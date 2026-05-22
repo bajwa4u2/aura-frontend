@@ -10,7 +10,7 @@ publish_to: "none"
 # X.Y.Z parts of `version` and zero out the build component to satisfy
 # the store rule. A pre-build script could enforce this automatically;
 # for now it's a manual sync.
-version: 1.1.3+13
+version: 1.1.4+14
 
 environment:
   sdk: ^3.10.8
@@ -159,7 +159,7 @@ msix_config:
   # (zoom / pan / open original / download original), desktop
   # reading-width public-record composition, and desktop contextual
   # discourse rails on the detail surfaces.
-  msix_version: 1.1.3.0
+  msix_version: 1.1.4.0
   description: Aura — a writing platform built for continuity.
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png

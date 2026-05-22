@@ -484,7 +484,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       },
       child: Scaffold(
       backgroundColor: AuraSurface.page,
-      body: LayoutBuilder(
+      // The call room is routed outside the app ShellRoute and the Scaffold
+      // has no appBar, so nothing insets the body for the status bar / notch
+      // / home indicator. Wrap the whole call surface in SafeArea so the
+      // top bar and the control dock are never drawn under system UI on
+      // iOS/Android (and under the title bar on a windowed desktop build).
+      body: SafeArea(
+        child: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= 860;
 
@@ -581,7 +587,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             ],
           );
         },
-      ),
+      )),
       ),
     );
   }

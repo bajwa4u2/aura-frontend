@@ -90,10 +90,14 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   void _initPosition() {
     final size = MediaQuery.sizeOf(context);
     if (size.isEmpty) return;
+    // Keep the initial bottom-right anchor clear of the home indicator /
+    // gesture bar (and the windowed-desktop edge) by offsetting with the
+    // real system inset rather than a blind margin.
+    final pad = MediaQuery.viewPaddingOf(context);
     _positionInitialized = true;
     _offset = Offset(
-      size.width - _kWidth - 20,
-      size.height - _kEstimatedHeight - 84,
+      size.width - _kWidth - 20 - pad.right,
+      size.height - _kEstimatedHeight - 84 - pad.bottom,
     );
   }
 
@@ -107,12 +111,21 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   void _onPanUpdate(DragUpdateDetails d) {
     if (_offset == null) return;
     final size = MediaQuery.sizeOf(context);
+    // Clamp the drag bounds to the safe area so the PiP can never be parked
+    // under the notch / status bar, the home indicator, or a desktop title
+    // bar — it must stay fully visible and draggable in every orientation.
+    final pad = MediaQuery.viewPaddingOf(context);
     setState(() {
       final raw = _offset! + d.delta;
+      final minX = pad.left;
+      final maxX =
+          (size.width - _kWidth - pad.right).clamp(minX, double.infinity);
+      final minY = pad.top;
+      final maxY = (size.height - _kEstimatedHeight - pad.bottom)
+          .clamp(minY, double.infinity);
       _offset = Offset(
-        raw.dx.clamp(0.0, (size.width - _kWidth).clamp(0.0, double.infinity)),
-        raw.dy
-            .clamp(0.0, (size.height - _kEstimatedHeight).clamp(0.0, double.infinity)),
+        raw.dx.clamp(minX, maxX),
+        raw.dy.clamp(minY, maxY),
       );
     });
   }
