@@ -182,7 +182,17 @@ class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>> {
   final Future<FeedPage> Function({String? cursor}) _fetch;
 
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
+    // Content-flash contract: a refresh MUST NOT blank a feed the user is
+    // already reading. Only the very first load (no items yet) shows the
+    // loading state. Every later refresh — pull-to-refresh, a realtime
+    // reconcile, an interaction-driven refresh — keeps the current items
+    // on screen and swaps the new page in only once it has arrived. A
+    // transient failure keeps the existing items rather than dropping a
+    // populated feed to a blank error screen.
+    final previous = state.valueOrNull;
+    if (previous == null) {
+      state = const AsyncValue.loading();
+    }
     try {
       final page = await _fetch(cursor: null);
       state = AsyncValue.data(FeedPagedState(
@@ -191,7 +201,9 @@ class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>> {
         loadingMore: false,
       ));
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      // Only surface an error when there was nothing on screen to keep —
+      // a genuine first-load failure. Otherwise hold the existing items.
+      if (previous == null) state = AsyncValue.error(e, st);
     }
   }
 
