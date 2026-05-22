@@ -198,6 +198,9 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
             _ThreadHeader(threadAsync: threadAsync, actor: actor!),
             Expanded(
               child: messagesAsync.when(
+                // Keep the conversation on screen during a send / refresh
+                // reload — a populated thread never blanks to a spinner.
+                skipLoadingOnReload: true,
                 loading: () =>
                     const AuraLoadingState(message: 'Loading messages…'),
                 error: (e, _) => Center(
@@ -306,6 +309,7 @@ class _ThreadHeader extends StatelessWidget {
           const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: threadAsync.when(
+              skipLoadingOnReload: true,
               loading: () => Text(
                 'Loading…',
                 style: AuraText.body

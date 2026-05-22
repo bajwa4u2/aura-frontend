@@ -614,6 +614,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 children: [
                   threadAsync.when(
+                    // Keep the thread visible during a post-send / realtime
+                    // refresh — only the genuine first load shows the
+                    // loading card, never a reload that already has data.
+                    skipLoadingOnReload: true,
                     loading: () => const AuraCard(
                       child: _LoadingBlock(label: 'Loading thread...'),
                     ),
@@ -1099,6 +1103,9 @@ class _ThreadConversationPanel extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s12),
           messagesAsync.when(
+            // Stale messages stay on screen during a send / refresh reload;
+            // a populated conversation never blanks back to a spinner.
+            skipLoadingOnReload: true,
             loading: () => const AuraCard(
               child: _LoadingBlock(label: 'Loading conversation...'),
             ),

@@ -63,6 +63,62 @@ Future<void> main() async {
     debugPrint('TokenStore.load failed: $e');
   }
 
+  // ── Global error boundary ──────────────────────────────────────────────
+  // A widget that throws during build must degrade to a calm, BOUNDED inline
+  // panel — never a blank/grey screen and never an unrecoverable shell. The
+  // default ErrorWidget paints an opaque grey box in release builds, which
+  // is what turned a single failed widget (e.g. during a message send) into
+  // a "whole app went blank, only a kill-and-relaunch recovers" report.
+  //
+  // With this builder the failure is CONTAINED to the widget that threw: the
+  // app shell, router and navigation stay alive, so the user can move away
+  // and the surface recovers on its next build. FlutterError.onError above
+  // still logs the real exception + stack for diagnosis.
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      // LimitedBox only constrains when the parent gives unbounded space
+      // (e.g. inside a Column/ListView), so this is safe both as a
+      // full-screen fallback and as a small inline one.
+      child: LimitedBox(
+        maxWidth: 420,
+        maxHeight: 240,
+        child: Container(
+          color: const Color(0xFF11131A),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(20),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                color: Color(0xFF9AA4B2),
+                size: 30,
+              ),
+              SizedBox(height: 10),
+              Text(
+                'This section ran into a problem.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFFE6E9EF),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'The rest of the app is still working — go back, '
+                'or reopen this screen.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+
   // Catch async errors thrown outside of Flutter's error handling (e.g., inside
   // provider notifiers or event stream handlers). These do NOT reach
   // FlutterError.onError and would otherwise be silently swallowed in web.
