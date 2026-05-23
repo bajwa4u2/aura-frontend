@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_paths.dart';
 import '../../../core/interactions/actor_context.dart';
+import '../../../core/diagnostics/runtime_trace.dart';
 import '../../../core/interactions/follow_invalidation.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/interaction_service.dart';
@@ -981,17 +982,45 @@ class _InstitutionProfileCtaRowState
     });
     try {
       final repo = ref.read(followsRepositoryProvider);
+      RuntimeTrace.emit('follow.api', 'request', data: {
+        'op': current.following ? 'unfollow' : 'follow',
+        'actor': actorRef.toString(),
+        'target': _targetRef().toString(),
+      });
+      final FollowState result;
       if (current.following) {
-        await repo.unfollow(actor: actorRef, target: _targetRef());
+        result = await repo.unfollow(actor: actorRef, target: _targetRef());
       } else {
-        await repo.follow(actor: actorRef, target: _targetRef());
+        result = await repo.follow(actor: actorRef, target: _targetRef());
       }
+      RuntimeTrace.emit('follow.api', 'response', data: {
+        'op': current.following ? 'unfollow' : 'follow',
+        'following': result.following,
+        'status': result.status,
+        'canMessage': result.canMessage,
+      });
       // Institution follow affects which institution posts appear in the
       // home feed and the institution-explore band. Invalidating through
       // the centralised helper keeps follow-graph-driven surfaces in sync
       // with the per-pair cache.
       invalidateFollowSurfaces(ref, key: key);
     } catch (e) {
+      // Extract HTTP status + raw response payload from a DioException so
+      // the trace shows the real backend signal rather than the generic
+      // "Something went wrong" mapped message — that's what made the
+      // unfollow regression initially unattributable.
+      String? status;
+      String? body;
+      if (e is DioException) {
+        status = e.response?.statusCode?.toString();
+        body = e.response?.data?.toString();
+      }
+      RuntimeTrace.emit('follow.api', 'threw', data: {
+        'op': current.following ? 'unfollow' : 'follow',
+        'status': status,
+        'body': body,
+        'err': '$e',
+      });
       if (!mounted) return;
       // Rollback: drop optimistic override so the button reverts to the
       // provider's truth (which never changed locally).
@@ -1109,6 +1138,14 @@ class _InstitutionProfileCtaRowState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         stateAsync.when(
+          // Hold the current Follow / Following button visible during the
+          // post-toggle invalidate — without this the SizedBox+spinner
+          // replaces the button for one frame, which the user perceives
+          // as the label flickering back to "Follow" before the new data
+          // resolves. `skipLoadingOnReload` keeps the data branch active
+          // for a reload that already has a previous value; the spinner
+          // still appears on the genuine first load.
+          skipLoadingOnReload: true,
           loading: () => const SizedBox(
             height: 38,
             child: Center(

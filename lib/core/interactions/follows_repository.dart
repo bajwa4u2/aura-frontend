@@ -56,6 +56,13 @@ class ActorRef {
 
   @override
   int get hashCode => Object.hash(type, userId, institutionId);
+
+  /// Stable, human-readable identifier used by RuntimeTrace and any
+  /// `debugPrint` call site. Mirrors `cacheKey` so the trace line and
+  /// the family-provider cache key for the same actor are textually
+  /// identical — easy to grep across both surfaces.
+  @override
+  String toString() => cacheKey;
 }
 
 /// Wire shape returned by `/v1/follows/...` endpoints.
@@ -82,7 +89,19 @@ class FollowState {
 
   factory FollowState.fromJson(dynamic raw) {
     if (raw is! Map) return empty;
-    final m = Map<String, dynamic>.from(raw);
+    var m = Map<String, dynamic>.from(raw);
+    // Backend serves every response through ResponseWrapInterceptor,
+    // which produces `{ ok: true, data: <payload> }`. Without this
+    // unwrap, top-level reads of `following` / `status` / `canMessage`
+    // are all null — the parser collapses to `FollowState.empty`, the
+    // button never shows "Following" no matter how many times the user
+    // taps, and the state probe never reflects the row that DID get
+    // persisted. The unwrap also tolerates a raw (un-wrapped) shape so
+    // direct service calls keep working.
+    final inner = m['data'];
+    if (inner is Map) {
+      m = Map<String, dynamic>.from(inner);
+    }
     final following = m['following'] == true;
     final status =
         (m['status']?.toString().trim().toUpperCase() ?? 'NONE');
@@ -128,11 +147,19 @@ class FollowsRepository {
     required ActorRef actor,
     required ActorRef target,
   }) async {
-    final body = <String, dynamic>{
-      ...actor.toFields('actor'),
-      ...target.toFields('target'),
+    // DELETE is sent as query parameters, not a body. HTTP intermediaries
+    // (Railway / NGINX edge, some Android HTTP stacks) do not reliably
+    // forward bodies on DELETE — RFC 7231 explicitly leaves DELETE-body
+    // semantics undefined. The previous body-on-DELETE shape arrived at
+    // the backend with `actorType: undefined`, tripping class-validator
+    // with 400 VALIDATION_ERROR and locking the Following button on
+    // every device. Query parameters bypass every stripper and match
+    // the controller's `@Query() FollowStateQueryDto` signature.
+    final query = <String, dynamic>{
+      ...actor.toQuery('actor'),
+      ...target.toQuery('target'),
     };
-    final res = await _dio.delete('/follows', data: body);
+    final res = await _dio.delete('/follows', queryParameters: query);
     return FollowState.fromJson(res.data);
   }
 }
