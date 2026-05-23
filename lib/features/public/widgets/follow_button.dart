@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/diagnostics/runtime_trace.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../data/thread_space_follow_repository.dart';
 
@@ -58,25 +60,49 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
       _optimisticFollowing = nextFollowing;
     });
     final repo = ref.read(threadSpaceFollowRepositoryProvider);
+    final kind = widget._isThread ? 'thread' : 'space';
+    final targetId = widget._isThread
+        ? (widget.threadPostId ?? '')
+        : (widget.spaceSlug ?? '');
+    final op = currentlyFollowing ? 'unfollow' : 'follow';
+    RuntimeTrace.emit('space_follow.api', 'request',
+        data: {'op': op, 'kind': kind, 'target': targetId});
     try {
+      bool result;
       if (widget._isThread) {
         final id = widget.threadPostId!;
-        if (currentlyFollowing) {
-          await repo.unfollowThread(id);
-        } else {
-          await repo.followThread(id);
-        }
+        result = currentlyFollowing
+            ? await repo.unfollowThread(id)
+            : await repo.followThread(id);
         ref.invalidate(threadFollowingProvider(id));
       } else {
         final slug = widget.spaceSlug!;
-        if (currentlyFollowing) {
-          await repo.unfollowSpace(slug);
-        } else {
-          await repo.followSpace(slug);
-        }
+        result = currentlyFollowing
+            ? await repo.unfollowSpace(slug)
+            : await repo.followSpace(slug);
         ref.invalidate(spaceFollowingProvider(slug));
       }
-    } catch (_) {
+      RuntimeTrace.emit('space_follow.api', 'response', data: {
+        'op': op,
+        'kind': kind,
+        'target': targetId,
+        'parsedFollowing': result,
+      });
+    } catch (e) {
+      String? status;
+      String? body;
+      if (e is DioException) {
+        status = e.response?.statusCode?.toString();
+        body = e.response?.data?.toString();
+      }
+      RuntimeTrace.emit('space_follow.api', 'threw', data: {
+        'op': op,
+        'kind': kind,
+        'target': targetId,
+        'status': status,
+        'body': body,
+        'err': '$e',
+      });
       // Rollback: drop optimistic override so the button reverts to
       // the provider's truth (which never changed locally). Errors
       // continue to surface via the global error handler.
