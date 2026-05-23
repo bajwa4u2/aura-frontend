@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/diagnostics/runtime_trace.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
@@ -124,25 +126,59 @@ class _AdminReviewQueueScreenState
   }
 
   Future<void> _handleApprove(ReviewQueueItem item) async {
+    RuntimeTrace.emit('admin.review', 'request',
+        data: {'op': 'approve', 'id': item.id, 'type': item.type});
     try {
       await ref.read(adminRepositoryProvider).approveReview(item.id);
+      RuntimeTrace.emit('admin.review', 'response',
+          data: {'op': 'approve', 'id': item.id});
       if (mounted) {
         ref.invalidate(adminReviewQueueProvider);
         _showSnackbar('Approved: ${item.title}', success: true);
       }
     } catch (e) {
+      String? status;
+      String? body;
+      if (e is DioException) {
+        status = e.response?.statusCode?.toString();
+        body = e.response?.data?.toString();
+      }
+      RuntimeTrace.emit('admin.review', 'threw', data: {
+        'op': 'approve',
+        'id': item.id,
+        'status': status,
+        'body': body,
+        'err': '$e',
+      });
       if (mounted) _showSnackbar('Failed to approve: ${adminErrorMessage(e)}');
     }
   }
 
   Future<void> _handleReject(ReviewQueueItem item) async {
+    RuntimeTrace.emit('admin.review', 'request',
+        data: {'op': 'reject', 'id': item.id, 'type': item.type});
     try {
       await ref.read(adminRepositoryProvider).rejectReview(item.id);
+      RuntimeTrace.emit('admin.review', 'response',
+          data: {'op': 'reject', 'id': item.id});
       if (mounted) {
         ref.invalidate(adminReviewQueueProvider);
         _showSnackbar('Rejected: ${item.title}');
       }
     } catch (e) {
+      String? status;
+      String? body;
+      if (e is DioException) {
+        status = e.response?.statusCode?.toString();
+        body = e.response?.data?.toString();
+      }
+      RuntimeTrace.emit('admin.review', 'threw', data: {
+        'op': 'reject',
+        'id': item.id,
+        'status': status,
+        'body': body,
+        'err': '$e',
+      });
       if (mounted) _showSnackbar('Failed to reject: ${adminErrorMessage(e)}');
     }
   }
@@ -442,38 +478,137 @@ class _QueueCardState extends State<_QueueCard> {
               const SizedBox(height: AuraSpace.s12),
 
               // ── Row 3: actions ─────────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (_loading)
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AuraSurface.accent,
-                      ),
-                    )
-                  else ...[
-                    AuraSecondaryButton(
-                      label: 'Reject',
-                      icon: Icons.close_rounded,
-                      onPressed: _reject,
-                    ),
-                    const SizedBox(width: AuraSpace.s8),
-                    AuraPrimaryButton(
-                      label: 'Approve',
-                      icon: Icons.check_rounded,
-                      onPressed: _approve,
-                    ),
-                  ],
-                ],
-              ),
+              _buildActionArea(),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Status-aware action area for a queue item.
+  ///
+  /// Founder feedback: every item in every filter showed Reject +
+  /// Approve regardless of state, so an already-approved request looked
+  /// identical to a still-pending one — the admin couldn't tell at a
+  /// glance what was done. Render now mirrors the actual data:
+  ///   * pending / provisional_active → Reject + Approve (unchanged)
+  ///   * rejected                     → "Rejected" chip, no buttons
+  ///   * active + member_join         → "Active member" chip + Remove
+  ///                                    (the same rejectReview path —
+  ///                                    just a clearer label)
+  ///   * active + institution items   → "Approved · <date>" chip from
+  ///                                    the existing meta.reviewedAt
+  ///   * any other / unknown status   → falls through to Reject +
+  ///                                    Approve so a new backend status
+  ///                                    cannot strand the admin
+  ///
+  /// No handlers, providers, repos, wire shape or backend code change.
+  /// The pending action path is byte-identical to before.
+  Widget _buildActionArea() {
+    if (_loading) {
+      return const Align(
+        alignment: Alignment.centerRight,
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AuraSurface.accent,
+          ),
+        ),
+      );
+    }
+
+    final item = widget.item;
+    final status = item.status.toLowerCase();
+    final isMember = item.type == 'member_join';
+    final needsDecision =
+        status == 'pending' || status == 'provisional_active';
+
+    if (needsDecision) {
+      return _buttonsRow();
+    }
+
+    if (status == 'rejected') {
+      return const Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _DecisionChip(
+            label: 'Rejected',
+            tone: _ChipTone.danger,
+            icon: Icons.cancel_rounded,
+          ),
+        ],
+      );
+    }
+
+    if (status == 'active') {
+      if (isMember) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            const _DecisionChip(
+              label: 'Active member',
+              tone: _ChipTone.good,
+              icon: Icons.check_rounded,
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            AuraSecondaryButton(
+              label: 'Remove',
+              icon: Icons.person_remove_outlined,
+              onPressed: _reject,
+            ),
+          ],
+        );
+      }
+      final reviewedAt = _formatReviewedAt(item.meta['reviewedAt']);
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _DecisionChip(
+            label: reviewedAt.isEmpty
+                ? 'Approved'
+                : 'Approved · $reviewedAt',
+            tone: _ChipTone.good,
+            icon: Icons.check_circle_rounded,
+          ),
+        ],
+      );
+    }
+
+    // Unknown future status — fall back to the original Reject +
+    // Approve so a new backend value cannot strand the admin without a
+    // way to action the item.
+    return _buttonsRow();
+  }
+
+  Widget _buttonsRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        AuraSecondaryButton(
+          label: 'Reject',
+          icon: Icons.close_rounded,
+          onPressed: _reject,
+        ),
+        const SizedBox(width: AuraSpace.s8),
+        AuraPrimaryButton(
+          label: 'Approve',
+          icon: Icons.check_rounded,
+          onPressed: _approve,
+        ),
+      ],
+    );
+  }
+
+  String _formatReviewedAt(dynamic raw) {
+    if (raw == null) return '';
+    final text = raw.toString().trim();
+    if (text.isEmpty) return '';
+    final dt = DateTime.tryParse(text)?.toLocal();
+    if (dt == null) return '';
+    return _formatDate(dt);
   }
 
   String _formatDate(DateTime dt) {
@@ -632,6 +767,74 @@ class _EmptyState extends StatelessWidget {
               ? 'All onboarding events have been reviewed.'
               : 'No items match the selected filter.',
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DECISION CHIP — read-only "Approved" / "Rejected" / "Active member" badge
+// rendered in place of action buttons once an item no longer needs an
+// admin decision. Tone-based palette uses existing AuraSurface colors so
+// no new design tokens are introduced; the chip is purely presentation.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum _ChipTone { good, danger, neutral }
+
+class _DecisionChip extends StatelessWidget {
+  const _DecisionChip({
+    required this.label,
+    required this.tone,
+    this.icon,
+  });
+
+  final String label;
+  final _ChipTone tone;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color ink;
+    switch (tone) {
+      case _ChipTone.good:
+        bg = AuraSurface.goodBg;
+        ink = AuraSurface.goodInk;
+        break;
+      case _ChipTone.danger:
+        bg = AuraSurface.dangerBg;
+        ink = AuraSurface.dangerInk;
+        break;
+      case _ChipTone.neutral:
+        bg = AuraSurface.subtle;
+        ink = AuraSurface.muted;
+        break;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: ink.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: ink),
+            const SizedBox(width: AuraSpace.s6),
+          ],
+          Text(
+            label,
+            style: AuraText.small.copyWith(
+              color: ink,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
