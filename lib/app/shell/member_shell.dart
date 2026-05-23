@@ -739,12 +739,23 @@ class _InstitutionContextBar extends StatelessWidget {
                   ),
                   const SizedBox(width: AuraSpace.s8),
                 ],
-                if (isVerified) ...[
-                  const _InstitutionVerifiedBadge(),
-                  const SizedBox(width: 4),
+                // Verified + Workspace badges are desktop-only — they
+                // are siblings (not children) of the Expanded primary
+                // nav, so on Pixel-class widths they stole ~150 px from
+                // the 7-tab horizontal scroll strip, leaving room for
+                // only ~2 tabs at a time and pinning the badges over
+                // the area the user expected to scroll. The avatar
+                // already anchors institution identity on mobile; the
+                // teal accent + shell context make "workspace" obvious.
+                // Same gating pattern as the `name` block above.
+                if (isDesktop) ...[
+                  if (isVerified) ...[
+                    const _InstitutionVerifiedBadge(),
+                    const SizedBox(width: 4),
+                  ],
+                  const _WorkspaceBadge(),
+                  const SizedBox(width: AuraSpace.s10),
                 ],
-                const _WorkspaceBadge(),
-                const SizedBox(width: AuraSpace.s10),
                 // Thin vertical rule that visually separates the
                 // identity cluster from the primary-nav strip without
                 // introducing a second row. Subtle accent-tinted line
