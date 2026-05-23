@@ -74,14 +74,25 @@ extension on _ExploreScopeKey {
 
 class _InstitutionExploreScreenState
     extends ConsumerState<InstitutionExploreScreen>
-    with SingleTickerProviderStateMixin {
+    // Plural mixin: each scope-set change creates a new TabController
+    // (with its own ticker). The old ticker is disposed first by
+    // `_refreshScopes`, but the singular mixin asserts "multiple tickers
+    // were created" the moment we ask for a second one — which was the
+    // source of `error.boundary` fires whenever the identity arrived
+    // after first render.
+    with TickerProviderStateMixin {
   late TabController _tabController;
   List<_ExploreScopeKey> _visibleScopes = const [];
 
   @override
   void initState() {
     super.initState();
+    // Bootstrap controller with the safe baseline length so build can run
+    // even before the identity provider resolves. The post-frame callback
+    // (and the ref.listen registered in build) then bring the controller
+    // and the rendered scopes back into lockstep.
     _tabController = TabController(length: 1, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshScopes());
   }
 
   @override
@@ -90,10 +101,26 @@ class _InstitutionExploreScreenState
     super.dispose();
   }
 
-  void _ensureTabController(int length) {
-    if (_tabController.length == length) return;
+  /// Sync the cached `_visibleScopes` and the live TabController with
+  /// the current institution identity. Must be called OUTSIDE the build
+  /// pass — Flutter asserts when a TabController is disposed / created
+  /// during a build (the prior `_ensureTabController` was called from
+  /// `build`, which is what produced both the "multiple tickers" assert
+  /// and the "TabController used after disposed" finalize-tree error
+  /// the global runtime trace surfaced).
+  void _refreshScopes() {
+    if (!mounted) return;
+    final identity = ref.read(institutionIdentityProvider);
+    final newScopes = _scopesFor(identity);
+    if (_listEquals(newScopes, _visibleScopes)) return;
     _tabController.dispose();
-    _tabController = TabController(length: length, vsync: this);
+    setState(() {
+      _visibleScopes = newScopes;
+      _tabController = TabController(
+        length: newScopes.length.clamp(1, 3),
+        vsync: this,
+      );
+    });
   }
 
   List<_ExploreScopeKey> _scopesFor(InstitutionIdentity? identity) {
@@ -150,11 +177,20 @@ class _InstitutionExploreScreenState
       );
     }
 
-    final scopes = _scopesFor(identity);
-    if (!_listEquals(scopes, _visibleScopes)) {
-      _visibleScopes = scopes;
-      _ensureTabController(scopes.length.clamp(1, 3));
-    }
+    // Identity changes (including the post-login transition from null
+    // to authorizedSpeaker) drive a TabController length change. Doing
+    // that mutation during build asserted in Flutter; do it from a
+    // ref.listen callback, which fires AFTER this build is committed.
+    // The current frame keeps using `_visibleScopes` (which matches the
+    // live `_tabController.length`); the listener calls setState so the
+    // next frame renders the new scopes and the new controller in
+    // lockstep.
+    ref.listen<InstitutionIdentity?>(
+      institutionIdentityProvider,
+      (_, __) => _refreshScopes(),
+    );
+
+    final scopes = _visibleScopes;
 
     final canCompose = identity?.canCreatePosts ?? false;
     final activeScope = scopes.isEmpty
