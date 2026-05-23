@@ -691,7 +691,16 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
                   backgroundColor: AuraSurface.overlay,
                   foregroundColor: AuraSurface.ink,
                 ),
-                onPressed: () => Navigator.of(context).pop(),
+                // Use the dialog's own BuildContext (from the LayoutBuilder)
+                // instead of the outer _MessageAttachmentCardState context.
+                // The card rebuilds on every thread refresh, after which the
+                // captured outer context points at a disposed element and
+                // `Navigator.of(context)` throws "Null check operator used on
+                // a null value" in the gesture handler — wedging the close
+                // button. The dialog's context is alive for as long as the
+                // dialog is mounted, which is exactly when this button can
+                // be tapped.
+                onPressed: () => Navigator.of(ctx).pop(),
                 icon: const Icon(Icons.close),
               ),
             ),
