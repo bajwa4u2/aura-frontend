@@ -74,6 +74,23 @@
 	<string>Aura asks for permission to save images and downloads to your photo library when you choose to keep them.</string>
 
 	<!--
+	  Location: the Aura app itself does not request, store, or share
+	  the user's location. This purpose string exists because Apple's
+	  static analyzer (`Transporter` / App Store Connect validator,
+	  error 90683) flags the binary as referencing CoreLocation through
+	  a linked dependency — the Firebase iOS SDK pulled in by
+	  `firebase_core` / `firebase_messaging` references
+	  `CLLocationManager` whether or not the host app calls it. Apple
+	  requires a user-facing string for that reference even when the
+	  prompt is never triggered. The string is worded so a reviewer can
+	  reconcile it with the actual app behaviour (no location feature
+	  is wired today; adding one in the future would still honour this
+	  string).
+	-->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aura does not currently use your location. This permission is requested only if you later enable a feature that needs it (for example, surfacing nearby live sessions). Your location is never shared.</string>
+
+	<!--
 	  Background modes. We claim ONLY the modes the app actually uses:
 	    - remote-notification: Firebase Messaging delivers push payloads
 	      while the app is suspended (incoming-call ring, message alerts).
