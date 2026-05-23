@@ -133,23 +133,28 @@ Future<void> main() async {
     );
   };
 
-  // Catch async errors thrown outside of Flutter's error handling (e.g., inside
-  // provider notifiers or event stream handlers). These do NOT reach
-  // FlutterError.onError and would otherwise be silently swallowed in web.
-  runZonedGuarded(
-    () {
-      runApp(
-        ProviderScope(
-          overrides: [
-            tokenStoreProvider.overrideWith((ref) => store),
-          ],
-          child: const AuraApp(),
-        ),
-      );
-    },
-    (error, stack) {
-      debugPrint('[ZONE_ERROR] $error');
-      debugPrint('[ZONE_ERROR] stack:\n$stack');
-    },
+  // Catch uncaught async errors at the engine boundary. This replaces an
+  // earlier `runZonedGuarded` wrap which produced a Flutter "Zone mismatch"
+  // warning at boot — `WidgetsFlutterBinding.ensureInitialized()` had run
+  // in the root zone but `runApp` was called inside the guarded zone, so
+  // zone-specific configuration was inconsistent between binding init and
+  // runApp ("this will likely cause confusion and bugs", per Flutter's
+  // own diagnostic). `PlatformDispatcher.onError` is the modern, zone-free
+  // entry point for the same intent and is honoured by the same Flutter
+  // binding that set up the framework. Returning `true` marks the error
+  // as handled so it does not propagate to the platform default handler.
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    debugPrint('[PLATFORM_ERROR] $error');
+    debugPrint('[PLATFORM_ERROR] stack:\n$stack');
+    return true;
+  };
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        tokenStoreProvider.overrideWith((ref) => store),
+      ],
+      child: const AuraApp(),
+    ),
   );
 }
