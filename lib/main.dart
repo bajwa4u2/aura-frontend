@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/aura_app.dart';
 import 'core/auth/auth_providers.dart';
+import 'core/diagnostics/runtime_trace.dart';
 import 'core/utils/configure_url_strategy.dart';
 
 // Top-level handler required by firebase_messaging for background/killed-app
@@ -75,6 +76,19 @@ Future<void> main() async {
   // and the surface recovers on its next build. FlutterError.onError above
   // still logs the real exception + stack for diagnosis.
   ErrorWidget.builder = (FlutterErrorDetails details) {
+    // Make the failure visible in the debug trace so a contained error
+    // is still attributable. The default FlutterError.onError above logs
+    // the full stack; this trace line is the short, grep-friendly
+    // companion that ties the error boundary firing to the channel
+    // counter used by the rest of the runtime trace.
+    RuntimeTrace.emit(
+      'error.boundary',
+      'widget build failed',
+      data: {
+        'exception': details.exceptionAsString(),
+        'library': details.library ?? '',
+      },
+    );
     return Directionality(
       textDirection: TextDirection.ltr,
       // LimitedBox only constrains when the parent gives unbounded space

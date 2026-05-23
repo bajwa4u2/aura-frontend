@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'route_classification.dart';
-import '../core/auth/session_providers.dart';
+import '../core/auth/auth_providers.dart';
+import '../core/diagnostics/runtime_trace.dart';
 import 'shell/admin_shell.dart';
 import 'shell/member_shell.dart';
 import 'shell/public_shell.dart';
@@ -38,18 +39,52 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final path = GoRouterState.of(context).uri.path;
-    final isAuthed =
-        ref.watch(authStatusProvider) == AuthStatus.authed;
 
+    // ── SHELL SURVIVABILITY ────────────────────────────────────────────
+    //
+    // Shell choice was previously gated on `authStatusProvider`, which
+    // returns `loading` whenever `sessionBootstrapProvider` is loading
+    // and `unauthed` whenever `tokenStore.isAuthed` is false (the
+    // `isAuthed` getter applies a 30s JWT-expiry skew, so it flips to
+    // false briefly before the silent refresh rotates the token). Either
+    // signal flipping mid-session bounced the shell from MemberShell
+    // back to PublicShell, which:
+    //   * tore down every authed surface (Works/thread/feed/realtime),
+    //   * disposed the AuraIncomingLiveLayer mounted inside MemberShell
+    //     and dropped any in-flight ringing card,
+    //   * showed up to the user as the "everything flashes / shell
+    //     disappears for a moment" cross-platform regression.
+    //
+    // The token's mere PRESENCE is the durable session signal: it's
+    // populated for the entire lifetime of a session and is only cleared
+    // by an explicit logout / clearTokens(). Choosing the shell from
+    // that signal keeps MemberShell alive through routine bootstrap
+    // re-runs and through the brief JWT-expiry → refresh round-trip,
+    // and only flips back to PublicShell on a real auth drop.
+    final store = ref.watch(tokenStoreProvider);
+    final isAuthed =
+        store.isLoaded && (store.accessToken?.trim().isNotEmpty ?? false);
+
+    final Widget shell;
+    final String chose;
     if (isAdminShellPath(path)) {
-      return AdminShell(child: child);
+      shell = AdminShell(child: child);
+      chose = 'AdminShell';
+    } else if (isInstitutionShellPath(path)) {
+      shell = InstitutionShell(child: child);
+      chose = 'InstitutionShell';
+    } else if (isAuthed) {
+      shell = MemberShell(child: child);
+      chose = 'MemberShell';
+    } else {
+      shell = PublicShell(child: child);
+      chose = 'PublicShell';
     }
-    if (isInstitutionShellPath(path)) {
-      return InstitutionShell(child: child);
-    }
-    if (isAuthed) {
-      return MemberShell(child: child);
-    }
-    return PublicShell(child: child);
+    RuntimeTrace.emit(
+      'shell.build',
+      'selected shell',
+      data: {'chose': chose, 'path': path, 'authed': isAuthed},
+    );
+    return shell;
   }
 }

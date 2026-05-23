@@ -10,6 +10,7 @@ import 'app/route_targets.dart';
 import 'core/auth/admin_access_provider.dart';
 import 'core/auth/session_bootstrap.dart';
 import 'core/auth/session_providers.dart';
+import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
 
 // Auth
@@ -199,34 +200,57 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
 
+  // ── REFRESH-LISTENER DISCIPLINE ────────────────────────────────────
+  //
+  // GoRouter rebuilds the Navigator (which re-runs ShellRoute.builder
+  // and so the AppShell + every routed screen) every time
+  // `refreshListenable` fires. The previous wiring fired on EVERY
+  // AsyncValue emit from the access providers — including the loading
+  // half of every invalidate / refetch — producing a router-refresh
+  // storm whenever any of those providers transiently re-evaluated.
+  //
+  // Tightened contract: fire ONLY when the materialised value changes.
+  // `.valueOrNull` honours `copyWithPrevious`, so a reload that lands
+  // on the same value as before never fires the listener — and a
+  // genuine state transition still does. The result is a stable router
+  // / shell / screen surface during routine background activity.
   ref.listen<AuthStatus>(authStatusProvider, (prev, next) {
-    if (prev != next) refresh.value++;
-  });
-
-  ref.listen<AsyncValue<bool?>>(emailVerifiedProvider, (prev, next) {
-    final prevValue = prev?.maybeWhen(
-      data: (value) => value,
-      orElse: () => null,
-    );
-    final nextValue = next.maybeWhen(
-      data: (value) => value,
-      orElse: () => null,
-    );
-
-    final prevLoading = prev?.isLoading ?? false;
-    final nextLoading = next.isLoading;
-
-    if (prevValue != nextValue || prevLoading != nextLoading) {
+    if (prev != next) {
       refresh.value++;
+      RuntimeTrace.emit('router.refresh', 'authStatus', data: {'next': next.name});
     }
   });
 
-  ref.listen<AsyncValue<InstitutionAccess>>(institutionAccessProvider, (_, __) {
-    refresh.value++;
+  ref.listen<AsyncValue<bool?>>(emailVerifiedProvider, (prev, next) {
+    final prevValue = prev?.valueOrNull;
+    final nextValue = next.valueOrNull;
+    if (prevValue != nextValue) {
+      refresh.value++;
+      RuntimeTrace.emit('router.refresh', 'emailVerified',
+          data: {'next': nextValue});
+    }
   });
 
-  ref.listen<AsyncValue<AppAdminAccess>>(appAdminAccessProvider, (_, __) {
-    refresh.value++;
+  ref.listen<AsyncValue<InstitutionAccess>>(institutionAccessProvider,
+      (prev, next) {
+    final prevState = prev?.valueOrNull?.state;
+    final nextState = next.valueOrNull?.state;
+    if (prevState != nextState) {
+      refresh.value++;
+      RuntimeTrace.emit('router.refresh', 'institutionAccess',
+          data: {'next': nextState?.name});
+    }
+  });
+
+  ref.listen<AsyncValue<AppAdminAccess>>(appAdminAccessProvider,
+      (prev, next) {
+    final prevAdmin = prev?.valueOrNull?.isAdmin;
+    final nextAdmin = next.valueOrNull?.isAdmin;
+    if (prevAdmin != nextAdmin) {
+      refresh.value++;
+      RuntimeTrace.emit('router.refresh', 'appAdminAccess',
+          data: {'next': nextAdmin});
+    }
   });
 
   bool isBootPath(String path) => path == kRouterBootRoute;

@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/diagnostics/runtime_trace.dart';
 import '../../correspondence/data/correspondence_live_service.dart';
 import '../../feed/data/unified_feed_providers.dart';
 
@@ -117,9 +119,24 @@ class RealtimeReconciliationController {
     try {
       _ref.read(globalPublicFeedPagedProvider.notifier).refresh();
       _ref.read(memberHomeFeedPagedProvider.notifier).refresh();
-    } catch (_) {
+      RuntimeTrace.emit('reconcile.refresh', 'paged feeds');
+    } catch (error, stack) {
       // Either provider may not be mounted yet — convergence is
       // best-effort and must never throw out of the socket listener.
+      // The failure IS surfaced in the debug trace so a regression in
+      // the convergence path is attributable rather than silently lost.
+      RuntimeTrace.emit('reconcile.refresh', 'failed',
+          data: {'err': '$error'});
+      assert(() {
+        FlutterError.reportError(FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'realtime reconciliation',
+          context: ErrorDescription(
+              'while data-preserving refresh of the primary paged feeds'),
+        ));
+        return true;
+      }());
     }
   }
 
