@@ -135,7 +135,20 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // The PiP widget reads `state.isCallRoomVisible` instead of route path,
     // so the transition between full and PiP is driven by the same state
     // change as the widget tree mount/unmount — no 1-2 frame race window.
-    ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
+    //
+    // Wrapped in a microtask because `didChangeDependencies` is a widget
+    // lifecycle method and Riverpod throws "Tried to modify a provider
+    // while the widget tree was building" if a notifier state is updated
+    // synchronously inside it (the new global error boundary catches the
+    // throw — but the room/PiP visibility flag never gets set, leaving
+    // the runtime in a broken state). The microtask runs immediately
+    // after the current event-loop turn, satisfying Riverpod while still
+    // landing before the next frame paints — the "no 1-2 frame race"
+    // contract above is preserved.
+    Future.microtask(() {
+      if (!mounted) return;
+      ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
+    });
 
     // Resolve institution session metadata. Constructor query params win
     // (fresh start from live rooms list); cache covers browser refresh
@@ -172,18 +185,31 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   void dispose() {
     _durationTimer?.cancel();
 
-    // A4: clear the visibility flag synchronously as the room screen
-    // unmounts. The PiP becomes visible the same frame the room widget
-    // tree is removed, so there is no gap between full-screen and PiP.
+    // A4: clear the visibility flag as the room screen unmounts so the
+    // PiP becomes visible right after the room widget tree is removed.
+    //
+    // Wrapped in a microtask for the same reason as the matching
+    // didChangeDependencies call above — dispose runs inside the
+    // Element unmount pass, which Riverpod treats as a "building"
+    // phase, so a synchronous notifier state mutation here throws
+    // "Tried to modify a provider while the widget tree was building"
+    // (the existing `try/catch` cannot catch it because Riverpod
+    // reports the listener throw via `FlutterError.onError` instead of
+    // propagating back to this caller). The captured container keeps
+    // the controller reachable; the microtask runs immediately after
+    // unmount completes, so the visibility flip lands in the next
+    // frame instead of crashing the lifecycle.
     final container = _capturedContainer;
     if (container != null) {
-      try {
-        container
-            .read(realtimeControllerProvider.notifier)
-            .setCallRoomVisible(false);
-      } catch (_) {
-        // best-effort: never let dispose throw
-      }
+      Future.microtask(() {
+        try {
+          container
+              .read(realtimeControllerProvider.notifier)
+              .setCallRoomVisible(false);
+        } catch (_) {
+          // best-effort: controller may have been torn down with the app.
+        }
+      });
     }
 
     // Only leave on dispose when the user *explicitly* ended/left the call.

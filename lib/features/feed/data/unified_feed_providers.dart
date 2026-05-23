@@ -189,18 +189,27 @@ class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>> {
     // on screen and swaps the new page in only once it has arrived. A
     // transient failure keeps the existing items rather than dropping a
     // populated feed to a blank error screen.
+    //
+    // Disposal discipline: this notifier can be disposed mid-fetch when
+    // its `StateNotifierProvider` rebuilds (e.g. `feedActorProvider`
+    // flips from null to `institution:<id>` after the post-login probe
+    // resolves). Writing `state` on a disposed notifier throws
+    // "Bad state: Tried to use FeedPagedNotifier after `dispose` was
+    // called" — `mounted` short-circuits each post-await write.
     final previous = state.valueOrNull;
-    if (previous == null) {
+    if (previous == null && mounted) {
       state = const AsyncValue.loading();
     }
     try {
       final page = await _fetch(cursor: null);
+      if (!mounted) return;
       state = AsyncValue.data(FeedPagedState(
         items: page.items,
         nextCursor: page.nextCursor,
         loadingMore: false,
       ));
     } catch (e, st) {
+      if (!mounted) return;
       // Only surface an error when there was nothing on screen to keep —
       // a genuine first-load failure. Otherwise hold the existing items.
       if (previous == null) state = AsyncValue.error(e, st);
@@ -210,9 +219,11 @@ class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>> {
   Future<void> loadMore() async {
     final cur = state.valueOrNull;
     if (cur == null || !cur.hasMore || cur.loadingMore) return;
+    if (!mounted) return;
     state = AsyncValue.data(cur.copyWith(loadingMore: true));
     try {
       final page = await _fetch(cursor: cur.nextCursor);
+      if (!mounted) return;
       // De-dupe by (type, id) so a server-side overlap on the cursor
       // boundary doesn't render duplicates.
       final seen = <String>{
@@ -229,6 +240,7 @@ class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>> {
         loadingMore: false,
       ));
     } catch (_) {
+      if (!mounted) return;
       state = AsyncValue.data(cur.copyWith(loadingMore: false));
     }
   }
