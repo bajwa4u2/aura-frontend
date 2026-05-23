@@ -100,10 +100,17 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
         ? ref.watch(threadFollowingProvider(widget.threadPostId!))
         : ref.watch(spaceFollowingProvider(widget.spaceSlug!));
 
-    final providerFollowing = asyncFollowing.maybeWhen(
-      data: (v) => v,
-      orElse: () => false,
-    );
+    // `valueOrNull` preserves the previous value through an
+    // AsyncLoading reload (Riverpod's copyWithPrevious). `maybeWhen`
+    // does NOT — its `data` branch fires only for AsyncData, so a
+    // reload landed on `orElse: () => false` and the button briefly
+    // flipped back to "Follow" between the optimistic clear (in
+    // `_toggle.finally`) and the provider refetch resolving. Same
+    // symptom and same fix shape as the institution-detail
+    // `stateAsync.when(skipLoadingOnReload: true, …)` change; here we
+    // hit it through valueOrNull because the consumer uses
+    // `maybeWhen`, which has no skipLoadingOnReload parameter.
+    final providerFollowing = asyncFollowing.valueOrNull ?? false;
     final following = _optimisticFollowing ?? providerFollowing;
     final loading = asyncFollowing.isLoading || _busy;
 
