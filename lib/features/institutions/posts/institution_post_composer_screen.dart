@@ -321,7 +321,7 @@ class _InstitutionPostComposerScreenState
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text(
               'Discard',
-              style: TextStyle(color: AuraSurface.dangerInk),
+              style: TextStyle(color: AuraSurface.coRose),
             ),
           ),
         ],
@@ -1106,8 +1106,8 @@ class _InstitutionPostComposerScreenState
 
   Color _counterColor(int used, int max) {
     final ratio = max == 0 ? 0.0 : used / max;
-    if (used >= max) return AuraSurface.dangerInk;
-    if (ratio >= 0.9) return AuraSurface.dangerInk;
+    if (used >= max) return AuraSurface.coRose;
+    if (ratio >= 0.9) return AuraSurface.coRose;
     return AuraSurface.faint;
   }
 
@@ -1357,7 +1357,7 @@ class _MediaUploadSlot extends StatelessWidget {
                 child: Text(
                   'Remove',
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.dangerInk,
+                    color: AuraSurface.coRose,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1481,7 +1481,7 @@ class _LabeledField extends StatelessWidget {
                   counter!,
                   style: AuraText.micro.copyWith(
                     color: counterColor ?? AuraSurface.faint,
-                    fontWeight: counterColor == AuraSurface.dangerInk
+                    fontWeight: counterColor == AuraSurface.coRose
                         ? FontWeight.w800
                         : FontWeight.w600,
                   ),
@@ -1757,7 +1757,7 @@ class _DraftStatusRow extends StatelessWidget {
             icon: const Icon(Icons.delete_outline, size: 14),
             label: const Text('Discard draft'),
             style: TextButton.styleFrom(
-              foregroundColor: AuraSurface.dangerInk,
+              foregroundColor: AuraSurface.coRose,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               minimumSize: const Size(0, 28),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1780,21 +1780,21 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
-        color: AuraSurface.dangerBg,
+        color: AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
         border: Border.all(
-          color: AuraSurface.dangerInk.withValues(alpha: 0.3),
+          color: AuraSurface.coRose.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
           const Icon(Icons.error_outline,
-              size: 16, color: AuraSurface.dangerInk),
+              size: 16, color: AuraSurface.coRose),
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
               message,
-              style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coRose),
             ),
           ),
         ],

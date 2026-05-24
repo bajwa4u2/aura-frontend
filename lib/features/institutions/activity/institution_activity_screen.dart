@@ -276,7 +276,7 @@ class _InstitutionActivityScreenState
                             child: Text(
                               _moreError!,
                               style: AuraText.small
-                                  .copyWith(color: AuraSurface.dangerInk),
+                                  .copyWith(color: AuraSurface.coRose),
                             ),
                           ),
                       ],

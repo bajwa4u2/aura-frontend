@@ -506,10 +506,10 @@ class _StatusDot extends StatelessWidget {
       width: 24,
       height: 24,
       decoration: BoxDecoration(
-        color: on ? AuraSurface.goodBg : AuraSurface.dangerBg,
+        color: on ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.coRose.withValues(alpha: 0.16),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, size: 12, color: on ? AuraSurface.goodInk : AuraSurface.dangerInk),
+      child: Icon(icon, size: 12, color: on ? AuraSurface.coVerdant : AuraSurface.coRose),
     );
   }
 }
@@ -585,9 +585,9 @@ class _Chip extends StatelessWidget {
     final Color fg;
     final Color border;
     if (danger) {
-      bg = AuraSurface.dangerBg;
-      fg = AuraSurface.dangerInk;
-      border = AuraSurface.dangerInk.withValues(alpha: 0.35);
+      bg = AuraSurface.coRose.withValues(alpha: 0.16);
+      fg = AuraSurface.coRose;
+      border = AuraSurface.coRose.withValues(alpha: 0.35);
     } else if (accent) {
       bg = AuraSurface.accentSoft;
       fg = AuraSurface.accentText;

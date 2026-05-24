@@ -377,7 +377,7 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
               const SizedBox(height: AuraSpace.s8),
               Text(
                 _translationError!,
-                style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                style: AuraText.small.copyWith(color: AuraSurface.coRose),
               ),
             ],
             if (_showTranslation &&

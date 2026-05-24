@@ -385,7 +385,7 @@ class _ProfileBody extends ConsumerWidget {
                             label: 'Institution',
                             value: isVerified ? 'Verified' : 'Unverified',
                             valueColor: isVerified
-                                ? AuraSurface.goodInk
+                                ? AuraSurface.coVerdant
                                 : AuraSurface.muted,
                           ),
                           _KeyValue(
@@ -394,7 +394,7 @@ class _ProfileBody extends ConsumerWidget {
                                 ? 'Verified'
                                 : 'Not verified',
                             valueColor: domainVerified
-                                ? AuraSurface.goodInk
+                                ? AuraSurface.coVerdant
                                 : AuraSurface.muted,
                           ),
                           if (domain.isNotEmpty)

@@ -87,21 +87,21 @@ class InsToneStyle {
       case InsTone.ok:
         return const InsToneStyle(
           bg: Color(0x2222C55E),
-          fg: AuraSurface.goodInk,
+          fg: AuraSurface.coVerdant,
           border: Color(0x4422C55E),
           icon: Icons.check_circle_rounded,
         );
       case InsTone.warn:
         return const InsToneStyle(
           bg: Color(0x22F59E0B),
-          fg: AuraSurface.warnInk,
+          fg: AuraSurface.coSun,
           border: Color(0x44F59E0B),
           icon: Icons.warning_amber_rounded,
         );
       case InsTone.danger:
         return const InsToneStyle(
           bg: Color(0x22EF4444),
-          fg: AuraSurface.dangerInk,
+          fg: AuraSurface.coRose,
           border: Color(0x44EF4444),
           icon: Icons.error_outline_rounded,
         );
@@ -422,7 +422,7 @@ class InsActionCard extends StatelessWidget {
                             minHeight: 18,
                           ),
                           decoration: BoxDecoration(
-                            color: AuraSurface.dangerInk,
+                            color: AuraSurface.coRose,
                             borderRadius: BorderRadius.circular(9),
                           ),
                           child: Center(

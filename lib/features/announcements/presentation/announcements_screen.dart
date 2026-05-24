@@ -8,6 +8,7 @@ import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -394,29 +395,11 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.label});
-
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        border: Border.all(color: AuraSurface.divider),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(
-          fontWeight: FontWeight.w600,
-          color: AuraSurface.muted,
-        ),
-      ),
-    );
+    return SubstrateChip(label: label, state: SubstrateChipState.mist);
   }
 }
 

@@ -108,13 +108,13 @@ class EditProfileEntryCard extends StatelessWidget {
                     const Icon(
                       Icons.delete_outline,
                       size: 16,
-                      color: AuraSurface.dangerInk,
+                      color: AuraSurface.coRose,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Remove',
                       style: AuraText.small.copyWith(
-                        color: AuraSurface.dangerInk,
+                        color: AuraSurface.coRose,
                       ),
                     ),
                   ],

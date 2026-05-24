@@ -492,12 +492,12 @@ class PostCardBadge extends StatelessWidget {
 
     switch (tone) {
       case PostCardBadgeTone.good:
-        bg = AuraSurface.goodBg;
-        fg = AuraSurface.goodInk;
+        bg = AuraSurface.coVerdant.withValues(alpha: 0.16);
+        fg = AuraSurface.coVerdant;
         break;
       case PostCardBadgeTone.warn:
-        bg = AuraSurface.warnBg;
-        fg = AuraSurface.warnInk;
+        bg = AuraSurface.coSun.withValues(alpha: 0.16);
+        fg = AuraSurface.coSun;
         break;
       case PostCardBadgeTone.neutral:
         bg = AuraSurface.elevated;

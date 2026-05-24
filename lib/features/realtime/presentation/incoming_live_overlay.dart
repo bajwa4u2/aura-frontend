@@ -570,7 +570,7 @@ class _IncomingCallCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ringColor = isVideo ? AuraSurface.accent : AuraSurface.goodInk;
+    final ringColor = isVideo ? AuraSurface.accent : AuraSurface.coVerdant;
     return Container(
       width: 360,
       constraints: const BoxConstraints(maxWidth: 420),
@@ -665,14 +665,14 @@ class _IncomingCallCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(AuraSpace.s10),
               decoration: BoxDecoration(
-                color: AuraSurface.dangerBg,
+                color: AuraSurface.coRose.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AuraRadius.md),
-                border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.35)),
+                border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.35)),
               ),
               child: Text(
                 joinError!,
                 style: AuraText.small.copyWith(
-                  color: AuraSurface.dangerInk,
+                  color: AuraSurface.coRose,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -689,8 +689,8 @@ class _IncomingCallCard extends StatelessWidget {
               ] else ...[
                 _CallCircleButton(
                   icon: Icons.call_end_rounded,
-                  color: AuraSurface.dangerInk,
-                  background: AuraSurface.dangerBg,
+                  color: AuraSurface.coRose,
+                  background: AuraSurface.coRose.withValues(alpha: 0.16),
                   size: 48,
                   onTap: onDecline,
                 ),
@@ -698,7 +698,7 @@ class _IncomingCallCard extends StatelessWidget {
                 _CallCircleButton(
                   icon: isVideo ? Icons.videocam_rounded : Icons.call_rounded,
                   color: Colors.white,
-                  background: isVideo ? AuraSurface.accent : AuraSurface.goodInk,
+                  background: isVideo ? AuraSurface.accent : AuraSurface.coVerdant,
                   size: 54,
                   onTap: onAccept,
                   busy: joining,

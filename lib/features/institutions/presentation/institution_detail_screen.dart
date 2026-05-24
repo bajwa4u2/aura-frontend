@@ -198,7 +198,7 @@ class _InstitutionDetailBody extends ConsumerWidget {
                                 ? 'Verified'
                                 : 'Not verified',
                             valueColor: institution.isVerified
-                                ? AuraSurface.goodInk
+                                ? AuraSurface.coVerdant
                                 : AuraSurface.muted,
                           ),
                           if (institution.domain.trim().isNotEmpty)
@@ -693,10 +693,10 @@ class _PublicIdentity extends StatelessWidget {
                   vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: AuraSurface.goodBg,
+                  color: AuraSurface.coVerdant.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(AuraRadius.pill),
                   border: Border.all(
-                    color: AuraSurface.goodInk.withValues(alpha: 0.3),
+                    color: AuraSurface.coVerdant.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -705,13 +705,13 @@ class _PublicIdentity extends StatelessWidget {
                     const Icon(
                       Icons.verified_rounded,
                       size: 12,
-                      color: AuraSurface.goodInk,
+                      color: AuraSurface.coVerdant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Verified',
                       style: AuraText.micro.copyWith(
-                        color: AuraSurface.goodInk,
+                        color: AuraSurface.coVerdant,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -831,10 +831,10 @@ class _PublicStatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = good ? AuraSurface.goodInk : AuraSurface.muted;
-    final bg = good ? AuraSurface.goodBg : AuraSurface.subtle;
+    final fg = good ? AuraSurface.coVerdant : AuraSurface.muted;
+    final bg = good ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.subtle;
     final border = good
-        ? AuraSurface.goodInk.withValues(alpha: 0.3)
+        ? AuraSurface.coVerdant.withValues(alpha: 0.3)
         : AuraSurface.divider;
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -1159,7 +1159,7 @@ class _InstitutionProfileCtaRowState
           error: (e, _) => Text(
             'Could not load follow state.',
             style:
-                AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                AuraText.small.copyWith(color: AuraSurface.coRose),
           ),
           data: (state) {
             final effectiveFollowing =
@@ -1199,7 +1199,7 @@ class _InstitutionProfileCtaRowState
           Text(
             _error!,
             style: AuraText.small
-                .copyWith(color: AuraSurface.dangerInk),
+                .copyWith(color: AuraSurface.coRose),
           ),
         ],
       ],

@@ -8,6 +8,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
@@ -144,7 +145,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             onPressed: () => Navigator.pop(ctx, 'revoke'),
             child: const Text(
               'Revoke',
-              style: TextStyle(color: AuraSurface.dangerInk),
+              style: TextStyle(color: AuraSurface.coRose),
             ),
           ),
         ],
@@ -555,7 +556,7 @@ class _CurrentSessionPanel extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(AuraRadius.xl),
         border: Border.all(
-          color: AuraSurface.goodInk.withValues(alpha: 0.28),
+          color: AuraSurface.coVerdant.withValues(alpha: 0.28),
         ),
       ),
       padding: const EdgeInsets.all(AuraSpace.s20),
@@ -568,11 +569,11 @@ class _CurrentSessionPanel extends StatelessWidget {
                 width: 14,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: AuraSurface.goodInk,
+                  color: AuraSurface.coVerdant,
                   borderRadius: BorderRadius.circular(7),
                   boxShadow: [
                     BoxShadow(
-                      color: AuraSurface.goodInk.withValues(alpha: 0.45),
+                      color: AuraSurface.coVerdant.withValues(alpha: 0.45),
                       blurRadius: 10,
                     ),
                   ],
@@ -582,7 +583,7 @@ class _CurrentSessionPanel extends StatelessWidget {
               Text(
                 'THIS DEVICE',
                 style: AuraText.label.copyWith(
-                  color: AuraSurface.goodInk,
+                  color: AuraSurface.coVerdant,
                   letterSpacing: 1.4,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1069,6 +1070,8 @@ class _SecurityRow extends StatelessWidget {
   }
 }
 
+/// Security-card status badge — wraps the canonical SubstrateChip
+/// with an optional trailing chevron used when the row is tappable.
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({
     required this.label,
@@ -1082,34 +1085,17 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, ink) = switch (style) {
-      _StatusStyle.good => (AuraSurface.goodBg, AuraSurface.goodInk),
-      _StatusStyle.warn => (AuraSurface.warnBg, AuraSurface.warnInk),
-      _StatusStyle.danger => (AuraSurface.dangerBg, AuraSurface.dangerInk),
-      _StatusStyle.neutral => (AuraSurface.elevated, AuraSurface.muted),
+    final state = switch (style) {
+      _StatusStyle.good => SubstrateChipState.verdant,
+      _StatusStyle.warn => SubstrateChipState.sun,
+      _StatusStyle.danger => SubstrateChipState.rose,
+      _StatusStyle.neutral => SubstrateChipState.mist,
     };
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s10,
-            vertical: 4,
-          ),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-            border: Border.all(color: ink.withValues(alpha: 0.22)),
-          ),
-          child: Text(
-            label,
-            style: AuraText.small.copyWith(
-              color: ink,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
+        SubstrateChip(label: label, state: state),
         if (showChevron) ...[
           const SizedBox(width: AuraSpace.s6),
           const Icon(
@@ -1165,7 +1151,7 @@ class _DangerZonePanel extends StatelessWidget {
               Icon(
                 Icons.warning_amber_rounded,
                 size: 15,
-                color: AuraSurface.dangerInk.withValues(alpha: 0.7),
+                color: AuraSurface.coRose.withValues(alpha: 0.7),
               ),
               const SizedBox(width: AuraSpace.s8),
               Text(
@@ -1174,7 +1160,7 @@ class _DangerZonePanel extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: AuraSurface.dangerInk.withValues(alpha: 0.7),
+                  color: AuraSurface.coRose.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -1182,10 +1168,10 @@ class _DangerZonePanel extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: AuraSurface.dangerBg.withValues(alpha: 0.6),
+            color: AuraSurface.coRose.withValues(alpha: 0.16).withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(AuraRadius.xl),
             border: Border.all(
-              color: AuraSurface.dangerInk.withValues(alpha: 0.18),
+              color: AuraSurface.coRose.withValues(alpha: 0.18),
             ),
           ),
           child: MouseRegion(
@@ -1205,7 +1191,7 @@ class _DangerZonePanel extends StatelessWidget {
                       const Icon(
                         Icons.delete_outline,
                         size: 18,
-                        color: AuraSurface.dangerInk,
+                        color: AuraSurface.coRose,
                       ),
                       const SizedBox(width: AuraSpace.s12),
                       Expanded(
@@ -1216,14 +1202,14 @@ class _DangerZonePanel extends StatelessWidget {
                               'Delete account',
                               style: AuraText.body.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: AuraSurface.dangerInk,
+                                color: AuraSurface.coRose,
                               ),
                             ),
                             const SizedBox(height: 4),
                             AuraTextBlock(
                               'Permanently remove your account and all its data.',
                               style: AuraText.small.copyWith(
-                                color: AuraSurface.dangerInk
+                                color: AuraSurface.coRose
                                     .withValues(alpha: 0.7),
                               ),
                             ),
@@ -1233,7 +1219,7 @@ class _DangerZonePanel extends StatelessWidget {
                       const Icon(
                         Icons.chevron_right,
                         size: 18,
-                        color: AuraSurface.dangerInk,
+                        color: AuraSurface.coRose,
                       ),
                     ],
                   ),

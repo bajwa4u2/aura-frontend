@@ -1118,10 +1118,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AuraSurface.dangerBg,
+        color: AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+          color: AuraSurface.coRose.withValues(alpha: 0.35),
         ),
       ),
       padding: const EdgeInsets.symmetric(
@@ -1130,7 +1130,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
       child: AuraTextBlock(
         _errorText ?? '',
-        style: AuraText.body.copyWith(color: AuraSurface.dangerInk),
+        style: AuraText.body.copyWith(color: AuraSurface.coRose),
       ),
     );
   }
@@ -1215,7 +1215,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             },
             child: Text(
               'Discard',
-              style: AuraText.body.copyWith(color: AuraSurface.dangerInk),
+              style: AuraText.body.copyWith(color: AuraSurface.coRose),
             ),
           ),
         ],

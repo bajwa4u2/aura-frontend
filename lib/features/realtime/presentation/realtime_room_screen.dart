@@ -703,15 +703,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 Container(
                   padding: const EdgeInsets.all(AuraSpace.s12),
                   decoration: BoxDecoration(
-                    color: AuraSurface.dangerBg,
+                    color: AuraSurface.coRose.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(AuraRadius.md),
                     border: Border.all(
-                      color: AuraSurface.dangerInk.withValues(alpha: 0.3),
+                      color: AuraSurface.coRose.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(
                     state.errorMessage ?? '',
-                    style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1251,10 +1251,10 @@ class _CallTopBar extends StatelessWidget {
     Color statusColor;
     String statusLabel;
     if (hasIssue) {
-      statusColor = AuraSurface.dangerInk;
+      statusColor = AuraSurface.coRose;
       statusLabel = 'Connection issue';
     } else if (isConnecting) {
-      statusColor = AuraSurface.warnInk;
+      statusColor = AuraSurface.coSun;
       statusLabel = 'Connecting…';
     } else if (isRinging) {
       statusColor = const Color(0xFFFBBF24);
@@ -1423,18 +1423,18 @@ class _ConnectionBanner extends StatelessWidget {
         horizontal: AuraSpace.s16,
         vertical: AuraSpace.s10,
       ),
-      decoration: const BoxDecoration(
-        color: AuraSurface.warnBg,
-        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      decoration: BoxDecoration(
+        color: AuraSurface.coSun.withValues(alpha: 0.16),
+        border: const Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.wifi_off_rounded, size: 16, color: AuraSurface.warnInk),
+          const Icon(Icons.wifi_off_rounded, size: 16, color: AuraSurface.coSun),
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
               'Connection lost — tap to reconnect.',
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coSun),
             ),
           ),
           TextButton(
@@ -1442,7 +1442,7 @@ class _ConnectionBanner extends StatelessWidget {
             child: Text(
               isBusy ? 'Reconnecting…' : 'Reconnect',
               style: AuraText.small.copyWith(
-                color: AuraSurface.warnInk,
+                color: AuraSurface.coSun,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1830,14 +1830,14 @@ class _AvatarTile extends StatelessWidget {
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: micOn ? AuraSurface.card : AuraSurface.dangerBg,
+                  color: micOn ? AuraSurface.card : AuraSurface.coRose.withValues(alpha: 0.16),
                   shape: BoxShape.circle,
                   border: Border.all(color: AuraSurface.divider, width: 1.5),
                 ),
                 child: Icon(
                   micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
                   size: 11,
-                  color: micOn ? AuraSurface.accentText : AuraSurface.dangerInk,
+                  color: micOn ? AuraSurface.accentText : AuraSurface.coRose,
                 ),
               ),
             ),
@@ -1912,7 +1912,7 @@ class _MediaWarningView extends StatelessWidget {
             const Icon(
               Icons.mic_off_rounded,
               size: 36,
-              color: AuraSurface.warnInk,
+              color: AuraSurface.coSun,
             ),
             const SizedBox(height: AuraSpace.s16),
             Text(
@@ -2061,12 +2061,12 @@ class _DockButton extends StatelessWidget {
     final bgColor = active
         ? AuraSurface.accentSoft
         : warning
-            ? AuraSurface.dangerBg
+            ? AuraSurface.coRose.withValues(alpha: 0.16)
             : AuraSurface.card;
     final iconColor = active
         ? AuraSurface.accentText
         : warning
-            ? AuraSurface.dangerInk
+            ? AuraSurface.coRose
             : AuraSurface.muted;
 
     return Column(
@@ -2164,11 +2164,11 @@ class _LeaveButton extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: disabled
-                    ? AuraSurface.dangerBg.withValues(alpha: 0.45)
-                    : AuraSurface.dangerBg,
+                    ? AuraSurface.coRose.withValues(alpha: 0.16).withValues(alpha: 0.45)
+                    : AuraSurface.coRose.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AuraRadius.md),
                 border: Border.all(
-                  color: AuraSurface.dangerInk.withValues(
+                  color: AuraSurface.coRose.withValues(
                     alpha: disabled ? 0.15 : 0.35,
                   ),
                 ),
@@ -2180,14 +2180,14 @@ class _LeaveButton extends StatelessWidget {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AuraSurface.dangerInk,
+                          color: AuraSurface.coRose,
                         ),
                       ),
                     )
                   : Icon(
                       Icons.call_end_rounded,
                       size: AuraIconSize.md,
-                      color: AuraSurface.dangerInk.withValues(
+                      color: AuraSurface.coRose.withValues(
                         alpha: disabled ? 0.4 : 1.0,
                       ),
                     ),
@@ -2198,7 +2198,7 @@ class _LeaveButton extends StatelessWidget {
         Text(
           label,
           style: AuraText.micro.copyWith(
-            color: AuraSurface.dangerInk.withValues(
+            color: AuraSurface.coRose.withValues(
               alpha: disabled ? 0.4 : 1.0,
             ),
             fontWeight: FontWeight.w600,

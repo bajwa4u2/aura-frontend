@@ -360,8 +360,8 @@ class _MessagesHeader extends StatelessWidget {
             AuraStatusChip(
               label:
                   '$inviteCount invite${inviteCount == 1 ? '' : 's'}',
-              backgroundColor: AuraSurface.goodBg,
-              textColor: AuraSurface.goodInk,
+              backgroundColor: AuraSurface.coVerdant.withValues(alpha: 0.16),
+              textColor: AuraSurface.coVerdant,
             ),
         ],
       ),
@@ -976,7 +976,7 @@ class _LiveSessionList extends StatelessWidget {
         color: AuraSurface.card,
         borderRadius: BorderRadius.circular(AuraRadius.card),
         border: Border.all(
-          color: AuraSurface.warnInk.withValues(alpha: 0.3),
+          color: AuraSurface.coSun.withValues(alpha: 0.3),
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1021,14 +1021,14 @@ class _LiveSessionRow extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AuraSurface.warnBg,
+                  color: AuraSurface.coSun.withValues(alpha: 0.16),
                   borderRadius:
                       BorderRadius.circular(AuraRadius.r10),
                 ),
                 child: const Icon(
                   Icons.videocam_rounded,
                   size: 18,
-                  color: AuraSurface.warnInk,
+                  color: AuraSurface.coSun,
                 ),
               ),
               const SizedBox(width: AuraSpace.s12),
@@ -1047,7 +1047,7 @@ class _LiveSessionRow extends ConsumerWidget {
                     Text(
                       'Live now',
                       style: AuraText.small.copyWith(
-                        color: AuraSurface.warnInk,
+                        color: AuraSurface.coSun,
                       ),
                     ),
                   ],
@@ -1059,14 +1059,14 @@ class _LiveSessionRow extends ConsumerWidget {
                   vertical: AuraSpace.s6,
                 ),
                 decoration: BoxDecoration(
-                  color: AuraSurface.warnBg,
+                  color: AuraSurface.coSun.withValues(alpha: 0.16),
                   borderRadius:
                       BorderRadius.circular(AuraRadius.pill),
                 ),
                 child: Text(
                   'Join',
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.warnInk,
+                    color: AuraSurface.coSun,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

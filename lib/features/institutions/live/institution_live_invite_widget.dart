@@ -206,8 +206,8 @@ class _InviteCard extends StatelessWidget {
     final isVideo = session.kind.toUpperCase() == 'VIDEO';
     final remainingSec = data.remaining.inSeconds;
 
-    final accentBg = isRinging ? AuraSurface.goodBg : AuraSurface.subtle;
-    final accentInk = isRinging ? AuraSurface.goodInk : AuraSurface.faint;
+    final accentBg = isRinging ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.subtle;
+    final accentInk = isRinging ? AuraSurface.coVerdant : AuraSurface.faint;
 
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
@@ -216,7 +216,7 @@ class _InviteCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AuraRadius.card),
         border: Border.all(
           color: isRinging
-              ? AuraSurface.goodInk.withValues(alpha: 0.4)
+              ? AuraSurface.coVerdant.withValues(alpha: 0.4)
               : AuraSurface.divider,
         ),
       ),

@@ -404,8 +404,8 @@ class _MessageBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isError ? AuraSurface.dangerBg : AuraSurface.goodBg;
-    final ink = isError ? AuraSurface.dangerInk : AuraSurface.goodInk;
+    final bg = isError ? AuraSurface.coRose.withValues(alpha: 0.16) : AuraSurface.coVerdant.withValues(alpha: 0.16);
+    final ink = isError ? AuraSurface.coRose : AuraSurface.coVerdant;
 
     return Container(
       width: double.infinity,

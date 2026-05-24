@@ -158,9 +158,9 @@ class _InstitutionInvitesScreenState
   Color _statusColor(String status) {
     switch (status) {
       case 'Active':
-        return AuraSurface.goodInk;
+        return AuraSurface.coVerdant;
       case 'Expired':
-        return AuraSurface.dangerInk;
+        return AuraSurface.coRose;
       default:
         return AuraSurface.muted;
     }
@@ -169,9 +169,9 @@ class _InstitutionInvitesScreenState
   Color _statusBg(String status) {
     switch (status) {
       case 'Active':
-        return AuraSurface.goodBg;
+        return AuraSurface.coVerdant.withValues(alpha: 0.16);
       case 'Expired':
-        return AuraSurface.dangerBg;
+        return AuraSurface.coRose.withValues(alpha: 0.16);
       default:
         return AuraSurface.subtle;
     }
@@ -297,15 +297,15 @@ class _InstitutionInvitesScreenState
             Container(
               padding: const EdgeInsets.all(AuraSpace.s10),
               decoration: BoxDecoration(
-                color: AuraSurface.dangerBg,
+                color: AuraSurface.coRose.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AuraRadius.md),
                 border: Border.all(
-                  color: AuraSurface.dangerInk.withValues(alpha: 0.3),
+                  color: AuraSurface.coRose.withValues(alpha: 0.3),
                 ),
               ),
               child: Text(
                 _createError!,
-                style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                style: AuraText.small.copyWith(color: AuraSurface.coRose),
               ),
             ),
           ],
@@ -384,7 +384,7 @@ class _InstitutionInvitesScreenState
                     child: Icon(
                       isCopied ? Icons.check_rounded : Icons.copy_rounded,
                       size: 16,
-                      color: isCopied ? AuraSurface.goodInk : AuraSurface.accentText,
+                      color: isCopied ? AuraSurface.coVerdant : AuraSurface.accentText,
                     ),
                   ),
                 ),
@@ -403,7 +403,7 @@ class _InstitutionInvitesScreenState
                       child: Icon(
                         Icons.link_off_rounded,
                         size: 16,
-                        color: AuraSurface.dangerInk.withValues(alpha: 0.7),
+                        color: AuraSurface.coRose.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
@@ -471,23 +471,23 @@ class _InstitutionInvitesScreenState
           Container(
             padding: const EdgeInsets.all(AuraSpace.s12),
             decoration: BoxDecoration(
-              color: AuraSurface.dangerBg,
+              color: AuraSurface.coRose.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+              border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline, size: 16, color: AuraSurface.dangerInk),
+                const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
                   child: Text(
                     _revokeError!,
-                    style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
                   ),
                 ),
                 GestureDetector(
                   onTap: () => setState(() => _revokeError = null),
-                  child: const Icon(Icons.close, size: 16, color: AuraSurface.dangerInk),
+                  child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
                 ),
               ],
             ),

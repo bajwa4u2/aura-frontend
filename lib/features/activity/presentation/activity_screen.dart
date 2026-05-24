@@ -996,7 +996,7 @@ class _ActivityLeadingIcon extends StatelessWidget {
       case 'POST_PUBLISHED':
         return AuraSurface.accentText;
       case 'POST_PUBLISH_FAILED':
-        return AuraSurface.warnInk;
+        return AuraSurface.coSun;
       case 'MESSAGE_RECEIVED':
       case 'THREAD_INVITE':
       case 'SPACE_INVITE':

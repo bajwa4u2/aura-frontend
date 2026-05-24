@@ -1211,11 +1211,11 @@ class _TimelineRow extends StatelessWidget {
         Icons.handshake_outlined,
       ),
       InsAccountabilityTag.update => (
-        AuraSurface.warnInk,
+        AuraSurface.coSun,
         Icons.update_rounded,
       ),
       InsAccountabilityTag.resolved => (
-        AuraSurface.goodInk,
+        AuraSurface.coVerdant,
         Icons.check_circle_outline_rounded,
       ),
     };
@@ -1423,10 +1423,10 @@ class _ResolutionBanner extends StatelessWidget {
         AuraSpace.s12,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.goodBg,
+        color: AuraSurface.coVerdant.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
         border: Border.all(
-          color: AuraSurface.goodInk.withValues(alpha: 0.45),
+          color: AuraSurface.coVerdant.withValues(alpha: 0.45),
           width: 1.4,
         ),
       ),
@@ -1435,7 +1435,7 @@ class _ResolutionBanner extends StatelessWidget {
           const Icon(
             Icons.check_circle_outline_rounded,
             size: 18,
-            color: AuraSurface.goodInk,
+            color: AuraSurface.coVerdant,
           ),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
@@ -1445,7 +1445,7 @@ class _ResolutionBanner extends StatelessWidget {
                 Text(
                   'This discussion led to a resolution',
                   style: AuraText.body.copyWith(
-                    color: AuraSurface.goodInk,
+                    color: AuraSurface.coVerdant,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1454,7 +1454,7 @@ class _ResolutionBanner extends StatelessWidget {
                   Text(
                     'Resolved by $actorName',
                     style: AuraText.small.copyWith(
-                      color: AuraSurface.goodInk.withValues(alpha: 0.85),
+                      color: AuraSurface.coVerdant.withValues(alpha: 0.85),
                       fontWeight: FontWeight.w700,
                     ),
                   ),

@@ -450,7 +450,7 @@ class _InstitutionAnnouncementComposerState
                                     : 'Ready'),
                             style: AuraText.micro.copyWith(
                               color: (attachment.error ?? '').trim().isNotEmpty
-                                  ? AuraSurface.dangerInk
+                                  ? AuraSurface.coRose
                                   : AuraSurface.faint,
                             ),
                           ),
@@ -621,18 +621,18 @@ class _InstitutionAnnouncementComposerState
                     Container(
                       padding: const EdgeInsets.all(AuraSpace.s12),
                       decoration: BoxDecoration(
-                        color: AuraSurface.dangerBg,
+                        color: AuraSurface.coRose.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(AuraRadius.md),
-                        border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+                        border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, size: 16, color: AuraSurface.dangerInk),
+                          const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
                           const SizedBox(width: AuraSpace.s8),
-                          Expanded(child: Text(_error!, style: AuraText.small.copyWith(color: AuraSurface.dangerInk))),
+                          Expanded(child: Text(_error!, style: AuraText.small.copyWith(color: AuraSurface.coRose))),
                           GestureDetector(
                             onTap: () => setState(() => _error = null),
-                            child: const Icon(Icons.close, size: 16, color: AuraSurface.dangerInk),
+                            child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
                           ),
                         ],
                       ),

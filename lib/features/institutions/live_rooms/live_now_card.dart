@@ -140,10 +140,10 @@ class LiveNowCard extends StatelessWidget {
           AuraSpace.s12,
         ),
         decoration: BoxDecoration(
-          color: AuraSurface.goodBg.withValues(alpha: 0.45),
+          color: AuraSurface.coVerdant.withValues(alpha: 0.16).withValues(alpha: 0.45),
           borderRadius: BorderRadius.circular(AuraRadius.lg),
           border: Border.all(
-            color: AuraSurface.goodInk.withValues(alpha: 0.45),
+            color: AuraSurface.coVerdant.withValues(alpha: 0.45),
             width: 1.2,
           ),
         ),
@@ -153,7 +153,7 @@ class LiveNowCard extends StatelessWidget {
               width: 8,
               height: 8,
               decoration: const BoxDecoration(
-                color: AuraSurface.goodInk,
+                color: AuraSurface.coVerdant,
                 shape: BoxShape.circle,
               ),
             ),
@@ -167,7 +167,7 @@ class LiveNowCard extends StatelessWidget {
                       Text(
                         'LIVE NOW',
                         style: AuraText.micro.copyWith(
-                          color: AuraSurface.goodInk,
+                          color: AuraSurface.coVerdant,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.9,
                           fontSize: 10,

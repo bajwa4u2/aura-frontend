@@ -198,16 +198,16 @@ class _InstitutionActionSheetState
               Container(
                 padding: const EdgeInsets.all(AuraSpace.s10),
                 decoration: BoxDecoration(
-                  color: AuraSurface.dangerBg,
+                  color: AuraSurface.coRose.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(AuraRadius.md),
                   border: Border.all(
-                    color: AuraSurface.dangerInk.withValues(alpha: 0.4),
+                    color: AuraSurface.coRose.withValues(alpha: 0.4),
                   ),
                 ),
                 child: Text(
                   _error!,
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.dangerInk,
+                    color: AuraSurface.coRose,
                   ),
                 ),
               ),

@@ -198,8 +198,8 @@ class _AdminCampaignWorkflowState
               AuraStatusChip(
                 label: approved ? 'Approved' : 'Draft',
                 backgroundColor:
-                    approved ? AuraSurface.goodBg : AuraSurface.subtle,
-                textColor: approved ? AuraSurface.goodInk : AuraSurface.muted,
+                    approved ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.subtle,
+                textColor: approved ? AuraSurface.coVerdant : AuraSurface.muted,
               ),
             ],
           ),

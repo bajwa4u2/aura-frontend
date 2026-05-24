@@ -310,15 +310,15 @@ class _ErrorState extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AuraSurface.dangerBg,
+                color: AuraSurface.coRose.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AuraRadius.pill),
                 border: Border.all(
-                    color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+                    color: AuraSurface.coRose.withValues(alpha: 0.3)),
               ),
               child: const Icon(
                 Icons.error_outline_rounded,
                 size: 22,
-                color: AuraSurface.dangerInk,
+                color: AuraSurface.coRose,
               ),
             ),
             const SizedBox(height: AuraSpace.s16),
@@ -471,20 +471,20 @@ class _ErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s14, vertical: AuraSpace.s10),
       decoration: BoxDecoration(
-        color: AuraSurface.dangerBg,
+        color: AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
         border:
-            Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+            Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           const Icon(Icons.warning_amber_rounded,
-              size: 16, color: AuraSurface.dangerInk),
+              size: 16, color: AuraSurface.coRose),
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
               message,
-              style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coRose),
             ),
           ),
         ],
@@ -506,21 +506,21 @@ class _EscalateSuccessBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s14, vertical: AuraSpace.s12),
       decoration: BoxDecoration(
-        color: AuraSurface.goodBg,
+        color: AuraSurface.coVerdant.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
         border: Border.all(
-            color: AuraSurface.goodInk.withValues(alpha: 0.35)),
+            color: AuraSurface.coVerdant.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
           const Icon(Icons.check_circle_outline_rounded,
-              size: 16, color: AuraSurface.goodInk),
+              size: 16, color: AuraSurface.coVerdant),
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
               'Case $caseRef submitted. The Aura team will follow up by email.',
               style:
-                  AuraText.small.copyWith(color: AuraSurface.goodInk),
+                  AuraText.small.copyWith(color: AuraSurface.coVerdant),
             ),
           ),
         ],

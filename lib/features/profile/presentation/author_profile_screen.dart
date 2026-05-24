@@ -264,9 +264,9 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
             vertical: AuraSpace.s4,
           ),
           decoration: BoxDecoration(
-            color: AuraSurface.goodBg,
+            color: AuraSurface.coVerdant.withValues(alpha: 0.16),
             border: Border.all(
-              color: AuraSurface.goodInk.withValues(alpha: 0.35),
+              color: AuraSurface.coVerdant.withValues(alpha: 0.35),
             ),
             borderRadius: BorderRadius.circular(AuraRadius.pill),
           ),
@@ -276,13 +276,13 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
               const Icon(
                 Icons.verified_rounded,
                 size: 12,
-                color: AuraSurface.goodInk,
+                color: AuraSurface.coVerdant,
               ),
               const SizedBox(width: AuraSpace.s4),
               Text(
                 'Verified',
                 style: AuraText.micro.copyWith(
-                  color: AuraSurface.goodInk,
+                  color: AuraSurface.coVerdant,
                   fontWeight: FontWeight.w700,
                 ),
               ),

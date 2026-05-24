@@ -248,16 +248,16 @@ class _LobbyAuthGate extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AuraSurface.warnBg,
+                  color: AuraSurface.coSun.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(AuraRadius.r10),
                   border: Border.all(
-                    color: AuraSurface.warnInk.withValues(alpha: 0.3),
+                    color: AuraSurface.coSun.withValues(alpha: 0.3),
                   ),
                 ),
                 child: const Icon(
                   Icons.lock_outline_rounded,
                   size: 18,
-                  color: AuraSurface.warnInk,
+                  color: AuraSurface.coSun,
                 ),
               ),
               const SizedBox(width: AuraSpace.s12),
@@ -294,11 +294,11 @@ class _StatusBanner extends StatelessWidget {
         vertical: AuraSpace.s14,
       ),
       decoration: BoxDecoration(
-        color: isError ? AuraSurface.dangerBg : AuraSurface.subtle,
+        color: isError ? AuraSurface.coRose.withValues(alpha: 0.16) : AuraSurface.subtle,
         borderRadius: BorderRadius.circular(AuraRadius.card),
         border: Border.all(
           color: isError
-              ? AuraSurface.dangerInk.withValues(alpha: 0.35)
+              ? AuraSurface.coRose.withValues(alpha: 0.35)
               : AuraSurface.divider,
         ),
       ),
@@ -308,14 +308,14 @@ class _StatusBanner extends StatelessWidget {
           Icon(
             isError ? Icons.error_outline_rounded : Icons.info_outline_rounded,
             size: 18,
-            color: isError ? AuraSurface.dangerInk : AuraSurface.muted,
+            color: isError ? AuraSurface.coRose : AuraSurface.muted,
           ),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Text(
               message,
               style: AuraText.body.copyWith(
-                color: isError ? AuraSurface.dangerInk : AuraSurface.ink,
+                color: isError ? AuraSurface.coRose : AuraSurface.ink,
                 height: 1.45,
               ),
             ),

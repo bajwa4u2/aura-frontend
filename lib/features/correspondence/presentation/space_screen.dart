@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -914,7 +915,7 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
                   child: Text(
                     _errorText!,
                     style: AuraText.small.copyWith(
-                      color: AuraSurface.dangerInk,
+                      color: AuraSurface.coRose,
                     ),
                   ),
                 ),
@@ -1375,6 +1376,8 @@ String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
 
 enum _StatusTone { neutral, accent, positive, negative }
 
+/// Space-screen status pill — wraps canonical SubstrateChip mapping
+/// the local `_StatusTone` enum to canonical chip states.
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.label, required this.tone});
 
@@ -1383,47 +1386,13 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = switch (tone) {
-      _StatusTone.positive => (
-        border: AuraSurface.goodInk.withValues(alpha: 0.35),
-        text: AuraSurface.goodInk,
-        fill: AuraSurface.goodBg,
-      ),
-      _StatusTone.negative => (
-        border: AuraSurface.dangerInk.withValues(alpha: 0.35),
-        text: AuraSurface.dangerInk,
-        fill: AuraSurface.dangerBg,
-      ),
-      _StatusTone.accent => (
-        border: AuraSurface.accent.withValues(alpha: 0.35),
-        text: AuraSurface.accentText,
-        fill: AuraSurface.accentSoft,
-      ),
-      _StatusTone.neutral => (
-        border: AuraSurface.divider,
-        text: AuraSurface.muted,
-        fill: Colors.transparent,
-      ),
+    final state = switch (tone) {
+      _StatusTone.positive => SubstrateChipState.verdant,
+      _StatusTone.negative => SubstrateChipState.rose,
+      _StatusTone.accent => SubstrateChipState.teal,
+      _StatusTone.neutral => SubstrateChipState.mist,
     };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        color: palette.fill,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(
-          fontWeight: FontWeight.w700,
-          color: palette.text,
-        ),
-      ),
-    );
+    return SubstrateChip(label: label, state: state);
   }
 }
 
@@ -1546,25 +1515,11 @@ class _MetaChip extends StatelessWidget {
 
 class _Pill extends StatelessWidget {
   const _Pill({required this.label});
-
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-      ),
-    );
+    return SubstrateChip(label: label, state: SubstrateChipState.mist);
   }
 }
 

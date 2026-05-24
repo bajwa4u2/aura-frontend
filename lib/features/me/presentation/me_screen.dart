@@ -705,7 +705,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     backgroundColor: AuraSurface.elevated,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       fraction >= 1.0
-                          ? AuraSurface.goodInk
+                          ? AuraSurface.coVerdant
                           : AuraSurface.accent,
                     ),
                   ),
@@ -733,11 +733,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: done ? AuraSurface.goodBg : AuraSurface.elevated,
+                  color: done ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.elevated,
                   borderRadius: BorderRadius.circular(AuraRadius.pill),
                   border: Border.all(
                     color: done
-                        ? AuraSurface.goodInk.withValues(alpha: 0.25)
+                        ? AuraSurface.coVerdant.withValues(alpha: 0.25)
                         : AuraSurface.divider,
                   ),
                 ),
@@ -749,13 +749,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           ? Icons.check_circle_outline_rounded
                           : Icons.radio_button_unchecked_rounded,
                       size: 12,
-                      color: done ? AuraSurface.goodInk : AuraSurface.faint,
+                      color: done ? AuraSurface.coVerdant : AuraSurface.faint,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       c.$1,
                       style: AuraText.micro.copyWith(
-                        color: done ? AuraSurface.goodInk : AuraSurface.muted,
+                        color: done ? AuraSurface.coVerdant : AuraSurface.muted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

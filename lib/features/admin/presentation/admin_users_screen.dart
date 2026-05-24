@@ -397,7 +397,7 @@ class _UserRow extends StatelessWidget {
         return AuraSurface.accentText;
       case 'suspended':
       case 'banned':
-        return AuraSurface.dangerInk;
+        return AuraSurface.coRose;
       default:
         return AuraSurface.faint;
     }

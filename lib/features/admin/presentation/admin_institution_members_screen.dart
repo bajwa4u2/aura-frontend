@@ -69,7 +69,7 @@ class _AdminInstitutionMembersScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(adminErrorMessage(e)),
-            backgroundColor: AuraSurface.dangerBg,
+            backgroundColor: AuraSurface.coRose.withValues(alpha: 0.16),
           ),
         );
         setState(() => _actionLoading = false);
@@ -87,7 +87,7 @@ class _AdminInstitutionMembersScreenState
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove', style: TextStyle(color: AuraSurface.dangerInk)),
+            child: const Text('Remove', style: TextStyle(color: AuraSurface.coRose)),
           ),
         ],
       ),
@@ -104,7 +104,7 @@ class _AdminInstitutionMembersScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(adminErrorMessage(e)),
-            backgroundColor: AuraSurface.dangerBg,
+            backgroundColor: AuraSurface.coRose.withValues(alpha: 0.16),
           ),
         );
         setState(() => _actionLoading = false);
@@ -223,11 +223,11 @@ class _MemberRow extends StatelessWidget {
   Color _roleColor(String role) {
     switch (role.toUpperCase()) {
       case 'OWNER':
-        return AuraSurface.goodInk;
+        return AuraSurface.coVerdant;
       case 'ADMIN':
         return AuraSurface.accentText;
       case 'EDITOR':
-        return AuraSurface.warnInk;
+        return AuraSurface.coSun;
       default:
         return AuraSurface.muted;
     }
@@ -326,7 +326,7 @@ class _MemberRow extends StatelessWidget {
                   value: 'REMOVE',
                   child: Text(
                     'Remove from institution',
-                    style: TextStyle(color: AuraSurface.dangerInk),
+                    style: TextStyle(color: AuraSurface.coRose),
                   ),
                 ),
               ],

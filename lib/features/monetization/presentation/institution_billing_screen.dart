@@ -8,6 +8,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../institutions/ui/institution_ds.dart';
 import '../data/monetization_repository.dart';
 import '../domain/monetization_models.dart';
@@ -505,19 +506,13 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
+/// Billing-screen neutral chip — wraps canonical SubstrateChip.
 class _Chip extends StatelessWidget {
   const _Chip({required this.label});
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white12,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(label, style: AuraText.muted),
-    );
+    return SubstrateChip(label: label, state: SubstrateChipState.mist);
   }
 }

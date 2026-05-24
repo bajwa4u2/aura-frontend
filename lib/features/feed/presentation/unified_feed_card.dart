@@ -8,6 +8,7 @@ import '../../../core/media/aura_media_viewer.dart';
 import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
@@ -926,6 +927,10 @@ class _MetaRow extends StatelessWidget {
 
 enum _BadgeTone { neutral, accent }
 
+/// Feed-card badge — wraps canonical SubstrateChip mapping the
+/// local accent/neutral tone to canonical teal/mist states. The
+/// previous hard-coded `0x1E0D9488` / `0xFF5EEAD4` hex values are
+/// retired in favour of canonical co/teal substrate tokens.
 class _Badge extends StatelessWidget {
   const _Badge({
     required this.icon,
@@ -939,37 +944,12 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAccent = tone == _BadgeTone.accent;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isAccent
-            ? const Color(0x1E0D9488)
-            : AuraSurface.subtle,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color:
-              isAccent ? const Color(0xFF0D9488) : AuraSurface.divider,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 12,
-            color: isAccent ? const Color(0xFF5EEAD4) : AuraSurface.muted,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: AuraText.micro.copyWith(
-              color: isAccent ? const Color(0xFF5EEAD4) : AuraSurface.muted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
+    return SubstrateChip(
+      label: label,
+      icon: icon,
+      state: tone == _BadgeTone.accent
+          ? SubstrateChipState.teal
+          : SubstrateChipState.mist,
     );
   }
 }
@@ -1474,16 +1454,16 @@ class _NewChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AuraSurface.goodBg,
+        color: AuraSurface.coVerdant.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(
-          color: AuraSurface.goodInk.withValues(alpha: 0.35),
+          color: AuraSurface.coVerdant.withValues(alpha: 0.35),
         ),
       ),
       child: Text(
         'NEW',
         style: AuraText.micro.copyWith(
-          color: AuraSurface.goodInk,
+          color: AuraSurface.coVerdant,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.7,
           fontSize: 9,
@@ -1507,10 +1487,10 @@ class _AdvisoryIndicator extends StatelessWidget {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.warnBg,
+        color: AuraSurface.coSun.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(
-          color: AuraSurface.warnInk.withValues(alpha: 0.35),
+          color: AuraSurface.coSun.withValues(alpha: 0.35),
         ),
       ),
       child: Row(
@@ -1519,13 +1499,13 @@ class _AdvisoryIndicator extends StatelessWidget {
           const Icon(
             Icons.report_problem_rounded,
             size: 12,
-            color: AuraSurface.warnInk,
+            color: AuraSurface.coSun,
           ),
           const SizedBox(width: 6),
           Text(
             'Advisory',
             style: AuraText.micro.copyWith(
-              color: AuraSurface.warnInk,
+              color: AuraSurface.coSun,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
               fontSize: 10,

@@ -296,19 +296,19 @@ class _HubHeader extends StatelessWidget {
                 ? '$inviteCount invite${inviteCount == 1 ? '' : 's'}'
                 : 'No invites',
             backgroundColor: inviteCount > 0
-                ? AuraSurface.goodBg
+                ? AuraSurface.coVerdant.withValues(alpha: 0.16)
                 : AuraSurface.subtle,
             textColor: inviteCount > 0
-                ? AuraSurface.goodInk
+                ? AuraSurface.coVerdant
                 : AuraSurface.muted,
           ),
           AuraStatusChip(
             label: liveLabel,
             backgroundColor: liveLabel == 'Live now'
-                ? AuraSurface.warnBg
+                ? AuraSurface.coSun.withValues(alpha: 0.16)
                 : AuraSurface.subtle,
             textColor: liveLabel == 'Live now'
-                ? AuraSurface.warnInk
+                ? AuraSurface.coSun
                 : AuraSurface.muted,
           ),
         ],

@@ -1137,7 +1137,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                         Text(
                           _translationError!,
                           style: AuraText.small.copyWith(
-                            color: AuraSurface.warnInk,
+                            color: AuraSurface.coSun,
                           ),
                         ),
                       ],

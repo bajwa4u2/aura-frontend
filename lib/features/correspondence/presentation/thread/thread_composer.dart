@@ -1141,10 +1141,10 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: AuraSurface.dangerBg,
+                        color: AuraSurface.coRose.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(AuraRadius.md),
                         border: Border.all(
-                          color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+                          color: AuraSurface.coRose.withValues(alpha: 0.35),
                         ),
                       ),
                       child: Row(
@@ -1152,7 +1152,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                           const Icon(
                             Icons.fiber_manual_record,
                             size: 14,
-                            color: AuraSurface.dangerInk,
+                            color: AuraSurface.coRose,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -1533,7 +1533,7 @@ class _AttachmentPreviewCard extends StatelessWidget {
         color: AuraSurface.subtle,
         border: Border.all(
           color: attachment.error != null
-              ? AuraSurface.dangerInk.withValues(alpha: 0.25)
+              ? AuraSurface.coRose.withValues(alpha: 0.25)
               : AuraSurface.divider,
         ),
         borderRadius: BorderRadius.circular(AuraRadius.md),
@@ -1588,7 +1588,7 @@ class _AttachmentPreviewCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: AuraText.small.copyWith(
                           color: attachment.error != null
-                              ? AuraSurface.dangerInk
+                              ? AuraSurface.coRose
                               : AuraSurface.muted,
                         ),
                       ),
@@ -1933,7 +1933,7 @@ class _ThreadEditMessageDialogState
                 alignment: Alignment.centerLeft,
                 child: Text(
                   _errorText!,
-                  style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                  style: AuraText.small.copyWith(color: AuraSurface.coRose),
                 ),
               ),
             ],

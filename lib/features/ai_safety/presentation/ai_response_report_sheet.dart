@@ -215,21 +215,21 @@ class _AiResponseReportSheetState
               vertical: AuraSpace.s8,
             ),
             decoration: BoxDecoration(
-              color: AuraSurface.dangerBg,
+              color: AuraSurface.coRose.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AuraRadius.md),
               border:
-                  Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+                  Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
                 const Icon(Icons.error_outline_rounded,
-                    size: 14, color: AuraSurface.dangerInk),
+                    size: 14, color: AuraSurface.coRose),
                 const SizedBox(width: AuraSpace.s6),
                 Expanded(
                   child: Text(
                     _error!,
                     style:
-                        AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                        AuraText.small.copyWith(color: AuraSurface.coRose),
                   ),
                 ),
               ],
@@ -272,16 +272,16 @@ class _AiResponseReportSheetState
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AuraSurface.goodBg,
+                color: AuraSurface.coVerdant.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AuraRadius.pill),
                 border: Border.all(
-                  color: AuraSurface.goodInk.withValues(alpha: 0.35),
+                  color: AuraSurface.coVerdant.withValues(alpha: 0.35),
                 ),
               ),
               child: const Icon(
                 Icons.check_rounded,
                 size: 18,
-                color: AuraSurface.goodInk,
+                color: AuraSurface.coVerdant,
               ),
             ),
             const SizedBox(width: AuraSpace.s10),

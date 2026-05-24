@@ -278,11 +278,11 @@ class MeStatusBadge extends StatelessWidget {
     final Color fg;
     switch (style) {
       case MeStatusStyle.good:
-        bg = AuraSurface.goodBg;
-        fg = AuraSurface.goodInk;
+        bg = AuraSurface.coVerdant.withValues(alpha: 0.16);
+        fg = AuraSurface.coVerdant;
       case MeStatusStyle.warn:
-        bg = AuraSurface.warnBg;
-        fg = AuraSurface.warnInk;
+        bg = AuraSurface.coSun.withValues(alpha: 0.16);
+        fg = AuraSurface.coSun;
       case MeStatusStyle.neutral:
         bg = AuraSurface.elevated;
         fg = AuraSurface.muted;

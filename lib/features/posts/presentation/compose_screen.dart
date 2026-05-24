@@ -1545,7 +1545,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             const SizedBox(height: AuraSpace.s8),
             Text(
               _compositionError!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coSun),
             ),
           ],
           if (suggestions.isNotEmpty) ...[
@@ -1672,7 +1672,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             const SizedBox(height: AuraSpace.s8),
             Text(
               _translationError!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coSun),
             ),
           ],
           if (preview != null) ...[
@@ -1814,7 +1814,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             const SizedBox(height: AuraSpace.s8),
             Text(
               'Text is required',
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coSun),
             ),
           ],
           if (!_isReply) ...[
@@ -3195,7 +3195,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       child: Text(
         '${_textController.text.trim().length}/$_limit',
         style: AuraText.small.copyWith(
-          color: _textTooLong ? AuraSurface.warnInk : AuraSurface.muted,
+          color: _textTooLong ? AuraSurface.coSun : AuraSurface.muted,
         ),
       ),
     );
@@ -3377,7 +3377,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 const SizedBox(height: AuraSpace.s10),
                 Text(
                   tiktokHelper,
-                  style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+                  style: AuraText.small.copyWith(color: AuraSurface.coSun),
                 ),
               ],
               if (linkedinVisible) ...[
@@ -3435,7 +3435,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   const SizedBox(height: AuraSpace.s10),
                   Text(
                     linkedinHelper,
-                    style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+                    style: AuraText.small.copyWith(color: AuraSurface.coSun),
                   ),
                 ],
               ],

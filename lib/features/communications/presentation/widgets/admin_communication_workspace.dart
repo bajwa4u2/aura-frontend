@@ -82,12 +82,12 @@ class _AdminWorkspaceHeader extends StatelessWidget {
                 vertical: 2,
               ),
               decoration: BoxDecoration(
-                color: AuraSurface.warnBg,
+                color: AuraSurface.coSun.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 'Admin only',
-                style: AuraText.micro.copyWith(color: AuraSurface.warnInk),
+                style: AuraText.micro.copyWith(color: AuraSurface.coSun),
               ),
             ),
           ],

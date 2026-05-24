@@ -296,23 +296,23 @@ class _InstitutionJoinRequestsScreenState
             padding: const EdgeInsets.all(AuraSpace.s12),
             margin: const EdgeInsets.only(bottom: AuraSpace.s12),
             decoration: BoxDecoration(
-              color: AuraSurface.dangerBg,
+              color: AuraSurface.coRose.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+              border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline, size: 16, color: AuraSurface.dangerInk),
+                const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
                   child: Text(
                     _actionError!,
-                    style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
                   ),
                 ),
                 GestureDetector(
                   onTap: () => setState(() => _actionError = null),
-                  child: const Icon(Icons.close, size: 16, color: AuraSurface.dangerInk),
+                  child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
                 ),
               ],
             ),
@@ -365,13 +365,13 @@ class _InstitutionJoinRequestsScreenState
                 Container(
                   padding: const EdgeInsets.all(AuraSpace.s10),
                   decoration: BoxDecoration(
-                    color: AuraSurface.dangerBg,
+                    color: AuraSurface.coRose.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(AuraRadius.md),
-                    border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+                    border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     _joinError!,
-                    style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
                   ),
                 ),
               ],
@@ -380,18 +380,18 @@ class _InstitutionJoinRequestsScreenState
                 Container(
                   padding: const EdgeInsets.all(AuraSpace.s10),
                   decoration: BoxDecoration(
-                    color: AuraSurface.goodBg,
+                    color: AuraSurface.coVerdant.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(AuraRadius.md),
-                    border: Border.all(color: AuraSurface.goodInk.withValues(alpha: 0.3)),
+                    border: Border.all(color: AuraSurface.coVerdant.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle_outline, size: 16, color: AuraSurface.goodInk),
+                      const Icon(Icons.check_circle_outline, size: 16, color: AuraSurface.coVerdant),
                       const SizedBox(width: AuraSpace.s8),
                       Expanded(
                         child: Text(
                           _joinSuccess!,
-                          style: AuraText.small.copyWith(color: AuraSurface.goodInk),
+                          style: AuraText.small.copyWith(color: AuraSurface.coVerdant),
                         ),
                       ),
                     ],

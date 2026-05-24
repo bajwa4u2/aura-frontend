@@ -834,7 +834,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   padding: const EdgeInsets.only(bottom: AuraSpace.s12),
                   child: Text(
                     _submitError!,
-                    style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+                    style: AuraText.small.copyWith(color: AuraSurface.coSun),
                   ),
                 ),
               Row(
@@ -988,7 +988,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
             const SizedBox(height: AuraSpace.s10),
             Text(
               _suggestionsError!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coSun),
             ),
           ],
           if (suggestions.isNotEmpty) ...[
@@ -1050,7 +1050,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
             const SizedBox(height: AuraSpace.s10),
             Text(
               _translationError!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coSun),
             ),
           ],
           if (_translationPreview != null) ...[

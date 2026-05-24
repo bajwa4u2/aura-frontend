@@ -182,7 +182,7 @@ class ComposeAttachmentCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: AuraSpace.s8),
               child: Text(
                 attachment.error!,
-                style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+                style: AuraText.small.copyWith(color: AuraSurface.coSun),
               ),
             ),
           Container(

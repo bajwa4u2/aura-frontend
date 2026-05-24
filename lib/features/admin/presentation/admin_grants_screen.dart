@@ -6,6 +6,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
@@ -188,7 +189,7 @@ class _GrantRow extends StatelessWidget {
                         : 'Expires ${_formatDate(grant.expiresAt!)}',
                     style: AuraText.micro.copyWith(
                       color: status == AdminGrantStatus.expired
-                          ? AuraSurface.dangerInk
+                          ? AuraSurface.coRose
                           : AuraSurface.faint,
                     ),
                   ),
@@ -222,6 +223,10 @@ class _GrantRow extends StatelessWidget {
   }
 }
 
+/// Renders the `AdminGrantStatus` typed enum as a canonical
+/// SubstrateChip. Mapping per `system/topology/topology-grammar.md`
+/// §6: active/bootstrap → teal (governance/institutional authority);
+/// expired → rose (refused state); revoked → mist (neutral / closed).
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 
@@ -229,56 +234,13 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, bg, fg, borderAlpha) = switch (status) {
-      AdminGrantStatus.active => (
-          'ACTIVE',
-          AuraSurface.accentSoft,
-          AuraSurface.accentText,
-          0.3,
-        ),
-      AdminGrantStatus.bootstrap => (
-          'BOOTSTRAP',
-          AuraSurface.accentSoft,
-          AuraSurface.accentText,
-          0.3,
-        ),
-      AdminGrantStatus.expired => (
-          'EXPIRED',
-          AuraSurface.elevated,
-          AuraSurface.dangerInk,
-          0.3,
-        ),
-      AdminGrantStatus.revoked => (
-          'REVOKED',
-          AuraSurface.elevated,
-          AuraSurface.muted,
-          0.0,
-        ),
+    final (label, state) = switch (status) {
+      AdminGrantStatus.active => ('ACTIVE', SubstrateChipState.teal),
+      AdminGrantStatus.bootstrap => ('BOOTSTRAP', SubstrateChipState.teal),
+      AdminGrantStatus.expired => ('EXPIRED', SubstrateChipState.rose),
+      AdminGrantStatus.revoked => ('REVOKED', SubstrateChipState.mist),
     };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s8,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color: borderAlpha == 0.0
-              ? AuraSurface.divider
-              : AuraSurface.accent.withValues(alpha: borderAlpha),
-        ),
-      ),
-      child: Text(
-        label,
-        style: AuraText.micro.copyWith(
-          color: fg,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
+    return SubstrateChip(label: label, state: state);
   }
 }
 

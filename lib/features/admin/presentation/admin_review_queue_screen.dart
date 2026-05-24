@@ -8,6 +8,7 @@ import '../../../core/diagnostics/runtime_trace.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -188,11 +189,11 @@ class _AdminReviewQueueScreenState
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor:
-            success ? AuraSurface.goodBg : AuraSurface.dangerBg,
+            success ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.coRose.withValues(alpha: 0.16),
         content: Text(
           message,
           style: AuraText.small.copyWith(
-            color: success ? AuraSurface.goodInk : AuraSurface.dangerInk,
+            color: success ? AuraSurface.coVerdant : AuraSurface.coRose,
           ),
         ),
         duration: const Duration(seconds: 3),
@@ -661,43 +662,23 @@ class _TypeBadge extends StatelessWidget {
   }
 }
 
+/// Review-queue lifecycle status rendered as a canonical SubstrateChip.
+/// Mapping: active → verdant; pending → sun; provisional_active → teal
+/// (governance-mediated state); rejected → rose; unknown → mist.
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
   final String status;
 
   @override
   Widget build(BuildContext context) {
-    final (label, bg, fg) = switch (status) {
-      'pending' => ('Pending', AuraSurface.warnBg, AuraSurface.warnInk),
-      'provisional_active' => (
-          'Provisional',
-          const Color(0x206366F1),
-          const Color(0xFF6366F1),
-        ),
-      'active' => ('Active', AuraSurface.goodBg, AuraSurface.goodInk),
-      'rejected' => ('Rejected', AuraSurface.dangerBg, AuraSurface.dangerInk),
-      _ => ('Unknown', AuraSurface.elevated, AuraSurface.faint),
+    final (label, state) = switch (status) {
+      'pending' => ('Pending', SubstrateChipState.sun),
+      'provisional_active' => ('Provisional', SubstrateChipState.teal),
+      'active' => ('Active', SubstrateChipState.verdant),
+      'rejected' => ('Rejected', SubstrateChipState.rose),
+      _ => ('Unknown', SubstrateChipState.mist),
     };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s8,
-        vertical: 3,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: fg.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        label,
-        style: AuraText.micro.copyWith(
-          color: fg,
-          fontWeight: FontWeight.w600,
-          fontSize: 10,
-        ),
-      ),
-    );
+    return SubstrateChip(label: label, state: state);
   }
 }
 
@@ -714,11 +695,11 @@ class _VerifBadge extends StatelessWidget {
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: verified ? AuraSurface.goodBg : AuraSurface.elevated,
+        color: verified ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.elevated,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(
           color: verified
-              ? AuraSurface.goodInk.withValues(alpha: 0.4)
+              ? AuraSurface.coVerdant.withValues(alpha: 0.4)
               : AuraSurface.divider,
         ),
       ),
@@ -728,13 +709,13 @@ class _VerifBadge extends StatelessWidget {
           Icon(
             verified ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
             size: 10,
-            color: verified ? AuraSurface.goodInk : AuraSurface.faint,
+            color: verified ? AuraSurface.coVerdant : AuraSurface.faint,
           ),
           const SizedBox(width: 4),
           Text(
             label,
             style: AuraText.micro.copyWith(
-              color: verified ? AuraSurface.goodInk : AuraSurface.faint,
+              color: verified ? AuraSurface.coVerdant : AuraSurface.faint,
               fontWeight: FontWeight.w500,
               fontSize: 10,
             ),
@@ -798,12 +779,12 @@ class _DecisionChip extends StatelessWidget {
     final Color ink;
     switch (tone) {
       case _ChipTone.good:
-        bg = AuraSurface.goodBg;
-        ink = AuraSurface.goodInk;
+        bg = AuraSurface.coVerdant.withValues(alpha: 0.16);
+        ink = AuraSurface.coVerdant;
         break;
       case _ChipTone.danger:
-        bg = AuraSurface.dangerBg;
-        ink = AuraSurface.dangerInk;
+        bg = AuraSurface.coRose.withValues(alpha: 0.16);
+        ink = AuraSurface.coRose;
         break;
       case _ChipTone.neutral:
         bg = AuraSurface.subtle;

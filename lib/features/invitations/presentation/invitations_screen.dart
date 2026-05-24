@@ -8,6 +8,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
@@ -556,25 +557,16 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = label.trim().isEmpty ? '—' : label.trim();
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Text(
-        text,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-      ),
-    );
+    return SubstrateChip(label: text, state: SubstrateChipState.mist);
   }
 }
 
 enum _StatusTone { neutral, accent, positive, negative }
 
+/// Invitations status pill — wraps canonical SubstrateChip,
+/// replacing the previous Tailwind-shade palette (Colors.green.shade,
+/// Colors.red.shade, Colors.blue.shade) with canonical substrate
+/// tokens so invitations render consistently with the rest of Aura.
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.label, required this.tone});
 
@@ -583,47 +575,13 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = switch (tone) {
-      _StatusTone.positive => (
-        border: Colors.green.shade200,
-        text: Colors.green.shade800,
-        fill: Colors.green.shade50,
-      ),
-      _StatusTone.negative => (
-        border: Colors.red.shade200,
-        text: Colors.red.shade800,
-        fill: Colors.red.shade50,
-      ),
-      _StatusTone.accent => (
-        border: Colors.blue.shade200,
-        text: Colors.blue.shade800,
-        fill: Colors.blue.shade50,
-      ),
-      _StatusTone.neutral => (
-        border: Colors.black12,
-        text: Colors.black87,
-        fill: Colors.transparent,
-      ),
+    final state = switch (tone) {
+      _StatusTone.positive => SubstrateChipState.verdant,
+      _StatusTone.negative => SubstrateChipState.rose,
+      _StatusTone.accent => SubstrateChipState.teal,
+      _StatusTone.neutral => SubstrateChipState.mist,
     };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        color: palette.fill,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(
-          fontWeight: FontWeight.w700,
-          color: palette.text,
-        ),
-      ),
-    );
+    return SubstrateChip(label: label, state: state);
   }
 }
 

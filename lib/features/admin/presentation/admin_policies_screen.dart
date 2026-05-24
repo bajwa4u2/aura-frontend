@@ -345,17 +345,17 @@ class _PolicyEditorState extends ConsumerState<_PolicyEditor> {
                   Container(
                     padding: const EdgeInsets.all(AuraSpace.s12),
                     decoration: BoxDecoration(
-                      color: AuraSurface.dangerBg,
+                      color: AuraSurface.coRose.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(AuraRadius.md),
                       border: Border.all(
                         color:
-                            AuraSurface.dangerInk.withValues(alpha: 0.3),
+                            AuraSurface.coRose.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
                       _saveError!,
                       style: AuraText.small
-                          .copyWith(color: AuraSurface.dangerInk),
+                          .copyWith(color: AuraSurface.coRose),
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s12),
@@ -365,16 +365,16 @@ class _PolicyEditorState extends ConsumerState<_PolicyEditor> {
                   Container(
                     padding: const EdgeInsets.all(AuraSpace.s12),
                     decoration: BoxDecoration(
-                      color: AuraSurface.goodBg,
+                      color: AuraSurface.coVerdant.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(AuraRadius.md),
                       border: Border.all(
-                        color: AuraSurface.goodInk.withValues(alpha: 0.3),
+                        color: AuraSurface.coVerdant.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
                       'Policies saved successfully.',
                       style: AuraText.small
-                          .copyWith(color: AuraSurface.goodInk),
+                          .copyWith(color: AuraSurface.coVerdant),
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s12),

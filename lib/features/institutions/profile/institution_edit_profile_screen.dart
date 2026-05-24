@@ -1211,7 +1211,7 @@ class _SaveBar extends StatelessWidget {
                           height: 8,
                           decoration: BoxDecoration(
                             color: dirty
-                                ? AuraSurface.warnInk
+                                ? AuraSurface.coSun
                                 : AuraSurface.faint,
                             shape: BoxShape.circle,
                           ),
@@ -1316,7 +1316,7 @@ class _StudioCountedField extends StatelessWidget {
     final ratio = maxChars == 0 ? 0.0 : used / maxChars;
     final atLimit = used >= maxChars;
     final danger = atLimit || ratio >= 0.9;
-    final color = danger ? AuraSurface.dangerInk : AuraSurface.faint;
+    final color = danger ? AuraSurface.coRose : AuraSurface.faint;
     final fontWeight = atLimit ? FontWeight.w800 : FontWeight.w600;
 
     return Padding(
@@ -1341,7 +1341,7 @@ class _StudioCountedField extends StatelessWidget {
                       Text(
                         '*',
                         style: AuraText.small
-                            .copyWith(color: AuraSurface.dangerInk),
+                            .copyWith(color: AuraSurface.coRose),
                       ),
                     ],
                   ],
@@ -1422,12 +1422,12 @@ class _StudioTextField extends StatelessWidget {
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
           borderSide:
-              const BorderSide(color: AuraSurface.dangerInk, width: 1.5),
+              const BorderSide(color: AuraSurface.coRose, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
           borderSide:
-              const BorderSide(color: AuraSurface.dangerInk, width: 1.5),
+              const BorderSide(color: AuraSurface.coRose, width: 1.5),
         ),
       ),
       keyboardType: keyboardType,
@@ -1801,7 +1801,7 @@ class _MediaUploadControl extends StatelessWidget {
                 child: Text(
                   'Remove',
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.dangerInk,
+                    color: AuraSurface.coRose,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

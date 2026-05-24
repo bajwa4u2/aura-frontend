@@ -118,9 +118,9 @@ class _AdminNewsletterLabState extends ConsumerState<AdminNewsletterLab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Newsletter preview and test send',
                   style: AuraText.subtitle,
@@ -128,8 +128,8 @@ class _AdminNewsletterLabState extends ConsumerState<AdminNewsletterLab> {
               ),
               AuraStatusChip(
                 label: 'Admin only',
-                backgroundColor: AuraSurface.warnBg,
-                textColor: AuraSurface.warnInk,
+                backgroundColor: AuraSurface.coSun.withValues(alpha: 0.16),
+                textColor: AuraSurface.coSun,
               ),
             ],
           ),

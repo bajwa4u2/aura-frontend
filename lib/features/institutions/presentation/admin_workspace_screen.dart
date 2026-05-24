@@ -8,6 +8,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../admin/data/admin_providers.dart';
@@ -72,14 +73,14 @@ class _DeniedState extends StatelessWidget {
             Container(
               width: 64,
               height: 64,
-              decoration: const BoxDecoration(
-                color: AuraSurface.dangerBg,
+              decoration: BoxDecoration(
+                color: AuraSurface.coRose.withValues(alpha: 0.16),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.lock_outline,
                 size: 28,
-                color: AuraSurface.dangerInk,
+                color: AuraSurface.coRose,
               ),
             ),
             const SizedBox(height: AuraSpace.s16),
@@ -383,12 +384,12 @@ class _HealthChip extends StatelessWidget {
         vertical: AuraSpace.s8,
       ),
       decoration: BoxDecoration(
-        color: ok ? AuraSurface.accentSoft : AuraSurface.dangerBg,
+        color: ok ? AuraSurface.accentSoft : AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(
           color: ok
               ? AuraSurface.accent.withValues(alpha: 0.3)
-              : AuraSurface.dangerInk.withValues(alpha: 0.3),
+              : AuraSurface.coRose.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -399,14 +400,14 @@ class _HealthChip extends StatelessWidget {
             height: 6,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: ok ? AuraSurface.accentText : AuraSurface.dangerInk,
+              color: ok ? AuraSurface.accentText : AuraSurface.coRose,
             ),
           ),
           const SizedBox(width: AuraSpace.s6),
           Text(
             '$label · $status',
             style: AuraText.micro.copyWith(
-              color: ok ? AuraSurface.accentText : AuraSurface.dangerInk,
+              color: ok ? AuraSurface.accentText : AuraSurface.coRose,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -692,6 +693,8 @@ class _ModuleTile extends StatelessWidget {
   }
 }
 
+/// Admin workspace chip — wraps canonical SubstrateChip, mapping the
+/// local `accent` and `muted` flags to canonical states.
 class _Chip extends StatelessWidget {
   const _Chip({required this.label, this.muted = false, this.accent = false});
 
@@ -701,32 +704,10 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        color: accent ? AuraSurface.accentSoft : AuraSurface.elevated,
-        border: Border.all(
-          color: accent
-              ? AuraSurface.accent.withValues(alpha: 0.3)
-              : AuraSurface.divider,
-        ),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(
-          fontWeight: FontWeight.w600,
-          color: accent
-              ? AuraSurface.accentText
-              : muted
-              ? AuraSurface.muted
-              : AuraSurface.ink,
-        ),
-      ),
-    );
+    final state = accent
+        ? SubstrateChipState.teal
+        : SubstrateChipState.mist;
+    return SubstrateChip(label: label, state: state, dimmed: muted);
   }
 }
 

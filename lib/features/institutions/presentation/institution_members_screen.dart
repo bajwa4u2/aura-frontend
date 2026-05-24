@@ -138,11 +138,11 @@ class _InstitutionMembersScreenState
   Color _roleColor(String role) {
     switch (role.toUpperCase()) {
       case 'OWNER':
-        return AuraSurface.goodInk;
+        return AuraSurface.coVerdant;
       case 'ADMIN':
         return AuraSurface.accentText;
       case 'EDITOR':
-        return AuraSurface.warnInk;
+        return AuraSurface.coSun;
       default:
         return AuraSurface.muted;
     }
@@ -151,11 +151,11 @@ class _InstitutionMembersScreenState
   Color _roleBg(String role) {
     switch (role.toUpperCase()) {
       case 'OWNER':
-        return AuraSurface.goodBg;
+        return AuraSurface.coVerdant.withValues(alpha: 0.16);
       case 'ADMIN':
         return AuraSurface.accentSoft;
       case 'EDITOR':
-        return AuraSurface.warnBg;
+        return AuraSurface.coSun.withValues(alpha: 0.16);
       default:
         return AuraSurface.subtle;
     }
@@ -258,7 +258,7 @@ class _InstitutionMembersScreenState
                       child: Text(
                         'Promote to Owner',
                         style: AuraText.small
-                            .copyWith(color: AuraSurface.goodInk),
+                            .copyWith(color: AuraSurface.coVerdant),
                       ),
                     ),
                   if (role.toUpperCase() != 'ADMIN' &&
@@ -275,7 +275,7 @@ class _InstitutionMembersScreenState
                       value: 'DEMOTE',
                       child: Text(
                         'Demote to Member',
-                        style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+                        style: AuraText.small.copyWith(color: AuraSurface.coSun),
                       ),
                     ),
                   if (role.toUpperCase() == 'MEMBER')
@@ -293,7 +293,7 @@ class _InstitutionMembersScreenState
                     value: 'REMOVE',
                     child: Text(
                       'Remove',
-                      style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                      style: AuraText.small.copyWith(color: AuraSurface.coRose),
                     ),
                   ),
                 ],
@@ -344,7 +344,7 @@ class _InstitutionMembersScreenState
             child: Text(
               'Remove',
               style: AuraText.small.copyWith(
-                color: AuraSurface.dangerInk,
+                color: AuraSurface.coRose,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -380,20 +380,20 @@ class _InstitutionMembersScreenState
             padding: const EdgeInsets.all(AuraSpace.s12),
             margin: const EdgeInsets.only(bottom: AuraSpace.s12),
             decoration: BoxDecoration(
-              color: AuraSurface.dangerBg,
+              color: AuraSurface.coRose.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AuraRadius.md),
               border: Border.all(
-                color: AuraSurface.dangerInk.withValues(alpha: 0.3),
+                color: AuraSurface.coRose.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline, size: 16, color: AuraSurface.dangerInk),
+                const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
                   child: Text(
                     err,
-                    style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
                   ),
                 ),
                 GestureDetector(
@@ -401,7 +401,7 @@ class _InstitutionMembersScreenState
                     _removeError = null;
                     _updateError = null;
                   }),
-                  child: const Icon(Icons.close, size: 16, color: AuraSurface.dangerInk),
+                  child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
                 ),
               ],
             ),

@@ -355,7 +355,7 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: AuraSpace.s16),
           child: AuraCard(
             onTap: () => context.push('/announcements/${a.slug}'),
-            borderColor: AuraSurface.warnInk.withValues(alpha: 0.2),
+            borderColor: AuraSurface.coSun.withValues(alpha: 0.2),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -363,16 +363,16 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: AuraSurface.warnBg,
+                    color: AuraSurface.coSun.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(AuraRadius.r10),
                     border: Border.all(
-                      color: AuraSurface.warnInk.withValues(alpha: 0.25),
+                      color: AuraSurface.coSun.withValues(alpha: 0.25),
                     ),
                   ),
                   child: const Icon(
                     Icons.push_pin_outlined,
                     size: 16,
-                    color: AuraSurface.warnInk,
+                    color: AuraSurface.coSun,
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s12),
@@ -385,7 +385,7 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
                           Text(
                             'Pinned announcement',
                             style: AuraText.label.copyWith(
-                              color: AuraSurface.warnInk,
+                              color: AuraSurface.coSun,
                             ),
                           ),
                           const Spacer(),

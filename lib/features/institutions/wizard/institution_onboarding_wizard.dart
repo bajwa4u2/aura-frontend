@@ -10,6 +10,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
@@ -1119,10 +1120,10 @@ class _InstitutionSearchFieldState
           Container(
             padding: const EdgeInsets.all(AuraSpace.s12),
             decoration: BoxDecoration(
-              color: AuraSurface.goodBg,
+              color: AuraSurface.coVerdant.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AuraRadius.card),
               border: Border.all(
-                color: AuraSurface.goodInk.withValues(alpha: 0.3),
+                color: AuraSurface.coVerdant.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -1130,7 +1131,7 @@ class _InstitutionSearchFieldState
                 const Icon(
                   Icons.check_circle_outline_rounded,
                   size: 16,
-                  color: AuraSurface.goodInk,
+                  color: AuraSurface.coVerdant,
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
@@ -1138,7 +1139,7 @@ class _InstitutionSearchFieldState
                     widget.selected!['name']?.toString() ??
                         'Selected institution',
                     style: AuraText.small.copyWith(
-                      color: AuraSurface.goodInk,
+                      color: AuraSurface.coVerdant,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1148,7 +1149,7 @@ class _InstitutionSearchFieldState
                   child: const Icon(
                     Icons.close,
                     size: 16,
-                    color: AuraSurface.goodInk,
+                    color: AuraSurface.coVerdant,
                   ),
                 ),
               ],
@@ -1183,7 +1184,7 @@ class _InstitutionSearchFieldState
               Expanded(
                 child: Text(
                   _errorMessage,
-                  style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                  style: AuraText.small.copyWith(color: AuraSurface.coRose),
                 ),
               ),
               const SizedBox(width: AuraSpace.s8),
@@ -1479,12 +1480,12 @@ class _SubmittedStatusPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.card,
         borderRadius: BorderRadius.circular(AuraRadius.xl),
-        border: Border.all(color: AuraSurface.goodInk.withValues(alpha: 0.3)),
+        border: Border.all(color: AuraSurface.coVerdant.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle_outline_rounded, size: 32, color: AuraSurface.goodInk),
+          const Icon(Icons.check_circle_outline_rounded, size: 32, color: AuraSurface.coVerdant),
           const SizedBox(height: AuraSpace.s16),
           const Text('Request submitted', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
@@ -1521,6 +1522,7 @@ class _SubmittedStatusPanel extends StatelessWidget {
   }
 }
 
+/// Onboarding-wizard review status rendered as a canonical SubstrateChip.
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status});
 
@@ -1528,39 +1530,13 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color bg;
-    Color fg;
-    String label;
-
-    switch (status) {
-      case 'APPROVED':
-        bg = AuraSurface.goodBg;
-        fg = AuraSurface.goodInk;
-        label = 'Approved';
-      case 'REJECTED':
-        bg = AuraSurface.dangerBg;
-        fg = AuraSurface.dangerInk;
-        label = 'Not approved';
-      case 'NEEDS_INFO':
-        bg = AuraSurface.warnBg;
-        fg = AuraSurface.warnInk;
-        label = 'Needs information';
-      case 'UNDER_REVIEW':
-      default:
-        bg = AuraSurface.infoBg;
-        fg = AuraSurface.infoInk;
-        label = 'Under review';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: fg.withValues(alpha: 0.3)),
-      ),
-      child: Text(label, style: AuraText.small.copyWith(color: fg, fontWeight: FontWeight.w700)),
-    );
+    final (label, state) = switch (status) {
+      'APPROVED' => ('Approved', SubstrateChipState.verdant),
+      'REJECTED' => ('Not approved', SubstrateChipState.rose),
+      'NEEDS_INFO' => ('Needs information', SubstrateChipState.sun),
+      _ => ('Under review', SubstrateChipState.teal),
+    };
+    return SubstrateChip(label: label, state: state);
   }
 }
 
@@ -1679,7 +1655,7 @@ class _SuccessPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.check_circle_outline_rounded, size: 36, color: AuraSurface.goodInk),
+        const Icon(Icons.check_circle_outline_rounded, size: 36, color: AuraSurface.coVerdant),
         const SizedBox(height: AuraSpace.s16),
         Text(title, style: AuraText.headline),
         const SizedBox(height: AuraSpace.s8),
@@ -1708,16 +1684,16 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
-        color: AuraSurface.dangerBg,
+        color: AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+        border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded, size: 16, color: AuraSurface.dangerInk),
+          const Icon(Icons.error_outline_rounded, size: 16, color: AuraSurface.coRose),
           const SizedBox(width: AuraSpace.s8),
-          Expanded(child: Text(message, style: AuraText.small.copyWith(color: AuraSurface.dangerInk))),
+          Expanded(child: Text(message, style: AuraText.small.copyWith(color: AuraSurface.coRose))),
         ],
       ),
     );

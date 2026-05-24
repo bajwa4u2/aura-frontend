@@ -270,10 +270,10 @@ class _ReportCard extends StatelessWidget {
 
   _StatusStyleData _statusStyle(String status) {
     return switch (status) {
-      'OPEN' => const _StatusStyleData(AuraSurface.warnBg, AuraSurface.warnInk),
+      'OPEN' => _StatusStyleData(AuraSurface.coSun.withValues(alpha: 0.16), AuraSurface.coSun),
       'UNDER_REVIEW' || 'REVIEWING' => const _StatusStyleData(AuraSurface.infoBg, AuraSurface.infoInk),
-      'NEEDS_CONTEXT' => const _StatusStyleData(AuraSurface.warnBg, AuraSurface.warnInk),
-      'ACTION_TAKEN' || 'RESOLVED' => const _StatusStyleData(AuraSurface.goodBg, AuraSurface.goodInk),
+      'NEEDS_CONTEXT' => _StatusStyleData(AuraSurface.coSun.withValues(alpha: 0.16), AuraSurface.coSun),
+      'ACTION_TAKEN' || 'RESOLVED' => _StatusStyleData(AuraSurface.coVerdant.withValues(alpha: 0.16), AuraSurface.coVerdant),
       'DISMISSED' => const _StatusStyleData(AuraSurface.elevated, AuraSurface.muted),
       _ => const _StatusStyleData(AuraSurface.elevated, AuraSurface.muted),
     };
@@ -574,10 +574,10 @@ class _ActionPanelState extends State<_ActionPanel> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
-            backgroundColor: AuraSurface.dangerBg,
+            backgroundColor: AuraSurface.coRose.withValues(alpha: 0.16),
             content: Text(
               'Failed: ${adminErrorMessage(e)}',
-              style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coRose),
             ),
           ),
         );

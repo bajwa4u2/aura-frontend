@@ -6,6 +6,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -411,7 +412,7 @@ class _InstitutionRow extends StatelessWidget {
                   style: AuraText.micro.copyWith(
                     color: institution.status == 'VERIFIED'
                         ? AuraSurface.accentText
-                        : AuraSurface.dangerInk,
+                        : AuraSurface.coRose,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -670,8 +671,8 @@ class _RequestCard extends StatelessWidget {
               ),
               _ActionButton(
                 label: 'Reject',
-                color: AuraSurface.dangerInk,
-                bgColor: AuraSurface.dangerBg,
+                color: AuraSurface.coRose,
+                bgColor: AuraSurface.coRose.withValues(alpha: 0.16),
                 icon: Icons.close_rounded,
                 disabled: actionLoading,
                 onTap: onReject,
@@ -785,6 +786,9 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
+/// Institution-lifecycle status rendered as a canonical SubstrateChip.
+/// APPROVED → teal (institutional authority); REJECTED/SUSPENDED →
+/// rose (refused); other → mist (pending / unknown).
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 
@@ -792,37 +796,13 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isApproved = status.toUpperCase() == 'APPROVED';
-    final isRejected = status.toUpperCase() == 'REJECTED' || status.toUpperCase() == 'SUSPENDED';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: 2),
-      decoration: BoxDecoration(
-        color: isApproved
-            ? AuraSurface.accentSoft
-            : isRejected
-                ? AuraSurface.dangerBg
-                : AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color: isApproved
-              ? AuraSurface.accent.withValues(alpha: 0.3)
-              : isRejected
-                  ? AuraSurface.dangerInk.withValues(alpha: 0.3)
-                  : AuraSurface.divider,
-        ),
-      ),
-      child: Text(
-        status.replaceAll('_', ' ').toUpperCase(),
-        style: AuraText.micro.copyWith(
-          color: isApproved
-              ? AuraSurface.accentText
-              : isRejected
-                  ? AuraSurface.dangerInk
-                  : AuraSurface.faint,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
+    final upper = status.toUpperCase();
+    final state = upper == 'APPROVED'
+        ? SubstrateChipState.teal
+        : (upper == 'REJECTED' || upper == 'SUSPENDED')
+            ? SubstrateChipState.rose
+            : SubstrateChipState.mist;
+    return SubstrateChip(label: status.replaceAll('_', ' '), state: state);
   }
 }
 

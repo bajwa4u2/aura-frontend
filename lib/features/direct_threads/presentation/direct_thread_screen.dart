@@ -264,7 +264,7 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
                 child: Text(
                   _sendError!,
                   style: AuraText.small
-                      .copyWith(color: AuraSurface.dangerInk),
+                      .copyWith(color: AuraSurface.coRose),
                 ),
               ),
             _Composer(
@@ -605,7 +605,7 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
                 Text(
                   'Translation unavailable. Try again later.',
                   style: AuraText.micro.copyWith(
-                    color: AuraSurface.dangerInk,
+                    color: AuraSurface.coRose,
                   ),
                 ),
               ],
@@ -789,7 +789,7 @@ class _PresenceLabel extends ConsumerWidget {
     };
     if (text.isEmpty) return const SizedBox.shrink();
     final color = state.status == PresenceStatus.online
-        ? AuraSurface.goodInk
+        ? AuraSurface.coVerdant
         : AuraSurface.faint;
     return Padding(
       padding: const EdgeInsets.only(top: 2),

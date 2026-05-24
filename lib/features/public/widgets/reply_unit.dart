@@ -288,23 +288,31 @@ class _AccountabilityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Canonical accountability chip palette mirrors
+    // `company/visuals/system/governance/governance-grammar.md` §3.2
+    // and the AU-01 flagship cognition artifact:
+    //   COMMITMENT → co/teal
+    //   UPDATE     → co/sun
+    //   RESOLVED   → co/verdant
+    // The mapping is the public substrate signature — same colors on
+    // the website, the press kit, the investor deck, and the app.
     final (Color bg, Color ink, Color border, IconData icon) = switch (tag) {
       InsAccountabilityTag.commitment => (
-        AuraSurface.accentSoft,
-        AuraSurface.accentText,
-        AuraSurface.accent.withValues(alpha: 0.4),
+        AuraSurface.coTeal.withValues(alpha: 0.16),
+        AuraSurface.coTeal,
+        AuraSurface.coTeal.withValues(alpha: 0.4),
         Icons.handshake_outlined,
       ),
       InsAccountabilityTag.update => (
-        AuraSurface.warnBg,
-        AuraSurface.warnInk,
-        AuraSurface.warnInk.withValues(alpha: 0.35),
+        AuraSurface.coSun.withValues(alpha: 0.16),
+        AuraSurface.coSun,
+        AuraSurface.coSun.withValues(alpha: 0.35),
         Icons.update_rounded,
       ),
       InsAccountabilityTag.resolved => (
-        AuraSurface.goodBg,
-        AuraSurface.goodInk,
-        AuraSurface.goodInk.withValues(alpha: 0.4),
+        AuraSurface.coVerdant.withValues(alpha: 0.16),
+        AuraSurface.coVerdant,
+        AuraSurface.coVerdant.withValues(alpha: 0.4),
         Icons.check_circle_outline_rounded,
       ),
     };

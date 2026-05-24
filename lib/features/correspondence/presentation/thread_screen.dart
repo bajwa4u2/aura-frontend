@@ -434,7 +434,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(
-              foregroundColor: AuraSurface.dangerInk,
+              foregroundColor: AuraSurface.coRose,
             ),
             child: const Text('Archive'),
           ),
@@ -1222,7 +1222,7 @@ class _ThreadConversationPanel extends StatelessWidget {
                                   Text(
                                     'Failed to send',
                                     style: AuraText.micro.copyWith(
-                                      color: AuraSurface.dangerInk,
+                                      color: AuraSurface.coRose,
                                     ),
                                   ),
                                   const SizedBox(width: AuraSpace.s8),
@@ -1366,7 +1366,7 @@ class _ConversationCallCard extends StatelessWidget {
     final isVideo = liveState.isVideoMode;
 
     final dotColor = isJoined
-        ? AuraSurface.goodInk
+        ? AuraSurface.coVerdant
         : (isBusy ? AuraSurface.accent : AuraSurface.muted);
 
     final statusText = isBusy
@@ -1414,7 +1414,7 @@ class _ConversationCallCard extends StatelessWidget {
             const SizedBox(width: AuraSpace.s8),
             _StripIconButton(
               icon: Icons.call_end_rounded,
-              tone: AuraSurface.dangerInk,
+              tone: AuraSurface.coRose,
               onTap: () => onLeave(),
             ),
           ] else if (!isBusy)

@@ -298,18 +298,18 @@ class _MeConnectionStatusChip extends StatelessWidget {
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: connected ? AuraSurface.goodBg : AuraSurface.card,
+        color: connected ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.card,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(
           color: connected
-              ? AuraSurface.goodInk.withValues(alpha: 0.3)
+              ? AuraSurface.coVerdant.withValues(alpha: 0.3)
               : AuraSurface.divider,
         ),
       ),
       child: Text(
         connected ? 'Connected' : 'Not connected',
         style: AuraText.micro.copyWith(
-          color: connected ? AuraSurface.goodInk : AuraSurface.muted,
+          color: connected ? AuraSurface.coVerdant : AuraSurface.muted,
           fontWeight: FontWeight.w600,
           fontSize: 11,
         ),

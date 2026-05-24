@@ -6,6 +6,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
@@ -193,7 +194,7 @@ class _DomainCardState extends ConsumerState<_DomainCard> {
             const SizedBox(height: AuraSpace.s10),
             Text(
               _error!,
-              style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coRose),
             ),
           ],
           const SizedBox(height: AuraSpace.s14),
@@ -218,6 +219,10 @@ class _DomainCardState extends ConsumerState<_DomainCard> {
   }
 }
 
+/// Institution domain verification status rendered as a canonical
+/// `SubstrateChip`. Maps the institution-domain lifecycle to canonical
+/// state semantics per `system/diagnostics/diagnostics-grammar.md`
+/// §3.3 (the pass/fail/unknown triad applied to verification gates).
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status});
 
@@ -225,25 +230,12 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPending = status.toLowerCase() == 'pending';
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s8,
-        vertical: 3,
-      ),
-      decoration: BoxDecoration(
-        color: isPending ? AuraSurface.elevated : AuraSurface.accentSoft,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: AuraText.micro.copyWith(
-          color: isPending ? AuraSurface.faint : AuraSurface.accentText,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
+    final state = switch (status.toLowerCase()) {
+      'verified' || 'active' => SubstrateChipState.verdant,
+      'failed' || 'rejected' => SubstrateChipState.rose,
+      'pending' || 'unknown' => SubstrateChipState.mist,
+      _ => SubstrateChipState.sun,
+    };
+    return SubstrateChip(label: status, state: state);
   }
 }

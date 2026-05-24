@@ -494,9 +494,9 @@ class _PulsePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final (Color bg, Color ink, Color border) = switch (kind) {
       _PulseKind.outcomeResolved => (
-        AuraSurface.goodBg,
-        AuraSurface.goodInk,
-        AuraSurface.goodInk.withValues(alpha: 0.4),
+        AuraSurface.coVerdant.withValues(alpha: 0.16),
+        AuraSurface.coVerdant,
+        AuraSurface.coVerdant.withValues(alpha: 0.4),
       ),
       _PulseKind.institutionInvolved => (
         AuraSurface.accentSoft,
@@ -504,9 +504,9 @@ class _PulsePill extends StatelessWidget {
         AuraSurface.accent.withValues(alpha: 0.4),
       ),
       _PulseKind.awaitingInstitutionResponse => (
-        AuraSurface.warnBg,
-        AuraSurface.warnInk,
-        AuraSurface.warnInk.withValues(alpha: 0.35),
+        AuraSurface.coSun.withValues(alpha: 0.16),
+        AuraSurface.coSun,
+        AuraSurface.coSun.withValues(alpha: 0.35),
       ),
       _PulseKind.peopleResponding ||
       _PulseKind.activeDiscussion =>

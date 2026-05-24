@@ -298,7 +298,7 @@ class _CreateChannelCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s10),
             Text(
               error!,
-              style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coRose),
             ),
           ],
           const SizedBox(height: AuraSpace.s12),

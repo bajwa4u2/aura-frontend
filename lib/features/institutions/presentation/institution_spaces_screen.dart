@@ -115,7 +115,7 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('Cancel', style: AuraText.small.copyWith(color: AuraSurface.muted))),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Archive', style: AuraText.small.copyWith(color: AuraSurface.dangerInk, fontWeight: FontWeight.w700)),
+            child: Text('Archive', style: AuraText.small.copyWith(color: AuraSurface.coRose, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -153,7 +153,7 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
 
   Color _visibilityColor(String v) {
     switch (v.toUpperCase()) {
-      case 'DISCOVERABLE': return AuraSurface.goodInk;
+      case 'DISCOVERABLE': return AuraSurface.coVerdant;
       case 'INVITE_ONLY': return AuraSurface.accentText;
       case 'PRIVATE': return AuraSurface.muted;
       default: return AuraSurface.muted;
@@ -162,7 +162,7 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
 
   Color _visibilityBg(String v) {
     switch (v.toUpperCase()) {
-      case 'DISCOVERABLE': return AuraSurface.goodBg;
+      case 'DISCOVERABLE': return AuraSurface.coVerdant.withValues(alpha: 0.16);
       case 'INVITE_ONLY': return AuraSurface.accentSoft;
       case 'PRIVATE': return AuraSurface.subtle;
       default: return AuraSurface.subtle;
@@ -224,7 +224,7 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
           ),
           if (_createError != null) ...[
             const SizedBox(height: AuraSpace.s8),
-            Text(_createError!, style: AuraText.small.copyWith(color: AuraSurface.dangerInk)),
+            Text(_createError!, style: AuraText.small.copyWith(color: AuraSurface.coRose)),
           ],
           const SizedBox(height: AuraSpace.s16),
           AuraPrimaryButton(
@@ -303,14 +303,14 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
                   const SizedBox(width: AuraSpace.s12),
                   GestureDetector(
                     onTap: () => _join(id),
-                    child: Text('Join', style: AuraText.small.copyWith(color: AuraSurface.goodInk, fontWeight: FontWeight.w700)),
+                    child: Text('Join', style: AuraText.small.copyWith(color: AuraSurface.coVerdant, fontWeight: FontWeight.w700)),
                   ),
                 ],
                 if (_isAdmin) ...[
                   const SizedBox(width: AuraSpace.s12),
                   GestureDetector(
                     onTap: () => _archive(id),
-                    child: const Icon(Icons.archive_outlined, size: 16, color: AuraSurface.dangerInk),
+                    child: const Icon(Icons.archive_outlined, size: 16, color: AuraSurface.coRose),
                   ),
                 ],
               ],
@@ -339,16 +339,16 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
             margin: const EdgeInsets.only(bottom: AuraSpace.s12),
             padding: const EdgeInsets.all(AuraSpace.s12),
             decoration: BoxDecoration(
-              color: AuraSurface.dangerBg,
+              color: AuraSurface.coRose.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+              border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline, size: 16, color: AuraSurface.dangerInk),
+                const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
                 const SizedBox(width: AuraSpace.s8),
-                Expanded(child: Text(_actionError!, style: AuraText.small.copyWith(color: AuraSurface.dangerInk))),
-                GestureDetector(onTap: () => setState(() => _actionError = null), child: const Icon(Icons.close, size: 16, color: AuraSurface.dangerInk)),
+                Expanded(child: Text(_actionError!, style: AuraText.small.copyWith(color: AuraSurface.coRose))),
+                GestureDetector(onTap: () => setState(() => _actionError = null), child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose)),
               ],
             ),
           ),

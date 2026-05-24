@@ -57,4 +57,22 @@ class AuraSurface {
 
   static const Color infoBg = Color(0xFF0F1E2E);
   static const Color infoInk = Color(0xFF6BAEED);
+
+  // ─── Canonical substrate tokens ─────────────────────────────────
+  // Mirror `company/visuals/system/tokens/design-tokens.md` and the
+  // governance grammar at `system/governance/governance-grammar.md`
+  // §3.2 (the COMMITMENT / UPDATE / RESOLVED chip-color triad).
+  //
+  // These are the visual identifiers used on the public website and
+  // the AU-01 flagship cognition artifact. New substrate-substantive
+  // surfaces should reference these directly so Aura and the website
+  // remain visually coherent. Existing AuraSurface constants above
+  // are preserved unchanged for backward compatibility.
+  static const Color coTeal = Color(0xFF0D9488);
+  static const Color coTealDeep = Color(0xFF176B5D);
+  static const Color coVerdant = Color(0xFF22C55E);
+  static const Color coSun = Color(0xFFEAB308);
+  static const Color coRose = Color(0xFFF43F5E);
+  static const Color coMist = Color(0xFFA6AECC);
+  static const Color coSnow = Color(0xFFF5F7FB);
 }

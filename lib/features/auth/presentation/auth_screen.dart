@@ -796,9 +796,9 @@ class _NoticeBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AuraSpace.s14),
       decoration: BoxDecoration(
-        color: AuraSurface.goodBg,
+        color: AuraSurface.coVerdant.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.goodInk.withValues(alpha: 0.35)),
+        border: Border.all(color: AuraSurface.coVerdant.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,14 +806,14 @@ class _NoticeBanner extends StatelessWidget {
           Text(
             title,
             style: AuraText.small.copyWith(
-              color: AuraSurface.goodInk,
+              color: AuraSurface.coVerdant,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             body,
-            style: AuraText.small.copyWith(color: AuraSurface.goodInk, height: 1.45),
+            style: AuraText.small.copyWith(color: AuraSurface.coVerdant, height: 1.45),
           ),
         ],
       ),

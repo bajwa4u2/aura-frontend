@@ -8,6 +8,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/utils/relative_time.dart';
 import '../data/institutions_repository.dart';
@@ -255,22 +256,22 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
           Container(
             padding: const EdgeInsets.all(AuraSpace.s14),
             decoration: BoxDecoration(
-              color: AuraSurface.dangerBg,
+              color: AuraSurface.coRose.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AuraRadius.card),
               border: Border.all(
-                color: AuraSurface.dangerInk.withValues(alpha: 0.25),
+                color: AuraSurface.coRose.withValues(alpha: 0.25),
               ),
             ),
             child: Row(
               children: [
                 const Icon(Icons.error_outline_rounded,
-                    size: 16, color: AuraSurface.dangerInk),
+                    size: 16, color: AuraSurface.coRose),
                 const SizedBox(width: AuraSpace.s10),
                 Expanded(
                   child: Text(
                     _error!,
                     style: AuraText.small.copyWith(
-                      color: AuraSurface.dangerInk,
+                      color: AuraSurface.coRose,
                     ),
                   ),
                 ),
@@ -512,6 +513,10 @@ class _SessionEyebrow extends StatelessWidget {
   }
 }
 
+/// Live-room status chip — canonical SubstrateChip with leading dot
+/// when the room is live. Phase 3 — "Live now" reads as event-presence
+/// rather than transport status; the dot is the only motion indicator
+/// we ship (no animation libraries).
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status, required this.isActive});
 
@@ -520,65 +525,14 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg;
-    final Color ink;
-    final String label;
-    final bool showDot;
+    final (label, state, icon) = isActive
+        ? ('Live now', SubstrateChipState.verdant, Icons.circle)
+        : status == 'ENDED'
+            ? ('Ended', SubstrateChipState.mist, null)
+            : (status.isNotEmpty ? status : 'Unknown',
+                SubstrateChipState.mist, null);
 
-    if (isActive) {
-      bg = AuraSurface.goodBg;
-      ink = AuraSurface.goodInk;
-      // Phase 3 — "Live now" reads as event-presence rather than just
-      // a transport-level status. The leading dot is the only indicator
-      // we ship; no animation libraries.
-      label = 'Live now';
-      showDot = true;
-    } else if (status == 'ENDED') {
-      bg = AuraSurface.subtle;
-      ink = AuraSurface.faint;
-      label = 'Ended';
-      showDot = false;
-    } else {
-      bg = AuraSurface.subtle;
-      ink = AuraSurface.muted;
-      label = status.isNotEmpty ? status : 'Unknown';
-      showDot = false;
-    }
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: showDot ? AuraSpace.s8 : AuraSpace.s8,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showDot) ...[
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: ink,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 5),
-          ],
-          Text(
-            label,
-            style: AuraText.micro.copyWith(
-              color: ink,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
-            ),
-          ),
-        ],
-      ),
-    );
+    return SubstrateChip(label: label, state: state, icon: icon);
   }
 }
 

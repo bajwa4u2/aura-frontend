@@ -261,10 +261,10 @@ class _BrowserNotificationsSectionState
   Color get _stateIconColor {
     switch (_state) {
       case _SubState.active:
-        return AuraSurface.goodInk;
+        return AuraSurface.coVerdant;
       case _SubState.blocked:
       case _SubState.failed:
-        return AuraSurface.warnInk;
+        return AuraSurface.coSun;
       case _SubState.noVapid:
       case _SubState.unsupported:
         return AuraSurface.faint;
@@ -308,7 +308,7 @@ class _BrowserNotificationsSectionState
         return Text(
           'Blocked',
           style: AuraText.small.copyWith(
-            color: AuraSurface.dangerInk,
+            color: AuraSurface.coRose,
             fontWeight: FontWeight.w600,
           ),
         );
@@ -320,13 +320,13 @@ class _BrowserNotificationsSectionState
             vertical: 4,
           ),
           decoration: BoxDecoration(
-            color: AuraSurface.goodBg,
+            color: AuraSurface.coVerdant.withValues(alpha: 0.16),
             borderRadius: BorderRadius.circular(AuraRadius.pill),
           ),
           child: Text(
             'Active',
             style: AuraText.small.copyWith(
-              color: AuraSurface.goodInk,
+              color: AuraSurface.coVerdant,
               fontWeight: FontWeight.w700,
             ),
           ),

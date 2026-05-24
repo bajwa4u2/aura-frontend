@@ -186,7 +186,7 @@ class _FlagRowState extends ConsumerState<_FlagRow> {
             const SizedBox(height: AuraSpace.s6),
             Text(
               _error!,
-              style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+              style: AuraText.small.copyWith(color: AuraSurface.coRose),
             ),
           ],
         ],

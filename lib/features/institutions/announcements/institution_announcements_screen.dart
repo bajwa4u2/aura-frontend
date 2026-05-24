@@ -130,7 +130,7 @@ class _InstitutionAnnouncementsScreenState
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Delete', style: AuraText.small.copyWith(color: AuraSurface.dangerInk, fontWeight: FontWeight.w700)),
+            child: Text('Delete', style: AuraText.small.copyWith(color: AuraSurface.coRose, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -167,7 +167,7 @@ class _InstitutionAnnouncementsScreenState
 
   Color _audienceColor(String audience) {
     switch (audience.toUpperCase()) {
-      case 'PUBLIC': return AuraSurface.goodInk;
+      case 'PUBLIC': return AuraSurface.coVerdant;
       case 'MEMBERS': return AuraSurface.accentText;
       default: return AuraSurface.muted;
     }
@@ -175,7 +175,7 @@ class _InstitutionAnnouncementsScreenState
 
   Color _audienceBg(String audience) {
     switch (audience.toUpperCase()) {
-      case 'PUBLIC': return AuraSurface.goodBg;
+      case 'PUBLIC': return AuraSurface.coVerdant.withValues(alpha: 0.16);
       case 'MEMBERS': return AuraSurface.accentSoft;
       default: return AuraSurface.subtle;
     }
@@ -262,7 +262,7 @@ class _InstitutionAnnouncementsScreenState
                 Text(publishedAt, style: AuraText.micro.copyWith(color: AuraSurface.faint)),
               ] else if (isDraft && createdAt.isNotEmpty) ...[
                 Text(' · ', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
-                Text('Draft · $createdAt', style: AuraText.micro.copyWith(color: AuraSurface.warnInk)),
+                Text('Draft · $createdAt', style: AuraText.micro.copyWith(color: AuraSurface.coSun)),
               ],
             ],
           ),
@@ -277,14 +277,14 @@ class _InstitutionAnnouncementsScreenState
                     _ActionBtn(
                       label: 'Publish',
                       icon: Icons.send_rounded,
-                      color: AuraSurface.goodInk,
+                      color: AuraSurface.coVerdant,
                       onTap: () => _publish(id),
                     )
                   else
                     _ActionBtn(
                       label: 'Unpublish',
                       icon: Icons.unpublished_outlined,
-                      color: AuraSurface.warnInk,
+                      color: AuraSurface.coSun,
                       onTap: () => _unpublish(id),
                     ),
                   const SizedBox(width: AuraSpace.s10),
@@ -300,7 +300,7 @@ class _InstitutionAnnouncementsScreenState
                   _ActionBtn(
                     label: 'Delete',
                     icon: Icons.delete_outline_rounded,
-                    color: AuraSurface.dangerInk,
+                    color: AuraSurface.coRose,
                     onTap: () => _delete(id),
                   ),
                 ],
@@ -346,18 +346,18 @@ class _InstitutionAnnouncementsScreenState
       margin: const EdgeInsets.only(bottom: AuraSpace.s12),
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
-        color: AuraSurface.dangerBg,
+        color: AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+        border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, size: 16, color: AuraSurface.dangerInk),
+          const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
           const SizedBox(width: AuraSpace.s8),
-          Expanded(child: Text(_actionError!, style: AuraText.small.copyWith(color: AuraSurface.dangerInk))),
+          Expanded(child: Text(_actionError!, style: AuraText.small.copyWith(color: AuraSurface.coRose))),
           GestureDetector(
             onTap: () => setState(() => _actionError = null),
-            child: const Icon(Icons.close, size: 16, color: AuraSurface.dangerInk),
+            child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
           ),
         ],
       ),

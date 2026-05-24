@@ -251,13 +251,13 @@ class _UnitCard extends StatelessWidget {
                     vertical: AuraSpace.s4,
                   ),
                   decoration: BoxDecoration(
-                    color: AuraSurface.warnBg,
+                    color: AuraSurface.coSun.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     'Hidden',
                     style: AuraText.micro.copyWith(
-                      color: AuraSurface.warnInk,
+                      color: AuraSurface.coSun,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
