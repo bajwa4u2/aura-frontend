@@ -17,7 +17,6 @@ import '../../core/ui/aura_text.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
-import '../../shared/identity/aura_identity_badge.dart';
 import 'public_shell.dart';
 import 'rail/rail_composition.dart';
 
@@ -667,7 +666,6 @@ class _InstitutionContextBar extends StatelessWidget {
 
     final name = identity?.name ?? '';
     final logoUrl = identity?.logoUrl;
-    final isVerified = identity?.isVerified ?? false;
     final currentPath = GoRouterState.of(context).uri.path;
 
     // ─────────────────────────────────────────────────────────────────
@@ -739,33 +737,28 @@ class _InstitutionContextBar extends StatelessWidget {
                   ),
                   const SizedBox(width: AuraSpace.s8),
                 ],
-                // Verified + Workspace badges are desktop-only — they
-                // are siblings (not children) of the Expanded primary
-                // nav, so on Pixel-class widths they stole ~150 px from
-                // the 7-tab horizontal scroll strip, leaving room for
-                // only ~2 tabs at a time and pinning the badges over
-                // the area the user expected to scroll. The avatar
-                // already anchors institution identity on mobile; the
-                // teal accent + shell context make "workspace" obvious.
-                // Same gating pattern as the `name` block above.
-                if (isDesktop) ...[
-                  if (isVerified) ...[
-                    const _InstitutionVerifiedBadge(),
-                    const SizedBox(width: 4),
-                  ],
-                  const _WorkspaceBadge(),
-                  const SizedBox(width: AuraSpace.s10),
+                // Verified + Workspace badges removed from the header
+                // entirely (user direction). They competed with the
+                // 7-tab primary nav strip even at desktop widths,
+                // pushing nav into the horizontal scroll region where
+                // it was not mouse-discoverable. The teal-tinted
+                // institution gradient + avatar + (desktop-only) name
+                // already establish workspace context; verified status
+                // surfaces on institution profile pages where it
+                // carries weight.
+                //
+                // Render the thin vertical rule only when the name is
+                // visible (desktop) so the identity cluster still has
+                // a visible boundary; at narrower widths the avatar
+                // alone separates identity from nav cleanly.
+                if (isDesktop && name.isNotEmpty) ...[
+                  Container(
+                    width: 1,
+                    height: 18,
+                    color: const Color(0x33B981A8),
+                  ),
+                  const SizedBox(width: AuraSpace.s8),
                 ],
-                // Thin vertical rule that visually separates the
-                // identity cluster from the primary-nav strip without
-                // introducing a second row. Subtle accent-tinted line
-                // — reads as "context boundary" rather than chrome.
-                Container(
-                  width: 1,
-                  height: 18,
-                  color: const Color(0x33B981A8),
-                ),
-                const SizedBox(width: AuraSpace.s8),
                 // Primary nav fills the remaining row width. It
                 // already wraps a `SingleChildScrollView(horizontal)`,
                 // so at narrow widths the user scrolls horizontally
@@ -987,21 +980,6 @@ class _PrimaryNavTab extends StatelessWidget {
   }
 }
 
-/// Shell verified marker — delegates to the shared `AuraIdentityBadge` so
-/// the workspace shell, feed cards, and any future identity surface share
-/// one visual definition of "verified institution".
-class _InstitutionVerifiedBadge extends StatelessWidget {
-  const _InstitutionVerifiedBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Tooltip(
-      message: 'Verified institution',
-      child: AuraVerifiedInstitutionBadge(),
-    );
-  }
-}
-
 class _InstitutionAvatarSmall extends StatelessWidget {
   const _InstitutionAvatarSmall({required this.name, this.logoUrl});
 
@@ -1057,33 +1035,6 @@ class _InstitutionAvatarSmall extends StatelessWidget {
       Icons.apartment_outlined,
       size: 16,
       color: _institutionAccentText,
-    );
-  }
-}
-
-class _WorkspaceBadge extends StatelessWidget {
-  const _WorkspaceBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s8,
-        vertical: 3,
-      ),
-      decoration: BoxDecoration(
-        color: _institutionAccentSoft,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: _institutionAccent.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        'Workspace',
-        style: AuraText.label.copyWith(
-          color: _institutionAccentText,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.4,
-        ),
-      ),
     );
   }
 }

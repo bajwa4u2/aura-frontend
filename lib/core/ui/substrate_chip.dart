@@ -48,7 +48,14 @@ class SubstrateChip extends StatelessWidget {
     return Opacity(
       opacity: opacity,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        // 2px vertical padding (not 4) — the 4px variant was ~6-8px
+        // taller per chip than the bespoke chips it replaced, which
+        // pushed many migrated cards (spaces hub cards, feed badges,
+        // messages header chip row) past their parent constraint and
+        // tripped "BOTTOM OVERFLOWED BY N PIXELS" warnings in debug
+        // (silent clip in release). Keeping 10px horizontal padding —
+        // the wider hit-area is fine; only vertical was the regression.
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(999),

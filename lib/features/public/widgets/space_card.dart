@@ -140,11 +140,14 @@ class PublicSpacesStrip extends ConsumerWidget {
     return AdaptiveCardGrid(
       cards: cards,
       cardWidth: 220,
-      // Match the pre-migration fixed card height. Without this, intrinsic-
-      // height cards collapse to ~124 px (their content height) and the
-      // section visually reads as compressed; rows of cards with mixed
-      // content (with vs without activitySummary) also align ragged.
-      cardHeight: 152,
+      // 188, not 152 — icon row (36) + title (~18) + 2-line
+      // description with line-height 1.4 (~32) + optional
+      // activitySummary line (~22) + paddings + gaps lands at ~180
+      // in practice; 152 tripped a 32px BOTTOM OVERFLOWED on /home
+      // for any space tile whose description wrapped to two lines.
+      // Cards without activitySummary still bottom-align cleanly
+      // because the Column uses `mainAxisSize: min`.
+      cardHeight: 188,
       gap: AuraSpace.s10,
       minCardsPerRow: 2,
       maxCardsPerRow: 5,
@@ -192,7 +195,12 @@ class _AllSpacesTile extends StatelessWidget {
               Text(
                 'Topical and regional discourse environments.',
                 style: AuraText.muted,
-                maxLines: 3,
+                // 2, not 3 — 3 lines pushed _AllSpacesTile content past
+                // the grid's 188 px cardHeight (28 px overflow). Two
+                // lines is enough for a CTA tile and keeps the tile
+                // visually consistent with the live SpaceCards beside
+                // it (whose description is also maxLines: 2).
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],

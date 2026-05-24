@@ -878,7 +878,13 @@ class _DiscourseRail extends StatelessWidget {
               ),
           ],
           cardWidth: 320,
-          cardHeight: 196,
+          // 240 not 196 — the rail card content (_RailPill + up to
+          // two-line headline + author/space line + Spacer + footer
+          // row with replies / officials counters) intrinsically
+          // needs ~240px; 196 tripped a 44px BOTTOM OVERFLOWED
+          // RenderFlex on /home for any item whose headline wrapped
+          // to two lines.
+          cardHeight: 240,
           gap: AuraSpace.s10,
           minCardsPerRow: 2,
           maxCardsPerRow: 4,

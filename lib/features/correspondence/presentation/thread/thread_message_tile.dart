@@ -420,7 +420,11 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
             if (attachments.isNotEmpty) const SizedBox(height: AuraSpace.s10),
           ],
           if (attachments.isNotEmpty) ...[
-            _MessageAttachmentList(attachments: attachments, isMine: isMine),
+            _MessageAttachmentList(
+              attachments: attachments,
+              isMine: isMine,
+              onDeleteMessage: isMine ? onDelete : null,
+            ),
             const SizedBox(height: AuraSpace.s10),
           ] else if (body.isEmpty) ...[
             Text(
@@ -551,17 +555,28 @@ class _MessageAttachmentList extends StatelessWidget {
   const _MessageAttachmentList({
     required this.attachments,
     required this.isMine,
+    this.onDeleteMessage,
   });
 
   final List<Map<String, dynamic>> attachments;
   final bool isMine;
+
+  /// When set (only on isMine), the image-viewer dialog grows a
+  /// Delete button next to Close. Without this, deleting a sent image
+  /// is a four-tap path: open viewer → close → find "…" → Delete.
+  /// With it, the path is two taps: open viewer → Delete.
+  final VoidCallback? onDeleteMessage;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (var i = 0; i < attachments.length; i++) ...[
-          _MessageAttachmentCard(attachment: attachments[i], isMine: isMine),
+          _MessageAttachmentCard(
+            attachment: attachments[i],
+            isMine: isMine,
+            onDeleteMessage: onDeleteMessage,
+          ),
           if (i != attachments.length - 1) const SizedBox(height: AuraSpace.s8),
         ],
       ],
@@ -577,10 +592,12 @@ class _MessageAttachmentCard extends StatefulWidget {
   const _MessageAttachmentCard({
     required this.attachment,
     required this.isMine,
+    this.onDeleteMessage,
   });
 
   final Map<String, dynamic> attachment;
   final bool isMine;
+  final VoidCallback? onDeleteMessage;
 
   @override
   State<_MessageAttachmentCard> createState() => _MessageAttachmentCardState();
@@ -686,22 +703,48 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
             Positioned(
               top: 8,
               right: 8,
-              child: IconButton(
-                style: IconButton.styleFrom(
-                  backgroundColor: AuraSurface.overlay,
-                  foregroundColor: AuraSurface.ink,
-                ),
-                // Use the dialog's own BuildContext (from the LayoutBuilder)
-                // instead of the outer _MessageAttachmentCardState context.
-                // The card rebuilds on every thread refresh, after which the
-                // captured outer context points at a disposed element and
-                // `Navigator.of(context)` throws "Null check operator used on
-                // a null value" in the gesture handler — wedging the close
-                // button. The dialog's context is alive for as long as the
-                // dialog is mounted, which is exactly when this button can
-                // be tapped.
-                onPressed: () => Navigator.of(ctx).pop(),
-                icon: const Icon(Icons.close),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Delete-from-viewer: collapses the four-tap delete
+                  // path (image → close → "…" → Delete) into two taps
+                  // (image → Delete) when the message is mine.
+                  // Closes the dialog first so the deletion's thread
+                  // refresh doesn't leave a stale dialog mounted on a
+                  // now-deleted message.
+                  if (widget.isMine && widget.onDeleteMessage != null) ...[
+                    IconButton(
+                      tooltip: 'Delete message',
+                      style: IconButton.styleFrom(
+                        backgroundColor: AuraSurface.overlay,
+                        foregroundColor: AuraSurface.coRose,
+                      ),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        widget.onDeleteMessage!();
+                      },
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  IconButton(
+                    style: IconButton.styleFrom(
+                      backgroundColor: AuraSurface.overlay,
+                      foregroundColor: AuraSurface.ink,
+                    ),
+                    // Use the dialog's own BuildContext (from the LayoutBuilder)
+                    // instead of the outer _MessageAttachmentCardState context.
+                    // The card rebuilds on every thread refresh, after which the
+                    // captured outer context points at a disposed element and
+                    // `Navigator.of(context)` throws "Null check operator used on
+                    // a null value" in the gesture handler — wedging the close
+                    // button. The dialog's context is alive for as long as the
+                    // dialog is mounted, which is exactly when this button can
+                    // be tapped.
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
               ),
             ),
             if (title.isNotEmpty)

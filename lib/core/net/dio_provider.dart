@@ -142,8 +142,21 @@ final dioProvider = Provider<Dio>((ref) {
     try {
       final raw = res.headers.map['set-cookie'];
       if (raw == null || raw.isEmpty) return null;
-      for (final line in raw) {
-        final firstPair = line.split(';').first.trim();
+      // Some native HTTP transports collapse multiple Set-Cookie
+      // headers into a single comma-joined string; without splitting
+      // that back into individual cookies, we'd miss the rotated
+      // `aura_refresh` whenever the backend also set another cookie
+      // in the same response — and the next refresh round would then
+      // send the just-invalidated old token and the user would be
+      // ejected to /login. The regex splits only at a comma that is
+      // immediately followed by a cookie-name=value boundary, which
+      // never matches a value comma (e.g. dates inside Expires=).
+      final boundary = RegExp(r',(?=\s*[A-Za-z_][\w-]*=)');
+      final cookies = <String>[
+        for (final line in raw) ...line.split(boundary),
+      ];
+      for (final cookie in cookies) {
+        final firstPair = cookie.split(';').first.trim();
         final eq = firstPair.indexOf('=');
         if (eq <= 0) continue;
         if (firstPair.substring(0, eq).trim() != 'aura_refresh') continue;
@@ -180,6 +193,18 @@ final dioProvider = Provider<Dio>((ref) {
   }
 
   Future<void>? refreshInFlight;
+
+  // Two-strike guard on `clearSessionState()`. A single refresh 401/403
+  // is treated as a transient failure (rotation collision, in-flight
+  // refresh racing with another request, momentary backend hiccup) and
+  // does NOT sign the user out — the request is rejected but the
+  // session is held. Only a SECOND refresh 401/403 within the cooldown
+  // window actually clears the session. Reset on any successful retry.
+  // Captures the auto-signout pattern observed live where an idle
+  // correspondence thread tab flipped authed → unauthed without any
+  // user action.
+  DateTime? lastRefreshFailureAt;
+  const refreshFailureCooldown = Duration(seconds: 30);
 
   // Per-host rate-limit gate: populated on 429, cleared when expiry passes.
   final rateLimitedUntil = <String, DateTime>{};
@@ -549,6 +574,10 @@ final dioProvider = Provider<Dio>((ref) {
           normalizeContentTypeForRequest(req);
 
           final response = await dio.fetch<dynamic>(req);
+          // Successful retry-after-refresh clears any prior strike so
+          // a once-transient failure doesn't pre-arm the signout for
+          // a totally unrelated future 401.
+          lastRefreshFailureAt = null;
           handler.resolve(response);
         } catch (refreshError) {
           final refreshStatus = refreshError is DioException
@@ -556,7 +585,28 @@ final dioProvider = Provider<Dio>((ref) {
               : null;
 
           if (isSafeSessionResetStatus(refreshStatus)) {
-            await clearSessionState();
+            final now = DateTime.now();
+            final lastFail = lastRefreshFailureAt;
+            lastRefreshFailureAt = now;
+            if (lastFail != null &&
+                now.difference(lastFail) <= refreshFailureCooldown) {
+              // Second refresh 401/403 within the cooldown — treat
+              // as a real session reset.
+              debugPrint(
+                '[auth] refresh $refreshStatus twice within '
+                '${refreshFailureCooldown.inSeconds}s — clearing session',
+              );
+              lastRefreshFailureAt = null;
+              await clearSessionState();
+            } else {
+              // First failure within window. Hold the session; the
+              // request is still rejected, but the user keeps their
+              // tokens and the next request gets another chance.
+              debugPrint(
+                '[auth] refresh $refreshStatus — first strike, '
+                'session held',
+              );
+            }
             handler.reject(mapDioException(err));
             return;
           }

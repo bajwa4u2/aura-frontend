@@ -832,7 +832,13 @@ class _ThreadCompactBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctxLine = _contextLine();
     return Container(
-      height: 60,
+      // 68, not 60 — Inter line-heights on a 14pt title + 11pt
+      // subtitle actually need ~62-63 px in vertical extent; the
+      // 60 px constraint tripped a 3 px BOTTOM OVERFLOWED on every
+      // correspondence thread header. Using a Container `height`
+      // (rather than min-height) keeps the bar visually stable
+      // across threads with vs without a subtitle.
+      height: 68,
       decoration: const BoxDecoration(
         color: AuraSurface.card,
         border: Border(
@@ -852,6 +858,7 @@ class _ThreadCompactBar extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   contextData.title,
