@@ -11,6 +11,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../civic_signals/widgets/sector_activity_panel.dart';
 import '../../discourse_intelligence/widgets/discourse_continuity_panel.dart';
+import '../../discourse_intelligence/widgets/institutional_response_history_strip.dart';
 import '../../institution_ontology/models.dart';
 import '../../institution_ontology/providers.dart';
 import '../../institution_ontology/widgets/ontology_identity_chips.dart';
@@ -326,6 +327,8 @@ class _SectorBodyWithActivity extends StatelessWidget {
               classId: classId,
               classLabel: classLabel,
             ),
+            const SizedBox(height: AuraSpace.s12),
+            InstitutionalResponseHistoryStrip(institutionClass: classId),
             const SizedBox(height: AuraSpace.s12),
             DiscourseContinuityPanel(institutionClass: classId),
           ],

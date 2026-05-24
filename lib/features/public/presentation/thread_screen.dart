@@ -17,6 +17,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/surface/aura_discourse_surface.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../feed/data/unified_feed_providers.dart';
+import '../../accountability/widgets/thread_lineage_rail.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
 import '../../posts/data/reactions_repository.dart';
@@ -503,9 +504,22 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                               (e) => e.tag == InsAccountabilityTag.resolved,
                             );
 
+                            final institutionalCount = page.items
+                                .where(_isOfficialReply)
+                                .length;
+
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                ThreadLineageRail(
+                                  item: item,
+                                  replyCount: page.items.length,
+                                  institutionReplyCount: institutionalCount,
+                                ),
+                                if ((item.resolvesPostId ?? '').isNotEmpty ||
+                                    (item.continuesPostId ?? '').isNotEmpty ||
+                                    page.items.isNotEmpty)
+                                  const SizedBox(height: AuraSpace.s12),
                                 if (hasResolution) ...[
                                   _ResolutionBanner(
                                     actorName: timeline

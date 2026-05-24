@@ -16,6 +16,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../accountability/widgets/continuation_chain_rail.dart';
 import '../../discourse_intelligence/models.dart';
 import '../../discourse_intelligence/providers.dart';
 import '../../discourse_intelligence/widgets/continuity_cards.dart';
@@ -236,6 +237,10 @@ class _InstitutionDetailBody extends ConsumerWidget {
                       // never an empty metric box.
                       const SizedBox(height: AuraSpace.s14),
                       DiscourseContinuityPanel(
+                        institutionId: institution.id,
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+                      ContinuationChainRail(
                         institutionId: institution.id,
                       ),
                       const SizedBox(height: AuraSpace.s14),

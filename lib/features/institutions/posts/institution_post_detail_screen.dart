@@ -13,6 +13,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
+import '../../accountability/widgets/accountability_timeline_rail.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
@@ -236,6 +237,10 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      AccountabilityTimelineRail(replies: page.items),
+                      if (page.items.any(
+                          (r) => r.accountabilityTagWire != null))
+                        const SizedBox(height: AuraSpace.s12),
                       for (var i = 0; i < page.items.length; i++) ...[
                         _ReplyCard(
                           reply: page.items[i],

@@ -18,6 +18,7 @@ import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
+import '../../discourse_intelligence/widgets/civic_memory_continuity_cue.dart';
 import '../../public/data/public_spaces_repository.dart';
 import '../../public/domain/space.dart';
 import '../../public/widgets/discourse_card.dart';
@@ -55,6 +56,9 @@ class PublicHomeScreen extends ConsumerWidget {
           ),
           _LiveDiscourseSection(feedAsync: feedAsync, isAuthed: isAuthed),
           _DiscussionPreviewSection(feedAsync: feedAsync, isAuthed: isAuthed),
+          const SizedBox(height: AuraSpace.s14),
+          const CivicMemoryContinuityCue(),
+          const SizedBox(height: AuraSpace.s14),
           const _HowItWorksSection(),
           const _SpacesSection(),
           const _PublicDiscoveryStrip(),
