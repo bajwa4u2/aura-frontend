@@ -5,6 +5,9 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../accountability/widgets/accountability_tag_legend.dart';
+import '../../accountability/widgets/open_commitments_board.dart';
+import '../../accountability/widgets/speech_mode_legend.dart';
 import '../../institutions/ui/institution_ds.dart';
 import '../domain/monetization_kind.dart';
 
@@ -101,6 +104,8 @@ class TransparencyScreen extends StatelessWidget {
             'Host live sessions of any type (briefing, class, research, '
                 'media, internal meeting).',
           ]),
+          const SizedBox(height: AuraSpace.s12),
+          const SpeechModeLegend(),
           const InsSectionGap(),
 
           // ── D. What institutions can buy (paid, labeled) ──────
@@ -172,6 +177,10 @@ class TransparencyScreen extends StatelessWidget {
             'Public correction: institutions are expected to correct '
                 'their own statements where errors are identified.',
           ]),
+          const SizedBox(height: AuraSpace.s12),
+          const AccountabilityTagLegend(),
+          const SizedBox(height: AuraSpace.s12),
+          const OpenCommitmentsBoard(),
           const InsSectionGap(),
 
           // ── F. Pricing ────────────────────────────────────────
