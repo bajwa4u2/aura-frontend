@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/session_providers.dart';
+import '../../../core/compliance/blocks_repository.dart';
+import '../../../core/compliance/report_content_sheet.dart';
+import '../../../core/compliance/report_repository.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -63,6 +67,19 @@ class ReplyUnit extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Apple Store §1.2 UGC compliance — locally hide replies from
+    // any author the viewer has blocked. The backend also filters
+    // these on fetch; this is the instant-hide path so the UI
+    // updates the moment a block is recorded, without waiting on
+    // a refetch.
+    final replyAuthorId = reply.author.id.trim();
+    if (replyAuthorId.isNotEmpty) {
+      final blockedSet = ref.watch(blockedUserIdsProvider).valueOrNull;
+      if (blockedSet != null && blockedSet.contains(replyAuthorId)) {
+        return const SizedBox.shrink();
+      }
+    }
+
     final ctx = reply.author.context;
     final hasBadge = ctx != null && ctx.isMeaningful;
     final initial = reply.author.displayName.trim().isNotEmpty
@@ -214,6 +231,21 @@ class ReplyUnit extends ConsumerWidget {
                     ),
                   ),
                 ),
+              ] else if (ref.watch(authStatusProvider) ==
+                  AuthStatus.authed) ...[
+                const SizedBox(width: AuraSpace.s6),
+                InkWell(
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  onTap: () => _showReplyMenu(context, ref),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.more_vert_rounded,
+                      size: 16,
+                      color: AuraSurface.muted,
+                    ),
+                  ),
+                ),
               ],
             ],
           ),
@@ -274,6 +306,94 @@ class ReplyUnit extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _showReplyMenu(BuildContext context, WidgetRef ref) async {
+    final authorId = reply.author.id.trim();
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AuraSurface.page,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Report this reply'),
+              subtitle: const Text(
+                'A moderator reviews reports within 24 hours.',
+              ),
+              onTap: () => Navigator.of(ctx).pop('report_reply'),
+            ),
+            if (authorId.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.block),
+                title: const Text('Block this author'),
+                subtitle: const Text(
+                  'You will stop seeing their posts and replies.',
+                ),
+                onTap: () => Navigator.of(ctx).pop('block_user'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.of(ctx).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    switch (action) {
+      case 'report_reply':
+        await ReportContentSheet.show(
+          context,
+          targetType: ReportTargetType.reply,
+          targetId: reply.id,
+          contextLabel: 'this reply',
+        );
+        break;
+      case 'block_user':
+        if (authorId.isEmpty) return;
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (dctx) => AlertDialog(
+            title: const Text('Block this author?'),
+            content: const Text(
+              'You will stop seeing this user\'s posts and replies. '
+              'A moderator will review the block within 24 hours.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dctx).pop(true),
+                child: const Text('Block'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || !context.mounted) return;
+        try {
+          await blockUser(ref, authorId);
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Author blocked. A moderator will review within 24 hours.',
+              ),
+            ),
+          );
+        } catch (_) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not block. Try again later.')),
+          );
+        }
+        break;
+    }
   }
 }
 

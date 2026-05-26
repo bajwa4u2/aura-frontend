@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/session_providers.dart';
+import '../../../../core/compliance/blocks_repository.dart';
+import '../../../../core/compliance/report_content_sheet.dart';
+import '../../../../core/compliance/report_repository.dart';
 import '../../../../core/institutions/institution_access_provider.dart';
 import '../../../../core/media/aura_attachment_image.dart';
 import '../../../../core/media/aura_media_viewer.dart';
@@ -698,11 +701,64 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
   }
 
+  /// Apple Store §1.2 UGC compliance — block the post author. Shows a
+  /// confirmation dialog so the action is intentional, then calls the
+  /// backend, invalidates the cached block set, and surfaces a
+  /// success snackbar. Feed widgets that watch
+  /// [blockedUserIdsProvider] hide the blocked author's content
+  /// immediately.
+  Future<void> _confirmBlockAuthor(
+    BuildContext context, {
+    required String authorId,
+    required String contextPostId,
+  }) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Block this author?'),
+        content: const Text(
+          'You will no longer see their posts in your feed. Blocks are '
+          'instant and a moderator is notified for review.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await blockUser(ref, authorId, contextPostId: contextPostId);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Author blocked. A moderator will review within 24 hours.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not complete the block. Please try again.'),
+        ),
+      );
+    }
+  }
+
   Future<void> _showPostMenu(
     BuildContext context, {
     required String postId,
     required String postUrl,
     required String? handle,
+    required String authorId,
     required bool isOwnPost,
   }) async {
     final selected = await showModalBottomSheet<String>(
@@ -757,6 +813,23 @@ class _PostCardState extends ConsumerState<PostCard> {
                   label: 'Share to Email',
                   onTap: () => Navigator.of(ctx).pop('share_email'),
                 ),
+                // Apple Store §1.2 UGC compliance — report + block
+                // affordances on every UGC card. Hidden on the user's
+                // own posts (you can't report or block yourself).
+                if (!isOwnPost) ...[
+                  const Divider(height: AuraSpace.s8),
+                  PostCardMenuActionTile(
+                    icon: Icons.flag_outlined,
+                    label: 'Report this work',
+                    onTap: () => Navigator.of(ctx).pop('report_post'),
+                  ),
+                  if (authorId.isNotEmpty)
+                    PostCardMenuActionTile(
+                      icon: Icons.block_outlined,
+                      label: 'Block this author',
+                      onTap: () => Navigator.of(ctx).pop('block_user'),
+                    ),
+                ],
               ],
             ),
           ),
@@ -769,6 +842,22 @@ class _PostCardState extends ConsumerState<PostCard> {
     switch (selected) {
       case 'delete_post':
         await _deletePost(context, postId);
+        break;
+      case 'report_post':
+        await ReportContentSheet.show(
+          context,
+          targetType: ReportTargetType.post,
+          targetId: postId,
+          contextLabel: 'this post',
+        );
+        break;
+      case 'block_user':
+        if (authorId.isEmpty) break;
+        await _confirmBlockAuthor(
+          context,
+          authorId: authorId,
+          contextPostId: postId,
+        );
         break;
       case 'open_post':
         context.push(FeedRouting.adaptTargetRoute(
@@ -847,6 +936,18 @@ class _PostCardState extends ConsumerState<PostCard> {
     final handle = (a?.handle ?? '').trim();
     final avatarResolved = _resolveAvatarUrl(ref, a?.avatarUrl);
     final contextLine = _authorContextLine(a);
+
+    // Apple Store §1.2 UGC compliance — hide blocked authors'
+    // content instantly without waiting for a server refresh. The
+    // backend filters the feed query too; this is the belt-and-
+    // suspenders side that makes the block feel immediate.
+    final authorIdForBlock = _authorId(a);
+    if (authorIdForBlock.isNotEmpty) {
+      final blocked = ref.watch(blockedUserIdsProvider).valueOrNull;
+      if (blocked != null && blocked.contains(authorIdForBlock)) {
+        return const SizedBox.shrink();
+      }
+    }
 
     final viewerAsync = ref.watch(viewerIdentityProvider);
     final viewer = viewerAsync.valueOrNull;
@@ -941,6 +1042,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                 postId: postId,
                 postUrl: postUrl,
                 handle: handle,
+                authorId: authorIdForBlock,
                 isOwnPost: isOwnPost,
               ),
             ),

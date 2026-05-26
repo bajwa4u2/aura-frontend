@@ -24,6 +24,10 @@ class AuthRepository {
     required String displayName,
     required String firstName,
     required String lastName,
+    // Apple Store §1.2 UGC compliance — caller must affirm acceptance
+    // of the Terms / EULA at the version named in `kTermsVersion`.
+    required bool termsAccepted,
+    required String termsAcceptedVersion,
   }) async {
     try {
       final res = await _dio.post(
@@ -35,6 +39,8 @@ class AuthRepository {
           'displayName': displayName.trim(),
           'firstName': firstName.trim(),
           'lastName': lastName.trim(),
+          'termsAccepted': termsAccepted,
+          'termsAcceptedVersion': termsAcceptedVersion,
         },
       );
 
@@ -46,6 +52,15 @@ class AuthRepository {
         'We could not create your account right now. Please try again.',
       );
     }
+  }
+
+  /// Apple Store §1.2 UGC compliance — record acceptance of a bumped
+  /// Terms / EULA version for an already-signed-in user.
+  Future<void> acceptTerms({required String version}) async {
+    await _dio.post(
+      '/auth/accept-terms',
+      data: {'version': version},
+    );
   }
 
   Future<Map<String, dynamic>> login({

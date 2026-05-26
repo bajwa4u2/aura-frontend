@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/compliance/objectionable_content.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
@@ -2341,6 +2342,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (_textTooLong) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Too long. Please shorten your post.')),
+      );
+      return;
+    }
+
+    // Apple Store §1.2 UGC compliance — client-side first-pass
+    // content filter. Backend re-runs the same rule at publish; this
+    // client check is purely a UX courtesy that fails fast without a
+    // network round-trip.
+    final filterHit = scanForObjectionableContent(_textController.text);
+    if (filterHit != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(kObjectionableContentMessage)),
       );
       return;
     }

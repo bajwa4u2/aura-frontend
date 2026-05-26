@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/compliance/blocks_repository.dart';
+import '../../../core/compliance/report_content_sheet.dart';
+import '../../../core/compliance/report_repository.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/interaction_service.dart';
 import '../../../core/ui/aura_card.dart';
@@ -624,9 +627,9 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                         canCorrespond: canCorrespond,
                         profile: profile,
                       ),
-                      if (isAuthed) ...[
+                      if (isAuthed && !isSelf) ...[
                         const SizedBox(height: AuraSpace.s24),
-                        _reportSection(),
+                        _reportSection(profile),
                       ],
                     ],
                   ),
@@ -638,18 +641,66 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     );
   }
 
-  Widget _reportSection() {
+  Widget _reportSection(Profile profile) {
+    final userId = _cleanValue(profile.id);
     return _surfaceSection(
       title: 'Moderation',
       children: [
         _sectionRow(
           title: 'Report this profile',
-          subtitle: 'Flag content for review by moderators',
+          subtitle: 'A human moderator reviews reports within 24 hours.',
           leading: Icons.flag_outlined,
-          onTap: () => _showMessage('Report submitted. Thank you.'),
+          onTap: userId.isEmpty
+              ? null
+              : () => ReportContentSheet.show(
+                    context,
+                    targetType: ReportTargetType.user,
+                    targetId: userId,
+                    contextLabel: 'this profile',
+                  ),
+        ),
+        _sectionRow(
+          title: 'Block this user',
+          subtitle: 'You will stop seeing their posts and replies.',
+          leading: Icons.block,
+          onTap: userId.isEmpty
+              ? null
+              : () => _confirmBlockProfile(userId),
         ),
       ],
     );
+  }
+
+  Future<void> _confirmBlockProfile(String userId) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Block this user?'),
+        content: const Text(
+          'You will stop seeing this user\'s posts and replies. '
+          'A moderator will review the block within 24 hours.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await blockUser(ref, userId);
+      if (!mounted) return;
+      _showMessage('User blocked. A moderator will review within 24 hours.');
+    } catch (_) {
+      if (!mounted) return;
+      _showMessage('Could not block user. Try again later.');
+    }
   }
 
   @override

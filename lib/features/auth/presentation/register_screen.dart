@@ -1,9 +1,11 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/compliance/terms_version.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -40,6 +42,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _loading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  // Apple Store §1.2 UGC compliance — required acceptance before
+  // registration. Submit is disabled until the user ticks this.
+  bool _termsAccepted = false;
   String? _error;
 
   @override
@@ -183,6 +188,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
+    // Apple Store §1.2 UGC compliance — terms acceptance is required
+    // before any account is created. The backend rejects the request
+    // without it; we surface the message here so users don't even
+    // round-trip when they haven't ticked the box.
+    if (!_termsAccepted) {
+      setState(() => _error =
+          'You must agree to the Terms of Service before creating an account.');
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
@@ -206,6 +221,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         lastName: lastName,
         handle: handle,
         displayName: displayName,
+        termsAccepted: true,
+        termsAcceptedVersion: kTermsVersion,
       );
 
       final emailSent = result['emailSent'] != false;
@@ -287,6 +304,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   confirmPassword: _confirmPassword,
                                   obscurePassword: _obscurePassword,
                                   obscureConfirmPassword: _obscureConfirmPassword,
+                                  termsAccepted: _termsAccepted,
+                                  onToggleTerms: (v) =>
+                                      setState(() => _termsAccepted = v),
                                   nameValidator: _nameValidator,
                                   handleValidator: _handleValidator,
                                   emailValidator: _emailValidator,
@@ -320,6 +340,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 confirmPassword: _confirmPassword,
                                 obscurePassword: _obscurePassword,
                                 obscureConfirmPassword: _obscureConfirmPassword,
+                                termsAccepted: _termsAccepted,
+                                onToggleTerms: (v) =>
+                                    setState(() => _termsAccepted = v),
                                 nameValidator: _nameValidator,
                                 handleValidator: _handleValidator,
                                 emailValidator: _emailValidator,
@@ -450,6 +473,8 @@ class _RegisterFormCard extends StatelessWidget {
     required this.confirmPassword,
     required this.obscurePassword,
     required this.obscureConfirmPassword,
+    required this.termsAccepted,
+    required this.onToggleTerms,
     required this.nameValidator,
     required this.handleValidator,
     required this.emailValidator,
@@ -474,6 +499,9 @@ class _RegisterFormCard extends StatelessWidget {
   final TextEditingController confirmPassword;
   final bool obscurePassword;
   final bool obscureConfirmPassword;
+  // Apple Store §1.2 UGC compliance — Terms / EULA gate state.
+  final bool termsAccepted;
+  final ValueChanged<bool> onToggleTerms;
   final String? Function(String?, String) nameValidator;
   final String? Function(String?) handleValidator;
   final String? Function(String?) emailValidator;
@@ -631,11 +659,68 @@ class _RegisterFormCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AuraSpace.s16),
+              // Apple Store §1.2 UGC compliance — explicit acceptance
+              // of the Terms / EULA is required before account
+              // creation. The Terms text covers: zero tolerance for
+              // objectionable content, zero tolerance for abusive
+              // users, reported content may be removed, offending
+              // users may be suspended/ejected, moderation action
+              // within 24 hours.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: termsAccepted,
+                    onChanged: loading
+                        ? null
+                        : (v) => onToggleTerms(v ?? false),
+                  ),
+                  const SizedBox(width: AuraSpace.s4),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: loading
+                          ? null
+                          : () => onToggleTerms(!termsAccepted),
+                      child: RichText(
+                        text: TextSpan(
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                            height: 1.45,
+                          ),
+                          children: [
+                            const TextSpan(
+                                text:
+                                    'I have read and agree to the '),
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: AuraText.small.copyWith(
+                                color: AuraSurface.accentText,
+                                decoration: TextDecoration.underline,
+                                height: 1.45,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  if (!loading) {
+                                    GoRouter.of(context).push('/terms');
+                                  }
+                                },
+                            ),
+                            const TextSpan(
+                                text:
+                                    '. Aura has zero tolerance for objectionable content and abusive users. Reported content may be removed and offending users may be suspended; moderation action within 24 hours.'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s12),
               SizedBox(
                 width: double.infinity,
                 child: AuraPrimaryButton(
                   label: loading ? 'Creating account…' : 'Create account',
-                  onPressed: loading ? null : onSubmit,
+                  onPressed: (loading || !termsAccepted) ? null : onSubmit,
                   icon: Icons.arrow_forward_rounded,
                 ),
               ),
