@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_responsive.dart';
@@ -97,6 +98,19 @@ class ShellFooter extends StatelessWidget {
                     ),
                     const SizedBox(height: AuraSpace.s16),
                     _FooterBottomRow(year: year, wide: wide),
+                    // Institutional continuity band — see
+                    // docs/ecosystem/ECOSYSTEM_CONTINUITY_ARCHITECTURE.md
+                    // in the personal repo. Aura's attribution copy is
+                    // "Built by Aura Platform LLC."; ecosystem links
+                    // appear in canonical order (Company → Aura →
+                    // Orchestrate → Bajwa Writes → Founder).
+                    const SizedBox(height: AuraSpace.s20),
+                    Container(
+                      height: 1,
+                      color: AuraSurface.divider,
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    const _EcosystemContinuityBand(wide: true),
                   ],
                 );
               },
@@ -306,4 +320,163 @@ class _FooterLink {
 
   final String label;
   final String path;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ECOSYSTEM CONTINUITY BAND
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Renders the canonical institutional band at the foot of the public shell.
+// See docs/ecosystem/ECOSYSTEM_CONTINUITY_ARCHITECTURE.md in the personal
+// repo for the doctrine this implements.
+//
+// Layout: two layers in one row.
+//   Left  — institution lockup: "Aura Platform LLC" wordmark linked to
+//           the company site, plus Aura's attribution copy below it.
+//   Right — five canonical links in doctrine-locked order
+//           (Company → Aura → Orchestrate → Bajwa Writes → Founder),
+//           with the current surface (Aura) marked as the
+//           "you are here" link.
+//
+// Tone: restrained mono-style typography, smaller than the surface-
+// native footer above it. The band orients without competing.
+
+class _EcosystemEntry {
+  const _EcosystemEntry({
+    required this.slug,
+    required this.label,
+    required this.url,
+  });
+  final String slug;
+  final String label;
+  final String url;
+}
+
+const String _kEcosystemCompanyUrl = 'https://company.auraplatform.org';
+
+const List<_EcosystemEntry> _kEcosystemLinks = <_EcosystemEntry>[
+  _EcosystemEntry(slug: 'company',      label: 'Company',      url: _kEcosystemCompanyUrl),
+  _EcosystemEntry(slug: 'aura',         label: 'Aura',         url: 'https://auraplatform.org'),
+  _EcosystemEntry(slug: 'orchestrate',  label: 'Orchestrate',  url: 'https://orchestrateops.com'),
+  _EcosystemEntry(slug: 'bajwa-writes', label: 'Bajwa Writes', url: 'https://bajwawrites.com'),
+  _EcosystemEntry(slug: 'founder',      label: 'Founder',      url: 'https://bajwa.auraplatform.org'),
+];
+
+class _EcosystemContinuityBand extends StatelessWidget {
+  const _EcosystemContinuityBand({required this.wide});
+  final bool wide;
+
+  static const String _kCurrentSlug = 'aura';
+  static const String _kAttributionCopy = 'Built by Aura Platform LLC.';
+
+  @override
+  Widget build(BuildContext context) {
+    final lockup = _institutionLockup(context);
+    const links = _EcosystemLinkRow(currentSlug: _kCurrentSlug);
+    if (wide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(child: lockup),
+          links,
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        lockup,
+        const SizedBox(height: AuraSpace.s8),
+        links,
+      ],
+    );
+  }
+
+  Widget _institutionLockup(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => _openExternal(_kEcosystemCompanyUrl),
+          child: Text(
+            'Aura Platform LLC',
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AuraSurface.ink,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          _kAttributionCopy,
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+      ],
+    );
+  }
+}
+
+class _EcosystemLinkRow extends StatelessWidget {
+  const _EcosystemLinkRow({required this.currentSlug});
+  final String currentSlug;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AuraSpace.s12,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (var i = 0; i < _kEcosystemLinks.length; i++) ...[
+          if (i > 0)
+            Text('·',
+                style: AuraText.small.copyWith(color: AuraSurface.faint)),
+          _EcosystemLink(
+            link: _kEcosystemLinks[i],
+            currentSlug: currentSlug,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _EcosystemLink extends StatelessWidget {
+  const _EcosystemLink({required this.link, required this.currentSlug});
+  final _EcosystemEntry link;
+  final String currentSlug;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrent = link.slug == currentSlug;
+    final style = AuraText.small.copyWith(
+      color: isCurrent ? AuraSurface.ink : AuraSurface.muted,
+      fontWeight: isCurrent ? FontWeight.w500 : FontWeight.w400,
+      decoration: isCurrent ? TextDecoration.underline : TextDecoration.none,
+      decorationColor: AuraSurface.divider,
+      decorationThickness: 1.2,
+    );
+    if (isCurrent) {
+      return Semantics(
+        selected: true,
+        label: '${link.label} (current surface)',
+        child: Text(link.label, style: style),
+      );
+    }
+    return Semantics(
+      link: true,
+      label: 'Open ${link.label} surface',
+      child: InkWell(
+        onTap: () => _openExternal(link.url),
+        child: Text(link.label, style: style),
+      ),
+    );
+  }
+}
+
+Future<void> _openExternal(String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  await launchUrl(uri, mode: LaunchMode.platformDefault);
 }
