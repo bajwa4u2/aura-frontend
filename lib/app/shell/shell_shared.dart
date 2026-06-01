@@ -87,6 +87,14 @@ class ShellFooter extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= _wideBreakpoint;
+                // Reconciled 2026-06-01 — see
+                // docs/ecosystem/FOOTER_RECONCILIATION_2026-06-01.md
+                // in the personal repo. The earlier two-slab footer
+                // (4 columns → bottom row → separate ecosystem band)
+                // read as two stacked footers. The ecosystem is now
+                // integrated into `_FooterBottomRow` (institution
+                // lockup left, canonical links right) — one footer,
+                // closing in two layers within one container.
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -98,19 +106,6 @@ class ShellFooter extends StatelessWidget {
                     ),
                     const SizedBox(height: AuraSpace.s16),
                     _FooterBottomRow(year: year, wide: wide),
-                    // Institutional continuity band — see
-                    // docs/ecosystem/ECOSYSTEM_CONTINUITY_ARCHITECTURE.md
-                    // in the personal repo. Aura's attribution copy is
-                    // "Built by Aura Platform LLC."; ecosystem links
-                    // appear in canonical order (Company → Aura →
-                    // Orchestrate → Bajwa Writes → Founder).
-                    const SizedBox(height: AuraSpace.s20),
-                    Container(
-                      height: 1,
-                      color: AuraSurface.divider,
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    const _EcosystemContinuityBand(wide: true),
                   ],
                 );
               },
@@ -286,30 +281,59 @@ class _FooterBottomRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final copy = Text(
-      '© $year Aura',
-      style: AuraText.micro.copyWith(color: AuraSurface.faint),
+    // Institutional attribution lockup — wordmark linked to the
+    // company surface, plus the Aura-specific attribution copy.
+    // Replaces the previous free-floating "© $year Aura" line; year
+    // moves into the attribution caption so the visual weight of the
+    // institution sits where the surface closes.
+    final lockup = InkWell(
+      onTap: () => _openExternal('https://company.auraplatform.org'),
+      borderRadius: BorderRadius.circular(2),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Aura Platform LLC',
+              style: AuraText.small.copyWith(
+                color: AuraSurface.ink,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Built by Aura Platform LLC · © $year',
+              style: AuraText.micro.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+        ),
+      ),
     );
-    final tagline = Text(
-      'Public discourse · accountable participation',
-      style: AuraText.micro.copyWith(color: AuraSurface.faint),
-    );
+
+    // Inline continuity row — five canonical links in doctrine-locked
+    // order. The current surface (Aura) is the "you are here" marker
+    // and is not tappable.
+    const links = _AuraEcosystemRow(currentSlug: 'aura');
 
     if (wide) {
       return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          copy,
+          lockup,
           const Spacer(),
-          tagline,
+          links,
         ],
       );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        copy,
-        const SizedBox(height: AuraSpace.s4),
-        tagline,
+        lockup,
+        const SizedBox(height: AuraSpace.s8),
+        links,
       ],
     );
   }
@@ -362,63 +386,8 @@ const List<_EcosystemEntry> _kEcosystemLinks = <_EcosystemEntry>[
   _EcosystemEntry(slug: 'founder',      label: 'Founder',      url: 'https://bajwa.auraplatform.org'),
 ];
 
-class _EcosystemContinuityBand extends StatelessWidget {
-  const _EcosystemContinuityBand({required this.wide});
-  final bool wide;
-
-  static const String _kCurrentSlug = 'aura';
-  static const String _kAttributionCopy = 'Built by Aura Platform LLC.';
-
-  @override
-  Widget build(BuildContext context) {
-    final lockup = _institutionLockup(context);
-    const links = _EcosystemLinkRow(currentSlug: _kCurrentSlug);
-    if (wide) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(child: lockup),
-          links,
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        lockup,
-        const SizedBox(height: AuraSpace.s8),
-        links,
-      ],
-    );
-  }
-
-  Widget _institutionLockup(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () => _openExternal(_kEcosystemCompanyUrl),
-          child: Text(
-            'Aura Platform LLC',
-            style: AuraText.small.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AuraSurface.ink,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          _kAttributionCopy,
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
-      ],
-    );
-  }
-}
-
-class _EcosystemLinkRow extends StatelessWidget {
-  const _EcosystemLinkRow({required this.currentSlug});
+class _AuraEcosystemRow extends StatelessWidget {
+  const _AuraEcosystemRow({required this.currentSlug});
   final String currentSlug;
 
   @override
@@ -431,7 +400,7 @@ class _EcosystemLinkRow extends StatelessWidget {
         for (var i = 0; i < _kEcosystemLinks.length; i++) ...[
           if (i > 0)
             Text('·',
-                style: AuraText.small.copyWith(color: AuraSurface.faint)),
+                style: AuraText.micro.copyWith(color: AuraSurface.faint)),
           _EcosystemLink(
             link: _kEcosystemLinks[i],
             currentSlug: currentSlug,
@@ -450,9 +419,9 @@ class _EcosystemLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCurrent = link.slug == currentSlug;
-    final style = AuraText.small.copyWith(
+    final style = AuraText.micro.copyWith(
       color: isCurrent ? AuraSurface.ink : AuraSurface.muted,
-      fontWeight: isCurrent ? FontWeight.w500 : FontWeight.w400,
+      fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
       decoration: isCurrent ? TextDecoration.underline : TextDecoration.none,
       decorationColor: AuraSurface.divider,
       decorationThickness: 1.2,
