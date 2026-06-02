@@ -122,16 +122,17 @@ class _FooterTopRow extends StatelessWidget {
 
   final bool wide;
 
+  // Task #272 — responsibility-boundary cleanup. Founder, white-paper,
+  // supporter, patron, and investor concerns now live on the dedicated
+  // Founder (bajwa.auraplatform.org) and Company (company.auraplatform.org)
+  // surfaces, so they are removed from Aura's product footer. The
+  // Participation column held only supporter/patron/investor relations
+  // (no Aura-specific participation), so it is removed entirely. The
+  // ecosystem continuity band is unaffected. Aura's footer now answers
+  // only "what is Aura?" — Mission, Support, Legal.
   static const _columns = <_FooterColumn>[
     _FooterColumn(title: 'Aura', links: [
       _FooterLink('Mission', '/mission'),
-      _FooterLink('Founder', '/founder'),
-      _FooterLink('White paper', '/white-paper'),
-    ]),
-    _FooterColumn(title: 'Participation', links: [
-      _FooterLink('Supporters', '/supporters'),
-      _FooterLink('Patrons', '/patrons'),
-      _FooterLink('Investors', '/investors'),
     ]),
     _FooterColumn(title: 'Support', links: [
       _FooterLink('Contact', '/contact'),
