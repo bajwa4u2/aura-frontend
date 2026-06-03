@@ -31,7 +31,9 @@ class AuraShellWordmark extends StatelessWidget {
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s4, vertical: AuraSpace.s4),
+            horizontal: AuraSpace.s4,
+            vertical: AuraSpace.s4,
+          ),
           child: SvgPicture.asset(
             _logoAsset,
             height: _logoHeight,
@@ -56,11 +58,30 @@ class AuraShellWordmark extends StatelessWidget {
 class ShellFooter extends StatelessWidget {
   const ShellFooter({super.key});
 
-  static const double maxWidth = 1080;
-  // Tablet/desktop transition for the footer's 4-column → stacked
-  // collapse. Aligned with the canonical tablet breakpoint so the
-  // footer transitions at the same width as the shell.
-  static const double _wideBreakpoint = kTabletBreak; // 900
+  // Footer content shares the public surface's content container so its
+  // edges align with every section above it. The public home/landing
+  // sections center their content at `kHeroWidth` (1360) — the previous
+  // hardcoded 1080 left the footer 280 px narrower than the band directly
+  // above it, so on desktop the full-width dark surface read as
+  // under-filled (a dead void on the right). Resolving to the canonical
+  // content width keeps the footer composed across the same canvas.
+  static const double maxWidth = kHeroWidth; // 1360
+  // Width at which the footer composes into its multi-column desktop
+  // layout (brand left, link columns distributed right, bottom row
+  // spanning full width) instead of stacking. This is a *content* test on
+  // the footer's own available width, not a viewport/shell breakpoint:
+  // brand + three short link columns compose cleanly from ~760 px up.
+  //
+  // It was previously pinned to kTabletBreak (900). The public home wraps
+  // its whole page — footer included — in AuraScaffold's default 920 px
+  // container, leaving the footer only 880 px of inner width. 880 < 900,
+  // so on desktop the footer fell 20 px short of going wide and rendered
+  // stacked: the three columns huddled at the left and the right two-
+  // thirds of the full-bleed dark surface read as an empty void. Lowering
+  // the threshold lets the footer fill that 880 px cleanly. Document /
+  // investor / publication hosts (1080 px container → ~1040 px footer)
+  // were always above either threshold and are unaffected.
+  static const double _wideBreakpoint = 760;
 
   static const _platformNote =
       'Aura is public discourse infrastructure. People raise issues, '
@@ -100,10 +121,7 @@ class ShellFooter extends StatelessWidget {
                   children: [
                     _FooterTopRow(wide: wide),
                     const SizedBox(height: AuraSpace.s24),
-                    Container(
-                      height: 1,
-                      color: AuraSurface.divider,
-                    ),
+                    Container(height: 1, color: AuraSurface.divider),
                     const SizedBox(height: AuraSpace.s16),
                     _FooterBottomRow(year: year, wide: wide),
                   ],
@@ -131,17 +149,21 @@ class _FooterTopRow extends StatelessWidget {
   // ecosystem continuity band is unaffected. Aura's footer now answers
   // only "what is Aura?" — Mission, Support, Legal.
   static const _columns = <_FooterColumn>[
-    _FooterColumn(title: 'Aura', links: [
-      _FooterLink('Mission', '/mission'),
-    ]),
-    _FooterColumn(title: 'Support', links: [
-      _FooterLink('Contact', '/contact'),
-      _FooterLink('Help', '/support/agent'),
-    ]),
-    _FooterColumn(title: 'Legal', links: [
-      _FooterLink('Privacy', '/privacy'),
-      _FooterLink('Terms', '/terms'),
-    ]),
+    _FooterColumn(title: 'Aura', links: [_FooterLink('Mission', '/mission')]),
+    _FooterColumn(
+      title: 'Support',
+      links: [
+        _FooterLink('Contact', '/contact'),
+        _FooterLink('Help', '/support/agent'),
+      ],
+    ),
+    _FooterColumn(
+      title: 'Legal',
+      links: [
+        _FooterLink('Privacy', '/privacy'),
+        _FooterLink('Terms', '/terms'),
+      ],
+    ),
   ];
 
   @override
@@ -206,7 +228,7 @@ class _BrandBlock extends StatelessWidget {
         ),
         const SizedBox(height: AuraSpace.s12),
         ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: wide ? 320 : 480),
+          constraints: BoxConstraints(maxWidth: wide ? 400 : 480),
           child: Text(
             ShellFooter._platformNote,
             style: AuraText.small.copyWith(
@@ -317,15 +339,20 @@ class _FooterBottomRow extends StatelessWidget {
     // Inline continuity row — five canonical links in doctrine-locked
     // order. The current surface (Aura) is the "you are here" marker
     // and is not tappable.
-    const links = _AuraEcosystemRow(currentSlug: 'aura');
 
     if (wide) {
+      // Lockup left, links flush right. The links take the remaining width
+      // via Expanded so the Wrap can wrap to a second line when the row is
+      // narrow (e.g. the public home's ~880 px footer) instead of forcing a
+      // horizontal overflow.
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           lockup,
-          const Spacer(),
-          links,
+          const SizedBox(width: AuraSpace.s20),
+          const Expanded(
+            child: _AuraEcosystemRow(currentSlug: 'aura', alignEnd: true),
+          ),
         ],
       );
     }
@@ -334,7 +361,7 @@ class _FooterBottomRow extends StatelessWidget {
       children: [
         lockup,
         const SizedBox(height: AuraSpace.s8),
-        links,
+        const _AuraEcosystemRow(currentSlug: 'aura'),
       ],
     );
   }
@@ -380,32 +407,51 @@ class _EcosystemEntry {
 const String _kEcosystemCompanyUrl = 'https://company.auraplatform.org';
 
 const List<_EcosystemEntry> _kEcosystemLinks = <_EcosystemEntry>[
-  _EcosystemEntry(slug: 'company',      label: 'Company',      url: _kEcosystemCompanyUrl),
-  _EcosystemEntry(slug: 'aura',         label: 'Aura',         url: 'https://auraplatform.org'),
-  _EcosystemEntry(slug: 'orchestrate',  label: 'Orchestrate',  url: 'https://orchestrateops.com'),
-  _EcosystemEntry(slug: 'bajwa-writes', label: 'Bajwa Writes', url: 'https://bajwawrites.com'),
-  _EcosystemEntry(slug: 'founder',      label: 'Founder',      url: 'https://bajwa.auraplatform.org'),
+  _EcosystemEntry(
+    slug: 'company',
+    label: 'Company',
+    url: _kEcosystemCompanyUrl,
+  ),
+  _EcosystemEntry(slug: 'aura', label: 'Aura', url: 'https://auraplatform.org'),
+  _EcosystemEntry(
+    slug: 'orchestrate',
+    label: 'Orchestrate',
+    url: 'https://orchestrateops.com',
+  ),
+  _EcosystemEntry(
+    slug: 'bajwa-writes',
+    label: 'Bajwa Writes',
+    url: 'https://bajwawrites.com',
+  ),
+  _EcosystemEntry(
+    slug: 'founder',
+    label: 'Founder',
+    url: 'https://bajwa.auraplatform.org',
+  ),
 ];
 
 class _AuraEcosystemRow extends StatelessWidget {
-  const _AuraEcosystemRow({required this.currentSlug});
+  const _AuraEcosystemRow({required this.currentSlug, this.alignEnd = false});
   final String currentSlug;
+
+  /// When the row is given bounded width (wide bottom row, where it sits to
+  /// the right of the institution lockup) it aligns to the trailing edge and
+  /// wraps onto a second line if the five links don't fit. When unbounded
+  /// (stacked layout, full own line) it stays leading-aligned.
+  final bool alignEnd;
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
+      alignment: alignEnd ? WrapAlignment.end : WrapAlignment.start,
       spacing: AuraSpace.s12,
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (var i = 0; i < _kEcosystemLinks.length; i++) ...[
           if (i > 0)
-            Text('·',
-                style: AuraText.micro.copyWith(color: AuraSurface.faint)),
-          _EcosystemLink(
-            link: _kEcosystemLinks[i],
-            currentSlug: currentSlug,
-          ),
+            Text('·', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
+          _EcosystemLink(link: _kEcosystemLinks[i], currentSlug: currentSlug),
         ],
       ],
     );
