@@ -233,9 +233,9 @@ class _Header extends ConsumerWidget {
         const Text('Institutions', style: AuraText.headline),
         const SizedBox(height: AuraSpace.s6),
         Text(
-          'Public ledgers of accountability. Verified organizations '
-          'speak here under their official identity — and members can '
-          'see exactly who said what, on the record.',
+          'Add your institution to Aura: a verified public presence under '
+          'your official identity, where what you say and commit to stays '
+          'on the public record. Verified organizations are listed first.',
           style: AuraText.body.copyWith(
             color: AuraSurface.muted,
             height: 1.55,
@@ -255,13 +255,18 @@ class _AuthAffordance extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isAuthed) {
-      return Row(
+      return Wrap(
+        spacing: AuraSpace.s8,
+        runSpacing: AuraSpace.s8,
         children: [
+          AuraSecondaryButton(
+            label: 'Add your institution',
+            onPressed: () => context.go('/institutions/get-started'),
+          ),
           AuraSecondaryButton(
             label: 'Join Aura',
             onPressed: () => context.go('/register'),
           ),
-          const SizedBox(width: AuraSpace.s8),
           AuraSecondaryButton(
             label: 'Sign in',
             onPressed: () => context.go('/login'),

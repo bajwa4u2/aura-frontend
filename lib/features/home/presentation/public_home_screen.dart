@@ -285,7 +285,7 @@ class _HeroLeft extends StatelessWidget {
               ),
               const SizedBox(width: AuraSpace.s6),
               Text(
-                'Public discourse infrastructure',
+                'Verified institutional communication',
                 style: AuraText.label.copyWith(color: AuraSurface.accentText),
               ),
             ],
@@ -293,12 +293,12 @@ class _HeroLeft extends StatelessWidget {
         ),
         const SizedBox(height: AuraSpace.s20),
         const Text(
-          'Where public discussions\nlead to real outcomes',
+          'A verified public presence\nfor institutions.',
           style: AuraText.display,
         ),
         const SizedBox(height: AuraSpace.s16),
         Text(
-          'People raise issues. Institutions respond. Outcomes are public.',
+          'For governments, universities, agencies, and associations: a verified identity, official communication, and an accountable public record — where the public raises issues, institutions respond, and commitments are resolved in the open. Not a feed. A record.',
           style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
         ),
         const SizedBox(height: AuraSpace.s28),
