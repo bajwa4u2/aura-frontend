@@ -162,14 +162,22 @@ class _ReportContentSheetState extends ConsumerState<ReportContentSheet> {
                 ),
               ),
               const SizedBox(height: AuraSpace.s16),
-              for (final r in ReportReason.values)
-                RadioListTile<ReportReason>(
-                  contentPadding: EdgeInsets.zero,
-                  value: r,
-                  groupValue: _reason,
-                  title: Text(r.label, style: AuraText.body),
-                  onChanged: _busy ? null : (v) => setState(() => _reason = v),
+              RadioGroup<ReportReason>(
+                groupValue: _reason,
+                onChanged: (v) => setState(() => _reason = v),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final r in ReportReason.values)
+                      RadioListTile<ReportReason>(
+                        contentPadding: EdgeInsets.zero,
+                        value: r,
+                        enabled: !_busy,
+                        title: Text(r.label, style: AuraText.body),
+                      ),
+                  ],
                 ),
+              ),
               const SizedBox(height: AuraSpace.s12),
               TextField(
                 controller: _details,
