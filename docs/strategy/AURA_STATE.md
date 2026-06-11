@@ -15,7 +15,7 @@
 
 **What Aura is not.** Not a social network. Not a creator / creator-economy platform. Not a community platform. Not a startup idea. Not under-built.
 
-**Institutional infrastructure posture.** Four distinct shells — **Public, Member, Institution, Admin** — a full institution workspace, a large multi-module backend, and a deployed public web build (per-route SEO / OpenGraph / schema.org). Release artifacts build for Web, Windows, and Android; iOS via Codemagic `ios-testflight`.
+**Institutional infrastructure posture.** Four distinct shells — **Public, Member, Institution, Admin** — a full institution workspace, a large multi-module backend, and a deployed public web build (per-route SEO / OpenGraph / schema.org). Distribution: live on web, published to the Microsoft Store, and distributed through Google Play closed testing (active); Apple App Store review in progress (TestFlight build processed). Release artifacts build for Web, Windows, Android, and iOS.
 
 ## Commercial Reality
 
