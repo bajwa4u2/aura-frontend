@@ -94,15 +94,13 @@
 	  Background modes. We claim ONLY the modes the app actually uses:
 	    - remote-notification: Firebase Messaging delivers push payloads
 	      while the app is suspended (incoming-call ring, message alerts).
-	    - voip: incoming-call socket can wake the app for the call screen.
 	  Each entry must be justifiable to App Store review — keep this list
-	  minimal. Adding `audio` or `fetch` here without a corresponding
-	  feature path is a rejection trigger.
+	  minimal. Adding `audio`, `fetch`, or `voip` here without a corresponding
+	  feature path (e.g. voip requires PushKit + CallKit) is a rejection trigger.
 	-->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
-		<string>voip</string>
 	</array>
 
 	<!--
