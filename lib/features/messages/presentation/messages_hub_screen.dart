@@ -345,7 +345,6 @@ class _MessagesHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuraGradientHeader(
       title: 'Messages',
-      subtitle: 'Direct conversations, shared spaces, and invitations.',
       trailing: Wrap(
         spacing: AuraSpace.s8,
         runSpacing: AuraSpace.s8,

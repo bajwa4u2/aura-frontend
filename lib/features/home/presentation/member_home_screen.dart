@@ -663,27 +663,17 @@ class _BandedItems {
 /// Stronger section title — heading + one-line subtitle. Anchors each
 /// activity band so the home doesn't read as a flat content list.
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title, required this.subtitle});
+  const _SectionTitle({required this.title, this.subtitle});
 
   final String title;
-  final String subtitle;
+
+  /// Retained on the API for call sites but intentionally not rendered: the
+  /// workspace doctrine keeps section labels operational, not explanatory.
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: AuraText.subtitle),
-        const SizedBox(height: 2),
-        Text(
-          subtitle,
-          style: AuraText.small.copyWith(
-            color: AuraSurface.muted,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
+    return Text(title, style: AuraText.subtitle);
   }
 }
 

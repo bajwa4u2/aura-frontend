@@ -115,18 +115,8 @@ class _SearchHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Discover', style: AuraText.headline),
-              const SizedBox(height: AuraSpace.s4),
-              Text(
-                'Search creators, institutions, and public work.',
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
-            ],
-          ),
+        const Expanded(
+          child: Text('Discover', style: AuraText.headline),
         ),
         if (!isAuthed)
           AuraActionPill(

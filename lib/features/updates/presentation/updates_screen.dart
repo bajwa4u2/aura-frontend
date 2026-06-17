@@ -184,17 +184,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
 class _UpdatesHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Updates', style: AuraText.headline),
-        const SizedBox(height: AuraSpace.s6),
-        Text(
-          'Announcements, releases, and public changes from Aura.',
-          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
-        ),
-      ],
-    );
+    return const Text('Updates', style: AuraText.headline);
   }
 }
 

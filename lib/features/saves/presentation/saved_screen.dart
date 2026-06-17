@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/post.dart';
 import '../../posts/presentation/widgets/post_card.dart';
@@ -51,18 +50,8 @@ class SavedScreen extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Saved', style: AuraText.headline),
-                    const SizedBox(height: AuraSpace.s4),
-                    Text(
-                      'Work you chose to keep. Stays private.',
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
-                    ),
-                  ],
-                ),
+              const Expanded(
+                child: Text('Saved', style: AuraText.headline),
               ),
               AuraActionPill(
                 icon: Icons.refresh_rounded,
@@ -71,7 +60,7 @@ class SavedScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: AuraSpace.s24),
+          const SizedBox(height: AuraSpace.s14),
           savedAsync.when(
             data: (raw) {
               final posts = _coercePosts(raw);
