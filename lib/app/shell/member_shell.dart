@@ -46,6 +46,11 @@ const LinearGradient _institutionNavGradient = LinearGradient(
   colors: [_institutionNavBg1, _institutionNavBg2],
 );
 
+/// Key for the institution workspace Scaffold so the mobile slim bar can open
+/// the navigation drawer reliably (Scaffold.of can resolve a nested scaffold).
+final GlobalKey<ScaffoldState> _institutionScaffoldKey =
+    GlobalKey<ScaffoldState>();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MEMBER SHELL
 // ─────────────────────────────────────────────────────────────────────────────
@@ -278,6 +283,7 @@ class InstitutionShell extends ConsumerWidget {
         );
 
         return Scaffold(
+          key: showLeftRail ? null : _institutionScaffoldKey,
           backgroundColor: AuraSurface.page,
           // Mobile navigation drawer — the same rail, opened on demand.
           drawer: showLeftRail
@@ -664,26 +670,25 @@ class _InstitutionMobileBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Builder(
-              builder: (ctx) => Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.menu_rounded,
-                        size: 22, color: AuraSurface.ink),
-                    tooltip: 'Workspace navigation',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => Scaffold.of(ctx).openDrawer(),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.menu_rounded,
+                      size: 22, color: AuraSurface.ink),
+                  tooltip: 'Workspace navigation',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () =>
+                      _institutionScaffoldKey.currentState?.openDrawer(),
+                ),
+                if (pendingTotal > 0)
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: IgnorePointer(
+                        child: _NavCountBadge(count: pendingTotal)),
                   ),
-                  if (pendingTotal > 0)
-                    Positioned(
-                      right: 4,
-                      top: 4,
-                      child:
-                          IgnorePointer(child: _NavCountBadge(count: pendingTotal)),
-                    ),
-                ],
-              ),
+              ],
             ),
             const SizedBox(width: AuraSpace.s2),
             _InstitutionAvatarSmall(name: name, logoUrl: identity?.logoUrl),

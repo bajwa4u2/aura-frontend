@@ -97,6 +97,10 @@ enum AuraRailVisibility {
   /// Render only at the desktop breakpoint (≥ kDesktopBreak).
   desktopOnly,
 
+  /// Render at tablet and above (≥ kTabletBreak). Used by the institution
+  /// workspace, whose left rail is the single navigation home on tablet too.
+  tabletUp,
+
   /// Never render.
   never,
 }
@@ -168,7 +172,8 @@ class AuraSurfacePolicy {
         return const AuraSurfacePolicy(
           maxContentWidth: kWorkspaceWidth,
           composition: AuraSurfaceComposition.multiZone,
-          leftRailVisibility: AuraRailVisibility.desktopOnly,
+          // The institution left rail is the single nav home on tablet too.
+          leftRailVisibility: AuraRailVisibility.tabletUp,
           contextRailVisibility: AuraRailVisibility.desktopOnly,
           density: AuraSurfaceDensity.balanced,
           bodyHorizontalPadding:
@@ -337,10 +342,10 @@ class AuraSurfaceScaffold extends StatelessWidget {
         final isDesktop = width >= kDesktopBreak;
         final isTablet = width >= kTabletBreak;
 
-        final showLeftRail =
-            leftRail != null && _allowed(resolved.leftRailVisibility, isDesktop);
+        final showLeftRail = leftRail != null &&
+            _allowed(resolved.leftRailVisibility, isDesktop, isTablet);
         final showContextRail = contextRail != null &&
-            _allowed(resolved.contextRailVisibility, isDesktop);
+            _allowed(resolved.contextRailVisibility, isDesktop, isTablet);
 
         return Column(
           children: [
@@ -373,12 +378,14 @@ class AuraSurfaceScaffold extends StatelessWidget {
     );
   }
 
-  static bool _allowed(AuraRailVisibility v, bool isDesktop) {
+  static bool _allowed(AuraRailVisibility v, bool isDesktop, bool isTablet) {
     switch (v) {
       case AuraRailVisibility.always:
         return true;
       case AuraRailVisibility.desktopOnly:
         return isDesktop;
+      case AuraRailVisibility.tabletUp:
+        return isTablet;
       case AuraRailVisibility.never:
         return false;
     }
