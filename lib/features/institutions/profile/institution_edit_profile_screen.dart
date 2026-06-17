@@ -243,7 +243,15 @@ class _InstitutionEditProfileScreenState
   // ── Save ────────────────────────────────────────────────────────────────
 
   Future<void> _save(String institutionId) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // Never fail silently — an operator who taps Save and sees nothing
+      // happen reads it as "save is broken". Surface a clear message.
+      setState(() {
+        _error = 'Some fields need attention before saving.';
+        _successMessage = null;
+      });
+      return;
+    }
 
     if (_exceedsLimits) {
       setState(() {
@@ -320,8 +328,42 @@ class _InstitutionEditProfileScreenState
 
   bool get _busy => _saving || _uploadingLogo || _uploadingCover;
 
-  void clearLogo() => setState(() => _logoUrl = null);
-  void clearCover() => setState(() => _coverUrl = null);
+  /// Persist a branding image immediately, so an upload (or removal) saves on
+  /// its own — it must not depend on the operator then clicking "Save changes"
+  /// or on the rest of the form passing validation. Branding fields are a
+  /// targeted partial PATCH.
+  Future<void> _persistBranding(Map<String, dynamic> patch) async {
+    final id = ref.read(institutionIdentityProvider)?.id ?? '';
+    if (id.isEmpty) return;
+    try {
+      await ref
+          .read(institutionsRepositoryProvider)
+          .updateInstitutionProfile(id, patch);
+      ref.invalidate(institutionAccessProvider);
+      if (mounted) {
+        setState(() {
+          _error = null;
+          _successMessage = 'Image saved.';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e is DioException
+            ? _readDioError(e, 'Could not save image.')
+            : 'Could not save image.');
+      }
+    }
+  }
+
+  void clearLogo() {
+    setState(() => _logoUrl = null);
+    _persistBranding({'logoUrl': ''});
+  }
+
+  void clearCover() {
+    setState(() => _coverUrl = null);
+    _persistBranding({'coverUrl': ''});
+  }
 
   Future<void> _pickLogo() => _pickAndUploadImage(isLogo: true);
   Future<void> _pickCover() => _pickAndUploadImage(isLogo: false);
@@ -383,6 +425,7 @@ class _InstitutionEditProfileScreenState
           _coverUrl = newUrl;
         }
       });
+      await _persistBranding(isLogo ? {'logoUrl': newUrl} : {'coverUrl': newUrl});
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() => _error = _readDioError(e, 'Could not upload image.'));
@@ -491,6 +534,7 @@ class _InstitutionEditProfileScreenState
           _coverUrl = url;
         }
       });
+      await _persistBranding(isLogo ? {'logoUrl': url} : {'coverUrl': url});
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {

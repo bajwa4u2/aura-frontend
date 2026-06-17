@@ -129,6 +129,39 @@ class _InstitutionInvitesScreenState
     }
   }
 
+  Future<void> _confirmRevoke(String inviteId, String code) async {
+    if (!mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+        ),
+        title: const Text('Revoke invite', style: AuraText.subtitle),
+        content: Text(
+          'Revoke this invite? The link will stop working immediately and '
+          'cannot be used to join.',
+          style: AuraText.body.copyWith(color: AuraSurface.muted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancel',
+                style: AuraText.small.copyWith(color: AuraSurface.muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Revoke',
+                style: AuraText.small.copyWith(
+                    color: AuraSurface.coRose, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await _revoke(inviteId);
+  }
+
   Future<void> _copyLink(String code) async {
     final origin = Uri.base.origin;
     final link = '$origin/institutions/get-started?mode=join&code=$code';
@@ -142,6 +175,23 @@ class _InstitutionInvitesScreenState
     if (error is DioException) {
       final data = error.response?.data;
       if (data is Map) {
+        // Success envelope is { ok:false, error:{ message, details:{issues} } }.
+        // Prefer the specific validation issue, then the error message, then a
+        // top-level message — so operators see what actually failed instead of
+        // a generic dead-end.
+        final err = data['error'];
+        if (err is Map) {
+          final details = err['details'];
+          if (details is Map && details['issues'] is List) {
+            final issues = (details['issues'] as List)
+                .map((e) => e.toString().trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+            if (issues.isNotEmpty) return issues.join('\n');
+          }
+          final em = err['message']?.toString().trim() ?? '';
+          if (em.isNotEmpty) return em;
+        }
         final msg = data['message']?.toString().trim() ?? '';
         if (msg.isNotEmpty) return msg;
       }
@@ -379,44 +429,66 @@ class _InstitutionInvitesScreenState
                   ),
                 ),
               ),
-              const SizedBox(width: AuraSpace.s8),
-              if (status == 'Active') ...[
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => _copyLink(code),
-                    child: Icon(
-                      isCopied ? Icons.check_rounded : Icons.copy_rounded,
-                      size: 16,
-                      color: isCopied ? AuraSurface.coVerdant : AuraSurface.accentText,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AuraSpace.s8),
+              const SizedBox(width: AuraSpace.s4),
+              // Clear, labelled management surface per invite. Active invites
+              // can be copied or revoked; used/expired invites have no actions.
+              if (status == 'Active')
                 if (isRevoking)
                   const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: 20,
+                    height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 else
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () => _revoke(inviteId),
-                      child: Icon(
-                        Icons.link_off_rounded,
-                        size: 16,
-                        color: AuraSurface.coRose.withValues(alpha: 0.7),
-                      ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert,
+                        size: 18, color: AuraSurface.muted),
+                    tooltip: 'Invite options',
+                    color: AuraSurface.card,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AuraRadius.md),
+                      side: const BorderSide(color: AuraSurface.divider),
                     ),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'copy',
+                        child: Row(
+                          children: [
+                            Icon(
+                              isCopied
+                                  ? Icons.check_rounded
+                                  : Icons.link_rounded,
+                              size: 16,
+                              color: AuraSurface.accentText,
+                            ),
+                            const SizedBox(width: AuraSpace.s10),
+                            Text(isCopied ? 'Copied' : 'Copy invite link',
+                                style: AuraText.small),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'revoke',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.link_off_rounded,
+                                size: 16, color: AuraSurface.coRose),
+                            const SizedBox(width: AuraSpace.s10),
+                            Text('Revoke invite',
+                                style: AuraText.small
+                                    .copyWith(color: AuraSurface.coRose)),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onSelected: (v) {
+                      if (v == 'copy') {
+                        _copyLink(code);
+                      } else if (v == 'revoke') {
+                        _confirmRevoke(inviteId, code);
+                      }
+                    },
                   ),
-              ] else
-                const Icon(
-                  Icons.copy_rounded,
-                  size: 16,
-                  color: AuraSurface.faint,
-                ),
             ],
           ),
           const SizedBox(height: AuraSpace.s8),

@@ -211,48 +211,39 @@ class _InstitutionExploreScreenState
                 constraints: const BoxConstraints(
                   maxWidth: InsSpacing.contentMaxWidth,
                 ),
-                child: InsModeHeader(
-                  title: 'Explore',
-                  primaryAction: canCompose
-                      ? AuraPrimaryButton(
-                          label: 'Compose',
-                          icon: Icons.edit_rounded,
-                          onPressed: () => _onCompose(activeScope),
-                        )
-                      : null,
-                  tabs: scopes.isEmpty
-                      ? null
-                      : _ScopeTabs(
-                          controller: _tabController,
-                          scopes: scopes,
-                          onChanged: (_) => setState(() {}),
+                // Single operational command row: page context + filters +
+                // primary action. No explanatory text, no separate filter row.
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text('Explore', style: AuraText.title),
+                    if (scopes.isNotEmpty) ...[
+                      const SizedBox(width: AuraSpace.s16),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _ScopeTabs(
+                            controller: _tabController,
+                            scopes: scopes,
+                            onChanged: (_) => setState(() {}),
+                          ),
                         ),
+                      ),
+                    ] else
+                      const Spacer(),
+                    if (canCompose) ...[
+                      const SizedBox(width: AuraSpace.s12),
+                      AuraPrimaryButton(
+                        label: 'Compose',
+                        icon: Icons.edit_rounded,
+                        onPressed: () => _onCompose(activeScope),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
           ),
-          if (scopes.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: InsSpacing.screenHPad,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: InsSpacing.contentMaxWidth,
-                  ),
-                  child: Text(
-                    _scopeBlurb(activeScope),
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.faint,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s10),
-          ],
           Expanded(
             child: scopes.isEmpty
                 ? Padding(
@@ -293,17 +284,6 @@ class _InstitutionExploreScreenState
     );
   }
 
-  String _scopeBlurb(_ExploreScopeKey scope) {
-    switch (scope) {
-      case _ExploreScopeKey.public:
-        return 'This institution’s public posts — visible to anyone on Aura. '
-            'For the global feed across all of Aura, use Home.';
-      case _ExploreScopeKey.member:
-        return 'Posts visible to verified members of this institution.';
-      case _ExploreScopeKey.internal:
-        return 'Internal posts — visible only to admins and editors.';
-    }
-  }
 
   String _emptyTitle(_ExploreScopeKey scope) {
     switch (scope) {

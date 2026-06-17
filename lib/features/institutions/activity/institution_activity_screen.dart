@@ -225,15 +225,25 @@ class _InstitutionActivityScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        InsModeHeader(
-                          title: 'Activity',
-                          tabs: _FilterRow(
-                            current: _filter,
-                            onSelect: _selectFilter,
-                            showAdmin: isAdminLike,
-                          ),
+                        // Single command row: page context + filters.
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text('Activity', style: AuraText.title),
+                            const SizedBox(width: AuraSpace.s16),
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: _FilterRow(
+                                  current: _filter,
+                                  onSelect: _selectFilter,
+                                  showAdmin: isAdminLike,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: AuraSpace.s8),
+                        const SizedBox(height: AuraSpace.s10),
                         if (filtered.isEmpty)
                           const InsEmptyState(
                             icon: Icons.timeline_rounded,
