@@ -39,10 +39,22 @@ class _InstitutionMembersScreenState
 
   bool get _isAdmin {
     final r = _callerRole.toUpperCase();
-    return r == 'ADMIN' || r == 'OWNER';
+    // PLATFORM_ADMIN is what listMembers returns when the caller is a platform
+    // admin — the service short-circuits on the platform-admin check before it
+    // ever reads their institution membership role. Such a caller has full
+    // member-management authority on the backend (updateMemberRole/removeMember
+    // both honor the platform-admin bypass), so the workspace controls must be
+    // visible to them too. Without this, an operator who is also a platform
+    // admin (the common case for a verified institution's founder) sees a
+    // read-only member list and cannot change roles from the workspace.
+    return r == 'ADMIN' || r == 'OWNER' || r == 'PLATFORM_ADMIN';
   }
 
-  bool get _isOwner => _callerRole.toUpperCase() == 'OWNER';
+  bool get _isOwner {
+    final r = _callerRole.toUpperCase();
+    // Platform admins outrank owners, so they get the owner-tier options too.
+    return r == 'OWNER' || r == 'PLATFORM_ADMIN';
+  }
 
   @override
   void initState() {
