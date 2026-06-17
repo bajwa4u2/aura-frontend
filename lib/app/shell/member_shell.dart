@@ -18,7 +18,6 @@ import '../../features/institutions/data/institution_pending_counts.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
-import 'public_shell.dart';
 import 'rail/rail_composition.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -223,52 +222,43 @@ class InstitutionShell extends ConsumerWidget {
         final isDesktop = width >= kDesktopBreak; // 1200
         final isTablet = width >= kTabletBreak; // 900
 
-        // Composition strategy — institution shell now composes UNDER
-        // GlobalPlatformShell. The platform bar (Aura wordmark + global
-        // tools) is persistent across every authed route; the
-        // institution identity row is the contextBar BELOW the platform
-        // bar; AuraSurfaceScaffold composes left rail + center + right
-        // rail below the context bar.
-        //   * DESKTOP (≥1200): platform bar + institution identity row +
-        //     left side-nav + center + right context rail.
-        //   * TABLET (900-1199): platform bar + institution identity row
-        //     + horizontal primary nav (in context bar's secondary line)
-        //     + center + bottom nav.
-        //   * MOBILE (<900): platform bar + compact identity + horizontal
-        //     primary nav + center + compact bottom nav.
+        // Workspace navigation doctrine (institution workspace only):
+        //   * DESKTOP / TABLET (≥900): the persistent LEFT RAIL is the single
+        //     home for institution identity + ALL institution navigation. No
+        //     institution context bar, no institution top tabs, no bottom nav.
+        //   * MOBILE (<900): no persistent institution chrome. A slim context
+        //     bar carries only a menu button + identity; the full navigation
+        //     opens on demand in a drawer. No top tabs, no bottom nav.
+        // The result recovers vertical space and lets page content start high.
+        final showLeftRail = isTablet;
+
+        final sideNav = _InstitutionSideNav(
+          currentPath: path,
+          identity: identity,
+          pendingJoinRequests: pendingJoinRequests,
+          pendingInvites: pendingInvites,
+        );
+
         final body = GlobalPlatformShell(
           // Suppress the global search button on institution routes —
           // /search is member-scoped; surfacing it here would leak member
           // content into institution context. The notifications bell and
           // account menu stay (they're platform-level, not member-only).
           searchPath: null,
-          contextBar: _InstitutionContextBar(
-            isDesktop: isDesktop,
-            isTablet: isTablet,
-            identity: identity,
-            // Primary workspace nav (Explore / Activity / Messages /
-            // Spaces / Announcements / Live / Invite) lives in the
-            // context bar at every width. The left side-nav carries
-            // admin + profile tools only; suppressing the primary nav
-            // at desktop left it unreachable, since the side-nav has no
-            // primary entries. Rendering it here at all widths is the
-            // single source of primary-nav truth.
-            showPrimaryNav: true,
-          ),
+          // Desktop/tablet: identity + nav live in the left rail, so no
+          // institution context bar at all. Mobile: a slim bar with a menu
+          // button (opens the nav drawer) + identity — the only institution
+          // chrome on small screens.
+          contextBar: showLeftRail
+              ? null
+              : _InstitutionMobileBar(
+                  identity: identity,
+                  pendingTotal: pendingJoinRequests + pendingInvites,
+                ),
           child: AuraSurfaceScaffold(
             type: AuraSurfaceType.institutionWorkspace,
-            // header is null — the platform bar + context bar are
-            // already rendered ABOVE the surface scaffold by
-            // GlobalPlatformShell.
             header: null,
-            leftRail: isDesktop
-                ? _InstitutionSideNav(
-                    currentPath: path,
-                    identity: identity,
-                    pendingJoinRequests: pendingJoinRequests,
-                    pendingInvites: pendingInvites,
-                  )
-                : null,
+            leftRail: showLeftRail ? sideNav : null,
             center: isPreview
                 ? Column(
                     children: [
@@ -282,20 +272,27 @@ class InstitutionShell extends ConsumerWidget {
                     modules: _institutionContextModules(context, identity),
                   )
                 : null,
-            footer: !isDesktop
-                ? _InstitutionBottomNav(
-                    currentPath: path,
-                    compact: !isTablet,
-                    identity: identity,
-                    pendingJoinRequests: pendingJoinRequests,
-                    pendingInvites: pendingInvites,
-                  )
-                : null,
+            // Institution bottom navigation removed from the workspace.
+            footer: null,
           ),
         );
 
         return Scaffold(
           backgroundColor: AuraSurface.page,
+          // Mobile navigation drawer — the same rail, opened on demand.
+          drawer: showLeftRail
+              ? null
+              : Drawer(
+                  backgroundColor: _institutionNavBg1,
+                  width: 288,
+                  child: _InstitutionSideNav(
+                    currentPath: path,
+                    identity: identity,
+                    pendingJoinRequests: pendingJoinRequests,
+                    pendingInvites: pendingInvites,
+                    inDrawer: true,
+                  ),
+                ),
           body: SafeArea(
             top: true,
             bottom: false,
@@ -638,389 +635,76 @@ class _PreviewChip extends StatelessWidget {
 // wordmark + account/search/notifications/live tools live in the
 // persistent GlobalPlatformShell above. If you need to restyle the
 // global header, edit `global_platform_shell.dart`, not here.
-// ─────────────────────────────────────────────────────────────────────────────
-// INSTITUTION HEADER — identity row + primary workspace nav row
-// ─────────────────────────────────────────────────────────────────────────────
 
-/// Institution shell context bar. Renders BELOW the GlobalPlatformShell
-/// platform bar, ABOVE the AuraSurfaceScaffold body. Owns: institution
-/// avatar + name + verified badge + workspace badge, plus the
-/// horizontal primary-nav strip at tablet/mobile widths.
-///
-/// Does NOT own: platform identity (Aura wordmark), account menu,
-/// search, notifications. Those live in GlobalPlatformShell and stay
-/// stable across all authenticated routes.
-class _InstitutionContextBar extends StatelessWidget {
-  const _InstitutionContextBar({
-    required this.isDesktop,
-    required this.isTablet,
-    required this.identity,
-    this.showPrimaryNav = true,
-  });
+// =============================================================================
+// INSTITUTION MOBILE BAR — slim, on-demand workspace nav affordance.
+// Carries only a menu button (opens the navigation drawer) + institution
+// identity. No persistent top tabs and no bottom nav; the full navigation
+// lives in the drawer (same rail as desktop/tablet).
+// =============================================================================
 
-  final bool isDesktop;
-  final bool isTablet;
+class _InstitutionMobileBar extends StatelessWidget {
+  const _InstitutionMobileBar({required this.identity, this.pendingTotal = 0});
+
   final InstitutionIdentity? identity;
-
-  /// When false, the horizontal primary-nav row is suppressed. In
-  /// practice callers should leave this true — the left side-nav only
-  /// carries admin/profile tools (Members / Join Requests / Domains /
-  /// Overview / Profile / Edit Profile / Public Preview); the primary
-  /// workspace nav (Explore / Activity / Messages / Spaces /
-  /// Announcements / Live / Invite) lives ONLY in this context bar, so
-  /// suppressing it removes the only entry point.
-  final bool showPrimaryNav;
+  final int pendingTotal;
 
   @override
   Widget build(BuildContext context) {
-    final hPad = isDesktop
-        ? AuraSpace.s24
-        : isTablet
-            ? AuraSpace.s20
-            : AuraSpace.s16;
-
     final name = identity?.name ?? '';
-    final logoUrl = identity?.logoUrl;
-    final currentPath = GoRouterState.of(context).uri.path;
-
-    // ─────────────────────────────────────────────────────────────────
-    //   UNIFIED INSTITUTION CONTEXT ROW
-    // ─────────────────────────────────────────────────────────────────
-    //
-    // The institution chrome used to stack TWO rows below the global
-    // platform bar — identity (avatar + name + badges) above the
-    // primary nav (Explore / Activity / …). That meant browsers showed
-    // ~144 px of chrome (56 platform + ~88 context) before content
-    // even began. We now compose identity + primary nav as a SINGLE
-    // row separated by a thin vertical rule, dropping the context bar
-    // to ~40 px and total chrome to ~96 px.
-    //
-    // What this preserves:
-    //   * GlobalPlatformShell ownership (still the only global bar).
-    //   * Every primary nav route (Explore / Activity / Messages /
-    //     Spaces / Announcements / Live / Invite).
-    //   * Active-tab state via `_PrimaryNavTab`.
-    //   * Horizontal scroll for the nav strip at narrow widths.
-    //   * The institution identity gradient + accent border.
-    //
-    // What it explicitly does NOT do:
-    //   * Stack the primary nav vertically — that was the prior bug.
-    //   * Merge institution identity into the platform bar — the
-    //     platform bar stays shell-agnostic.
-    //   * Hide nav items behind a menu on desktop — every route
-    //     remains directly reachable.
     return Container(
       decoration: const BoxDecoration(
         gradient: _institutionHeaderGradient,
-        border: Border(
-          bottom: BorderSide(color: Color(0x220D9488)),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0x220D9488))),
       ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-              maxWidth: PublicShell.maxContentWidth + 160),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              hPad,
-              AuraSpace.s4,
-              hPad,
-              AuraSpace.s4,
-            ),
-            child: Row(
-              children: [
-                _InstitutionAvatarSmall(name: name, logoUrl: logoUrl),
-                const SizedBox(width: AuraSpace.s8),
-                // Name is only shown at desktop widths — at tablet/
-                // mobile the avatar + badges already identify the
-                // workspace, and the primary nav needs the horizontal
-                // room. The previous implementation showed the name
-                // on tablet too, which crowded the nav strip and
-                // contributed to the vertical-stack regression.
-                if (isDesktop && name.isNotEmpty) ...[
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 200),
-                    child: Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AuraText.small.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AuraSurface.ink,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                ],
-                // Verified + Workspace badges removed from the header
-                // entirely (user direction). They competed with the
-                // 7-tab primary nav strip even at desktop widths,
-                // pushing nav into the horizontal scroll region where
-                // it was not mouse-discoverable. The teal-tinted
-                // institution gradient + avatar + (desktop-only) name
-                // already establish workspace context; verified status
-                // surfaces on institution profile pages where it
-                // carries weight.
-                //
-                // Render the thin vertical rule only when the name is
-                // visible (desktop) so the identity cluster still has
-                // a visible boundary; at narrower widths the avatar
-                // alone separates identity from nav cleanly.
-                if (isDesktop && name.isNotEmpty) ...[
-                  Container(
-                    width: 1,
-                    height: 18,
-                    color: const Color(0x33B981A8),
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                ],
-                // Primary nav fills the remaining row width. It
-                // already wraps a `SingleChildScrollView(horizontal)`,
-                // so at narrow widths the user scrolls horizontally
-                // rather than the strip wrapping to a second line.
-                if (showPrimaryNav)
-                  Expanded(
-                    child: _InstitutionPrimaryNav(
-                      identity: identity,
-                      currentPath: currentPath,
-                      isDesktop: isDesktop,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s8,
+          vertical: AuraSpace.s2,
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INSTITUTION PRIMARY NAV — Explore / Activity / Messages / Spaces /
-// Announcements / Live / Invite. Lives in the header row, scrolls
-// horizontally on tight widths so all 7 tabs remain reachable.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _InstitutionPrimaryNav extends StatelessWidget {
-  const _InstitutionPrimaryNav({
-    required this.identity,
-    required this.currentPath,
-    required this.isDesktop,
-  });
-
-  final InstitutionIdentity? identity;
-  final String currentPath;
-  final bool isDesktop;
-
-  @override
-  Widget build(BuildContext context) {
-    final id = identity?.id ?? '';
-    final items = _institutionPrimaryItems(id);
-
-    // Horizontal scroll strip. The previous implementation used `Wrap`,
-    // which together with each tab's internal `Center` widget caused
-    // every tab to balloon to the Wrap's full width — producing a
-    // vertical stack of seven tabs at desktop. A single-row horizontal
-    // strip is the contract: at desktop (≥1200), all 7 tabs fit on one
-    // line and no scroll is engaged; at tablet/mobile, horizontal
-    // scroll lets the user reach overflow tabs without breaking the
-    // single-row reading order. Active selection is preserved by
-    // `_PrimaryNavTab` (accent underline).
-    final strip = Padding(
-      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s2),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const ClampingScrollPhysics(),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            for (final item in items)
-              _PrimaryNavTab(
-                label: item.label,
-                selected: item.matcher(currentPath),
-                disabled: item.path == null,
-                onTap: () {
-                  final target = item.path;
-                  if (target == null) return;
-                  if (target.split('?')[0] == currentPath.split('?')[0]) {
-                    return;
-                  }
-                  context.go(target);
-                },
+            Builder(
+              builder: (ctx) => Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.menu_rounded,
+                        size: 22, color: AuraSurface.ink),
+                    tooltip: 'Workspace navigation',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => Scaffold.of(ctx).openDrawer(),
+                  ),
+                  if (pendingTotal > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child:
+                          IgnorePointer(child: _NavCountBadge(count: pendingTotal)),
+                    ),
+                ],
               ),
+            ),
+            const SizedBox(width: AuraSpace.s2),
+            _InstitutionAvatarSmall(name: name, logoUrl: identity?.logoUrl),
+            const SizedBox(width: AuraSpace.s8),
+            Expanded(
+              child: Text(
+                name.isEmpty ? 'Workspace' : name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AuraText.small.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AuraSurface.ink,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
-
-    // At desktop all tabs fit on one line, so no affordance is needed. At
-    // tablet/mobile the strip scrolls horizontally; a right-edge fade signals
-    // that more tabs (e.g. Announcements / Live) lie off-screen — previously
-    // they were silently cut off with no hint they existed.
-    if (isDesktop) return strip;
-    return Stack(
-      children: [
-        strip,
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          child: IgnorePointer(
-            child: Container(
-              width: 24,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0x000F2535), Color(0xFF0F2535)],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }
-
-List<_PrimaryNavItem> _institutionPrimaryItems(String id) {
-  return [
-    _PrimaryNavItem(
-      label: 'Explore',
-      path: id.isNotEmpty
-          ? '/institution/$id/explore'
-          : '/institution/dashboard',
-      matcher: (p) =>
-          p == '/institution/dashboard' ||
-          (p.startsWith('/institution/') && p.contains('/explore')),
-    ),
-    _PrimaryNavItem(
-      label: 'Activity',
-      path: id.isNotEmpty ? '/institution/$id/activity' : null,
-      matcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/activity'),
-    ),
-    _PrimaryNavItem(
-      label: 'Messages',
-      path: id.isNotEmpty ? '/institution/$id/messages' : null,
-      matcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/messages'),
-    ),
-    _PrimaryNavItem(
-      label: 'Spaces',
-      path: id.isNotEmpty ? '/institution/$id/spaces' : null,
-      matcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/spaces'),
-    ),
-    _PrimaryNavItem(
-      label: 'Announcements',
-      path: id.isNotEmpty ? '/institution/$id/announcements' : null,
-      matcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/announcements'),
-    ),
-    _PrimaryNavItem(
-      label: 'Live',
-      // Phase-7 regression fix — every other institution tab passes the
-      // active id explicitly. Live used to use the shorthand
-      // `/institution/live-rooms`, which crashed when the identity
-      // provider was null at navigation time. Match the rest of the
-      // tabs so the screen always receives a real id.
-      path: id.isNotEmpty ? '/institution/$id/live-rooms' : null,
-      matcher: (p) =>
-          p == '/institution/live-rooms' ||
-          (p.startsWith('/institution/') && p.contains('/live')),
-    ),
-    // 'Invite' was moved OUT of the primary (communicate) nav into the
-    // sidebar ADMIN group next to Members and Join Requests. This gives a
-    // learnable rule — top nav = communicate/participate, side nav =
-    // manage/configure — and groups all three member-access tools together.
-  ];
-}
-
-class _PrimaryNavItem {
-  const _PrimaryNavItem({
-    required this.label,
-    required this.path,
-    required this.matcher,
-  });
-
-  final String label;
-  final String? path;
-  final bool Function(String) matcher;
-}
-
-class _PrimaryNavTab extends StatelessWidget {
-  const _PrimaryNavTab({
-    required this.label,
-    required this.selected,
-    required this.disabled,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final bool disabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected
-        ? _institutionAccentText
-        : disabled
-            ? AuraSurface.faint.withValues(alpha: 0.45)
-            : AuraSurface.faint;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Semantics(
-        button: !disabled,
-        label: label,
-        child: MouseRegion(
-          cursor:
-              disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: disabled ? null : onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s12,
-                // Reduced from s8 → s6 in the multi-context consolidation
-                // pass. Tab content (text ~17 + 2·6 = 29 px) plus the
-                // 4-px outer context-bar padding gives a ~37-px context
-                // band instead of the prior ~41 px. The accent-underline
-                // marker stays 2 px wide and visually crisp at this
-                // tighter height.
-                vertical: AuraSpace.s6,
-              ),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: selected ? _institutionAccent : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-              ),
-              // No `Center` wrap — Center expands to its parent's max
-              // width, which inside a horizontal strip used to make
-              // each tab consume the whole row. The Text widget reports
-              // its own intrinsic width, so the tab sizes itself to
-              // content.
-              child: Text(
-                label,
-                maxLines: 1,
-                style: AuraText.small.copyWith(
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  color: color,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _InstitutionAvatarSmall extends StatelessWidget {
   const _InstitutionAvatarSmall({required this.name, this.logoUrl});
 
@@ -1305,10 +989,77 @@ List<_InstEntry> _buildInstEntries(
   final slug = identity?.slug ?? '';
   final isAdmin = identity?.isAdmin ?? false;
 
-  // Sidebar holds institution admin + profile tools only.
-  // Primary workspace surfaces (Explore/Activity/Messages/Spaces/
-  // Announcements/Live/Invite) live in the institution header above.
+  String? sectionPath(String section) =>
+      id.isNotEmpty ? '/institution/$id/$section' : null;
+
+  // The left rail is now the single home for ALL institution navigation,
+  // grouped by intent:
+  //   WORKSPACE — communicate / participate
+  //   ADMIN     — manage access + trust
+  //   IDENTITY  — the institution's public face
   return [
+    // ── WORKSPACE ──────────────────────────────────────────────────────────
+    _InstEntry(
+      sectionLabel: 'WORKSPACE',
+      label: 'Overview',
+      icon: Icons.grid_view_outlined,
+      selectedIcon: Icons.grid_view_rounded,
+      pathBuilder: (_) => '/institution/dashboard',
+      pathMatcher: (p) =>
+          p == '/institution/dashboard' ||
+          (p.startsWith('/institution/') && p.endsWith('/dashboard')),
+    ),
+    _InstEntry(
+      label: 'Explore',
+      icon: Icons.explore_outlined,
+      selectedIcon: Icons.explore_rounded,
+      pathBuilder: (_) =>
+          id.isNotEmpty ? '/institution/$id/explore' : '/institution/dashboard',
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.contains('/explore'),
+    ),
+    _InstEntry(
+      label: 'Activity',
+      icon: Icons.timeline_outlined,
+      selectedIcon: Icons.timeline_rounded,
+      pathBuilder: (_) => sectionPath('activity'),
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.contains('/activity'),
+    ),
+    _InstEntry(
+      label: 'Announcements',
+      icon: Icons.campaign_outlined,
+      selectedIcon: Icons.campaign_rounded,
+      pathBuilder: (_) => sectionPath('announcements'),
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.contains('/announcements'),
+    ),
+    _InstEntry(
+      label: 'Live',
+      icon: Icons.sensors_outlined,
+      selectedIcon: Icons.sensors_rounded,
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/live-rooms' : null,
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.contains('/live'),
+    ),
+    _InstEntry(
+      label: 'Spaces',
+      icon: Icons.forum_outlined,
+      selectedIcon: Icons.forum_rounded,
+      pathBuilder: (_) => sectionPath('spaces'),
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.contains('/spaces'),
+    ),
+    _InstEntry(
+      label: 'Messages',
+      icon: Icons.chat_bubble_outline_rounded,
+      selectedIcon: Icons.chat_bubble_rounded,
+      pathBuilder: (_) => sectionPath('messages'),
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.contains('/messages'),
+    ),
+
+    // ── ADMIN ──────────────────────────────────────────────────────────────
     _InstEntry(
       sectionLabel: 'ADMIN',
       label: 'Members',
@@ -1330,8 +1081,6 @@ List<_InstEntry> _buildInstEntries(
       pathMatcher: (p) =>
           p.contains('/join-requests') && p.startsWith('/institution/'),
     ),
-    // Invites lives here (not in the top nav) so all three member-access
-    // tools — Members / Join Requests / Invites — sit together under ADMIN.
     _InstEntry(
       label: 'Invites',
       icon: Icons.mail_outline_rounded,
@@ -1347,27 +1096,14 @@ List<_InstEntry> _buildInstEntries(
       label: 'Domains',
       icon: Icons.language_rounded,
       selectedIcon: Icons.language_rounded,
-      // Routing-hardening — every workspace tab routes through the
-      // canonical id-aware path. Disabled (null) when no id is yet
-      // resolved so the tab fails closed instead of routing through
-      // a shorthand redirect mid-bootstrap.
       pathBuilder: (_) => id.isNotEmpty
           ? institutionWorkspacePath(id, InstitutionSection.domains)
           : null,
     ),
 
+    // ── IDENTITY ───────────────────────────────────────────────────────────
     _InstEntry(
-      sectionLabel: 'PROFILE',
-      label: 'Overview',
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view_rounded,
-      // Dashboard is the global selector — kept at /institution/dashboard.
-      pathBuilder: (_) => '/institution/dashboard',
-      pathMatcher: (p) =>
-          p == '/institution/dashboard' ||
-          (p.startsWith('/institution/') && p.endsWith('/dashboard')),
-    ),
-    _InstEntry(
+      sectionLabel: 'IDENTITY',
       label: 'Profile',
       icon: Icons.badge_outlined,
       selectedIcon: Icons.badge_rounded,
@@ -1388,15 +1124,11 @@ List<_InstEntry> _buildInstEntries(
       label: 'Public Preview',
       icon: Icons.open_in_new_rounded,
       selectedIcon: Icons.open_in_new_rounded,
-      // Shell-preserving variant: keeps the user inside InstitutionShell so
-      // the preview is reachable from the workspace without dropping
-      // institution context. Only fires when both id and slug are loaded.
       pathBuilder: (_) => (slug.isNotEmpty && id.isNotEmpty)
           ? '/institution/$id/institutions/$slug'
           : null,
       pathMatcher: (p) =>
-          p.startsWith('/institution/') &&
-          p.contains('/institutions/'),
+          p.startsWith('/institution/') && p.contains('/institutions/'),
     ),
   ];
 }
@@ -1407,12 +1139,17 @@ class _InstitutionSideNav extends StatelessWidget {
     required this.identity,
     this.pendingJoinRequests = 0,
     this.pendingInvites = 0,
+    this.inDrawer = false,
   });
 
   final String currentPath;
   final InstitutionIdentity? identity;
   final int pendingJoinRequests;
   final int pendingInvites;
+
+  /// When true the rail renders as the mobile navigation drawer: it expands to
+  /// the drawer width and tapping a destination closes the drawer.
+  final bool inDrawer;
 
   @override
   Widget build(BuildContext context) {
@@ -1422,42 +1159,127 @@ class _InstitutionSideNav extends StatelessWidget {
       pendingInvites: pendingInvites,
     );
 
+    final list = ListView(
+      padding: const EdgeInsets.fromLTRB(0, AuraSpace.s8, 0, AuraSpace.s20),
+      children: [
+        // Institution identity now lives at the top of the rail (it left the
+        // old context bar). It is the workspace's anchor on every screen.
+        _RailIdentityHeader(identity: identity),
+        const SizedBox(height: AuraSpace.s4),
+        for (final entry in entries) ...[
+          if (entry.sectionLabel != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s20,
+                AuraSpace.s12,
+                AuraSpace.s12,
+                AuraSpace.s4,
+              ),
+              child: Text(
+                entry.sectionLabel!,
+                style: AuraText.micro.copyWith(
+                  color: _institutionAccent.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                  fontSize: 9.5,
+                ),
+              ),
+            ),
+          _InstitutionSideNavTile(
+            entry: entry,
+            selected: entry.isSelected(currentPath, identity),
+            identity: identity,
+            currentPath: currentPath,
+            onNavigate:
+                inDrawer ? () => Navigator.of(context).maybePop() : null,
+          ),
+        ],
+      ],
+    );
+
+    if (inDrawer) {
+      // The Drawer parent already provides width + surface; just supply the
+      // gradient and the scrolling nav list.
+      return DecoratedBox(
+        decoration: const BoxDecoration(gradient: _institutionNavGradient),
+        child: SafeArea(child: list),
+      );
+    }
+
     return Container(
       width: 232,
       decoration: const BoxDecoration(
         gradient: _institutionNavGradient,
         border: Border(right: BorderSide(color: Color(0x14FFFFFF))),
       ),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(0, AuraSpace.s12, 0, AuraSpace.s20),
-        children: [
-          for (final entry in entries) ...[
-            if (entry.sectionLabel != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s20,
-                  AuraSpace.s14,
-                  AuraSpace.s12,
-                  AuraSpace.s4,
-                ),
-                child: Text(
-                  entry.sectionLabel!,
-                  style: AuraText.micro.copyWith(
-                    color: _institutionAccent.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                    fontSize: 9.5,
+      child: list,
+    );
+  }
+}
+
+/// Compact institution identity block shown at the top of the rail / drawer.
+class _RailIdentityHeader extends StatelessWidget {
+  const _RailIdentityHeader({required this.identity});
+
+  final InstitutionIdentity? identity;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = identity?.name ?? '';
+    final verified = identity?.isVerified ?? false;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s8,
+        AuraSpace.s12,
+        AuraSpace.s8,
+      ),
+      child: GestureDetector(
+        onTap: () => context.go('/institution/dashboard'),
+        behavior: HitTestBehavior.opaque,
+        child: Row(
+          children: [
+            _InstitutionAvatarSmall(name: name, logoUrl: identity?.logoUrl),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name.isEmpty ? 'Institution' : name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AuraSurface.ink,
+                    ),
                   ),
-                ),
+                  if (verified)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.verified_rounded,
+                          size: 12,
+                          color: _institutionAccentText,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          'Verified',
+                          style: AuraText.micro.copyWith(
+                            color: _institutionAccentText,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
-            _InstitutionSideNavTile(
-              entry: entry,
-              selected: entry.isSelected(currentPath, identity),
-              identity: identity,
-              currentPath: currentPath,
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1469,12 +1291,16 @@ class _InstitutionSideNavTile extends StatelessWidget {
     required this.selected,
     required this.identity,
     required this.currentPath,
+    this.onNavigate,
   });
 
   final _InstEntry entry;
   final bool selected;
   final InstitutionIdentity? identity;
   final String currentPath;
+
+  /// Called after a successful navigation — used to close the mobile drawer.
+  final VoidCallback? onNavigate;
 
   @override
   Widget build(BuildContext context) {
@@ -1494,6 +1320,7 @@ class _InstitutionSideNavTile extends StatelessWidget {
     void onTap() {
       if (isDisabled) return;
       if (target != currentPath.split('?')[0]) context.go(target);
+      onNavigate?.call();
     }
 
     return Semantics(
@@ -1601,324 +1428,6 @@ class _InstitutionSideNavTile extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INSTITUTION BOTTOM NAV — admin/profile tools on small screens.
-// Primary workspace nav (Explore/Activity/Messages/Spaces/Announcements/
-// Live/Invite) lives in the institution header row 2 instead.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _InstitutionBottomNav extends StatelessWidget {
-  const _InstitutionBottomNav({
-    required this.currentPath,
-    required this.compact,
-    required this.identity,
-    this.pendingJoinRequests = 0,
-    this.pendingInvites = 0,
-  });
-
-  final String currentPath;
-  final bool compact;
-  final InstitutionIdentity? identity;
-  final int pendingJoinRequests;
-  final int pendingInvites;
-
-  @override
-  Widget build(BuildContext context) {
-    final id = identity?.id ?? '';
-    final items = <_InstBottomItem>[
-      _InstBottomItem(
-        label: 'Overview',
-        icon: Icons.grid_view_outlined,
-        selectedIcon: Icons.grid_view_rounded,
-        path: '/institution/dashboard',
-        matcher: (p) => p == '/institution/dashboard',
-      ),
-      _InstBottomItem(
-        label: 'Members',
-        icon: Icons.people_outline_rounded,
-        selectedIcon: Icons.people_rounded,
-        path: id.isNotEmpty ? '/institution/$id/members' : null,
-        matcher: (p) =>
-            p.contains('/members') && p.startsWith('/institution/'),
-      ),
-      _InstBottomItem(
-        label: 'Domains',
-        icon: Icons.language_rounded,
-        selectedIcon: Icons.language_rounded,
-        path: id.isNotEmpty
-            ? institutionWorkspacePath(id, InstitutionSection.domains)
-            : null,
-        matcher: (p) =>
-            p == '/institution/domains' ||
-            (p.startsWith('/institution/') && p.endsWith('/domains')),
-      ),
-      _InstBottomItem(
-        label: 'Profile',
-        icon: Icons.badge_outlined,
-        selectedIcon: Icons.badge_rounded,
-        path: id.isNotEmpty
-            ? institutionWorkspacePath(id, InstitutionSection.profile)
-            : null,
-        matcher: (p) =>
-            p == '/institution/profile' ||
-            (p.startsWith('/institution/') && p.endsWith('/profile')),
-      ),
-    ];
-
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: _institutionNavGradient,
-        border: Border(top: BorderSide(color: Color(0x220D9488))),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? AuraSpace.s4 : AuraSpace.s8,
-            vertical: compact ? AuraSpace.s6 : AuraSpace.s8,
-          ),
-          child: Row(
-            children: [
-              for (final item in items)
-                Expanded(
-                  child: _InstitutionBottomNavBtn(
-                    label: item.label,
-                    icon: item.icon,
-                    selectedIcon: item.selectedIcon,
-                    selected: item.matcher(currentPath),
-                    compact: compact,
-                    disabled: item.path == null,
-                    onTap: item.path == null || item.matcher(currentPath)
-                        ? null
-                        : () => context.go(item.path!),
-                  ),
-                ),
-              Expanded(
-                child: _InstitutionBottomNavMore(
-                  identity: identity,
-                  compact: compact,
-                  badge: pendingJoinRequests + pendingInvites,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InstBottomItem {
-  const _InstBottomItem({
-    required this.label,
-    required this.icon,
-    required this.selectedIcon,
-    required this.path,
-    required this.matcher,
-  });
-
-  final String label;
-  final IconData icon;
-  final IconData selectedIcon;
-  final String? path;
-  final bool Function(String) matcher;
-}
-
-/// Overflow menu for the institution bottom nav. Hosts admin/profile
-/// items that don't fit in the 4-slot bottom nav (Join Requests, Edit
-/// Profile, Public Preview).
-class _InstitutionBottomNavMore extends StatelessWidget {
-  const _InstitutionBottomNavMore({
-    required this.identity,
-    required this.compact,
-    this.badge = 0,
-  });
-
-  final InstitutionIdentity? identity;
-  final bool compact;
-  final int badge;
-
-  @override
-  Widget build(BuildContext context) {
-    final id = identity?.id ?? '';
-    final slug = identity?.slug ?? '';
-    final isAdmin = identity?.isAdmin ?? false;
-
-    final entries = <(_MoreEntry, String?)>[
-      if (isAdmin)
-        (
-          const _MoreEntry(
-            label: 'Join Requests',
-            icon: Icons.person_add_outlined,
-          ),
-          id.isNotEmpty
-              ? '/institution/$id/join-requests'
-              : null,
-        ),
-      if (isAdmin)
-        (
-          const _MoreEntry(
-            label: 'Invites',
-            icon: Icons.mail_outline_rounded,
-          ),
-          id.isNotEmpty ? '/institution/$id/invites' : null,
-        ),
-      if (isAdmin)
-        (
-          const _MoreEntry(label: 'Edit Profile', icon: Icons.edit_outlined),
-          id.isNotEmpty
-              ? institutionWorkspacePath(
-                  id, InstitutionSection.editProfile)
-              : null,
-        ),
-      (
-        const _MoreEntry(
-          label: 'Public Preview',
-          icon: Icons.open_in_new_rounded,
-        ),
-        // Shell-preserving — see sidebar variant for context.
-        (slug.isNotEmpty && id.isNotEmpty)
-            ? '/institution/$id/institutions/$slug'
-            : null,
-      ),
-    ];
-
-    return PopupMenuButton<String>(
-      tooltip: 'More',
-      offset: const Offset(0, -8),
-      color: AuraSurface.overlay,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AuraRadius.r16),
-        side: const BorderSide(color: AuraSurface.divider),
-      ),
-      itemBuilder: (_) {
-        return [
-          for (final pair in entries)
-            PopupMenuItem<String>(
-              enabled: pair.$2 != null,
-              value: pair.$2 ?? '',
-              child: Row(
-                children: [
-                  Icon(pair.$1.icon,
-                      size: 16,
-                      color: pair.$2 == null
-                          ? AuraSurface.faint
-                          : AuraSurface.muted),
-                  const SizedBox(width: AuraSpace.s10),
-                  Text(
-                    pair.$1.label,
-                    style: AuraText.small.copyWith(
-                      color: pair.$2 == null
-                          ? AuraSurface.faint
-                          : AuraSurface.ink,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ];
-      },
-      onSelected: (target) {
-        if (target.isNotEmpty) context.go(target);
-      },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          _InstitutionBottomNavBtn(
-            label: 'More',
-            icon: Icons.more_horiz_rounded,
-            selectedIcon: Icons.more_horiz_rounded,
-            selected: false,
-            compact: compact,
-            disabled: false,
-            onTap: null,
-          ),
-          // Surfaces pending join requests that live inside this overflow
-          // menu so a mobile operator knows to open it.
-          if (badge > 0)
-            Positioned(
-              top: 0,
-              right: compact ? 8 : 14,
-              child: _NavCountBadge(count: badge),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MoreEntry {
-  const _MoreEntry({required this.label, required this.icon});
-  final String label;
-  final IconData icon;
-}
-
-class _InstitutionBottomNavBtn extends StatelessWidget {
-  const _InstitutionBottomNavBtn({
-    required this.label,
-    required this.icon,
-    required this.selectedIcon,
-    required this.selected,
-    required this.compact,
-    required this.disabled,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final IconData selectedIcon;
-  final bool selected;
-  final bool compact;
-  final bool disabled;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final iconColor = selected
-        ? _institutionAccentText
-        : disabled
-            ? AuraSurface.faint.withValues(alpha: 0.35)
-            : AuraSurface.faint;
-
-    return Semantics(
-      button: !disabled,
-      label: label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.r10),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: compact ? AuraSpace.s4 : AuraSpace.s6,
-            horizontal: AuraSpace.s4,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                selected ? selectedIcon : icon,
-                size: compact ? 20 : 22,
-                color: iconColor,
-              ),
-              const SizedBox(height: AuraSpace.s4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: AuraText.micro.copyWith(
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: iconColor,
-                ),
-              ),
-            ],
           ),
         ),
       ),

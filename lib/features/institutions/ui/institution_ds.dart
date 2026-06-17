@@ -32,12 +32,11 @@ class InsSpacing {
   static const double screenHPad = AuraSpace.s20;
 
   /// Outer page vertical padding (the gap from the top of the routed
-  /// body to the first line of page content). Reduced from `s24` → `s16`
-  /// in the institution page-density pass — the context bar above
-  /// already provides 4 px of breathing room, so 16 px of additional
-  /// page padding is enough hierarchical separation without padding
-  /// browser viewports out of useful content.
-  static const double screenVPad = AuraSpace.s16;
+  /// body to the first line of page content). Tightened to `s12` in the
+  /// workspace-console pass: the institution context bar / top tabs were
+  /// removed, so page content should sit close to the top of the surface
+  /// and claim the recovered vertical space instead of re-padding it away.
+  static const double screenVPad = AuraSpace.s12;
 
   /// Vertical gap between major sections (eyebrow → next eyebrow).
   /// Reduced from `s28` → `s20` in the same pass — sections still read
