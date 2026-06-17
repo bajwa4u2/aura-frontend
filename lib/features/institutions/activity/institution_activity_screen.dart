@@ -227,15 +227,13 @@ class _InstitutionActivityScreenState
                       children: [
                         InsModeHeader(
                           title: 'Activity',
-                          description:
-                              'Track institutional actions, communication, and operational signals.',
                           tabs: _FilterRow(
                             current: _filter,
                             onSelect: _selectFilter,
                             showAdmin: isAdminLike,
                           ),
                         ),
-                        const SizedBox(height: AuraSpace.s18),
+                        const SizedBox(height: AuraSpace.s8),
                         if (filtered.isEmpty)
                           const InsEmptyState(
                             icon: Icons.timeline_rounded,

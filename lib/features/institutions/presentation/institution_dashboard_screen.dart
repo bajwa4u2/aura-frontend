@@ -296,10 +296,7 @@ class _InstitutionDashboardScreenState
     return (
       value: 'Not authorized',
       tone: InsTone.neutral,
-      helper:
-          'Posts you publish appear under your personal identity. An '
-          'institution admin can grant official voice from Members → change '
-          'role (Admin or Owner can speak officially).',
+      helper: 'Posts appear under your personal identity.',
     );
   }
 
@@ -618,7 +615,6 @@ class _InstitutionDashboardScreenState
     return InsSection(
       eyebrow: 'Attention',
       title: 'Needs your attention',
-      helper: 'Pending requests and invites waiting on an operator decision.',
       child: countsAsync.when(
         loading: () => const InsCard(
           child: Row(
@@ -757,8 +753,6 @@ class _InstitutionDashboardScreenState
           //     surface so the workspace shell feels uniform across screens.
           InsModeHeader(
             title: 'Workspace overview',
-            description:
-                'Standing, role, and the most relevant next moves for this institution.',
             primaryAction: (_canUseInstitutionTools &&
                     _institutionId.isNotEmpty)
                 ? AuraSecondaryButton(
@@ -784,8 +778,6 @@ class _InstitutionDashboardScreenState
           InsSection(
             eyebrow: 'Standing',
             title: 'Status at a glance',
-            helper:
-                'How this institution is set up inside Aura right now.',
             child: InsResponsiveGrid(
               children: [
                 InsStatusCard(
@@ -823,8 +815,6 @@ class _InstitutionDashboardScreenState
           InsSection(
             eyebrow: 'Next',
             title: 'What to do next',
-            helper:
-                'A short list of the most relevant moves for this workspace.',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -843,8 +833,6 @@ class _InstitutionDashboardScreenState
           InsSection(
             eyebrow: 'Activity',
             title: 'Workspace pulse',
-            helper:
-                'Light read on this institution’s footprint on Aura.',
             child: _buildActivity(),
           ),
         ],

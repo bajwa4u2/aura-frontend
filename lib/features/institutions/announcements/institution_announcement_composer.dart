@@ -532,13 +532,11 @@ class _InstitutionAnnouncementComposerState
                           title: widget.isEditing
                               ? 'Edit announcement'
                               : 'New announcement',
-                          description:
-                              'Publish official institutional notices and public statements.',
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AuraSpace.s24),
+                  const SizedBox(height: AuraSpace.s12),
                   _AnnouncementCommunicationTypePicker(
                     selected: _communicationType,
                     onChanged: (t) =>

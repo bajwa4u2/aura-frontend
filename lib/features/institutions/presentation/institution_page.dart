@@ -80,7 +80,6 @@ class InstitutionPage extends StatelessWidget {
 
     final header = _PageHeader(
       title: title,
-      subtitle: subtitle,
       trailing: trailing,
       showBack: showBack,
       onBack: onBack,
@@ -88,12 +87,11 @@ class InstitutionPage extends StatelessWidget {
 
     final children = <Widget>[
       header,
-      // Institution page-density pass — reduced from `s14` → `s10` so
-      // body content sits closer to the page title. Combined with the
-      // tightened `InsSpacing.screenVPad`, the page hero block now
-      // consumes ~30 px less vertical space across every institution
-      // route without losing the visual gap between header and body.
-      const SizedBox(height: AuraSpace.s10),
+      // Workspace-console pass — content begins immediately below the compact
+      // command row. The descriptive subtitle was removed (operators don't
+      // need a "what this page does" paragraph on every visit), so only a
+      // small gap separates the command row from operational content.
+      const SizedBox(height: AuraSpace.s8),
       if (body != null) body!,
     ];
 
@@ -149,34 +147,36 @@ class InstitutionPage extends StatelessWidget {
 class _PageHeader extends StatelessWidget {
   const _PageHeader({
     required this.title,
-    required this.subtitle,
     required this.trailing,
     required this.showBack,
     required this.onBack,
   });
 
   final String title;
-  final String? subtitle;
   final Widget? trailing;
   final bool showBack;
   final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
+    // Workspace doctrine: the page header is a compact command row (context +
+    // primary action). Descriptive subtitles are intentionally NOT rendered in
+    // the institution workspace — that copy belongs in onboarding/help, not in
+    // daily operator workflows. `subtitle` is retained on the API for callers
+    // but no longer painted here.
     if (!showBack) {
       return InsModeHeader(
         title: title,
-        description: subtitle,
         primaryAction: trailing,
       );
     }
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         GestureDetector(
           onTap: onBack ?? () => context.pop(),
           child: const Padding(
-            padding: EdgeInsets.only(right: AuraSpace.s12, top: 4),
+            padding: EdgeInsets.only(right: AuraSpace.s12),
             child: Icon(
               Icons.arrow_back_rounded,
               size: 20,
@@ -187,7 +187,6 @@ class _PageHeader extends StatelessWidget {
         Expanded(
           child: InsModeHeader(
             title: title,
-            description: subtitle,
             primaryAction: trailing,
           ),
         ),

@@ -333,10 +333,7 @@ class _InstitutionJoinRequestsScreenState
           const InsEmptyState(
             icon: Icons.inbox_outlined,
             title: 'No pending requests',
-            description:
-                'When people ask to join your institution, their requests '
-                'land here for you to approve or decline — this is how you '
-                'control who becomes a member. Nothing is waiting right now.',
+            description: 'Requests to join appear here.',
           )
         else
           ..._requests.map(_buildRequestTile),

@@ -516,8 +516,6 @@ class _InstitutionDomainsScreenState
         children: [
           InsModeHeader(
             title: 'Domains & Trust',
-            description:
-                'Verify institutional web domains and strengthen public trust.',
             primaryAction: AuraPrimaryButton(
               label: _submitting ? 'Adding…' : 'Add domain',
               icon: Icons.add_rounded,

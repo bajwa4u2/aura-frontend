@@ -512,10 +512,7 @@ class _InstitutionInvitesScreenState
           const InsEmptyState(
             icon: Icons.group_add_outlined,
             title: 'No invites yet',
-            description:
-                'Invite codes are the fastest way to bring trusted colleagues '
-                'straight into the workspace — no public join request needed. '
-                'Create one with the action above and share it directly.',
+            description: 'Create one with Invite.',
           )
         else
           ..._invites.map(_buildInviteTile),

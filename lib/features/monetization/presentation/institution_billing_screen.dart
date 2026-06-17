@@ -49,8 +49,6 @@ class InstitutionBillingScreen extends ConsumerWidget {
           children: [
             const InsModeHeader(
               title: 'Plan & Billing',
-              description:
-                  'Manage your institution’s plan, credits, and feature usage.',
             ),
             const InsModeHeaderGap(),
             _ErrorState(message: e.toString()),
@@ -62,8 +60,6 @@ class InstitutionBillingScreen extends ConsumerWidget {
               children: [
                 InsModeHeader(
                   title: 'Plan & Billing',
-                  description:
-                      'Manage your institution’s plan, credits, and feature usage.',
                 ),
                 InsModeHeaderGap(),
                 _DisabledState(),
@@ -77,8 +73,6 @@ class InstitutionBillingScreen extends ConsumerWidget {
               children: [
                 const InsModeHeader(
                   title: 'Plan & Billing',
-                  description:
-                      'Manage your institution’s plan, credits, and feature usage.',
                 ),
                 const InsModeHeaderGap(),
                 _ErrorState(message: e.toString()),
@@ -88,8 +82,6 @@ class InstitutionBillingScreen extends ConsumerWidget {
               children: [
                 const InsModeHeader(
                   title: 'Plan & Billing',
-                  description:
-                      'Manage your institution’s plan, credits, and feature usage.',
                 ),
                 const InsModeHeaderGap(),
                 _CurrentPlanCard(entitlements: ent),

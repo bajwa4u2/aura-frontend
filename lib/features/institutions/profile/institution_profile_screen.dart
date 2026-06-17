@@ -270,8 +270,6 @@ class _ProfileBody extends ConsumerWidget {
                   // ── Mode header ──────────────────────────────────────
                   InsModeHeader(
                     title: 'Profile',
-                    description:
-                        'Identity, mission, and trust signals that members and the public see.',
                     primaryAction:
                         (identity != null &&
                                 identity!.isAdmin &&

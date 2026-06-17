@@ -592,9 +592,7 @@ class _StudioBody extends StatelessWidget {
             children: [
               // ── Mode header ───────────────────────────────────────────
               InsModeHeader(
-                title: 'Identity studio',
-                description:
-                    'A guided editor for everything the public sees about this institution.',
+                title: 'Identity',
                 primaryAction: AuraSecondaryButton(
                   label: 'Cancel',
                   icon: Icons.close_rounded,

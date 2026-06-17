@@ -164,10 +164,7 @@ class _InstitutionMessagingScreenState
             const InsEmptyState(
               icon: Icons.forum_outlined,
               title: 'No group spaces yet',
-              description:
-                  'Group spaces are where members hold ongoing discussions. '
-                  'Create your first one under Spaces, then open its threads '
-                  'here.',
+              description: 'Create one under Spaces.',
             )
           else
             ..._spaces.map((space) => _SpaceTile(

@@ -245,9 +245,7 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
     return InsScreen(
       children: [
         InsModeHeader(
-          title: 'Live Sessions',
-          description:
-              'Host internal meetings, public briefings, classes, hearings, and broadcasts.',
+          title: 'Live',
           primaryAction: primaryAction,
         ),
 
@@ -306,12 +304,8 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
             icon: Icons.radio_outlined,
             title: 'No live rooms',
             description: isAdmin
-                ? 'Live rooms let your institution speak in real time — '
-                    'member briefings, public hearings, classes, town halls, '
-                    'or broadcasts, all under your verified identity. Start '
-                    'one from the action above when you are ready to host.'
-                : 'No live rooms are active right now. When your institution '
-                    'hosts a session it will appear here to join.',
+                ? 'Start one with Start session.'
+                : 'No active sessions.',
           ),
         ] else ...[
           if (widget.sessions.isNotEmpty) ...[

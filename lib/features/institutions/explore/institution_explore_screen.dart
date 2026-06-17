@@ -157,8 +157,6 @@ class _InstitutionExploreScreenState
           children: [
             InsModeHeader(
               title: 'Explore',
-              description:
-                  'Official posts, member-visible updates, and institutional discussion.',
               primaryAction: AuraSecondaryButton(
                 label: 'Go to dashboard',
                 icon: Icons.arrow_forward_rounded,
@@ -215,8 +213,6 @@ class _InstitutionExploreScreenState
                 ),
                 child: InsModeHeader(
                   title: 'Explore',
-                  description:
-                      'Official posts, member-visible updates, and institutional discussion.',
                   primaryAction: canCompose
                       ? AuraPrimaryButton(
                           label: 'Compose',

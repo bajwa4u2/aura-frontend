@@ -438,11 +438,7 @@ class _InstitutionMembersScreenState
           const InsEmptyState(
             icon: Icons.people_outline_rounded,
             title: 'No members yet',
-            description:
-                'Members are the people who act inside your institution — '
-                'posting, speaking, and coordinating under its identity. '
-                'Invite colleagues to build your team; they appear here with '
-                'their roles once they accept.',
+            description: 'Invite colleagues with Invite.',
           )
         else
           ..._members.map(_buildMemberTile),
