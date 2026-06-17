@@ -121,6 +121,13 @@ class _InstitutionEditProfileScreenState
   String? _error;
   String? _successMessage;
 
+  /// Edit surfaces prioritise editing over presentation: the public-profile
+  /// live preview is collapsed by default so the operator reaches the fields
+  /// immediately, and expands it on demand.
+  bool _previewExpanded = false;
+  void togglePreview() =>
+      setState(() => _previewExpanded = !_previewExpanded);
+
   static const int _kNameMax = 120;
   static const int _kTaglineMax = 160;
   static const int _kDescMax = 2000;
@@ -604,19 +611,26 @@ class _StudioBody extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: AuraSpace.s20),
+              const SizedBox(height: AuraSpace.s8),
 
-              // ── Live preview ──────────────────────────────────────────
-              _LivePreviewCard(
-                name: state._nameCtrl.text,
-                tagline: state._taglineCtrl.text,
-                logoUrl: state._logoUrl,
-                coverUrl: state._coverUrl,
-                location: state._locationCtrl.text,
-                category: state._categoryCtrl.text,
+              // ── Live preview (secondary — collapsed by default) ────────
+              // On an edit surface the public-profile preview must not push
+              // the editable fields below the fold. It is a compact, on-demand
+              // disclosure: one row when collapsed, full preview when expanded.
+              _PreviewDisclosure(
+                expanded: state._previewExpanded,
+                onToggle: state.togglePreview,
+                preview: _LivePreviewCard(
+                  name: state._nameCtrl.text,
+                  tagline: state._taglineCtrl.text,
+                  logoUrl: state._logoUrl,
+                  coverUrl: state._coverUrl,
+                  location: state._locationCtrl.text,
+                  category: state._categoryCtrl.text,
+                ),
               ),
 
-              const InsSectionGap(),
+              const SizedBox(height: AuraSpace.s12),
 
               // ── Banners ───────────────────────────────────────────────
               if (state._error != null) ...[
@@ -1036,6 +1050,71 @@ class _StudioBody extends StatelessWidget {
       return 'Enter a valid URL (http:// or https://)';
     }
     return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Preview disclosure — keeps the public-profile preview secondary on the edit
+// surface. Collapsed = a single compact row; expanded = the full live preview.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PreviewDisclosure extends StatelessWidget {
+  const _PreviewDisclosure({
+    required this.expanded,
+    required this.onToggle,
+    required this.preview,
+  });
+
+  final bool expanded;
+  final VoidCallback onToggle;
+  final Widget preview;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s8,
+                vertical: AuraSpace.s8,
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.visibility_outlined,
+                      size: 15, color: AuraSurface.muted),
+                  const SizedBox(width: AuraSpace.s8),
+                  Text(
+                    'Public preview',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 18,
+                    color: AuraSurface.muted,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (expanded) ...[
+          const SizedBox(height: AuraSpace.s8),
+          preview,
+        ],
+      ],
+    );
   }
 }
 
