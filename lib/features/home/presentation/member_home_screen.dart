@@ -691,12 +691,7 @@ class _SpacesSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Spaces', style: AuraText.subtitle),
-        SizedBox(height: AuraSpace.s4),
-        Text(
-          'Topical and regional discourse environments. Public-first.',
-          style: AuraText.muted,
-        ),
-        SizedBox(height: AuraSpace.s12),
+        SizedBox(height: AuraSpace.s10),
         PublicSpacesStrip(),
       ],
     );
