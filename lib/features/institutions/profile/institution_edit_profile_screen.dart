@@ -99,15 +99,20 @@ class _InstitutionEditProfileScreenState
       // Clearing the class also clears the type — server reconciles
       // the same way; mirroring locally keeps the UI honest.
       _institutionType = null;
+      _dirty = true;
     });
   }
 
   void setInstitutionType(String? typeId) {
-    setState(() => _institutionType = typeId);
+    setState(() {
+      _institutionType = typeId;
+      _dirty = true;
+    });
   }
 
   void toggleDomainTag(String id) {
     setState(() {
+      _dirty = true;
       if (_domainTags.contains(id)) {
         _domainTags.remove(id);
       } else {
@@ -128,6 +133,12 @@ class _InstitutionEditProfileScreenState
   void togglePreview() =>
       setState(() => _previewExpanded = !_previewExpanded);
 
+  /// Real unsaved-changes state. Was previously hardcoded `true` in the save
+  /// bar, so it always read "You have unsaved changes" even right after a save.
+  /// Set on any field edit; cleared on load and on a successful save. Branding
+  /// images auto-save independently and do not affect this.
+  bool _dirty = false;
+
   static const int _kNameMax = 120;
   static const int _kTaglineMax = 160;
   static const int _kDescMax = 2000;
@@ -143,23 +154,21 @@ class _InstitutionEditProfileScreenState
   @override
   void initState() {
     super.initState();
-    // Live counters + live preview rebuild whenever name/tagline/description
-    // change so the preview tile and counters reflect the current input.
-    _nameCtrl.addListener(_onTextChanged);
-    _taglineCtrl.addListener(_onTextChanged);
-    _descCtrl.addListener(_onTextChanged);
+    // Any field edit rebuilds (live counters/preview) and marks the form dirty.
+    for (final c in _allControllers) {
+      c.addListener(_onChanged);
+    }
   }
 
-  void _onTextChanged() {
-    if (mounted) setState(() {});
+  void _onChanged() {
+    if (!mounted) return;
+    setState(() => _dirty = true);
   }
 
   @override
   void dispose() {
-    _nameCtrl.removeListener(_onTextChanged);
-    _taglineCtrl.removeListener(_onTextChanged);
-    _descCtrl.removeListener(_onTextChanged);
     for (final c in _allControllers) {
+      c.removeListener(_onChanged);
       c.dispose();
     }
     super.dispose();
@@ -238,6 +247,9 @@ class _InstitutionEditProfileScreenState
             .map((e) => e?.toString().trim() ?? '')
             .where((s) => s.isNotEmpty));
     }
+
+    // Hydrating controllers fires their listeners; loading is not an edit.
+    _dirty = false;
   }
 
   // ── Save ────────────────────────────────────────────────────────────────
@@ -308,6 +320,7 @@ class _InstitutionEditProfileScreenState
 
       setState(() {
         _saving = false;
+        _dirty = false;
         _successMessage = 'Profile saved successfully.';
       });
     } catch (e) {
@@ -1068,7 +1081,7 @@ class _StudioBody extends StatelessWidget {
           child: _SaveBar(
             saving: state._saving,
             busy: state._busy,
-            dirty: true,
+            dirty: state._dirty,
             onSave: () => state._save(institutionId),
             onCancel: () => context.go(
               institutionId.isNotEmpty

@@ -213,33 +213,56 @@ class _InstitutionExploreScreenState
                 ),
                 // Single operational command row: page context + filters +
                 // primary action. No explanatory text, no separate filter row.
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text('Explore', style: AuraText.title),
-                    if (scopes.isNotEmpty) ...[
-                      const SizedBox(width: AuraSpace.s16),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _ScopeTabs(
-                            controller: _tabController,
-                            scopes: scopes,
-                            onChanged: (_) => setState(() {}),
+                // On narrow widths Compose collapses to an icon so the scope
+                // filters keep usable room instead of being squeezed.
+                child: LayoutBuilder(
+                  builder: (context, c) {
+                    final narrow = c.maxWidth < 520;
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text('Explore', style: AuraText.title),
+                        if (scopes.isNotEmpty) ...[
+                          const SizedBox(width: AuraSpace.s12),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: _ScopeTabs(
+                                controller: _tabController,
+                                scopes: scopes,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ] else
-                      const Spacer(),
-                    if (canCompose) ...[
-                      const SizedBox(width: AuraSpace.s12),
-                      AuraPrimaryButton(
-                        label: 'Compose',
-                        icon: Icons.edit_rounded,
-                        onPressed: () => _onCompose(activeScope),
-                      ),
-                    ],
-                  ],
+                        ] else
+                          const Spacer(),
+                        if (canCompose) ...[
+                          const SizedBox(width: AuraSpace.s8),
+                          if (narrow)
+                            SizedBox(
+                              height: 38,
+                              width: 38,
+                              child: IconButton(
+                                onPressed: () => _onCompose(activeScope),
+                                icon: const Icon(Icons.edit_rounded, size: 18),
+                                tooltip: 'Compose',
+                                style: IconButton.styleFrom(
+                                  backgroundColor: AuraSurface.accent,
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ),
+                            )
+                          else
+                            AuraPrimaryButton(
+                              label: 'Compose',
+                              icon: Icons.edit_rounded,
+                              onPressed: () => _onCompose(activeScope),
+                            ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

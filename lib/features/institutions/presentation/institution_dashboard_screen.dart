@@ -44,7 +44,6 @@ class _InstitutionDashboardScreenState
 
   Map<String, dynamic>? _membership;
   Map<String, dynamic>? _institution;
-  Map<String, dynamic>? _request;
   String _state = 'SIGNED_IN_NO_STANDING';
 
   Dio get _dio => ref.read(dioProvider);
@@ -104,7 +103,6 @@ class _InstitutionDashboardScreenState
       final membership = _mapOrNull(data['membership']);
       final institution = _mapOrNull(membership?['institution']) ??
           _mapOrNull(data['institution']);
-      final request = _mapOrNull(data['request']);
       final state = (data['state']?.toString().trim().isNotEmpty ?? false)
           ? data['state'].toString().trim()
           : 'SIGNED_IN_NO_STANDING';
@@ -112,7 +110,6 @@ class _InstitutionDashboardScreenState
       setState(() {
         _membership = membership;
         _institution = institution;
-        _request = request;
         _state = state;
         _loading = false;
       });
@@ -173,39 +170,6 @@ class _InstitutionDashboardScreenState
   }
 
   // ── Identity / display helpers ─────────────────────────────────────────
-
-  String get _displayName {
-    final name = _str(_institution, [
-      'name',
-      'displayName',
-      'title',
-      'organizationName',
-    ]);
-    if (name.isNotEmpty) return name;
-    final reqOrg = _str(_request, ['organizationName']);
-    if (reqOrg.isNotEmpty) return reqOrg;
-    return 'Institution';
-  }
-
-  String get _slug => _str(_institution, ['slug', 'handle']);
-
-  String get _logoUrl =>
-      _str(_institution, ['logoUrl', 'avatarUrl', 'logo']);
-
-  String get _tagline => _str(_institution, [
-        'tagline',
-        'oneLiner',
-        'shortDescription',
-        'summary',
-      ]);
-
-  String get _location => _str(_institution, [
-        'location',
-        'city',
-        'headquarters',
-        'address',
-        'jurisdiction',
-      ]);
 
   String get _domain => _str(_institution, ['domain']);
 
@@ -325,76 +289,6 @@ class _InstitutionDashboardScreenState
     );
   }
 
-  // ── Identity header bits ────────────────────────────────────────────────
-
-  List<Widget> _identityBadges() {
-    final out = <Widget>[];
-    if (_canUseInstitutionTools) {
-      out.add(const InsBadge(
-        label: 'VERIFIED',
-        tone: InsTone.ok,
-        icon: Icons.verified_rounded,
-      ));
-    } else if (_isPending) {
-      out.add(const InsBadge(
-        label: 'UNDER REVIEW',
-        tone: InsTone.warn,
-        icon: Icons.hourglass_top_rounded,
-      ));
-    } else if (_isSuspended) {
-      out.add(const InsBadge(
-        label: 'SUSPENDED',
-        tone: InsTone.danger,
-        icon: Icons.pause_circle_outline_rounded,
-      ));
-    }
-    if (_canUseInstitutionTools) {
-      out.add(const InsBadge(
-        label: 'WORKSPACE',
-        tone: InsTone.info,
-        icon: Icons.apartment_rounded,
-      ));
-    }
-    if (_domainVerified) {
-      out.add(const InsBadge(
-        label: 'DOMAIN VERIFIED',
-        tone: InsTone.ok,
-        icon: Icons.dns_rounded,
-      ));
-    }
-    return out;
-  }
-
-  List<InsFact> _identityFacts() {
-    final out = <InsFact>[];
-    if (_slug.isNotEmpty) {
-      out.add(InsFact(
-        icon: Icons.alternate_email_rounded,
-        text: '/institutions/$_slug',
-      ));
-    }
-    final memberCount = _institution?['memberCount'];
-    if (memberCount is num && memberCount > 0) {
-      out.add(InsFact(
-        icon: Icons.people_outline_rounded,
-        text: '${memberCount.toInt()} '
-            '${memberCount.toInt() == 1 ? 'member' : 'members'}',
-      ));
-    }
-    if (_location.isNotEmpty) {
-      out.add(InsFact(
-        icon: Icons.place_outlined,
-        text: _location,
-      ));
-    }
-    if (_domain.isNotEmpty) {
-      out.add(InsFact(
-        icon: Icons.dns_outlined,
-        text: _domain,
-      ));
-    }
-    return out;
-  }
 
   // ── Next actions ────────────────────────────────────────────────────────
 
@@ -737,20 +631,9 @@ class _InstitutionDashboardScreenState
       onRefresh: _load,
       child: InsScreen(
         children: [
-          // ── Identity header ───────────────────────────────────────────
-          InsIdentityHeader(
-            name: _displayName,
-            handle: _slug.isEmpty ? null : _slug,
-            logoUrl: _logoUrl.isEmpty ? null : _logoUrl,
-            tagline: _tagline.isEmpty ? null : _tagline,
-            badges: _identityBadges(),
-            facts: _identityFacts(),
-          ),
-
-          const InsSectionGap(),
-
-          // ── Mode header — declares the institutional mode for this
-          //     surface so the workspace shell feels uniform across screens.
+          // Identity (name, badges, tagline, facts) now lives in the left
+          // rail / mobile bar, so the overview no longer repeats it as a hero.
+          // The page leads straight with its command row + action queue.
           InsModeHeader(
             title: 'Workspace overview',
             primaryAction: (_canUseInstitutionTools &&
