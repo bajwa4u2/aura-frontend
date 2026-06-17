@@ -89,11 +89,15 @@ class _InstitutionMessagingScreenState
 
     return InstitutionPage(
       title: 'Messages',
+      // Distinct from Spaces: Messages is the conversation inbox (direct
+      // messages + your existing spaces' threads). Group spaces are created
+      // and managed under Spaces, so this screen no longer offers a second
+      // "New space" action that competed with the Spaces tab.
       subtitle:
-          'Coordinate internal groups and direct conversations for this institution.',
-      trailing: AuraPrimaryButton(
-        label: 'New space',
-        icon: Icons.add_rounded,
+          'Direct messages and conversations across your institution’s spaces.',
+      trailing: AuraSecondaryButton(
+        label: 'Manage spaces',
+        icon: Icons.workspaces_outline,
         onPressed: _goCreateSpace,
       ),
       body: Column(
@@ -134,7 +138,16 @@ class _InstitutionMessagingScreenState
               ),
             ),
           ),
-          const SizedBox(height: AuraSpace.s14),
+          const SizedBox(height: AuraSpace.s16),
+          Text(
+            'GROUP SPACES',
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.faint,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.9,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s8),
           if (_loading)
             const AuraLoadingState(message: 'Loading spaces…')
           else if (_error != null)
@@ -150,9 +163,11 @@ class _InstitutionMessagingScreenState
           else if (_spaces.isEmpty)
             const InsEmptyState(
               icon: Icons.forum_outlined,
-              title: 'No conversations yet',
+              title: 'No group spaces yet',
               description:
-                  'Use the action above to create a space and start a thread with members of this institution.',
+                  'Group spaces are where members hold ongoing discussions. '
+                  'Create your first one under Spaces, then open its threads '
+                  'here.',
             )
           else
             ..._spaces.map((space) => _SpaceTile(

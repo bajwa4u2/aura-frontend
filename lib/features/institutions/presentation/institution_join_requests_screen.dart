@@ -8,6 +8,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../data/institution_pending_counts.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
 import 'institution_page.dart';
@@ -84,6 +85,11 @@ class _InstitutionJoinRequestsScreenState
         _requests = items;
         _loading = false;
       });
+      // Keep the shared attention counts (dashboard queue + nav badges) in
+      // sync with what this screen just loaded / changed.
+      ref.invalidate(
+        institutionPendingCountsProvider(widget.institutionId),
+      );
     } catch (e) {
       setState(() {
         _error = _message(e, 'Could not load join requests.');
@@ -327,7 +333,10 @@ class _InstitutionJoinRequestsScreenState
           const InsEmptyState(
             icon: Icons.inbox_outlined,
             title: 'No pending requests',
-            description: 'Join requests from non-members will appear here.',
+            description:
+                'When people ask to join your institution, their requests '
+                'land here for you to approve or decline — this is how you '
+                'control who becomes a member. Nothing is waiting right now.',
           )
         else
           ..._requests.map(_buildRequestTile),

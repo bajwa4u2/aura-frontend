@@ -13,6 +13,8 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../../monetization/domain/monetization_models.dart';
+import '../../monetization/providers/monetization_providers.dart';
 import '../ui/institution_ds.dart';
 
 /// Phase 6.6c — Institution Profile / Workspace Identity hub.
@@ -293,6 +295,15 @@ class _ProfileBody extends ConsumerWidget {
                   _ActionGroup(
                     identity: identity,
                     publicLink: publicLink,
+                    // Hide the "Manage billing" dead-end when monetization is
+                    // disabled in this environment. Unknown (still loading)
+                    // is treated as enabled so a real feature never flickers
+                    // hidden.
+                    billingEnabled: ref
+                            .watch(monetizationConfigProvider)
+                            .valueOrNull
+                            ?.mode !=
+                        MonetizationMode.disabled,
                   ),
 
                   const InsSectionGap(),
@@ -465,10 +476,15 @@ class _ProfileBody extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ActionGroup extends StatelessWidget {
-  const _ActionGroup({required this.identity, required this.publicLink});
+  const _ActionGroup({
+    required this.identity,
+    required this.publicLink,
+    this.billingEnabled = true,
+  });
 
   final InstitutionIdentity? identity;
   final String publicLink;
+  final bool billingEnabled;
 
   Future<void> _copyLink(BuildContext context) async {
     if (publicLink.isEmpty) return;
@@ -531,9 +547,11 @@ class _ActionGroup extends StatelessWidget {
                 : '/institution/dashboard',
           ),
         ),
-        // Surface billing only for institution admins/owners. Backend
-        // enforces the same on POST /v1/monetization/checkout/*.
-        if (canEdit && (identity?.id.isNotEmpty ?? false))
+        // Surface billing only for institution admins/owners AND only when
+        // monetization is actually enabled — otherwise it routes to a
+        // "Billing unavailable" dead-end. Backend enforces admin on
+        // POST /v1/monetization/checkout/*.
+        if (canEdit && billingEnabled && (identity?.id.isNotEmpty ?? false))
           AuraSecondaryButton(
             label: 'Manage billing',
             icon: Icons.receipt_long_rounded,

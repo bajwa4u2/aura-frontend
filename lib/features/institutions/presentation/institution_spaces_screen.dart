@@ -359,7 +359,10 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
             icon: Icons.forum_outlined,
             title: 'No spaces yet',
             description:
-                'Use the action above to create the first space for your members.',
+                'Spaces are dedicated rooms where members coordinate — '
+                'committees, chapters, project teams, or working groups. '
+                'Create your first space to give members a focused place to '
+                'organise and discuss. Use the action above to begin.',
           )
         else
           ..._spaces.map(_buildSpaceTile),

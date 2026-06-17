@@ -10,6 +10,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../data/institution_pending_counts.dart';
 import '../ui/institution_ds.dart';
 
 /// Phase 6.6a — Institution Overview / Command Center.
@@ -82,9 +83,6 @@ class _InstitutionDashboardScreenState
   String get _institutionId =>
       _institution?['id']?.toString().trim() ?? '';
 
-  int get _pendingJoinCount =>
-      _membership?['pendingJoinRequestCount'] as int? ?? 0;
-
   @override
   void initState() {
     super.initState();
@@ -118,6 +116,13 @@ class _InstitutionDashboardScreenState
         _state = state;
         _loading = false;
       });
+
+      // Refresh the Action Queue counts whenever the overview reloads so a
+      // pull-to-refresh updates pending join requests / invites too.
+      final id = institution?['id']?.toString().trim() ?? '';
+      if (id.isNotEmpty) {
+        ref.invalidate(institutionPendingCountsProvider(id));
+      }
     } catch (e) {
       setState(() {
         _error = _dioMessage(e, 'Could not load institution dashboard.');
@@ -291,7 +296,10 @@ class _InstitutionDashboardScreenState
     return (
       value: 'Not authorized',
       tone: InsTone.neutral,
-      helper: 'Posts you publish appear under your personal identity.',
+      helper:
+          'Posts you publish appear under your personal identity. An '
+          'institution admin can grant official voice from Members → change '
+          'role (Admin or Owner can speak officially).',
     );
   }
 
@@ -466,18 +474,9 @@ class _InstitutionDashboardScreenState
       ));
     }
 
-    if (_isAdmin && _pendingJoinCount > 0 && _institutionId.isNotEmpty) {
-      items.add(InsActionCard(
-        icon: Icons.person_add_outlined,
-        title: 'Review join requests',
-        body:
-            'Members are waiting to be approved into the workspace.',
-        cta: 'Review',
-        badge: _pendingJoinCount,
-        tone: InsTone.warn,
-        onTap: () => _go('/institution/$_institutionId/join-requests'),
-      ));
-    }
+    // Pending join requests are now surfaced by the Action Queue ("Needs your
+    // attention") at the top of the overview, so they are intentionally not
+    // duplicated in this evergreen-suggestions list.
 
     if (_canPublishAnnouncements && _institutionId.isNotEmpty) {
       items.add(InsActionCard(
@@ -600,6 +599,109 @@ class _InstitutionDashboardScreenState
     return '${dt.year}-$m-$d';
   }
 
+  // ── Action queue ("Needs your attention") ────────────────────────────────
+  //
+  // The single place an operator can see, at a glance, what requires a decision
+  // right now. Admin/owner only — the underlying endpoints are admin-gated and
+  // degrade to zero for everyone else. Returns null when there is nothing to
+  // show the surface for (non-admin, no active workspace).
+
+  Widget? _buildActionQueue() {
+    if (!_isAdmin || !_canUseInstitutionTools || _institutionId.isEmpty) {
+      return null;
+    }
+
+    final countsAsync = ref.watch(
+      institutionPendingCountsProvider(_institutionId),
+    );
+
+    return InsSection(
+      eyebrow: 'Attention',
+      title: 'Needs your attention',
+      helper: 'Pending requests and invites waiting on an operator decision.',
+      child: countsAsync.when(
+        loading: () => const InsCard(
+          child: Row(
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: AuraSpace.s10),
+              Text('Checking for pending items…', style: AuraText.small),
+            ],
+          ),
+        ),
+        // Degrade quietly — a transient counts failure must never block the
+        // overview or imply a problem that isn't there.
+        error: (_, __) => const SizedBox.shrink(),
+        data: (counts) {
+          if (!counts.hasAny) {
+            return const InsCard(
+              tone: InsTone.ok,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 16,
+                    color: AuraSurface.coVerdant,
+                  ),
+                  SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: Text(
+                      "You're all caught up — no requests or invites need "
+                      'action right now.',
+                      style: AuraText.small,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final cards = <Widget>[];
+          if (counts.joinRequests > 0) {
+            cards.add(InsActionCard(
+              icon: Icons.person_add_outlined,
+              title: 'Review join requests',
+              body: '${counts.joinRequests} '
+                  '${counts.joinRequests == 1 ? 'person is' : 'people are'} '
+                  'waiting to be approved into the workspace.',
+              cta: 'Review',
+              badge: counts.joinRequests,
+              tone: InsTone.warn,
+              onTap: () => _go('/institution/$_institutionId/join-requests'),
+            ));
+          }
+          if (counts.invites > 0) {
+            cards.add(InsActionCard(
+              icon: Icons.mail_outline_rounded,
+              title: 'Outstanding invites',
+              body: '${counts.invites} invite'
+                  '${counts.invites == 1 ? '' : 's'} created and not yet used.',
+              cta: 'Manage',
+              badge: counts.invites,
+              tone: InsTone.info,
+              onTap: () => _go('/institution/$_institutionId/invites'),
+            ));
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                cards[i],
+                if (i != cards.length - 1)
+                  const SizedBox(height: InsSpacing.cardGap),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   // ── Build ───────────────────────────────────────────────────────────────
 
   @override
@@ -633,6 +735,7 @@ class _InstitutionDashboardScreenState
     final role = _role;
     final speech = _officialSpeech;
     final domain = _domainTrust;
+    final actionQueue = _buildActionQueue();
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -668,6 +771,14 @@ class _InstitutionDashboardScreenState
           ),
 
           const InsModeHeaderGap(),
+
+          // ── Action queue ("Needs your attention") ─────────────────────
+          //     First content section for operators so pending decisions are
+          //     impossible to miss. Hidden for non-admins / pre-active states.
+          if (actionQueue != null) ...[
+            actionQueue,
+            const InsSectionGap(),
+          ],
 
           // ── Standing grid (Section B) ─────────────────────────────────
           InsSection(

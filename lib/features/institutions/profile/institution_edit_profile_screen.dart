@@ -1201,57 +1201,86 @@ class _SaveBar extends StatelessWidget {
               constraints: const BoxConstraints(
                 maxWidth: InsSpacing.contentMaxWidth,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Row(
+              child: LayoutBuilder(
+                builder: (context, c) {
+                  // At phone widths the four-element row (status + Preview +
+                  // Cancel + Save changes) overflowed and clipped "Save
+                  // changes". On narrow widths we keep only the essential
+                  // actions (Cancel + Save) plus a status dot; Preview stays
+                  // reachable from the live-preview card above.
+                  final narrow = c.maxWidth < 480;
+                  final statusDot = Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: dirty ? AuraSurface.coSun : AuraSurface.faint,
+                      shape: BoxShape.circle,
+                    ),
+                  );
+
+                  if (narrow) {
+                    return Row(
                       children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: dirty
-                                ? AuraSurface.coSun
-                                : AuraSurface.faint,
-                            shape: BoxShape.circle,
-                          ),
+                        statusDot,
+                        const Spacer(),
+                        AuraSecondaryButton(
+                          label: 'Cancel',
+                          onPressed: busy ? null : onCancel,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            saving
-                                ? 'Saving changes…'
-                                : (dirty
-                                    ? 'You have unsaved changes'
-                                    : 'All changes saved'),
-                            style: AuraText.small.copyWith(
-                              color: AuraSurface.muted,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        const SizedBox(width: AuraSpace.s8),
+                        AuraPrimaryButton(
+                          label: saving ? 'Saving…' : 'Save changes',
+                          icon: saving ? null : Icons.check_rounded,
+                          onPressed: busy ? null : onSave,
                         ),
                       ],
-                    ),
-                  ),
-                  AuraGhostButton(
-                    label: 'Preview',
-                    icon: Icons.visibility_outlined,
-                    onPressed: busy ? null : onPreview,
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                  AuraSecondaryButton(
-                    label: 'Cancel',
-                    onPressed: busy ? null : onCancel,
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                  AuraPrimaryButton(
-                    label: saving ? 'Saving…' : 'Save changes',
-                    icon: saving ? null : Icons.check_rounded,
-                    onPressed: busy ? null : onSave,
-                  ),
-                ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            statusDot,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                saving
+                                    ? 'Saving changes…'
+                                    : (dirty
+                                        ? 'You have unsaved changes'
+                                        : 'All changes saved'),
+                                style: AuraText.small.copyWith(
+                                  color: AuraSurface.muted,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      AuraGhostButton(
+                        label: 'Preview',
+                        icon: Icons.visibility_outlined,
+                        onPressed: busy ? null : onPreview,
+                      ),
+                      const SizedBox(width: AuraSpace.s8),
+                      AuraSecondaryButton(
+                        label: 'Cancel',
+                        onPressed: busy ? null : onCancel,
+                      ),
+                      const SizedBox(width: AuraSpace.s8),
+                      AuraPrimaryButton(
+                        label: saving ? 'Saving…' : 'Save changes',
+                        icon: saving ? null : Icons.check_rounded,
+                        onPressed: busy ? null : onSave,
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),

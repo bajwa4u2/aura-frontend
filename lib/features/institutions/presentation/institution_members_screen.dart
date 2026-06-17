@@ -439,7 +439,10 @@ class _InstitutionMembersScreenState
             icon: Icons.people_outline_rounded,
             title: 'No members yet',
             description:
-                'Use the action above to invite people. They will appear here once they accept.',
+                'Members are the people who act inside your institution — '
+                'posting, speaking, and coordinating under its identity. '
+                'Invite colleagues to build your team; they appear here with '
+                'their roles once they accept.',
           )
         else
           ..._members.map(_buildMemberTile),

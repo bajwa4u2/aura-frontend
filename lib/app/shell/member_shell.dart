@@ -14,6 +14,7 @@ import '../../core/ui/surface/surface_composition.dart';
 import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
+import '../../features/institutions/data/institution_pending_counts.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
@@ -206,6 +207,16 @@ class InstitutionShell extends ConsumerWidget {
     final path = GoRouterState.of(context).uri.path;
     final isPreview = _isPublicPreviewPath(path);
 
+    // Pending-attention counts power the nav badges. Only admins can read the
+    // underlying endpoints, so we only subscribe for them; everyone else sees
+    // no badges (and we avoid needless 403s). Counts refresh when the provider
+    // is invalidated after approve/reject/invite actions.
+    final counts = (identity != null && identity.isAdmin && identity.id.isNotEmpty)
+        ? ref.watch(institutionPendingCountsProvider(identity.id)).valueOrNull
+        : null;
+    final pendingJoinRequests = counts?.joinRequests ?? 0;
+    final pendingInvites = counts?.invites ?? 0;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -254,6 +265,8 @@ class InstitutionShell extends ConsumerWidget {
                 ? _InstitutionSideNav(
                     currentPath: path,
                     identity: identity,
+                    pendingJoinRequests: pendingJoinRequests,
+                    pendingInvites: pendingInvites,
                   )
                 : null,
             center: isPreview
@@ -274,6 +287,8 @@ class InstitutionShell extends ConsumerWidget {
                     currentPath: path,
                     compact: !isTablet,
                     identity: identity,
+                    pendingJoinRequests: pendingJoinRequests,
+                    pendingInvites: pendingInvites,
                   )
                 : null,
           ),
@@ -811,7 +826,7 @@ class _InstitutionPrimaryNav extends StatelessWidget {
     // scroll lets the user reach overflow tabs without breaking the
     // single-row reading order. Active selection is preserved by
     // `_PrimaryNavTab` (accent underline).
-    return Padding(
+    final strip = Padding(
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s2),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -836,6 +851,34 @@ class _InstitutionPrimaryNav extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    // At desktop all tabs fit on one line, so no affordance is needed. At
+    // tablet/mobile the strip scrolls horizontally; a right-edge fade signals
+    // that more tabs (e.g. Announcements / Live) lie off-screen — previously
+    // they were silently cut off with no hint they existed.
+    if (isDesktop) return strip;
+    return Stack(
+      children: [
+        strip,
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Container(
+              width: 24,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [Color(0x000F2535), Color(0xFF0F2535)],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -887,12 +930,10 @@ List<_PrimaryNavItem> _institutionPrimaryItems(String id) {
           p == '/institution/live-rooms' ||
           (p.startsWith('/institution/') && p.contains('/live')),
     ),
-    _PrimaryNavItem(
-      label: 'Invite',
-      path: id.isNotEmpty ? '/institution/$id/invites' : null,
-      matcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/invite'),
-    ),
+    // 'Invite' was moved OUT of the primary (communicate) nav into the
+    // sidebar ADMIN group next to Members and Join Requests. This gives a
+    // learnable rule — top nav = communicate/participate, side nav =
+    // manage/configure — and groups all three member-access tools together.
   ];
 }
 
@@ -1218,6 +1259,7 @@ class _InstEntry {
     this.pathBuilder,
     this.pathMatcher,
     this.adminOnly = false,
+    this.badge = 0,
     // ignore: unused_element_parameter
     this.disabled = false,
     // ignore: unused_element_parameter
@@ -1228,6 +1270,9 @@ class _InstEntry {
   final IconData icon;
   final IconData selectedIcon;
   final String? sectionLabel;
+
+  /// Pending-attention count rendered as a badge (0 = none).
+  final int badge;
 
   /// Builds the navigation path from the current identity. Return null to disable.
   final String? Function(InstitutionIdentity?)? pathBuilder;
@@ -1251,7 +1296,11 @@ class _InstEntry {
   }
 }
 
-List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
+List<_InstEntry> _buildInstEntries(
+  InstitutionIdentity? identity, {
+  int pendingJoinRequests = 0,
+  int pendingInvites = 0,
+}) {
   final id = identity?.id ?? '';
   final slug = identity?.slug ?? '';
   final isAdmin = identity?.isAdmin ?? false;
@@ -1274,11 +1323,25 @@ List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
       icon: Icons.person_add_outlined,
       selectedIcon: Icons.person_add_rounded,
       adminOnly: true,
+      badge: pendingJoinRequests,
       pathBuilder: (_) => id.isNotEmpty && isAdmin
           ? '/institution/$id/join-requests'
           : null,
       pathMatcher: (p) =>
           p.contains('/join-requests') && p.startsWith('/institution/'),
+    ),
+    // Invites lives here (not in the top nav) so all three member-access
+    // tools — Members / Join Requests / Invites — sit together under ADMIN.
+    _InstEntry(
+      label: 'Invites',
+      icon: Icons.mail_outline_rounded,
+      selectedIcon: Icons.mail_rounded,
+      adminOnly: true,
+      badge: pendingInvites,
+      pathBuilder: (_) =>
+          id.isNotEmpty && isAdmin ? '/institution/$id/invites' : null,
+      pathMatcher: (p) =>
+          p.contains('/invite') && p.startsWith('/institution/'),
     ),
     _InstEntry(
       label: 'Domains',
@@ -1342,14 +1405,22 @@ class _InstitutionSideNav extends StatelessWidget {
   const _InstitutionSideNav({
     required this.currentPath,
     required this.identity,
+    this.pendingJoinRequests = 0,
+    this.pendingInvites = 0,
   });
 
   final String currentPath;
   final InstitutionIdentity? identity;
+  final int pendingJoinRequests;
+  final int pendingInvites;
 
   @override
   Widget build(BuildContext context) {
-    final entries = _buildInstEntries(identity);
+    final entries = _buildInstEntries(
+      identity,
+      pendingJoinRequests: pendingJoinRequests,
+      pendingInvites: pendingInvites,
+    );
 
     return Container(
       width: 232,
@@ -1488,6 +1559,10 @@ class _InstitutionSideNavTile extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (!isDisabled && entry.badge > 0) ...[
+                          const SizedBox(width: AuraSpace.s6),
+                          _NavCountBadge(count: entry.badge),
+                        ],
                         if (isDisabled && entry.disabledReason != null) ...[
                           const SizedBox(width: AuraSpace.s6),
                           Text(
@@ -1544,11 +1619,15 @@ class _InstitutionBottomNav extends StatelessWidget {
     required this.currentPath,
     required this.compact,
     required this.identity,
+    this.pendingJoinRequests = 0,
+    this.pendingInvites = 0,
   });
 
   final String currentPath;
   final bool compact;
   final InstitutionIdentity? identity;
+  final int pendingJoinRequests;
+  final int pendingInvites;
 
   @override
   Widget build(BuildContext context) {
@@ -1625,6 +1704,7 @@ class _InstitutionBottomNav extends StatelessWidget {
                 child: _InstitutionBottomNavMore(
                   identity: identity,
                   compact: compact,
+                  badge: pendingJoinRequests + pendingInvites,
                 ),
               ),
             ],
@@ -1658,10 +1738,12 @@ class _InstitutionBottomNavMore extends StatelessWidget {
   const _InstitutionBottomNavMore({
     required this.identity,
     required this.compact,
+    this.badge = 0,
   });
 
   final InstitutionIdentity? identity;
   final bool compact;
+  final int badge;
 
   @override
   Widget build(BuildContext context) {
@@ -1679,6 +1761,14 @@ class _InstitutionBottomNavMore extends StatelessWidget {
           id.isNotEmpty
               ? '/institution/$id/join-requests'
               : null,
+        ),
+      if (isAdmin)
+        (
+          const _MoreEntry(
+            label: 'Invites',
+            icon: Icons.mail_outline_rounded,
+          ),
+          id.isNotEmpty ? '/institution/$id/invites' : null,
         ),
       if (isAdmin)
         (
@@ -1739,14 +1829,27 @@ class _InstitutionBottomNavMore extends StatelessWidget {
       onSelected: (target) {
         if (target.isNotEmpty) context.go(target);
       },
-      child: _InstitutionBottomNavBtn(
-        label: 'More',
-        icon: Icons.more_horiz_rounded,
-        selectedIcon: Icons.more_horiz_rounded,
-        selected: false,
-        compact: compact,
-        disabled: false,
-        onTap: null,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _InstitutionBottomNavBtn(
+            label: 'More',
+            icon: Icons.more_horiz_rounded,
+            selectedIcon: Icons.more_horiz_rounded,
+            selected: false,
+            compact: compact,
+            disabled: false,
+            onTap: null,
+          ),
+          // Surfaces pending join requests that live inside this overflow
+          // menu so a mobile operator knows to open it.
+          if (badge > 0)
+            Positioned(
+              top: 0,
+              right: compact ? 8 : 14,
+              child: _NavCountBadge(count: badge),
+            ),
+        ],
       ),
     );
   }
@@ -1963,6 +2066,42 @@ class _MemberBottomNavButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NAV COUNT BADGE — small pending-attention pill used across the institution
+// navigation (primary nav, side nav, bottom-nav overflow). Caps at 99+.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _NavCountBadge extends StatelessWidget {
+  const _NavCountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= 0) return const SizedBox.shrink();
+    final text = count > 99 ? '99+' : '$count';
+    return Container(
+      constraints: const BoxConstraints(minWidth: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: _institutionAccent,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: AuraText.micro.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          fontSize: 10,
+          height: 1.1,
         ),
       ),
     );

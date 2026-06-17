@@ -121,7 +121,13 @@ class InstitutionPage extends StatelessWidget {
       );
     }
 
-    final inner = Center(
+    // Top-align (not Center) so short bodies — Members, Join Requests,
+    // Invites, Spaces, empty states — sit directly under the page header
+    // instead of floating in the vertical middle of a tall viewport. This
+    // makes vertical anchoring consistent with the dashboard and the other
+    // top-anchored screens, and removes the large empty canvas above content.
+    final inner = Align(
+      alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: maxContentWidth),
         child: columnContent,

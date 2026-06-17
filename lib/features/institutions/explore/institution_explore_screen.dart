@@ -156,7 +156,7 @@ class _InstitutionExploreScreenState
         body: InsScreen(
           children: [
             InsModeHeader(
-              title: 'Communication',
+              title: 'Explore',
               description:
                   'Official posts, member-visible updates, and institutional discussion.',
               primaryAction: AuraSecondaryButton(
@@ -214,7 +214,7 @@ class _InstitutionExploreScreenState
                   maxWidth: InsSpacing.contentMaxWidth,
                 ),
                 child: InsModeHeader(
-                  title: 'Communication',
+                  title: 'Explore',
                   description:
                       'Official posts, member-visible updates, and institutional discussion.',
                   primaryAction: canCompose

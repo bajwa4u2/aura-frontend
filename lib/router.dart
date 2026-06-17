@@ -75,7 +75,6 @@ import 'features/institutions/verification/institution_request_verification_scre
 import 'features/institutions/announcements/institution_announcements_screen.dart';
 import 'features/institutions/announcements/institution_announcement_composer.dart';
 import 'features/institutions/presentation/institution_spaces_screen.dart';
-import 'features/institutions/correspondence/institution_correspondence_screen.dart';
 import 'features/institutions/live_rooms/institution_live_rooms_screen.dart';
 import 'features/institutions/explore/institution_explore_screen.dart';
 import 'features/institutions/posts/institution_post_composer_screen.dart';
@@ -1122,20 +1121,25 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const InstitutionRequestVerificationScreen(),
           ),
 
-          // Correspondence.
+          // Correspondence — consolidated into Messages. There used to be two
+          // separate institution surfaces both titled "Messages"
+          // (/messages and /correspondence). /correspondence is now a
+          // permanent redirect to the canonical Messages surface so any
+          // existing link still lands somewhere sensible and the duplicate is
+          // gone from the workspace.
           GoRoute(
             path: kInstitutionCorrespondenceRoute,
             redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, 'correspondence'),
+                _redirectShorthandToCanonical(ref, 'messages'),
           ),
           GoRoute(
             path: '/institution/:institutionId/correspondence',
-            redirect: (context, state) => _enforceCanonicalIdMatch(
-              ref,
-              state.pathParameters['institutionId'],
-              'correspondence',
-            ),
-            builder: (_, __) => const InstitutionCorrespondenceScreen(),
+            redirect: (context, state) {
+              final id = state.pathParameters['institutionId'] ?? '';
+              return id.isNotEmpty
+                  ? '/institution/$id/messages'
+                  : kInstitutionDashboardRoute;
+            },
           ),
 
           // Announcements (the const was dead — keep a redirect helper

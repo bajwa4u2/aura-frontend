@@ -8,6 +8,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../data/institution_pending_counts.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
 import 'institution_page.dart';
@@ -70,6 +71,9 @@ class _InstitutionInvitesScreenState
         _invites = invites;
         _loading = false;
       });
+      ref.invalidate(
+        institutionPendingCountsProvider(widget.institutionId),
+      );
     } catch (e) {
       setState(() {
         _error = _message(e, 'Could not load invites.');
@@ -509,7 +513,9 @@ class _InstitutionInvitesScreenState
             icon: Icons.group_add_outlined,
             title: 'No invites yet',
             description:
-                'Use the action above to create an invite code for colleagues.',
+                'Invite codes are the fastest way to bring trusted colleagues '
+                'straight into the workspace — no public join request needed. '
+                'Create one with the action above and share it directly.',
           )
         else
           ..._invites.map(_buildInviteTile),
@@ -520,7 +526,7 @@ class _InstitutionInvitesScreenState
   @override
   Widget build(BuildContext context) {
     return InstitutionPage(
-      title: 'Members & Access',
+      title: 'Invites',
       subtitle: 'Create and manage invite codes for your institution.',
       trailing: AuraPrimaryButton(
         label: _showCreate ? 'Hide form' : 'Invite',

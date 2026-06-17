@@ -306,8 +306,12 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
             icon: Icons.radio_outlined,
             title: 'No live rooms',
             description: isAdmin
-                ? 'Start a live audio or video room from the action above to host members, briefings, or public sessions.'
-                : 'No live rooms are active right now. Check back later.',
+                ? 'Live rooms let your institution speak in real time — '
+                    'member briefings, public hearings, classes, town halls, '
+                    'or broadcasts, all under your verified identity. Start '
+                    'one from the action above when you are ready to host.'
+                : 'No live rooms are active right now. When your institution '
+                    'hosts a session it will appear here to join.',
           ),
         ] else ...[
           if (widget.sessions.isNotEmpty) ...[
