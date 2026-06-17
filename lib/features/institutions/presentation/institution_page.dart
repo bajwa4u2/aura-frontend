@@ -119,27 +119,46 @@ class InstitutionPage extends StatelessWidget {
       );
     }
 
-    // Top-align (not Center) so short bodies — Members, Join Requests,
-    // Invites, Spaces, empty states — sit directly under the page header
-    // instead of floating in the vertical middle of a tall viewport. This
-    // makes vertical anchoring consistent with the dashboard and the other
-    // top-anchored screens, and removes the large empty canvas above content.
-    final inner = Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: maxContentWidth),
-        child: columnContent,
-      ),
-    );
+    // Scrollable pages use a ListView — like InsScreen — which top-anchors its
+    // content. Short bodies (Members, Join Requests, Invites, Spaces, empty
+    // states) sit directly under the command row instead of floating in the
+    // vertical middle of the surface. The surface scaffold vertically centers
+    // its center column, which is why a SingleChildScrollView + Align here
+    // still floated; a ListView starts at the top regardless.
+    if (scrollable) {
+      return AuraScaffold(
+        showHeader: false,
+        maxWidth: maxContentWidth,
+        body: ListView(
+          padding: pad,
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: maxContentWidth),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: children,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
+    // Non-scrollable pages own their own scroll/layout; top-align the fixed
+    // content so it begins at the top of the surface.
     return AuraScaffold(
       showHeader: false,
-      // Honor InstitutionPage's own declared content width. Without
-      // this, AuraScaffold's 920px default clamped every institution
-      // page (post detail included) below the [maxContentWidth] this
-      // page already constrains its body to.
       maxWidth: maxContentWidth,
-      body: scrollable ? SingleChildScrollView(child: inner) : inner,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: maxContentWidth),
+          child: columnContent,
+        ),
+      ),
     );
   }
 }
