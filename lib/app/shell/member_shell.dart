@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/session_providers.dart';
 import '../../core/institutions/institution_access_provider.dart';
 import '../../core/institutions/institution_paths.dart';
 import '../../core/media/aura_attachment_image.dart';
@@ -55,6 +56,10 @@ final GlobalKey<ScaffoldState> _institutionScaffoldKey =
 // MEMBER SHELL
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Key for the member workspace Scaffold so the mobile bar can open the nav
+/// drawer reliably (no nested-Scaffold ambiguity).
+final GlobalKey<ScaffoldState> _memberScaffoldKey = GlobalKey<ScaffoldState>();
+
 class MemberShell extends StatelessWidget {
   const MemberShell({super.key, required this.child});
 
@@ -94,7 +99,6 @@ class MemberShell extends StatelessWidget {
     ),
   ];
 
-  static const double _desktopBreakpoint = kDesktopBreak; // 1200
   static const double _tabletBreakpoint = kTabletBreak; // 900
 
   /// Returns the index of the nav item that should be highlighted, or
@@ -133,48 +137,49 @@ class MemberShell extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final isDesktop = width >= _desktopBreakpoint;
-        final isTablet = width >= _tabletBreakpoint;
+        final isTablet = width >= _tabletBreakpoint; // 900
+
+        // Member navigation doctrine:
+        //   * DESKTOP / TABLET (≥900): persistent LEFT RAIL — member identity +
+        //     navigation. No bottom nav.
+        //   * MOBILE (<900): no persistent bottom nav. A slim bar carries a
+        //     menu button (opens the nav drawer) + identity; the full rail
+        //     opens on demand as a drawer. Content gets the whole viewport.
+        final showLeftRail = isTablet;
 
         return Scaffold(
+          key: showLeftRail ? null : _memberScaffoldKey,
           backgroundColor: AuraSurface.page,
+          drawer: showLeftRail
+              ? null
+              : Drawer(
+                  backgroundColor: AuraSurface.page,
+                  width: 288,
+                  child: _MemberSideNav(
+                    items: _items,
+                    selectedIndex: selectedIndex,
+                    currentPath: path,
+                    inDrawer: true,
+                  ),
+                ),
           body: SafeArea(
             top: true,
             bottom: false,
             child: GlobalLiveBannerLayer(
               child: AuraIncomingLiveLayer(
-                // Persistent platform chrome — Aura wordmark + tools live
-                // at the top of every authenticated route via
-                // GlobalPlatformShell. The member shell no longer renders
-                // its own header; that responsibility is now global.
                 child: GlobalPlatformShell(
-                  // Member shell has no per-shell context-identity row;
-                  // the platform bar is sufficient at the top. Primary
-                  // nav lives in the side rail (desktop) or bottom nav
-                  // (tablet/mobile) below.
-                  contextBar: null,
-                  child: Column(
+                  contextBar: (!showLeftRail && _showMemberMobileBar(path))
+                      ? const _MemberMobileBar()
+                      : null,
+                  child: Row(
                     children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            if (isDesktop)
-                              _MemberSideNav(
-                                items: _items,
-                                selectedIndex: selectedIndex,
-                                currentPath: path,
-                              ),
-                            Expanded(child: child),
-                          ],
-                        ),
-                      ),
-                      if (!isDesktop && _showMemberBottomNav(path))
-                        _MemberBottomNav(
+                      if (showLeftRail)
+                        _MemberSideNav(
                           items: _items,
                           selectedIndex: selectedIndex,
                           currentPath: path,
-                          compact: !isTablet,
                         ),
+                      Expanded(child: child),
                     ],
                   ),
                 ),
@@ -187,7 +192,9 @@ class MemberShell extends StatelessWidget {
   }
 }
 
-bool _showMemberBottomNav(String path) {
+/// The slim mobile bar (and its menu affordance) is suppressed on immersive
+/// full-screen routes where navigation chrome should get out of the way.
+bool _showMemberMobileBar(String path) {
   if (path.startsWith('/realtime')) return false;
   if (path.startsWith('/me/correspondence/') &&
       (path.contains('/thread/') || path.contains('/live/'))) {
@@ -773,42 +780,211 @@ class _InstitutionAvatarSmall extends StatelessWidget {
 // MEMBER SIDE NAV
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MemberSideNav extends StatelessWidget {
+class _MemberSideNav extends ConsumerWidget {
   const _MemberSideNav({
     required this.items,
     required this.selectedIndex,
     required this.currentPath,
+    this.inDrawer = false,
   });
 
   final List<_NavItem> items;
   final int selectedIndex;
   final String currentPath;
+  final bool inDrawer;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final list = Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AuraSpace.s12, AuraSpace.s8, AuraSpace.s12, AuraSpace.s20),
+      child: Column(
+        children: [
+          // Member identity at the top of the rail (it is no longer repeated
+          // as a page hero on member surfaces).
+          const _MemberIdentityHeader(),
+          const SizedBox(height: AuraSpace.s10),
+          for (var i = 0; i < items.length; i++) ...[
+            _MemberSideNavTile(
+              item: items[i],
+              selected: i == selectedIndex,
+              onTap: () {
+                final target = items[i].path;
+                if (target != currentPath) context.go(target);
+                if (inDrawer) Navigator.of(context).maybePop();
+              },
+            ),
+            if (i != items.length - 1) const SizedBox(height: AuraSpace.s4),
+          ],
+          const Spacer(),
+        ],
+      ),
+    );
+
+    if (inDrawer) {
+      return DecoratedBox(
+        decoration: const BoxDecoration(gradient: AuraGradients.sideNav),
+        child: SafeArea(child: list),
+      );
+    }
     return Container(
       width: 240,
       decoration: const BoxDecoration(
         gradient: AuraGradients.sideNav,
         border: Border(right: BorderSide(color: AuraSurface.divider)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-            AuraSpace.s12, AuraSpace.s16, AuraSpace.s12, AuraSpace.s20),
-        child: Column(
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              _MemberSideNavTile(
-                item: items[i],
-                selected: i == selectedIndex,
-                onTap: () {
-                  final target = items[i].path;
-                  if (target != currentPath) context.go(target);
-                },
+      child: list,
+    );
+  }
+}
+
+/// Compact current-user identity block for the member rail / drawer.
+class _MemberIdentityHeader extends ConsumerWidget {
+  const _MemberIdentityHeader();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final me = ref.watch(authMeDataProvider).valueOrNull;
+    final user = (me?['user'] is Map)
+        ? Map<String, dynamic>.from(me!['user'] as Map)
+        : const <String, dynamic>{};
+    final name = (user['displayName'] ?? '').toString().trim();
+    final handle = (user['handle'] ?? '').toString().trim();
+    final avatarUrl = (user['avatarUrl'] ?? '').toString().trim();
+    final initials = name.isNotEmpty ? name[0].toUpperCase() : '';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go('/me'),
+        borderRadius: BorderRadius.circular(AuraRadius.r14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s8,
+            vertical: AuraSpace.s8,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: AuraSurface.accent.withValues(alpha: 0.35)),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: avatarUrl.isNotEmpty
+                    ? AuraAttachmentImage(
+                        url: avatarUrl,
+                        fit: BoxFit.cover,
+                        errorWidget: (_) => _MemberAvatarFallback(initials),
+                      )
+                    : _MemberAvatarFallback(initials),
               ),
-              if (i != items.length - 1) const SizedBox(height: AuraSpace.s4),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name.isEmpty ? 'Your account' : name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AuraSurface.ink,
+                      ),
+                    ),
+                    if (handle.isNotEmpty)
+                      Text(
+                        '@$handle',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.micro.copyWith(color: AuraSurface.muted),
+                      ),
+                  ],
+                ),
+              ),
             ],
-            const Spacer(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MemberAvatarFallback extends StatelessWidget {
+  const _MemberAvatarFallback(this.initials);
+  final String initials;
+  @override
+  Widget build(BuildContext context) {
+    if (initials.isEmpty) {
+      return const Icon(Icons.person_rounded,
+          size: 18, color: AuraSurface.accentText);
+    }
+    return Center(
+      child: Text(
+        initials,
+        style: AuraText.small.copyWith(
+          color: AuraSurface.accentText,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+/// Slim mobile bar for member surfaces: a menu button (opens the nav drawer)
+/// plus the current-user identity. The only persistent member chrome on phones.
+class _MemberMobileBar extends ConsumerWidget {
+  const _MemberMobileBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final me = ref.watch(authMeDataProvider).valueOrNull;
+    final user = (me?['user'] is Map)
+        ? Map<String, dynamic>.from(me!['user'] as Map)
+        : const <String, dynamic>{};
+    final name = (user['displayName'] ?? '').toString().trim();
+    final handle = (user['handle'] ?? '').toString().trim();
+    final label = name.isNotEmpty
+        ? name
+        : (handle.isNotEmpty ? '@$handle' : 'Menu');
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AuraGradients.sideNav,
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s8,
+          vertical: AuraSpace.s2,
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.menu_rounded,
+                  size: 22, color: AuraSurface.ink),
+              tooltip: 'Menu',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _memberScaffoldKey.currentState?.openDrawer(),
+            ),
+            const SizedBox(width: AuraSpace.s2),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AuraText.small.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AuraSurface.ink,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -1433,152 +1609,6 @@ class _InstitutionSideNavTile extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MEMBER BOTTOM NAV
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _MemberBottomNav extends StatelessWidget {
-  const _MemberBottomNav({
-    required this.items,
-    required this.selectedIndex,
-    required this.currentPath,
-    required this.compact,
-  });
-
-  final List<_NavItem> items;
-  final int selectedIndex;
-  final String currentPath;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: AuraGradients.bottomNav,
-        border: Border(top: BorderSide(color: AuraSurface.divider)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? AuraSpace.s4 : AuraSpace.s8,
-            vertical: compact ? AuraSpace.s6 : AuraSpace.s8,
-          ),
-          child: Row(
-            children: [
-              for (var i = 0; i < items.length; i++)
-                Expanded(
-                  child: _MemberBottomNavButton(
-                    item: items[i],
-                    selected: i == selectedIndex,
-                    compact: compact,
-                    onTap: () {
-                      final target = items[i].path;
-                      if (target != currentPath) context.go(target);
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MemberBottomNavButton extends StatelessWidget {
-  const _MemberBottomNavButton({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-    required this.compact,
-  });
-
-  final _NavItem item;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    if (item.isPrimary) {
-      return Center(
-        child: Semantics(
-          button: true,
-          label: item.label,
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: onTap,
-              child: AnimatedContainer(
-                duration: AuraMotion.fast,
-                width: compact ? 46 : 52,
-                height: compact ? 46 : 52,
-                decoration: BoxDecoration(
-                  gradient: selected ? null : AuraGradients.accent,
-                  color: selected ? AuraSurface.accentSoft : null,
-                  borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  border: Border.all(
-                    color: selected
-                        ? AuraSurface.accent.withValues(alpha: 0.4)
-                        : Colors.transparent,
-                  ),
-                  boxShadow: selected ? [] : AuraShadows.glow,
-                ),
-                child: Icon(
-                  item.icon,
-                  size: compact ? 20 : 22,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    final iconColor = selected ? AuraSurface.ink : AuraSurface.faint;
-    final textColor = selected ? AuraSurface.accentText : AuraSurface.faint;
-
-    return Semantics(
-      button: true,
-      label: item.label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.r12),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: compact ? AuraSpace.s4 : AuraSpace.s6,
-            horizontal: AuraSpace.s4,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                selected ? item.selectedIcon : item.icon,
-                size: compact ? 20 : 22,
-                color: iconColor,
-              ),
-              const SizedBox(height: AuraSpace.s4),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: AuraText.micro.copyWith(
-                  fontWeight:
-                      selected ? FontWeight.w700 : FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-            ],
           ),
         ),
       ),
