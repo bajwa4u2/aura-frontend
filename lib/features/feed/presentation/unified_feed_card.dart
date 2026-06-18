@@ -345,30 +345,12 @@ class UnifiedFeedCard extends ConsumerWidget {
                 FeedInteractionBar(
                   target: reactionTarget,
                   visibility: item.interaction,
+                  // Share reads as a peer reaction in line with Like /
+                  // Reply / Repost — gated to publicly-shareable content
+                  // (private / member-only / internal never shareable).
+                  onShare:
+                      _canShare(item) ? () => _shareItem(context) : null,
                 ),
-            ],
-            // Share — only for publicly-visible content with a canonical
-            // permalink. Private / member-only / internal content is never
-            // shareable from the feed (the URL would not resolve publicly).
-            if (_canShare(item)) ...[
-              const SizedBox(height: AuraSpace.s8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () => _shareItem(context),
-                  icon: const Icon(Icons.ios_share_rounded, size: 18),
-                  label: const Text('Share'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AuraSurface.muted,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    minimumSize: const Size(0, 0),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ),
             ],
           ],
         ),

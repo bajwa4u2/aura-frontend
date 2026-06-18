@@ -32,6 +32,7 @@ class FeedInteractionBar extends ConsumerStatefulWidget {
     super.key,
     required this.target,
     this.visibility = FeedInteraction.empty,
+    this.onShare,
   });
 
   final ReactionTarget target;
@@ -40,6 +41,11 @@ class FeedInteractionBar extends ConsumerStatefulWidget {
   /// The bar always renders Like / Reply / Repost actions; numeric counts
   /// only render when the corresponding `canView*Count` flag is true.
   final FeedInteraction visibility;
+
+  /// Optional share action. When non-null, a Share pill renders in line
+  /// with Like / Reply / Repost so sharing reads as a peer reaction, not
+  /// a detached button. Callers gate this to publicly-shareable content.
+  final VoidCallback? onShare;
 
   @override
   ConsumerState<FeedInteractionBar> createState() => _FeedInteractionBarState();
@@ -307,6 +313,12 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
           label: repostLabel(),
           onTap: doRepost,
         ),
+        if (widget.onShare != null)
+          AuraActionPill(
+            icon: Icons.ios_share_rounded,
+            label: 'Share',
+            onTap: widget.onShare!,
+          ),
       ],
     );
   }

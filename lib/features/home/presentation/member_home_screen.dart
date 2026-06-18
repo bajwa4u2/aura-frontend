@@ -16,7 +16,6 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/surface/surface_composition.dart';
 
 import '../../feed/data/unified_feed_providers.dart';
-import '../../feed/domain/feed_item.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
 import '../../public/widgets/activation_overlay.dart';
@@ -509,15 +508,12 @@ class _DiscourseStream extends ConsumerWidget {
             ],
           );
         }
-        // Phase 2 — group items by activity:
-        //   * Active discussions: items with replies or recent activity.
-        //   * Institutional voices: items authored by institutions OR
-        //     where institutions have responded.
-        //   * Recent statements: everything else, in original order.
-        // An item appears in at most one band — the strongest one — so
-        // we never show the same statement twice.
-        final byBand = _bandItems(page.items);
-
+        // Global Feed Ordering Doctrine — a single reverse-chronological
+        // stream (newest first by createdAt/publishedAt, as ordered by the
+        // backend). No content-type banding: member, institution, official,
+        // and announcement content interleave purely by recency. Each card's
+        // label keeps the source legible without reordering. Pinned content
+        // is the only permitted exception and is not introduced here.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -538,48 +534,12 @@ class _DiscourseStream extends ConsumerWidget {
               ],
               const SizedBox(height: AuraSpace.s18),
             ],
-            if (byBand.activeDiscussions.isNotEmpty) ...[
-              const _SectionTitle(
-                title: 'Active discussions',
-                subtitle: 'People are responding now.',
-              ),
-              const SizedBox(height: AuraSpace.s10),
-              for (var i = 0;
-                  i < byBand.activeDiscussions.length;
-                  i++) ...[
-                DiscourseCard(item: byBand.activeDiscussions[i]),
-                if (i < byBand.activeDiscussions.length - 1)
-                  const SizedBox(height: AuraSpace.s12),
-              ],
-              const SizedBox(height: AuraSpace.s18),
+            for (var i = 0; i < page.items.length; i++) ...[
+              DiscourseCard(item: page.items[i]),
+              if (i < page.items.length - 1)
+                const SizedBox(height: AuraSpace.s12),
             ],
-            if (byBand.institutional.isNotEmpty) ...[
-              const _SectionTitle(
-                title: 'Institutional voices',
-                subtitle:
-                    'Verified institutions speaking and responding.',
-              ),
-              const SizedBox(height: AuraSpace.s10),
-              for (var i = 0; i < byBand.institutional.length; i++) ...[
-                DiscourseCard(item: byBand.institutional[i]),
-                if (i < byBand.institutional.length - 1)
-                  const SizedBox(height: AuraSpace.s12),
-              ],
-              const SizedBox(height: AuraSpace.s18),
-            ],
-            if (byBand.recent.isNotEmpty) ...[
-              const _SectionTitle(
-                title: 'Recent statements',
-                subtitle: 'Everything else, in order.',
-              ),
-              const SizedBox(height: AuraSpace.s10),
-              for (var i = 0; i < byBand.recent.length; i++) ...[
-                DiscourseCard(item: byBand.recent[i]),
-                if (i < byBand.recent.length - 1)
-                  const SizedBox(height: AuraSpace.s12),
-              ],
-              const SizedBox(height: AuraSpace.s18),
-            ],
+            const SizedBox(height: AuraSpace.s18),
             // Phase 3 — cursor-driven Load more.
             if (page.hasMore) ...[
               Center(
@@ -606,62 +566,10 @@ class _DiscourseStream extends ConsumerWidget {
     );
   }
 
-  /// Group items into bands by activity. Each item appears in at most
-  /// one band — the strongest one wins. Order within each band is the
-  /// original feed order so backend sort is preserved as the
-  /// tiebreaker.
-  _BandedItems _bandItems(List<FeedItem> all) {
-    final active = <FeedItem>[];
-    final institutional = <FeedItem>[];
-    final recent = <FeedItem>[];
-    for (final item in all) {
-      if (_isActive(item)) {
-        active.add(item);
-      } else if (_isInstitutionalVoice(item)) {
-        institutional.add(item);
-      } else {
-        recent.add(item);
-      }
-    }
-    return _BandedItems(
-      activeDiscussions: active,
-      institutional: institutional,
-      recent: recent,
-    );
-  }
-
-  bool _isActive(FeedItem item) {
-    final inter = item.interaction;
-    final hasMomentum =
-        inter.canViewReplyCount && inter.replyCount >= 2;
-    return hasMomentum || item.activity?.recentReply == true;
-  }
-
-  bool _isInstitutionalVoice(FeedItem item) {
-    if (item.type == FeedItemType.institutionPost) return true;
-    final preview = item.replyPreview;
-    if (preview == null) return false;
-    return preview.items.any((r) =>
-        r.author.context?.type ==
-        FeedIdentityContextType.officialInstitution);
-  }
 }
 
-/// Three-band item grouping for the discourse stream.
-class _BandedItems {
-  const _BandedItems({
-    required this.activeDiscussions,
-    required this.institutional,
-    required this.recent,
-  });
-
-  final List<FeedItem> activeDiscussions;
-  final List<FeedItem> institutional;
-  final List<FeedItem> recent;
-}
-
-/// Stronger section title — heading + one-line subtitle. Anchors each
-/// activity band so the home doesn't read as a flat content list.
+/// Stronger section title — heading + one-line subtitle. Anchors the
+/// Live-now strip above the discourse stream.
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.title, this.subtitle});
 
