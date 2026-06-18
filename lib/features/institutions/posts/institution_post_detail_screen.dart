@@ -22,6 +22,7 @@ import '../../../core/utils/relative_time.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
+import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
 import '../presentation/institution_page.dart';
 import '../ui/institution_ds.dart';
@@ -49,6 +50,13 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
     final identity = ref.watch(institutionIdentityProvider);
     final canActAsInstitution =
         identity != null && identity.id.isNotEmpty && identity.canPublishPosts;
+    // Governance gate: only an authorized operator (ADMIN / OWNER /
+    // authorized speaker) of THIS institution may edit or delete its
+    // posts. Public and cross-institution viewers have no matching
+    // identity → no controls. The backend re-checks authority on write.
+    final canGovern = identity != null &&
+        identity.id == institutionId &&
+        identity.canPublishPosts;
 
     final args = FeedItemDetailArgs(
       type: FeedItemType.institutionPost,
@@ -71,6 +79,73 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
       if (result == true) {
         ref.invalidate(feedItemRepliesProvider(args));
         ref.invalidate(feedItemDetailProvider(args));
+      }
+    }
+
+    Future<void> onDelete() async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AuraSurface.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+          ),
+          title: const Text('Delete this post', style: AuraText.subtitle),
+          content: Text(
+            'This removes the post from every feed and its public link. '
+            'This cannot be undone.',
+            style: AuraText.body.copyWith(color: AuraSurface.muted),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(
+                'Cancel',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(
+                'Delete',
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.coRose,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      try {
+        await ref
+            .read(institutionsRepositoryProvider)
+            .deleteInstitutionPost(institutionId, postId);
+        // Remove the post from every feed surface so no orphaned card
+        // remains, then drop the detail cache.
+        invalidateUnifiedFeedSurfaces(ref);
+        ref.invalidate(feedItemDetailProvider(args));
+        if (context.mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(
+              content: Text('Post removed'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          if (context.canPop()) context.pop();
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text(
+                AppErrorMapper.from(e, feature: 'delete this post').message,
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     }
 
@@ -180,6 +255,29 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
                       emailSubject: 'Aura institution post',
                     ),
                   ),
+                ),
+              ],
+              // Governance — edit / delete, only for an authorized
+              // operator of this institution (gated above; backend
+              // re-enforces). Hidden from public and member viewers.
+              if (canGovern) ...[
+                const SizedBox(height: AuraSpace.s10),
+                Row(
+                  children: [
+                    AuraSecondaryButton(
+                      label: 'Edit',
+                      icon: Icons.edit_outlined,
+                      onPressed: () => context.push(
+                        '/institution/$institutionId/posts/$postId/edit',
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s10),
+                    AuraSecondaryButton(
+                      label: 'Delete',
+                      icon: Icons.delete_outline_rounded,
+                      onPressed: onDelete,
+                    ),
+                  ],
                 ),
               ],
               const SizedBox(height: AuraSpace.s14),

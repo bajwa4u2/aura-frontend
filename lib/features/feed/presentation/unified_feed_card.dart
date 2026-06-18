@@ -16,6 +16,8 @@ import '../../../core/utils/relative_time.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../../institutions/domain/communication_type.dart';
 import '../../posts/data/reactions_repository.dart';
+import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
+import '../../share/aura_share_sheet.dart';
 import '../domain/feed_item.dart';
 import 'feed_interaction_bar.dart';
 
@@ -345,9 +347,73 @@ class UnifiedFeedCard extends ConsumerWidget {
                   visibility: item.interaction,
                 ),
             ],
+            // Share — only for publicly-visible content with a canonical
+            // permalink. Private / member-only / internal content is never
+            // shareable from the feed (the URL would not resolve publicly).
+            if (_canShare(item)) ...[
+              const SizedBox(height: AuraSpace.s8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => _shareItem(context),
+                  icon: const Icon(Icons.ios_share_rounded, size: 18),
+                  label: const Text('Share'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AuraSurface.muted,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  /// A feed card is shareable only when it is publicly visible and carries
+  /// a canonical permalink we can build. User posts and institution posts
+  /// qualify; announcements are shared from their own surfaces (the feed
+  /// item does not carry the announcement slug).
+  bool _canShare(FeedItem item) {
+    if (item.visibility != FeedVisibility.public) return false;
+    switch (item.type) {
+      case FeedItemType.userPost:
+        return item.id.trim().isNotEmpty;
+      case FeedItemType.institutionPost:
+        return item.id.trim().isNotEmpty && item.author.id.trim().isNotEmpty;
+      case FeedItemType.announcement:
+        return false;
+    }
+  }
+
+  Future<void> _shareItem(BuildContext context) async {
+    final String url;
+    final String headline;
+    switch (item.type) {
+      case FeedItemType.institutionPost:
+        url = canonicalInstitutionPostUrl(item.author.id, item.id);
+        headline = 'Share this institution post';
+        break;
+      case FeedItemType.userPost:
+        url = canonicalPostUrl(item.id);
+        headline = 'Share this post';
+        break;
+      case FeedItemType.announcement:
+        return;
+    }
+    await showAuraShareSheet(
+      context,
+      shareUrl: url,
+      headline: headline,
+      subtitle:
+          'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+      emailSubject: 'Aura',
     );
   }
 }

@@ -135,6 +135,13 @@ class _InstitutionPostComposerScreenState
       _distribution = initial.distribution;
     } else {
       _visibility = _scopeToVisibility(widget.defaultScope);
+      // Public institution posts broadcast to the global/member Works feed
+      // by default — institution operating infrastructure publishes to its
+      // audience, not just its own profile. The operator can still switch a
+      // public post to institution-only via the distribution control.
+      if (_visibility == InstitutionPostVisibility.publicAll) {
+        _distribution = InstitutionPostDistribution.globalEligible;
+      }
     }
     _titleCtrl.addListener(_onFieldChanged);
     _bodyCtrl.addListener(_onFieldChanged);
@@ -374,6 +381,10 @@ class _InstitutionPostComposerScreenState
       _visibility = next;
       if (next != InstitutionPostVisibility.publicAll) {
         _distribution = InstitutionPostDistribution.institutionOnly;
+      } else {
+        // Switching to public defaults to global/member Works broadcast
+        // (operator can still toggle back to institution-only).
+        _distribution = InstitutionPostDistribution.globalEligible;
       }
       _draftStatus = _DraftStatus.idle;
       _draftSavedAt = null;

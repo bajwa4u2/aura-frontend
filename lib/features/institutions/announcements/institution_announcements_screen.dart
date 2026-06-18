@@ -12,6 +12,8 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../features/institutions/presentation/institution_page.dart';
 import '../../feed/domain/feed_media.dart';
+import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
+import '../../share/aura_share_sheet.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
 
@@ -193,6 +195,7 @@ class _InstitutionAnnouncementsScreenState
     final title = ann['title']?.toString().trim() ?? '';
     final summary = ann['summary']?.toString().trim() ?? '';
     final audience = ann['audience']?.toString() ?? 'PUBLIC';
+    final slug = ann['slug']?.toString() ?? '';
     final kind = ann['kind']?.toString() ?? 'GENERAL';
     final publishedAt = _formatDate(ann['publishedAt']?.toString());
     final createdAt = _formatDate(ann['createdAt']?.toString());
@@ -266,6 +269,25 @@ class _InstitutionAnnouncementsScreenState
               ],
             ],
           ),
+          if (!isDraft && audience == 'PUBLIC' && slug.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _ActionBtn(
+                label: 'Share',
+                icon: Icons.ios_share_rounded,
+                color: AuraSurface.accentText,
+                onTap: () => showAuraShareSheet(
+                  context,
+                  shareUrl: canonicalAnnouncementUrl(slug),
+                  headline: 'Share this announcement',
+                  subtitle:
+                      'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                  emailSubject: 'Aura announcement',
+                ),
+              ),
+            ),
+          ],
           if (_isAdmin) ...[
             const SizedBox(height: AuraSpace.s12),
             if (isActing)
