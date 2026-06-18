@@ -70,7 +70,7 @@ class SupportersHubScreen extends StatelessWidget {
           label: 'Share',
           body:
               'Invite thoughtful users and institutions who would '
-              'benefit from accountable communication infrastructure.',
+              'benefit from institution operating infrastructure.',
         ),
 
         PubText.h('What supporters are not'),

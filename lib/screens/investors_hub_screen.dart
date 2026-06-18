@@ -121,8 +121,8 @@ class InvestorsHubScreen extends StatelessWidget {
                   InvestorArchitectureProduct(
                     name: 'Aura',
                     tagline:
-                        'Accountable public discourse and '
-                        'institutional communication.',
+                        'Institution operating infrastructure — the system '
+                        'an institution runs its public and member-facing life on.',
                   ),
                   InvestorArchitectureProduct(
                     name: 'Orchestrate',

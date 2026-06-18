@@ -95,8 +95,8 @@ $emdash = [char]0x2014
 
 New-Og `
   -OutFile (Join-Path $assetsDir 'og-default.png') `
-  -Headline 'Accountable public discourse.' `
-  -Subline ('Institutional communication infrastructure. Verified identity, structured authority, durable records ' + $emdash + ' for people and institutions speaking on the record.')
+  -Headline 'Institution operating infrastructure.' `
+  -Subline ('The system an institution runs its public and member-facing life on. Verified identity, structured authority, durable records ' + $emdash + ' on one accountable record.')
 
 New-Og `
   -OutFile (Join-Path $assetsDir 'og-investors.png') `
@@ -106,7 +106,7 @@ New-Og `
 New-Og `
   -OutFile (Join-Path $assetsDir 'og-mission.png') `
   -Headline 'Mission' `
-  -Subline 'Build durable systems for communication, coordination, and execution in the AI era.'
+  -Subline 'Build the durable substrate institutions run on, in an era where capability is abundant and continuity is scarce.'
 
 New-Og `
   -OutFile (Join-Path $assetsDir 'og-founder.png') `

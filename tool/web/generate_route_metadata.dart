@@ -46,7 +46,7 @@ class _RouteMeta {
     this.crawlerVisibleHeading,
     this.crawlerVisibleBodyParagraphs = const <String>[],
     this.crawlerVisibleContactEmail,
-  }) : imageAlt = imageAlt ?? 'Aura Platform — accountable communication infrastructure';
+  }) : imageAlt = imageAlt ?? 'Aura Platform — institution operating infrastructure';
 
   final String path; // e.g. '/investors' — must start with '/' and not end with '/'
   final String title;
@@ -90,7 +90,7 @@ const _routes = <_RouteMeta>[
     path: '/mission',
     title: 'Mission — Aura Platform LLC',
     description:
-        'Build durable systems for communication, coordination, and execution in the AI era. Identity, accountability, continuity, human authority, operational memory.',
+        'Build the durable substrate institutions run on — identity, accountability, continuity, human authority, operational memory — in an era where capability is abundant and continuity is scarce.',
     image: 'og-mission.png',
     imageAlt: 'Aura Platform LLC — mission',
   ),
@@ -98,7 +98,7 @@ const _routes = <_RouteMeta>[
     path: '/investors',
     title: 'Investors & Partners — Aura Platform LLC',
     description:
-        'Aura Platform LLC builds infrastructure for accountable communication and AI-assisted operational execution. Trust, action, records — one identity, one record, one accountable surface.',
+        'Aura Platform LLC builds continuity infrastructure for institutions: Aura (institution operating infrastructure), Orchestrate (commercial execution infrastructure), and Bajwa Writes (continuity & preservation). One identity, one record, one accountable surface.',
     image: 'og-investors.png',
     imageAlt: 'Aura Platform LLC — investors and partners',
   ),
@@ -106,7 +106,7 @@ const _routes = <_RouteMeta>[
     path: '/founder',
     title: 'Founder — Aura Platform LLC',
     description:
-        'Aura Platform LLC is being built by an operator-builder focused on accountable communication, operational execution, and durable systems.',
+        'Aura Platform LLC is being built by an operator-builder focused on institution operating infrastructure, commercial execution, and durable systems.',
     image: 'og-founder.png',
     imageAlt: 'Aura Platform LLC — founder',
   ),
@@ -120,19 +120,19 @@ const _routes = <_RouteMeta>[
     path: '/patrons',
     title: 'Patrons — Aura Platform LLC',
     description:
-        'Patrons provide ongoing support for the development of durable communication and operational infrastructure.',
+        'Patrons provide ongoing support for the development of durable institution operating and execution infrastructure.',
   ),
   _RouteMeta(
     path: '/institutions',
     title: 'Institutions — Aura Platform',
     description:
-        'Verified institutions on Aura. Public directory of organizations speaking under identity-bound, accountable communication.',
+        'Verified institutions on Aura — organizations running their public and member-facing life on institution operating infrastructure, under identity-bound, accountable record.',
   ),
   _RouteMeta(
     path: '/white-paper',
     title: 'White Paper — Aura Platform',
     description:
-        'How Aura keeps identity, authority, and outcomes connected across public discourse and institutional communication.',
+        'How Aura, as institution operating infrastructure, keeps identity, authority, and outcomes connected on one accountable record.',
   ),
   _RouteMeta(
     path: '/contact',
@@ -149,8 +149,8 @@ const _routes = <_RouteMeta>[
         'user-controlled deletion.',
     crawlerVisibleHeading: 'Privacy Policy',
     crawlerVisibleBodyParagraphs: [
-      'Aura Platform LLC operates the Aura communication platform and the '
-          'Orchestrate operational-execution platform. This page summarizes '
+      'Aura Platform LLC operates Aura, its institution operating infrastructure, '
+          'and the Orchestrate operational-execution platform. This page summarizes '
           'how the platform collects, uses, retains, and deletes personal '
           'information.',
       'Aura collects only the information needed to operate verified-identity '
@@ -188,9 +188,9 @@ const _routes = <_RouteMeta>[
         'Acceptable use, accountability requirements, and dispute resolution.',
     crawlerVisibleHeading: 'Terms of Use',
     crawlerVisibleBodyParagraphs: [
-      'These Terms of Use govern access to the Aura communication platform '
-          'and the Orchestrate operational-execution platform, both operated '
-          'by Aura Platform LLC.',
+      'These Terms of Use govern access to Aura, the institution operating '
+          'infrastructure, and the Orchestrate operational-execution platform, '
+          'both operated by Aura Platform LLC.',
       'Identity: accounts on Aura are tied to verified real-person or '
           'verified-institution identity. Accountability is a core platform '
           'property; impersonation, identity laundering, and synthetic '

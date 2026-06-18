@@ -84,8 +84,9 @@ class ShellFooter extends StatelessWidget {
   static const double _wideBreakpoint = 760;
 
   static const _platformNote =
-      'Aura is public discourse infrastructure. People raise issues, '
-      'institutions respond, and outcomes are public.';
+      'Aura is institution operating infrastructure. Institutions run their '
+      'public and member-facing life on one verified identity and one '
+      'accountable record.';
 
   @override
   Widget build(BuildContext context) {

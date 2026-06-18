@@ -66,7 +66,7 @@ class FounderMessageScreen extends StatelessWidget {
           'system that rewards reaction over responsibility. Identity '
           'is blurred, corrections are lost, and the record of what was '
           'said and what followed evaporates. Aura is the '
-          'communication infrastructure for the opposite: people and '
+          'institution operating infrastructure for the opposite: people and '
           'institutions speaking under verified identity, with '
           'structure that keeps positions attributable and outcomes '
           'durable.',

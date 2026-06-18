@@ -369,7 +369,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   body:
                                       'Sign in to continue your work, conversations, institutions, and publishing history.',
                                   accent:
-                                      'Aura keeps communication, identity, and publication in one place.',
+                                      'Aura is institution operating infrastructure — one verified identity, one accountable record.',
                                 ),
                               ),
                               const SizedBox(width: AuraSpace.s16),
@@ -383,7 +383,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 body:
                                     'Sign in to continue your work, conversations, institutions, and publishing history.',
                                 accent:
-                                    'Aura keeps communication, identity, and publication in one place.',
+                                    'Aura is institution operating infrastructure — one verified identity, one accountable record.',
                               ),
                               const SizedBox(height: AuraSpace.s16),
                               formWidget,

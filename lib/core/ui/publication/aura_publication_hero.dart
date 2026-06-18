@@ -33,7 +33,7 @@ class AuraPublicationHero extends StatelessWidget {
   final String eyebrow;
 
   /// Display title — short, declarative, capital case. Examples:
-  ///   "Accountable communication infrastructure."
+  ///   "Institution operating infrastructure."
   ///   "Mission."
   final String title;
 

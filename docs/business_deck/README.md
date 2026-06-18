@@ -6,9 +6,10 @@ Current deck exports were removed because generated PDFs had layout and renderin
 
 ## Canonical Positioning
 
-- Aura = accountable public discourse and institutional communication infrastructure.
-- Orchestrate = AI-assisted revenue automation and operational execution platform from outreach -> follow-ups -> meetings -> workflow execution -> billing.
-- Aura Platform LLC = infrastructure company combining trusted communication and operational execution.
+- Aura = institution operating infrastructure — the system an institution runs its public and member-facing life on, on one accountable record. Supporting short label: accountable institutional communication.
+- Orchestrate = commercial execution infrastructure — governed managed-outbound execution from outreach -> follow-ups -> meetings -> workflow execution -> billing.
+- Aura Platform LLC = continuity infrastructure for institutions — three products on one shared substrate: Aura, Orchestrate, and Bajwa Writes (continuity & preservation). The substrate outlasts the moment.
+- NOTE: the deck body (`source/`) still covers only Aura + Orchestrate. Adding the Bajwa Writes pillar to the deck slides is DEFERRED until the deck is regenerated (current PDF exports were removed — see above).
 
 ## Structure
 

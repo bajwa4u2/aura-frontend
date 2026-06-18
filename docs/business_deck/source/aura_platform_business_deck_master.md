@@ -2,9 +2,9 @@
 
 ## Positioning
 
-Aura Platform LLC is an infrastructure company combining trusted communication and operational execution.
+Aura Platform LLC builds continuity infrastructure for institutions — three products on one shared substrate: Aura (institution operating infrastructure), Orchestrate (commercial execution infrastructure), and Bajwa Writes (continuity & preservation infrastructure). One conviction: the substrate outlasts the moment.
 
-Aura is accountable public discourse and institutional communication infrastructure. It is built around verified institutional presence, public discussion, spaces, messaging, realtime/live communication, and governance-aware interaction between the public and institutions.
+Aura is institution operating infrastructure — the system an institution runs its public and member-facing life on. It is built around verified institutional presence, public discussion, spaces, correspondence, realtime/live communication, and governance-aware interaction between the public and institutions, on one accountable record. Supporting short label: accountable institutional communication.
 
 Orchestrate is an AI-assisted revenue automation and operational execution platform. Its core path is outreach -> follow-ups -> meetings -> workflow execution -> billing. It should not be described as generic workflow software, generic productivity tooling, or just CRM.
 
@@ -23,7 +23,7 @@ Aura Platform LLC connects these needs through shared infrastructure ideas:
 
 ## Product 1: Aura
 
-Aura provides infrastructure for accountable public discourse and institutional communication.
+Aura provides institution operating infrastructure — the system an institution runs its public and member-facing life on.
 
 Core surfaces represented in the app:
 
@@ -40,7 +40,7 @@ Core surfaces represented in the app:
 
 Investor framing:
 
-Aura should be presented as institutional communication infrastructure, not a consumer social media app.
+Aura should be presented as institution operating infrastructure, not a consumer social media app.
 
 ## Product 2: Orchestrate
 

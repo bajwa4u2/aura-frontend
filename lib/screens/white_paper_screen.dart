@@ -127,10 +127,11 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
 
     final hero = AuraPublicationHero(
       eyebrow: 'White Paper',
-      title: 'Accountable communication infrastructure.',
+      title: 'Institution operating infrastructure.',
       subtitle:
           'How Aura keeps identity, authority, and outcomes connected '
-          'across public discourse and institutional communication.',
+          'on one accountable record — the system an institution runs '
+          'its public and member-facing life on.',
       metaItems: metaItems,
       actions: [
         AuraPrimaryButton(
