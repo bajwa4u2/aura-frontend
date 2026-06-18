@@ -18,6 +18,7 @@ import '../../institutions/domain/communication_type.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
+import '../../topics/topic.dart';
 import '../domain/feed_item.dart';
 import 'feed_interaction_bar.dart';
 
@@ -314,6 +315,37 @@ class UnifiedFeedCard extends ConsumerWidget {
               _MetaRow(
                 visibility: item.visibility,
                 distribution: item.distribution,
+              ),
+            ],
+            // Primary topic — the authoritative, human-selected category.
+            // Always visible when present (Content Topics doctrine).
+            if (AuraTopic.fromWire(item.primaryTopic) case final topic?) ...[
+              const SizedBox(height: AuraSpace.s8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: AuraSurface.subtle,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.label_outline_rounded,
+                        size: 13, color: AuraSurface.muted),
+                    const SizedBox(width: 4),
+                    Text(
+                      topic.label,
+                      style: AuraText.micro.copyWith(
+                        color: AuraSurface.muted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
             // Phase 4 — "Recent activity around this" line. Renders only

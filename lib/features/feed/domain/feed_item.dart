@@ -814,6 +814,8 @@ class FeedItem {
     required this.visibility,
     required this.distribution,
     required this.status,
+    this.primaryTopic,
+    this.secondaryTopics = const <String>[],
     this.createdAt,
     this.publishedAt,
     required this.targetRoute,
@@ -847,6 +849,14 @@ class FeedItem {
   final FeedVisibility visibility;
   final FeedDistribution distribution;
   final String status;
+
+  /// Topic classification (LEFT-side filter). `primaryTopic` is the
+  /// authoritative human-selected topic wire token (e.g. `AGRICULTURE`);
+  /// null for content that predates topics. `secondaryTopics` widen
+  /// discovery. Convert to [AuraTopic] in the UI layer for display.
+  final String? primaryTopic;
+  final List<String> secondaryTopics;
+
   final DateTime? createdAt;
   final DateTime? publishedAt;
 
@@ -1005,6 +1015,13 @@ class FeedItem {
       visibility: FeedVisibility.fromWire(m['visibility']),
       distribution: FeedDistribution.fromWire(m['distribution']),
       status: s(['status']),
+      primaryTopic: opt(['primaryTopic']),
+      secondaryTopics: (m['secondaryTopics'] is List)
+          ? (m['secondaryTopics'] as List)
+              .map((e) => e.toString())
+              .where((e) => e.trim().isNotEmpty)
+              .toList()
+          : const <String>[],
       createdAt: readDate(m['createdAt']),
       publishedAt: readDate(m['publishedAt']),
       targetRoute: s(['targetRoute']),

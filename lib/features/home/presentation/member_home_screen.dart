@@ -16,6 +16,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/surface/surface_composition.dart';
 
 import '../../feed/data/unified_feed_providers.dart';
+import '../../feed/presentation/feed_filter_bar.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
 import '../../public/widgets/activation_overlay.dart';
@@ -276,6 +277,11 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
                   // own cards; 16 px reads as "next section" without
                   // a yawning gap.
                   const SizedBox(height: AuraSpace.s16),
+
+                  // Two-dimension feed filters (topic + source/type) — narrow
+                  // the reverse-chronological stream without reordering it.
+                  const FeedFilterBar(),
+                  const SizedBox(height: AuraSpace.s14),
 
                   // ── Discourse stream + LIVE NOW
                   const _DiscourseStream(),

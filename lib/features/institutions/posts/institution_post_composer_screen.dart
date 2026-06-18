@@ -22,6 +22,8 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
+import '../../topics/aura_topic_selector.dart';
+import '../../topics/topic.dart';
 import '../data/institution_draft_store.dart';
 import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
@@ -89,6 +91,11 @@ class _InstitutionPostComposerScreenState
   String? _mediaUrl;
   String? _mediaThumbUrl;
   String? _mediaMimeType;
+
+  // Content Topics — Primary is human-selected and authoritative (required
+  // before publishing); Secondary topics are suggested + human-editable.
+  AuraTopic? _primaryTopic;
+  List<AuraTopic> _secondaryTopics = <AuraTopic>[];
   bool _uploading = false;
 
   bool _busy = false;
@@ -471,6 +478,12 @@ class _InstitutionPostComposerScreenState
     if (body.length > InstitutionPost.maxBodyChars) {
       return 'Body is too long (max ${InstitutionPost.maxBodyChars} chars).';
     }
+    // Content Topics doctrine: a human-selected Primary Topic is required
+    // before a NEW post can be saved, submitted, or published. (Edit mode
+    // preserves the post's stored topics and does not re-require selection.)
+    if (!widget.isEditing && _primaryTopic == null) {
+      return 'Select a primary topic.';
+    }
     return InstitutionPost.validate(_visibility, _distribution);
   }
 
@@ -491,6 +504,13 @@ class _InstitutionPostComposerScreenState
       if (_mediaUrl != null && _mediaUrl!.isNotEmpty) 'mediaUrl': _mediaUrl,
       'visibility': _visibility.wire,
       'distribution': _distribution.wire,
+      // Topics are authored on NEW posts. On edit we omit them so the
+      // backend preserves the stored values (editing topics in place is a
+      // follow-up that needs the post model to carry them for pre-fill).
+      if (!widget.isEditing && _primaryTopic != null)
+        'primaryTopic': _primaryTopic!.wire,
+      if (!widget.isEditing)
+        'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
     };
   }
 
@@ -1090,6 +1110,18 @@ class _InstitutionPostComposerScreenState
                       _scheduleDraftSave();
                     },
                   ),
+                  if (!widget.isEditing) ...[
+                    const SizedBox(height: AuraSpace.s16),
+                    AuraTopicSelector(
+                      primary: _primaryTopic,
+                      secondaries: _secondaryTopics,
+                      contentText: '${_titleCtrl.text} ${_bodyCtrl.text}',
+                      onPrimaryChanged: (t) =>
+                          setState(() => _primaryTopic = t),
+                      onSecondariesChanged: (list) =>
+                          setState(() => _secondaryTopics = list),
+                    ),
+                  ],
                   const SizedBox(height: AuraSpace.s16),
                   if (!widget.isEditing)
                     _DraftStatusRow(

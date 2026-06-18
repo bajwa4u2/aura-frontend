@@ -246,13 +246,33 @@ class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>> {
   }
 }
 
+/// Viewer feed filters — two independent dimensions that combine:
+///   * topic  — AuraTopic wire token (LEFT, "what is it about?"). null = All.
+///   * source — institutions | members | official | announcements |
+///              public | member | internal (RIGHT, "who/what kind?"). null = Latest/All.
+/// Changing this rebuilds the member/public paged providers, which re-fetch
+/// with the filter as query params. Ordering stays reverse-chronological.
+class FeedFilter {
+  const FeedFilter({this.topic, this.source});
+  final String? topic;
+  final String? source;
+}
+
+final feedFilterProvider =
+    StateProvider<FeedFilter>((ref) => const FeedFilter());
+
 /// Paged variant of [globalPublicFeedProvider].
 final globalPublicFeedPagedProvider = StateNotifierProvider<
     FeedPagedNotifier, AsyncValue<FeedPagedState>>((ref) {
   final repo = ref.watch(unifiedFeedRepositoryProvider);
   final actor = ref.watch(feedActorProvider);
-  return FeedPagedNotifier(({cursor}) =>
-      repo.globalPublic(limit: 20, cursor: cursor, actor: actor));
+  final filter = ref.watch(feedFilterProvider);
+  return FeedPagedNotifier(({cursor}) => repo.globalPublic(
+      limit: 20,
+      cursor: cursor,
+      actor: actor,
+      topic: filter.topic,
+      source: filter.source));
 });
 
 /// Paged variant of [memberHomeFeedProvider].
@@ -260,8 +280,13 @@ final memberHomeFeedPagedProvider = StateNotifierProvider<
     FeedPagedNotifier, AsyncValue<FeedPagedState>>((ref) {
   final repo = ref.watch(unifiedFeedRepositoryProvider);
   final actor = ref.watch(feedActorProvider);
-  return FeedPagedNotifier(({cursor}) =>
-      repo.memberHome(limit: 20, cursor: cursor, actor: actor));
+  final filter = ref.watch(feedFilterProvider);
+  return FeedPagedNotifier(({cursor}) => repo.memberHome(
+      limit: 20,
+      cursor: cursor,
+      actor: actor,
+      topic: filter.topic,
+      source: filter.source));
 });
 
 /// Paged variant of [institutionExploreFeedProvider].

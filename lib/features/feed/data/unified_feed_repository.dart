@@ -15,18 +15,37 @@ class UnifiedFeedRepository {
     String? cursor,
     int? limit,
     String? actor,
+    String? topic,
+    String? source,
   }) async {
     return _list('/feed/public',
-        cursor: cursor, limit: limit, actor: actor);
+        cursor: cursor,
+        limit: limit,
+        actor: actor,
+        query: _filterQuery(topic, source));
+  }
+
+  /// Build the optional viewer-filter query (topic + source/type). Returns
+  /// null when neither is set so default feeds are byte-identical to before.
+  Map<String, dynamic>? _filterQuery(String? topic, String? source) {
+    final q = <String, dynamic>{};
+    if (topic != null && topic.trim().isNotEmpty) q['topic'] = topic.trim();
+    if (source != null && source.trim().isNotEmpty) q['source'] = source.trim();
+    return q.isEmpty ? null : q;
   }
 
   Future<FeedPage> memberHome({
     String? cursor,
     int? limit,
     String? actor,
+    String? topic,
+    String? source,
   }) async {
     return _list('/feed/member',
-        cursor: cursor, limit: limit, actor: actor);
+        cursor: cursor,
+        limit: limit,
+        actor: actor,
+        query: _filterQuery(topic, source));
   }
 
   Future<FeedPage> institutionExplore({
