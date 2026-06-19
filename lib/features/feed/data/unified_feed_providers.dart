@@ -296,12 +296,15 @@ final institutionExploreFeedPagedProvider = StateNotifierProvider.family<
     InstitutionExploreFeedArgs>((ref, args) {
   final repo = ref.watch(unifiedFeedRepositoryProvider);
   final actor = ref.watch(feedActorProvider);
+  final filter = ref.watch(feedFilterProvider);
   return FeedPagedNotifier(({cursor}) => repo.institutionExplore(
         institutionId: args.institutionId,
         scope: args.scope,
         limit: 20,
         cursor: cursor,
         actor: actor,
+        topic: filter.topic,
+        source: filter.source,
       ));
 });
 
@@ -311,11 +314,14 @@ final institutionProfileFeedPagedProvider =
         AsyncValue<FeedPagedState>, String>((ref, institutionId) {
   final repo = ref.watch(unifiedFeedRepositoryProvider);
   final actor = ref.watch(feedActorProvider);
+  final filter = ref.watch(feedFilterProvider);
   return FeedPagedNotifier(({cursor}) => repo.institutionProfile(
         institutionId: institutionId,
         limit: 20,
         cursor: cursor,
         actor: actor,
+        topic: filter.topic,
+        source: filter.source,
       ));
 });
 

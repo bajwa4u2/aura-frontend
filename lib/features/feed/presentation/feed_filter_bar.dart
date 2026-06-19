@@ -8,25 +8,42 @@ import '../../../core/ui/aura_text.dart';
 import '../../topics/topic.dart';
 import '../data/unified_feed_providers.dart';
 
-/// Two-dimension feed filter bar (Global Feed Ordering doctrine).
+/// Two-dimension feed filter bar (Global Feed Ordering doctrine), rendered as
+/// two dropdowns on one row, opposite each other:
 ///
-///   * LEFT  — Topic ("what is it about?"): All Topics + the 17 topics.
-///   * RIGHT — Source / type ("who published it / what kind?"): Latest/All,
-///             Institutions, Members, Official, Announcements.
+///   Topic: [All Topics ▼] ........ Resources: [All Resources ▼]
 ///
-/// The two are independent and combine. Selecting a filter updates
-/// [feedFilterProvider]; it never changes the default reverse-chronological
-/// ordering — it only narrows what is shown.
+///   * Topic ("what is it about?") — All Topics + the 17 topics.
+///   * Resources ("who published it / what kind?") — All Resources,
+///     Institutions, Members, Official, Announcements, Public, Internal.
+///
+/// The two are independent and combine. Changing either updates
+/// [feedFilterProvider]; neither changes the default reverse-chronological
+/// ordering — they only narrow what is shown.
 class FeedFilterBar extends ConsumerWidget {
-  const FeedFilterBar({super.key});
+  const FeedFilterBar({super.key, this.compact = false});
 
-  static const List<(String?, String)> _sources = [
-    (null, 'Latest'),
+  /// When true, used inline alongside other controls (e.g. the Institution
+  /// Explore visibility tabs) — drops the outer row spacing assumptions.
+  final bool compact;
+
+  /// (wire, label) for the Resources dimension. null = no filter.
+  static const List<(String?, String)> resources = [
+    (null, 'All Resources'),
     ('institutions', 'Institutions'),
     ('members', 'Members'),
     ('official', 'Official'),
     ('announcements', 'Announcements'),
+    ('public', 'Public'),
+    ('internal', 'Internal'),
   ];
+
+  static String resourceLabel(String? wire) {
+    for (final (w, l) in resources) {
+      if (w == wire) return l;
+    }
+    return 'All Resources';
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,137 +60,116 @@ class FeedFilterBar extends ConsumerWidget {
           FeedFilter(topic: filter.topic, source: s);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        // ── LEFT — Topic ────────────────────────────────────────────────
-        Row(
-          children: [
-            Text('Topic', style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-            )),
-            const SizedBox(width: AuraSpace.s8),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: PopupMenuButton<AuraTopic?>(
-                  onSelected: setTopic,
-                  itemBuilder: (_) => [
-                    const PopupMenuItem<AuraTopic?>(
-                      value: null,
-                      child: Text('All topics'),
-                    ),
-                    for (final t in AuraTopic.values)
-                      PopupMenuItem<AuraTopic?>(
-                        value: t,
-                        child: Text(t.label),
-                      ),
-                  ],
-                  child: _Pill(
-                    label: selectedTopic?.label ?? 'All topics',
-                    selected: selectedTopic != null,
-                    trailing: Icons.arrow_drop_down_rounded,
-                  ),
-                ),
-              ),
-            ),
-            if (selectedTopic != null)
-              TextButton(
-                onPressed: () => setTopic(null),
-                style: TextButton.styleFrom(
-                  foregroundColor: AuraSurface.muted,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('Clear'),
-              ),
-          ],
+        Flexible(
+          child: LabeledFilterDropdown<AuraTopic?>(
+            label: 'Topic',
+            current: selectedTopic?.label ?? 'All Topics',
+            selected: selectedTopic != null,
+            onSelected: setTopic,
+            items: [
+              (null, 'All Topics'),
+              for (final t in AuraTopic.values) (t, t.label),
+            ],
+          ),
         ),
-        const SizedBox(height: AuraSpace.s8),
-        // ── RIGHT — Source / type ──────────────────────────────────────
-        Row(
-          children: [
-            Text('Source', style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-            )),
-            const SizedBox(width: AuraSpace.s8),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final (wire, label) in _sources) ...[
-                      _Pill(
-                        label: label,
-                        selected: filter.source == wire,
-                        onTap: () => setSource(wire),
-                      ),
-                      const SizedBox(width: AuraSpace.s6),
-                    ],
-                  ],
-                ),
-              ),
+        const SizedBox(width: AuraSpace.s12),
+        Flexible(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: LabeledFilterDropdown<String?>(
+              label: 'Resources',
+              current: resourceLabel(filter.source),
+              selected: filter.source != null,
+              onSelected: setSource,
+              items: resources,
             ),
-          ],
+          ),
         ),
       ],
     );
   }
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({
+/// A labeled dropdown rendered as `Label: [current ▼]`. Public so feed
+/// surfaces (Works, Explore, Institution preview) reuse the exact control.
+class LabeledFilterDropdown<T> extends StatelessWidget {
+  const LabeledFilterDropdown({
+    super.key,
     required this.label,
+    required this.current,
     required this.selected,
-    this.onTap,
-    this.trailing,
+    required this.items,
+    required this.onSelected,
   });
 
   final String label;
+  final String current;
   final bool selected;
-  final VoidCallback? onTap;
-  final IconData? trailing;
+
+  /// (value, label) pairs.
+  final List<(T, String)> items;
+  final ValueChanged<T> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final pill = Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        color: selected ? AuraSurface.accentSoft : Colors.transparent,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color: selected ? AuraSurface.accent : AuraSurface.divider,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$label:',
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.faint,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: AuraText.small.copyWith(
-              color: selected ? AuraSurface.accentText : AuraSurface.ink,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        const SizedBox(width: AuraSpace.s6),
+        Flexible(
+          child: PopupMenuButton<T>(
+            onSelected: onSelected,
+            itemBuilder: (_) => [
+              for (final (value, itemLabel) in items)
+                PopupMenuItem<T>(value: value, child: Text(itemLabel)),
+            ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s10,
+                vertical: AuraSpace.s6,
+              ),
+              decoration: BoxDecoration(
+                color: selected ? AuraSurface.accentSoft : Colors.transparent,
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                border: Border.all(
+                  color: selected ? AuraSurface.accent : AuraSurface.divider,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      current,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.small.copyWith(
+                        color: selected
+                            ? AuraSurface.accentText
+                            : AuraSurface.ink,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.arrow_drop_down_rounded,
+                      size: 18,
+                      color: selected ? AuraSurface.accentText : AuraSurface.muted),
+                ],
+              ),
             ),
           ),
-          if (trailing != null)
-            Icon(trailing, size: 16,
-                color: selected ? AuraSurface.accentText : AuraSurface.muted),
-        ],
-      ),
-    );
-    if (onTap == null) return pill;
-    return InkWell(
-      borderRadius: BorderRadius.circular(AuraRadius.pill),
-      onTap: onTap,
-      child: pill,
+        ),
+      ],
     );
   }
 }

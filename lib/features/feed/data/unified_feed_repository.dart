@@ -54,12 +54,17 @@ class UnifiedFeedRepository {
     String? cursor,
     int? limit,
     String? actor,
+    String? topic,
+    String? source,
   }) async {
     final id = institutionId.trim();
     if (id.isEmpty) throw Exception('Institution id is missing.');
+    final query = <String, dynamic>{'scope': scope};
+    final f = _filterQuery(topic, source);
+    if (f != null) query.addAll(f);
     return _list(
       '/feed/institutions/$id/explore',
-      query: <String, dynamic>{'scope': scope},
+      query: query,
       cursor: cursor,
       limit: limit,
       actor: actor,
@@ -71,11 +76,14 @@ class UnifiedFeedRepository {
     String? cursor,
     int? limit,
     String? actor,
+    String? topic,
+    String? source,
   }) async {
     final id = institutionId.trim();
     if (id.isEmpty) throw Exception('Institution id is missing.');
     return _list(
       '/feed/institutions/$id/profile',
+      query: _filterQuery(topic, source),
       cursor: cursor,
       limit: limit,
       actor: actor,

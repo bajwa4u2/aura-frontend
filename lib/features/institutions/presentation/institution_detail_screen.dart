@@ -22,6 +22,7 @@ import '../../discourse_intelligence/providers.dart';
 import '../../discourse_intelligence/widgets/continuity_cards.dart';
 import '../../discourse_intelligence/widgets/discourse_continuity_panel.dart';
 import '../../feed/data/unified_feed_providers.dart';
+import '../../feed/presentation/feed_filter_bar.dart';
 import '../../feed/presentation/unified_feed_card.dart';
 import '../../institution_ontology/widgets/ontology_identity_chips.dart';
 import '../data/institutions_repository.dart';
@@ -494,6 +495,9 @@ class _PublicPostsSection extends ConsumerWidget {
               letterSpacing: 0.6,
             ),
           ),
+          const SizedBox(height: AuraSpace.s12),
+          // Topic + Resources controls — same doctrine as Works/Explore.
+          const FeedFilterBar(),
           const SizedBox(height: AuraSpace.s14),
           postsAsync.when(
             loading: () => const Padding(

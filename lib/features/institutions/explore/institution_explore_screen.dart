@@ -11,7 +11,9 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
+import '../../feed/presentation/feed_filter_bar.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../../topics/topic.dart';
 import '../domain/communication_type.dart';
 import '../live_rooms/institution_live_rooms_screen.dart'
     show institutionLiveRoomsProvider;
@@ -145,6 +147,36 @@ class _InstitutionExploreScreenState
     );
   }
 
+  // Topic + Resources controls — share the global feedFilterProvider with
+  // Works so the doctrine is identical across surfaces.
+  Widget _topicDropdown() {
+    final filter = ref.watch(feedFilterProvider);
+    final t = AuraTopic.fromWire(filter.topic);
+    return LabeledFilterDropdown<AuraTopic?>(
+      label: 'Topic',
+      current: t?.label ?? 'All Topics',
+      selected: t != null,
+      onSelected: (v) => ref.read(feedFilterProvider.notifier).state =
+          FeedFilter(topic: v?.wire, source: filter.source),
+      items: [
+        (null, 'All Topics'),
+        for (final x in AuraTopic.values) (x, x.label),
+      ],
+    );
+  }
+
+  Widget _resourcesDropdown() {
+    final filter = ref.watch(feedFilterProvider);
+    return LabeledFilterDropdown<String?>(
+      label: 'Resources',
+      current: FeedFilterBar.resourceLabel(filter.source),
+      selected: filter.source != null,
+      onSelected: (v) => ref.read(feedFilterProvider.notifier).state =
+          FeedFilter(topic: filter.topic, source: v),
+      items: FeedFilterBar.resources,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final identity = ref.watch(institutionIdentityProvider);
@@ -224,18 +256,40 @@ class _InstitutionExploreScreenState
                         const Text('Explore', style: AuraText.title),
                         if (scopes.isNotEmpty) ...[
                           const SizedBox(width: AuraSpace.s12),
+                          // Visibility tabs (Public/Member/Internal) PLUS the
+                          // Topic + Resources controls inline on the same row
+                          // (horizontally scrollable when space is tight).
                           Expanded(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: _ScopeTabs(
-                                controller: _tabController,
-                                scopes: scopes,
-                                onChanged: (_) => setState(() {}),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _ScopeTabs(
+                                    controller: _tabController,
+                                    scopes: scopes,
+                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                  const SizedBox(width: AuraSpace.s12),
+                                  _topicDropdown(),
+                                  const SizedBox(width: AuraSpace.s8),
+                                  _resourcesDropdown(),
+                                ],
                               ),
                             ),
                           ),
                         ] else
-                          const Spacer(),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _topicDropdown(),
+                                  const SizedBox(width: AuraSpace.s8),
+                                  _resourcesDropdown(),
+                                ],
+                              ),
+                            ),
+                          ),
                         if (canCompose) ...[
                           const SizedBox(width: AuraSpace.s8),
                           if (narrow)
