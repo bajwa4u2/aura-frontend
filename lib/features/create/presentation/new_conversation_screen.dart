@@ -838,7 +838,18 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   Expanded(
                     child: AuraSecondaryButton(
                       label: 'Cancel',
-                      onPressed: _submitting ? null : () => context.pop(),
+                      onPressed: _submitting
+                          ? null
+                          : () {
+                              // Entered via context.go from the Create hub, so
+                              // there's often no back-stack — fall back to the
+                              // messages hub so Cancel is never a dead tap.
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go('/me/correspondence');
+                              }
+                            },
                       icon: Icons.close_rounded,
                     ),
                   ),

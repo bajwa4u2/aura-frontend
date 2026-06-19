@@ -3067,7 +3067,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     AuraGhostButton(
                       label: 'Back',
                       icon: Icons.arrow_back,
-                      onPressed: _posting ? null : () => context.pop(),
+                      onPressed: _posting
+                    ? null
+                    : () {
+                        // Reached via context.go from the Create hub has no
+                        // back-stack — fall back to a safe home so Back is
+                        // never a dead tap.
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -3122,7 +3133,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               AuraGhostButton(
                 label: 'Back',
                 icon: Icons.arrow_back,
-                onPressed: _posting ? null : () => context.pop(),
+                onPressed: _posting
+                    ? null
+                    : () {
+                        // Reached via context.go from the Create hub has no
+                        // back-stack — fall back to a safe home so Back is
+                        // never a dead tap.
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
+                      },
               ),
             ],
           ),
