@@ -12,17 +12,69 @@ enum InstitutionAccessState {
   authorizedSpeaker,
 }
 
+/// A single institution the current member belongs to. Display-only shape for
+/// member surfaces (the left-nav affiliation line). Capacity-aware: a member
+/// may merely belong, or be authorized to speak for the institution.
+class MemberAffiliation {
+  const MemberAffiliation({
+    required this.id,
+    required this.name,
+    required this.slug,
+    this.logoUrl,
+    required this.role,
+    required this.canSpeakOfficially,
+    required this.isVerified,
+  });
+
+  final String id;
+  final String name;
+  final String slug;
+  final String? logoUrl;
+
+  /// Canonical role wire token (OWNER/ADMIN/EDITOR/MEMBER), upper-cased.
+  final String role;
+  final bool canSpeakOfficially;
+  final bool isVerified;
+
+  /// Tolerant parse of one `memberships[]` entry from `/institutions/me`.
+  /// Returns null when the entry lacks a usable institution id.
+  static MemberAffiliation? fromJson(Map<String, dynamic> m) {
+    final inst = m['institution'] is Map
+        ? Map<String, dynamic>.from(m['institution'] as Map)
+        : null;
+    if (inst == null) return null;
+    final id = (inst['id'] ?? '').toString().trim();
+    if (id.isEmpty) return null;
+    final logo = (inst['logoUrl'] ?? '').toString().trim();
+    final status = (inst['status'] ?? '').toString().trim().toUpperCase();
+    return MemberAffiliation(
+      id: id,
+      name: (inst['name'] ?? '').toString().trim(),
+      slug: (inst['slug'] ?? '').toString().trim(),
+      logoUrl: logo.isEmpty ? null : logo,
+      role: (m['role'] ?? '').toString().trim().toUpperCase(),
+      canSpeakOfficially: m['canSpeakOfficially'] == true,
+      isVerified: inst['isVerified'] == true || status == 'VERIFIED',
+    );
+  }
+}
+
 class InstitutionAccess {
   final InstitutionAccessState state;
   final Map<String, dynamic>? institution;
   final Map<String, dynamic>? membership;
   final Map<String, dynamic>? request;
 
+  /// All active affiliations (primary-first). Empty when the user belongs to
+  /// no institution — the left-nav line self-hides on empty.
+  final List<MemberAffiliation> memberships;
+
   const InstitutionAccess({
     required this.state,
     this.institution,
     this.membership,
     this.request,
+    this.memberships = const <MemberAffiliation>[],
   });
 
   bool get hasAccess =>
@@ -173,6 +225,15 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
   );
 });
 
+/// All institutions the current member is affiliated with (primary-first).
+/// Derived from the session-cached [institutionAccessProvider] — no extra
+/// request. Returns an empty list while loading, on error, or when the user
+/// has no affiliation, so consumers (the left-nav line) can self-hide safely.
+final myAffiliationsProvider = Provider<List<MemberAffiliation>>((ref) {
+  final access = ref.watch(institutionAccessProvider).valueOrNull;
+  return access?.memberships ?? const <MemberAffiliation>[];
+});
+
 final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async {
   await ref.watch(sessionBootstrapProvider.future);
 
@@ -234,6 +295,16 @@ final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async 
       parsed = InstitutionAccessState.authorizedSpeaker;
     }
 
+    final memberships = data['memberships'] is List
+        ? (data['memberships'] as List)
+            .whereType<Map>()
+            .map((e) => MemberAffiliation.fromJson(
+                  Map<String, dynamic>.from(e),
+                ))
+            .whereType<MemberAffiliation>()
+            .toList(growable: false)
+        : const <MemberAffiliation>[];
+
     return InstitutionAccess(
       state: parsed,
       institution: institution,
@@ -241,6 +312,7 @@ final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async 
       request: data['request'] is Map
           ? Map<String, dynamic>.from(data['request'])
           : null,
+      memberships: memberships,
     );
   } on DioException catch (e) {
     final code = e.response?.statusCode;

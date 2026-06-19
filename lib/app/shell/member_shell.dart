@@ -67,7 +67,7 @@ class MemberShell extends StatelessWidget {
 
   static const List<_NavItem> _items = [
     _NavItem(
-      label: 'Works',
+      label: 'Home',
       icon: Icons.home_outlined,
       selectedIcon: Icons.home_rounded,
       path: '/home',
@@ -870,8 +870,12 @@ class _MemberIdentityHeader extends ConsumerWidget {
     final handle = (user['handle'] ?? '').toString().trim();
     final avatarUrl = (user['avatarUrl'] ?? '').toString().trim();
     final initials = name.isNotEmpty ? name[0].toUpperCase() : '';
+    final affiliations = ref.watch(myAffiliationsProvider);
 
-    return Material(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => context.go('/me'),
@@ -927,6 +931,104 @@ class _MemberIdentityHeader extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    ),
+        if (affiliations.isNotEmpty)
+          _AffiliationLine(affiliations: affiliations),
+      ],
+    );
+  }
+}
+
+/// Compact affiliation line under the member identity block. Shows the
+/// primary institution + capacity (Speaks for / Owner / Admin / Member),
+/// a verified tick, and "+N" when the member belongs to several. Self-hides
+/// when the member has no affiliation. Tapping opens the institution
+/// workspace selector.
+class _AffiliationLine extends StatelessWidget {
+  const _AffiliationLine({required this.affiliations});
+
+  final List<MemberAffiliation> affiliations;
+
+  String _capacity(MemberAffiliation a) {
+    if (a.canSpeakOfficially) return 'Speaks for';
+    switch (a.role) {
+      case 'OWNER':
+        return 'Owner ·';
+      case 'ADMIN':
+        return 'Admin ·';
+      case 'EDITOR':
+        return 'Editor ·';
+      default:
+        return 'Member ·';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (affiliations.isEmpty) return const SizedBox.shrink();
+    final primary = affiliations.first;
+    final extra = affiliations.length - 1;
+    final name = primary.name.isEmpty ? 'an institution' : primary.name;
+    final label = '${_capacity(primary)} $name';
+
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AuraSpace.s8,
+        right: AuraSpace.s8,
+        top: AuraSpace.s4,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go('/institution/dashboard'),
+          borderRadius: BorderRadius.circular(AuraRadius.r10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s8,
+              vertical: AuraSpace.s6,
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.account_balance_outlined,
+                  size: 13,
+                  color: AuraSurface.muted,
+                ),
+                const SizedBox(width: AuraSpace.s6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.micro.copyWith(
+                      color: AuraSurface.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (primary.isVerified) ...[
+                  const SizedBox(width: 3),
+                  const Icon(
+                    Icons.verified_rounded,
+                    size: 11,
+                    color: AuraSurface.accentText,
+                  ),
+                ],
+                if (extra > 0) ...[
+                  const SizedBox(width: AuraSpace.s6),
+                  Text(
+                    '+$extra',
+                    style: AuraText.micro.copyWith(
+                      color: AuraSurface.accentText,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
