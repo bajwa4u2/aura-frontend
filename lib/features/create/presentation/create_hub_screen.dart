@@ -41,8 +41,10 @@ class CreateHubScreen extends ConsumerWidget {
     final canAnnounceAsInstitution =
         institution.state == InstitutionAccessState.authorizedSpeaker;
     final canAnnounce = canAnnounceAsPlatform || canAnnounceAsInstitution;
-    final canClaimAudit = isAdmin;
-    final hasAuthoritySection = canAnnounce || canClaimAudit;
+    // Claim audit is an analysis tool, not an act of creation — it now lives
+    // outside the Create hub (reachable at /ai/claim-audit). Create stays
+    // scoped to things you make: writing, messages, announcements.
+    final hasAuthoritySection = canAnnounce;
 
     void onAnnouncementTap(BuildContext ctx) {
       if (canAnnounceAsPlatform && canAnnounceAsInstitution) {
@@ -97,18 +99,11 @@ class CreateHubScreen extends ConsumerWidget {
                 title: 'Writing',
                 items: [
                   _CreateActionData(
-                    title: 'New work',
+                    title: 'Write',
                     subtitle:
-                        'Begin a piece of writing or long-form content.',
+                        'Start a post — add media, topics, and audience as you go.',
                     icon: Icons.edit_note_rounded,
-                    route: '/compose?mode=text',
-                  ),
-                  _CreateActionData(
-                    title: 'With media',
-                    subtitle:
-                        'Open composer with attachment tray ready.',
-                    icon: Icons.perm_media_outlined,
-                    route: '/compose?mode=media',
+                    route: '/compose',
                   ),
                 ],
               ),
@@ -143,14 +138,6 @@ class CreateHubScreen extends ConsumerWidget {
                             'Publish an official institution or platform notice.',
                         icon: Icons.campaign_outlined,
                         onTap: onAnnouncementTap,
-                      ),
-                    if (canClaimAudit)
-                      _CreateActionData(
-                        title: 'Claim audit',
-                        subtitle:
-                            'Open the AI-powered claim audit surface.',
-                        icon: Icons.fact_check_outlined,
-                        route: '/ai/claim-audit',
                       ),
                   ],
                 ),

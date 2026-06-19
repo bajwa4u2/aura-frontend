@@ -145,6 +145,12 @@ class MemberHomeScreen extends ConsumerStatefulWidget {
 class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
   bool _activationChecked = false;
 
+  /// First-session activation overlay visibility. Rendered as an in-tree
+  /// Stack child of THIS screen (not a root dialog), so it is structurally
+  /// bound to the Home route and can never float over Create or any other
+  /// surface — it is torn down automatically when Home is disposed.
+  bool _showActivation = false;
+
   Future<void> _openCompose({String? heldId}) async {
     final target = (heldId ?? '').trim().isNotEmpty
         ? '/compose?held=${Uri.encodeComponent(heldId!.trim())}'
@@ -168,12 +174,7 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
     // Defer one frame so the home renders behind the overlay first.
     await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
-      builder: (_) => const ActivationOverlay(),
-    );
+    setState(() => _showActivation = true);
   }
 
   @override
@@ -206,7 +207,9 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
     // grows to 1200; ≥1680 grows to 1280 (matches workspace width).
     return AuraScaffold(
       showHeader: false,
-      body: RefreshIndicator(
+      body: Stack(
+        children: [
+          RefreshIndicator(
         onRefresh: _refresh,
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -300,6 +303,22 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
             );
           },
         ),
+          ),
+          // First-session activation overlay — in-tree (Home-scoped) so it
+          // never floats over other surfaces. Carries its own scrim now that
+          // it is no longer a root-navigator dialog.
+          if (_showActivation)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.55),
+                child: ActivationOverlay(
+                  onDismiss: () {
+                    if (mounted) setState(() => _showActivation = false);
+                  },
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

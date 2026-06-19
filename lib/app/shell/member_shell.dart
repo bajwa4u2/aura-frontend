@@ -162,6 +162,18 @@ class MemberShell extends StatelessWidget {
                     inDrawer: true,
                   ),
                 ),
+          // Persistent bottom navigation for small screens (no left rail).
+          // Restores always-visible section nav on mobile/tablet so the
+          // create surfaces (and every other member surface) are never a
+          // single hidden hamburger away. Suppressed on immersive routes
+          // (realtime, thread/live) via the same predicate as the slim bar.
+          bottomNavigationBar: (!showLeftRail && _showMemberMobileBar(path))
+              ? _MemberBottomNav(
+                  items: _items,
+                  selectedIndex: selectedIndex,
+                  currentPath: path,
+                )
+              : null,
           body: SafeArea(
             top: true,
             bottom: false,
@@ -983,6 +995,112 @@ class _MemberMobileBar extends ConsumerWidget {
                   fontWeight: FontWeight.w700,
                   color: AuraSurface.ink,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEMBER BOTTOM NAV — persistent section nav for small screens (no left rail).
+// Mirrors the rail's item set so the user has the same five destinations
+// (Works / Messages / Create / Institutions / Support) always one tap away.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MemberBottomNav extends StatelessWidget {
+  const _MemberBottomNav({
+    required this.items,
+    required this.selectedIndex,
+    required this.currentPath,
+  });
+
+  final List<_NavItem> items;
+  final int selectedIndex;
+  final String currentPath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AuraSurface.card,
+        border: Border(top: BorderSide(color: AuraSurface.divider)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 12,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 58,
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                Expanded(
+                  child: _MemberBottomNavTile(
+                    item: items[i],
+                    selected: i == selectedIndex,
+                    onTap: () {
+                      if (items[i].path != currentPath) {
+                        context.go(items[i].path);
+                      }
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MemberBottomNavTile extends StatelessWidget {
+  const _MemberBottomNavTile({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _NavItem item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // The "Create" item is primary — it reads as the accent action whether or
+    // not it's the selected tab, matching its left-rail treatment.
+    final color = selected || item.isPrimary
+        ? AuraSurface.accentText
+        : AuraSurface.muted;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: item.label,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              selected ? item.selectedIcon : item.icon,
+              size: AuraIconSize.md,
+              color: color,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.micro.copyWith(
+                color: color,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
           ],

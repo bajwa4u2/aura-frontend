@@ -26,6 +26,8 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../ai/providers.dart';
 import '../../feed/data/unified_feed_providers.dart';
+import '../../topics/aura_topic_selector.dart';
+import '../../topics/topic.dart';
 import '../../composition/domain/composition_models.dart';
 import 'compose/compose_models.dart';
 import 'compose/compose_widgets.dart';
@@ -195,6 +197,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _uploadingMedia = false;
 
   PostVisibility _visibility = PostVisibility.public;
+
+  /// Content Topics — human-selected Primary Topic (authoritative) + optional
+  /// Secondary Topics (suggested, editable). Mirrors the institution composer
+  /// so member posts carry the same LEFT-side feed-filter dimension. Sent on
+  /// the draft payload and preserved through publish.
+  AuraTopic? _primaryTopic;
+  List<AuraTopic> _secondaryTopics = <AuraTopic>[];
 
   final List<Attachment> _attachments = [];
 
@@ -854,6 +863,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       setState(() {
         _textController.text = text;
         _visibility = visibility;
+        _primaryTopic = AuraTopic.fromWire(_str(draft['primaryTopic']));
+        _secondaryTopics = AuraTopic.listFromWire(draft['secondaryTopics']);
         _lastSavedAt = savedAt;
         _attachments
           ..clear()
@@ -1167,6 +1178,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return {
       'text': _textController.text.trim(),
       'visibility': _visibilityApiValue(_visibility),
+      // Content Topics — always send current selection so the draft (and the
+      // post it publishes into) reflects the composer state. `null` clears.
+      'primaryTopic': _primaryTopic?.wire,
+      'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
       // Public-UX Phase 4 — anchor the post to a public discourse
       // space when the composer was entered with one (or the user
       // picked one). Backend persists this on the draft and replies
@@ -1825,6 +1840,29 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             _buildInlineAudienceRow(),
             const SizedBox(height: AuraSpace.s14),
             _buildAttachmentsBlock(),
+            const SizedBox(height: AuraSpace.s16),
+            const Divider(color: AuraSurface.divider),
+            const SizedBox(height: AuraSpace.s16),
+            AuraTopicSelector(
+              primary: _primaryTopic,
+              secondaries: _secondaryTopics,
+              contentText: _textController.text,
+              onPrimaryChanged: (t) {
+                setState(() => _primaryTopic = t);
+                // Drop any secondary that now equals the primary, then persist.
+                if (t != null && _secondaryTopics.contains(t)) {
+                  setState(() {
+                    _secondaryTopics =
+                        _secondaryTopics.where((x) => x != t).toList();
+                  });
+                }
+                _scheduleAutosave();
+              },
+              onSecondariesChanged: (list) {
+                setState(() => _secondaryTopics = list);
+                _scheduleAutosave();
+              },
+            ),
           ],
         ],
       ),

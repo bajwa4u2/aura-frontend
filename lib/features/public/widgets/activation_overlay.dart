@@ -23,7 +23,15 @@ import '../../feed/data/unified_feed_providers.dart';
 /// overlay never shows again on that device. There is no analytics
 /// dependency — the activation outcome is pure UX state.
 class ActivationOverlay extends ConsumerStatefulWidget {
-  const ActivationOverlay({super.key});
+  const ActivationOverlay({super.key, this.onDismiss});
+
+  /// Called when the overlay should be torn down (Skip / × / action picked).
+  /// When provided, the overlay drives dismissal through this callback
+  /// instead of popping a Navigator route — which is what binds it to the
+  /// Home route's widget tree (rendered as an in-tree Stack child) rather
+  /// than living as a root-navigator dialog that could float over other
+  /// routes. When null, falls back to `Navigator.maybePop()`.
+  final VoidCallback? onDismiss;
 
   static const String _kDismissedKey = 'aura.activation.dismissed';
 
@@ -55,19 +63,26 @@ class ActivationOverlay extends ConsumerStatefulWidget {
 }
 
 class _ActivationOverlayState extends ConsumerState<ActivationOverlay> {
+  void _close() {
+    if (widget.onDismiss != null) {
+      widget.onDismiss!();
+    } else if (mounted) {
+      Navigator.of(context).maybePop();
+    }
+  }
+
   Future<void> _dismiss() async {
     await ActivationOverlay.markDismissed();
     if (!mounted) return;
-    Navigator.of(context).pop();
+    _close();
   }
 
   Future<void> _route(String path) async {
     await ActivationOverlay.markDismissed();
     if (!mounted) return;
-    Navigator.of(context).pop();
-    if (mounted) {
-      context.push(path);
-    }
+    // Route first (while this context is still mounted), then tear down.
+    context.push(path);
+    _close();
   }
 
   /// "Respond to a discussion" — picks the first active discussion
