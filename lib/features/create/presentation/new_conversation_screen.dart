@@ -14,6 +14,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../composition/domain/composition_models.dart';
+import '../../composition/presentation/composition_assist.dart';
 
 class NewConversationScreen extends ConsumerStatefulWidget {
   const NewConversationScreen({
@@ -40,8 +41,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   final TextEditingController _descriptionController = TextEditingController();
 
   final Set<String> _selectedIds = <String>{};
-  final Set<String> _applyingSuggestionIds = <String>{};
-  final Set<String> _dismissedSuggestionIds = <String>{};
 
   List<_DirectoryEntry> _relationshipEntries = const [];
   List<_DirectoryEntry> _searchEntries = const [];
@@ -55,18 +54,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   String _spaceType = 'CIRCLE';
 
   Timer? _searchDebounce;
-  Timer? _suggestionDebounce;
-
-  bool _suggestionsBusy = false;
-  String? _suggestionsError;
-  CompositionReviewResult? _spaceSuggestions;
-  String? _reviewedSnapshot;
-
-  bool _translationBusy = false;
-  String? _translationError;
-  String _translationTargetLanguage = 'ur';
-  CompositionTranslationResult? _translationPreview;
-  String? _translationSourceSnapshot;
 
   String? _currentUserId;
   String? _currentUserHandle;
@@ -114,19 +101,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         .toList(growable: false);
   }
 
-  List<CompositionSuggestion> get _visibleSuggestions {
-    final review = _spaceSuggestions;
-    if (review == null) return const [];
-
-    final out = <CompositionSuggestion>[];
-    for (final suggestion in review.suggestions) {
-      if (_dismissedSuggestionIds.contains(suggestion.id)) continue;
-      out.add(suggestion);
-      if (out.length >= 2) break;
-    }
-    return out;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -139,7 +113,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    _suggestionDebounce?.cancel();
     _searchController.removeListener(_handleSearchChanged);
     _titleController.removeListener(_onSpaceDraftChanged);
     _descriptionController.removeListener(_onSpaceDraftChanged);
@@ -150,35 +123,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   }
 
   void _onSpaceDraftChanged() {
-    if (!mounted) return;
-
-    final current = _spaceDraftText();
-
-    if (_reviewedSnapshot != null &&
-        _normalizeText(_reviewedSnapshot!) != _normalizeText(current)) {
-      setState(() {
-        _spaceSuggestions = null;
-        _suggestionsError = null;
-        _dismissedSuggestionIds.clear();
-      });
-    }
-
-    if (_translationSourceSnapshot != null &&
-        _normalizeText(_translationSourceSnapshot!) !=
-            _normalizeText(current)) {
-      setState(() {
-        _translationPreview = null;
-        _translationError = null;
-      });
-    }
-
-    _suggestionDebounce?.cancel();
-    _suggestionDebounce = Timer(const Duration(milliseconds: 550), () {
-      if (!mounted) return;
-      if (_spaceDraftText().trim().isEmpty) return;
-      unawaited(_refreshSuggestions(silent: true));
-    });
-
+    // Title/description edits can flip the derived conversation/space kind and
+    // feed the assist panel's `text` — rebuild so both stay in sync.
     if (mounted) setState(() {});
   }
 
@@ -439,188 +385,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     }
 
     _replaceControllerText(_descriptionController, normalized);
-  }
-
-  Future<void> _refreshSuggestions({bool silent = false}) async {
-    if (!_isSharedSpaceMode) return;
-
-    final draft = _spaceDraftText();
-    if (draft.trim().isEmpty) return;
-
-    if (!silent) {
-      setState(() {
-        _suggestionsBusy = true;
-        _suggestionsError = null;
-      });
-    } else if (!_suggestionsBusy) {
-      setState(() {
-        _suggestionsBusy = true;
-      });
-    }
-
-    try {
-      final dio = ref.read(dioProvider);
-      final response = await dio.post(
-        '/composition/review',
-        data: {'text': draft, 'surface': 'space'},
-      );
-
-      final parsed = _parseLightReview(_firstMap(response.data));
-      if (!mounted) return;
-      setState(() {
-        _spaceSuggestions = parsed;
-        _reviewedSnapshot = draft;
-        _dismissedSuggestionIds.clear();
-        _suggestionsError = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _suggestionsError = silent
-            ? null
-            : 'Suggestions could not be loaded: $e';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _suggestionsBusy = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _applySuggestion(CompositionSuggestion suggestion) async {
-    final review = _spaceSuggestions;
-    if (review == null || suggestion.id.trim().isEmpty) return;
-
-    final currentDraft = _spaceDraftText();
-
-    setState(() {
-      _applyingSuggestionIds.add(suggestion.id);
-      _submitError = null;
-      _suggestionsError = null;
-    });
-
-    try {
-      final dio = ref.read(dioProvider);
-      final response = await dio.post(
-        '/composition/apply',
-        data: {
-          'sessionId': review.sessionId,
-          'findingId': suggestion.id,
-          'currentText': currentDraft,
-        },
-      );
-
-      final root = _firstMap(response.data);
-      final nextText = _firstNonEmptyString(root, const [
-        ['text'],
-        ['updatedText'],
-        ['resultText'],
-        ['revisedText'],
-        ['content'],
-        ['data', 'text'],
-        ['data', 'updatedText'],
-      ]);
-
-      if (nextText.trim().isNotEmpty) {
-        _applySpaceDraftText(nextText);
-      }
-
-      final refreshed = _safeParseLightReview(root);
-
-      if (!mounted) return;
-      setState(() {
-        _reviewedSnapshot = _spaceDraftText();
-        if (refreshed != null) {
-          _spaceSuggestions = refreshed;
-          _dismissedSuggestionIds.clear();
-        } else {
-          _dismissedSuggestionIds.add(suggestion.id);
-        }
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _suggestionsError = 'Suggestion could not be applied: $e';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _applyingSuggestionIds.remove(suggestion.id);
-        });
-      }
-    }
-  }
-
-  void _dismissSuggestion(String id) {
-    setState(() {
-      _dismissedSuggestionIds.add(id);
-    });
-  }
-
-  Future<void> _translateDraft() async {
-    if (!_isSharedSpaceMode) return;
-
-    final draft = _spaceDraftText();
-    if (draft.trim().isEmpty) return;
-
-    setState(() {
-      _translationBusy = true;
-      _translationError = null;
-    });
-
-    try {
-      final dio = ref.read(dioProvider);
-      final response = await dio.post(
-        '/composition/translate',
-        data: {'text': draft, 'targetLanguage': _translationTargetLanguage},
-      );
-
-      final root = _firstMap(response.data);
-      final translatedText = _firstNonEmptyString(root, const [
-        ['translatedText'],
-        ['text'],
-        ['translation'],
-        ['data', 'translatedText'],
-        ['data', 'text'],
-      ]);
-
-      if (!mounted) return;
-      setState(() {
-        _translationPreview = CompositionTranslationResult(
-          translatedText: translatedText,
-          targetLanguage: _translationTargetLanguage,
-        );
-        _translationSourceSnapshot = draft;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _translationError = 'Translation could not be prepared: $e';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _translationBusy = false;
-        });
-      }
-    }
-  }
-
-  void _applyTranslation() {
-    final preview = _translationPreview;
-    if (preview == null || preview.translatedText.trim().isEmpty) return;
-
-    _applySpaceDraftText(preview.translatedText);
-    setState(() {
-      _translationSourceSnapshot = _spaceDraftText();
-      _translationPreview = null;
-      _suggestionsError = null;
-      _spaceSuggestions = null;
-      _dismissedSuggestionIds.clear();
-      _reviewedSnapshot = null;
-    });
   }
 
   Future<void> _submit() async {
@@ -951,164 +715,12 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               },
             ),
             const SizedBox(height: AuraSpace.s16),
-            _buildWritingAssistCard(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWritingAssistCard() {
-    final suggestions = _visibleSuggestions;
-    final hasDraft = _spaceDraftText().trim().isNotEmpty;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      decoration: BoxDecoration(
-        color: AuraSurface.page,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Writing assist',
-                      style: AuraText.body.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s6),
-                    Text(
-                      'Light suggestions only. Writing stays here.',
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
-                    ),
-                  ],
-                ),
-              ),
-              AuraSecondaryButton(
-                label: _suggestionsBusy ? 'Checking…' : 'Check',
-                icon: Icons.auto_fix_high_outlined,
-                onPressed: hasDraft && !_suggestionsBusy
-                    ? () => _refreshSuggestions()
-                    : null,
-              ),
-            ],
-          ),
-          if ((_suggestionsError ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(
-              _suggestionsError!,
-              style: AuraText.small.copyWith(color: AuraSurface.coSun),
-            ),
-          ],
-          if (suggestions.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            for (final suggestion in suggestions) ...[
-              _SuggestionTile(
-                suggestion: suggestion,
-                applying: _applyingSuggestionIds.contains(suggestion.id),
-                onApply: suggestion.canApply
-                    ? () => _applySuggestion(suggestion)
-                    : null,
-                onDismiss: () => _dismissSuggestion(suggestion.id),
-              ),
-              if (suggestion != suggestions.last)
-                const SizedBox(height: AuraSpace.s10),
-            ],
-          ] else if (!_suggestionsBusy && hasDraft) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(
-              'No suggestions right now.',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-          const SizedBox(height: AuraSpace.s14),
-          Container(height: 1, color: AuraSurface.divider),
-          const SizedBox(height: AuraSpace.s14),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _translationTargetLanguage,
-                  decoration: const InputDecoration(labelText: 'Translate to'),
-                  items: const [
-                    DropdownMenuItem(value: 'ur', child: Text('Urdu')),
-                    DropdownMenuItem(value: 'en', child: Text('English')),
-                    DropdownMenuItem(value: 'ar', child: Text('Arabic')),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _translationTargetLanguage = value;
-                      _translationPreview = null;
-                      _translationError = null;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              AuraSecondaryButton(
-                label: _translationBusy ? 'Preparing…' : 'Preview',
-                icon: Icons.translate_outlined,
-                onPressed: hasDraft && !_translationBusy
-                    ? _translateDraft
-                    : null,
-              ),
-            ],
-          ),
-          if ((_translationError ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(
-              _translationError!,
-              style: AuraText.small.copyWith(color: AuraSurface.coSun),
-            ),
-          ],
-          if (_translationPreview != null) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AuraSpace.s12),
-              decoration: BoxDecoration(
-                color: AuraSurface.elevated,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AuraSurface.divider),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Preview',
-                    style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: AuraSpace.s8),
-                  Text(
-                    _translationPreview!.translatedText.trim().isEmpty
-                        ? 'No translated text returned.'
-                        : _translationPreview!.translatedText,
-                    style: AuraText.body,
-                  ),
-                  const SizedBox(height: AuraSpace.s10),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: AuraPrimaryButton(
-                      label: 'Use translation',
-                      icon: Icons.check_rounded,
-                      onPressed:
-                          _translationPreview!.translatedText.trim().isEmpty
-                          ? null
-                          : _applyTranslation,
-                    ),
-                  ),
-                ],
-              ),
+            CompositionAssist(
+              text: _spaceDraftText(),
+              surface: CompositionSurface.space,
+              enabled: !_submitting,
+              onApply: _applySpaceDraftText,
+              note: 'Light suggestions only. Writing stays here.',
             ),
           ],
         ],
@@ -1195,141 +807,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     );
   }
 
-  CompositionReviewResult _parseLightReview(Map<String, dynamic> root) {
-    final sessionId = _firstNonEmptyString(root, const [
-      ['sessionId'],
-      ['session', 'id'],
-      ['review', 'sessionId'],
-      ['review', 'session', 'id'],
-      ['data', 'sessionId'],
-      ['data', 'session', 'id'],
-    ]);
-
-    final rawFindings = _findRawFindings(root);
-    final suggestions = <CompositionSuggestion>[];
-
-    for (var i = 0; i < rawFindings.length; i++) {
-      final item = rawFindings[i];
-      final id = _firstNonEmptyString(item, const [
-        ['id'],
-        ['findingId'],
-        ['key'],
-      ], fallback: 'suggestion_$i');
-      final message = _firstNonEmptyString(item, const [
-        ['message'],
-        ['title'],
-        ['summary'],
-      ]);
-      final replacement = _firstNonEmptyString(item, const [
-        ['replacement'],
-        ['suggestion'],
-        ['text'],
-        ['body'],
-      ]);
-      final canApply =
-          _boolAt(item, const ['canApply']) ??
-          _boolAt(item, const ['allowApply']) ??
-          replacement.trim().isNotEmpty;
-
-      if (message.trim().isEmpty && replacement.trim().isEmpty) continue;
-
-      suggestions.add(
-        CompositionSuggestion(
-          id: id,
-          message: message.trim().isEmpty ? 'Suggested refinement' : message,
-          replacement: replacement,
-          canApply: canApply,
-        ),
-      );
-    }
-
-    return CompositionReviewResult(
-      sessionId: sessionId,
-      suggestions: suggestions,
-    );
-  }
-
-  CompositionReviewResult? _safeParseLightReview(Map<String, dynamic> root) {
-    try {
-      final parsed = _parseLightReview(root);
-      if (parsed.sessionId.trim().isEmpty && parsed.suggestions.isEmpty) {
-        return null;
-      }
-      return parsed;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  List<Map<String, dynamic>> _findRawFindings(Map<String, dynamic> root) {
-    for (final path in const [
-      ['findings'],
-      ['review', 'findings'],
-      ['data', 'findings'],
-      ['result', 'findings'],
-      ['items'],
-      ['data', 'items'],
-    ]) {
-      final value = _valueAtPath(root, path);
-      if (value is List) {
-        return value
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
-      }
-      if (value is Map) {
-        final flattened = <Map<String, dynamic>>[];
-        value.forEach((_, grouped) {
-          if (grouped is List) {
-            flattened.addAll(
-              grouped.whereType<Map>().map((e) => Map<String, dynamic>.from(e)),
-            );
-          }
-        });
-        if (flattened.isNotEmpty) return flattened;
-      }
-    }
-    return const [];
-  }
-
-  dynamic _valueAtPath(Map<String, dynamic> root, List<String> path) {
-    dynamic current = root;
-    for (final segment in path) {
-      if (current is! Map) return null;
-      current = current[segment];
-    }
-    return current;
-  }
-
-  bool? _boolAt(Map<String, dynamic> root, List<String> path) {
-    final value = _valueAtPath(root, path);
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
-        return true;
-      }
-      if (normalized == 'false' || normalized == '0' || normalized == 'no') {
-        return false;
-      }
-    }
-    return null;
-  }
-
-  String _firstNonEmptyString(
-    Map<String, dynamic> root,
-    List<List<String>> paths, {
-    String fallback = '',
-  }) {
-    for (final path in paths) {
-      final value = _valueAtPath(root, path);
-      final s = (value ?? '').toString().trim();
-      if (s.isNotEmpty) return s;
-    }
-    return fallback;
-  }
-
   void _replaceControllerText(TextEditingController controller, String text) {
     final selection = controller.selection;
     final targetOffset = selection.baseOffset >= 0
@@ -1340,10 +817,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       selection: TextSelection.collapsed(offset: targetOffset),
       composing: TextRange.empty,
     );
-  }
-
-  String _normalizeText(String input) {
-    return input.replaceAll('\r\n', '\n').trim();
   }
 
   Map<String, dynamic> _firstMap(dynamic data) {
@@ -1491,72 +964,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     ]);
 
     return id;
-  }
-}
-
-class _SuggestionTile extends StatelessWidget {
-  const _SuggestionTile({
-    required this.suggestion,
-    required this.applying,
-    required this.onApply,
-    required this.onDismiss,
-  });
-
-  final CompositionSuggestion suggestion;
-  final bool applying;
-  final VoidCallback? onApply;
-  final VoidCallback onDismiss;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      decoration: BoxDecoration(
-        color: AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  suggestion.message,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Dismiss',
-                onPressed: onDismiss,
-                icon: const Icon(Icons.close, size: 18),
-              ),
-            ],
-          ),
-          if (suggestion.replacement.trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              suggestion.replacement,
-              style: AuraText.body.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-          if (onApply != null) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AuraSecondaryButton(
-                label: applying ? 'Applying…' : 'Apply',
-                icon: Icons.check_circle_outline,
-                onPressed: applying ? null : onApply,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
   }
 }
 
