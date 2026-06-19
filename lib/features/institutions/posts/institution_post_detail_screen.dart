@@ -17,6 +17,7 @@ import '../../accountability/widgets/accountability_timeline_rail.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
+import '../../feed/presentation/feed_reply_context.dart';
 import '../../feed/presentation/unified_feed_card.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../posts/data/reactions_repository.dart';
@@ -212,6 +213,12 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
               // replies in two places on the same screen. Detail mode
               // lets the bundled image render in the larger, contain-by-
               // default frame instead of the feed-rhythm frame.
+              // A reply is never shown detached from its original: surface an
+              // "In reply to" banner above the focused post.
+              if (item.isReply) ...[
+                FeedReplyContext(item: item),
+                const SizedBox(height: AuraSpace.s10),
+              ],
               UnifiedFeedCard(
                 item: item,
                 showReplyPreview: false,

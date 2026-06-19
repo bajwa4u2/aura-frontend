@@ -831,6 +831,9 @@ class FeedItem {
     this.publicSpaceName,
     this.resolvesPostId,
     this.continuesPostId,
+    this.replyToPostId,
+    this.replyToInstitutionPostId,
+    this.parentInstitutionId,
   });
 
   final String id;
@@ -905,6 +908,28 @@ class FeedItem {
   /// institution posts without any continuity linkage.
   final String? resolvesPostId;
   final String? continuesPostId;
+
+  /// Reply linkage — non-null when this item is itself a reply. Used by detail
+  /// surfaces to show the original it answers (never a detached comment).
+  /// `replyToPostId` for user posts; `replyToInstitutionPostId`
+  /// (+ `parentInstitutionId` for routing) for institution posts.
+  final String? replyToPostId;
+  final String? replyToInstitutionPostId;
+  final String? parentInstitutionId;
+
+  /// The parent's canonical detail route when this item is a reply, else null.
+  String? get parentTargetRoute {
+    final up = (replyToPostId ?? '').trim();
+    if (up.isNotEmpty) return '/posts/$up';
+    final ip = (replyToInstitutionPostId ?? '').trim();
+    final inst = (parentInstitutionId ?? '').trim();
+    if (ip.isNotEmpty && inst.isNotEmpty) {
+      return '/institution/$inst/posts/$ip';
+    }
+    return null;
+  }
+
+  bool get isReply => parentTargetRoute != null;
 
   bool get hasContinuityLinkage =>
       (resolvesPostId != null && resolvesPostId!.trim().isNotEmpty) ||
@@ -1037,6 +1062,9 @@ class FeedItem {
       publicSpaceName: spaceName,
       resolvesPostId: opt(['resolvesPostId']),
       continuesPostId: opt(['continuesPostId']),
+      replyToPostId: opt(['replyToPostId']),
+      replyToInstitutionPostId: opt(['replyToInstitutionPostId']),
+      parentInstitutionId: opt(['parentInstitutionId']),
     );
   }
 }

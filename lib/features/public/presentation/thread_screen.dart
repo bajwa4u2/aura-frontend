@@ -20,6 +20,7 @@ import '../../feed/data/unified_feed_providers.dart';
 import '../../accountability/widgets/thread_lineage_rail.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
+import '../../feed/presentation/feed_reply_context.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../../institutions/ui/institution_ds.dart';
 import '../data/thread_last_seen_cache.dart';
@@ -418,6 +419,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
                     return InsScreen(
                       children: [
+                        // A reply is never shown detached from its original:
+                        // surface an "In reply to" banner above the header.
+                        if (item.isReply) ...[
+                          FeedReplyContext(item: item),
+                          const SizedBox(height: AuraSpace.s10),
+                        ],
                         ThreadHeader(item: item),
                         const SizedBox(height: AuraSpace.s10),
                         FeedInteractionBar(
