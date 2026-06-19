@@ -182,9 +182,17 @@ class PostDetailScreen extends ConsumerWidget {
                     // non-null: backend may emit lowercase strings.
                     final isPublic =
                         post.visibility.trim().toUpperCase() == 'PUBLIC';
+                    final parentId = (post.replyToPostId ?? '').trim();
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // A reply is never shown detached from what it
+                        // replies to: surface the original above it, with a
+                        // tap-through to the full original thread.
+                        if (parentId.isNotEmpty) ...[
+                          _InReplyToCard(parentId: parentId),
+                          const SizedBox(height: AuraSpace.s12),
+                        ],
                         // The focused record renders in detail mode:
                         // full body, no feed-style collapse/"Open".
                         PostCard(post: post, compact: false, detail: true),
@@ -316,6 +324,142 @@ class PostDetailScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// "In reply to" parent-context card. Ensures a reply opened directly (from a
+/// notification, reply preview, or deep link) is never shown detached from the
+/// original post it answers. Fetches the parent via the same `postProvider`
+/// and links through to its full thread.
+class _InReplyToCard extends ConsumerWidget {
+  const _InReplyToCard({required this.parentId});
+
+  final String parentId;
+
+  Widget _frame(BuildContext context, {required Widget child, VoidCallback? onTap}) {
+    final card = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: child,
+    );
+    if (onTap == null) return card;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        onTap: onTap,
+        child: card,
+      ),
+    );
+  }
+
+  Widget _eyebrow({String trailing = ''}) {
+    return Row(
+      children: [
+        const Icon(Icons.reply_rounded, size: 14, color: AuraSurface.muted),
+        const SizedBox(width: 6),
+        Text(
+          'In reply to',
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.muted,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
+        if (trailing.isNotEmpty) ...[
+          const Spacer(),
+          Text(
+            trailing,
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.accentText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final parentAsync = ref.watch(postProvider(parentId));
+    return parentAsync.when(
+      loading: () => _frame(
+        context,
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            Text(
+              'Loading the original…',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+        ),
+      ),
+      error: (_, __) => _frame(
+        context,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _eyebrow(),
+            const SizedBox(height: AuraSpace.s6),
+            Text(
+              'The original post is unavailable.',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+        ),
+      ),
+      data: (parent) {
+        final name = (parent.author?.displayName.trim().isNotEmpty ?? false)
+            ? parent.author!.displayName
+            : ((parent.author?.handle.trim().isNotEmpty ?? false)
+                ? '@${parent.author!.handle}'
+                : 'Original post');
+        final snippet = parent.text.trim().replaceAll('\n', ' ');
+        final short =
+            snippet.length > 160 ? '${snippet.substring(0, 160)}…' : snippet;
+        return _frame(
+          context,
+          onTap: () => context.go('/posts/$parentId'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _eyebrow(trailing: 'View original →'),
+              const SizedBox(height: AuraSpace.s8),
+              Text(
+                name,
+                style: AuraText.small.copyWith(fontWeight: FontWeight.w800),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (short.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  short,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    height: 1.4,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
