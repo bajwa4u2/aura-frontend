@@ -71,7 +71,15 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   String? _currentUserId;
   String? _currentUserHandle;
 
-  bool get _isSharedSpaceMode => widget.isSharedSpaceMode;
+  // Unified messaging creation. The surface is no longer pre-committed to
+  // "conversation" vs "space"; it derives the kind from the selection —
+  // exactly one member with no name is a direct conversation; two-or-more
+  // members, or any name entered, makes it a shared space. The constructor
+  // flag is retained only for backward-compat with existing links and no
+  // longer gates capability.
+  bool get _isSharedSpaceMode =>
+      _selectedMemberCount >= 2 ||
+      _titleController.text.trim().isNotEmpty;
 
   List<_DirectoryEntry> get _selectedEntries => _allEntries
       .where((entry) => _selectedIds.contains(entry.id))
@@ -142,7 +150,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   }
 
   void _onSpaceDraftChanged() {
-    if (!mounted || !_isSharedSpaceMode) return;
+    if (!mounted) return;
 
     final current = _spaceDraftText();
 
@@ -166,7 +174,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
     _suggestionDebounce?.cancel();
     _suggestionDebounce = Timer(const Duration(milliseconds: 550), () {
-      if (!mounted || !_isSharedSpaceMode) return;
+      if (!mounted) return;
       if (_spaceDraftText().trim().isEmpty) return;
       unawaited(_refreshSuggestions(silent: true));
     });
@@ -367,16 +375,12 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     if (matched == null) return;
 
     setState(() {
-      if (_isSharedSpaceMode) {
-        _selectedIds.add(matched!.id);
-        if (_titleController.text.trim().isEmpty) {
-          _titleController.text = matched.displayName;
-        }
-      } else {
-        _selectedIds
-          ..clear()
-          ..add(matched!.id);
-      }
+      // Seed with the deep-linked member; leave the name empty so a single
+      // initial member defaults to a direct conversation (the user can add
+      // more people or a name to make it a space).
+      _selectedIds
+        ..clear()
+        ..add(matched!.id);
     });
   }
 
@@ -390,21 +394,13 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
     setState(() {
       _submitError = null;
-
-      if (_isSharedSpaceMode) {
-        if (_selectedIds.contains(id)) {
-          _selectedIds.remove(id);
-        } else {
-          _selectedIds.add(id);
-        }
+      // Always multi-select. Selecting a second person is what upgrades a
+      // direct conversation into a shared space, so single-select would make
+      // that transition impossible.
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
       } else {
-        if (_selectedIds.contains(id)) {
-          _selectedIds.clear();
-        } else {
-          _selectedIds
-            ..clear()
-            ..add(id);
-        }
+        _selectedIds.add(id);
       }
     });
   }
@@ -765,9 +761,12 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredEntries = _filteredEntries;
-    final pageTitle = _isSharedSpaceMode
-        ? 'Create space'
-        : 'Start a private conversation';
+    // Neutral, stable app-bar title for the unified surface; the lead card
+    // carries the adaptive guidance so the top chrome doesn't flip as the
+    // selection changes the derived kind.
+    const pageTitle = 'New message';
+    final leadTitle =
+        _isSharedSpaceMode ? 'New shared space' : 'New conversation';
 
     return AuraScaffold(
       title: pageTitle,
@@ -783,10 +782,12 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
             ),
             children: [
               _LeadCard(
-                title: pageTitle,
+                title: leadTitle,
                 subtitle: _isSharedSpaceMode
-                    ? 'Choose the members first, then name the room.'
-                    : 'Choose one member and start directly.',
+                    ? 'Add members and a name — everyone you choose joins this '
+                          'space.'
+                    : 'Pick one person for a direct conversation, or add more '
+                          'people (or a name) to make a shared space.',
               ),
               const SizedBox(height: AuraSpace.s16),
               LayoutBuilder(
@@ -798,22 +799,17 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   );
                   final side = _buildSelectionRail(context);
 
-                  if (!_isSharedSpaceMode) {
-                    return Column(
-                      children: [
-                        directory,
-                        const SizedBox(height: AuraSpace.s14),
-                        side,
-                      ],
-                    );
-                  }
-
+                  // Stable layout regardless of derived kind — the directory
+                  // (pick people) leads; the selection/name rail follows.
+                  // Keeping the structure constant means typing a name (which
+                  // flips conversation → space) never reflows the tree, so the
+                  // name field never loses keyboard focus mid-edit.
                   if (stacked) {
                     return Column(
                       children: [
-                        side,
-                        const SizedBox(height: AuraSpace.s14),
                         directory,
+                        const SizedBox(height: AuraSpace.s14),
+                        side,
                       ],
                     );
                   }
@@ -821,9 +817,9 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(flex: 4, child: side),
-                      const SizedBox(width: AuraSpace.s14),
                       Expanded(flex: 6, child: directory),
+                      const SizedBox(width: AuraSpace.s14),
+                      Expanded(flex: 4, child: side),
                     ],
                   );
                 },
@@ -903,14 +899,25 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   ),
               ],
             ),
-          if (_isSharedSpaceMode) ...[
-            const SizedBox(height: AuraSpace.s16),
-            Container(height: 1, color: AuraSurface.divider),
-            const SizedBox(height: AuraSpace.s16),
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
+          // Name field is ALWAYS visible — it's the affordance that upgrades a
+          // direct conversation into a shared space. Helper copy explains the
+          // rule so the single unified surface stays legible.
+          const SizedBox(height: AuraSpace.s16),
+          Container(height: 1, color: AuraSurface.divider),
+          const SizedBox(height: AuraSpace.s16),
+          TextField(
+            controller: _titleController,
+            decoration: InputDecoration(
+              labelText: 'Name',
+              helperText: _isSharedSpaceMode
+                  ? 'This will be a shared space.'
+                  : 'Optional — add a name, or a second person, to make a '
+                        'shared space.',
             ),
+          ),
+          // Space-only details surface once it's a space (2+ members or a
+          // name entered).
+          if (_isSharedSpaceMode) ...[
             const SizedBox(height: AuraSpace.s12),
             TextField(
               controller: _descriptionController,
@@ -1162,7 +1169,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   _DirectoryRow(
                     entry: filteredEntries[i],
                     selected: _selectedIds.contains(filteredEntries[i].id),
-                    allowMultiSelect: _isSharedSpaceMode,
+                    allowMultiSelect: true,
                     onTap: () => _toggleEntry(filteredEntries[i].id),
                     onOpenProfile: filteredEntries[i].profileRoute == null
                         ? null

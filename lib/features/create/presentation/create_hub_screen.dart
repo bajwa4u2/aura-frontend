@@ -112,17 +112,12 @@ class CreateHubScreen extends ConsumerWidget {
                 title: 'Messages',
                 items: [
                   _CreateActionData(
-                    title: 'Conversation',
+                    title: 'Message',
                     subtitle:
-                        'Begin a direct private exchange with one person.',
-                    icon: Icons.chat_bubble_outline_rounded,
-                    route: '/me/correspondence/create/conversation',
-                  ),
-                  _CreateActionData(
-                    title: 'Space',
-                    subtitle: 'Form a shared room with clear membership.',
-                    icon: Icons.groups_outlined,
-                    route: '/me/correspondence/create/space',
+                        'Start a direct conversation — add more people or a '
+                        'name to make a shared space.',
+                    icon: Icons.forum_outlined,
+                    route: '/me/correspondence?start=private',
                   ),
                 ],
               ),

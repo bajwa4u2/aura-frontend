@@ -134,6 +134,11 @@ class MemberShell extends StatelessWidget {
     final uri = GoRouterState.of(context).uri;
     final path = uri.path;
     final selectedIndex = _indexForPath(path);
+    // When the soft keyboard is up (e.g., typing in the composer) the bottom
+    // nav both wastes the reclaimed space and risks an accidental tap that
+    // navigates away mid-compose. Hide it while editing; it returns the
+    // moment the keyboard dismisses.
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -167,7 +172,8 @@ class MemberShell extends StatelessWidget {
           // create surfaces (and every other member surface) are never a
           // single hidden hamburger away. Suppressed on immersive routes
           // (realtime, thread/live) via the same predicate as the slim bar.
-          bottomNavigationBar: (!showLeftRail && _showMemberMobileBar(path))
+          bottomNavigationBar:
+              (!showLeftRail && _showMemberMobileBar(path) && !keyboardOpen)
               ? _MemberBottomNav(
                   items: _items,
                   selectedIndex: selectedIndex,

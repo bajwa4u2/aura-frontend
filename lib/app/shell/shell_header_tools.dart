@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/admin_access_provider.dart';
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/media/aura_attachment_image.dart';
@@ -76,6 +77,12 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
       case 'settings':
         context.go('/security');
         return;
+      case 'claim_audit':
+        // Claim audit relocated out of the Create hub — it's an analysis
+        // tool, not an act of creation. Surfaced here so admins can reach it
+        // from any surface; gated on the display-only admin signal.
+        context.go('/ai/claim-audit');
+        return;
       case 'logout':
         await _logout();
         return;
@@ -115,6 +122,9 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
     final me = ref
         .watch(_shellMeProvider)
         .maybeWhen(data: (d) => d, orElse: () => <String, dynamic>{});
+    // Display-only admin signal (no probe) — gates the admin-only Claim audit
+    // entry in the account menu.
+    final isAdmin = ref.watch(appAdminCachedDisplayProvider);
     const gap = SizedBox(width: AuraSpace.s6);
 
     final tools = <Widget>[
@@ -147,6 +157,7 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
       _HeaderAccountBtn(
         busy: _busyLogout,
         me: me,
+        isAdmin: isAdmin,
         onSelected: (v) => unawaited(_handleAccountAction(v)),
       ),
     ];
@@ -457,11 +468,13 @@ class _HeaderAccountBtn extends StatelessWidget {
   const _HeaderAccountBtn({
     required this.busy,
     required this.me,
+    required this.isAdmin,
     required this.onSelected,
   });
 
   final bool busy;
   final Map<String, dynamic> me;
+  final bool isAdmin;
   final ValueChanged<String> onSelected;
 
   @override
@@ -480,6 +493,8 @@ class _HeaderAccountBtn extends StatelessWidget {
           _menuItem('profile', Icons.person_outline_rounded, 'Profile'),
           _menuItem('preferences', Icons.tune_outlined, 'Preferences'),
           _menuItem('settings', Icons.shield_outlined, 'Settings'),
+          if (isAdmin)
+            _menuItem('claim_audit', Icons.fact_check_outlined, 'Claim audit'),
           const PopupMenuDivider(),
           _menuItem(
             'logout',
