@@ -867,7 +867,6 @@ class _MemberIdentityHeader extends ConsumerWidget {
         ? Map<String, dynamic>.from(me!['user'] as Map)
         : const <String, dynamic>{};
     final name = (user['displayName'] ?? '').toString().trim();
-    final handle = (user['handle'] ?? '').toString().trim();
     final avatarUrl = (user['avatarUrl'] ?? '').toString().trim();
     final initials = name.isNotEmpty ? name[0].toUpperCase() : '';
     final affiliations = ref.watch(myAffiliationsProvider);
@@ -911,6 +910,10 @@ class _MemberIdentityHeader extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Handle is intentionally NOT shown here — in the user's
+                    // own nav it's low-value and competes with the affiliation
+                    // line below. The @handle stays internal / on the profile
+                    // view. Identity block = name + affiliation-or-nothing.
                     Text(
                       name.isEmpty ? 'Your account' : name,
                       maxLines: 1,
@@ -920,13 +923,6 @@ class _MemberIdentityHeader extends ConsumerWidget {
                         color: AuraSurface.ink,
                       ),
                     ),
-                    if (handle.isNotEmpty)
-                      Text(
-                        '@$handle',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.micro.copyWith(color: AuraSurface.muted),
-                      ),
                   ],
                 ),
               ),
