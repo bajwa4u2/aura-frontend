@@ -17,6 +17,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../../core/ui/compact_profile_hero.dart';
 import '../../../core/ui/profile_header.dart';
 import '../../feed/data/unified_feed_providers.dart';
@@ -434,9 +435,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
         border: Border.all(color: AuraSurface.divider),
       ),
       padding: const EdgeInsets.all(AuraSpace.s20),
-      child: Text(
+      child: AuraTextBlock(
         bio,
         style: AuraText.body.copyWith(height: 1.5, color: AuraSurface.ink),
+        selectable: true,
       ),
     );
   }

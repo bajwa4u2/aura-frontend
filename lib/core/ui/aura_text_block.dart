@@ -27,7 +27,7 @@ class AuraTextBlock extends StatelessWidget {
     this.textScaler,
     this.textWidthBasis,
     this.textHeightBehavior,
-    this.paragraphSpacing = 8,
+    this.paragraphSpacing = 4,
     this.selectable = false,
     this.trim = true,
     this.empty,
