@@ -867,6 +867,7 @@ class _MemberIdentityHeader extends ConsumerWidget {
         ? Map<String, dynamic>.from(me!['user'] as Map)
         : const <String, dynamic>{};
     final name = (user['displayName'] ?? '').toString().trim();
+    final title = (user['title'] ?? '').toString().trim();
     final avatarUrl = (user['avatarUrl'] ?? '').toString().trim();
     final initials = name.isNotEmpty ? name[0].toUpperCase() : '';
     final affiliations = ref.watch(myAffiliationsProvider);
@@ -923,6 +924,16 @@ class _MemberIdentityHeader extends ConsumerWidget {
                         color: AuraSurface.ink,
                       ),
                     ),
+                    if (title.isNotEmpty)
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.micro.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AuraSurface.muted,
+                        ),
+                      ),
                   ],
                 ),
               ),

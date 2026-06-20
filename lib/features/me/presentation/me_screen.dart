@@ -12,12 +12,15 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_profile_tab_bar.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/compact_profile_hero.dart';
+import '../../../core/ui/profile_header.dart' show PresenceHeaderAction;
 import 'me/me_widgets.dart';
 import 'widgets/me_connected_accounts_panel.dart';
 
@@ -604,6 +607,8 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
   String get _handle => _value(_resolvedUser['handle']);
 
+  String get _titleText => _value(_resolvedUser['title']);
+
   String get _bio => _firstNonEmpty([
         _value(_resolvedUser['bio']),
         _value(_resolvedUser['headline']),
@@ -991,9 +996,9 @@ class _MeScreenState extends ConsumerState<MeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildCompactHero(wide),
+                _buildHero(),
                 const SizedBox(height: AuraSpace.s20),
-                _buildTabBar(),
+                AuraProfileTabBar(controller: _tabController, tabs: _tabs),
                 const SizedBox(height: AuraSpace.s20),
                 AnimatedBuilder(
                   animation: _tabController,
@@ -1008,316 +1013,38 @@ class _MeScreenState extends ConsumerState<MeScreen>
     );
   }
 
-  // ─── COMPACT HERO ──────────────────────────────────────────────────────────
+  // ─── HERO + TAB CONTENT (hero & tab bar are shared core/ui widgets) ────────
 
-  Widget _buildCompactHero(bool wide) {
+  Widget _buildHero() {
     final user = _resolvedUser;
     final locationText = _locationText(user);
     final websiteUrl = _websiteText(user);
-    final meta = _buildHeroMeta(locationText, websiteUrl);
-    final roleLabel = _roleChipLabel;
-    final displayTitle = _displayName.isNotEmpty ? _displayName : 'Presence';
-
-    const coverHeight = 116.0;
-    const avatarSize = 84.0;
-
-    final identity = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          displayTitle,
-          style: AuraText.title.copyWith(
-            fontSize: wide ? 26 : 22,
-            fontWeight: FontWeight.w700,
-            height: 1.1,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+    return CompactProfileHero(
+      displayName: _displayName.isNotEmpty ? _displayName : 'Presence',
+      handle: _handle,
+      title: _titleText,
+      avatarUrl: _avatarUrl,
+      coverUrl: _coverUrl,
+      roleLabel: _roleChipLabel,
+      metaChips: _buildHeroMeta(locationText, websiteUrl),
+      actions: [
+        PresenceHeaderAction(
+          label: 'Edit profile',
+          icon: Icons.edit_outlined,
+          primary: true,
+          onTap: () async {
+            await context.push('/me/edit');
+            if (!mounted) return;
+            await _load();
+          },
         ),
-        const SizedBox(height: AuraSpace.s4),
-        Text(
-          _handle.isNotEmpty ? '@$_handle' : '—',
-          style: AuraText.muted.copyWith(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+        if (_handle.isNotEmpty)
+          PresenceHeaderAction(
+            label: 'Public profile',
+            icon: Icons.open_in_new,
+            onTap: () => context.push('/u/$_handle'),
           ),
-        ),
-        if (roleLabel.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s10),
-          _buildRoleChip(roleLabel),
-        ],
-        if (meta.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: meta,
-          ),
-        ],
       ],
-    );
-
-    final buttons = _heroButtons(expand: !wide);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.xl),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              _heroCover(coverHeight),
-              Positioned(
-                left: wide ? AuraSpace.s24 : AuraSpace.s18,
-                bottom: -(avatarSize / 2),
-                child: _heroAvatar(avatarSize, displayTitle),
-              ),
-            ],
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              wide ? AuraSpace.s24 : AuraSpace.s18,
-              (avatarSize / 2) + AuraSpace.s12,
-              wide ? AuraSpace.s24 : AuraSpace.s18,
-              wide ? AuraSpace.s20 : AuraSpace.s18,
-            ),
-            child: wide
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: identity),
-                      const SizedBox(width: AuraSpace.s20),
-                      buttons,
-                    ],
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      identity,
-                      const SizedBox(height: AuraSpace.s16),
-                      buttons,
-                    ],
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _heroCover(double height) {
-    final cover = _coverUrl;
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      child: cover.isEmpty
-          ? const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF232833),
-                    Color(0xFF1C212A),
-                    Color(0xFF171B22),
-                  ],
-                ),
-              ),
-            )
-          : Image.network(
-              cover,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  const ColoredBox(color: AuraSurface.elevated),
-            ),
-    );
-  }
-
-  Widget _heroAvatar(double size, String name) {
-    final url = _avatarUrl;
-    final fallback = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AuraSurface.elevated,
-        border: Border.all(color: AuraSurface.card, width: 4),
-      ),
-      child: Text(
-        _initialsFor(name),
-        style: AuraText.title.copyWith(
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-
-    if (url.isEmpty) return fallback;
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AuraSurface.card,
-        border: Border.all(color: AuraSurface.card, width: 4),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
-      ),
-    );
-  }
-
-  String _initialsFor(String name) {
-    final parts = name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((e) => e.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) {
-      return parts.first.substring(0, 1).toUpperCase();
-    }
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
-  }
-
-  Widget _buildRoleChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        color: AuraSurface.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.28)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.verified_outlined,
-            size: 13,
-            color: AuraSurface.accent,
-          ),
-          const SizedBox(width: AuraSpace.s6),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AuraText.micro.copyWith(
-                color: AuraSurface.accent,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _heroButtons({required bool expand}) {
-    final edit = FilledButton.icon(
-      onPressed: () async {
-        await context.push('/me/edit');
-        if (!mounted) return;
-        await _load();
-      },
-      icon: const Icon(Icons.edit_outlined, size: 16),
-      label: const Text('Edit profile'),
-      style: FilledButton.styleFrom(
-        minimumSize: expand ? const Size.fromHeight(44) : null,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s16,
-          vertical: AuraSpace.s12,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      ),
-    );
-
-    final view = OutlinedButton.icon(
-      onPressed:
-          _handle.isNotEmpty ? () => context.push('/u/$_handle') : null,
-      icon: const Icon(Icons.open_in_new, size: 16),
-      label: const Text('Public profile'),
-      style: OutlinedButton.styleFrom(
-        minimumSize: expand ? const Size.fromHeight(44) : null,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s16,
-          vertical: AuraSpace.s12,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      ),
-    );
-
-    if (expand) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          edit,
-          const SizedBox(height: AuraSpace.s10),
-          view,
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        edit,
-        const SizedBox(width: AuraSpace.s10),
-        view,
-      ],
-    );
-  }
-
-  // ─── TAB BAR + TAB CONTENT ─────────────────────────────────────────────────
-
-  Widget _buildTabBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        labelColor: AuraSurface.ink,
-        unselectedLabelColor: AuraSurface.muted,
-        indicatorColor: AuraSurface.accent,
-        indicatorWeight: 2.5,
-        indicatorSize: TabBarIndicatorSize.label,
-        dividerColor: Colors.transparent,
-        overlayColor: WidgetStateProperty.all(Colors.transparent),
-        labelStyle: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-        unselectedLabelStyle:
-            AuraText.small.copyWith(fontWeight: FontWeight.w600),
-        tabs: [
-          for (final tab in _tabs)
-            Tab(
-              height: 44,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(tab.$2, size: 16),
-                  const SizedBox(width: AuraSpace.s8),
-                  Text(tab.$1),
-                ],
-              ),
-            ),
-        ],
-      ),
     );
   }
 
@@ -1562,6 +1289,7 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
     final rows = <Widget>[
       _summaryRow(label: 'Display name', value: _displayName),
+      _summaryRow(label: 'Title', value: _titleText),
       _summaryRow(
         label: 'Handle',
         value: _handle.isNotEmpty ? '@$_handle' : '',

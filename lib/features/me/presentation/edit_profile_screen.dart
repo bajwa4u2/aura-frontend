@@ -44,6 +44,7 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _displayNameController = TextEditingController();
+  final _titleController = TextEditingController();
   final _bioController = TextEditingController();
   final _locationController = TextEditingController();
   final _websiteController = TextEditingController();
@@ -68,6 +69,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String _lastName = '';
 
   String _initialDisplayName = '';
+  String _initialTitle = '';
   String _initialBio = '';
   String _initialLocation = '';
   String _initialWebsite = '';
@@ -84,6 +86,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void initState() {
     super.initState();
     _displayNameController.addListener(_onChanged);
+    _titleController.addListener(_onChanged);
     _bioController.addListener(_onChanged);
     _locationController.addListener(_onChanged);
     _websiteController.addListener(_onChanged);
@@ -93,11 +96,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void dispose() {
     _displayNameController.removeListener(_onChanged);
+    _titleController.removeListener(_onChanged);
     _bioController.removeListener(_onChanged);
     _locationController.removeListener(_onChanged);
     _websiteController.removeListener(_onChanged);
 
     _displayNameController.dispose();
+    _titleController.dispose();
     _bioController.dispose();
     _locationController.dispose();
     _websiteController.dispose();
@@ -121,6 +126,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   bool get _hasChanges {
     return _displayNameController.text.trim() != _initialDisplayName ||
+        _titleController.text.trim() != _initialTitle ||
         _bioController.text.trim() != _initialBio ||
         _locationController.text.trim() != _initialLocation ||
         _websiteController.text.trim() != _initialWebsite ||
@@ -182,6 +188,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final data = _unwrapResponseMap(res.data);
 
       _initialDisplayName = _readString(data, const ['displayName', 'name']);
+      _initialTitle = _readString(data, const ['title']);
       _initialBio = _readString(data, const ['bio', 'headline', 'summary']);
       _initialLocation = _readString(data, const ['location', 'place']);
       if (_initialLocation.isEmpty) {
@@ -207,6 +214,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
 
       _displayNameController.text = _initialDisplayName;
+      _titleController.text = _initialTitle;
       _bioController.text = _initialBio;
       _locationController.text = _initialLocation;
       _websiteController.text = _initialWebsite;
@@ -470,6 +478,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         '/users/me',
         data: {
           'displayName': _displayNameController.text.trim(),
+          'title': _titleController.text.trim(),
           'bio': _bioController.text.trim(),
           'location': location,
           'website': website,
@@ -483,6 +492,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
 
       _initialDisplayName = _displayNameController.text.trim();
+      _initialTitle = _titleController.text.trim();
       _initialBio = _bioController.text.trim();
       _initialLocation = _locationController.text.trim();
       _initialWebsite = _websiteController.text.trim();
@@ -519,6 +529,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     setState(() {
       _displayNameController.text = _initialDisplayName;
+      _titleController.text = _initialTitle;
       _bioController.text = _initialBio;
       _locationController.text = _initialLocation;
       _websiteController.text = _initialWebsite;
@@ -913,12 +924,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         children: [
           const EditProfilePanelHeader(
             title: 'How you appear',
-            subtitle: 'Name and short statement',
+            subtitle: 'Name, title, and short statement',
           ),
           const SizedBox(height: AuraSpace.s18),
           EditProfileField(
             label: 'Display name',
             controller: _displayNameController,
+            textInputAction: TextInputAction.next,
+            maxLines: 1,
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          EditProfileField(
+            label: 'Title',
+            controller: _titleController,
             textInputAction: TextInputAction.next,
             maxLines: 1,
           ),

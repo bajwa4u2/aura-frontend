@@ -4,6 +4,7 @@ class Profile {
     required this.handle,
     required this.displayName,
     required this.bio,
+    this.title,
     required this.avatarUrl,
     this.coverUrl,
     this.location,
@@ -18,6 +19,9 @@ class Profile {
   final String handle;
   final String displayName;
   final String? bio;
+
+  /// Short professional headline shown under the display name.
+  final String? title;
   final String? avatarUrl;
   final String? coverUrl;
   final String? location;
@@ -53,6 +57,7 @@ class Profile {
       handle: (j['handle'] ?? '').toString().trim(),
       displayName: (j['displayName'] ?? '').toString().trim(),
       bio: asNullableString(j['bio']),
+      title: asNullableString(j['title'] ?? j['headline']),
       avatarUrl: asNullableString(j['avatarUrl'] ?? j['avatar']),
       coverUrl: asNullableString(j['coverUrl'] ?? j['bannerUrl']),
       location: asNullableString(j['location']),

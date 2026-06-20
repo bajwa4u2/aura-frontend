@@ -11,19 +11,19 @@ import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/interaction_service.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_profile_tab_bar.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/compact_profile_hero.dart';
 import '../../../core/ui/profile_header.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/post.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 import '../domain/profile.dart';
 import '../providers.dart';
-
-enum _ProfileTab { posts, connections }
 
 class AuthorProfileScreen extends ConsumerStatefulWidget {
   const AuthorProfileScreen({super.key, required this.handle});
@@ -35,9 +35,10 @@ class AuthorProfileScreen extends ConsumerStatefulWidget {
       _AuthorProfileScreenState();
 }
 
-class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
+class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
+    with SingleTickerProviderStateMixin {
   late Future<_ProfileBundle> _bundleFuture;
-  _ProfileTab _activeTab = _ProfileTab.posts;
+  late final TabController _tabController;
 
   // R1 follow hardening: prevent concurrent follow/unfollow taps and
   // give the user an immediate label flip. Cleared after _reload()
@@ -49,6 +50,16 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
   void initState() {
     super.initState();
     _bundleFuture = _load();
+    _tabController = TabController(length: 2, vsync: this)
+      ..addListener(() {
+        if (mounted) setState(() {});
+      });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<_ProfileBundle> _load() async {
@@ -405,26 +416,27 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
   }
 
   Widget _buildTabBar() {
+    return AuraProfileTabBar(
+      controller: _tabController,
+      tabs: const [
+        ('Posts', Icons.article_outlined),
+        ('Connections', Icons.people_outline),
+      ],
+    );
+  }
+
+  Widget _aboutCard(String bio) {
     return Container(
-      padding: const EdgeInsets.all(AuraSpace.s4),
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
         border: Border.all(color: AuraSurface.divider),
       ),
-      child: Row(
-        children: [
-          _ProfileTabPill(
-            label: 'Posts',
-            selected: _activeTab == _ProfileTab.posts,
-            onTap: () => setState(() => _activeTab = _ProfileTab.posts),
-          ),
-          _ProfileTabPill(
-            label: 'Connections',
-            selected: _activeTab == _ProfileTab.connections,
-            onTap: () => setState(() => _activeTab = _ProfileTab.connections),
-          ),
-        ],
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Text(
+        bio,
+        style: AuraText.body.copyWith(height: 1.5, color: AuraSurface.ink),
       ),
     );
   }
@@ -439,6 +451,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
         ? profile.displayName.trim()
         : widget.handle;
     final bio = (profile.bio ?? '').trim();
+    final title = (profile.title ?? '').trim();
     final avatar = (profile.avatarUrl ?? '').trim();
     final cover = (profile.coverUrl ?? '').trim();
     final trailingMeta = _presenceMeta(profile);
@@ -504,13 +517,13 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
             child: ListView(
               padding: EdgeInsets.fromLTRB(hPad, AuraSpace.s18, hPad, AuraSpace.s28),
               children: [
-                PresenceHeader(
+                CompactProfileHero(
                   displayName: name,
                   handle: widget.handle,
-                  bio: bio,
+                  title: title,
                   avatarUrl: avatar,
                   coverUrl: cover,
-                  trailingMeta: trailingMeta,
+                  metaChips: trailingMeta,
                   actions: [
                     if (!isAuthed)
                       PresenceHeaderAction(
@@ -611,10 +624,14 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                   const SizedBox(height: AuraSpace.s16),
                   notice,
                 ],
+                if (bio.isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s16),
+                  _aboutCard(bio),
+                ],
                 const SizedBox(height: AuraSpace.s16),
                 _buildTabBar(),
                 const SizedBox(height: AuraSpace.s20),
-                if (_activeTab == _ProfileTab.posts)
+                if (_tabController.index == 0)
                   _workSection(posts)
                 else
                   Column(
@@ -750,52 +767,3 @@ String _cleanValue(String? value) {
   return (value ?? '').trim();
 }
 
-class _ProfileTabPill extends StatelessWidget {
-  const _ProfileTabPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(
-              vertical: AuraSpace.s8,
-              horizontal: AuraSpace.s4,
-            ),
-            decoration: BoxDecoration(
-              color: selected ? AuraSurface.accentSoft : Colors.transparent,
-              borderRadius: BorderRadius.circular(AuraRadius.pill),
-              border: Border.all(
-                color: selected
-                    ? AuraSurface.accent.withValues(alpha: 0.4)
-                    : Colors.transparent,
-              ),
-            ),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: AuraText.small.copyWith(
-                fontWeight:
-                    selected ? FontWeight.w700 : FontWeight.w500,
-                color:
-                    selected ? AuraSurface.accentText : AuraSurface.muted,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
