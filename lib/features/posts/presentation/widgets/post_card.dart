@@ -1004,7 +1004,14 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     final postId = post.id;
     final postUrl = canonicalPostUrl(postId);
-    final text = (post.text).trim();
+    final rawText = (post.text).trim();
+    // Feed / profile previews collapse blank-line runs so multi-paragraph
+    // bodies stay compact instead of showing large vertical gaps. The full
+    // record (detail or expanded) keeps the author's paragraph breaks intact.
+    final bool fullView = widget.detail || _expanded;
+    final text = fullView
+        ? rawText
+        : rawText.replaceAll(RegExp(r'\n[ \t]*\n+'), '\n');
     _translationTargetLanguage ??= _defaultTranslationLanguage(context);
 
     final headerName = displayName.isNotEmpty
