@@ -46,6 +46,7 @@ Future<void> _pumpFooter(WidgetTester tester, double viewportWidth) async {
       ),
     ],
   );
+  addTearDown(router.dispose);
 
   await tester.pumpWidget(MaterialApp.router(routerConfig: router));
   await tester.pump(const Duration(milliseconds: 50));
@@ -61,9 +62,9 @@ void main() {
     // first link in the first link column.
     final brand = tester.getRect(
       find.text(
-        'Aura is public discourse '
-        'infrastructure. People raise issues, institutions respond, '
-        'and outcomes are public.',
+        'Aura is institution operating infrastructure. Institutions run their '
+        'public and member-facing life on one verified identity and one '
+        'accountable record.',
       ),
     );
     final firstColLabel = tester.getRect(find.text('AURA'));
@@ -83,9 +84,9 @@ void main() {
 
     final brand = tester.getRect(
       find.text(
-        'Aura is public discourse '
-        'infrastructure. People raise issues, institutions respond, '
-        'and outcomes are public.',
+        'Aura is institution operating infrastructure. Institutions run their '
+        'public and member-facing life on one verified identity and one '
+        'accountable record.',
       ),
     );
     final firstColLabel = tester.getRect(find.text('AURA'));
