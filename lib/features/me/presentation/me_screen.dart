@@ -18,7 +18,6 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/profile_header.dart';
 import 'me/me_widgets.dart';
 import 'widgets/me_connected_accounts_panel.dart';
 
@@ -29,7 +28,8 @@ class MeScreen extends ConsumerStatefulWidget {
   ConsumerState<MeScreen> createState() => _MeScreenState();
 }
 
-class _MeScreenState extends ConsumerState<MeScreen> {
+class _MeScreenState extends ConsumerState<MeScreen>
+    with SingleTickerProviderStateMixin {
   Map<String, dynamic>? _user;
   bool _loading = true;
   String? _error;
@@ -51,14 +51,33 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   bool _linkedinActionBusy = false;
   bool _handledLinkedInRedirect = false;
 
+  /// Top-level workspace tabs for the redesigned /me dashboard. Each entry is
+  /// (label, icon); order defines the tab index consumed by [_tabContent].
+  static const List<(String, IconData)> _tabs = [
+    ('Identity', Icons.person_outline),
+    ('Authority', Icons.account_balance_outlined),
+    ('Participation', Icons.workspaces_outline),
+    ('Network', Icons.hub_outlined),
+    ('Account', Icons.settings_outlined),
+  ];
+
+  late final TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
     unawaited(_load());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_handleLinkedInRedirectIfNeeded());
       _kickAdminAuthorityProbe();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   /// Trigger a single `GET /v1/admin/me` probe for this Me screen visit.
@@ -567,9 +586,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               color: AuraSurface.accent,
               onRefresh: _load,
               child: LayoutBuilder(
-                builder: (context, constraints) => constraints.maxWidth >= 900
-                    ? _buildWideContent(context)
-                    : _buildNarrowContent(context),
+                builder: (context, constraints) =>
+                    _buildContent(context, constraints.maxWidth >= 900),
               ),
             ),
     );
@@ -629,30 +647,51 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   List<Widget> _buildHeroMeta(String locationText, String websiteUrl) {
     final websiteLabel = _websiteLabel(websiteUrl);
+    final joined = _joinedText;
     return [
       if (locationText.isNotEmpty) MeMetaChip(label: locationText),
       if (websiteLabel.isNotEmpty)
         MeMetaLinkChip(
           label: websiteLabel,
-          onTap: () async {
-            final uri = Uri.tryParse(websiteUrl);
-            if (uri == null) return;
-            await launchUrl(uri, mode: LaunchMode.platformDefault);
-          },
+          onTap: () => _openExternalUrl(websiteUrl),
         ),
-      if (_handle.isNotEmpty)
-        MeMetaLinkChip(
-          label: '$_followersCount Followers',
-          onTap: () => context.push('/u/$_handle/followers'),
-        ),
-      if (_handle.isNotEmpty)
-        MeMetaLinkChip(
-          label: '$_followingCount Following',
-          onTap: () => context.push('/u/$_handle/following'),
-        ),
-      // Authority roles intentionally excluded from identity hero.
-      // They appear only in the Authority & Workspaces panel below.
+      if (joined.isNotEmpty) MeMetaChip(label: joined),
+      // Authority roles intentionally excluded from the identity hero — they
+      // live in the Authority tab. Followers / Following live in Network.
     ];
+  }
+
+  /// "Joined <Month> <Year>" derived from the account creation timestamp.
+  /// Empty when no parseable timestamp is present — we never fabricate a date.
+  String get _joinedText {
+    final raw = _firstNonEmpty([
+      _value(_resolvedUser['createdAt']),
+      _value(_resolvedUser['created_at']),
+      _value(_resolvedUser['joinedAt']),
+      _value(_resolvedUser['joined_at']),
+    ]);
+    if (raw.isEmpty) return '';
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) return '';
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    return 'Joined ${months[dt.month - 1]} ${dt.year}';
+  }
+
+  /// Identity-hero role chip: only shown when the member is an authorized
+  /// speaker for an institution. Mirrors the shell's "Speaks for …" copy.
+  String get _roleChipLabel {
+    final access = _institutionAccess;
+    if (access.state != InstitutionAccessState.authorizedSpeaker) return '';
+    final institution = access.institution ?? const <String, dynamic>{};
+    final request = access.request ?? const <String, dynamic>{};
+    final name = _firstNonEmpty([
+      _value(institution['name']),
+      _value(request['organizationName']),
+    ]);
+    return name.isNotEmpty ? 'Speaks for $name' : 'Speaks for an institution';
   }
 
   // ─── ACCOUNT HEALTH PANEL ─────────────────────────────────────────────────
@@ -934,30 +973,15 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  // ─── WIDE LAYOUT (≥900) ────────────────────────────────────────────────────
+  // ─── UNIFIED CONTENT: COMPACT HERO + TABBED WORKSPACE ──────────────────────
 
-  Widget _buildWideContent(BuildContext context) {
-    final user = _resolvedUser;
-    final locationText = _locationText(user);
-    final websiteUrl = _websiteText(user);
-    final meta = _buildHeroMeta(locationText, websiteUrl);
-
-    final publications = _publicationsFromUser(user);
-    final links = _linksFromUser(user);
-
-    final institutionAccess = _institutionAccess;
-    final hasInstitutionWorkspace = institutionAccess.hasAccess;
-    final institutionLabel = _institutionWorkspaceLabel(institutionAccess);
-    final isAppAdmin = _isAppAdmin;
-
-    final displayTitle = _displayName.isNotEmpty ? _displayName : 'Presence';
-
+  Widget _buildContent(BuildContext context, bool wide) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-        AuraSpace.s24,
-        AuraSpace.s24,
-        AuraSpace.s24,
+      padding: EdgeInsets.fromLTRB(
+        wide ? AuraSpace.s24 : AuraSpace.s16,
+        wide ? AuraSpace.s24 : AuraSpace.s16,
+        wide ? AuraSpace.s24 : AuraSpace.s16,
         AuraSpace.s32,
       ),
       children: [
@@ -967,89 +991,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                PresenceHeader(
-                  displayName: displayTitle,
-                  handle: _handle,
-                  bio: _bio,
-                  avatarUrl: _avatarUrl,
-                  coverUrl: _coverUrl,
-                  trailingMeta: meta,
-                  actions: [
-                    PresenceHeaderAction(
-                      label: 'Edit profile',
-                      icon: Icons.edit_outlined,
-                      primary: true,
-                      onTap: () async {
-                        await context.push('/me/edit');
-                        if (!mounted) return;
-                        await _load();
-                      },
-                    ),
-                    if (_handle.isNotEmpty)
-                      PresenceHeaderAction(
-                        label: 'View profile',
-                        icon: Icons.visibility_outlined,
-                        onTap: () => context.push('/u/$_handle'),
-                      ),
-                  ],
-                  workspaceActions: const [],
-                ),
-                const SizedBox(height: AuraSpace.s24),
-                // Full-width profile health — sits above both columns so neither
-                // side accumulates unequal vertical mass.
-                _buildAccountHealthPanel(),
+                _buildCompactHero(wide),
                 const SizedBox(height: AuraSpace.s20),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left column: personal records + connections
-                    Expanded(
-                      flex: 5,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildPersonalRecordSection(),
-                          const SizedBox(height: AuraSpace.lg),
-                          _buildConnectionsSection(),
-                          if (publications.isNotEmpty) ...[
-                            const SizedBox(height: AuraSpace.lg),
-                            MeSection(
-                              title: 'Public record',
-                              children: _buildPublicationItems(publications),
-                            ),
-                          ],
-                          if (links.isNotEmpty) ...[
-                            const SizedBox(height: AuraSpace.lg),
-                            MeSection(
-                              title: 'Elsewhere',
-                              children: _buildLinkItems(links),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: AuraSpace.s20),
-                    // Right column: connected accounts + settings + workspaces
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildConnectedAccountsPanel(),
-                          const SizedBox(height: AuraSpace.lg),
-                          _buildSettingsHub(),
-                          if (hasInstitutionWorkspace || isAppAdmin) ...[
-                            const SizedBox(height: AuraSpace.lg),
-                            _buildWorkspacesSection(
-                              hasInstitutionWorkspace,
-                              isAppAdmin,
-                              institutionLabel,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                _buildTabBar(),
+                const SizedBox(height: AuraSpace.s20),
+                AnimatedBuilder(
+                  animation: _tabController,
+                  builder: (context, _) =>
+                      _tabContent(_tabController.index, wide),
                 ),
               ],
             ),
@@ -1059,105 +1008,676 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  // ─── NARROW LAYOUT (<900) ─────────────────────────────────────────────────
+  // ─── COMPACT HERO ──────────────────────────────────────────────────────────
 
-  Widget _buildNarrowContent(BuildContext context) {
+  Widget _buildCompactHero(bool wide) {
     final user = _resolvedUser;
     final locationText = _locationText(user);
     final websiteUrl = _websiteText(user);
     final meta = _buildHeroMeta(locationText, websiteUrl);
-
-    final publications = _publicationsFromUser(user);
-    final links = _linksFromUser(user);
-
-    final institutionAccess = _institutionAccess;
-    final hasInstitutionWorkspace = institutionAccess.hasAccess;
-    final institutionLabel = _institutionWorkspaceLabel(institutionAccess);
-    final isAppAdmin = _isAppAdmin;
-
+    final roleLabel = _roleChipLabel;
     final displayTitle = _displayName.isNotEmpty ? _displayName : 'Presence';
 
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-        AuraSpace.s16,
-        AuraSpace.s16,
-        AuraSpace.s16,
-        AuraSpace.s32,
-      ),
+    const coverHeight = 116.0;
+    const avatarSize = 84.0;
+
+    final identity = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kWorkspaceWidth),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                PresenceHeader(
-                  displayName: displayTitle,
-                  handle: _handle,
-                  bio: _bio,
-                  avatarUrl: _avatarUrl,
-                  coverUrl: _coverUrl,
-                  trailingMeta: meta,
-                  actions: [
-                    PresenceHeaderAction(
-                      label: 'Edit profile',
-                      icon: Icons.edit_outlined,
-                      primary: true,
-                      onTap: () async {
-                        await context.push('/me/edit');
-                        if (!mounted) return;
-                        await _load();
-                      },
-                    ),
-                    if (_handle.isNotEmpty)
-                      PresenceHeaderAction(
-                        label: 'View profile',
-                        icon: Icons.visibility_outlined,
-                        onTap: () => context.push('/u/$_handle'),
-                      ),
-                  ],
-                  workspaceActions: const [],
-                ),
-                const SizedBox(height: AuraSpace.lg),
-                _buildAccountHealthPanel(),
-                const SizedBox(height: AuraSpace.lg),
-                _buildPersonalRecordSection(),
-                if (publications.isNotEmpty) ...[
-                  const SizedBox(height: AuraSpace.lg),
-                  MeSection(
-                    title: 'Public record',
-                    children: _buildPublicationItems(publications),
-                  ),
-                ],
-                if (links.isNotEmpty) ...[
-                  const SizedBox(height: AuraSpace.lg),
-                  MeSection(
-                    title: 'Elsewhere',
-                    children: _buildLinkItems(links),
-                  ),
-                ],
-                const SizedBox(height: AuraSpace.lg),
-                _buildConnectionsSection(),
-                const SizedBox(height: AuraSpace.lg),
-                _buildConnectedAccountsPanel(),
-                const SizedBox(height: AuraSpace.lg),
-                _buildSettingsHub(),
-                if (hasInstitutionWorkspace || isAppAdmin) ...[
-                  const SizedBox(height: AuraSpace.lg),
-                  _buildWorkspacesSection(
-                    hasInstitutionWorkspace,
-                    isAppAdmin,
-                    institutionLabel,
-                  ),
-                ],
-              ],
+        Text(
+          displayTitle,
+          style: AuraText.title.copyWith(
+            fontSize: wide ? 26 : 22,
+            fontWeight: FontWeight.w700,
+            height: 1.1,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: AuraSpace.s4),
+        Text(
+          _handle.isNotEmpty ? '@$_handle' : '—',
+          style: AuraText.muted.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (roleLabel.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s10),
+          _buildRoleChip(roleLabel),
+        ],
+        if (meta.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: meta,
+          ),
+        ],
+      ],
+    );
+
+    final buttons = _heroButtons(expand: !wide);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _heroCover(coverHeight),
+              Positioned(
+                left: wide ? AuraSpace.s24 : AuraSpace.s18,
+                bottom: -(avatarSize / 2),
+                child: _heroAvatar(avatarSize, displayTitle),
+              ),
+            ],
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              wide ? AuraSpace.s24 : AuraSpace.s18,
+              (avatarSize / 2) + AuraSpace.s12,
+              wide ? AuraSpace.s24 : AuraSpace.s18,
+              wide ? AuraSpace.s20 : AuraSpace.s18,
             ),
+            child: wide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: identity),
+                      const SizedBox(width: AuraSpace.s20),
+                      buttons,
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      identity,
+                      const SizedBox(height: AuraSpace.s16),
+                      buttons,
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroCover(double height) {
+    final cover = _coverUrl;
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: cover.isEmpty
+          ? const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF232833),
+                    Color(0xFF1C212A),
+                    Color(0xFF171B22),
+                  ],
+                ),
+              ),
+            )
+          : Image.network(
+              cover,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  const ColoredBox(color: AuraSurface.elevated),
+            ),
+    );
+  }
+
+  Widget _heroAvatar(double size, String name) {
+    final url = _avatarUrl;
+    final fallback = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AuraSurface.elevated,
+        border: Border.all(color: AuraSurface.card, width: 4),
+      ),
+      child: Text(
+        _initialsFor(name),
+        style: AuraText.title.copyWith(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+
+    if (url.isEmpty) return fallback;
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AuraSurface.card,
+        border: Border.all(color: AuraSurface.card, width: 4),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      ),
+    );
+  }
+
+  String _initialsFor(String name) {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
+  }
+
+  Widget _buildRoleChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.verified_outlined,
+            size: 13,
+            color: AuraSurface.accent,
+          ),
+          const SizedBox(width: AuraSpace.s6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.accent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroButtons({required bool expand}) {
+    final edit = FilledButton.icon(
+      onPressed: () async {
+        await context.push('/me/edit');
+        if (!mounted) return;
+        await _load();
+      },
+      icon: const Icon(Icons.edit_outlined, size: 16),
+      label: const Text('Edit profile'),
+      style: FilledButton.styleFrom(
+        minimumSize: expand ? const Size.fromHeight(44) : null,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s16,
+          vertical: AuraSpace.s12,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      ),
+    );
+
+    final view = OutlinedButton.icon(
+      onPressed:
+          _handle.isNotEmpty ? () => context.push('/u/$_handle') : null,
+      icon: const Icon(Icons.open_in_new, size: 16),
+      label: const Text('Public profile'),
+      style: OutlinedButton.styleFrom(
+        minimumSize: expand ? const Size.fromHeight(44) : null,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s16,
+          vertical: AuraSpace.s12,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      ),
+    );
+
+    if (expand) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          edit,
+          const SizedBox(height: AuraSpace.s10),
+          view,
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        edit,
+        const SizedBox(width: AuraSpace.s10),
+        view,
+      ],
+    );
+  }
+
+  // ─── TAB BAR + TAB CONTENT ─────────────────────────────────────────────────
+
+  Widget _buildTabBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        labelColor: AuraSurface.ink,
+        unselectedLabelColor: AuraSurface.muted,
+        indicatorColor: AuraSurface.accent,
+        indicatorWeight: 2.5,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: Colors.transparent,
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        labelStyle: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+        unselectedLabelStyle:
+            AuraText.small.copyWith(fontWeight: FontWeight.w600),
+        tabs: [
+          for (final tab in _tabs)
+            Tab(
+              height: 44,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(tab.$2, size: 16),
+                  const SizedBox(width: AuraSpace.s8),
+                  Text(tab.$1),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabContent(int index, bool wide) {
+    switch (index) {
+      case 1:
+        return _authorityTab(wide);
+      case 2:
+        return _participationTab(wide);
+      case 3:
+        return _networkTab(wide);
+      case 4:
+        return _accountTab(wide);
+      case 0:
+      default:
+        return _identityTab(wide);
+    }
+  }
+
+  Widget _identityTab(bool wide) {
+    final links = _linksFromUser(_resolvedUser);
+    final left = <Widget>[
+      _buildProfileSummaryCard(),
+      if (links.isNotEmpty) ...[
+        const SizedBox(height: AuraSpace.lg),
+        MeSection(title: 'Elsewhere', children: _buildLinkItems(links)),
+      ],
+    ];
+    final right = <Widget>[
+      _buildAccountHealthPanel(),
+      const SizedBox(height: AuraSpace.lg),
+      _buildConnectedAccountsPanel(),
+    ];
+    return _twoColumn(wide, left, right);
+  }
+
+  Widget _authorityTab(bool wide) {
+    final access = _institutionAccess;
+    final hasWorkspace = access.hasAccess;
+    final isAdmin = _isAppAdmin;
+    final label = _institutionWorkspaceLabel(access);
+    if (!hasWorkspace && !isAdmin) {
+      return _emptyStateCard(
+        icon: Icons.account_balance_outlined,
+        title: 'No workspaces yet',
+        body: 'Institution and platform workspaces you can act in '
+            'will appear here.',
+      );
+    }
+    return _constrainLeft(
+      wide,
+      _buildWorkspacesSection(hasWorkspace, isAdmin, label),
+    );
+  }
+
+  Widget _participationTab(bool wide) {
+    final publications = _publicationsFromUser(_resolvedUser);
+    final left = <Widget>[_buildPersonalRecordSection()];
+    final right = <Widget>[
+      if (publications.isNotEmpty)
+        MeSection(
+          title: 'Public record',
+          children: _buildPublicationItems(publications),
+        )
+      else
+        _emptyStateCard(
+          icon: Icons.menu_book_outlined,
+          title: 'No public record yet',
+          body: 'Publications and released work will be listed here.',
+        ),
+    ];
+    return _twoColumn(wide, left, right);
+  }
+
+  Widget _networkTab(bool wide) {
+    final left = <Widget>[_buildConnectionsSection()];
+    final right = <Widget>[_buildAudienceCard()];
+    return _twoColumn(wide, left, right);
+  }
+
+  Widget _accountTab(bool wide) {
+    return _constrainLeft(wide, _buildSettingsHub());
+  }
+
+  // ─── TAB LAYOUT HELPERS ────────────────────────────────────────────────────
+
+  Widget _twoColumn(bool wide, List<Widget> left, List<Widget> right) {
+    if (!wide) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ...left,
+          const SizedBox(height: AuraSpace.lg),
+          ...right,
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: left,
+          ),
+        ),
+        const SizedBox(width: AuraSpace.s20),
+        Expanded(
+          flex: 4,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: right,
           ),
         ),
       ],
     );
   }
+
+  Widget _constrainLeft(bool wide, Widget child) {
+    if (!wide) return child;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _emptyStateCard({
+    required IconData icon,
+    required String title,
+    required String body,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      padding: const EdgeInsets.all(AuraSpace.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 22, color: AuraSurface.muted),
+          const SizedBox(height: AuraSpace.s12),
+          Text(title, style: AuraText.title),
+          const SizedBox(height: AuraSpace.s6),
+          Text(
+            body,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAudienceCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Audience', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s14),
+          Row(
+            children: [
+              Expanded(
+                child: _audienceStat(
+                  count: _followersCount,
+                  label: 'Followers',
+                  onTap: _handle.isNotEmpty
+                      ? () => context.push('/u/$_handle/followers')
+                      : null,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: _audienceStat(
+                  count: _followingCount,
+                  label: 'Following',
+                  onTap: _handle.isNotEmpty
+                      ? () => context.push('/u/$_handle/following')
+                      : null,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _audienceStat({
+    required int count,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.card),
+      child: Container(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        decoration: BoxDecoration(
+          color: AuraSurface.elevated,
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$count',
+              style: AuraText.title.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── PROFILE SUMMARY (inline-editable identity fields) ─────────────────────
+
+  Widget _buildProfileSummaryCard() {
+    final user = _resolvedUser;
+    final location = _locationText(user);
+    final website = _websiteText(user);
+
+    final rows = <Widget>[
+      _summaryRow(label: 'Display name', value: _displayName),
+      _summaryRow(
+        label: 'Handle',
+        value: _handle.isNotEmpty ? '@$_handle' : '',
+        editable: false,
+      ),
+      _summaryRow(label: 'Bio', value: _bio, maxLines: 4),
+      _summaryRow(label: 'Location', value: location),
+      _summaryRow(
+        label: 'Website',
+        value: website,
+        onOpen: website.isNotEmpty ? () => _openExternalUrl(website) : null,
+      ),
+      _summaryRow(label: 'Joined', value: _joinedText, editable: false),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.badge_outlined,
+                size: 16,
+                color: AuraSurface.accent,
+              ),
+              SizedBox(width: AuraSpace.s8),
+              Text('Profile summary', style: AuraText.title),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s6),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i != 0)
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AuraSurface.divider,
+              ),
+            rows[i],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow({
+    required String label,
+    required String value,
+    bool editable = true,
+    int maxLines = 2,
+    VoidCallback? onOpen,
+  }) {
+    final hasValue = value.trim().isNotEmpty;
+    final valueWidget = Text(
+      hasValue ? value : 'Not set',
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      style: AuraText.body.copyWith(
+        color: hasValue ? AuraSurface.ink : AuraSurface.faint,
+        fontWeight: FontWeight.w600,
+        fontStyle: hasValue ? FontStyle.normal : FontStyle.italic,
+        height: 1.4,
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 96,
+            child: Text(
+              label,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.muted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: onOpen != null && hasValue
+                ? InkWell(onTap: onOpen, child: valueWidget)
+                : valueWidget,
+          ),
+          if (editable) ...[
+            const SizedBox(width: AuraSpace.s8),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(),
+              padding: const EdgeInsets.all(AuraSpace.s4),
+              iconSize: 16,
+              color: AuraSurface.muted,
+              tooltip: 'Edit $label',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () async {
+                await context.push('/me/edit');
+                if (!mounted) return;
+                await _load();
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Narrow vs. wide is now unified in [_buildContent]; each tab builder takes
+  // a `wide` flag and collapses its two columns into one stack below 900px.
 
   // ─────────────────────────────────────────────────────────────────────────
   // DATA HELPERS
