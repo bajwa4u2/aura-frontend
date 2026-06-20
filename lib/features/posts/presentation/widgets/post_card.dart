@@ -582,7 +582,12 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     out.add(
       PostCardResolvedMediaItem(
-        id: 'legacy',
+        // Unique per image: the legacy single-media path previously used a
+        // constant 'legacy' id, which became the CachedNetworkImage cache key
+        // (aura_attachment:legacy) for EVERY post — so all posts in a list
+        // (e.g. the author profile) showed the first-cached image. Keying by
+        // the resolved URL makes each post resolve its own image.
+        id: resolvedMediaUrl ?? resolvedMediaThumbUrl ?? 'legacy',
         type: (mediaType ?? 'IMAGE').toUpperCase(),
         url: resolvedMediaUrl,
         thumbUrl: resolvedMediaThumbUrl,
