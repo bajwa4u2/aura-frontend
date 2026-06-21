@@ -831,6 +831,7 @@ class FeedItem {
     this.publicSpaceName,
     this.resolvesPostId,
     this.continuesPostId,
+    this.publicStatus,
     this.replyToPostId,
     this.replyToInstitutionPostId,
     this.parentInstitutionId,
@@ -908,6 +909,13 @@ class FeedItem {
   /// institution posts without any continuity linkage.
   final String? resolvesPostId;
   final String? continuesPostId;
+
+  /// Public-record accountability status. Derived by the backend from the
+  /// highest-ranked RoutedPublicRecord status for this post. Null (or
+  /// PENDING) means no institution has formally responded yet — the UI
+  /// renders nothing in that case. RESPONDED / COMMITTED / RESOLVED map
+  /// to the calm product labels "Official Response" / "Commitment" / "Resolved".
+  final String? publicStatus;
 
   /// Reply linkage — non-null when this item is itself a reply. Used by detail
   /// surfaces to show the original it answers (never a detached comment).
@@ -1062,6 +1070,7 @@ class FeedItem {
       publicSpaceName: spaceName,
       resolvesPostId: opt(['resolvesPostId']),
       continuesPostId: opt(['continuesPostId']),
+      publicStatus: opt(['publicStatus']),
       replyToPostId: opt(['replyToPostId']),
       replyToInstitutionPostId: opt(['replyToInstitutionPostId']),
       parentInstitutionId: opt(['parentInstitutionId']),

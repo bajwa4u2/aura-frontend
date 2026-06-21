@@ -348,6 +348,13 @@ class UnifiedFeedCard extends ConsumerWidget {
                 ),
               ),
             ],
+            // Public-record accountability status. Null and PENDING are
+            // silent — a chip only appears when an institution has
+            // formally responded. Language is calm and non-judgmental.
+            if (_publicStatusLabel(item.publicStatus) case final label?) ...[
+              const SizedBox(height: AuraSpace.s8),
+              _PublicStatusChip(label: label),
+            ],
             // Phase 4 — "Recent activity around this" line. Renders only
             // for official posts when the existing FeedItem.activity /
             // FeedItem.interaction signal carries a usable hint. No
@@ -1548,6 +1555,68 @@ class _NewChip extends StatelessWidget {
           letterSpacing: 0.7,
           fontSize: 9,
         ),
+      ),
+    );
+  }
+}
+
+/// Maps a raw `publicStatus` wire value to the calm product label shown on
+/// feed cards. Returns null when the status is absent, empty, or PENDING —
+/// those states render nothing (silence is the default, not a failure).
+String? _publicStatusLabel(String? raw) {
+  switch ((raw ?? '').toUpperCase().trim()) {
+    case 'RESPONDED':
+      return 'Official Response';
+    case 'COMMITTED':
+      return 'Commitment';
+    case 'RESOLVED':
+      return 'Resolved';
+    default:
+      return null;
+  }
+}
+
+/// Calm inline chip that surfaces the accountability status of a public post.
+/// Shown only when an institution has formally responded (RESPONDED /
+/// COMMITTED / RESOLVED). Never shows routing internals.
+class _PublicStatusChip extends StatelessWidget {
+  const _PublicStatusChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isResolved = label == 'Resolved';
+    final color = isResolved
+        ? const Color(0xFF1B8A4C)
+        : AuraSurface.accent;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isResolved
+                ? Icons.check_circle_outline_rounded
+                : Icons.verified_outlined,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
       ),
     );
   }

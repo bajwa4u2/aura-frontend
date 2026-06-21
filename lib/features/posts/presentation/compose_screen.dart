@@ -1127,7 +1127,25 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return 'Saved ${_time(dt)}.';
   }
 
+  /// Maps the current intent selection to the backend wire enum value.
+  /// Returns null for replies or when no intent is selected (backend
+  /// treats absent/null as no intent — post is not routed).
+  String? _intentWire() {
+    if (_isReply) return null;
+    switch (_intent) {
+      case _ComposeIntent.ask:
+        return 'ASK';
+      case _ComposeIntent.raise:
+        return 'ISSUE';
+      case _ComposeIntent.share:
+        return 'SHARE_UPDATE';
+      case _ComposeIntent.none:
+        return null;
+    }
+  }
+
   Map<String, dynamic> _buildComposePayload() {
+    final intentWire = _intentWire();
     return {
       'text': _textController.text.trim(),
       'visibility': _visibilityApiValue(_visibility),
@@ -1135,6 +1153,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // post it publishes into) reflects the composer state. `null` clears.
       'primaryTopic': _primaryTopic?.wire,
       'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
+      // Public-record routing — intent tells the backend which accountability
+      // route to attempt when PUBLIC_RECORD_ROUTING_ENABLED is on.
+      // Null/absent means no routing is attempted.
+      if (intentWire != null) 'intent': intentWire,
       // Public-UX Phase 4 — anchor the post to a public discourse
       // space when the composer was entered with one (or the user
       // picked one). Backend persists this on the draft and replies
@@ -1887,6 +1909,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
+    // For top-level posts with Raise Issue intent, nudge user to add a topic
+    // so the backend can route the record to the right institution.
+    if (!_isReply &&
+        _intent == _ComposeIntent.raise &&
+        _primaryTopic == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Select a topic so your issue can reach the right institutions.',
+          ),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     if (_hasUploadingAttachments) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -2041,6 +2079,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+
+      // Capability gate: backend returns 403 when the user is not eligible
+      // to raise issues (CAN_RAISE_ISSUE_GATE_ENABLED=true). Show a calm,
+      // non-judgmental message rather than a raw error string.
+      if (e is DioException &&
+          e.response?.statusCode == 403 &&
+          _intent == _ComposeIntent.raise) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Raising issues may require account verification or eligibility. '
+              'You can still ask a question or share an update.',
+            ),
+            duration: Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
 
       final message =
           publishedPostId != null && publishedPostId.trim().isNotEmpty

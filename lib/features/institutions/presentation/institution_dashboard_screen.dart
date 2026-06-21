@@ -381,6 +381,18 @@ class _InstitutionDashboardScreenState
       ));
     }
 
+    if (_isAdmin && _institutionId.isNotEmpty) {
+      items.add(InsActionCard(
+        icon: Icons.inbox_outlined,
+        title: 'Public Engagement',
+        body:
+            'View public records routed to your institution and manage your participation declarations.',
+        cta: 'Open workspace',
+        tone: InsTone.info,
+        onTap: () => _go('/institution/$_institutionId/public-engagement'),
+      ));
+    }
+
     if (items.isEmpty) {
       // Fully set up — nothing actionable. Surface a calm "all clear" tile
       // so the section never sits empty on a healthy workspace.

@@ -79,6 +79,9 @@ import 'features/institutions/live_rooms/institution_live_rooms_screen.dart';
 import 'features/institutions/explore/institution_explore_screen.dart';
 import 'features/institutions/posts/institution_post_composer_screen.dart';
 import 'features/institutions/posts/institution_post_detail_screen.dart';
+import 'features/institutions/engagement/engagement_list_screen.dart';
+import 'features/institutions/engagement/engagement_detail_screen.dart';
+import 'features/institutions/participation/participation_screen.dart';
 import 'features/direct_threads/presentation/direct_intent_screen.dart';
 import 'features/direct_threads/presentation/direct_thread_screen.dart';
 import 'features/direct_threads/presentation/inbox_screen.dart';
@@ -1070,6 +1073,27 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/units',
             builder: (_, state) => InstitutionUnitsScreen(
               institutionId: state.pathParameters['institutionId']!,
+            ),
+          ),
+
+          // Public Engagement workspace — list + detail + participation settings.
+          GoRoute(
+            path: '/institution/:institutionId/public-engagement',
+            builder: (_, state) => EngagementListScreen(
+              institutionId: state.pathParameters['institutionId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/public-engagement/participation',
+            builder: (_, state) => ParticipationScreen(
+              institutionId: state.pathParameters['institutionId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/public-engagement/:recordId',
+            builder: (_, state) => EngagementDetailScreen(
+              institutionId: state.pathParameters['institutionId']!,
+              recordId: state.pathParameters['recordId']!,
             ),
           ),
 
