@@ -24,7 +24,7 @@ class EngagementRepository {
       },
     );
     final root = _unwrap(res.data);
-    final raw = root['data'] ?? root['items'] ?? root;
+    final raw = root['data'] ?? root['items'] ?? root['records'] ?? root;
     final items = raw is List ? raw : (raw is Map ? [raw] : <dynamic>[]);
     return items
         .whereType<Map>()
@@ -40,7 +40,7 @@ class EngagementRepository {
       '/institutions/$institutionId/engagement/$recordId',
     );
     final root = _unwrap(res.data);
-    final record = root['data'] ?? root;
+    final record = root['data'] ?? root['record'] ?? root;
     return RoutedRecord.fromJson(_unwrap(record));
   }
 

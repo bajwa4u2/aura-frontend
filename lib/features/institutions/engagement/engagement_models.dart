@@ -123,7 +123,7 @@ class RoutedRecord {
 
     return RoutedRecord(
       id: (m['id'] ?? '').toString(),
-      postId: _opt(m, ['postId']) ?? '',
+      postId: _opt(m, ['postId']) ?? (postRaw['id']?.toString() ?? ''),
       institutionId: _opt(m, ['institutionId']) ?? '',
       status: RoutedRecordStatus.fromWire(m['status']),
       intent: RecordIntent.fromWire(
@@ -169,7 +169,7 @@ class EngagementSummary {
         : m;
     return EngagementSummary(
       total: readInt(data['total']),
-      pending: readInt(data['pending']),
+      pending: readInt(data['pending'] ?? data['needsResponse']),
       responded: readInt(data['responded']),
       committed: readInt(data['committed']),
       resolved: readInt(data['resolved']),
