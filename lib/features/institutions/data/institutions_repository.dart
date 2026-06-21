@@ -731,6 +731,24 @@ class InstitutionsRepository {
     await _dio.delete('/institutions/$id/posts/$pid');
   }
 
+  Future<void> patchAccountabilityTag(
+    String institutionId,
+    String postId,
+    String tag,
+    String publicPostId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    final ppid = publicPostId.trim();
+    if (id.isEmpty || pid.isEmpty || ppid.isEmpty) {
+      throw Exception('institutionId, postId, and publicPostId are required.');
+    }
+    await _dio.patch(
+      '/institutions/$id/posts/$pid/accountability',
+      data: <String, dynamic>{'tag': tag, 'publicPostId': ppid},
+    );
+  }
+
   InstitutionPost _readPost(dynamic body) {
     if (body is Map) {
       final root = Map<String, dynamic>.from(body);
