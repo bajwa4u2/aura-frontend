@@ -35,6 +35,44 @@
 - **Monetization:** plan tiers, member limits, billing.
 - **Public marketing surfaces:** mission, founder, investors (+ deck), patrons, supporters, white-paper, transparency (`/aura/participation`).
 
+## Public Record Accountability — Implemented (as of 2026-06-21)
+
+The public record accountability system (Phase F1–F5) is **fully implemented and deployed**. This is not a future framework — it is running in production.
+
+### What is live
+
+**Backend (`https://api.auraplatform.org/v1`, commit `d34ae7c`):**
+- `RoutedPublicRecord` model: every public post routed to one or more institutions by topic participation
+- `RoutedPublicRecord.status`: `PENDING → RESPONDED → COMMITTED → RESOLVED` lifecycle driven by institution accountability tags
+- `publicStatus` field on post detail: derives from the highest status across all routed records for that post; returned as `PENDING / RESPONDED / COMMITTED / RESOLVED`
+- `AccountabilityTag` lifecycle: `COMMITMENT` tag advances status to `COMMITTED`; `RESOLVED` tag advances to `RESOLVED`; `UPDATE` tag does not advance status (informational only)
+- Engagement workspace endpoints: `GET /institutions/:id/engagement`, `GET /institutions/:id/engagement/:recordId`, `GET /institutions/:id/engagement/summary` — returns all routed records with topic, intent, author, and status
+- Institution participation declarations: `GOVERNMENT/ACCOUNTABLE`, `EDUCATION/RESPONDING`, `TECHNOLOGY/ACCOUNTABLE` — controls which topics route to which institutions
+- Participation modes: `ACCOUNTABLE` (commits to responding) and `RESPONDING` (participates without commitment)
+
+**Flutter frontend (commit `3dac187`):**
+- Engagement workspace: list of routed records with status badge, topic, intent, author
+- Status badges: `Needs Response / Official Response / Commitment / Resolved`
+- Engagement detail: full post body, author, status, "View original post" deep link
+- Institution participation screen: topic/mode declarations visible with status
+- Summary card: total and `needsResponse` count
+
+**Feature flags (both OFF — do not enable without explicit approval):**
+- `PUBLIC_RECORD_INTENT_REQUIRED` — gates post visibility by intent; currently OFF so all posts surface
+- `CAN_RAISE_ISSUE_GATE_ENABLED` — gates who can raise an issue; currently OFF
+
+### What is not yet built
+
+- "Reply Officially" action from engagement detail (next build: allows institution admin to compose and publish institution post reply with accountability tag directly from the engagement detail screen)
+- Participation admin UX polish (topic descriptions, mode explanations, status transitions)
+- LISTENING and REFERENCE_ONLY participation modes (explicitly deferred)
+- Jurisdiction-aware routing refinement (deferred)
+- Intent-required gate for public posts (flag off, not built out)
+
+### Seeded institutions
+
+- **Aura Platform LLC** (`aura-platform-llc`, ID `cmmg1ildu0000k201gtwg60rr`): verified, GOVERNMENT/ACCOUNTABLE + EDUCATION/RESPONDING + TECHNOLOGY/ACCOUNTABLE participations active. Has COMMITTED and RESOLVED engagement records in production demonstrating the full lifecycle end-to-end.
+
 ## Proven False Assumptions
 
 - ❌ "Aura is a social network." → Verified-identity institutional accountability; a public record, not an engagement feed.
@@ -56,3 +94,22 @@
 - **Differentiator vs social:** verified identity + typed accountability + public record — "not a feed, a record."
 - **Be honest:** no verified institutions yet; the path is founder-operated seeding of the directory so the proof surface is populated.
 - **Doctrine is preserved**, intact and visible, beneath the legible offer.
+
+## Progressive Credibility Doctrine
+
+Aura's institution journey is progressive:
+
+```txt
+Identity is declared.
+Participation is observed.
+Credibility is earned.
+Accountability is progressively accepted.
+Trust accumulates through continuity.
+```
+
+Verified identity is the start of institutional presence, not the end state of
+trust. Participation can be suggested or declared, but credibility comes from
+observable behavior: official responses, commitments, progress, resolution,
+dispute handling, and durable continuity. Accountability should not be treated
+as an onboarding checkbox; it becomes meaningful through public institutional
+action over time.
