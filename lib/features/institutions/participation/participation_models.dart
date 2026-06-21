@@ -25,9 +25,20 @@ enum ParticipationMode {
   String get description {
     switch (this) {
       case ParticipationMode.responding:
-        return 'You respond to public posts on this topic.';
+        return 'Public posts on this topic are routed to your workspace. '
+            'You can respond officially. Activity is not tracked as a public commitment.';
       case ParticipationMode.accountable:
-        return 'You are publicly accountable on this topic.';
+        return 'Public posts on this topic are routed to your workspace. '
+            'Your responses, commitments, and resolutions are tracked and visible on your public profile.';
+    }
+  }
+
+  String get shortDescription {
+    switch (this) {
+      case ParticipationMode.responding:
+        return 'Receives posts · responses not publicly tracked';
+      case ParticipationMode.accountable:
+        return 'Receives posts · commitments tracked publicly';
     }
   }
 
@@ -67,6 +78,17 @@ enum ParticipationStatus {
         return 'Inactive';
       case ParticipationStatus.paused:
         return 'Paused';
+    }
+  }
+
+  String get routingNote {
+    switch (this) {
+      case ParticipationStatus.active:
+        return 'Routing active — public posts on this topic reach your workspace.';
+      case ParticipationStatus.paused:
+        return 'Routing paused — posts are not currently reaching you.';
+      case ParticipationStatus.inactive:
+        return 'Inactive — not receiving posts on this topic.';
     }
   }
 
