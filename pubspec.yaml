@@ -159,7 +159,10 @@ msix_config:
   # (zoom / pan / open original / download original), desktop
   # reading-width public-record composition, and desktop contextual
   # discourse rails on the detail surfaces.
-  msix_version: 1.2.0.0
+  # 2026-06-24 bump (1.2.1.0): fix handle validation mismatch — frontend
+  # now enforces lowercase-only [a-z0-9_] max 24 chars matching backend DTO,
+  # eliminating the "Registration failed" error on valid handles.
+  msix_version: 1.2.1.0
   description: "Aura — institution operating infrastructure: the system an institution runs its public and member-facing life on."
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png
