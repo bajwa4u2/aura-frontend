@@ -74,12 +74,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   String? _handleValidator(String? v) {
-    final t = (v ?? '').trim();
+    final t = (v ?? '').trim().toLowerCase();
     if (t.isEmpty) return null;
-    final ok = RegExp(r'^[a-zA-Z0-9_.]+$').hasMatch(t);
-    if (!ok) return 'Handle can use letters, numbers, underscores, and dots only';
+    final ok = RegExp(r'^[a-z0-9_]+$').hasMatch(t);
+    if (!ok) return 'Handle can only use lowercase letters, numbers, and underscores';
     if (t.length < 3) return 'Handle must be at least 3 characters';
-    if (t.length > 30) return 'Handle is too long';
+    if (t.length > 24) return 'Handle must be 24 characters or fewer';
     return null;
   }
 
@@ -101,10 +101,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   String _defaultHandleFromEmail(String email) {
-    final e = email.trim();
+    final e = email.trim().toLowerCase();
     final at = e.indexOf('@');
-    if (at > 0) return e.substring(0, at);
-    return e.isEmpty ? 'member' : e;
+    final local = at > 0 ? e.substring(0, at) : (e.isEmpty ? 'member' : e);
+    return local.replaceAll(RegExp(r'[^a-z0-9_]+'), '_').replaceAll(RegExp(r'^_+|_+$'), '');
   }
 
   String _defaultDisplayName(String firstName, String lastName, String handle) {
@@ -158,6 +158,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return 'Please choose a stronger password.';
     }
 
+    if (msg.contains('handle') && (msg.contains('lowercase') || msg.contains('underscores'))) {
+      return 'Handle can only use lowercase letters, numbers, and underscores.';
+    }
+
+    if (msg.contains('some details need another look') || msg.contains('review the form')) {
+      return raw;
+    }
+
     if (msg.contains('network error') ||
         msg.contains('socketexception') ||
         msg.contains('connection error') ||
@@ -206,9 +214,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       final firstName = _firstName.text.trim();
       final lastName = _lastName.text.trim();
 
-      final handle = _handle.text.trim().isEmpty
+      final handle = (_handle.text.trim().isEmpty
           ? _defaultHandleFromEmail(email)
-          : _handle.text.trim();
+          : _handle.text.trim().toLowerCase());
 
       final displayName = _displayName.text.trim().isEmpty
           ? _defaultDisplayName(firstName, lastName, handle)
@@ -584,7 +592,9 @@ class _RegisterFormCard extends StatelessWidget {
                 textInputAction: TextInputAction.next,
                 autocorrect: false,
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_.]')),
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
+                  TextInputFormatter.withFunction((old, newVal) =>
+                      newVal.copyWith(text: newVal.text.toLowerCase())),
                 ],
                 style: AuraText.body,
                 validator: handleValidator,

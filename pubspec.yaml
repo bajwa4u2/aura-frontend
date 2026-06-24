@@ -10,7 +10,7 @@ publish_to: "none"
 # X.Y.Z parts of `version` and zero out the build component to satisfy
 # the store rule. A pre-build script could enforce this automatically;
 # for now it's a manual sync.
-version: 1.2.0+20
+version: 1.2.1+21
 
 environment:
   sdk: ^3.10.8
