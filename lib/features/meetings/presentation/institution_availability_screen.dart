@@ -39,13 +39,22 @@ class InstitutionAvailabilityScreen extends ConsumerWidget {
           }
           return ListView.separated(
             padding: const EdgeInsets.all(AuraSpace.s16),
-            itemCount: profiles.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: AuraSpace.s8),
-            itemBuilder: (_, i) => _ProfileCard(
-              profile: profiles[i],
-              institutionId: institutionId,
-            ),
+            itemCount: profiles.length + 1,
+            separatorBuilder: (_, i) =>
+                i == 0 ? const SizedBox(height: AuraSpace.s16) : const SizedBox(height: AuraSpace.s8),
+            itemBuilder: (_, i) {
+              if (i == 0) {
+                return OutlinedButton.icon(
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('New booking page'),
+                  onPressed: () => _showCreateDialog(context, ref),
+                );
+              }
+              return _ProfileCard(
+                profile: profiles[i - 1],
+                institutionId: institutionId,
+              );
+            },
           );
         },
       ),
@@ -160,6 +169,39 @@ class _ProfileCard extends ConsumerWidget {
                     }
                   } else if (v == 'edit') {
                     _showEditDialog(context, ref);
+                  } else if (v == 'delete') {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Delete booking page'),
+                        content: Text(
+                            'Delete "${profile.name}"? This cannot be undone.'),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel')),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                                backgroundColor:
+                                    const Color(0xFFEF4444)),
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed != true) return;
+                    try {
+                      await ref
+                          .read(availabilityRepositoryProvider)
+                          .deleteInstitutionProfile(
+                              institutionId, profile.id);
+                      ref.invalidate(institutionProfilesProvider(institutionId));
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')));
+                    }
                   }
                 },
                 itemBuilder: (_) => [
@@ -171,6 +213,12 @@ class _ProfileCard extends ConsumerWidget {
                     value: 'toggle',
                     child: Text(
                         profile.isActive ? 'Disable' : 'Enable'),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Delete',
+                        style: TextStyle(color: Color(0xFFEF4444))),
                   ),
                 ],
               ),

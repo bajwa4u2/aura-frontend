@@ -226,7 +226,7 @@ class AvailabilityRepository {
     return AvailabilityProfile.fromJson(data);
   }
 
-  Future<void> disableInstitutionProfile(
+  Future<void> deleteInstitutionProfile(
       String institutionId, String profileId) async {
     await _dio.delete<void>(
         '/institution/$institutionId/availability/$profileId');
