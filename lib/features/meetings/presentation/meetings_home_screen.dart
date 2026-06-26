@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -10,15 +9,22 @@ import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 
 class MeetingsHomeScreen extends ConsumerWidget {
-  const MeetingsHomeScreen({super.key});
+  final String? institutionId;
+
+  const MeetingsHomeScreen({super.key, this.institutionId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final upcomingAsync = ref.watch(upcomingMeetingsProvider);
-    final pastAsync = ref.watch(pastMeetingsProvider);
+    final institutionId = this.institutionId;
+    final upcomingAsync = institutionId == null
+        ? ref.watch(upcomingMeetingsProvider)
+        : ref.watch(institutionUpcomingMeetingsProvider(institutionId));
+    final pastAsync = institutionId == null
+        ? ref.watch(pastMeetingsProvider)
+        : ref.watch(institutionPastMeetingsProvider(institutionId));
 
     return AuraScaffold(
-      title: 'Meetings',
+      title: institutionId == null ? 'Meetings' : 'Institution meetings',
       actions: [
         IconButton(
           icon: const Icon(Icons.add_rounded),
@@ -26,116 +32,185 @@ class MeetingsHomeScreen extends ConsumerWidget {
           onPressed: () => context.push('/meetings/new'),
         ),
       ],
-      body: ListView(
-        padding: const EdgeInsets.all(AuraSpace.s16),
-        children: [
-          // Quick action buttons
-          _QuickActions(),
-          const SizedBox(height: AuraSpace.s24),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          if (institutionId == null) {
+            ref.invalidate(upcomingMeetingsProvider);
+            ref.invalidate(pastMeetingsProvider);
+          } else {
+            ref.invalidate(institutionUpcomingMeetingsProvider(institutionId));
+            ref.invalidate(institutionPastMeetingsProvider(institutionId));
+          }
+        },
+        child: ListView(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _HostHeader(),
+                    const SizedBox(height: AuraSpace.s20),
+                    upcomingAsync.when(
+                      loading: () => const _LoadingPanel(
+                        message: 'Loading scheduled meetings...',
+                      ),
+                      error: (e, _) => _ErrorPanel(
+                        message: 'Could not load scheduled meetings.',
+                        detail: '$e',
+                      ),
+                      data: (meetings) {
+                        final now = DateTime.now();
+                        final active = meetings
+                            .where((m) => !m.isEnded)
+                            .toList(growable: false);
+                        final today = active
+                            .where((m) => _isToday(m.scheduledAt, now))
+                            .toList(growable: false);
+                        final upcoming = active
+                            .where((m) => !_isToday(m.scheduledAt, now))
+                            .toList(growable: false);
+                        final requests = active
+                            .where((m) => m.booking != null)
+                            .toList(growable: false);
 
-          // Upcoming meetings
-          const _SectionHeader(title: 'UPCOMING'),
-          const SizedBox(height: AuraSpace.s8),
-          upcomingAsync.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AuraSpace.s32),
-                child: CircularProgressIndicator(),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _MeetingSection(
+                              title: "Today's meetings",
+                              emptyTitle: 'No meetings today',
+                              emptyBody:
+                                  'New guest bookings will appear here when they are scheduled for today.',
+                              meetings: today,
+                              institutionId: institutionId,
+                              highlightToday: true,
+                            ),
+                            const SizedBox(height: AuraSpace.s20),
+                            _MeetingSection(
+                              title: 'Upcoming conversations',
+                              emptyTitle: 'No upcoming conversations',
+                              emptyBody:
+                                  'Scheduled meetings and guest bookings will appear here.',
+                              meetings: upcoming,
+                              institutionId: institutionId,
+                            ),
+                            const SizedBox(height: AuraSpace.s20),
+                            _MeetingSection(
+                              title: 'Booking requests received',
+                              emptyTitle: 'No guest bookings yet',
+                              emptyBody:
+                                  'When a guest books from a public booking page, their details and source page will appear here.',
+                              meetings: requests,
+                              institutionId: institutionId,
+                              compact: true,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: AuraSpace.s20),
+                    pastAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (meetings) => _MeetingSection(
+                        title: 'Past meetings',
+                        emptyTitle: 'No past meetings yet',
+                        emptyBody:
+                            'Completed and cancelled meetings appear here.',
+                        meetings: meetings.take(12).toList(growable: false),
+                        institutionId: institutionId,
+                        compact: true,
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s32),
+                  ],
+                ),
               ),
             ),
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.all(AuraSpace.s16),
-              child: Text('Could not load meetings: $e',
-                  style: Theme.of(context).textTheme.bodySmall),
-            ),
-            data: (meetings) {
-              if (meetings.isEmpty) {
-                return const _EmptyState(
-                  message: 'No upcoming meetings.',
-                  hint: 'Schedule one or share a booking link.',
-                );
-              }
-              return Column(
-                children: meetings
-                    .map((m) => _MeetingCard(meeting: m))
-                    .toList(),
-              );
-            },
-          ),
-
-          const SizedBox(height: AuraSpace.s24),
-
-          // Past meetings
-          const _SectionHeader(title: 'RECENT'),
-          const SizedBox(height: AuraSpace.s8),
-          pastAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (meetings) {
-              if (meetings.isEmpty) {
-                return const _EmptyState(message: 'No past meetings yet.');
-              }
-              return Column(
-                children: meetings
-                    .take(10)
-                    .map((m) => _MeetingCard(meeting: m))
-                    .toList(),
-              );
-            },
-          ),
-
-          const SizedBox(height: AuraSpace.s32),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _QuickActions extends ConsumerWidget {
+class _HostHeader extends ConsumerWidget {
+  const _HostHeader();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.video_call_rounded,
-            label: 'Start',
-            color: const Color(0xFF6C63FF),
-            onTap: () async {
-              final repo = ref.read(meetingsRepositoryProvider);
-              try {
-                final meeting = await repo.startInstantMeeting();
-                if (!context.mounted) return;
-                // Show the meeting code first, then navigate
-                _showMeetingStarted(context, meeting);
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to start meeting: $e')),
-                );
-              }
-            },
-          ),
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s18),
+        child: Wrap(
+          spacing: AuraSpace.s16,
+          runSpacing: AuraSpace.s16,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Scheduled meetings',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s6),
+                  Text(
+                    'Manage guest bookings, upcoming conversations, and meeting links from one place.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF9CA3AF),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.login_rounded),
+                  label: const Text('Join by code'),
+                  onPressed: () => _showJoinDialog(context),
+                ),
+                FilledButton.icon(
+                  icon: const Icon(Icons.video_call_rounded),
+                  label: const Text('Start meeting'),
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      final meeting = await ref
+                          .read(meetingsRepositoryProvider)
+                          .startInstantMeeting();
+                      ref.invalidate(upcomingMeetingsProvider);
+                      if (!context.mounted) return;
+                      _showMeetingStarted(context, meeting);
+                    } catch (e) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Could not start meeting: $e')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(width: AuraSpace.s12),
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.login_rounded,
-            label: 'Join',
-            color: const Color(0xFF10B981),
-            onTap: () => _showJoinDialog(context),
-          ),
-        ),
-        const SizedBox(width: AuraSpace.s12),
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.calendar_month_rounded,
-            label: 'Schedule',
-            color: const Color(0xFFF59E0B),
-            onTap: () => context.push('/meetings/new'),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -146,46 +221,34 @@ class _QuickActions extends ConsumerWidget {
         title: const Text('Meeting started'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Share this code to invite others:',
-                style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  meeting.meetingCode,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy_rounded, size: 20),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: meeting.joinUrl));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Link copied to clipboard')),
-                    );
-                  },
-                ),
-              ],
-            ),
+            const Text('Share this meeting link with guests.'),
+            const SizedBox(height: AuraSpace.s12),
+            SelectableText(meeting.joinUrl),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Later'),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: meeting.joinUrl));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Meeting link copied')),
+              );
+            },
+            child: const Text('Copy meeting link'),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
               if (meeting.sessionId != null) {
                 context.push('/realtime/${meeting.sessionId}?action=join');
+              } else {
+                context.push('/meetings/join/${meeting.meetingCode}');
               }
             },
-            child: const Text('Join now'),
+            child: const Text('Join meeting'),
           ),
         ],
       ),
@@ -226,7 +289,7 @@ class _QuickActions extends ConsumerWidget {
                 context.push('/meetings/join/$code');
               }
             },
-            child: const Text('Join'),
+            child: const Text('Join meeting'),
           ),
         ],
       ),
@@ -234,220 +297,436 @@ class _QuickActions extends ConsumerWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
+class _MeetingSection extends StatelessWidget {
+  final String title;
+  final String emptyTitle;
+  final String emptyBody;
+  final List<Meeting> meetings;
+  final String? institutionId;
+  final bool compact;
+  final bool highlightToday;
 
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
+  const _MeetingSection({
+    required this.title,
+    required this.emptyTitle,
+    required this.emptyBody,
+    required this.meetings,
+    this.institutionId,
+    this.compact = false,
+    this.highlightToday = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AuraSpace.s16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: AuraSpace.s4),
+          child: Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
         ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: AuraSpace.s6),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s4),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.0,
-          color: Color(0xFF9CA3AF),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final String message;
-  final String? hint;
-
-  const _EmptyState({required this.message, this.hint});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s16),
-      child: Center(
-        child: Column(
-          children: [
-            Text(message,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF6B7280),
-                    )),
-            if (hint != null) ...[
-              const SizedBox(height: AuraSpace.s4),
-              Text(hint!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF9CA3AF),
-                      )),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MeetingCard extends StatelessWidget {
-  final Meeting meeting;
-  const _MeetingCard({required this.meeting});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isActive = meeting.isActive;
-    final formatter = DateFormat('EEE, MMM d · h:mm a');
-    final scheduledLabel = meeting.scheduledAt != null
-        ? formatter.format(meeting.scheduledAt!.toLocal())
-        : 'Instant meeting';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-      child: GestureDetector(
-        onTap: () => context.push('/meetings/${meeting.id}'),
-        child: Container(
-          padding: const EdgeInsets.all(AuraSpace.s16),
-          decoration: BoxDecoration(
-            color: isActive
-                ? const Color(0xFF6C63FF).withOpacity(0.08)
-                : theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isActive
-                  ? const Color(0xFF6C63FF).withOpacity(0.4)
-                  : const Color(0xFF374151).withOpacity(0.4),
+        const SizedBox(height: AuraSpace.s10),
+        if (meetings.isEmpty)
+          _EmptyState(title: emptyTitle, body: emptyBody)
+        else
+          ...meetings.map(
+            (meeting) => _MeetingCard(
+              meeting: meeting,
+              institutionId: institutionId,
+              compact: compact,
+              highlight: highlightToday,
             ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFF6C63FF)
-                      : const Color(0xFF374151),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  isActive
-                      ? Icons.video_call_rounded
-                      : Icons.calendar_today_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              Expanded(
-                child: Column(
+      ],
+    );
+  }
+}
+
+class _MeetingCard extends ConsumerWidget {
+  final Meeting meeting;
+  final String? institutionId;
+  final bool compact;
+  final bool highlight;
+
+  const _MeetingCard({
+    required this.meeting,
+    this.institutionId,
+    this.compact = false,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final booking = meeting.booking;
+    final guestName = booking?.bookerName ?? _guestParticipant?.displayName;
+    final guestEmail = booking?.bookerEmail ?? _guestParticipant?.guestEmail;
+    final source = _sourceLabel(meeting);
+    final scheduledLabel = _scheduledLabel(context, meeting);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: meeting.isActive || highlight
+              ? const Color(0xFF6C63FF).withValues(alpha: 0.10)
+              : theme.colorScheme.surface,
+          border: Border.all(
+            color: meeting.isActive
+                ? const Color(0xFF10B981).withValues(alpha: 0.55)
+                : const Color(0xFF243244),
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => context.push(_detailPath),
+          child: Padding(
+            padding: const EdgeInsets.all(AuraSpace.s16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        if (isActive)
-                          Container(
-                            margin: const EdgeInsets.only(right: 6),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'LIVE',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
+                    _MeetingIcon(meeting: meeting),
+                    const SizedBox(width: AuraSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            spacing: AuraSpace.s8,
+                            runSpacing: AuraSpace.s6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                meeting.title,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                            ),
+                              _StatusChip(meeting: meeting),
+                            ],
                           ),
-                        Expanded(
-                          child: Text(
-                            meeting.title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                          const SizedBox(height: AuraSpace.s6),
+                          _Line(
+                            icon: Icons.schedule_rounded,
+                            text:
+                                '$scheduledLabel - ${meeting.durationMinutes} min - ${meeting.timezone}',
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      scheduledLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF9CA3AF),
-                      ),
-                    ),
-                    Text(
-                      '${meeting.durationMinutes} min · ${meeting.participantCount} participant${meeting.participantCount != 1 ? 's' : ''}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF6B7280),
+                          if (guestName != null)
+                            _Line(
+                              icon: Icons.person_outline_rounded,
+                              text: guestEmail?.isNotEmpty == true
+                                  ? '$guestName - $guestEmail'
+                                  : guestName,
+                            ),
+                          if (source != null)
+                            _Line(
+                              icon: Icons.calendar_today_rounded,
+                              text: source,
+                            ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              if (isActive)
-                FilledButton.tonal(
-                  onPressed: () => context.push(
-                      '/meetings/join/${meeting.meetingCode}'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
-                    minimumSize: Size.zero,
+                if (!compact && booking?.bookerNotes?.trim().isNotEmpty == true)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 52,
+                      top: AuraSpace.s10,
+                    ),
+                    child: Text(
+                      booking!.bookerNotes!.trim(),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFFCBD5E1),
+                        height: 1.35,
+                      ),
+                    ),
                   ),
-                  child: const Text('Join', style: TextStyle(fontSize: 13)),
-                )
-              else
-                const Icon(Icons.chevron_right_rounded,
-                    color: Color(0xFF6B7280)),
-            ],
+                const SizedBox(height: AuraSpace.s12),
+                Wrap(
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s8,
+                  children: [
+                    if (meeting.isScheduled || meeting.isDraft)
+                      FilledButton.icon(
+                        icon: const Icon(Icons.video_call_rounded, size: 18),
+                        label: const Text('Start meeting'),
+                        onPressed: () => _startMeeting(context, ref),
+                      )
+                    else if (meeting.isActive)
+                      FilledButton.icon(
+                        icon: const Icon(Icons.video_call_rounded, size: 18),
+                        label: const Text('Join meeting'),
+                        onPressed: () => _joinMeeting(context),
+                      ),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.content_copy_rounded, size: 18),
+                      label: const Text('Copy meeting link'),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: meeting.joinUrl));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Meeting link copied')),
+                        );
+                      },
+                    ),
+                    TextButton(
+                      onPressed: () => context.push(_detailPath),
+                      child: const Text('Open details'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  MeetingParticipant? get _guestParticipant {
+    for (final participant in meeting.participants) {
+      if (participant.isGuest) return participant;
+    }
+    return null;
+  }
+
+  String get _detailPath => institutionId == null
+      ? '/meetings/${meeting.id}'
+      : '/institution/$institutionId/meetings/${meeting.id}';
+
+  Future<void> _startMeeting(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final updated = await ref
+          .read(meetingsRepositoryProvider)
+          .startMeeting(meeting.id);
+      ref.invalidate(meetingProvider(meeting.id));
+      if (institutionId == null) {
+        ref.invalidate(upcomingMeetingsProvider);
+      } else {
+        ref.invalidate(institutionUpcomingMeetingsProvider(institutionId!));
+      }
+      if (!context.mounted) return;
+      if (updated.sessionId != null) {
+        context.push('/realtime/${updated.sessionId}?action=join');
+      } else {
+        context.push('/meetings/join/${updated.meetingCode}');
+      }
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not start meeting: $e')),
+      );
+    }
+  }
+
+  void _joinMeeting(BuildContext context) {
+    if (meeting.sessionId != null) {
+      context.push('/realtime/${meeting.sessionId}?action=join');
+    } else {
+      context.push('/meetings/join/${meeting.meetingCode}');
+    }
+  }
+}
+
+class _MeetingIcon extends StatelessWidget {
+  final Meeting meeting;
+
+  const _MeetingIcon({required this.meeting});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: meeting.isActive
+            ? const Color(0xFF10B981)
+            : const Color(0xFF6C63FF),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        meeting.isActive ? Icons.sensors_rounded : Icons.calendar_today_rounded,
+        color: Colors.white,
+        size: 20,
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final Meeting meeting;
+
+  const _StatusChip({required this.meeting});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (meeting.state) {
+      'ACTIVE' => ('Live', const Color(0xFF10B981)),
+      'SCHEDULED' => ('Scheduled', const Color(0xFF6C63FF)),
+      'ENDED' => ('Completed', const Color(0xFF9CA3AF)),
+      'CANCELLED' => ('Cancelled', const Color(0xFFEF4444)),
+      _ => ('Scheduled', const Color(0xFF9CA3AF)),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _Line extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _Line({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AuraSpace.s4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF9CA3AF)),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingPanel extends StatelessWidget {
+  final String message;
+
+  const _LoadingPanel({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s24),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          Text(message),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorPanel extends StatelessWidget {
+  final String message;
+  final String detail;
+
+  const _ErrorPanel({required this.message, required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    return _EmptyState(title: message, body: detail);
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final String title;
+  final String body;
+
+  const _EmptyState({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: AuraSpace.s6),
+            Text(
+              body,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+bool _isToday(DateTime? date, DateTime now) {
+  if (date == null) return false;
+  final local = date.toLocal();
+  return local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day;
+}
+
+String _scheduledLabel(BuildContext context, Meeting meeting) {
+  final scheduled = meeting.scheduledAt;
+  if (scheduled == null) return 'Instant meeting';
+  final local = scheduled.toLocal();
+  final localizations = MaterialLocalizations.of(context);
+  final date = localizations.formatMediumDate(local);
+  final time = TimeOfDay.fromDateTime(local).format(context);
+  return '$date at $time';
+}
+
+String? _sourceLabel(Meeting meeting) {
+  final booking = meeting.booking;
+  if (booking == null) return null;
+  final page = booking.bookingPageName?.trim();
+  final institution = booking.institution?.name.trim();
+  if (page?.isNotEmpty == true && institution?.isNotEmpty == true) {
+    return '$page - $institution';
+  }
+  if (page?.isNotEmpty == true) return page;
+  if (institution?.isNotEmpty == true) return institution;
+  return 'Public booking page';
 }

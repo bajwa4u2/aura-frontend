@@ -25,16 +25,32 @@ final pastMeetingsProvider = FutureProvider<List<Meeting>>((ref) async {
   return repo.listMeetings(filter: 'past');
 });
 
+final institutionUpcomingMeetingsProvider =
+    FutureProvider.family<List<Meeting>, String>((ref, institutionId) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      return repo.listMeetings(
+        filter: 'upcoming',
+        institutionId: institutionId,
+      );
+    });
+
+final institutionPastMeetingsProvider =
+    FutureProvider.family<List<Meeting>, String>((ref, institutionId) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      return repo.listMeetings(filter: 'past', institutionId: institutionId);
+    });
+
 // Single meeting by id
-final meetingProvider =
-    FutureProvider.family<Meeting, String>((ref, id) async {
+final meetingProvider = FutureProvider.family<Meeting, String>((ref, id) async {
   final repo = ref.watch(meetingsRepositoryProvider);
   return repo.getMeeting(id);
 });
 
 // Meeting by code (public, used in join flow)
-final meetingByCodeProvider =
-    FutureProvider.family<Meeting, String>((ref, code) async {
+final meetingByCodeProvider = FutureProvider.family<Meeting, String>((
+  ref,
+  code,
+) async {
   final repo = ref.watch(meetingsRepositoryProvider);
   return repo.getMeetingByCode(code);
 });
@@ -42,16 +58,16 @@ final meetingByCodeProvider =
 // My availability profiles
 final myAvailabilityProfilesProvider =
     FutureProvider<List<AvailabilityProfile>>((ref) async {
-  final repo = ref.watch(availabilityRepositoryProvider);
-  return repo.listMyProfiles();
-});
+      final repo = ref.watch(availabilityRepositoryProvider);
+      return repo.listMyProfiles();
+    });
 
 // Public booking profile
 final publicProfileProvider =
     FutureProvider.family<AvailabilityProfile, String>((ref, slug) async {
-  final repo = ref.watch(availabilityRepositoryProvider);
-  return repo.getPublicProfile(slug);
-});
+      final repo = ref.watch(availabilityRepositoryProvider);
+      return repo.getPublicProfile(slug);
+    });
 
 // Available slots for booking
 class SlotQueryParams {
@@ -71,33 +87,34 @@ class SlotQueryParams {
 }
 
 final availableSlotsProvider =
-    FutureProvider.family<List<TimeSlot>, SlotQueryParams>(
-        (ref, params) async {
-  final repo = ref.watch(availabilityRepositoryProvider);
-  if (params.institutionSlug != null) {
-    return repo.getInstitutionSlots(
-      params.institutionSlug!,
-      params.slug,
-      start: params.start,
-      end: params.end,
-      durationMinutes: params.duration,
-    );
-  }
-  return repo.getSlots(
-    params.slug,
-    start: params.start,
-    end: params.end,
-    durationMinutes: params.duration,
-  );
-});
+    FutureProvider.family<List<TimeSlot>, SlotQueryParams>((ref, params) async {
+      final repo = ref.watch(availabilityRepositoryProvider);
+      if (params.institutionSlug != null) {
+        return repo.getInstitutionSlots(
+          params.institutionSlug!,
+          params.slug,
+          start: params.start,
+          end: params.end,
+          durationMinutes: params.duration,
+        );
+      }
+      return repo.getSlots(
+        params.slug,
+        start: params.start,
+        end: params.end,
+        durationMinutes: params.duration,
+      );
+    });
 
 // Institution availability profiles (for admin screens)
 final institutionProfilesProvider =
-    FutureProvider.family<List<AvailabilityProfile>, String>(
-        (ref, institutionId) async {
-  final repo = ref.watch(availabilityRepositoryProvider);
-  return repo.listInstitutionProfiles(institutionId);
-});
+    FutureProvider.family<List<AvailabilityProfile>, String>((
+      ref,
+      institutionId,
+    ) async {
+      final repo = ref.watch(availabilityRepositoryProvider);
+      return repo.listInstitutionProfiles(institutionId);
+    });
 
 // Institution public booking profile (by institutionSlug/bookingSlug)
 class InstitutionBookingKey {
@@ -114,8 +131,13 @@ class InstitutionBookingKey {
 }
 
 final institutionPublicProfileProvider =
-    FutureProvider.family<AvailabilityProfile, InstitutionBookingKey>(
-        (ref, key) async {
-  final repo = ref.watch(availabilityRepositoryProvider);
-  return repo.getInstitutionPublicProfile(key.institutionSlug, key.bookingSlug);
-});
+    FutureProvider.family<AvailabilityProfile, InstitutionBookingKey>((
+      ref,
+      key,
+    ) async {
+      final repo = ref.watch(availabilityRepositoryProvider);
+      return repo.getInstitutionPublicProfile(
+        key.institutionSlug,
+        key.bookingSlug,
+      );
+    });

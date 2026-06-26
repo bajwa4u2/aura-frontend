@@ -873,6 +873,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const MeetingsHomeScreen(),
           ),
           GoRoute(
+            path: '/institution/:institutionId/meetings',
+            builder: (context, state) => MeetingsHomeScreen(
+              institutionId: state.pathParameters['institutionId'],
+            ),
+          ),
+          GoRoute(
             path: '/meetings/new',
             builder: (_, __) => const CreateMeetingScreen(),
           ),
@@ -886,6 +892,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/meetings/:id',
             builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['id'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/meetings/:meetingId',
+            builder: (context, state) => MeetingDetailScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              institutionId: state.pathParameters['institutionId'],
             ),
           ),
           GoRoute(

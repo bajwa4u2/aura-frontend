@@ -1476,11 +1476,12 @@ List<_InstEntry> _buildInstEntries(
       label: 'Meetings',
       icon: Icons.videocam_outlined,
       selectedIcon: Icons.videocam_rounded,
-      pathBuilder: (_) => '/meetings',
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/meetings' : null,
       pathMatcher: (p) =>
           p == '/meetings' ||
           p == '/meetings/new' ||
-          p.startsWith('/meetings/'),
+          p.startsWith('/meetings/') ||
+          (p.startsWith('/institution/') && p.contains('/meetings')),
     ),
 
     // ── ADMIN ──────────────────────────────────────────────────────────────

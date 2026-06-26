@@ -47,10 +47,16 @@ class MeetingsRepository {
     return Meeting.fromJson(data);
   }
 
-  Future<List<Meeting>> listMeetings({String? filter}) async {
+  Future<List<Meeting>> listMeetings({
+    String? filter,
+    String? institutionId,
+  }) async {
     final res = await _dio.get<Map<String, dynamic>>(
       '/meetings',
-      queryParameters: {if (filter != null) 'filter': filter},
+      queryParameters: {
+        if (filter != null) 'filter': filter,
+        if (institutionId != null) 'institutionId': institutionId,
+      },
     );
     final list = res.data!['data'] as List<dynamic>;
     return list
