@@ -285,7 +285,6 @@ class _ProfileCard extends ConsumerWidget {
               spacing: AuraSpace.s6,
               runSpacing: 4,
               children: profile.windows
-                  .take(5)
                   .map(
                     (w) => Container(
                       padding: const EdgeInsets.symmetric(
@@ -496,164 +495,126 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _WindowManager extends ConsumerWidget {
+class _WindowManager extends ConsumerStatefulWidget {
   final AvailabilityProfile profile;
   final String institutionId;
   const _WindowManager({required this.profile, required this.institutionId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      title: const Text(
-        'Manage availability windows',
-        style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-      ),
+  ConsumerState<_WindowManager> createState() => _WindowManagerState();
+}
+
+class _WindowManagerState extends ConsumerState<_WindowManager> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = widget.profile;
+    final institutionId = widget.institutionId;
+
+    return Column(
       children: [
-        ...profile.windows.map(
-          (w) => ListTile(
+        InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Manage availability windows',
+                    style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                  ),
+                ),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: const Color(0xFF9CA3AF),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded) ...[
+          const Divider(height: 1, color: Color(0xFF1F2937)),
+          ...profile.windows.map(
+            (w) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(
+                '${_dayFull(w.dayOfWeek)}: ${w.label}',
+                style: const TextStyle(fontSize: 13),
+              ),
+              trailing: IconButton(
+                icon: const Icon(
+                  Icons.remove_circle_outline_rounded,
+                  size: 18,
+                  color: Color(0xFF9CA3AF),
+                ),
+                onPressed: () async {
+                  try {
+                    await ref
+                        .read(availabilityRepositoryProvider)
+                        .removeInstitutionWindow(
+                          institutionId,
+                          profile.id,
+                          w.id,
+                        );
+                    await _refreshInstitutionProfiles(ref, institutionId);
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                },
+              ),
+            ),
+          ),
+          ListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: Text(
-              '${_dayFull(w.dayOfWeek)}: ${w.label}',
-              style: const TextStyle(fontSize: 13),
+            leading: const Icon(
+              Icons.add_rounded,
+              size: 18,
+              color: Color(0xFF6C63FF),
             ),
-            trailing: IconButton(
-              icon: const Icon(
-                Icons.remove_circle_outline_rounded,
-                size: 18,
-                color: Color(0xFF9CA3AF),
-              ),
-              onPressed: () async {
-                try {
-                  await ref
-                      .read(availabilityRepositoryProvider)
-                      .removeInstitutionWindow(institutionId, profile.id, w.id);
-                  await _refreshInstitutionProfiles(ref, institutionId);
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              },
+            title: const Text(
+              'Add window',
+              style: TextStyle(fontSize: 13, color: Color(0xFF6C63FF)),
             ),
+            onTap: () => _showAddWindow(context),
           ),
-        ),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          dense: true,
-          leading: const Icon(
-            Icons.add_rounded,
-            size: 18,
-            color: Color(0xFF6C63FF),
-          ),
-          title: const Text(
-            'Add window',
-            style: TextStyle(fontSize: 13, color: Color(0xFF6C63FF)),
-          ),
-          onTap: () => _showAddWindow(context, ref),
-        ),
+        ],
       ],
     );
   }
 
-  void _showAddWindow(BuildContext context, WidgetRef ref) {
-    String? selectedDay = 'MON';
-    final startCtrl = TextEditingController(text: '09:00');
-    final endCtrl = TextEditingController(text: '17:00');
-
-    showDialog<void>(
+  Future<void> _showAddWindow(BuildContext context) async {
+    final input = await showDialog<_WindowInput>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Add availability window'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              initialValue: selectedDay,
-              decoration: const InputDecoration(
-                labelText: 'Day',
-                border: OutlineInputBorder(),
-              ),
-              items:
-                  const {
-                        'MON': 'Monday',
-                        'TUE': 'Tuesday',
-                        'WED': 'Wednesday',
-                        'THU': 'Thursday',
-                        'FRI': 'Friday',
-                        'SAT': 'Saturday',
-                        'SUN': 'Sunday',
-                      }.entries
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e.key,
-                          child: Text(e.value),
-                        ),
-                      )
-                      .toList(),
-              onChanged: (v) => selectedDay = v,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: startCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Start (HH:mm)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: endCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'End (HH:mm)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              if (selectedDay == null) return;
-              try {
-                await ref
-                    .read(availabilityRepositoryProvider)
-                    .addInstitutionWindow(
-                      institutionId,
-                      profile.id,
-                      dayOfWeek: selectedDay!,
-                      startTime: startCtrl.text.trim(),
-                      endTime: endCtrl.text.trim(),
-                    );
-                await _refreshInstitutionProfiles(ref, institutionId);
-                if (!context.mounted) return;
-                Navigator.pop(context);
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Error: $e')));
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+      builder: (_) => const _AddWindowDialog(),
     );
+    if (input == null) return;
+
+    try {
+      await ref
+          .read(availabilityRepositoryProvider)
+          .addInstitutionWindow(
+            widget.institutionId,
+            widget.profile.id,
+            dayOfWeek: input.day,
+            startTime: input.startTime,
+            endTime: input.endTime,
+          );
+      await _refreshInstitutionProfiles(ref, widget.institutionId);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
   }
 
   String _dayFull(String day) => switch (day) {
@@ -666,6 +627,126 @@ class _WindowManager extends ConsumerWidget {
     'SUN' => 'Sunday',
     _ => day,
   };
+}
+
+class _WindowInput {
+  final String day;
+  final String startTime;
+  final String endTime;
+
+  const _WindowInput({
+    required this.day,
+    required this.startTime,
+    required this.endTime,
+  });
+}
+
+class _AddWindowDialog extends StatefulWidget {
+  const _AddWindowDialog();
+
+  @override
+  State<_AddWindowDialog> createState() => _AddWindowDialogState();
+}
+
+class _AddWindowDialogState extends State<_AddWindowDialog> {
+  static const _days = <String, String>{
+    'MON': 'Mon',
+    'TUE': 'Tue',
+    'WED': 'Wed',
+    'THU': 'Thu',
+    'FRI': 'Fri',
+    'SAT': 'Sat',
+    'SUN': 'Sun',
+  };
+
+  String _selectedDay = 'MON';
+  final _startCtrl = TextEditingController(text: '09:00');
+  final _endCtrl = TextEditingController(text: '17:00');
+
+  @override
+  void dispose() {
+    _startCtrl.dispose();
+    _endCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add availability window'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Day',
+              style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _days.entries
+                  .map(
+                    (entry) => ChoiceChip(
+                      label: Text(entry.value),
+                      selected: _selectedDay == entry.key,
+                      onSelected: (_) {
+                        setState(() => _selectedDay = entry.key);
+                      },
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _startCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Start (HH:mm)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _endCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'End (HH:mm)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.pop(
+              context,
+              _WindowInput(
+                day: _selectedDay,
+                startTime: _startCtrl.text.trim(),
+                endTime: _endCtrl.text.trim(),
+              ),
+            );
+          },
+          child: const Text('Add'),
+        ),
+      ],
+    );
+  }
 }
 
 class _CreateProfileDialog extends ConsumerStatefulWidget {
