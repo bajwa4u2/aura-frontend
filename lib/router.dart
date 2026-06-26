@@ -379,6 +379,26 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     refreshListenable: refresh,
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            SelectableText(
+              'Route not found: ${state.uri.path}',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => GoRouter.of(context).go('/'),
+              child: const Text('Go home'),
+            ),
+          ],
+        ),
+      ),
+    ),
     redirect: (context, state) {
       final path = state.uri.path;
       final currentLocation = state.uri.toString();
