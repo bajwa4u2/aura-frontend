@@ -1472,6 +1472,16 @@ List<_InstEntry> _buildInstEntries(
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/messages'),
     ),
+    _InstEntry(
+      label: 'Meetings',
+      icon: Icons.videocam_outlined,
+      selectedIcon: Icons.videocam_rounded,
+      pathBuilder: (_) => '/meetings',
+      pathMatcher: (p) =>
+          p == '/meetings' ||
+          p == '/meetings/new' ||
+          p.startsWith('/meetings/'),
+    ),
 
     // ── ADMIN ──────────────────────────────────────────────────────────────
     _InstEntry(
@@ -1513,6 +1523,17 @@ List<_InstEntry> _buildInstEntries(
       pathBuilder: (_) => id.isNotEmpty
           ? institutionWorkspacePath(id, InstitutionSection.domains)
           : null,
+    ),
+    _InstEntry(
+      label: 'Booking pages',
+      icon: Icons.calendar_today_outlined,
+      selectedIcon: Icons.calendar_today_rounded,
+      adminOnly: true,
+      pathBuilder: (_) => (id.isNotEmpty && isAdmin)
+          ? '/institution/$id/availability'
+          : null,
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.endsWith('/availability'),
     ),
 
     // ── IDENTITY ───────────────────────────────────────────────────────────
