@@ -124,6 +124,17 @@ import 'screens/terms_screen.dart';
 import 'features/support/presentation/support_agent_screen.dart';
 import 'features/support/presentation/admin_support_console_screen.dart';
 
+// Meetings
+import 'features/meetings/presentation/meetings_home_screen.dart';
+import 'features/meetings/presentation/create_meeting_screen.dart';
+import 'features/meetings/presentation/meeting_detail_screen.dart';
+import 'features/meetings/presentation/pre_join_screen.dart';
+import 'features/meetings/presentation/availability_setup_screen.dart';
+import 'features/meetings/presentation/public_booking_screen.dart';
+import 'features/meetings/presentation/slot_picker_screen.dart';
+import 'features/meetings/presentation/booking_confirm_screen.dart';
+import 'features/meetings/domain/availability_profile.dart';
+
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
 const String kInstitutionGetStartedRoute = '/institutions/get-started';
@@ -304,6 +315,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     if (path == '/announcements') return true;
     if (path.startsWith('/announcements/')) return true;
+
+    // Public booking pages — no auth required
+    if (path.startsWith('/meet/')) return true;
 
     return false;
   }
@@ -658,6 +672,39 @@ final routerProvider = Provider<GoRouter>((ref) {
               slug: state.pathParameters['slug'] ?? '',
             ),
           ),
+          // Public booking pages — no auth required (Calendly replacement)
+          // These MUST appear before the ShellRoute member routes because
+          // /meet/:slug is public and must not require authentication.
+          GoRoute(
+            path: '/meet/:slug',
+            builder: (context, state) => PublicBookingScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/meet/:slug/book',
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is Map<String, dynamic>) {
+                final profile = extra['profile'] as AvailabilityProfile?;
+                final slot = extra['slot'] as TimeSlot?;
+                final duration = extra['duration'] as int? ?? 30;
+                if (profile != null && slot != null) {
+                  return BookingConfirmScreen(
+                    profile: profile,
+                    slot: slot,
+                    durationMinutes: duration,
+                  );
+                }
+              }
+              if (extra is AvailabilityProfile) {
+                // Arrived from booking page without pre-selecting a slot
+                return SlotPickerScreen(profile: extra);
+              }
+              return const PublicBookingScreen(slug: '');
+            },
+          ),
+
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(
             path: '/posts/:id',
@@ -788,6 +835,35 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           // Member + institution routes
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
+
+          // ── Meetings ─────────────────────────────────────────────────
+          // IMPORTANT: static paths (/meetings/new, /meetings/join/:code)
+          // must appear BEFORE the dynamic /meetings/:id route so
+          // GoRouter's first-match-wins order resolves them correctly.
+          GoRoute(
+            path: '/meetings',
+            builder: (_, __) => const MeetingsHomeScreen(),
+          ),
+          GoRoute(
+            path: '/meetings/new',
+            builder: (_, __) => const CreateMeetingScreen(),
+          ),
+          GoRoute(
+            path: '/meetings/join/:code',
+            builder: (context, state) => PreJoinScreen(
+              meetingCode: state.pathParameters['code'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/meetings/:id',
+            builder: (context, state) => MeetingDetailScreen(
+              meetingId: state.pathParameters['id'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/availability',
+            builder: (_, __) => const AvailabilitySetupScreen(),
+          ),
           // /messages — restored to MessagesHubScreen (existing
           // conversations/spaces/invites). The new actor-aware direct
           // inbox is mounted as a sub-route at /messages/direct so it's
