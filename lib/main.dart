@@ -76,11 +76,6 @@ Future<void> main() async {
   // and the surface recovers on its next build. FlutterError.onError above
   // still logs the real exception + stack for diagnosis.
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    // Make the failure visible in the debug trace so a contained error
-    // is still attributable. The default FlutterError.onError above logs
-    // the full stack; this trace line is the short, grep-friendly
-    // companion that ties the error boundary firing to the channel
-    // counter used by the rest of the runtime trace.
     RuntimeTrace.emit(
       'error.boundary',
       'widget build failed',
@@ -89,28 +84,27 @@ Future<void> main() async {
         'library': details.library ?? '',
       },
     );
+    final msg = details.exceptionAsString();
+    final short = msg.length > 280 ? '${msg.substring(0, 280)}…' : msg;
     return Directionality(
       textDirection: TextDirection.ltr,
-      // LimitedBox only constrains when the parent gives unbounded space
-      // (e.g. inside a Column/ListView), so this is safe both as a
-      // full-screen fallback and as a small inline one.
       child: LimitedBox(
-        maxWidth: 420,
-        maxHeight: 240,
+        maxWidth: 460,
+        maxHeight: 320,
         child: Container(
           color: const Color(0xFF11131A),
           alignment: Alignment.center,
           padding: const EdgeInsets.all(20),
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              const Icon(
                 Icons.error_outline_rounded,
                 color: Color(0xFF9AA4B2),
                 size: 30,
               ),
-              SizedBox(height: 10),
-              Text(
+              const SizedBox(height: 10),
+              const Text(
                 'This section ran into a problem.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -119,12 +113,22 @@ Future<void> main() async {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              SizedBox(height: 4),
-              Text(
+              const SizedBox(height: 4),
+              const Text(
                 'The rest of the app is still working — go back, '
                 'or reopen this screen.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              SelectableText(
+                short,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                ),
               ),
             ],
           ),
