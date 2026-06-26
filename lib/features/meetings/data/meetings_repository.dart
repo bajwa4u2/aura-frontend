@@ -5,6 +5,9 @@ class MeetingsRepository {
   MeetingsRepository(this._dio);
   final Dio _dio;
 
+  // All backend responses are wrapped: { ok: true, data: <payload> }
+  // Extract the inner data field from every response before parsing.
+
   Future<Meeting> createMeeting({
     required String title,
     String? description,
@@ -34,27 +37,31 @@ class MeetingsRepository {
           'guestApprovalRequired': guestApprovalRequired,
       },
     );
-    return Meeting.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
   }
 
   Future<Meeting> startInstantMeeting() async {
     final res = await _dio.post<Map<String, dynamic>>('/meetings/instant');
-    return Meeting.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
   }
 
   Future<List<Meeting>> listMeetings({String? filter}) async {
-    final res = await _dio.get<List<dynamic>>(
+    final res = await _dio.get<Map<String, dynamic>>(
       '/meetings',
       queryParameters: {if (filter != null) 'filter': filter},
     );
-    return (res.data ?? [])
+    final list = res.data!['data'] as List<dynamic>;
+    return list
         .map((m) => Meeting.fromJson(m as Map<String, dynamic>))
         .toList();
   }
 
   Future<Meeting> getMeeting(String id) async {
     final res = await _dio.get<Map<String, dynamic>>('/meetings/$id');
-    return Meeting.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
   }
 
   Future<Meeting> updateMeeting(
@@ -82,28 +89,32 @@ class MeetingsRepository {
         if (allowGuests != null) 'allowGuests': allowGuests,
       },
     );
-    return Meeting.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
   }
 
   Future<Meeting> startMeeting(String id) async {
     final res = await _dio.post<Map<String, dynamic>>('/meetings/$id/start');
-    return Meeting.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
   }
 
   Future<Meeting> endMeeting(String id) async {
     final res = await _dio.post<Map<String, dynamic>>('/meetings/$id/end');
-    return Meeting.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
   }
 
   Future<Meeting> cancelMeeting(String id) async {
     final res = await _dio.post<Map<String, dynamic>>('/meetings/$id/cancel');
-    return Meeting.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
   }
 
   Future<Meeting> getMeetingByCode(String code) async {
-    final res =
-        await _dio.get<Map<String, dynamic>>('/meetings/join/$code');
-    return Meeting.fromJson(res.data!);
+    final res = await _dio.get<Map<String, dynamic>>('/meetings/join/$code');
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
   }
 
   Future<JoinMeetingResult> joinMeeting(
@@ -118,7 +129,8 @@ class MeetingsRepository {
         if (guestEmail != null) 'guestEmail': guestEmail,
       },
     );
-    return JoinMeetingResult.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return JoinMeetingResult.fromJson(data);
   }
 
   Future<void> inviteToMeeting(

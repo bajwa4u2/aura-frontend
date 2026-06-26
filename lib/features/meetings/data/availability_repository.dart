@@ -5,6 +5,9 @@ class AvailabilityRepository {
   AvailabilityRepository(this._dio);
   final Dio _dio;
 
+  // All backend responses are wrapped: { ok: true, data: <payload> }
+  // Extract the inner data field from every response before parsing.
+
   Future<AvailabilityProfile> createProfile({
     required String name,
     required String slug,
@@ -39,20 +42,22 @@ class AvailabilityRepository {
         'requireApproval': requireApproval,
       },
     );
-    return AvailabilityProfile.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return AvailabilityProfile.fromJson(data);
   }
 
   Future<List<AvailabilityProfile>> listMyProfiles() async {
-    final res = await _dio.get<List<dynamic>>('/availability');
-    return (res.data ?? [])
-        .map((p) =>
-            AvailabilityProfile.fromJson(p as Map<String, dynamic>))
+    final res = await _dio.get<Map<String, dynamic>>('/availability');
+    final list = res.data!['data'] as List<dynamic>;
+    return list
+        .map((p) => AvailabilityProfile.fromJson(p as Map<String, dynamic>))
         .toList();
   }
 
   Future<AvailabilityProfile> getPublicProfile(String slug) async {
     final res = await _dio.get<Map<String, dynamic>>('/book/$slug');
-    return AvailabilityProfile.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return AvailabilityProfile.fromJson(data);
   }
 
   Future<List<TimeSlot>> getSlots(
@@ -61,7 +66,7 @@ class AvailabilityRepository {
     required DateTime end,
     required int durationMinutes,
   }) async {
-    final res = await _dio.get<List<dynamic>>(
+    final res = await _dio.get<Map<String, dynamic>>(
       '/book/$slug/slots',
       queryParameters: {
         'start': start.toUtc().toIso8601String(),
@@ -69,7 +74,8 @@ class AvailabilityRepository {
         'duration': durationMinutes.toString(),
       },
     );
-    return (res.data ?? [])
+    final list = res.data!['data'] as List<dynamic>;
+    return list
         .map((s) => TimeSlot.fromJson(s as Map<String, dynamic>))
         .toList();
   }
@@ -94,7 +100,8 @@ class AvailabilityRepository {
         'timezone': timezone,
       },
     );
-    return BookingConfirmation.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return BookingConfirmation.fromJson(data);
   }
 
   Future<void> addWindow(
@@ -177,13 +184,15 @@ class AvailabilityRepository {
         'requireApproval': requireApproval,
       },
     );
-    return AvailabilityProfile.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return AvailabilityProfile.fromJson(data);
   }
 
   Future<List<AvailabilityProfile>> listInstitutionProfiles(String institutionId) async {
-    final res = await _dio.get<List<dynamic>>(
+    final res = await _dio.get<Map<String, dynamic>>(
         '/institution/$institutionId/availability');
-    return (res.data ?? [])
+    final list = res.data!['data'] as List<dynamic>;
+    return list
         .map((p) => AvailabilityProfile.fromJson(p as Map<String, dynamic>))
         .toList();
   }
@@ -213,7 +222,8 @@ class AvailabilityRepository {
         if (requireApproval != null) 'requireApproval': requireApproval,
       },
     );
-    return AvailabilityProfile.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return AvailabilityProfile.fromJson(data);
   }
 
   Future<void> disableInstitutionProfile(
@@ -250,7 +260,8 @@ class AvailabilityRepository {
       String institutionSlug, String slug) async {
     final res = await _dio.get<Map<String, dynamic>>(
         '/i/$institutionSlug/meet/$slug');
-    return AvailabilityProfile.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return AvailabilityProfile.fromJson(data);
   }
 
   Future<List<TimeSlot>> getInstitutionSlots(
@@ -260,7 +271,7 @@ class AvailabilityRepository {
     required DateTime end,
     required int durationMinutes,
   }) async {
-    final res = await _dio.get<List<dynamic>>(
+    final res = await _dio.get<Map<String, dynamic>>(
       '/i/$institutionSlug/meet/$slug/slots',
       queryParameters: {
         'start': start.toUtc().toIso8601String(),
@@ -268,7 +279,8 @@ class AvailabilityRepository {
         'duration': durationMinutes.toString(),
       },
     );
-    return (res.data ?? [])
+    final list = res.data!['data'] as List<dynamic>;
+    return list
         .map((s) => TimeSlot.fromJson(s as Map<String, dynamic>))
         .toList();
   }
@@ -294,6 +306,7 @@ class AvailabilityRepository {
         'timezone': timezone,
       },
     );
-    return BookingConfirmation.fromJson(res.data!);
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return BookingConfirmation.fromJson(data);
   }
 }
