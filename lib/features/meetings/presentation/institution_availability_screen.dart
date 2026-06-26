@@ -8,6 +8,19 @@ import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 
+Future<void> _refreshInstitutionProfiles(WidgetRef ref, String institutionId) {
+  return ref.refresh(institutionProfilesProvider(institutionId).future);
+}
+
+Future<void> _afterPopupClosed(
+  BuildContext context,
+  Future<void> Function() action,
+) async {
+  await Future<void>.delayed(const Duration(milliseconds: 180));
+  if (!context.mounted) return;
+  await action();
+}
+
 // Institution/workspace admin screen for creating and managing
 // booking profiles. Accessible at /institution/:id/availability.
 // Gated by institution ADMIN role on the backend.
@@ -17,8 +30,7 @@ class InstitutionAvailabilityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profilesAsync =
-        ref.watch(institutionProfilesProvider(institutionId));
+    final profilesAsync = ref.watch(institutionProfilesProvider(institutionId));
 
     return AuraScaffold(
       title: 'Booking pages',
@@ -41,8 +53,9 @@ class InstitutionAvailabilityScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(AuraSpace.s16),
             itemCount: profiles.length + 1,
-            separatorBuilder: (_, i) =>
-                i == 0 ? const SizedBox(height: AuraSpace.s16) : const SizedBox(height: AuraSpace.s8),
+            separatorBuilder: (_, i) => i == 0
+                ? const SizedBox(height: AuraSpace.s16)
+                : const SizedBox(height: AuraSpace.s8),
             itemBuilder: (_, i) {
               if (i == 0) {
                 return OutlinedButton.icon(
@@ -65,10 +78,8 @@ class InstitutionAvailabilityScreen extends ConsumerWidget {
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
     showDialog<void>(
       context: context,
-      builder: (_) => _CreateProfileDialog(
-        institutionId: institutionId,
-        ref: ref,
-      ),
+      builder: (_) =>
+          _CreateProfileDialog(institutionId: institutionId, ref: ref),
     );
   }
 }
@@ -85,11 +96,16 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.calendar_today_rounded,
-                size: 56, color: Color(0xFF9CA3AF)),
+            const Icon(
+              Icons.calendar_today_rounded,
+              size: 56,
+              color: Color(0xFF9CA3AF),
+            ),
             const SizedBox(height: AuraSpace.s16),
-            Text('No booking pages',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'No booking pages',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: AuraSpace.s8),
             const Text(
               'Create a booking page so visitors can schedule meetings '
@@ -118,8 +134,11 @@ class _ProfileCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final _baseHost = AppConfig.publicWebUrl.replaceFirst(RegExp(r'^https?://'), '');
-    final publicUrl = '$_baseHost${profile.publicUrl}';
+    final baseHost = AppConfig.publicWebUrl.replaceFirst(
+      RegExp(r'^https?://'),
+      '',
+    );
+    final publicUrl = '$baseHost${profile.publicUrl}';
     final host = profile.effectiveHost;
 
     return Container(
@@ -128,7 +147,7 @@ class _ProfileCard extends ConsumerWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF374151).withOpacity(0.4),
+          color: const Color(0xFF374151).withValues(alpha: 0.4),
         ),
       ),
       child: Column(
@@ -138,9 +157,12 @@ class _ProfileCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(profile.name,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                child: Text(
+                  profile.name,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               _StatusBadge(isActive: profile.isActive),
               const SizedBox(width: AuraSpace.s8),
@@ -149,75 +171,59 @@ class _ProfileCard extends ConsumerWidget {
                 onSelected: (v) async {
                   if (v == 'copy') {
                     Clipboard.setData(
-                        ClipboardData(text: 'https://$publicUrl'));
+                      ClipboardData(text: 'https://$publicUrl'),
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Link copied')));
+                      const SnackBar(content: Text('Link copied')),
+                    );
                   } else if (v == 'toggle') {
                     try {
                       await ref
                           .read(availabilityRepositoryProvider)
                           .updateInstitutionProfile(
-                            institutionId, profile.id,
+                            institutionId,
+                            profile.id,
                             isActive: !profile.isActive,
                           );
-                      ref.invalidate(institutionProfilesProvider(institutionId));
+                      await _refreshInstitutionProfiles(ref, institutionId);
                     } catch (e) {
                       if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')));
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
                   } else if (v == 'edit') {
-                    _showEditDialog(context, ref);
-                  } else if (v == 'delete') {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Delete booking page'),
-                        content: Text(
-                            'Delete "${profile.name}"? This cannot be undone.'),
-                        actions: [
-                          TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel')),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                                backgroundColor:
-                                    const Color(0xFFEF4444)),
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      ),
+                    await _afterPopupClosed(
+                      context,
+                      () => _showEditDialog(context, ref),
                     );
-                    if (confirmed != true) return;
-                    try {
-                      await ref
-                          .read(availabilityRepositoryProvider)
-                          .deleteInstitutionProfile(
-                              institutionId, profile.id);
-                      ref.invalidate(institutionProfilesProvider(institutionId));
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')));
-                    }
+                  } else if (v == 'delete') {
+                    await _afterPopupClosed(
+                      context,
+                      () => _confirmDelete(context, ref),
+                    );
                   }
                 },
                 itemBuilder: (_) => [
                   const PopupMenuItem(
-                      value: 'copy', child: Text('Copy booking link')),
+                    value: 'copy',
+                    child: Text('Copy booking link'),
+                  ),
                   const PopupMenuItem(
-                      value: 'edit', child: Text('Edit profile')),
+                    value: 'edit',
+                    child: Text('Edit profile'),
+                  ),
                   PopupMenuItem(
                     value: 'toggle',
-                    child: Text(
-                        profile.isActive ? 'Disable' : 'Enable'),
+                    child: Text(profile.isActive ? 'Disable' : 'Enable'),
                   ),
                   const PopupMenuDivider(),
                   const PopupMenuItem(
                     value: 'delete',
-                    child: Text('Delete',
-                        style: TextStyle(color: Color(0xFFEF4444))),
+                    child: Text(
+                      'Delete',
+                      style: TextStyle(color: Color(0xFFEF4444)),
+                    ),
                   ),
                 ],
               ),
@@ -225,21 +231,31 @@ class _ProfileCard extends ConsumerWidget {
           ),
 
           const SizedBox(height: AuraSpace.s4),
-          Text(profile.meetingTitle,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: const Color(0xFF6B7280))),
+          Text(
+            profile.meetingTitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF6B7280),
+            ),
+          ),
 
           // Assigned host
           if (host != null) ...[
             const SizedBox(height: AuraSpace.s8),
             Row(
               children: [
-                const Icon(Icons.person_outline_rounded,
-                    size: 14, color: Color(0xFF9CA3AF)),
+                const Icon(
+                  Icons.person_outline_rounded,
+                  size: 14,
+                  color: Color(0xFF9CA3AF),
+                ),
                 const SizedBox(width: 4),
-                Text('Host: ${host.name}',
-                    style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF9CA3AF))),
+                Text(
+                  'Host: ${host.name}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                ),
               ],
             ),
           ],
@@ -249,12 +265,16 @@ class _ProfileCard extends ConsumerWidget {
           Wrap(
             spacing: AuraSpace.s6,
             children: profile.durationOptions
-                .map((d) => Chip(
-                      label: Text(_durationLabel(d),
-                          style: const TextStyle(fontSize: 11)),
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                    ))
+                .map(
+                  (d) => Chip(
+                    label: Text(
+                      _durationLabel(d),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+                )
                 .toList(),
           ),
 
@@ -266,19 +286,25 @@ class _ProfileCard extends ConsumerWidget {
               runSpacing: 4,
               children: profile.windows
                   .take(5)
-                  .map((w) => Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF374151),
-                          borderRadius: BorderRadius.circular(6),
+                  .map(
+                    (w) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF374151),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${_dayAbbr(w.dayOfWeek)} ${w.label}',
+                        style: const TextStyle(
+                          color: Color(0xFFD1D5DB),
+                          fontSize: 11,
                         ),
-                        child: Text(
-                          '${_dayAbbr(w.dayOfWeek)} ${w.label}',
-                          style: const TextStyle(
-                              color: Color(0xFFD1D5DB), fontSize: 11),
-                        ),
-                      ))
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
           ],
@@ -289,95 +315,141 @@ class _ProfileCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(publicUrl,
-                    style: const TextStyle(
-                        color: Color(0xFF9CA3AF), fontSize: 12)),
+                child: Text(
+                  publicUrl,
+                  style: const TextStyle(
+                    color: Color(0xFF9CA3AF),
+                    fontSize: 12,
+                  ),
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.copy_rounded, size: 16),
                 color: const Color(0xFF9CA3AF),
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 onPressed: () {
-                  Clipboard.setData(
-                      ClipboardData(text: 'https://$publicUrl'));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Link copied')));
+                  Clipboard.setData(ClipboardData(text: 'https://$publicUrl'));
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Link copied')));
                 },
               ),
             ],
           ),
 
           // Window management
-          _WindowManager(
-              profile: profile, institutionId: institutionId),
+          _WindowManager(profile: profile, institutionId: institutionId),
         ],
       ),
     );
   }
 
-  void _showEditDialog(BuildContext context, WidgetRef ref) {
-    final titleCtrl =
-        TextEditingController(text: profile.meetingTitle);
-    final descCtrl =
-        TextEditingController(text: profile.meetingDescription ?? '');
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Edit booking page'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleCtrl,
-                decoration: const InputDecoration(
+  Future<void> _showEditDialog(BuildContext context, WidgetRef ref) async {
+    final titleCtrl = TextEditingController(text: profile.meetingTitle);
+    final descCtrl = TextEditingController(
+      text: profile.meetingDescription ?? '',
+    );
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Edit booking page'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(
                     labelText: 'Meeting title',
-                    border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descCtrl,
-                maxLines: 3,
-                decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
                     labelText: 'Description',
-                    border: OutlineInputBorder()),
-              ),
-            ],
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(availabilityRepositoryProvider)
+                      .updateInstitutionProfile(
+                        institutionId,
+                        profile.id,
+                        meetingTitle: titleCtrl.text.trim(),
+                        meetingDescription: descCtrl.text.trim().isEmpty
+                            ? null
+                            : descCtrl.text.trim(),
+                      );
+                  await _refreshInstitutionProfiles(ref, institutionId);
+                  if (!dialogContext.mounted) return;
+                  Navigator.pop(dialogContext);
+                } catch (e) {
+                  if (!dialogContext.mounted) return;
+                  ScaffoldMessenger.of(
+                    dialogContext,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
         ),
+      );
+    } finally {
+      titleCtrl.dispose();
+      descCtrl.dispose();
+    }
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete booking page'),
+        content: Text('Delete "${profile.name}"? This cannot be undone.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await ref
-                    .read(availabilityRepositoryProvider)
-                    .updateInstitutionProfile(
-                      institutionId, profile.id,
-                      meetingTitle: titleCtrl.text.trim(),
-                      meetingDescription:
-                          descCtrl.text.trim().isEmpty
-                              ? null
-                              : descCtrl.text.trim(),
-                    );
-                ref.invalidate(
-                    institutionProfilesProvider(institutionId));
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text('Error: $e')));
-              }
-            },
-            child: const Text('Save'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
+    if (confirmed != true) return;
+    try {
+      await ref
+          .read(availabilityRepositoryProvider)
+          .deleteInstitutionProfile(institutionId, profile.id);
+      await _refreshInstitutionProfiles(ref, institutionId);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
   }
 
   String _durationLabel(int m) {
@@ -388,15 +460,15 @@ class _ProfileCard extends ConsumerWidget {
   }
 
   String _dayAbbr(String day) => switch (day) {
-        'MON' => 'Mon',
-        'TUE' => 'Tue',
-        'WED' => 'Wed',
-        'THU' => 'Thu',
-        'FRI' => 'Fri',
-        'SAT' => 'Sat',
-        'SUN' => 'Sun',
-        _ => day.length >= 3 ? day.substring(0, 3) : day,
-      };
+    'MON' => 'Mon',
+    'TUE' => 'Tue',
+    'WED' => 'Wed',
+    'THU' => 'Thu',
+    'FRI' => 'Fri',
+    'SAT' => 'Sat',
+    'SUN' => 'Sun',
+    _ => day.length >= 3 ? day.substring(0, 3) : day,
+  };
 }
 
 class _StatusBadge extends StatelessWidget {
@@ -408,18 +480,14 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: (isActive
-                ? const Color(0xFF10B981)
-                : const Color(0xFF9CA3AF))
-            .withOpacity(0.12),
+        color: (isActive ? const Color(0xFF10B981) : const Color(0xFF9CA3AF))
+            .withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         isActive ? 'Active' : 'Disabled',
         style: TextStyle(
-          color: isActive
-              ? const Color(0xFF10B981)
-              : const Color(0xFF9CA3AF),
+          color: isActive ? const Color(0xFF10B981) : const Color(0xFF9CA3AF),
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
@@ -431,48 +499,59 @@ class _StatusBadge extends StatelessWidget {
 class _WindowManager extends ConsumerWidget {
   final AvailabilityProfile profile;
   final String institutionId;
-  const _WindowManager(
-      {required this.profile, required this.institutionId});
+  const _WindowManager({required this.profile, required this.institutionId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
-      title: const Text('Manage availability windows',
-          style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+      title: const Text(
+        'Manage availability windows',
+        style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+      ),
       children: [
-        ...profile.windows.map((w) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              title: Text('${_dayFull(w.dayOfWeek)}: ${w.label}',
-                  style: const TextStyle(fontSize: 13)),
-              trailing: IconButton(
-                icon: const Icon(Icons.remove_circle_outline_rounded,
-                    size: 18, color: Color(0xFF9CA3AF)),
-                onPressed: () async {
-                  try {
-                    await ref
-                        .read(availabilityRepositoryProvider)
-                        .removeInstitutionWindow(
-                            institutionId, profile.id, w.id);
-                    ref.invalidate(
-                        institutionProfilesProvider(institutionId));
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')));
-                  }
-                },
+        ...profile.windows.map(
+          (w) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text(
+              '${_dayFull(w.dayOfWeek)}: ${w.label}',
+              style: const TextStyle(fontSize: 13),
+            ),
+            trailing: IconButton(
+              icon: const Icon(
+                Icons.remove_circle_outline_rounded,
+                size: 18,
+                color: Color(0xFF9CA3AF),
               ),
-            )),
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(availabilityRepositoryProvider)
+                      .removeInstitutionWindow(institutionId, profile.id, w.id);
+                  await _refreshInstitutionProfiles(ref, institutionId);
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              },
+            ),
+          ),
+        ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           dense: true,
-          leading: const Icon(Icons.add_rounded,
-              size: 18, color: Color(0xFF6C63FF)),
-          title: const Text('Add window',
-              style:
-                  TextStyle(fontSize: 13, color: Color(0xFF6C63FF))),
+          leading: const Icon(
+            Icons.add_rounded,
+            size: 18,
+            color: Color(0xFF6C63FF),
+          ),
+          title: const Text(
+            'Add window',
+            style: TextStyle(fontSize: 13, color: Color(0xFF6C63FF)),
+          ),
           onTap: () => _showAddWindow(context, ref),
         ),
       ],
@@ -492,21 +571,28 @@ class _WindowManager extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: selectedDay,
+              initialValue: selectedDay,
               decoration: const InputDecoration(
-                  labelText: 'Day', border: OutlineInputBorder()),
-              items: const {
-                'MON': 'Monday',
-                'TUE': 'Tuesday',
-                'WED': 'Wednesday',
-                'THU': 'Thursday',
-                'FRI': 'Friday',
-                'SAT': 'Saturday',
-                'SUN': 'Sunday',
-              }.entries
-                  .map((e) =>
-                      DropdownMenuItem(value: e.key, child: Text(e.value)))
-                  .toList(),
+                labelText: 'Day',
+                border: OutlineInputBorder(),
+              ),
+              items:
+                  const {
+                        'MON': 'Monday',
+                        'TUE': 'Tuesday',
+                        'WED': 'Wednesday',
+                        'THU': 'Thursday',
+                        'FRI': 'Friday',
+                        'SAT': 'Saturday',
+                        'SUN': 'Sunday',
+                      }.entries
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        ),
+                      )
+                      .toList(),
               onChanged: (v) => selectedDay = v,
             ),
             const SizedBox(height: 12),
@@ -516,8 +602,9 @@ class _WindowManager extends ConsumerWidget {
                   child: TextField(
                     controller: startCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Start (HH:mm)',
-                        border: OutlineInputBorder()),
+                      labelText: 'Start (HH:mm)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -525,8 +612,9 @@ class _WindowManager extends ConsumerWidget {
                   child: TextField(
                     controller: endCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'End (HH:mm)',
-                        border: OutlineInputBorder()),
+                      labelText: 'End (HH:mm)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                 ),
               ],
@@ -535,27 +623,30 @@ class _WindowManager extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () async {
               if (selectedDay == null) return;
-              Navigator.pop(context);
               try {
                 await ref
                     .read(availabilityRepositoryProvider)
                     .addInstitutionWindow(
-                      institutionId, profile.id,
+                      institutionId,
+                      profile.id,
                       dayOfWeek: selectedDay!,
                       startTime: startCtrl.text.trim(),
                       endTime: endCtrl.text.trim(),
                     );
-                ref.invalidate(
-                    institutionProfilesProvider(institutionId));
+                await _refreshInstitutionProfiles(ref, institutionId);
+                if (!context.mounted) return;
+                Navigator.pop(context);
               } catch (e) {
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')));
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: const Text('Add'),
@@ -566,30 +657,28 @@ class _WindowManager extends ConsumerWidget {
   }
 
   String _dayFull(String day) => switch (day) {
-        'MON' => 'Monday',
-        'TUE' => 'Tuesday',
-        'WED' => 'Wednesday',
-        'THU' => 'Thursday',
-        'FRI' => 'Friday',
-        'SAT' => 'Saturday',
-        'SUN' => 'Sunday',
-        _ => day,
-      };
+    'MON' => 'Monday',
+    'TUE' => 'Tuesday',
+    'WED' => 'Wednesday',
+    'THU' => 'Thursday',
+    'FRI' => 'Friday',
+    'SAT' => 'Saturday',
+    'SUN' => 'Sunday',
+    _ => day,
+  };
 }
 
 class _CreateProfileDialog extends ConsumerStatefulWidget {
   final String institutionId;
   final WidgetRef ref;
-  const _CreateProfileDialog(
-      {required this.institutionId, required this.ref});
+  const _CreateProfileDialog({required this.institutionId, required this.ref});
 
   @override
   ConsumerState<_CreateProfileDialog> createState() =>
       _CreateProfileDialogState();
 }
 
-class _CreateProfileDialogState
-    extends ConsumerState<_CreateProfileDialog> {
+class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
   final _nameCtrl = TextEditingController();
   final _slugCtrl = TextEditingController();
   final _titleCtrl = TextEditingController();
@@ -614,9 +703,10 @@ class _CreateProfileDialogState
             TextField(
               controller: _nameCtrl,
               decoration: const InputDecoration(
-                  labelText: 'Page name',
-                  hintText: 'e.g. 30-min discovery call',
-                  border: OutlineInputBorder()),
+                labelText: 'Page name',
+                hintText: 'e.g. 30-min discovery call',
+                border: OutlineInputBorder(),
+              ),
               onChanged: (v) {
                 if (_slugCtrl.text.isEmpty ||
                     _slugCtrl.text == _toSlug(_nameCtrl.text)) {
@@ -628,25 +718,28 @@ class _CreateProfileDialogState
             TextField(
               controller: _titleCtrl,
               decoration: const InputDecoration(
-                  labelText: 'Meeting title',
-                  hintText: 'Shown on the booking page to visitors',
-                  border: OutlineInputBorder()),
+                labelText: 'Meeting title',
+                hintText: 'Shown on the booking page to visitors',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _slugCtrl,
               decoration: const InputDecoration(
-                  labelText: 'URL slug',
-                  hintText: 'your-workspace/meet/this-slug',
-                  border: OutlineInputBorder()),
+                labelText: 'URL slug',
+                hintText: 'your-workspace/meet/this-slug',
+                border: OutlineInputBorder(),
+              ),
             ),
           ],
         ),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
           onPressed: _saving ? null : _create,
           child: _saving
@@ -654,7 +747,10 @@ class _CreateProfileDialogState
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
               : const Text('Create'),
         ),
       ],
@@ -669,7 +765,9 @@ class _CreateProfileDialogState
 
     setState(() => _saving = true);
     try {
-      await ref.read(availabilityRepositoryProvider).createInstitutionProfile(
+      await ref
+          .read(availabilityRepositoryProvider)
+          .createInstitutionProfile(
             widget.institutionId,
             name: name,
             slug: slug,
@@ -678,13 +776,14 @@ class _CreateProfileDialogState
             defaultDuration: 30,
             timezone: DateTime.now().timeZoneName,
           );
-      ref.invalidate(institutionProfilesProvider(widget.institutionId));
+      await _refreshInstitutionProfiles(ref, widget.institutionId);
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
