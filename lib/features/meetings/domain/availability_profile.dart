@@ -73,6 +73,27 @@ class ProfileOwner {
   String get name => displayName ?? handle ?? 'Unknown';
 }
 
+class InstitutionRef {
+  final String id;
+  final String name;
+  final String slug;
+  final String? description;
+
+  const InstitutionRef({
+    required this.id,
+    required this.name,
+    required this.slug,
+    this.description,
+  });
+
+  factory InstitutionRef.fromJson(Map<String, dynamic> j) => InstitutionRef(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        slug: j['slug'] as String,
+        description: j['description'] as String?,
+      );
+}
+
 class AvailabilityProfile {
   final String id;
   final String name;
@@ -93,6 +114,10 @@ class AvailabilityProfile {
   final List<AvailabilityWindow> windows;
   final List<AvailabilityOverride> overrides;
   final ProfileOwner? owner;
+  // Institution ownership fields
+  final String? institutionId;
+  final ProfileOwner? assignedHost;
+  final InstitutionRef? institution;
 
   const AvailabilityProfile({
     required this.id,
@@ -114,6 +139,9 @@ class AvailabilityProfile {
     required this.windows,
     required this.overrides,
     this.owner,
+    this.institutionId,
+    this.assignedHost,
+    this.institution,
   });
 
   factory AvailabilityProfile.fromJson(Map<String, dynamic> j) =>
@@ -147,9 +175,23 @@ class AvailabilityProfile {
         owner: j['owner'] != null
             ? ProfileOwner.fromJson(j['owner'] as Map<String, dynamic>)
             : null,
+        institutionId: j['institutionId'] as String?,
+        assignedHost: j['assignedHost'] != null
+            ? ProfileOwner.fromJson(j['assignedHost'] as Map<String, dynamic>)
+            : null,
+        institution: j['institution'] != null
+            ? InstitutionRef.fromJson(j['institution'] as Map<String, dynamic>)
+            : null,
       );
 
-  String get publicUrl => '/meet/$slug';
+  bool get isInstitutionOwned => institutionId != null;
+
+  /// The display host: assigned host if set, else the owner.
+  ProfileOwner? get effectiveHost => assignedHost ?? owner;
+
+  String get publicUrl => isInstitutionOwned && institution != null
+      ? '/i/${institution!.slug}/meet/$slug'
+      : '/meet/$slug';
 }
 
 class TimeSlot {

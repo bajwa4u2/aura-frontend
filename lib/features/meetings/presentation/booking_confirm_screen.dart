@@ -50,17 +50,36 @@ class _BookingConfirmScreenState
 
     try {
       final repo = ref.read(availabilityRepositoryProvider);
-      final conf = await repo.createBooking(
-        widget.profile.slug,
-        bookerName: _nameCtrl.text.trim(),
-        bookerEmail: _emailCtrl.text.trim(),
-        bookerNotes: _notesCtrl.text.trim().isEmpty
-            ? null
-            : _notesCtrl.text.trim(),
-        scheduledAt: widget.slot.startAt,
-        durationMinutes: widget.durationMinutes,
-        timezone: DateTime.now().timeZoneName,
-      );
+      final BookingConfirmation conf;
+      final profile = widget.profile;
+
+      // Institution-owned profiles book via institution endpoint
+      if (profile.isInstitutionOwned && profile.institution != null) {
+        conf = await repo.createInstitutionBooking(
+          profile.institution!.slug,
+          profile.slug,
+          bookerName: _nameCtrl.text.trim(),
+          bookerEmail: _emailCtrl.text.trim(),
+          bookerNotes: _notesCtrl.text.trim().isEmpty
+              ? null
+              : _notesCtrl.text.trim(),
+          scheduledAt: widget.slot.startAt,
+          durationMinutes: widget.durationMinutes,
+          timezone: DateTime.now().timeZoneName,
+        );
+      } else {
+        conf = await repo.createBooking(
+          profile.slug,
+          bookerName: _nameCtrl.text.trim(),
+          bookerEmail: _emailCtrl.text.trim(),
+          bookerNotes: _notesCtrl.text.trim().isEmpty
+              ? null
+              : _notesCtrl.text.trim(),
+          scheduledAt: widget.slot.startAt,
+          durationMinutes: widget.durationMinutes,
+          timezone: DateTime.now().timeZoneName,
+        );
+      }
       setState(() => _confirmation = conf);
     } catch (e) {
       if (!mounted) return;
@@ -94,16 +113,37 @@ class _BookingConfirmScreenState
         child: ListView(
           padding: const EdgeInsets.all(AuraSpace.s16),
           children: [
-            // Meeting summary — org/host context first
-            if (widget.profile.owner != null)
+            // Meeting summary — institution/org context first
+            if (widget.profile.institution != null)
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6C63FF).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                        child: Icon(Icons.business_rounded,
+                            color: Color(0xFF6C63FF), size: 18)),
+                  ),
+                  const SizedBox(width: AuraSpace.s10),
+                  Text(widget.profile.institution!.name,
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                ],
+              )
+            else if (widget.profile.effectiveHost != null)
               Row(
                 children: [
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: const Color(0xFF6C63FF),
                     child: Text(
-                      widget.profile.owner!.name.isNotEmpty
-                          ? widget.profile.owner!.name[0].toUpperCase()
+                      widget.profile.effectiveHost!.name.isNotEmpty
+                          ? widget.profile.effectiveHost!.name[0]
+                              .toUpperCase()
                           : 'H',
                       style: const TextStyle(
                           color: Colors.white,
@@ -111,7 +151,7 @@ class _BookingConfirmScreenState
                     ),
                   ),
                   const SizedBox(width: AuraSpace.s10),
-                  Text(widget.profile.owner!.name,
+                  Text(widget.profile.effectiveHost!.name,
                       style: theme.textTheme.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w600)),
                 ],

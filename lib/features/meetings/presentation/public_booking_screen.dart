@@ -7,9 +7,7 @@ import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 
-// Public booking page — the Calendly replacement.
-// Design principle: host and organization identity first.
-// "Powered by Aura" is present but secondary.
+// Personal booking page — /meet/:slug
 class PublicBookingScreen extends ConsumerWidget {
   final String slug;
   const PublicBookingScreen({super.key, required this.slug});
@@ -17,35 +15,65 @@ class PublicBookingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(publicProfileProvider(slug));
-
     return profileAsync.when(
       loading: () => AuraScaffold(
-        title: '',
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => AuraScaffold(
-        title: '',
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.calendar_today_rounded,
-                  size: 48, color: Color(0xFF9CA3AF)),
-              const SizedBox(height: AuraSpace.s16),
-              Text('Booking page not found',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: AuraSpace.s8),
-              const Text('This booking link may be expired or invalid.',
-                  style: TextStyle(color: Color(0xFF6B7280))),
-            ],
-          ),
-        ),
-      ),
+          title: '', body: const Center(child: CircularProgressIndicator())),
+      error: (e, _) => _NotFoundBody(),
       data: (profile) => _BookingPageBody(profile: profile),
     );
   }
 }
 
+// Institution-owned booking page — /i/:institutionSlug/meet/:bookingSlug
+// Shows institution identity before anything else.
+class InstitutionPublicBookingScreen extends ConsumerWidget {
+  final String institutionSlug;
+  final String bookingSlug;
+  const InstitutionPublicBookingScreen({
+    super.key,
+    required this.institutionSlug,
+    required this.bookingSlug,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key = InstitutionBookingKey(institutionSlug, bookingSlug);
+    final profileAsync = ref.watch(institutionPublicProfileProvider(key));
+    return profileAsync.when(
+      loading: () => AuraScaffold(
+          title: '', body: const Center(child: CircularProgressIndicator())),
+      error: (e, _) => _NotFoundBody(),
+      data: (profile) => _BookingPageBody(profile: profile),
+    );
+  }
+}
+
+class _NotFoundBody extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AuraScaffold(
+      title: '',
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.calendar_today_rounded,
+                size: 48, color: Color(0xFF9CA3AF)),
+            const SizedBox(height: AuraSpace.s16),
+            Text('Booking page not found',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: AuraSpace.s8),
+            const Text('This booking link may be expired or invalid.',
+                style: TextStyle(color: Color(0xFF6B7280))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Shared body — renders both personal and institution booking pages.
+// Institution-owned profiles show institution badge + assigned host first.
 class _BookingPageBody extends StatelessWidget {
   final AvailabilityProfile profile;
   const _BookingPageBody({required this.profile});
@@ -53,6 +81,8 @@ class _BookingPageBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final host = profile.effectiveHost;
+    final institution = profile.institution;
 
     return AuraScaffold(
       title: '',
@@ -62,20 +92,56 @@ class _BookingPageBody extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(AuraSpace.s24),
             children: [
-              // Host identity — shown first, before anything else
-              if (profile.owner != null) ...[
+              // Institution badge — shown first when institution-owned
+              if (institution != null) ...[
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6C63FF).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.business_rounded,
+                            color: Color(0xFF6C63FF), size: 22),
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(institution.name,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700)),
+                        if (institution.description != null)
+                          Text(institution.description!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: const Color(0xFF9CA3AF))),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                const Divider(),
+                const SizedBox(height: AuraSpace.s16),
+              ],
+
+              // Host identity — shown before meeting info
+              if (host != null) ...[
                 Row(
                   children: [
                     CircleAvatar(
                       radius: 28,
                       backgroundColor: const Color(0xFF6C63FF),
-                      backgroundImage: profile.owner!.avatarUrl != null
-                          ? NetworkImage(profile.owner!.avatarUrl!)
+                      backgroundImage: host.avatarUrl != null
+                          ? NetworkImage(host.avatarUrl!)
                           : null,
-                      child: profile.owner!.avatarUrl == null
+                      child: host.avatarUrl == null
                           ? Text(
-                              profile.owner!.name.isNotEmpty
-                                  ? profile.owner!.name[0].toUpperCase()
+                              host.name.isNotEmpty
+                                  ? host.name[0].toUpperCase()
                                   : 'H',
                               style: const TextStyle(
                                   color: Colors.white,
@@ -88,11 +154,11 @@ class _BookingPageBody extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(profile.owner!.name,
+                        Text(host.name,
                             style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700)),
-                        if (profile.owner!.handle != null)
-                          Text('@${profile.owner!.handle}',
+                        if (host.handle != null)
+                          Text('@${host.handle}',
                               style: theme.textTheme.bodySmall?.copyWith(
                                   color: const Color(0xFF9CA3AF))),
                       ],
@@ -117,7 +183,6 @@ class _BookingPageBody extends StatelessWidget {
 
               const SizedBox(height: AuraSpace.s12),
 
-              // Duration options + booking hint
               Wrap(
                 spacing: AuraSpace.s8,
                 runSpacing: AuraSpace.s4,
@@ -136,21 +201,20 @@ class _BookingPageBody extends StatelessWidget {
 
               const SizedBox(height: AuraSpace.s24),
 
-              // CTA — route to slot picker
               SizedBox(
                 height: 50,
                 child: FilledButton.icon(
                   icon: const Icon(Icons.calendar_month_rounded),
                   label: const Text('Book a time'),
+                  // publicUrl already contains the right path prefix
                   onPressed: () => context.push(
-                      '/meet/${profile.slug}/book',
+                      '${profile.publicUrl}/book',
                       extra: profile),
                 ),
               ),
 
               const SizedBox(height: AuraSpace.s24),
 
-              // Meeting capabilities
               _CapabilityRow(
                   icon: Icons.link_rounded,
                   text: 'Aura meeting link sent by email'),
@@ -168,7 +232,6 @@ class _BookingPageBody extends StatelessWidget {
 
               const SizedBox(height: AuraSpace.s32),
 
-              // Platform attribution — truthful, not promotional
               const Divider(),
               const SizedBox(height: AuraSpace.s12),
               Row(

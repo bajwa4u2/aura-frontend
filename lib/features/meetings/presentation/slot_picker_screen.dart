@@ -39,6 +39,10 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen> {
       start: start,
       end: end,
       duration: _selectedDuration,
+      // Route to institution slots endpoint when profile is institution-owned
+      institutionSlug: profile.isInstitutionOwned
+          ? profile.institution?.slug
+          : null,
     )));
   }
 
@@ -229,7 +233,7 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen> {
                   children: slots.map((slot) {
                     return OutlinedButton(
                       onPressed: () =>
-                          context.push('/meet/${profile.slug}/book',
+                          context.push('${profile.publicUrl}/book',
                               extra: {
                             'profile': profile,
                             'slot': slot,

@@ -130,6 +130,7 @@ import 'features/meetings/presentation/create_meeting_screen.dart';
 import 'features/meetings/presentation/meeting_detail_screen.dart';
 import 'features/meetings/presentation/pre_join_screen.dart';
 import 'features/meetings/presentation/availability_setup_screen.dart';
+import 'features/meetings/presentation/institution_availability_screen.dart';
 import 'features/meetings/presentation/public_booking_screen.dart';
 import 'features/meetings/presentation/slot_picker_screen.dart';
 import 'features/meetings/presentation/booking_confirm_screen.dart';
@@ -318,6 +319,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     // Public booking pages — no auth required
     if (path.startsWith('/meet/')) return true;
+
+    // Institution-owned public booking pages — /i/:slug/meet/:bookingSlug
+    if (path.startsWith('/i/')) return true;
 
     return false;
   }
@@ -863,6 +867,49 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/availability',
             builder: (_, __) => const AvailabilitySetupScreen(),
+          ),
+          // Institution admin booking pages — gated by InstitutionRoleGuard (ADMIN) on backend
+          GoRoute(
+            path: '/institution/:institutionId/availability',
+            builder: (context, state) => InstitutionAvailabilityScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          // Institution-owned public booking — /i/:institutionSlug/meet/:bookingSlug
+          // These are public (no auth) but still inside ShellRoute for the app chrome.
+          GoRoute(
+            path: '/i/:institutionSlug/meet/:bookingSlug',
+            builder: (context, state) => InstitutionPublicBookingScreen(
+              institutionSlug: state.pathParameters['institutionSlug'] ?? '',
+              bookingSlug: state.pathParameters['bookingSlug'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/i/:institutionSlug/meet/:bookingSlug/book',
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is Map<String, dynamic>) {
+                final profile = extra['profile'] as AvailabilityProfile?;
+                final slot = extra['slot'] as TimeSlot?;
+                final duration = extra['duration'] as int? ?? 30;
+                if (profile != null && slot != null) {
+                  return BookingConfirmScreen(
+                    profile: profile,
+                    slot: slot,
+                    durationMinutes: duration,
+                  );
+                }
+              }
+              if (extra is AvailabilityProfile) {
+                return SlotPickerScreen(profile: extra);
+              }
+              // Fallback: reload the institution booking page
+              return InstitutionPublicBookingScreen(
+                institutionSlug:
+                    state.pathParameters['institutionSlug'] ?? '',
+                bookingSlug: state.pathParameters['bookingSlug'] ?? '',
+              );
+            },
           ),
           // /messages — restored to MessagesHubScreen (existing
           // conversations/spaces/invites). The new actor-aware direct

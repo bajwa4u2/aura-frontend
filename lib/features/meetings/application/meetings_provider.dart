@@ -59,11 +59,14 @@ class SlotQueryParams {
   final DateTime start;
   final DateTime end;
   final int duration;
+  // Optional institution slug for institution-owned booking pages
+  final String? institutionSlug;
   const SlotQueryParams({
     required this.slug,
     required this.start,
     required this.end,
     required this.duration,
+    this.institutionSlug,
   });
 }
 
@@ -71,10 +74,48 @@ final availableSlotsProvider =
     FutureProvider.family<List<TimeSlot>, SlotQueryParams>(
         (ref, params) async {
   final repo = ref.watch(availabilityRepositoryProvider);
+  if (params.institutionSlug != null) {
+    return repo.getInstitutionSlots(
+      params.institutionSlug!,
+      params.slug,
+      start: params.start,
+      end: params.end,
+      durationMinutes: params.duration,
+    );
+  }
   return repo.getSlots(
     params.slug,
     start: params.start,
     end: params.end,
     durationMinutes: params.duration,
   );
+});
+
+// Institution availability profiles (for admin screens)
+final institutionProfilesProvider =
+    FutureProvider.family<List<AvailabilityProfile>, String>(
+        (ref, institutionId) async {
+  final repo = ref.watch(availabilityRepositoryProvider);
+  return repo.listInstitutionProfiles(institutionId);
+});
+
+// Institution public booking profile (by institutionSlug/bookingSlug)
+class InstitutionBookingKey {
+  final String institutionSlug;
+  final String bookingSlug;
+  const InstitutionBookingKey(this.institutionSlug, this.bookingSlug);
+  @override
+  bool operator ==(Object other) =>
+      other is InstitutionBookingKey &&
+      other.institutionSlug == institutionSlug &&
+      other.bookingSlug == bookingSlug;
+  @override
+  int get hashCode => Object.hash(institutionSlug, bookingSlug);
+}
+
+final institutionPublicProfileProvider =
+    FutureProvider.family<AvailabilityProfile, InstitutionBookingKey>(
+        (ref, key) async {
+  final repo = ref.watch(availabilityRepositoryProvider);
+  return repo.getInstitutionPublicProfile(key.institutionSlug, key.bookingSlug);
 });
