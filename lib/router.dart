@@ -505,7 +505,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (!isLoggedIn) {
-        if (requiresAuth(path)) {
+        if (requiresAuth(path) && !isPublic) {
           final encoded = Uri.encodeComponent(
             _normalizeRedirectDest(currentLocation, fallback: '/public'),
           );
