@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -117,10 +118,8 @@ class _ProfileCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final institution = profile.institution;
-    final publicUrl = institution != null
-        ? 'aura.app/i/${institution.slug}/meet/${profile.slug}'
-        : 'aura.app/meet/${profile.slug}';
+    final _baseHost = AppConfig.publicWebUrl.replaceFirst(RegExp(r'^https?://'), '');
+    final publicUrl = '$_baseHost${profile.publicUrl}';
     final host = profile.effectiveHost;
 
     return Container(

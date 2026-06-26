@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -96,8 +97,8 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final publicUrl =
-        'aura.app/meet/${profile.slug}'; // display-only label
+    final _baseHost = AppConfig.publicWebUrl.replaceFirst(RegExp(r'^https?://'), '');
+    final publicUrl = '$_baseHost${profile.publicUrl}';
 
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
@@ -415,7 +416,7 @@ class _CreateProfileDialogState
               controller: _slugCtrl,
               decoration: const InputDecoration(
                   labelText: 'URL slug',
-                  hintText: 'aura.app/meet/your-slug',
+                  hintText: 'auraplatform.org/meet/your-slug',
                   prefixText: '/meet/',
                   border: OutlineInputBorder()),
             ),
