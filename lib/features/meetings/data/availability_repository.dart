@@ -104,6 +104,10 @@ class AvailabilityRepository {
     return BookingConfirmation.fromJson(data);
   }
 
+  Future<void> cancelBookingByToken(String token) async {
+    await _dio.patch<void>('/book/cancel/$token');
+  }
+
   Future<void> addWindow(
     String profileId, {
     required String dayOfWeek,

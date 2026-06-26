@@ -389,14 +389,14 @@ class _ProfileCard extends ConsumerWidget {
   }
 
   String _dayAbbr(String day) => switch (day) {
-        'MONDAY' => 'Mon',
-        'TUESDAY' => 'Tue',
-        'WEDNESDAY' => 'Wed',
-        'THURSDAY' => 'Thu',
-        'FRIDAY' => 'Fri',
-        'SATURDAY' => 'Sat',
-        'SUNDAY' => 'Sun',
-        _ => day.substring(0, 3),
+        'MON' => 'Mon',
+        'TUE' => 'Tue',
+        'WED' => 'Wed',
+        'THU' => 'Thu',
+        'FRI' => 'Fri',
+        'SAT' => 'Sat',
+        'SUN' => 'Sun',
+        _ => day.length >= 3 ? day.substring(0, 3) : day,
       };
 }
 
@@ -481,7 +481,7 @@ class _WindowManager extends ConsumerWidget {
   }
 
   void _showAddWindow(BuildContext context, WidgetRef ref) {
-    String? selectedDay = 'MONDAY';
+    String? selectedDay = 'MON';
     final startCtrl = TextEditingController(text: '09:00');
     final endCtrl = TextEditingController(text: '17:00');
 
@@ -496,12 +496,17 @@ class _WindowManager extends ConsumerWidget {
               value: selectedDay,
               decoration: const InputDecoration(
                   labelText: 'Day', border: OutlineInputBorder()),
-              items: const [
-                'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
-                'FRIDAY', 'SATURDAY', 'SUNDAY',
-              ]
-                  .map((d) =>
-                      DropdownMenuItem(value: d, child: Text(d)))
+              items: const {
+                'MON': 'Monday',
+                'TUE': 'Tuesday',
+                'WED': 'Wednesday',
+                'THU': 'Thursday',
+                'FRI': 'Friday',
+                'SAT': 'Saturday',
+                'SUN': 'Sunday',
+              }.entries
+                  .map((e) =>
+                      DropdownMenuItem(value: e.key, child: Text(e.value)))
                   .toList(),
               onChanged: (v) => selectedDay = v,
             ),
@@ -562,13 +567,13 @@ class _WindowManager extends ConsumerWidget {
   }
 
   String _dayFull(String day) => switch (day) {
-        'MONDAY' => 'Monday',
-        'TUESDAY' => 'Tuesday',
-        'WEDNESDAY' => 'Wednesday',
-        'THURSDAY' => 'Thursday',
-        'FRIDAY' => 'Friday',
-        'SATURDAY' => 'Saturday',
-        'SUNDAY' => 'Sunday',
+        'MON' => 'Monday',
+        'TUE' => 'Tuesday',
+        'WED' => 'Wednesday',
+        'THU' => 'Thursday',
+        'FRI' => 'Friday',
+        'SAT' => 'Saturday',
+        'SUN' => 'Sunday',
         _ => day,
       };
 }

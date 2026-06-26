@@ -134,6 +134,7 @@ import 'features/meetings/presentation/institution_availability_screen.dart';
 import 'features/meetings/presentation/public_booking_screen.dart';
 import 'features/meetings/presentation/slot_picker_screen.dart';
 import 'features/meetings/presentation/booking_confirm_screen.dart';
+import 'features/meetings/presentation/booking_cancel_screen.dart';
 import 'features/meetings/domain/availability_profile.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
@@ -322,6 +323,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     // Institution-owned public booking pages — /i/:slug/meet/:bookingSlug
     if (path.startsWith('/i/')) return true;
+
+    // Pre-join screen — guests arrive here from booking confirmation emails
+    if (path.startsWith('/meetings/join/')) return true;
 
     return false;
   }
@@ -882,6 +886,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => InstitutionPublicBookingScreen(
               institutionSlug: state.pathParameters['institutionSlug'] ?? '',
               bookingSlug: state.pathParameters['bookingSlug'] ?? '',
+            ),
+          ),
+          // Cancel link from booking confirmation email
+          GoRoute(
+            path: '/i/:institutionSlug/meet/cancel/:token',
+            builder: (context, state) => BookingCancelScreen(
+              token: state.pathParameters['token'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/meet/cancel/:token',
+            builder: (context, state) => BookingCancelScreen(
+              token: state.pathParameters['token'] ?? '',
             ),
           ),
           GoRoute(

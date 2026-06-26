@@ -65,13 +65,19 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen> {
 
     return AuraScaffold(
       title: 'Pick a time',
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => context.pop(),
-      ),
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s16),
         children: [
+          // Back navigation (AuraScaffold drops leading/actions)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+              label: const Text('Back'),
+              onPressed: () => context.pop(),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s8),
           // Duration selector
           if (profile.durationOptions.length > 1) ...[
             Text('Duration',

@@ -104,15 +104,21 @@ class _BookingConfirmScreenState
 
     return AuraScaffold(
       title: 'Confirm booking',
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => context.pop(),
-      ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(AuraSpace.s16),
           children: [
+            // Back navigation (AuraScaffold drops leading/actions)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: const Text('Back'),
+                onPressed: () => context.pop(),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s8),
             // Meeting summary — institution/org context first
             if (widget.profile.institution != null)
               Row(
@@ -363,8 +369,8 @@ class _ConfirmationView extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s12),
 
                 OutlinedButton(
-                  onPressed: () => context.go('/home'),
-                  child: const Text('Back to home'),
+                  onPressed: () => context.go(profile.publicUrl),
+                  child: const Text('Done'),
                 ),
 
                 const SizedBox(height: AuraSpace.s24),
