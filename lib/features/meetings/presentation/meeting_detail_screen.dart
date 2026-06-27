@@ -51,6 +51,12 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
   bool _actioning = false;
 
   Meeting get meeting => widget.meeting;
+  String? get _resolvedInstitutionId =>
+      widget.institutionId ?? meeting.booking?.institution?.id;
+  String get _detailPath => _resolvedInstitutionId == null
+      ? '/meetings/${meeting.id}'
+      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}';
+  String get _meetingRoomReturnTo => Uri.encodeComponent(_detailPath);
 
   Future<void> _startMeeting() async {
     setState(() => _actioning = true);
@@ -63,7 +69,9 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
       _invalidateLists();
       if (!mounted) return;
       if (updated.sessionId != null) {
-        context.push('/realtime/${updated.sessionId}?action=join');
+        context.push(
+          '/realtime/${updated.sessionId}?action=join&returnTo=$_meetingRoomReturnTo',
+        );
       } else {
         context.push('/meetings/join/${updated.meetingCode}');
       }
@@ -126,20 +134,21 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
   }
 
   void _invalidateLists() {
-    if (widget.institutionId == null) {
+    final institutionId = _resolvedInstitutionId;
+    if (institutionId == null) {
       ref.invalidate(upcomingMeetingsProvider);
       ref.invalidate(pastMeetingsProvider);
     } else {
-      ref.invalidate(
-        institutionUpcomingMeetingsProvider(widget.institutionId!),
-      );
-      ref.invalidate(institutionPastMeetingsProvider(widget.institutionId!));
+      ref.invalidate(institutionUpcomingMeetingsProvider(institutionId));
+      ref.invalidate(institutionPastMeetingsProvider(institutionId));
     }
   }
 
   void _joinMeeting() {
     if (meeting.sessionId != null) {
-      context.push('/realtime/${meeting.sessionId}?action=join');
+      context.push(
+        '/realtime/${meeting.sessionId}?action=join&returnTo=$_meetingRoomReturnTo',
+      );
     } else {
       context.push('/meetings/join/${meeting.meetingCode}');
     }
@@ -150,9 +159,10 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
     final theme = Theme.of(context);
     final booking = meeting.booking;
     final guest = _guestParticipant;
+    final institutionId = _resolvedInstitutionId;
 
     return AuraScaffold(
-      title: widget.institutionId == null
+      title: institutionId == null
           ? 'Meeting details'
           : 'Institution meeting',
       leading: IconButton(

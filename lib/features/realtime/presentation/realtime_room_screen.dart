@@ -119,6 +119,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   String? _lastConsentSyncKey;
   RealtimeSurfaceType? _lastKnownSurfaceType;
   String? _lastKnownSurfaceId;
+  String? _lastKnownInstitutionId;
   Timer? _durationTimer;
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
@@ -308,9 +309,17 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
     final surfaceType = session?.surfaceType ?? _lastKnownSurfaceType;
     final surfaceId = (session?.surfaceId ?? _lastKnownSurfaceId ?? '').trim();
+    final institutionId =
+        _meetingInstitutionId(session) ?? _lastKnownInstitutionId;
     if (surfaceType != null) {
       switch (surfaceType) {
         case RealtimeSurfaceType.meeting:
+          if (institutionId != null && institutionId.isNotEmpty) {
+            if (surfaceId.isNotEmpty) {
+              return '/institution/$institutionId/meetings/$surfaceId';
+            }
+            return '/institution/$institutionId/meetings';
+          }
           if (surfaceId.isNotEmpty) return '/meetings/$surfaceId';
           return '/meetings';
         case RealtimeSurfaceType.space:
@@ -420,6 +429,29 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     );
   }
 
+  String? _meetingInstitutionId(RealtimeSession? session) {
+    final meta = session?.metadataJson;
+    if (meta == null) return null;
+
+    String? readCandidate(Object? value) {
+      if (value == null) return null;
+      final trimmed = value.toString().trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
+    final direct =
+        readCandidate(meta['institutionId']) ??
+        readCandidate(meta['organizationId']);
+    if (direct != null) return direct;
+
+    final institution = meta['institution'];
+    if (institution is Map) {
+      return readCandidate(institution['id']);
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Keep the presence bridge alive in this window so it can broadcast
@@ -439,6 +471,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       if (session != null) {
         _lastKnownSurfaceType = session.surfaceType;
         _lastKnownSurfaceId = (session.surfaceId ?? '').trim();
+        _lastKnownInstitutionId = _meetingInstitutionId(session);
       }
       if (next.isJoined && !_wasJoined) {
         _wasJoined = true;

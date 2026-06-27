@@ -501,9 +501,14 @@ class _MeetingCard extends ConsumerWidget {
     return null;
   }
 
-  String get _detailPath => institutionId == null
+  String? get _resolvedInstitutionId =>
+      institutionId ?? meeting.booking?.institution?.id;
+
+  String get _detailPath => _resolvedInstitutionId == null
       ? '/meetings/${meeting.id}'
-      : '/institution/$institutionId/meetings/${meeting.id}';
+      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}';
+
+  String get _meetingRoomReturnTo => Uri.encodeComponent(_detailPath);
 
   Future<void> _startMeeting(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -519,7 +524,9 @@ class _MeetingCard extends ConsumerWidget {
       }
       if (!context.mounted) return;
       if (updated.sessionId != null) {
-        context.push('/realtime/${updated.sessionId}?action=join');
+        context.push(
+          '/realtime/${updated.sessionId}?action=join&returnTo=$_meetingRoomReturnTo',
+        );
       } else {
         context.push('/meetings/join/${updated.meetingCode}');
       }
@@ -532,7 +539,9 @@ class _MeetingCard extends ConsumerWidget {
 
   void _joinMeeting(BuildContext context) {
     if (meeting.sessionId != null) {
-      context.push('/realtime/${meeting.sessionId}?action=join');
+      context.push(
+        '/realtime/${meeting.sessionId}?action=join&returnTo=$_meetingRoomReturnTo',
+      );
     } else {
       context.push('/meetings/join/${meeting.meetingCode}');
     }
