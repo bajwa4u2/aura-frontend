@@ -915,7 +915,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 ? 'Meeting unavailable'
                 : 'Call unavailable',
             state.session?.surfaceType == RealtimeSurfaceType.meeting
-                ? 'This meeting has ended or your invite has expired.'
+                ? 'This meeting is unavailable right now. Please try again in a moment.'
                 : 'This call has ended or your invite has expired.',
             false,
             false,
@@ -933,7 +933,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           return (
             Icons.call_end_rounded,
             state.session?.surfaceType == RealtimeSurfaceType.meeting
-                ? 'Meeting has ended'
+                ? 'Meeting ended'
                 : 'Call has ended',
             state.session?.surfaceType == RealtimeSurfaceType.meeting
                 ? 'This meeting is no longer active.'
@@ -945,8 +945,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         if (state.session?.surfaceType == RealtimeSurfaceType.meeting) {
           return (
             Icons.event_available_rounded,
-            'Waiting for host to start',
-            'This meeting room opens when the host starts it.',
+            'Waiting for host',
+            'You are in the right place. The host will let you in when the meeting starts.',
             true,
             false,
           );

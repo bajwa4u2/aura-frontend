@@ -538,7 +538,11 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
 
     if (!session.isActive) {
-      throw StateError('This session has already ended.');
+      throw StateError(
+        session.surfaceType == RealtimeSurfaceType.meeting
+            ? 'Meeting room is unavailable.'
+            : 'Live session has already ended.',
+      );
     }
 
     final isMeetingSession = session.surfaceType == RealtimeSurfaceType.meeting;
@@ -1573,7 +1577,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         state = _copyWithDetachedMediaState(
           joinState: RealtimeJoinState.idle,
           clearSessionContext: true,
-          infoMessage: 'The call has ended.',
+          infoMessage: state.session?.surfaceType == RealtimeSurfaceType.meeting
+              ? 'The meeting has ended.'
+              : 'The call has ended.',
           lastSocketEvent: event.name,
         );
         return;
@@ -1650,20 +1656,33 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final text = error.toString().toLowerCase();
     if (text.contains('invite_expired') ||
         text.contains('invite has expired')) {
-      return 'This call invite has expired.';
+      return state.session?.surfaceType == RealtimeSurfaceType.meeting
+          ? 'This meeting invite has expired.'
+          : 'This call invite has expired.';
     }
     if (text.contains('session_closed') ||
         text.contains('session is closed') ||
         text.contains('already ended')) {
-      return 'This call has ended.';
+      return state.session?.surfaceType == RealtimeSurfaceType.meeting
+          ? 'This meeting is unavailable right now. Please try again.'
+          : 'This call has ended.';
     }
     if (text.contains('locked')) {
-      return 'This call is locked.';
+      return state.session?.surfaceType == RealtimeSurfaceType.meeting
+          ? 'This meeting room is locked.'
+          : 'This call is locked.';
     }
     if (text.contains('approval') || text.contains('waiting room')) {
-      return 'Your join request was sent. Waiting for approval.';
+      return state.session?.surfaceType == RealtimeSurfaceType.meeting
+          ? 'Your request was sent. Waiting for the host.'
+          : 'Your join request was sent. Waiting for approval.';
     }
-    return AppErrorMapper.from(error, feature: 'join this call').message;
+    return AppErrorMapper.from(
+      error,
+      feature: state.session?.surfaceType == RealtimeSurfaceType.meeting
+          ? 'join this meeting'
+          : 'join this call',
+    ).message;
   }
 
   bool managesCorrespondenceSurface({

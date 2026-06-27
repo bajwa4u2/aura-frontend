@@ -232,6 +232,14 @@ class _PreJoinBody extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: AuraSpace.s8),
+                if (meeting.booking?.institution != null)
+                  Text(
+                    meeting.booking!.institution!.name,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
                 if (meeting.description != null) ...[
                   const SizedBox(height: AuraSpace.s8),
                   Text(
@@ -243,6 +251,11 @@ class _PreJoinBody extends ConsumerWidget {
                 ],
                 const SizedBox(height: AuraSpace.s6),
                 _StatusPill(state: meeting.state),
+                const SizedBox(height: AuraSpace.s12),
+                _MeetingMetaRow(
+                  icon: Icons.schedule_rounded,
+                  text: _scheduledLabel(context, meeting),
+                ),
 
                 const SizedBox(height: AuraSpace.s24),
 
@@ -352,6 +365,31 @@ class _StatusPill extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+      ],
+    );
+  }
+}
+
+String _scheduledLabel(BuildContext context, Meeting meeting) {
+  final scheduledAt = meeting.scheduledAt;
+  if (scheduledAt == null) return 'Time will be confirmed by the host';
+  final local = scheduledAt.toLocal();
+  return '${MaterialLocalizations.of(context).formatFullDate(local)} · ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
+}
+
+class _MeetingMetaRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _MeetingMetaRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF6B7280)),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(child: Text(text)),
       ],
     );
   }

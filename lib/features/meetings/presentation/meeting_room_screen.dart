@@ -89,12 +89,12 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
 
     return meetingAsync.when(
       loading: () => AuraScaffold(
-        title: 'Meeting room',
+        title: 'Meeting workspace',
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => AuraScaffold(
-        title: 'Meeting room',
-        body: Center(child: Text('Could not load meeting room: $e')),
+        title: 'Meeting workspace',
+        body: Center(child: Text('Could not load meeting: $e')),
       ),
       data: (meeting) {
         final room = meeting.room;
@@ -113,7 +113,7 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
         };
 
         return AuraScaffold(
-          title: 'Meeting room',
+          title: meeting.title,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
@@ -141,65 +141,7 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                         onCopy: () => _copyLink(meeting),
                       ),
                       const SizedBox(height: AuraSpace.s16),
-                      Wrap(
-                        spacing: AuraSpace.s16,
-                        runSpacing: AuraSpace.s16,
-                        children: [
-                          _InfoPanel(
-                            title: 'Room state',
-                            children: [
-                              _InfoRow(
-                                icon: Icons.event_available_rounded,
-                                label: 'Status',
-                                value: statusLabel,
-                              ),
-                              _InfoRow(
-                                icon: Icons.people_alt_rounded,
-                                label: 'Active participants',
-                                value: '${room?.activeParticipantCount ?? 0}',
-                              ),
-                              _InfoRow(
-                                icon: Icons.schedule_rounded,
-                                label: 'Scheduled',
-                                value: _scheduledLabel(context, meeting),
-                              ),
-                              _InfoRow(
-                                icon: Icons.public_rounded,
-                                label: 'Timezone',
-                                value: meeting.timezone,
-                              ),
-                            ],
-                          ),
-                          _InfoPanel(
-                            title: 'Meeting context',
-                            children: [
-                              _InfoRow(
-                                icon: Icons.person_outline_rounded,
-                                label: 'Host',
-                                value: meeting.host?.name ?? 'Host',
-                              ),
-                              _InfoRow(
-                                icon: Icons.business_rounded,
-                                label: 'Institution',
-                                value:
-                                    meeting.booking?.institution?.name ??
-                                    widget.institutionId ??
-                                    'None',
-                              ),
-                              _InfoRow(
-                                icon: Icons.link_rounded,
-                                label: 'Join link',
-                                value: meeting.joinUrl,
-                                onTap: () => _copyLink(meeting),
-                                trailing: const Icon(
-                                  Icons.content_copy_rounded,
-                                  size: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                      _MeetingStatusStrip(meeting: meeting, room: room),
                       const SizedBox(height: AuraSpace.s16),
                       _RoomStateCard(
                         meeting: meeting,
@@ -279,7 +221,9 @@ class _HeaderCard extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: sessionId != null ? onEnter : onStart,
                   icon: const Icon(Icons.meeting_room_rounded),
-                  label: Text(sessionId != null ? 'Enter room' : 'Open room'),
+                  label: Text(
+                    sessionId != null ? 'Enter room' : 'Start meeting',
+                  ),
                 ),
                 OutlinedButton.icon(
                   onPressed: onCopy,
@@ -345,13 +289,39 @@ class _RoomStateCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s8),
             Text(
               isTerminal
-                  ? 'This room is closed.'
-                  : 'MeetingRoom owns lifecycle. RealtimeSession is transport only.',
+                  ? 'This meeting has ended.'
+                  : room?.status == MeetingRoomStatus.live
+                  ? 'The meeting room is open.'
+                  : 'The meeting is ready when you are.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: const Color(0xFF6B7280),
               ),
             ),
             const SizedBox(height: AuraSpace.s16),
+            if (!isTerminal) ...[
+              Row(
+                children: [
+                  Icon(
+                    room?.status == MeetingRoomStatus.live
+                        ? Icons.people_alt_rounded
+                        : Icons.schedule_rounded,
+                    size: 18,
+                    color: const Color(0xFF6B7280),
+                  ),
+                  const SizedBox(width: AuraSpace.s8),
+                  Expanded(
+                    child: Text(
+                      room?.status == MeetingRoomStatus.live
+                          ? '${room?.activeParticipantCount ?? 0} people in the room'
+                          : isHost
+                          ? 'Waiting for guest to join'
+                          : 'Waiting for host to start',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s16),
+            ],
             Wrap(
               spacing: AuraSpace.s12,
               runSpacing: AuraSpace.s12,
@@ -371,13 +341,70 @@ class _RoomStateCard extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: onCopy,
                   icon: const Icon(Icons.content_copy_rounded),
-                  label: const Text('Copy meeting link'),
+                  label: const Text('Copy link'),
                 ),
               ],
             ),
+            if (!isTerminal) ...[
+              const SizedBox(height: AuraSpace.s16),
+              Text(
+                'If the room is still loading, refresh to reconnect. The meeting stays open until the host ends it.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: AuraSpace.s16),
+              Text(
+                'You can still open the meeting details page for notes and history.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MeetingStatusStrip extends StatelessWidget {
+  final Meeting meeting;
+  final MeetingRoom? room;
+
+  const _MeetingStatusStrip({required this.meeting, required this.room});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = room?.status ?? MeetingRoomStatus.unknown;
+    final chips = <Widget>[
+      _TinyChip(
+        icon: Icons.schedule_rounded,
+        label: _scheduledLabel(context, meeting),
+      ),
+      _TinyChip(icon: Icons.public_rounded, label: meeting.timezone),
+      _TinyChip(
+        icon: Icons.event_available_rounded,
+        label: switch (status) {
+          MeetingRoomStatus.scheduled => 'Scheduled',
+          MeetingRoomStatus.waiting => 'Waiting',
+          MeetingRoomStatus.live => 'Live',
+          MeetingRoomStatus.ended => 'Ended',
+          MeetingRoomStatus.cancelled => 'Cancelled',
+          MeetingRoomStatus.unknown => meeting.state,
+        },
+      ),
+      _TinyChip(
+        icon: Icons.people_alt_rounded,
+        label: '${room?.activeParticipantCount ?? 0} participants',
+      ),
+    ];
+
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: chips,
     );
   }
 }
@@ -406,6 +433,40 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
+class _TinyChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _TinyChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFE5E7EB),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 String _scheduledLabel(BuildContext context, Meeting meeting) {
   final scheduledAt = meeting.scheduledAt;
   if (scheduledAt == null) return 'Not scheduled';
@@ -415,85 +476,4 @@ String _scheduledLabel(BuildContext context, Meeting meeting) {
     TimeOfDay.fromDateTime(scheduledAt.toLocal()),
   );
   return '$date · $time';
-}
-
-class _InfoPanel extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-
-  const _InfoPanel({required this.title, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final VoidCallback? onTap;
-  final Widget? trailing;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.onTap,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final row = Padding(
-      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF6B7280)),
-          const SizedBox(width: AuraSpace.s10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: const Color(0xFF6B7280),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(value),
-              ],
-            ),
-          ),
-          if (trailing != null) ...[
-            const SizedBox(width: AuraSpace.s8),
-            trailing!,
-          ],
-        ],
-      ),
-    );
-
-    if (onTap == null) return row;
-    return InkWell(onTap: onTap, child: row);
-  }
 }

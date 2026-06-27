@@ -189,7 +189,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                     runSpacing: AuraSpace.s16,
                     children: [
                       _InfoPanel(
-                        title: 'Scheduled time',
+                        title: 'Meeting details',
                         children: [
                           _InfoRow(
                             icon: Icons.schedule_rounded,
@@ -219,7 +219,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                         ],
                       ),
                       _InfoPanel(
-                        title: 'Guest details',
+                        title: 'Attendee details',
                         children: [
                           _InfoRow(
                             icon: Icons.person_outline_rounded,
@@ -256,7 +256,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                   ),
                   const SizedBox(height: AuraSpace.s16),
                   _InfoPanel(
-                    title: 'Booking source',
+                    title: 'Source',
                     fullWidth: true,
                     children: [
                       if (booking?.institution != null)
@@ -284,6 +284,54 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                         value: booking == null
                             ? 'No guest confirmation for this meeting'
                             : 'Confirmation sent when the guest booked',
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      Text(
+                        'Preparation notes',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s6),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AuraSpace.s12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A),
+                          border: Border.all(color: const Color(0xFF243244)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Add notes, prep points, and follow-up items here.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
+                      Text(
+                        'Waiting and attendance',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s6),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AuraSpace.s12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A),
+                          border: Border.all(color: const Color(0xFF243244)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          guest?.attended == true
+                              ? 'Guest has joined the meeting.'
+                              : 'Waiting for the guest to join.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF9CA3AF),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -393,7 +441,7 @@ class _HeaderCard extends StatelessWidget {
                 else if (meeting.isActive)
                   FilledButton.icon(
                     icon: const Icon(Icons.video_call_rounded),
-                    label: const Text('Join meeting'),
+                    label: const Text('Enter room'),
                     onPressed: onJoin,
                   ),
                 OutlinedButton.icon(
