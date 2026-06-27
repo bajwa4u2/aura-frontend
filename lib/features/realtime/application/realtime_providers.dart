@@ -20,6 +20,10 @@ final realtimeRepositoryProvider = Provider<RealtimeRepository>((ref) {
 
 final realtimeSocketServiceProvider = Provider<RealtimeSocketService>((ref) {
   final service = RealtimeSocketService();
+  service.updateAccessToken(ref.read(tokenStoreProvider).accessToken ?? '');
+  ref.listen(tokenStoreProvider, (_, next) {
+    service.updateAccessToken(next.accessToken ?? '');
+  });
   ref.onDispose(service.dispose);
   return service;
 });
@@ -34,19 +38,23 @@ final realtimeMediaServiceProvider = Provider<RealtimeMediaService>((ref) {
 
 final realtimeControllerProvider =
     StateNotifierProvider<RealtimeController, RealtimeState>((ref) {
-  final repository = ref.watch(realtimeRepositoryProvider);
-  final socketService = ref.watch(realtimeSocketServiceProvider);
-  final mediaService = ref.watch(realtimeMediaServiceProvider);
-  final tokenStore = ref.watch(tokenStoreProvider);
+      final repository = ref.watch(realtimeRepositoryProvider);
+      final socketService = ref.watch(realtimeSocketServiceProvider);
+      final mediaService = ref.watch(realtimeMediaServiceProvider);
+      final tokenStore = ref.watch(tokenStoreProvider);
 
-  return RealtimeController(
-    repository,
-    socketService,
-    mediaService,
-    tokenStore,
-    () => ref.read(clientIdentityProvider.future),
-  );
-});
+      final controller = RealtimeController(
+        repository,
+        socketService,
+        mediaService,
+        tokenStore,
+        () => ref.read(clientIdentityProvider.future),
+      );
+      ref.listen(tokenStoreProvider, (_, next) {
+        socketService.updateAccessToken(next.accessToken ?? '');
+      });
+      return controller;
+    });
 
 final liveSessionsProvider = FutureProvider<List<RealtimeSession>>((ref) async {
   await ref.watch(sessionBootstrapProvider.future);
@@ -77,8 +85,9 @@ const _kLiveDiscoverableTypes = {
   RealtimeSurfaceType.institution,
 };
 
-final discoverableLiveSessionsProvider =
-    FutureProvider<List<RealtimeSession>>((ref) async {
+final discoverableLiveSessionsProvider = FutureProvider<List<RealtimeSession>>((
+  ref,
+) async {
   final all = await ref.watch(liveSessionsProvider.future);
   final seen = <String>{};
   final filtered = <RealtimeSession>[];

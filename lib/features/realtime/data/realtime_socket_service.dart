@@ -27,12 +27,38 @@ class RealtimeSocketService {
     if (isConnected) return;
     if (_connectFuture != null) return _connectFuture!;
 
-    _connectFuture =
-        _connectInternal(accessToken: accessToken, identity: identity);
+    _connectFuture = _connectInternal(
+      accessToken: accessToken,
+      identity: identity,
+    );
     try {
       await _connectFuture!;
     } finally {
       _connectFuture = null;
+    }
+  }
+
+  void updateAccessToken(String accessToken) {
+    final token = accessToken.trim();
+    if (token.isEmpty) return;
+
+    final socket = _socket;
+    if (socket == null) return;
+
+    final auth = <String, dynamic>{'token': token, 'accessToken': token};
+    socket.auth = auth;
+
+    try {
+      final ioOptions = socket.io.options;
+      if (ioOptions is Map) {
+        ioOptions['auth'] = auth;
+        final extraHeaders = ioOptions['extraHeaders'];
+        if (extraHeaders is Map) {
+          extraHeaders['Authorization'] = 'Bearer $token';
+        }
+      }
+    } catch (_) {
+      // Best-effort only; socket.auth is the critical reconnect input.
     }
   }
 
@@ -63,16 +89,13 @@ class RealtimeSocketService {
       });
     }
 
-    final socket = io.io(
-      '$origin/realtime',
-      <String, dynamic>{
-        'transports': <String>['websocket', 'polling'],
-        'autoConnect': false,
-        'forceNew': true,
-        'auth': auth,
-        'extraHeaders': extraHeaders,
-      },
-    );
+    final socket = io.io('$origin/realtime', <String, dynamic>{
+      'transports': <String>['websocket', 'polling'],
+      'autoConnect': false,
+      'forceNew': true,
+      'auth': auth,
+      'extraHeaders': extraHeaders,
+    });
 
     _wireCoreEvents(socket);
     _socket = socket;
@@ -257,22 +280,27 @@ class RealtimeSocketService {
 
     final completer = Completer<Map<String, dynamic>>();
 
-    socket.emitWithAck(event, payload, ack: (dynamic ack) {
-      if (completer.isCompleted) return;
-      if (ack is Map<String, dynamic>) {
-        completer.complete(ack);
-        return;
-      }
-      if (ack is Map) {
-        completer.complete(Map<String, dynamic>.from(ack));
-        return;
-      }
-      completer.complete(<String, dynamic>{'ok': true, 'data': ack});
-    });
+    socket.emitWithAck(
+      event,
+      payload,
+      ack: (dynamic ack) {
+        if (completer.isCompleted) return;
+        if (ack is Map<String, dynamic>) {
+          completer.complete(ack);
+          return;
+        }
+        if (ack is Map) {
+          completer.complete(Map<String, dynamic>.from(ack));
+          return;
+        }
+        completer.complete(<String, dynamic>{'ok': true, 'data': ack});
+      },
+    );
 
     return completer.future.timeout(
       const Duration(seconds: 15),
-      onTimeout: () => throw TimeoutException('Realtime request timed out: $event'),
+      onTimeout: () =>
+          throw TimeoutException('Realtime request timed out: $event'),
     );
   }
 

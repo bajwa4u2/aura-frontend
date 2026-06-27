@@ -6,8 +6,14 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../../config.dart';
 import '../../../core/auth/auth_providers.dart';
 
-final correspondenceLiveServiceProvider = Provider<CorrespondenceLiveService>((ref) {
+final correspondenceLiveServiceProvider = Provider<CorrespondenceLiveService>((
+  ref,
+) {
   final service = CorrespondenceLiveService(ref);
+  service.updateAccessToken(ref.read(tokenStoreProvider).accessToken ?? '');
+  ref.listen(tokenStoreProvider, (_, next) {
+    service.updateAccessToken(next.accessToken ?? '');
+  });
   ref.onDispose(service.dispose);
   return service;
 });
@@ -22,8 +28,10 @@ class CorrespondenceLiveEvent {
   String get spaceId => _pickString(payload, const ['spaceId']);
   String get invitationId => _pickString(payload, const ['invitationId', 'id']);
 
-  bool matchesThread(String value) => value.trim().isNotEmpty && value.trim() == threadId;
-  bool matchesSpace(String value) => value.trim().isNotEmpty && value.trim() == spaceId;
+  bool matchesThread(String value) =>
+      value.trim().isNotEmpty && value.trim() == threadId;
+  bool matchesSpace(String value) =>
+      value.trim().isNotEmpty && value.trim() == spaceId;
 }
 
 class CorrespondenceLiveService {
@@ -42,6 +50,34 @@ class CorrespondenceLiveService {
     if (token.isEmpty) return;
     if (_socket != null && _socket!.connected && _activeToken == token) return;
     await _connect(token);
+  }
+
+  void updateAccessToken(String token) {
+    final normalized = token.trim();
+    if (normalized.isEmpty) return;
+    _activeToken = normalized;
+
+    final socket = _socket;
+    if (socket == null) return;
+
+    final auth = <String, dynamic>{
+      'token': normalized,
+      'accessToken': normalized,
+    };
+    socket.auth = auth;
+
+    try {
+      final ioOptions = socket.io.options;
+      if (ioOptions is Map) {
+        ioOptions['auth'] = auth;
+        final extraHeaders = ioOptions['extraHeaders'];
+        if (extraHeaders is Map) {
+          extraHeaders['Authorization'] = 'Bearer $normalized';
+        }
+      }
+    } catch (_) {
+      // Best-effort only; socket.auth is the critical reconnect input.
+    }
   }
 
   Future<void> joinSpace(String spaceId) async {
@@ -80,30 +116,26 @@ class CorrespondenceLiveService {
 
   Future<void> _connect(String token) async {
     await disconnect();
+    _activeToken = token.trim();
     final uri = Uri.parse(AppConfig.apiBaseUrl);
-    final origin = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+    final origin =
+        '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
 
-    final socket = io.io(
-      origin,
-      <String, dynamic>{
-        'transports': <String>['websocket'],
-        'autoConnect': false,
-        'forceNew': false,
-        'auth': <String, dynamic>{
-          'token': token,
-          'accessToken': token,
-        },
-        'extraHeaders': <String, dynamic>{
-          'Authorization': 'Bearer $token',
-        },
-      },
-    );
+    final socket = io.io(origin, <String, dynamic>{
+      'transports': <String>['websocket'],
+      'autoConnect': false,
+      'forceNew': false,
+      'auth': <String, dynamic>{'token': token, 'accessToken': token},
+      'extraHeaders': <String, dynamic>{'Authorization': 'Bearer $token'},
+    });
 
     void onNamed(String name) {
       socket.on(name, (dynamic data) {
         final payload = data is Map<String, dynamic>
             ? data
-            : (data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'value': data});
+            : (data is Map
+                  ? Map<String, dynamic>.from(data)
+                  : <String, dynamic>{'value': data});
         if (!_events.isClosed) {
           _events.add(CorrespondenceLiveEvent(name: name, payload: payload));
         }
@@ -147,10 +179,12 @@ class CorrespondenceLiveService {
     // distinguish.
     socket.onConnect((_) {
       if (!_events.isClosed) {
-        _events.add(const CorrespondenceLiveEvent(
-          name: 'socket:connected',
-          payload: <String, dynamic>{},
-        ));
+        _events.add(
+          const CorrespondenceLiveEvent(
+            name: 'socket:connected',
+            payload: <String, dynamic>{},
+          ),
+        );
       }
     });
 
