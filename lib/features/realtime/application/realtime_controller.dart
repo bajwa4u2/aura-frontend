@@ -1540,6 +1540,19 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           state = state.copyWith(lastSocketEvent: event.name);
           return;
         }
+        final terminalReason = (event.payload['reason'] ?? '')
+            .toString()
+            .trim()
+            .toUpperCase();
+        final terminalCallState = (event.payload['callState'] ?? '')
+            .toString()
+            .trim()
+            .toUpperCase();
+        if (state.session?.surfaceType == RealtimeSurfaceType.meeting &&
+            (terminalReason == 'ACCEPTED' || terminalCallState == 'ACTIVE')) {
+          state = state.copyWith(lastSocketEvent: event.name);
+          return;
+        }
         _clearPendingOfferTargets();
         if (endedSessionId.isNotEmpty) {
           _repository.clearBundleCache(endedSessionId);

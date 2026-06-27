@@ -117,6 +117,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   // call and produced the "blank wrapped" UI the user reported.
   bool _intentToLeave = false;
   String? _lastConsentSyncKey;
+  RealtimeSurfaceType? _lastKnownSurfaceType;
+  String? _lastKnownSurfaceId;
   Timer? _durationTimer;
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
@@ -304,9 +306,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       return explicit;
     }
 
-    final surfaceId = (session?.surfaceId ?? '').trim();
-    if (session != null) {
-      switch (session.surfaceType) {
+    final surfaceType = session?.surfaceType ?? _lastKnownSurfaceType;
+    final surfaceId = (session?.surfaceId ?? _lastKnownSurfaceId ?? '').trim();
+    if (surfaceType != null) {
+      switch (surfaceType) {
+        case RealtimeSurfaceType.meeting:
+          if (surfaceId.isNotEmpty) return '/meetings/$surfaceId';
+          return '/meetings';
         case RealtimeSurfaceType.space:
           if (surfaceId.isNotEmpty) return '/me/correspondence/$surfaceId';
         case RealtimeSurfaceType.dm:
@@ -351,8 +357,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   void _navigateAfterCall(RealtimeSession? session) {
     // Invalidate cached thread data so the stale liveSessionId ribbon is gone
     // when the thread screen remounts after the call ends.
-    final surfaceId = (session?.surfaceId ?? '').trim();
-    if (surfaceId.isNotEmpty) {
+    final surfaceType = session?.surfaceType ?? _lastKnownSurfaceType;
+    final surfaceId = (session?.surfaceId ?? _lastKnownSurfaceId ?? '').trim();
+    if (surfaceId.isNotEmpty &&
+        (surfaceType == RealtimeSurfaceType.space ||
+            surfaceType == RealtimeSurfaceType.thread ||
+            surfaceType == RealtimeSurfaceType.dm)) {
       ref.invalidate(threadDetailProvider(surfaceId));
       ref.invalidate(messagesProvider(surfaceId));
     }
@@ -425,6 +435,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // toast fires exactly once per screen lifetime even if joinState
     // oscillates afterwards.
     ref.listen<RealtimeState>(realtimeControllerProvider, (prev, next) {
+      final session = next.session;
+      if (session != null) {
+        _lastKnownSurfaceType = session.surfaceType;
+        _lastKnownSurfaceId = (session.surfaceId ?? '').trim();
+      }
       if (next.isJoined && !_wasJoined) {
         _wasJoined = true;
         _showJoinedToast();
