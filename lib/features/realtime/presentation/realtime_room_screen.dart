@@ -815,9 +815,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (state.isBusy || state.joinState == RealtimeJoinState.joining) {
       return (
         isMeeting ? Icons.event_note_rounded : Icons.call_rounded,
-        isMeeting ? 'Starting meeting…' : 'Connecting…',
+        isMeeting ? 'Opening meeting room…' : 'Connecting…',
         isMeeting
-            ? 'Opening your meeting room.'
+            ? 'Waiting for guest to join.'
             : 'Setting up your session. This only takes a moment.',
         false,
         false,

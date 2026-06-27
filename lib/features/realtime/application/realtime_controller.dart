@@ -541,6 +541,16 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       throw StateError('This session has already ended.');
     }
 
+    final isMeetingSession = session.surfaceType == RealtimeSurfaceType.meeting;
+    if (isMeetingSession) {
+      state = state.copyWith(
+        joinState: RealtimeJoinState.joined,
+        clearIncomingCall: true,
+        infoMessage: 'Waiting for guest to join.',
+        clearErrorMessage: true,
+      );
+    }
+
     final joinedBundle = await _repository.joinSession(session);
     _applyBundle(joinedBundle);
 
@@ -558,7 +568,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     state = state.copyWith(
       joinState: RealtimeJoinState.joined,
       clearIncomingCall: true,
-      infoMessage: 'You joined live.',
+      infoMessage: isMeetingSession
+          ? 'Waiting for guest to join.'
+          : 'You joined live.',
     );
     _startHeartbeat();
     await _flushPendingOffers(refreshTurnCredentials: true);
