@@ -59,13 +59,15 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Meeting is not yet live. Check back later.')),
+            content: Text('Meeting is not yet live. Check back later.'),
+          ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not join: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not join: $e')));
     } finally {
       if (mounted) setState(() => _joining = false);
     }
@@ -75,10 +77,11 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Waiting room'),
+        title: const Text('Waiting for host to start'),
         content: const Text(
-            'The host has not yet admitted you. '
-            'You will be notified when your request is approved.'),
+          'This meeting room is not open yet. '
+          'You will be able to join as soon as the host starts it.',
+        ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(context),
@@ -109,15 +112,20 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline_rounded,
-                  size: 48, color: Color(0xFF9CA3AF)),
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: Color(0xFF9CA3AF),
+              ),
               const SizedBox(height: AuraSpace.s16),
-              Text('Meeting not found',
-                  style: theme.textTheme.titleMedium),
+              Text('Meeting not found', style: theme.textTheme.titleMedium),
               const SizedBox(height: AuraSpace.s8),
-              Text('Check the meeting code and try again.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF6B7280))),
+              Text(
+                'Check the meeting code and try again.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
             ],
           ),
         ),
@@ -185,22 +193,29 @@ class _PreJoinBody extends ConsumerWidget {
                               ? meeting.host!.name[0].toUpperCase()
                               : 'H',
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
                         ),
                       ),
                       const SizedBox(width: AuraSpace.s12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(meeting.host!.name,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600)),
-                          const Text('has invited you to a meeting',
-                              style: TextStyle(
-                                  color: Color(0xFF6B7280),
-                                  fontSize: 13)),
+                          Text(
+                            meeting.host!.name,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Text(
+                            'has invited you to a meeting',
+                            style: TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -211,14 +226,20 @@ class _PreJoinBody extends ConsumerWidget {
                 ],
 
                 // Meeting info
-                Text(meeting.title,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700)),
+                Text(
+                  meeting.title,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 if (meeting.description != null) ...[
                   const SizedBox(height: AuraSpace.s8),
-                  Text(meeting.description!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF6B7280))),
+                  Text(
+                    meeting.description!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
                 ],
                 const SizedBox(height: AuraSpace.s6),
                 _StatusPill(state: meeting.state),
@@ -226,9 +247,12 @@ class _PreJoinBody extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s24),
 
                 // Guest identification (optional for signed-in users)
-                Text('Your name',
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Your name',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: AuraSpace.s6),
                 TextField(
                   controller: nameCtrl,
@@ -240,9 +264,12 @@ class _PreJoinBody extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AuraSpace.s12),
-                Text('Email (optional)',
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Email (optional)',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: AuraSpace.s6),
                 TextField(
                   controller: emailCtrl,
@@ -271,14 +298,18 @@ class _PreJoinBody extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Powered by ',
-                        style: TextStyle(
-                            color: Color(0xFF9CA3AF), fontSize: 12)),
-                    Text('Aura',
-                        style: TextStyle(
-                            color: theme.colorScheme.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Powered by ',
+                      style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                    ),
+                    Text(
+                      'Aura',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -311,16 +342,16 @@ class _StatusPill extends StatelessWidget {
             width: 8,
             height: 8,
             margin: const EdgeInsets.only(right: 6),
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-        Text(label,
-            style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

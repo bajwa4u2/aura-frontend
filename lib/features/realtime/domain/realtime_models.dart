@@ -86,6 +86,8 @@ RealtimeSurfaceType _readSurfaceType(dynamic value) {
     case 'event_room':
     case 'room':
       return RealtimeSurfaceType.room;
+    case 'meeting':
+      return RealtimeSurfaceType.meeting;
     case 'institution':
     case 'institution_room':
       return RealtimeSurfaceType.institution;

@@ -31,7 +31,6 @@ import 'widgets/realtime_host_controls.dart';
 import 'widgets/realtime_join_requests_panel.dart';
 import 'widgets/realtime_participant_list.dart';
 
-
 class _CallRouteRedirectingFallback extends StatelessWidget {
   const _CallRouteRedirectingFallback();
 
@@ -58,7 +57,9 @@ class _CallRouteRedirectingFallback extends StatelessWidget {
 // duplicated the network call (one to /users/me, one to /auth/me), causing the
 // realtime room screen to issue an extra round-trip on every mount; now the
 // canonical authMeDataProvider serves both.
-final _realtimeCurrentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final _realtimeCurrentUserProvider = FutureProvider<Map<String, dynamic>>((
+  ref,
+) async {
   return ref.watch(authMeDataProvider.future);
 });
 
@@ -222,8 +223,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       if (container != null) {
         try {
           if (container.read(realtimeControllerProvider).isJoined) {
-            final controller =
-                container.read(realtimeControllerProvider.notifier);
+            final controller = container.read(
+              realtimeControllerProvider.notifier,
+            );
             unawaited(controller.leave().catchError((_) {}));
           }
         } catch (_) {
@@ -278,7 +280,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     } catch (e, st) {
       // endCall is designed to be local-first, but never let an unexpected
       // exception keep the user trapped on the call route.
-      debugPrint('[END] _endCallAndClose unexpected error: $e\n${st.toString().split('\n').take(4).join('\n')}');
+      debugPrint(
+        '[END] _endCallAndClose unexpected error: $e\n${st.toString().split('\n').take(4).join('\n')}',
+      );
     } finally {
       if (mounted) {
         _hasNavigatedAway = true;
@@ -455,7 +459,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // or a deep link from after the host hung up rendered a "Connecting…"
     // shell on a dead session that would never join.
     final hydratedSession = state.session;
-    if (hydratedSession != null && !hydratedSession.isActive && !state.isJoined) {
+    if (hydratedSession != null &&
+        !hydratedSession.isActive &&
+        !state.isJoined) {
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -469,6 +475,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       data: (me) => (me['id'] ?? '').toString(),
       orElse: () => '',
     );
+    final isMeetingSession =
+        state.session?.surfaceType == RealtimeSurfaceType.meeting;
 
     RealtimeParticipant? myParticipant;
     for (final p in state.participants) {
@@ -509,111 +517,120 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: AuraSurface.page,
-      // The call room is routed outside the app ShellRoute and the Scaffold
-      // has no appBar, so nothing insets the body for the status bar / notch
-      // / home indicator. Wrap the whole call surface in SafeArea so the
-      // top bar and the control dock are never drawn under system UI on
-      // iOS/Android (and under the title bar on a windowed desktop build).
-      body: SafeArea(
-        child: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 860;
+        backgroundColor: AuraSurface.page,
+        // The call room is routed outside the app ShellRoute and the Scaffold
+        // has no appBar, so nothing insets the body for the status bar / notch
+        // / home indicator. Wrap the whole call surface in SafeArea so the
+        // top bar and the control dock are never drawn under system UI on
+        // iOS/Android (and under the title bar on a windowed desktop build).
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 860;
 
-          return Column(
-            children: [
-              // ── Header bar ────────────────────────────────────────────────
-              _CallTopBar(
-                title: _callTitle(state.session, state.isVideoMode),
-                contextLabel: _contextLabel(state.session),
-                duration: callDuration,
-                participantCount: state.participants.length,
-                isConnecting: isConnecting,
-                hasIssue: showConnectionIssue,
-                isRinging: state.isJoined &&
-                    state.participants.length <= 1 &&
-                    ringingSessionIds.contains(widget.sessionId),
-                onMinimize: state.isJoined
-                    ? () => _minimizeCall(state.session)
-                    : null,
-                sessionTypeChip: _buildSessionTypeChip(),
-                trustLine: _buildTrustLine(),
-              ),
+              return Column(
+                children: [
+                  // ── Header bar ────────────────────────────────────────────────
+                  _CallTopBar(
+                    title: _callTitle(state.session, state.isVideoMode),
+                    contextLabel: _contextLabel(state.session),
+                    duration: callDuration,
+                    participantCount: state.participants.length,
+                    isConnecting: isConnecting,
+                    hasIssue: showConnectionIssue,
+                    isRinging:
+                        !isMeetingSession &&
+                        state.isJoined &&
+                        state.participants.length <= 1 &&
+                        ringingSessionIds.contains(widget.sessionId),
+                    waitingLabel:
+                        isMeetingSession &&
+                            state.isJoined &&
+                            state.participants.length <= 1
+                        ? 'Waiting for guest to join'
+                        : null,
+                    onMinimize: state.isJoined
+                        ? () => _minimizeCall(state.session)
+                        : null,
+                    sessionTypeChip: _buildSessionTypeChip(),
+                    trustLine: _buildTrustLine(),
+                  ),
 
-              // ── Phase 3 — per-type focus reinforcement ───────────────────
-              // Single-line text band that shifts focus per session type:
-              // "Speaker-led session" for public briefings/classes,
-              // "Q&A session" for media interactions. Internal meetings
-              // and research sessions stay quiet.
-              if (_buildFocusBanner() case final focus?) focus,
+                  // ── Phase 3 — per-type focus reinforcement ───────────────────
+                  // Single-line text band that shifts focus per session type:
+                  // "Speaker-led session" for public briefings/classes,
+                  // "Q&A session" for media interactions. Internal meetings
+                  // and research sessions stay quiet.
+                  if (_buildFocusBanner() case final focus?) focus,
 
-              // ── Phase 4 — in-session presence line ───────────────────────
-              // Calm line beneath the focus banner (or directly under
-              // the top bar when there's no focus banner) that names
-              // how many participants are present. Reads from existing
-              // realtime state — no extra fetch.
-              if (_buildPresenceLine(state) case final presence?) presence,
+                  // ── Phase 4 — in-session presence line ───────────────────────
+                  // Calm line beneath the focus banner (or directly under
+                  // the top bar when there's no focus banner) that names
+                  // how many participants are present. Reads from existing
+                  // realtime state — no extra fetch.
+                  if (_buildPresenceLine(state) case final presence?) presence,
 
-              // ── Consent banner ────────────────────────────────────────────
-              RealtimeConsentSheet(
-                currentUserId: myUserId.isNotEmpty ? myUserId : null,
-                consents: state.consents,
-              ),
+                  // ── Consent banner ────────────────────────────────────────────
+                  RealtimeConsentSheet(
+                    currentUserId: myUserId.isNotEmpty ? myUserId : null,
+                    consents: state.consents,
+                  ),
 
-              // ── Connection issue banner ───────────────────────────────────
-              if (showConnectionIssue)
-                _ConnectionBanner(
-                  isBusy: state.isBusy || isConnecting,
-                  onReconnect: () => controller.resume(widget.sessionId),
-                ),
+                  // ── Connection issue banner ───────────────────────────────────
+                  if (showConnectionIssue)
+                    _ConnectionBanner(
+                      isBusy: state.isBusy || isConnecting,
+                      onReconnect: () => controller.resume(widget.sessionId),
+                    ),
 
-              // ── Main body ─────────────────────────────────────────────────
-              Expanded(
-                child: state.isJoined
-                    ? _buildActiveCall(
-                        state: state,
-                        controller: controller,
-                        myUserId: myUserId,
-                        canModerate: canModerate,
-                        wide: wide,
-                      )
-                    : _buildPreJoin(
-                        context: context,
-                        state: state,
-                        controller: controller,
-                        policy: policy,
-                        roomIsClosed: roomIsClosed,
-                      ),
-              ),
+                  // ── Main body ─────────────────────────────────────────────────
+                  Expanded(
+                    child: state.isJoined
+                        ? _buildActiveCall(
+                            state: state,
+                            controller: controller,
+                            myUserId: myUserId,
+                            canModerate: canModerate,
+                            wide: wide,
+                          )
+                        : _buildPreJoin(
+                            context: context,
+                            state: state,
+                            controller: controller,
+                            policy: policy,
+                            roomIsClosed: roomIsClosed,
+                          ),
+                  ),
 
-              // ── Call controls ─────────────────────────────────────────────
-              if (state.isJoined)
-                _CallControlDock(
-                  micOn: state.microphoneEnabled,
-                  cameraOn: state.cameraEnabled,
-                  isVideoMode: state.isVideoMode,
-                  activePanel: _activePanel,
-                  pendingRequests: canModerate ? joinRequestCount : 0,
-                  onToggleMic: controller.toggleMicrophone,
-                  onToggleCamera: controller.toggleCamera,
-                  onParticipants: () =>
-                      _togglePanel(_kPanelParticipants, wide),
-                  onMore: () => _togglePanel(_kPanelMore, wide),
-                  // Only the session host can end for everyone.
-                  // Non-hosts always leave; the backend auto-ends when the
-                  // last active participant leaves.
-                  isEndCall: isHost,
-                  isEnding: state.isEndingCall,
-                  onLeave: state.isEndingCall
-                      ? null
-                      : isHost
+                  // ── Call controls ─────────────────────────────────────────────
+                  if (state.isJoined)
+                    _CallControlDock(
+                      micOn: state.microphoneEnabled,
+                      cameraOn: state.cameraEnabled,
+                      isVideoMode: state.isVideoMode,
+                      activePanel: _activePanel,
+                      pendingRequests: canModerate ? joinRequestCount : 0,
+                      onToggleMic: controller.toggleMicrophone,
+                      onToggleCamera: controller.toggleCamera,
+                      onParticipants: () =>
+                          _togglePanel(_kPanelParticipants, wide),
+                      onMore: () => _togglePanel(_kPanelMore, wide),
+                      // Only the session host can end for everyone.
+                      // Non-hosts always leave; the backend auto-ends when the
+                      // last active participant leaves.
+                      isEndCall: isHost,
+                      isEnding: state.isEndingCall,
+                      onLeave: state.isEndingCall
+                          ? null
+                          : isHost
                           ? () => unawaited(_endCallAndClose(controller))
                           : () => unawaited(_leaveAndNavigate(controller)),
-                ),
-            ],
-          );
-        },
-      )),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -627,10 +644,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required bool canModerate,
     required bool wide,
   }) {
-    final stage = _CallStage(
-      state: state,
-      myUserId: myUserId,
-    );
+    final stage = _CallStage(state: state, myUserId: myUserId);
 
     if (!wide || _activePanel == null) return stage;
 
@@ -667,8 +681,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required RealtimePolicy? policy,
     required bool roomIsClosed,
   }) {
-    final (icon, title, subtitle, showJoin, showRequest) =
-        _preJoinContent(state: state, policy: policy, roomIsClosed: roomIsClosed);
+    final isMeetingSession =
+        state.session?.surfaceType == RealtimeSurfaceType.meeting;
+    final (icon, title, subtitle, showJoin, showRequest) = _preJoinContent(
+      state: state,
+      policy: policy,
+      roomIsClosed: roomIsClosed,
+    );
 
     // Auto-navigate away from an ended session so the screen never stays blank.
     if (state.session?.isActive == false) {
@@ -695,9 +714,17 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 child: Icon(icon, size: 30, color: Colors.white),
               ),
               const SizedBox(height: AuraSpace.s20),
-              Text(title, style: AuraText.headline, textAlign: TextAlign.center),
+              Text(
+                title,
+                style: AuraText.headline,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: AuraSpace.s8),
-              Text(subtitle, style: AuraText.muted, textAlign: TextAlign.center),
+              Text(
+                subtitle,
+                style: AuraText.muted,
+                textAlign: TextAlign.center,
+              ),
               if ((state.errorMessage ?? '').isNotEmpty) ...[
                 const SizedBox(height: AuraSpace.s12),
                 Container(
@@ -724,7 +751,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 children: [
                   if (showJoin)
                     AuraPrimaryButton(
-                      label: state.isBusy ? 'Joining…' : 'Join call',
+                      label: state.isBusy
+                          ? 'Joining…'
+                          : isMeetingSession
+                          ? 'Join meeting'
+                          : 'Join call',
                       onPressed: state.isBusy
                           ? null
                           : () => controller.join(widget.sessionId),
@@ -767,11 +798,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required RealtimePolicy? policy,
     required bool roomIsClosed,
   }) {
+    final isMeeting = state.session?.surfaceType == RealtimeSurfaceType.meeting;
     if (state.isBusy || state.joinState == RealtimeJoinState.joining) {
       return (
-        Icons.call_rounded,
-        'Connecting…',
-        'Setting up your session. This only takes a moment.',
+        isMeeting ? Icons.event_note_rounded : Icons.call_rounded,
+        isMeeting ? 'Starting meeting…' : 'Connecting…',
+        isMeeting
+            ? 'Opening your meeting room.'
+            : 'Setting up your session. This only takes a moment.',
         false,
         false,
       );
@@ -796,8 +830,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       case RealtimeJoinState.removed:
         return (
           Icons.person_remove_rounded,
-          'Removed from call',
-          'You were removed from this call by the host.',
+          state.session?.surfaceType == RealtimeSurfaceType.meeting
+              ? 'Removed from meeting'
+              : 'Removed from call',
+          state.session?.surfaceType == RealtimeSurfaceType.meeting
+              ? 'You were removed from this meeting by the host.'
+              : 'You were removed from this call by the host.',
           false,
           false,
         );
@@ -811,15 +849,22 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         );
       case RealtimeJoinState.failed:
         final errLower = (state.errorMessage ?? '').toLowerCase();
-        final isTerminal = errLower.contains('invite_expired') ||
+        final isTerminal =
+            errLower.contains('invite_expired') ||
             errLower.contains('invite has expired') ||
             errLower.contains('session_closed') ||
             errLower.contains('session is closed');
         if (isTerminal) {
           return (
-            Icons.call_end_rounded,
-            'Call unavailable',
-            'This call has ended or your invite has expired.',
+            state.session?.surfaceType == RealtimeSurfaceType.meeting
+                ? Icons.event_busy_rounded
+                : Icons.call_end_rounded,
+            state.session?.surfaceType == RealtimeSurfaceType.meeting
+                ? 'Meeting unavailable'
+                : 'Call unavailable',
+            state.session?.surfaceType == RealtimeSurfaceType.meeting
+                ? 'This meeting has ended or your invite has expired.'
+                : 'This call has ended or your invite has expired.',
             false,
             false,
           );
@@ -835,9 +880,22 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         if (state.session?.isActive == false) {
           return (
             Icons.call_end_rounded,
-            'Call has ended',
-            'This call is no longer active.',
+            state.session?.surfaceType == RealtimeSurfaceType.meeting
+                ? 'Meeting has ended'
+                : 'Call has ended',
+            state.session?.surfaceType == RealtimeSurfaceType.meeting
+                ? 'This meeting is no longer active.'
+                : 'This call is no longer active.',
             false,
+            false,
+          );
+        }
+        if (state.session?.surfaceType == RealtimeSurfaceType.meeting) {
+          return (
+            Icons.event_available_rounded,
+            'Waiting for host to start',
+            'This meeting room opens when the host starts it.',
+            true,
             false,
           );
         }
@@ -853,7 +911,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         return (
           Icons.call_rounded,
           'Ready to join',
-          'Tap Join call to enter.',
+          isMeeting ? 'Tap Join meeting to enter.' : 'Tap Join call to enter.',
           true,
           false,
         );
@@ -919,7 +977,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (_insSessionMeta == null) return null;
     if (!state.isJoined) return null;
     final n = state.participants.length;
-    final String label = n > 1
+    final isMeetingSession =
+        state.session?.surfaceType == RealtimeSurfaceType.meeting;
+    final String label = isMeetingSession && n <= 1
+        ? 'Waiting for guest to join'
+        : n > 1
         ? '$n participants in session'
         : 'Participants present';
     return Container(
@@ -1077,7 +1139,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   /// outward-facing session is unambiguous on the in-call header.
   Widget? _buildSessionTypeChip() {
     final meta = _insSessionMeta;
-    if (meta == null) return null;
+    if (meta == null) {
+      final session = ref.read(realtimeControllerProvider).session;
+      if (session?.surfaceType != RealtimeSurfaceType.meeting) return null;
+      return const _SessionTypeChip(
+        label: 'Scheduled meeting',
+        icon: Icons.event_note_rounded,
+        isPublic: false,
+      );
+    }
     final isPublic = meta.audience == InsSessionAudience.publicAudience;
     String label;
     IconData icon;
@@ -1115,11 +1185,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (!isBroadcast) return typeChip;
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        const _BroadcastChip(),
-        const SizedBox(width: 6),
-        typeChip,
-      ],
+      children: [const _BroadcastChip(), const SizedBox(width: 6), typeChip],
     );
   }
 
@@ -1132,7 +1198,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             session.surfaceType == RealtimeSurfaceType.institution)) {
       return _insSessionMeta!.displayTitle;
     }
-    if (session == null) return isVideo ? 'Video call' : 'Audio call';
+    if (session == null) return isVideo ? 'Video meeting' : 'Audio meeting';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
       case RealtimeSurfaceType.thread:
@@ -1140,6 +1206,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       case RealtimeSurfaceType.space:
       case RealtimeSurfaceType.room:
         return isVideo ? 'Video call' : 'Audio call';
+      case RealtimeSurfaceType.meeting:
+        return session.title?.trim().isNotEmpty == true
+            ? session.title!.trim()
+            : 'Scheduled meeting';
       case RealtimeSurfaceType.institution:
         return isVideo ? 'Video call' : 'Audio call';
       case RealtimeSurfaceType.unknown:
@@ -1166,6 +1236,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       case RealtimeSurfaceType.space:
       case RealtimeSurfaceType.room:
         return named != null ? 'in $named' : 'Space live';
+      case RealtimeSurfaceType.meeting:
+        return named ?? 'Scheduled meeting';
       case RealtimeSurfaceType.institution:
         return named != null ? '$named · Institution live' : 'Institution live';
       case RealtimeSurfaceType.unknown:
@@ -1207,6 +1279,7 @@ class _CallTopBar extends StatelessWidget {
     required this.participantCount,
     required this.isConnecting,
     required this.hasIssue,
+    this.waitingLabel,
     this.contextLabel,
     this.isRinging = false,
     this.onMinimize,
@@ -1220,6 +1293,7 @@ class _CallTopBar extends StatelessWidget {
   final int participantCount;
   final bool isConnecting;
   final bool hasIssue;
+  final String? waitingLabel;
   final bool isRinging;
   final VoidCallback? onMinimize;
 
@@ -1245,8 +1319,7 @@ class _CallTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final durationLabel =
-        duration != null ? _fmt(duration!) : null;
+    final durationLabel = duration != null ? _fmt(duration!) : null;
 
     Color statusColor;
     String statusLabel;
@@ -1256,6 +1329,9 @@ class _CallTopBar extends StatelessWidget {
     } else if (isConnecting) {
       statusColor = AuraSurface.coSun;
       statusLabel = 'Connecting…';
+    } else if (waitingLabel != null) {
+      statusColor = const Color(0xFFFBBF24);
+      statusLabel = waitingLabel!;
     } else if (isRinging) {
       statusColor = const Color(0xFFFBBF24);
       statusLabel = 'Ringing…';
@@ -1266,9 +1342,7 @@ class _CallTopBar extends StatelessWidget {
 
     return Container(
       constraints: BoxConstraints(
-        minHeight: trustLine != null
-            ? 76
-            : (contextLabel != null ? 60 : 52),
+        minHeight: trustLine != null ? 76 : (contextLabel != null ? 60 : 52),
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s16,
@@ -1408,10 +1482,7 @@ class _CallTopBar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ConnectionBanner extends StatelessWidget {
-  const _ConnectionBanner({
-    required this.isBusy,
-    required this.onReconnect,
-  });
+  const _ConnectionBanner({required this.isBusy, required this.onReconnect});
 
   final bool isBusy;
   final VoidCallback onReconnect;
@@ -1429,7 +1500,11 @@ class _ConnectionBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.wifi_off_rounded, size: 16, color: AuraSurface.coSun),
+          const Icon(
+            Icons.wifi_off_rounded,
+            size: 16,
+            color: AuraSurface.coSun,
+          ),
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
@@ -1562,33 +1637,41 @@ class _VideoGrid extends StatelessWidget {
           if (isLandscape) {
             return Row(
               children: entries
-                  .map((e) => Expanded(
-                        child: _VideoTile(
-                          label: e.$1,
-                          renderer: e.$2,
-                          mirror: e.$3,
-                          micOn: e.$1 == 'You' ? micOn : true,
-                        ),
-                      ))
-                  .toList(),
-            );
-          }
-          return Column(
-            children: entries
-                .map((e) => Expanded(
+                  .map(
+                    (e) => Expanded(
                       child: _VideoTile(
                         label: e.$1,
                         renderer: e.$2,
                         mirror: e.$3,
                         micOn: e.$1 == 'You' ? micOn : true,
                       ),
-                    ))
+                    ),
+                  )
+                  .toList(),
+            );
+          }
+          return Column(
+            children: entries
+                .map(
+                  (e) => Expanded(
+                    child: _VideoTile(
+                      label: e.$1,
+                      renderer: e.$2,
+                      mirror: e.$3,
+                      micOn: e.$1 == 'You' ? micOn : true,
+                    ),
+                  ),
+                )
                 .toList(),
           );
         }
 
         // 3+ participants — responsive grid
-        final cols = w >= 900 ? 3 : w >= 600 ? 2 : 2;
+        final cols = w >= 900
+            ? 3
+            : w >= 600
+            ? 2
+            : 2;
         final rows = (entries.length / cols).ceil();
         final tileH = h / rows;
         final tileW = w / cols;
@@ -1744,10 +1827,10 @@ class _AvatarStage extends StatelessWidget {
         final cols = participants.length == 1
             ? 1
             : w >= 720
-                ? math.min(4, participants.length)
-                : w >= 480
-                    ? math.min(3, participants.length)
-                    : math.min(2, participants.length);
+            ? math.min(4, participants.length)
+            : w >= 480
+            ? math.min(3, participants.length)
+            : math.min(2, participants.length);
         final tileSize = math.min(
           (w - (cols - 1) * AuraSpace.s16) / cols,
           140.0,
@@ -1816,11 +1899,7 @@ class _AvatarTile extends StatelessWidget {
                   width: 2,
                 ),
               ),
-              child: AuraAvatar(
-                name: name,
-                imageUrl: avatarUrl,
-                size: size,
-              ),
+              child: AuraAvatar(name: name, imageUrl: avatarUrl, size: size),
             ),
             // Mic state badge
             Positioned(
@@ -1830,7 +1909,9 @@ class _AvatarTile extends StatelessWidget {
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: micOn ? AuraSurface.card : AuraSurface.coRose.withValues(alpha: 0.16),
+                  color: micOn
+                      ? AuraSurface.card
+                      : AuraSurface.coRose.withValues(alpha: 0.16),
                   shape: BoxShape.circle,
                   border: Border.all(color: AuraSurface.divider, width: 1.5),
                 ),
@@ -1997,7 +2078,9 @@ class _CallControlDock extends StatelessWidget {
           // Camera (video calls only)
           if (isVideoMode) ...[
             _DockButton(
-              icon: cameraOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+              icon: cameraOn
+                  ? Icons.videocam_rounded
+                  : Icons.videocam_off_rounded,
               label: cameraOn ? 'Camera' : 'Camera off',
               active: cameraOn,
               warning: !cameraOn,
@@ -2061,13 +2144,13 @@ class _DockButton extends StatelessWidget {
     final bgColor = active
         ? AuraSurface.accentSoft
         : warning
-            ? AuraSurface.coRose.withValues(alpha: 0.16)
-            : AuraSurface.card;
+        ? AuraSurface.coRose.withValues(alpha: 0.16)
+        : AuraSurface.card;
     final iconColor = active
         ? AuraSurface.accentText
         : warning
-            ? AuraSurface.coRose
-            : AuraSurface.muted;
+        ? AuraSurface.coRose
+        : AuraSurface.muted;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -2164,7 +2247,9 @@ class _LeaveButton extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: disabled
-                    ? AuraSurface.coRose.withValues(alpha: 0.16).withValues(alpha: 0.45)
+                    ? AuraSurface.coRose
+                          .withValues(alpha: 0.16)
+                          .withValues(alpha: 0.45)
                     : AuraSurface.coRose.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AuraRadius.md),
                 border: Border.all(
@@ -2198,9 +2283,7 @@ class _LeaveButton extends StatelessWidget {
         Text(
           label,
           style: AuraText.micro.copyWith(
-            color: AuraSurface.coRose.withValues(
-              alpha: disabled ? 0.4 : 1.0,
-            ),
+            color: AuraSurface.coRose.withValues(alpha: disabled ? 0.4 : 1.0),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -2257,10 +2340,18 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
     });
   }
 
-  Future<void> _search(String query, List<RealtimeParticipant> participants) async {
+  Future<void> _search(
+    String query,
+    List<RealtimeParticipant> participants,
+  ) async {
     final q = query.trim();
     if (q.isEmpty) {
-      if (mounted) setState(() { _results = const []; _searching = false; });
+      if (mounted) {
+        setState(() {
+          _results = const [];
+          _searching = false;
+        });
+      }
       return;
     }
     if (mounted) setState(() => _searching = true);
@@ -2274,9 +2365,19 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
             id != widget.myUserId &&
             !existingIds.contains(id);
       }).toList();
-      if (mounted) setState(() { _results = filtered; _searching = false; });
+      if (mounted) {
+        setState(() {
+          _results = filtered;
+          _searching = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() { _results = const []; _searching = false; });
+      if (mounted) {
+        setState(() {
+          _results = const [];
+          _searching = false;
+        });
+      }
     }
   }
 
@@ -2285,10 +2386,12 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
     if (id.isEmpty || _inviting != null) return;
     if (mounted) setState(() => _inviting = id);
     try {
-      await ref.read(realtimeControllerProvider.notifier).inviteMember(
-        invitedUserId: id,
-        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
-      );
+      await ref
+          .read(realtimeControllerProvider.notifier)
+          .inviteMember(
+            invitedUserId: id,
+            note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+          );
       if (!mounted) return;
       setState(() {
         _results = _results.where((u) => (u['id'] ?? '') != id).toList();
@@ -2306,12 +2409,18 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
     final state = ref.watch(realtimeControllerProvider);
     final controller = ref.read(realtimeControllerProvider.notifier);
     final isParticipants = widget.panelId == _kPanelParticipants;
+    final isMeetingSession =
+        state.session?.surfaceType == RealtimeSurfaceType.meeting;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _PanelHeader(
-          title: isParticipants ? 'Participants' : 'Call options',
+          title: isParticipants
+              ? 'Participants'
+              : isMeetingSession
+              ? 'Meeting options'
+              : 'Call options',
           count: isParticipants ? state.participants.length : null,
           onClose: widget.onClose,
         ),
@@ -2343,14 +2452,15 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
   Widget _buildMore(RealtimeState state, RealtimeController ctrl) {
     final policy = state.policy;
     final joinRequests = policy?.joinRequests ?? const [];
+    final isMeetingSession =
+        state.session?.surfaceType == RealtimeSurfaceType.meeting;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Consent banner (if pending)
         RealtimeConsentSheet(
-          currentUserId:
-              widget.myUserId.isNotEmpty ? widget.myUserId : null,
+          currentUserId: widget.myUserId.isNotEmpty ? widget.myUserId : null,
           consents: state.consents,
         ),
 
@@ -2379,6 +2489,7 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
           ],
 
           _RoomInviteCard(
+            isMeetingSession: isMeetingSession,
             searchController: _searchCtrl,
             noteController: _noteCtrl,
             isSearching: _searching,
@@ -2413,11 +2524,7 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PanelHeader extends StatelessWidget {
-  const _PanelHeader({
-    required this.title,
-    this.count,
-    this.onClose,
-  });
+  const _PanelHeader({required this.title, this.count, this.onClose});
 
   final String title;
   final int? count;
@@ -2491,6 +2598,7 @@ class _PanelHeader extends StatelessWidget {
 
 class _RoomInviteCard extends StatelessWidget {
   const _RoomInviteCard({
+    required this.isMeetingSession,
     required this.searchController,
     required this.noteController,
     required this.isSearching,
@@ -2500,6 +2608,7 @@ class _RoomInviteCard extends StatelessWidget {
     required this.onInvite,
   });
 
+  final bool isMeetingSession;
   final TextEditingController searchController;
   final TextEditingController noteController;
   final bool isSearching;
@@ -2514,10 +2623,15 @@ class _RoomInviteCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Invite members', style: AuraText.title),
+          Text(
+            isMeetingSession ? 'Invite guest' : 'Invite members',
+            style: AuraText.title,
+          ),
           const SizedBox(height: AuraSpace.s8),
-          const Text(
-            'Find Aura members and invite them into this call.',
+          Text(
+            isMeetingSession
+                ? 'Find an Aura member and invite them into this meeting.'
+                : 'Find Aura members and invite them into this call.',
             style: AuraText.muted,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -2562,15 +2676,14 @@ class _RoomInviteCard extends StatelessWidget {
           else
             ...results.map((user) {
               final id = (user['id'] ?? '').toString();
-              final displayName =
-                  (user['displayName'] ?? '').toString().trim();
+              final displayName = (user['displayName'] ?? '').toString().trim();
               final handle = (user['handle'] ?? '').toString().trim();
               final bio = (user['bio'] ?? '').toString().trim();
               final title = displayName.isNotEmpty
                   ? displayName
                   : handle.isNotEmpty
-                      ? '@$handle'
-                      : 'Member';
+                  ? '@$handle'
+                  : 'Member';
               final subtitle = [
                 if (handle.isNotEmpty && displayName.isNotEmpty) '@$handle',
                 if (bio.isNotEmpty) bio,
@@ -2636,7 +2749,11 @@ class _ArtifactBlock extends StatelessWidget {
     final canTranscribe = policy?.canTranscribe == true;
 
     // Show nothing if no capabilities and no data yet
-    if (!canRecord && !canTranscribe && recordingCount == 0 && transcriptCount == 0 && artifactCount == 0) {
+    if (!canRecord &&
+        !canTranscribe &&
+        recordingCount == 0 &&
+        transcriptCount == 0 &&
+        artifactCount == 0) {
       return const SizedBox.shrink();
     }
 
@@ -2653,15 +2770,17 @@ class _ArtifactBlock extends StatelessWidget {
             Text(
               recordingCount > 0
                   ? (recordingCount == 1
-                      ? '1 recording'
-                      : '$recordingCount recordings')
+                        ? '1 recording'
+                        : '$recordingCount recordings')
                   : 'Recording available',
               style: AuraText.small,
             ),
           if (canTranscribe || transcriptCount > 0)
             Text(
               transcriptCount > 0
-                  ? (transcriptCount == 1 ? '1 live note' : '$transcriptCount live notes')
+                  ? (transcriptCount == 1
+                        ? '1 live note'
+                        : '$transcriptCount live notes')
                   : 'Live notes available',
               style: AuraText.small,
             ),
@@ -2749,9 +2868,7 @@ class _BroadcastChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.accentSoft,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color: AuraSurface.accent.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

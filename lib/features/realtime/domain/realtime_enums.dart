@@ -46,6 +46,7 @@ enum RealtimeSurfaceType {
   thread,
   space,
   room,
+  meeting,
   institution,
   unknown,
 }
