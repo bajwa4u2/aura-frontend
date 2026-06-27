@@ -9,6 +9,7 @@ import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_room.dart';
+import 'meeting_lifecycle_presenter.dart';
 
 class MeetingRoomScreen extends ConsumerStatefulWidget {
   final String meetingId;
@@ -98,19 +99,16 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       ),
       data: (meeting) {
         final room = meeting.room;
+        final isHost = (me['id']?.toString().trim() ?? '') == meeting.host?.id;
+        final lifecycle = MeetingLifecyclePresenter.present(
+          meeting,
+          room: room,
+          isHost: isHost,
+        );
         final canStart = room?.canStart == true && !_busy;
         final sessionId = (_sessionId ?? room?.realtimeSessionId ?? '').trim();
-        final isHost = (me['id']?.toString().trim() ?? '') == meeting.host?.id;
         final isTerminal = room?.isTerminal == true || meeting.isEnded;
-        final roomStatus = room?.status ?? MeetingRoomStatus.unknown;
-        final statusLabel = switch (roomStatus) {
-          MeetingRoomStatus.scheduled => 'Scheduled',
-          MeetingRoomStatus.waiting => 'Waiting',
-          MeetingRoomStatus.live => 'Live',
-          MeetingRoomStatus.ended => 'Ended',
-          MeetingRoomStatus.cancelled => 'Cancelled',
-          MeetingRoomStatus.unknown => meeting.state,
-        };
+        final statusLabel = lifecycle.label;
 
         return AuraScaffold(
           title: meeting.title,
@@ -141,13 +139,18 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                         onCopy: () => _copyLink(meeting),
                       ),
                       const SizedBox(height: AuraSpace.s16),
-                      _MeetingStatusStrip(meeting: meeting, room: room),
+                      _MeetingStatusStrip(
+                        meeting: meeting,
+                        room: room,
+                        lifecycle: lifecycle,
+                      ),
                       const SizedBox(height: AuraSpace.s16),
                       _RoomStateCard(
                         meeting: meeting,
                         room: room,
                         isHost: isHost,
                         busy: _busy,
+                        lifecycle: lifecycle,
                         onStart: canStart && isHost
                             ? () => _startMeeting(meeting)
                             : null,
@@ -244,6 +247,7 @@ class _RoomStateCard extends StatelessWidget {
   final MeetingRoom? room;
   final bool isHost;
   final bool busy;
+  final MeetingLifecycleViewModel lifecycle;
   final VoidCallback? onStart;
   final VoidCallback? onEnter;
   final VoidCallback onCopy;
@@ -254,6 +258,7 @@ class _RoomStateCard extends StatelessWidget {
     required this.room,
     required this.isHost,
     required this.busy,
+    required this.lifecycle,
     required this.onStart,
     required this.onEnter,
     required this.onCopy,
@@ -263,15 +268,17 @@ class _RoomStateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final roomStatus = room?.status ?? MeetingRoomStatus.unknown;
-    final statusText = switch (roomStatus) {
-      MeetingRoomStatus.scheduled => 'Scheduled meeting',
-      MeetingRoomStatus.waiting =>
-        isHost ? 'Waiting for guest to join' : 'Waiting for host to start',
-      MeetingRoomStatus.live => 'Meeting is live',
-      MeetingRoomStatus.ended => 'Meeting ended',
-      MeetingRoomStatus.cancelled => 'Meeting cancelled',
-      MeetingRoomStatus.unknown => meeting.state,
+    final statusText = switch (lifecycle.status) {
+      MeetingLifecycleStatus.scheduled => 'Scheduled meeting',
+      MeetingLifecycleStatus.startingSoon => 'Starting soon',
+      MeetingLifecycleStatus.guestWaiting => 'Waiting for host to start',
+      MeetingLifecycleStatus.hostWaiting => 'Waiting for guest to join',
+      MeetingLifecycleStatus.inProgress => 'Meeting is live',
+      MeetingLifecycleStatus.ended => 'Meeting ended',
+      MeetingLifecycleStatus.missed => 'Meeting missed',
+      MeetingLifecycleStatus.cancelled => 'Meeting cancelled',
+      MeetingLifecycleStatus.connectionIssue => 'Connection issue',
+      MeetingLifecycleStatus.unknown => meeting.state,
     };
 
     return Card(
@@ -290,7 +297,7 @@ class _RoomStateCard extends StatelessWidget {
             Text(
               isTerminal
                   ? 'This meeting has ended.'
-                  : room?.status == MeetingRoomStatus.live
+                  : lifecycle.status == MeetingLifecycleStatus.inProgress
                   ? 'The meeting room is open.'
                   : 'The meeting is ready when you are.',
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -302,7 +309,7 @@ class _RoomStateCard extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    room?.status == MeetingRoomStatus.live
+                    lifecycle.status == MeetingLifecycleStatus.inProgress
                         ? Icons.people_alt_rounded
                         : Icons.schedule_rounded,
                     size: 18,
@@ -311,7 +318,7 @@ class _RoomStateCard extends StatelessWidget {
                   const SizedBox(width: AuraSpace.s8),
                   Expanded(
                     child: Text(
-                      room?.status == MeetingRoomStatus.live
+                      lifecycle.status == MeetingLifecycleStatus.inProgress
                           ? '${room?.activeParticipantCount ?? 0} people in the room'
                           : isHost
                           ? 'Waiting for guest to join'
@@ -372,29 +379,23 @@ class _RoomStateCard extends StatelessWidget {
 class _MeetingStatusStrip extends StatelessWidget {
   final Meeting meeting;
   final MeetingRoom? room;
+  final MeetingLifecycleViewModel lifecycle;
 
-  const _MeetingStatusStrip({required this.meeting, required this.room});
+  const _MeetingStatusStrip({
+    required this.meeting,
+    required this.room,
+    required this.lifecycle,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final status = room?.status ?? MeetingRoomStatus.unknown;
     final chips = <Widget>[
       _TinyChip(
         icon: Icons.schedule_rounded,
         label: _scheduledLabel(context, meeting),
       ),
       _TinyChip(icon: Icons.public_rounded, label: meeting.timezone),
-      _TinyChip(
-        icon: Icons.event_available_rounded,
-        label: switch (status) {
-          MeetingRoomStatus.scheduled => 'Scheduled',
-          MeetingRoomStatus.waiting => 'Waiting',
-          MeetingRoomStatus.live => 'Live',
-          MeetingRoomStatus.ended => 'Ended',
-          MeetingRoomStatus.cancelled => 'Cancelled',
-          MeetingRoomStatus.unknown => meeting.state,
-        },
-      ),
+      _TinyChip(icon: Icons.event_available_rounded, label: lifecycle.label),
       _TinyChip(
         icon: Icons.people_alt_rounded,
         label: '${room?.activeParticipantCount ?? 0} participants',

@@ -6,6 +6,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
+import 'meeting_lifecycle_presenter.dart';
 
 // Pre-join: shows meeting context (host, org, purpose) before entering.
 // Applies the "organization first, Aura second" principle — the guest
@@ -159,6 +160,7 @@ class _PreJoinBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final lifecycle = MeetingLifecyclePresenter.present(meeting);
 
     // Is the authenticated user already a participant?
     // If so we skip name/email fields. For now we detect by checking
@@ -250,7 +252,7 @@ class _PreJoinBody extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: AuraSpace.s6),
-                _StatusPill(state: meeting.state),
+                _StatusPill(lifecycle: lifecycle),
                 const SizedBox(height: AuraSpace.s12),
                 _MeetingMetaRow(
                   icon: Icons.schedule_rounded,
@@ -300,8 +302,8 @@ class _PreJoinBody extends ConsumerWidget {
                   height: 50,
                   child: FilledButton.icon(
                     icon: const Icon(Icons.video_call_rounded),
-                    label: const Text('Join meeting'),
-                    onPressed: joining ? null : onJoin,
+                    label: Text(_buttonLabel(lifecycle)),
+                    onPressed: joining || lifecycle.isTerminal ? null : onJoin,
                   ),
                 ),
 
@@ -335,22 +337,51 @@ class _PreJoinBody extends ConsumerWidget {
 }
 
 class _StatusPill extends StatelessWidget {
-  final String state;
-  const _StatusPill({required this.state});
+  final MeetingLifecycleViewModel lifecycle;
+  const _StatusPill({required this.lifecycle});
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (state) {
-      'ACTIVE' => ('Live now', const Color(0xFF10B981)),
-      'SCHEDULED' => ('Scheduled', const Color(0xFF6C63FF)),
-      'ENDED' => ('Meeting ended', const Color(0xFF9CA3AF)),
-      'CANCELLED' => ('Cancelled', const Color(0xFFEF4444)),
-      _ => ('Pending', const Color(0xFF9CA3AF)),
+    final (label, color) = switch (lifecycle.status) {
+      MeetingLifecycleStatus.scheduled => (
+        'Scheduled',
+        const Color(0xFF6C63FF),
+      ),
+      MeetingLifecycleStatus.startingSoon => (
+        'Starting soon',
+        const Color(0xFF8B85FF),
+      ),
+      MeetingLifecycleStatus.guestWaiting => (
+        'Waiting for host',
+        const Color(0xFFF59E0B),
+      ),
+      MeetingLifecycleStatus.hostWaiting => (
+        'Host waiting',
+        const Color(0xFFF59E0B),
+      ),
+      MeetingLifecycleStatus.inProgress => (
+        'Live now',
+        const Color(0xFF10B981),
+      ),
+      MeetingLifecycleStatus.ended => (
+        'Meeting ended',
+        const Color(0xFF9CA3AF),
+      ),
+      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.cancelled => (
+        'Cancelled',
+        const Color(0xFFEF4444),
+      ),
+      MeetingLifecycleStatus.connectionIssue => (
+        'Connection issue',
+        const Color(0xFFF97316),
+      ),
+      MeetingLifecycleStatus.unknown => ('Pending', const Color(0xFF9CA3AF)),
     };
 
     return Row(
       children: [
-        if (state == 'ACTIVE')
+        if (lifecycle.status == MeetingLifecycleStatus.inProgress)
           Container(
             width: 8,
             height: 8,
@@ -368,6 +399,21 @@ class _StatusPill extends StatelessWidget {
       ],
     );
   }
+}
+
+String _buttonLabel(MeetingLifecycleViewModel lifecycle) {
+  return switch (lifecycle.status) {
+    MeetingLifecycleStatus.ended => 'Meeting ended',
+    MeetingLifecycleStatus.cancelled => 'Meeting cancelled',
+    MeetingLifecycleStatus.missed => 'Meeting missed',
+    MeetingLifecycleStatus.connectionIssue => 'Retry connection',
+    MeetingLifecycleStatus.guestWaiting => 'Wait for host',
+    MeetingLifecycleStatus.hostWaiting => 'Join meeting',
+    MeetingLifecycleStatus.inProgress => 'Join meeting',
+    MeetingLifecycleStatus.startingSoon => 'Join meeting',
+    MeetingLifecycleStatus.scheduled => 'Join meeting',
+    MeetingLifecycleStatus.unknown => 'Join meeting',
+  };
 }
 
 String _scheduledLabel(BuildContext context, Meeting meeting) {

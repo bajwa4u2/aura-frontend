@@ -7,6 +7,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
+import 'meeting_lifecycle_presenter.dart';
 
 class MeetingDetailScreen extends ConsumerWidget {
   final String meetingId;
@@ -31,8 +32,15 @@ class MeetingDetailScreen extends ConsumerWidget {
         title: 'Meeting',
         body: Center(child: Text('Could not load meeting: $e')),
       ),
-      data: (meeting) =>
-          _MeetingDetailBody(meeting: meeting, institutionId: institutionId),
+      data: (meeting) => _MeetingDetailBody(
+        meeting: meeting,
+        institutionId: institutionId,
+        lifecycle: MeetingLifecyclePresenter.present(
+          meeting,
+          room: meeting.room,
+          isHost: true,
+        ),
+      ),
     );
   }
 }
@@ -40,8 +48,13 @@ class MeetingDetailScreen extends ConsumerWidget {
 class _MeetingDetailBody extends ConsumerStatefulWidget {
   final Meeting meeting;
   final String? institutionId;
+  final MeetingLifecycleViewModel lifecycle;
 
-  const _MeetingDetailBody({required this.meeting, this.institutionId});
+  const _MeetingDetailBody({
+    required this.meeting,
+    this.institutionId,
+    required this.lifecycle,
+  });
 
   @override
   ConsumerState<_MeetingDetailBody> createState() => _MeetingDetailBodyState();
@@ -179,6 +192,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                 children: [
                   _HeaderCard(
                     meeting: meeting,
+                    lifecycle: widget.lifecycle,
                     onStart: _actioning ? null : _startMeeting,
                     onJoin: _actioning ? null : _joinMeeting,
                     onCopy: _copyLink,
@@ -372,12 +386,14 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
 
 class _HeaderCard extends StatelessWidget {
   final Meeting meeting;
+  final MeetingLifecycleViewModel lifecycle;
   final VoidCallback? onStart;
   final VoidCallback? onJoin;
   final VoidCallback onCopy;
 
   const _HeaderCard({
     required this.meeting,
+    required this.lifecycle,
     required this.onStart,
     required this.onJoin,
     required this.onCopy,
@@ -402,7 +418,7 @@ class _HeaderCard extends StatelessWidget {
               runSpacing: AuraSpace.s8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                _StatusChip(meeting: meeting),
+                _StatusChip(lifecycle: lifecycle),
                 if (meeting.booking != null)
                   const _SmallChip(
                     icon: Icons.calendar_today_rounded,
@@ -432,18 +448,11 @@ class _HeaderCard extends StatelessWidget {
               spacing: AuraSpace.s10,
               runSpacing: AuraSpace.s10,
               children: [
-                if (meeting.isScheduled || meeting.isDraft)
-                  FilledButton.icon(
-                    icon: const Icon(Icons.video_call_rounded),
-                    label: const Text('Start meeting'),
-                    onPressed: onStart,
-                  )
-                else if (meeting.isActive)
-                  FilledButton.icon(
-                    icon: const Icon(Icons.video_call_rounded),
-                    label: const Text('Enter room'),
-                    onPressed: onJoin,
-                  ),
+                _LifecycleActionButton(
+                  lifecycle: lifecycle,
+                  onStart: onStart,
+                  onJoin: onJoin,
+                ),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.content_copy_rounded),
                   label: const Text('Copy meeting link'),
@@ -559,18 +568,44 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  final Meeting meeting;
+  final MeetingLifecycleViewModel lifecycle;
 
-  const _StatusChip({required this.meeting});
+  const _StatusChip({required this.lifecycle});
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (meeting.state) {
-      'ACTIVE' => ('Live', const Color(0xFF10B981)),
-      'SCHEDULED' => ('Scheduled', const Color(0xFF6C63FF)),
-      'ENDED' => ('Completed', const Color(0xFF9CA3AF)),
-      'CANCELLED' => ('Cancelled', const Color(0xFFEF4444)),
-      _ => ('Scheduled', const Color(0xFF9CA3AF)),
+    final (label, color) = switch (lifecycle.status) {
+      MeetingLifecycleStatus.scheduled => (
+        'Scheduled',
+        const Color(0xFF6C63FF),
+      ),
+      MeetingLifecycleStatus.startingSoon => (
+        'Starting soon',
+        const Color(0xFF8B85FF),
+      ),
+      MeetingLifecycleStatus.guestWaiting => (
+        'Guest waiting',
+        const Color(0xFFF59E0B),
+      ),
+      MeetingLifecycleStatus.hostWaiting => (
+        'Host waiting',
+        const Color(0xFFF59E0B),
+      ),
+      MeetingLifecycleStatus.inProgress => (
+        'In progress',
+        const Color(0xFF10B981),
+      ),
+      MeetingLifecycleStatus.ended => ('Completed', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.cancelled => (
+        'Cancelled',
+        const Color(0xFFEF4444),
+      ),
+      MeetingLifecycleStatus.connectionIssue => (
+        'Connection issue',
+        const Color(0xFFF97316),
+      ),
+      MeetingLifecycleStatus.unknown => ('Scheduled', const Color(0xFF9CA3AF)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -587,6 +622,49 @@ class _StatusChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
+    );
+  }
+}
+
+class _LifecycleActionButton extends StatelessWidget {
+  final MeetingLifecycleViewModel lifecycle;
+  final VoidCallback? onStart;
+  final VoidCallback? onJoin;
+
+  const _LifecycleActionButton({
+    required this.lifecycle,
+    required this.onStart,
+    required this.onJoin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = lifecycle.primaryAction;
+    if (label == 'View summary' || label == 'Review missed') {
+      return FilledButton.icon(
+        icon: const Icon(Icons.description_outlined),
+        label: Text(label),
+        onPressed: onJoin ?? onStart,
+      );
+    }
+    if (label == 'Retry connection') {
+      return FilledButton.icon(
+        icon: const Icon(Icons.refresh_rounded),
+        label: const Text('Retry connection'),
+        onPressed: onJoin ?? onStart,
+      );
+    }
+    if (label == 'Enter room') {
+      return FilledButton.icon(
+        icon: const Icon(Icons.video_call_rounded),
+        label: const Text('Enter room'),
+        onPressed: onJoin,
+      );
+    }
+    return FilledButton.icon(
+      icon: const Icon(Icons.video_call_rounded),
+      label: const Text('Start meeting'),
+      onPressed: onStart,
     );
   }
 }

@@ -8,6 +8,7 @@ import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_room.dart';
+import 'meeting_lifecycle_presenter.dart';
 
 class MeetingsHomeScreen extends ConsumerWidget {
   final String? institutionId;
@@ -369,6 +370,11 @@ class _MeetingCard extends ConsumerWidget {
     final guestEmail = booking?.bookerEmail ?? _guestParticipant?.guestEmail;
     final source = _sourceLabel(meeting);
     final scheduledLabel = _scheduledLabel(context, meeting);
+    final lifecycle = MeetingLifecyclePresenter.present(
+      meeting,
+      room: meeting.room,
+      isHost: true,
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s10),
@@ -412,14 +418,14 @@ class _MeetingCard extends ConsumerWidget {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              _StatusChip(meeting: meeting),
+                              _StatusChip(lifecycle: lifecycle),
                             ],
                           ),
                           const SizedBox(height: AuraSpace.s6),
                           _Line(
                             icon: Icons.schedule_rounded,
                             text:
-                                '$scheduledLabel - ${meeting.durationMinutes} min - ${meeting.timezone}',
+                                '$scheduledLabel • ${meeting.durationMinutes} min • ${meeting.timezone}',
                           ),
                           if (guestName != null)
                             _Line(
@@ -459,23 +465,12 @@ class _MeetingCard extends ConsumerWidget {
                   spacing: AuraSpace.s8,
                   runSpacing: AuraSpace.s8,
                   children: [
-                    if (meeting.isScheduled || meeting.isDraft)
-                      FilledButton.icon(
-                        icon: const Icon(Icons.video_call_rounded, size: 18),
-                        label: Text(
-                          meeting.room?.status == MeetingRoomStatus.live
-                              ? 'Enter room'
-                              : 'Start meeting',
-                        ),
-                        onPressed: () => _startMeeting(context, ref),
-                      )
-                    else if (meeting.isActive ||
-                        meeting.room?.status == MeetingRoomStatus.live)
-                      FilledButton.icon(
-                        icon: const Icon(Icons.video_call_rounded, size: 18),
-                        label: const Text('Enter room'),
-                        onPressed: () => _joinMeeting(context),
-                      ),
+                    _PrimaryActionButton(
+                      lifecycle: lifecycle,
+                      onStart: () => _startMeeting(context, ref),
+                      onEnter: () => _joinMeeting(context),
+                      onOpenDetails: () => context.push(_detailPath),
+                    ),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.content_copy_rounded, size: 18),
                       label: const Text('Copy meeting link'),
@@ -586,25 +581,44 @@ class _MeetingIcon extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  final Meeting meeting;
+  final MeetingLifecycleViewModel lifecycle;
 
-  const _StatusChip({required this.meeting});
+  const _StatusChip({required this.lifecycle});
 
   @override
   Widget build(BuildContext context) {
-    final roomStatus = meeting.room?.status;
-    final (label, color) = switch (roomStatus) {
-      MeetingRoomStatus.live => ('Live', const Color(0xFF10B981)),
-      MeetingRoomStatus.waiting => ('Guest waiting', const Color(0xFFF59E0B)),
-      MeetingRoomStatus.ended => ('Ended', const Color(0xFF9CA3AF)),
-      MeetingRoomStatus.cancelled => ('Cancelled', const Color(0xFFEF4444)),
-      _ => switch (meeting.state) {
-        'ACTIVE' => ('Live', const Color(0xFF10B981)),
-        'SCHEDULED' => ('Scheduled', const Color(0xFF6C63FF)),
-        'ENDED' => ('Ended', const Color(0xFF9CA3AF)),
-        'CANCELLED' => ('Cancelled', const Color(0xFFEF4444)),
-        _ => ('Scheduled', const Color(0xFF9CA3AF)),
-      },
+    final (label, color) = switch (lifecycle.status) {
+      MeetingLifecycleStatus.scheduled => (
+        'Scheduled',
+        const Color(0xFF6C63FF),
+      ),
+      MeetingLifecycleStatus.startingSoon => (
+        'Starting soon',
+        const Color(0xFF8B85FF),
+      ),
+      MeetingLifecycleStatus.guestWaiting => (
+        'Guest waiting',
+        const Color(0xFFF59E0B),
+      ),
+      MeetingLifecycleStatus.hostWaiting => (
+        'Host waiting',
+        const Color(0xFFF59E0B),
+      ),
+      MeetingLifecycleStatus.inProgress => (
+        'In progress',
+        const Color(0xFF10B981),
+      ),
+      MeetingLifecycleStatus.ended => ('Ended', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.cancelled => (
+        'Cancelled',
+        const Color(0xFFEF4444),
+      ),
+      MeetingLifecycleStatus.connectionIssue => (
+        'Connection issue',
+        const Color(0xFFF97316),
+      ),
+      MeetingLifecycleStatus.unknown => ('Scheduled', const Color(0xFF9CA3AF)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -621,6 +635,51 @@ class _StatusChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
+    );
+  }
+}
+
+class _PrimaryActionButton extends StatelessWidget {
+  final MeetingLifecycleViewModel lifecycle;
+  final VoidCallback onStart;
+  final VoidCallback onEnter;
+  final VoidCallback onOpenDetails;
+
+  const _PrimaryActionButton({
+    required this.lifecycle,
+    required this.onStart,
+    required this.onEnter,
+    required this.onOpenDetails,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = lifecycle.primaryAction;
+    if (label == 'View summary' || label == 'Review missed') {
+      return FilledButton.icon(
+        icon: const Icon(Icons.description_outlined, size: 18),
+        label: Text(label),
+        onPressed: onOpenDetails,
+      );
+    }
+    if (label == 'Retry connection') {
+      return FilledButton.icon(
+        icon: const Icon(Icons.refresh_rounded, size: 18),
+        label: Text(label),
+        onPressed: onEnter,
+      );
+    }
+    if (label == 'Enter room') {
+      return FilledButton.icon(
+        icon: const Icon(Icons.video_call_rounded, size: 18),
+        label: const Text('Enter room'),
+        onPressed: onEnter,
+      );
+    }
+    return FilledButton.icon(
+      icon: const Icon(Icons.video_call_rounded, size: 18),
+      label: const Text('Start meeting'),
+      onPressed: onStart,
     );
   }
 }
