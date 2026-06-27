@@ -1578,6 +1578,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'session:stale':
+        if (state.session?.surfaceType == RealtimeSurfaceType.meeting) {
+          state = state.copyWith(lastSocketEvent: event.name);
+          return;
+        }
         // Server detected heartbeat timeout and is about to disconnect this
         // socket — treat as a local disconnect so the UI tears down cleanly.
         _clearPendingOfferTargets();

@@ -483,13 +483,17 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);
     final ringingSessionIds = ref.watch(callerRingbackProvider);
+    final isMeetingSurface =
+        (state.session?.surfaceType ?? _lastKnownSurfaceType) ==
+        RealtimeSurfaceType.meeting;
 
     // After teardown, leave the realtime route immediately. Do not render a
     // blank scaffold on /realtime/:id; that was the source of the grey/wrapped
     // post-call screen.
     if (_wasJoined &&
         state.joinState == RealtimeJoinState.idle &&
-        state.session == null) {
+        state.session == null &&
+        !isMeetingSurface) {
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -507,7 +511,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final hydratedSession = state.session;
     if (hydratedSession != null &&
         !hydratedSession.isActive &&
-        !state.isJoined) {
+        !state.isJoined &&
+        hydratedSession.surfaceType != RealtimeSurfaceType.meeting) {
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -736,7 +741,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     );
 
     // Auto-navigate away from an ended session so the screen never stays blank.
-    if (state.session?.isActive == false) {
+    if (state.session?.isActive == false &&
+        state.session?.surfaceType != RealtimeSurfaceType.meeting) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _navigateAfterCall(state.session);
       });
