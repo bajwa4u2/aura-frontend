@@ -363,6 +363,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     }
 
     final target = _safeReturnRoute(session);
+    debugPrint(
+      '[RTC NAV] action=go target=$target sessionId=${session?.id ?? widget.sessionId} surfaceType=${session?.surfaceType.name ?? ""} lastEvent=${ref.read(realtimeControllerProvider).lastSocketEvent ?? ""}',
+    );
     context.go(target);
   }
 
@@ -444,6 +447,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (_wasJoined &&
         state.joinState == RealtimeJoinState.idle &&
         state.session == null) {
+      debugPrint(
+        '[RTC NAV] action=teardownFallback target=_safeReturnRoute sessionId=${widget.sessionId} lastEvent=${state.lastSocketEvent ?? ""} surfaceType=${state.session?.surfaceType.name ?? ""}',
+      );
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -462,6 +468,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (hydratedSession != null &&
         !hydratedSession.isActive &&
         !state.isJoined) {
+      debugPrint(
+        '[RTC NAV] action=staleSessionFallback target=_safeReturnRoute sessionId=${hydratedSession.id} surfaceType=${hydratedSession.surfaceType.name} lastEvent=${state.lastSocketEvent ?? ""}',
+      );
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {

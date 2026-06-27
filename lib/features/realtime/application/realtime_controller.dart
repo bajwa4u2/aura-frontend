@@ -1260,6 +1260,11 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }
 
   void _handleSocketEvent(RealtimeParsedEvent event) {
+    final currentSessionId = (state.sessionId ?? state.session?.id ?? '').trim();
+    final currentSurfaceType = state.session?.surfaceType.name ?? '';
+    debugPrint(
+      '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent',
+    );
     switch (event.name) {
       case 'socket:connected':
         state = state.copyWith(
@@ -1294,6 +1299,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'session:participant.joined':
       case 'session:participant.resumed':
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=mergeParticipantSnapshot',
+        );
         final merged = RealtimeEventParser.mergeSnapshot(state, event.payload);
         final modeFromEvent =
             ((event.payload['videoState'] ?? '').toString().toUpperCase() == 'ON' ||
@@ -1319,6 +1327,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:participant.left':
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=participantLeft',
+        );
         final leavingUserId = _participantUserIdFromPayload(event.payload);
         final leavingPeerKey = _transportPeerKeyFromPayload(event.payload);
         final updatedParticipants = state.participants
@@ -1347,6 +1358,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:offer':
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=peerOffer',
+        );
         unawaited(() async {
           final sessionId = state.sessionId;
           if (sessionId == null || sessionId.isEmpty) return;
@@ -1435,6 +1449,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:replaced':
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=reconnect',
+        );
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.reconnecting,
           infoMessage: 'This live session moved to a new connection.',
@@ -1443,6 +1460,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'session:removed':
       case 'realtime:removed':
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=clearSessionContext reason=removed',
+        );
         _clearPendingOfferTargets();
         unawaited(_mediaService.resetSessionMedia());
         state = _copyWithDetachedMediaState(
@@ -1452,6 +1472,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'join:requested':
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=joinRequested',
+        );
         state = state.copyWith(
           joinState: RealtimeJoinState.requested,
           infoMessage: 'Your request to join is pending.',
@@ -1459,6 +1482,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'join:approved':
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=joinApproved',
+        );
         state = state.copyWith(
           joinState: RealtimeJoinState.joined,
           infoMessage: 'Your request to join was approved.',
@@ -1466,6 +1492,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'join:rejected':
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=joinRejected',
+        );
         state = state.copyWith(
           joinState: RealtimeJoinState.rejected,
           infoMessage: 'Your request to join was declined.',
@@ -1480,6 +1509,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         // event reached the controller, but we intentionally do not
         // mutate `participants` / `joinState` here — the controller is
         // responsible for the join/leave lifecycle, not the ring UI.
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=bridgeIncomingCall',
+        );
         state = state.copyWith(lastSocketEvent: event.name);
         return;
       case 'call:declined':
@@ -1493,6 +1525,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
             declinedSessionId != state.session!.id) {
           return;
         }
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${declinedSessionId.isNotEmpty ? declinedSessionId : (event.payload["sessionId"] ?? currentSessionId)} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=declineCleanup',
+        );
         final participantsAfterDecline = state.participants
             .where((p) => p.userId != declinedUserId)
             .toList();
@@ -1521,12 +1556,18 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         // currently in. A stale `call:terminal` for an unrelated session
         // (e.g. a previous tab's teardown) must not nuke the current call.
         final eventSessionId = (event.payload['sessionId'] ?? '').toString().trim();
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${eventSessionId.isNotEmpty ? eventSessionId : currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=teardown',
+        );
         if (eventSessionId.isNotEmpty &&
             endedSessionId.isNotEmpty &&
             eventSessionId != endedSessionId) {
           state = state.copyWith(lastSocketEvent: event.name);
           return;
         }
+        debugPrint(
+          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=staleDisconnect',
+        );
         _clearPendingOfferTargets();
         if (endedSessionId.isNotEmpty) {
           _repository.clearBundleCache(endedSessionId);

@@ -508,6 +508,9 @@ class _MeetingCard extends ConsumerWidget {
   Future<void> _startMeeting(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
+      debugPrint(
+        '[MEETING UI] handler=MeetingsHomeScreen._startMeeting meetingId=${meeting.id} meetingCode=${meeting.meetingCode} institutionId=${institutionId ?? ""} action=call startMeeting',
+      );
       final updated = await ref
           .read(meetingsRepositoryProvider)
           .startMeeting(meeting.id);
@@ -519,8 +522,14 @@ class _MeetingCard extends ConsumerWidget {
       }
       if (!context.mounted) return;
       if (updated.sessionId != null) {
+        debugPrint(
+          '[MEETING UI] handler=MeetingsHomeScreen._startMeeting meetingId=${meeting.id} sessionId=${updated.sessionId} route=/realtime/${updated.sessionId}?action=join',
+        );
         context.push('/realtime/${updated.sessionId}?action=join');
       } else {
+        debugPrint(
+          '[MEETING UI] handler=MeetingsHomeScreen._startMeeting meetingId=${meeting.id} sessionId=null route=/meetings/join/${updated.meetingCode}',
+        );
         context.push('/meetings/join/${updated.meetingCode}');
       }
     } catch (e) {
@@ -532,8 +541,14 @@ class _MeetingCard extends ConsumerWidget {
 
   void _joinMeeting(BuildContext context) {
     if (meeting.sessionId != null) {
+      debugPrint(
+        '[MEETING UI] handler=MeetingsHomeScreen._joinMeeting meetingId=${meeting.id} sessionId=${meeting.sessionId} route=/realtime/${meeting.sessionId}?action=join',
+      );
       context.push('/realtime/${meeting.sessionId}?action=join');
     } else {
+      debugPrint(
+        '[MEETING UI] handler=MeetingsHomeScreen._joinMeeting meetingId=${meeting.id} sessionId=null route=/meetings/join/${meeting.meetingCode}',
+      );
       context.push('/meetings/join/${meeting.meetingCode}');
     }
   }
