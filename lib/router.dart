@@ -127,6 +127,7 @@ import 'features/support/presentation/admin_support_console_screen.dart';
 // Meetings
 import 'features/meetings/presentation/meetings_home_screen.dart';
 import 'features/meetings/presentation/create_meeting_screen.dart';
+import 'features/meetings/presentation/meeting_room_screen.dart';
 import 'features/meetings/presentation/meeting_detail_screen.dart';
 import 'features/meetings/presentation/pre_join_screen.dart';
 import 'features/meetings/presentation/availability_setup_screen.dart';
@@ -142,7 +143,8 @@ const String kInstitutionCreateRoute = '/institution/create';
 const String kInstitutionGetStartedRoute = '/institutions/get-started';
 const String kInstitutionDomainsRoute = '/institution/domains';
 const String kInstitutionProfileRoute = '/institution/profile';
-const String kInstitutionVerificationRoute = '/institution/request-verification';
+const String kInstitutionVerificationRoute =
+    '/institution/request-verification';
 const String kInstitutionAnnouncementsRoute = '/institution/announcements';
 const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kInstitutionEditProfileRoute = '/institution/edit-profile';
@@ -155,13 +157,11 @@ const String kRouterBootRoute = '/_boot';
 
 const String kMessagesRoute = '/messages';
 const String kCorrespondenceHubRoute = '/me/correspondence';
-const String kCreateConversationRoute = '/me/correspondence/create/conversation';
+const String kCreateConversationRoute =
+    '/me/correspondence/create/conversation';
 const String kCreateSpaceRoute = '/me/correspondence/create/space';
 
-String _normalizeRedirectDest(
-  String? dest, {
-  String fallback = '/home',
-}) {
+String _normalizeRedirectDest(String? dest, {String fallback = '/home'}) {
   final trimmed = (dest ?? '').trim();
   if (trimmed.isEmpty || trimmed == '/') return fallback;
   if (!trimmed.startsWith('/')) return fallback;
@@ -189,11 +189,7 @@ String _redirectShorthandToCanonical(Ref ref, String section) {
 /// active identity (or carries no id at all), rewrite to the active
 /// identity's URL — or to the global dashboard if no identity exists.
 /// Returning `null` means the route may proceed unchanged.
-String? _enforceCanonicalIdMatch(
-  Ref ref,
-  String? pathId,
-  String section,
-) {
+String? _enforceCanonicalIdMatch(Ref ref, String? pathId, String section) {
   final pathTrim = (pathId ?? '').trim();
   final activeId = ref.read(institutionIdentityProvider)?.id ?? '';
   if (pathTrim.isEmpty) {
@@ -232,7 +228,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen<AuthStatus>(authStatusProvider, (prev, next) {
     if (prev != next) {
       refresh.value++;
-      RuntimeTrace.emit('router.refresh', 'authStatus', data: {'next': next.name});
+      RuntimeTrace.emit(
+        'router.refresh',
+        'authStatus',
+        data: {'next': next.name},
+      );
     }
   });
 
@@ -241,30 +241,40 @@ final routerProvider = Provider<GoRouter>((ref) {
     final nextValue = next.valueOrNull;
     if (prevValue != nextValue) {
       refresh.value++;
-      RuntimeTrace.emit('router.refresh', 'emailVerified',
-          data: {'next': nextValue});
+      RuntimeTrace.emit(
+        'router.refresh',
+        'emailVerified',
+        data: {'next': nextValue},
+      );
     }
   });
 
-  ref.listen<AsyncValue<InstitutionAccess>>(institutionAccessProvider,
-      (prev, next) {
+  ref.listen<AsyncValue<InstitutionAccess>>(institutionAccessProvider, (
+    prev,
+    next,
+  ) {
     final prevState = prev?.valueOrNull?.state;
     final nextState = next.valueOrNull?.state;
     if (prevState != nextState) {
       refresh.value++;
-      RuntimeTrace.emit('router.refresh', 'institutionAccess',
-          data: {'next': nextState?.name});
+      RuntimeTrace.emit(
+        'router.refresh',
+        'institutionAccess',
+        data: {'next': nextState?.name},
+      );
     }
   });
 
-  ref.listen<AsyncValue<AppAdminAccess>>(appAdminAccessProvider,
-      (prev, next) {
+  ref.listen<AsyncValue<AppAdminAccess>>(appAdminAccessProvider, (prev, next) {
     final prevAdmin = prev?.valueOrNull?.isAdmin;
     final nextAdmin = next.valueOrNull?.isAdmin;
     if (prevAdmin != nextAdmin) {
       refresh.value++;
-      RuntimeTrace.emit('router.refresh', 'appAdminAccess',
-          data: {'next': nextAdmin});
+      RuntimeTrace.emit(
+        'router.refresh',
+        'appAdminAccess',
+        data: {'next': nextAdmin},
+      );
     }
   });
 
@@ -303,7 +313,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         // onboarding wizard (/institutions/get-started) is auth-gated;
         // it's matched separately by isMemberShellPath.
         path == '/institutions' ||
-        (path.startsWith('/institutions/') && path != '/institutions/get-started') ||
+        (path.startsWith('/institutions/') &&
+            path != '/institutions/get-started') ||
         path == '/patrons' ||
         path == '/supporters' ||
         path == '/search' ||
@@ -343,8 +354,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool isGuestOnly(String path) => isPlainAuthPage(path);
 
   bool requiresAppAdmin(String path) =>
-      path == kAdminWorkspaceRoute ||
-      path.startsWith('$kAdminWorkspaceRoute/');
+      path == kAdminWorkspaceRoute || path.startsWith('$kAdminWorkspaceRoute/');
 
   bool requiresInstitutionAccess(String path) {
     if (path == kInstitutionDashboardRoute ||
@@ -421,7 +431,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       final appAdminAsync = ref.read(appAdminAccessProvider);
 
-      final defaultRedirect = authStatus == AuthStatus.authed ? '/home' : '/public';
+      final defaultRedirect = authStatus == AuthStatus.authed
+          ? '/home'
+          : '/public';
       final redirectDest = _normalizeRedirectDest(
         state.uri.queryParameters['redirect'],
         fallback: defaultRedirect,
@@ -444,11 +456,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // isVerified == null means we don't yet know the verification state.
       // Treat it like loading so the router does not redirect prematurely.
       final isVerificationLoading =
-          isLoggedIn && (emailVerifiedAsync.isLoading || emailVerifiedAsync.isRefreshing || isVerified == null);
+          isLoggedIn &&
+          (emailVerifiedAsync.isLoading ||
+              emailVerifiedAsync.isRefreshing ||
+              isVerified == null);
 
       final institutionAccess = institutionAsync.maybeWhen(
         data: (value) => value,
-        orElse: () => const InstitutionAccess(state: InstitutionAccessState.none),
+        orElse: () =>
+            const InstitutionAccess(state: InstitutionAccessState.none),
       );
 
       final appAdmin = appAdminAsync.maybeWhen(
@@ -456,13 +472,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         orElse: () => const AppAdminAccess(state: AppAdminState.none),
       );
 
-      final requiresInstitution = requiresInstitutionAccess(path) ||
+      final requiresInstitution =
+          requiresInstitutionAccess(path) ||
           requiresInstitutionAdminOrSpeaker(path) ||
           requiresInstitutionAdmin(path);
 
       // Wait for both institution access and admin access to settle on institution paths,
       // so platform admins aren't wrongly redirected before their admin state loads.
-      final institutionAccessLoading = isLoggedIn &&
+      final institutionAccessLoading =
+          isLoggedIn &&
           requiresInstitution &&
           (institutionAsync.isLoading || appAdminAsync.isLoading);
 
@@ -472,13 +490,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isBootstrapping) {
         if (isBootPath(path)) return null;
 
-        return bootRedirectFor(
-          currentLocation,
-          fallback: defaultRedirect,
-        );
+        return bootRedirectFor(currentLocation, fallback: defaultRedirect);
       }
 
-      if (isLoggedIn && (isVerificationLoading || institutionAccessLoading || appAdminLoading)) {
+      if (isLoggedIn &&
+          (isVerificationLoading ||
+              institutionAccessLoading ||
+              appAdminLoading)) {
         return null;
       }
 
@@ -561,14 +579,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         final isInstitutionAdmin =
             institutionAccess.state == InstitutionAccessState.authorizedSpeaker;
         final isInstitutionSpeakerOrAdmin =
-            institutionAccess.state == InstitutionAccessState.authorizedSpeaker ||
-                institutionAccess.state == InstitutionAccessState.verifiedMember;
+            institutionAccess.state ==
+                InstitutionAccessState.authorizedSpeaker ||
+            institutionAccess.state == InstitutionAccessState.verifiedMember;
 
         if (requiresInstitutionAdmin(path) && !isInstitutionAdmin) {
           return kInstitutionDashboardRoute;
         }
 
-        if (requiresInstitutionAdminOrSpeaker(path) && !isInstitutionSpeakerOrAdmin) {
+        if (requiresInstitutionAdminOrSpeaker(path) &&
+            !isInstitutionSpeakerOrAdmin) {
           return kInstitutionDashboardRoute;
         }
       }
@@ -589,11 +609,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/auth', redirect: (_, __) => '/login'),
 
           // Public routes
-          GoRoute(path: '/public', builder: (_, __) => const PublicHomeScreen()),
+          GoRoute(
+            path: '/public',
+            builder: (_, __) => const PublicHomeScreen(),
+          ),
           GoRoute(path: '/mission', builder: (_, __) => const MissionScreen()),
-          GoRoute(path: '/white-paper', builder: (_, __) => const WhitePaperScreen()),
-          GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
-          GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
+          GoRoute(
+            path: '/white-paper',
+            builder: (_, __) => const WhitePaperScreen(),
+          ),
+          GoRoute(
+            path: '/founder',
+            builder: (_, __) => const FounderMessageScreen(),
+          ),
+          GoRoute(
+            path: '/privacy',
+            builder: (_, __) => const PrivacyPolicyScreen(),
+          ),
           GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
           GoRoute(
             path: '/child-safety',
@@ -602,12 +634,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/safety', redirect: (_, __) => '/child-safety'),
           GoRoute(path: '/trust-safety', redirect: (_, __) => '/child-safety'),
           GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
-          GoRoute(path: '/support/agent', builder: (_, __) => const SupportAgentScreen()),
+          GoRoute(
+            path: '/support/agent',
+            builder: (_, __) => const SupportAgentScreen(),
+          ),
           GoRoute(
             path: '/account-deletion',
             builder: (_, __) => const AccountDeletionScreen(),
           ),
-          GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
+          GoRoute(
+            path: '/investors',
+            builder: (_, __) => const InvestorsHubScreen(),
+          ),
           GoRoute(
             path: '/institutions',
             builder: (_, __) => const InstitutionsHubScreen(),
@@ -670,16 +708,19 @@ final routerProvider = Provider<GoRouter>((ref) {
               unitSlug: state.pathParameters['unitSlug'] ?? '',
             ),
           ),
-          GoRoute(
-            path: '/institution/sign-in',
-            redirect: (_, __) => '/login',
-          ),
+          GoRoute(path: '/institution/sign-in', redirect: (_, __) => '/login'),
           GoRoute(
             path: kInstitutionCreateRoute,
             redirect: (_, __) => '$kInstitutionGetStartedRoute?mode=create',
           ),
-          GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
-          GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
+          GoRoute(
+            path: '/patrons',
+            builder: (_, __) => const PatronsHubScreen(),
+          ),
+          GoRoute(
+            path: '/supporters',
+            builder: (_, __) => const SupportersHubScreen(),
+          ),
           GoRoute(
             path: '/announcements',
             builder: (_, __) => const AnnouncementsScreen(),
@@ -687,7 +728,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/announcements/create',
             builder: (context, state) {
-              final scope = (state.uri.queryParameters['scope'] ?? '').trim().toLowerCase();
+              final scope = (state.uri.queryParameters['scope'] ?? '')
+                  .trim()
+                  .toLowerCase();
               final editorScope = scope == 'institution'
                   ? AnnouncementEditorScope.institution
                   : AnnouncementEditorScope.platform;
@@ -705,9 +748,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           // /meet/:slug is public and must not require authentication.
           GoRoute(
             path: '/meet/:slug',
-            builder: (context, state) => PublicBookingScreen(
-              slug: state.pathParameters['slug'] ?? '',
-            ),
+            builder: (context, state) =>
+                PublicBookingScreen(slug: state.pathParameters['slug'] ?? ''),
           ),
           GoRoute(
             path: '/meet/:slug/book',
@@ -736,9 +778,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(
             path: '/posts/:id',
-            builder: (context, state) => PostDetailScreen(
-              postId: state.pathParameters['id'] ?? '',
-            ),
+            builder: (context, state) =>
+                PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
           ),
           // Public-UX generalized thread surface — works for both user
           // posts and institution posts via the existing
@@ -772,9 +813,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/spaces/:slug',
-            builder: (_, state) => SpaceDetailScreen(
-              slug: state.pathParameters['slug'] ?? '',
-            ),
+            builder: (_, state) =>
+                SpaceDetailScreen(slug: state.pathParameters['slug'] ?? ''),
           ),
           // Public-UX Phase 2 — Transparency page.
           GoRoute(
@@ -796,15 +836,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/u/:handle/followers',
-            builder: (context, state) => FollowersScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
+            builder: (context, state) =>
+                FollowersScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
           GoRoute(
             path: '/u/:handle/following',
-            builder: (context, state) => FollowingScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
+            builder: (context, state) =>
+                FollowingScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
           GoRoute(
             path: '/support/:handle',
@@ -821,7 +859,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               email: state.uri.queryParameters['email'],
               notice: state.uri.queryParameters['verified'] == '1'
                   ? 'verified'
-                  : (state.uri.queryParameters['reset'] == '1' ? 'reset' : null),
+                  : (state.uri.queryParameters['reset'] == '1'
+                        ? 'reset'
+                        : null),
             ),
           ),
           GoRoute(
@@ -856,7 +896,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => VerifyPendingScreen(
               email: state.uri.queryParameters['email'],
               redirectTo: state.uri.queryParameters['redirect'],
-              emailSent: _queryBool(state.uri.queryParameters['emailSent']) ||
+              emailSent:
+                  _queryBool(state.uri.queryParameters['emailSent']) ||
                   state.uri.queryParameters['emailSent'] == null,
             ),
           ),
@@ -884,9 +925,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/meetings/join/:code',
-            builder: (context, state) => PreJoinScreen(
-              meetingCode: state.pathParameters['code'] ?? '',
-            ),
+            builder: (context, state) =>
+                PreJoinScreen(meetingCode: state.pathParameters['code'] ?? ''),
           ),
           GoRoute(
             path: '/meetings/:id',
@@ -895,10 +935,27 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/meetings/:meetingId/room',
+            builder: (context, state) => MeetingRoomScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              sessionId: state.uri.queryParameters['sessionId'],
+              returnTo: state.uri.queryParameters['returnTo'],
+            ),
+          ),
+          GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId',
             builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
               institutionId: state.pathParameters['institutionId'],
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/meetings/:meetingId/room',
+            builder: (context, state) => MeetingRoomScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              institutionId: state.pathParameters['institutionId'],
+              sessionId: state.uri.queryParameters['sessionId'],
+              returnTo: state.uri.queryParameters['returnTo'],
             ),
           ),
           GoRoute(
@@ -924,15 +981,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Cancel link from booking confirmation email
           GoRoute(
             path: '/i/:institutionSlug/meet/cancel/:token',
-            builder: (context, state) => BookingCancelScreen(
-              token: state.pathParameters['token'] ?? '',
-            ),
+            builder: (context, state) =>
+                BookingCancelScreen(token: state.pathParameters['token'] ?? ''),
           ),
           GoRoute(
             path: '/meet/cancel/:token',
-            builder: (context, state) => BookingCancelScreen(
-              token: state.pathParameters['token'] ?? '',
-            ),
+            builder: (context, state) =>
+                BookingCancelScreen(token: state.pathParameters['token'] ?? ''),
           ),
           GoRoute(
             path: '/i/:institutionSlug/meet/:bookingSlug/book',
@@ -955,8 +1010,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               }
               // Fallback: reload the institution booking page
               return InstitutionPublicBookingScreen(
-                institutionSlug:
-                    state.pathParameters['institutionSlug'] ?? '',
+                institutionSlug: state.pathParameters['institutionSlug'] ?? '',
                 bookingSlug: state.pathParameters['bookingSlug'] ?? '',
               );
             },
@@ -976,10 +1030,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
-          GoRoute(
-            path: '/conversations',
-            redirect: (_, __) => kMessagesRoute,
-          ),
+          GoRoute(path: '/conversations', redirect: (_, __) => kMessagesRoute),
           GoRoute(
             path: '/activity',
             builder: (_, __) => const ActivityScreen(),
@@ -1028,7 +1079,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/invite/create',
             builder: (context, state) => InviteCreateScreen(
-              destinationType: (state.uri.queryParameters['destinationType'] ?? 'JOIN_AURA').trim().toUpperCase(),
+              destinationType:
+                  (state.uri.queryParameters['destinationType'] ?? 'JOIN_AURA')
+                      .trim()
+                      .toUpperCase(),
               spaceId: state.uri.queryParameters['spaceId'],
               threadId: state.uri.queryParameters['threadId'],
               returnTo: state.uri.queryParameters['returnTo'],
@@ -1136,9 +1190,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/me/correspondence/:spaceId',
-            builder: (context, state) => SpaceScreen(
-              spaceId: state.pathParameters['spaceId'] ?? '',
-            ),
+            builder: (context, state) =>
+                SpaceScreen(spaceId: state.pathParameters['spaceId'] ?? ''),
           ),
           GoRoute(
             path: '/me/correspondence/:spaceId/invite',
@@ -1153,7 +1206,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: '/me/correspondence/:spaceId/thread/:threadId/live/:sessionId',
+            path:
+                '/me/correspondence/:spaceId/thread/:threadId/live/:sessionId',
             builder: (context, state) => ThreadStateWrapper(
               threadId: state.pathParameters['threadId'] ?? '',
             ),
@@ -1175,14 +1229,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 surface: state.uri.queryParameters['surface'],
                 mode: state.uri.queryParameters['mode'],
                 asInstitution: asInstitution,
-                institutionId:
-                    state.uri.queryParameters['institutionId']?.trim(),
-                publicSpaceId:
-                    state.uri.queryParameters['publicSpaceId']?.trim(),
-                publicSpaceName:
-                    state.uri.queryParameters['publicSpaceName']?.trim(),
-                publicSpaceSlug:
-                    state.uri.queryParameters['publicSpaceSlug']?.trim(),
+                institutionId: state.uri.queryParameters['institutionId']
+                    ?.trim(),
+                publicSpaceId: state.uri.queryParameters['publicSpaceId']
+                    ?.trim(),
+                publicSpaceName: state.uri.queryParameters['publicSpaceName']
+                    ?.trim(),
+                publicSpaceSlug: state.uri.queryParameters['publicSpaceSlug']
+                    ?.trim(),
                 intent: state.uri.queryParameters['intent']?.trim(),
               );
             },
@@ -1377,7 +1431,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: '/institution/:institutionId/announcements/:announcementId/edit',
+            path:
+                '/institution/:institutionId/announcements/:announcementId/edit',
             builder: (context, state) => InstitutionAnnouncementComposer(
               institutionId: state.pathParameters['institutionId'] ?? '',
               announcementId: state.pathParameters['announcementId'],
@@ -1391,12 +1446,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/spaces/:spaceId',
-            builder: (context, state) => SpaceScreen(
-              spaceId: state.pathParameters['spaceId'] ?? '',
-            ),
+            builder: (context, state) =>
+                SpaceScreen(spaceId: state.pathParameters['spaceId'] ?? ''),
           ),
           GoRoute(
-            path: '/institution/:institutionId/spaces/:spaceId/thread/:threadId',
+            path:
+                '/institution/:institutionId/spaces/:spaceId/thread/:threadId',
             builder: (context, state) => ThreadStateWrapper(
               threadId: state.pathParameters['threadId'] ?? '',
             ),

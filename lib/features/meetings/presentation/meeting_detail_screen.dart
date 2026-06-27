@@ -53,10 +53,11 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
   Meeting get meeting => widget.meeting;
   String? get _resolvedInstitutionId =>
       widget.institutionId ?? meeting.booking?.institution?.id;
-  String get _detailPath => _resolvedInstitutionId == null
-      ? '/meetings/${meeting.id}'
-      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}';
-  String get _meetingRoomReturnTo => Uri.encodeComponent(_detailPath);
+  String get _roomBasePath => _resolvedInstitutionId == null
+      ? '/meetings/${meeting.id}/room'
+      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/room';
+  String get _roomPath => _roomBasePath;
+  String get _meetingRoomReturnTo => Uri.encodeComponent(_roomBasePath);
 
   Future<void> _startMeeting() async {
     setState(() => _actioning = true);
@@ -70,10 +71,10 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
       if (!mounted) return;
       if (updated.sessionId != null) {
         context.push(
-          '/realtime/${updated.sessionId}?action=join&returnTo=$_meetingRoomReturnTo',
+          '$_roomPath?sessionId=${updated.sessionId}&returnTo=$_meetingRoomReturnTo',
         );
       } else {
-        context.push('/meetings/join/${updated.meetingCode}');
+        context.push(_roomPath);
       }
     } catch (e) {
       messenger.showSnackBar(
@@ -147,10 +148,10 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
   void _joinMeeting() {
     if (meeting.sessionId != null) {
       context.push(
-        '/realtime/${meeting.sessionId}?action=join&returnTo=$_meetingRoomReturnTo',
+        '$_roomPath?sessionId=${meeting.sessionId}&returnTo=$_meetingRoomReturnTo',
       );
     } else {
-      context.push('/meetings/join/${meeting.meetingCode}');
+      context.push(_roomPath);
     }
   }
 
@@ -162,9 +163,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
     final institutionId = _resolvedInstitutionId;
 
     return AuraScaffold(
-      title: institutionId == null
-          ? 'Meeting details'
-          : 'Institution meeting',
+      title: institutionId == null ? 'Meeting details' : 'Institution meeting',
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () => context.pop(),

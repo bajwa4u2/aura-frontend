@@ -53,7 +53,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
 
       if (result.sessionId != null) {
         context.push(
-          '/realtime/${result.sessionId}?action=join'
+          '/meetings/${result.meetingId}/room?sessionId=${result.sessionId}'
           '${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
         );
       } else {

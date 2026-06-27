@@ -1,3 +1,5 @@
+import 'meeting_room.dart';
+
 class MeetingHost {
   final String id;
   final String? displayName;
@@ -155,6 +157,7 @@ class Meeting {
   final bool allowGuests;
   final bool guestApprovalRequired;
   final String? sessionId;
+  final MeetingRoom? room;
   final MeetingHost? host;
   final List<MeetingParticipant> participants;
   final MeetingBookingDetails? booking;
@@ -180,6 +183,7 @@ class Meeting {
     required this.allowGuests,
     required this.guestApprovalRequired,
     this.sessionId,
+    this.room,
     this.host,
     required this.participants,
     this.booking,
@@ -208,6 +212,9 @@ class Meeting {
     allowGuests: j['allowGuests'] as bool? ?? false,
     guestApprovalRequired: j['guestApprovalRequired'] as bool? ?? true,
     sessionId: j['sessionId'] as String?,
+    room: j['room'] is Map<String, dynamic>
+        ? MeetingRoom.fromJson(j['room'] as Map<String, dynamic>)
+        : null,
     host: j['host'] != null
         ? MeetingHost.fromJson(j['host'] as Map<String, dynamic>)
         : null,
