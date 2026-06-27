@@ -84,6 +84,18 @@ class SlotQueryParams {
     required this.duration,
     this.institutionSlug,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      other is SlotQueryParams &&
+      other.slug == slug &&
+      other.start == start &&
+      other.end == end &&
+      other.duration == duration &&
+      other.institutionSlug == institutionSlug;
+
+  @override
+  int get hashCode => Object.hash(slug, start, end, duration, institutionSlug);
 }
 
 final availableSlotsProvider =
