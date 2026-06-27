@@ -439,36 +439,41 @@ class _CalendarPanel extends StatelessWidget {
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(2),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: isPast ? null : () => onSelectDate(date),
-                    child: Container(
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF6C63FF)
-                            : isToday
-                            ? const Color(0xFF6C63FF).withValues(alpha: 0.14)
-                            : const Color(0xFF111827),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
+                  child: Semantics(
+                    button: !isPast,
+                    selected: isSelected,
+                    label: _dayLabel(context, date),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: isPast ? null : () => onSelectDate(date),
+                      child: Container(
+                        height: 42,
+                        decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFF8B85FF)
-                              : const Color(0xFF1F2937),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$dayNum',
-                          style: TextStyle(
+                              ? const Color(0xFF6C63FF)
+                              : isToday
+                              ? const Color(0xFF6C63FF).withValues(alpha: 0.14)
+                              : const Color(0xFF111827),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
                             color: isSelected
-                                ? Colors.white
-                                : isPast
-                                ? const Color(0xFF4B5563)
-                                : const Color(0xFFE5E7EB),
-                            fontWeight: isSelected || isToday
-                                ? FontWeight.w800
-                                : null,
+                                ? const Color(0xFF8B85FF)
+                                : const Color(0xFF1F2937),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$dayNum',
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : isPast
+                                  ? const Color(0xFF4B5563)
+                                  : const Color(0xFFE5E7EB),
+                              fontWeight: isSelected || isToday
+                                  ? FontWeight.w800
+                                  : null,
+                            ),
                           ),
                         ),
                       ),
@@ -762,4 +767,8 @@ String _formatFullDate(BuildContext context, DateTime date) {
 
 String _formatTime(BuildContext context, DateTime date) {
   return TimeOfDay.fromDateTime(date).format(context);
+}
+
+String _dayLabel(BuildContext context, DateTime date) {
+  return MaterialLocalizations.of(context).formatFullDate(date);
 }
