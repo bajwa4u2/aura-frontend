@@ -273,16 +273,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // the explicit-leave codepath.
     _intentToLeave = true;
     final session = ref.read(realtimeControllerProvider).session;
-    debugPrint('[END] End button tapped: sessionId=${session?.id}');
     try {
-      debugPrint('[END] _endCallAndClose: awaiting controller.endCall()');
       await controller.endCall();
-    } catch (e, st) {
+    } catch (_) {
       // endCall is designed to be local-first, but never let an unexpected
       // exception keep the user trapped on the call route.
-      debugPrint(
-        '[END] _endCallAndClose unexpected error: $e\n${st.toString().split('\n').take(4).join('\n')}',
-      );
     } finally {
       if (mounted) {
         _hasNavigatedAway = true;
@@ -447,9 +442,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (_wasJoined &&
         state.joinState == RealtimeJoinState.idle &&
         state.session == null) {
-      debugPrint(
-        '[RTC NAV] action=teardownFallback target=_safeReturnRoute sessionId=${widget.sessionId} lastEvent=${state.lastSocketEvent ?? ""} surfaceType=${state.session?.surfaceType.name ?? ""}',
-      );
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -468,9 +460,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (hydratedSession != null &&
         !hydratedSession.isActive &&
         !state.isJoined) {
-      debugPrint(
-        '[RTC NAV] action=staleSessionFallback target=_safeReturnRoute sessionId=${hydratedSession.id} surfaceType=${hydratedSession.surfaceType.name} lastEvent=${state.lastSocketEvent ?? ""}',
-      );
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {

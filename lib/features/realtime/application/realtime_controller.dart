@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
@@ -84,7 +83,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           ? const <RealtimeParticipant>[]
           : state.participants,
       clearPolicy: clearPolicy,
-      consents: clearSessionContext ? const <RealtimeConsent>[] : state.consents,
+      consents: clearSessionContext
+          ? const <RealtimeConsent>[]
+          : state.consents,
       recordings: clearSessionContext
           ? const <RealtimeRecording>[]
           : state.recordings,
@@ -129,7 +130,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   void _clearPendingOfferTargets() {
     _pendingOfferTargets.clear();
   }
-
 
   String _transportPeerKeyFromPayload(Map<String, dynamic> payload) {
     final socketId = (payload['socketId'] ?? '').toString().trim();
@@ -180,16 +180,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           );
           _pendingOfferTargets.remove(peerKey);
         } catch (error) {
-          state = state.copyWith(
-            errorMessage: error.toString(),
-          );
+          state = state.copyWith(errorMessage: error.toString());
         }
       }
     } finally {
       _flushingPendingOffers = false;
     }
   }
-
 
   Future<void> connect() async {
     if (state.connectionStatus == RealtimeConnectionStatus.connected ||
@@ -217,10 +214,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         identity = null;
       }
 
-      await _socketService.connect(
-        accessToken: token,
-        identity: identity,
-      );
+      await _socketService.connect(accessToken: token, identity: identity);
 
       state = state.copyWith(
         connectionStatus: RealtimeConnectionStatus.connected,
@@ -266,14 +260,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       );
       return bundle.session.id;
     } catch (error) {
-      state = state.copyWith(
-        isBusy: false,
-        errorMessage: error.toString(),
-      );
+      state = state.copyWith(isBusy: false, errorMessage: error.toString());
       rethrow;
     }
   }
-
 
   bool isManagingSurface({
     required String surfaceType,
@@ -302,10 +292,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final normalizedId = surfaceId.trim();
     final normalizedKind = kind.trim().toUpperCase();
     if (normalizedType.isEmpty || normalizedId.isEmpty) {
-      throw StateError('A conversation, space, or institution context is required before starting live.');
+      throw StateError(
+        'A conversation, space, or institution context is required before starting live.',
+      );
     }
 
-    if (isManagingSurface(surfaceType: normalizedType, surfaceId: normalizedId)) {
+    if (isManagingSurface(
+      surfaceType: normalizedType,
+      surfaceId: normalizedId,
+    )) {
       final existingSessionId = _managedSessionId;
       if (existingSessionId.isNotEmpty) {
         if (joinAfterCreate && state.joinState != RealtimeJoinState.joined) {
@@ -378,12 +373,21 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final trimmed = sessionId.trim();
     if (trimmed.isEmpty || _terminating) return;
 
-    final currentSessionId = (state.sessionId ?? state.session?.id ?? '').trim();
+    final currentSessionId = (state.sessionId ?? state.session?.id ?? '')
+        .trim();
     if (_joiningSessionId == trimmed) return;
-    if (state.joinState == RealtimeJoinState.joined && _isSameManagedSession(trimmed)) return;
-    if (state.joinState == RealtimeJoinState.joining && _isSameManagedSession(trimmed)) return;
+    if (state.joinState == RealtimeJoinState.joined &&
+        _isSameManagedSession(trimmed)) {
+      return;
+    }
+    if (state.joinState == RealtimeJoinState.joining &&
+        _isSameManagedSession(trimmed)) {
+      return;
+    }
 
-    if (currentSessionId.isNotEmpty && currentSessionId != trimmed && state.isJoined) {
+    if (currentSessionId.isNotEmpty &&
+        currentSessionId != trimmed &&
+        state.isJoined) {
       await leave();
     }
 
@@ -409,7 +413,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       // Perform join with retry-once on transient socket/network errors.
       // A 30-second timeout covers the entire join phase.
       await _performJoinWithRetry(trimmed);
-
     } catch (error) {
       if (_terminating) return;
 
@@ -481,8 +484,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         lastError = error;
         lastStack = stack;
 
-        final retryable = error is TimeoutException ||
-            _isRetryableConnectionError(error);
+        final retryable =
+            error is TimeoutException || _isRetryableConnectionError(error);
         if (!retryable || attempt == maxAttempts - 1) {
           // Either the error is a business-rule failure (e.g. session
           // already ended) or we exhausted retries. Bubble out so the
@@ -650,16 +653,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   /// second tap. The captured session is sent to the backend, while local media,
   /// socket membership, and call state are torn down regardless of that result.
   Future<void> endCall() async {
-    debugPrint('[END] endCall: called _endingCall=$_endingCall _terminating=$_terminating sessionId=${state.sessionId} session=${state.session?.id}');
     if (_endingCall) {
-      debugPrint('[END] endCall: bailed — already ending');
       return;
     }
 
     final sessionId = _managedSessionId;
     final session = state.session;
     if (sessionId.isEmpty && session == null) {
-      debugPrint('[END] endCall: no managed session — forcing local clear');
       state = _copyWithDetachedMediaState(
         joinState: RealtimeJoinState.idle,
         clearSessionContext: true,
@@ -669,8 +669,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       );
       return;
     }
-
-    debugPrint('[END] endCall: session.id=${session?.id} surfaceType=${session?.surfaceType} surfaceId=${session?.surfaceId}');
 
     _endingCall = true;
     // A5: surface the in-progress end through state so every UI surface
@@ -683,11 +681,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       // double-end; not firing leaves the host's authoritative end stuck
       // on the client and the UI navigates away with the server still
       // believing the session is live.
-      unawaited(
-        _repository.endSession(session).catchError((Object error) {
-          debugPrint('[END] endCall: backend end failed after local teardown: $error');
-        }),
-      );
+      unawaited(_repository.endSession(session).catchError((Object error) {}));
 
       // If a concurrent teardown is already in-flight, skip the second
       // local teardown — but the server end above has already fired.
@@ -697,10 +691,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           infoMessage: 'Call ended.',
           alsoCallRepository: false,
         );
-      } else {
-        debugPrint('[END] endCall: skipping second local teardown — already terminating');
       }
-      debugPrint('[END] endCall: local teardown done isJoined=${state.isJoined}');
     } finally {
       _endingCall = false;
       // Clear the flag — _terminateSession's _copyWithDetachedMediaState
@@ -729,7 +720,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       // non-joined sockets, so the ticker is safe to keep running.
       unawaited(
         _socketService
-            .emitAck('session:heartbeat', <String, dynamic>{'sessionId': sessionId})
+            .emitAck('session:heartbeat', <String, dynamic>{
+              'sessionId': sessionId,
+            })
             .catchError((Object _) => <String, dynamic>{}),
       );
     });
@@ -849,7 +842,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
     state = state.copyWith(
       policy: policy,
-      infoMessage: enabled ? 'Entry requests turned on.' : 'Entry requests turned off.',
+      infoMessage: enabled
+          ? 'Entry requests turned on.'
+          : 'Entry requests turned off.',
     );
   }
 
@@ -883,7 +878,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
               activeParticipantCount: session.activeParticipantCount,
             ),
       policy: policy,
-      infoMessage: locked ? 'Room closed to new entries.' : 'Room opened to new entries.',
+      infoMessage: locked
+          ? 'Room closed to new entries.'
+          : 'Room opened to new entries.',
     );
   }
 
@@ -941,7 +938,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     await _repository.removeParticipant(sessionId, targetUserId);
     await hydrateSession(sessionId);
-    state = state.copyWith(infoMessage: 'Member removed from this live session.');
+    state = state.copyWith(
+      infoMessage: 'Member removed from this live session.',
+    );
   }
 
   Future<void> requestConsent() async {
@@ -1016,10 +1015,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }
 
   void clearMessage() {
-    state = state.copyWith(
-      clearErrorMessage: true,
-      clearInfoMessage: true,
-    );
+    state = state.copyWith(clearErrorMessage: true, clearInfoMessage: true);
   }
 
   void _applyBundle(RealtimeSessionSnapshot bundle) {
@@ -1034,12 +1030,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     } else if (sessionKind == 'AUDIO') {
       callMode = 'audio';
     } else {
-      // Unrecognised kind: log and preserve the existing mode rather than
-      // silently overwriting with audio.
-      debugPrint(
-        'RealtimeController._applyBundle: unrecognised session kind '
-        '"$sessionKind" — preserving existing callMode',
-      );
       callMode = state.callMode;
     }
 
@@ -1055,7 +1045,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       artifacts: bundle.artifacts,
     );
   }
-
 
   Future<void> _terminateSession({
     required bool keepSocketConnected,
@@ -1087,7 +1076,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       try {
         await _mediaService.resetSessionMedia();
       } catch (e) {
-        debugPrint('[END] _terminateSession: resetSessionMedia error (ignored): $e');
+        final _ = e;
       }
       if (!keepSocketConnected) {
         try {
@@ -1117,10 +1106,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }) async {
     if (state.isMediaBusy) return;
 
-    state = state.copyWith(
-      isMediaBusy: true,
-      clearMediaError: true,
-    );
+    state = state.copyWith(isMediaBusy: true, clearMediaError: true);
 
     try {
       final configuration = await _resolveRtcConfiguration(
@@ -1129,7 +1115,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       );
 
       final wantsAudio = state.policy?.audioAllowed ?? true;
-      final wantsVideo = state.isVideoMode && (state.policy?.videoAllowed ?? true);
+      final wantsVideo =
+          state.isVideoMode && (state.policy?.videoAllowed ?? true);
 
       if (!state.isMediaReady) {
         await _mediaService.ensureLocalMedia(
@@ -1222,25 +1209,24 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       targetSocketId: targetSocketId,
       configuration: configuration,
       onIceCandidate: (candidate) {
-        unawaited(_socketService.emitAck('session:ice-candidate', <String, dynamic>{
-          'sessionId': sessionId,
-          'targetSocketId': targetSocketId,
-          'candidate': <String, dynamic>{
-            'candidate': candidate.candidate,
-            'sdpMid': candidate.sdpMid,
-            'sdpMLineIndex': candidate.sdpMLineIndex,
-          },
-        }));
+        unawaited(
+          _socketService.emitAck('session:ice-candidate', <String, dynamic>{
+            'sessionId': sessionId,
+            'targetSocketId': targetSocketId,
+            'candidate': <String, dynamic>{
+              'candidate': candidate.candidate,
+              'sdpMid': candidate.sdpMid,
+              'sdpMLineIndex': candidate.sdpMLineIndex,
+            },
+          }),
+        );
       },
     );
 
     await _socketService.emitAck('session:offer', <String, dynamic>{
       'sessionId': sessionId,
       'targetSocketId': targetSocketId,
-      'sdp': <String, dynamic>{
-        'sdp': offer.sdp,
-        'type': offer.type,
-      },
+      'sdp': <String, dynamic>{'sdp': offer.sdp, 'type': offer.type},
     });
   }
 
@@ -1249,22 +1235,19 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     if (meSocketId == null) return;
     state = state.copyWith(
       participants: state.participants
-          .map((participant) => participant.runtimeDeviceId == meSocketId
-              ? participant.copyWith(
-                  audioOn: audioOn ?? participant.audioOn,
-                  videoOn: videoOn ?? participant.videoOn,
-                )
-              : participant)
+          .map(
+            (participant) => participant.runtimeDeviceId == meSocketId
+                ? participant.copyWith(
+                    audioOn: audioOn ?? participant.audioOn,
+                    videoOn: videoOn ?? participant.videoOn,
+                  )
+                : participant,
+          )
           .toList(),
     );
   }
 
   void _handleSocketEvent(RealtimeParsedEvent event) {
-    final currentSessionId = (state.sessionId ?? state.session?.id ?? '').trim();
-    final currentSurfaceType = state.session?.surfaceType.name ?? '';
-    debugPrint(
-      '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent',
-    );
     switch (event.name) {
       case 'socket:connected':
         state = state.copyWith(
@@ -1299,27 +1282,25 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'session:participant.joined':
       case 'session:participant.resumed':
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=mergeParticipantSnapshot',
-        );
         final merged = RealtimeEventParser.mergeSnapshot(state, event.payload);
         final modeFromEvent =
-            ((event.payload['videoState'] ?? '').toString().toUpperCase() == 'ON' ||
-             (event.payload['screenState'] ?? '').toString().toUpperCase() == 'ON')
-                ? 'video'
-                : merged.callMode;
+            ((event.payload['videoState'] ?? '').toString().toUpperCase() ==
+                    'ON' ||
+                (event.payload['screenState'] ?? '').toString().toUpperCase() ==
+                    'ON')
+            ? 'video'
+            : merged.callMode;
         state = merged.copyWith(
           callMode: modeFromEvent,
           lastSocketEvent: event.name,
         );
 
         final peerKey = _transportPeerKeyFromPayload(event.payload);
-        final targetSocketId = (event.payload['socketId'] ?? '').toString().trim();
+        final targetSocketId = (event.payload['socketId'] ?? '')
+            .toString()
+            .trim();
         if (peerKey.isNotEmpty && targetSocketId.isNotEmpty) {
-          _queueOfferTarget(
-            peerKey: peerKey,
-            targetSocketId: targetSocketId,
-          );
+          _queueOfferTarget(peerKey: peerKey, targetSocketId: targetSocketId);
           if (state.isJoined) {
             unawaited(_flushPendingOffers());
             unawaited(_forceNegotiationIfNeeded());
@@ -1327,9 +1308,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:participant.left':
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=participantLeft',
-        );
         final leavingUserId = _participantUserIdFromPayload(event.payload);
         final leavingPeerKey = _transportPeerKeyFromPayload(event.payload);
         final updatedParticipants = state.participants
@@ -1350,17 +1328,16 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
 
         if (updatedParticipants.length <= 1 && state.isJoined) {
-          unawaited(_terminateSession(
-            keepSocketConnected: true,
-            infoMessage: 'Call ended.',
-            alsoCallRepository: false,
-          ));
+          unawaited(
+            _terminateSession(
+              keepSocketConnected: true,
+              infoMessage: 'Call ended.',
+              alsoCallRepository: false,
+            ),
+          );
         }
         return;
       case 'session:offer':
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=peerOffer',
-        );
         unawaited(() async {
           final sessionId = state.sessionId;
           if (sessionId == null || sessionId.isEmpty) return;
@@ -1371,31 +1348,37 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
           final peerKey = _transportPeerKeyFromPayload(event.payload);
           final fromSocketId = event.payload['fromSocketId']?.toString();
-          if (peerKey.isEmpty || fromSocketId == null || fromSocketId.isEmpty) return;
+          if (peerKey.isEmpty || fromSocketId == null || fromSocketId.isEmpty) {
+            return;
+          }
           final answer = await _mediaService.handleRemoteOffer(
             peerKey: peerKey,
             targetSocketId: fromSocketId,
             configuration: configuration,
-            sdp: Map<String, dynamic>.from((event.payload['sdp'] ?? const <String, dynamic>{}) as Map),
+            sdp: Map<String, dynamic>.from(
+              (event.payload['sdp'] ?? const <String, dynamic>{}) as Map,
+            ),
             onIceCandidate: (candidate) {
-              unawaited(_socketService.emitAck('session:ice-candidate', <String, dynamic>{
-                'sessionId': sessionId,
-                'targetSocketId': fromSocketId,
-                'candidate': <String, dynamic>{
-                  'candidate': candidate.candidate,
-                  'sdpMid': candidate.sdpMid,
-                  'sdpMLineIndex': candidate.sdpMLineIndex,
-                },
-              }));
+              unawaited(
+                _socketService.emitAck(
+                  'session:ice-candidate',
+                  <String, dynamic>{
+                    'sessionId': sessionId,
+                    'targetSocketId': fromSocketId,
+                    'candidate': <String, dynamic>{
+                      'candidate': candidate.candidate,
+                      'sdpMid': candidate.sdpMid,
+                      'sdpMLineIndex': candidate.sdpMLineIndex,
+                    },
+                  },
+                ),
+              );
             },
           );
           await _socketService.emitAck('session:answer', <String, dynamic>{
             'sessionId': sessionId,
             'targetSocketId': fromSocketId,
-            'sdp': <String, dynamic>{
-              'sdp': answer.sdp,
-              'type': answer.type,
-            },
+            'sdp': <String, dynamic>{'sdp': answer.sdp, 'type': answer.type},
           });
         }());
         state = state.copyWith(lastSocketEvent: event.name);
@@ -1431,27 +1414,34 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'session:track.updated':
         final userId = event.payload['userId']?.toString();
         if (userId != null && userId.isNotEmpty) {
-          final videoOn = (event.payload['videoState'] ?? '').toString().toUpperCase() == 'ON';
-          final screenOn = (event.payload['screenState'] ?? '').toString().toUpperCase() == 'ON';
+          final videoOn =
+              (event.payload['videoState'] ?? '').toString().toUpperCase() ==
+              'ON';
+          final screenOn =
+              (event.payload['screenState'] ?? '').toString().toUpperCase() ==
+              'ON';
           state = state.copyWith(
             callMode: (videoOn || screenOn) ? 'video' : state.callMode,
             participants: state.participants
-                .map((participant) => participant.userId == userId
-                    ? participant.copyWith(
-                        audioOn: (event.payload['audioState'] ?? '').toString().toUpperCase() == 'ON',
-                        videoOn: videoOn,
-                        screenOn: screenOn,
-                      )
-                    : participant)
+                .map(
+                  (participant) => participant.userId == userId
+                      ? participant.copyWith(
+                          audioOn:
+                              (event.payload['audioState'] ?? '')
+                                  .toString()
+                                  .toUpperCase() ==
+                              'ON',
+                          videoOn: videoOn,
+                          screenOn: screenOn,
+                        )
+                      : participant,
+                )
                 .toList(),
             lastSocketEvent: event.name,
           );
         }
         return;
       case 'session:replaced':
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=reconnect',
-        );
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.reconnecting,
           infoMessage: 'This live session moved to a new connection.',
@@ -1460,9 +1450,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'session:removed':
       case 'realtime:removed':
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=clearSessionContext reason=removed',
-        );
         _clearPendingOfferTargets();
         unawaited(_mediaService.resetSessionMedia());
         state = _copyWithDetachedMediaState(
@@ -1472,9 +1459,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'join:requested':
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=joinRequested',
-        );
         state = state.copyWith(
           joinState: RealtimeJoinState.requested,
           infoMessage: 'Your request to join is pending.',
@@ -1482,9 +1466,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'join:approved':
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=joinApproved',
-        );
         state = state.copyWith(
           joinState: RealtimeJoinState.joined,
           infoMessage: 'Your request to join was approved.',
@@ -1492,9 +1473,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'join:rejected':
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=joinRejected',
-        );
         state = state.copyWith(
           joinState: RealtimeJoinState.rejected,
           infoMessage: 'Your request to join was declined.',
@@ -1509,34 +1487,32 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         // event reached the controller, but we intentionally do not
         // mutate `participants` / `joinState` here — the controller is
         // responsible for the join/leave lifecycle, not the ring UI.
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=bridgeIncomingCall',
-        );
         state = state.copyWith(lastSocketEvent: event.name);
         return;
       case 'call:declined':
-        final declinedUserId =
-            (event.payload['userId'] ?? '').toString().trim();
-        final declinedSessionId =
-            (event.payload['sessionId'] ?? '').toString().trim();
+        final declinedUserId = (event.payload['userId'] ?? '')
+            .toString()
+            .trim();
+        final declinedSessionId = (event.payload['sessionId'] ?? '')
+            .toString()
+            .trim();
         // Ignore if this event belongs to a different session
         if (declinedSessionId.isNotEmpty &&
             state.session?.id != null &&
             declinedSessionId != state.session!.id) {
           return;
         }
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${declinedSessionId.isNotEmpty ? declinedSessionId : (event.payload["sessionId"] ?? currentSessionId)} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=declineCleanup',
-        );
         final participantsAfterDecline = state.participants
             .where((p) => p.userId != declinedUserId)
             .toList();
         if (participantsAfterDecline.length <= 1 && state.isJoined) {
-          unawaited(_terminateSession(
-            keepSocketConnected: true,
-            infoMessage: 'Call declined.',
-            alsoCallRepository: true,
-          ));
+          unawaited(
+            _terminateSession(
+              keepSocketConnected: true,
+              infoMessage: 'Call declined.',
+              alsoCallRepository: true,
+            ),
+          );
         } else {
           state = state.copyWith(
             participants: participantsAfterDecline,
@@ -1555,19 +1531,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         // Only honor the terminal event when it concerns the call we are
         // currently in. A stale `call:terminal` for an unrelated session
         // (e.g. a previous tab's teardown) must not nuke the current call.
-        final eventSessionId = (event.payload['sessionId'] ?? '').toString().trim();
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${eventSessionId.isNotEmpty ? eventSessionId : currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=teardown',
-        );
+        final eventSessionId = (event.payload['sessionId'] ?? '')
+            .toString()
+            .trim();
         if (eventSessionId.isNotEmpty &&
             endedSessionId.isNotEmpty &&
             eventSessionId != endedSessionId) {
           state = state.copyWith(lastSocketEvent: event.name);
           return;
         }
-        debugPrint(
-          '[RTC RX] event=${event.name} sessionId=${event.payload["sessionId"] ?? currentSessionId} surfaceType=$currentSurfaceType handler=RealtimeController._handleSocketEvent action=staleDisconnect',
-        );
         _clearPendingOfferTargets();
         if (endedSessionId.isNotEmpty) {
           _repository.clearBundleCache(endedSessionId);
@@ -1681,7 +1653,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
 
     if (surfaceType == 'space') {
-      if (normalizedSpaceId.isNotEmpty && surfaceId == normalizedSpaceId) return true;
+      if (normalizedSpaceId.isNotEmpty && surfaceId == normalizedSpaceId) {
+        return true;
+      }
     }
 
     return false;
@@ -1697,9 +1671,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final value = _managedSessionId;
     return value.isEmpty ? null : value;
   }
-
-
-  
 
   Future<void> _forceNegotiationIfNeeded() async {
     final sessionId = _managedSessionId;
@@ -1719,17 +1690,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
       if (_pendingOfferTargets.containsKey(peerKey)) continue;
 
-      _queueOfferTarget(
-        peerKey: peerKey,
-        targetSocketId: peerSocketId,
-      );
+      _queueOfferTarget(peerKey: peerKey, targetSocketId: peerSocketId);
     }
 
     if (_pendingOfferTargets.isNotEmpty) {
       await _flushPendingOffers();
     }
   }
-@override
+
+  @override
   void dispose() {
     _stopHeartbeat();
     _subscription?.cancel();

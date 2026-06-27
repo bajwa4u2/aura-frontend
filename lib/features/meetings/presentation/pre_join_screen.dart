@@ -35,9 +35,6 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     setState(() => _joining = true);
 
     try {
-      debugPrint(
-        '[MEETING UI] handler=PreJoinScreen._join meetingCode=${widget.meetingCode} meetingId=${meeting.id} action=call joinMeeting',
-      );
       final repo = ref.read(meetingsRepositoryProvider);
       final result = await repo.joinMeeting(
         widget.meetingCode,
@@ -50,25 +47,16 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       if (!mounted) return;
 
       if (result.shouldWait) {
-        debugPrint(
-          '[MEETING UI] handler=PreJoinScreen._join meetingCode=${widget.meetingCode} meetingId=${meeting.id} action=wait sessionId=${result.sessionId ?? ""}',
-        );
         _showWaitingRoomMessage();
         return;
       }
 
       if (result.sessionId != null) {
-        debugPrint(
-          '[MEETING UI] handler=PreJoinScreen._join meetingCode=${widget.meetingCode} meetingId=${meeting.id} action=navigate route=/realtime/${result.sessionId}?action=join',
-        );
         context.push(
           '/realtime/${result.sessionId}?action=join'
           '${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
         );
       } else {
-        debugPrint(
-          '[MEETING UI] handler=PreJoinScreen._join meetingCode=${widget.meetingCode} meetingId=${meeting.id} action=no-session',
-        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Meeting is not yet live. Check back later.'),
