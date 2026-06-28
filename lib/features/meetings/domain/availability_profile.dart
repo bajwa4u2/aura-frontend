@@ -1,3 +1,5 @@
+import 'meeting_identity.dart';
+
 class AvailabilityWindow {
   final String id;
   final String dayOfWeek;
@@ -66,12 +68,12 @@ class ProfileOwner {
   });
 
   factory ProfileOwner.fromJson(Map<String, dynamic> j) => ProfileOwner(
-        id: j['id'] as String,
-        displayName: j['displayName'] as String?,
-        handle: j['handle'] as String?,
-        avatarUrl: j['avatarUrl'] as String?,
-        title: j['title'] as String?,
-      );
+    id: j['id'] as String,
+    displayName: j['displayName'] as String?,
+    handle: j['handle'] as String?,
+    avatarUrl: j['avatarUrl'] as String?,
+    title: j['title'] as String?,
+  );
 
   String get name => displayName ?? handle ?? 'Unknown';
 }
@@ -98,17 +100,17 @@ class InstitutionRef {
   });
 
   factory InstitutionRef.fromJson(Map<String, dynamic> j) => InstitutionRef(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        slug: j['slug'] as String,
-        description: j['description'] as String?,
-        tagline: j['tagline'] as String?,
-        logoUrl: j['logoUrl'] as String?,
-        isVerified: j['isVerified'] as bool? ?? false,
-        verifiedAt: j['verifiedAt'] != null
-            ? DateTime.tryParse(j['verifiedAt'] as String)
-            : null,
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    slug: j['slug'] as String,
+    description: j['description'] as String?,
+    tagline: j['tagline'] as String?,
+    logoUrl: j['logoUrl'] as String?,
+    isVerified: j['isVerified'] as bool? ?? false,
+    verifiedAt: j['verifiedAt'] != null
+        ? DateTime.tryParse(j['verifiedAt'] as String)
+        : null,
+  );
 }
 
 class AvailabilityProfile {
@@ -168,10 +170,9 @@ class AvailabilityProfile {
         slug: j['slug'] as String,
         meetingTitle: j['meetingTitle'] as String,
         meetingDescription: j['meetingDescription'] as String?,
-        durationOptions:
-            (j['durationOptions'] as List<dynamic>? ?? [30])
-                .map((e) => (e as num).toInt())
-                .toList(),
+        durationOptions: (j['durationOptions'] as List<dynamic>? ?? [30])
+            .map((e) => (e as num).toInt())
+            .toList(),
         defaultDuration: (j['defaultDuration'] as num?)?.toInt() ?? 30,
         bufferBefore: (j['bufferBefore'] as num?)?.toInt() ?? 0,
         bufferAfter: (j['bufferAfter'] as num?)?.toInt() ?? 15,
@@ -186,8 +187,9 @@ class AvailabilityProfile {
             .map((w) => AvailabilityWindow.fromJson(w as Map<String, dynamic>))
             .toList(),
         overrides: (j['overrides'] as List<dynamic>? ?? [])
-            .map((o) =>
-                AvailabilityOverride.fromJson(o as Map<String, dynamic>))
+            .map(
+              (o) => AvailabilityOverride.fromJson(o as Map<String, dynamic>),
+            )
             .toList(),
         owner: j['owner'] != null
             ? ProfileOwner.fromJson(j['owner'] as Map<String, dynamic>)
@@ -218,11 +220,9 @@ class TimeSlot {
   const TimeSlot({required this.startAt, required this.endAt});
 
   factory TimeSlot.fromJson(Map<String, dynamic> j) => TimeSlot(
-        startAt:
-            DateTime.tryParse(j['startAt'] as String? ?? '') ?? DateTime.now(),
-        endAt:
-            DateTime.tryParse(j['endAt'] as String? ?? '') ?? DateTime.now(),
-      );
+    startAt: DateTime.tryParse(j['startAt'] as String? ?? '') ?? DateTime.now(),
+    endAt: DateTime.tryParse(j['endAt'] as String? ?? '') ?? DateTime.now(),
+  );
 
   Duration get duration => endAt.difference(startAt);
   int get durationMinutes => duration.inMinutes;
@@ -240,6 +240,7 @@ class BookingConfirmation {
   final String hostName;
   final ProfileOwner? host;
   final InstitutionRef? institution;
+  final MeetingIdentityRef? bookerIdentity;
   final String meetingTitle;
 
   const BookingConfirmation({
@@ -254,6 +255,7 @@ class BookingConfirmation {
     required this.hostName,
     this.host,
     this.institution,
+    this.bookerIdentity,
     required this.meetingTitle,
   });
 
@@ -266,7 +268,7 @@ class BookingConfirmation {
         cancelUrl: j['cancelUrl'] as String,
         scheduledAt:
             DateTime.tryParse(j['scheduledAt'] as String? ?? '') ??
-                DateTime.now(),
+            DateTime.now(),
         durationMinutes: (j['durationMinutes'] as num?)?.toInt() ?? 30,
         timezone: j['timezone'] as String? ?? 'UTC',
         hostName: j['hostName'] as String? ?? '',
@@ -275,6 +277,11 @@ class BookingConfirmation {
             : null,
         institution: j['institution'] is Map<String, dynamic>
             ? InstitutionRef.fromJson(j['institution'] as Map<String, dynamic>)
+            : null,
+        bookerIdentity: j['bookerIdentity'] is Map<String, dynamic>
+            ? MeetingIdentityRef.fromJson(
+                j['bookerIdentity'] as Map<String, dynamic>,
+              )
             : null,
         meetingTitle: j['meetingTitle'] as String? ?? '',
       );

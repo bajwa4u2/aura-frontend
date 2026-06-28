@@ -8,6 +8,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_identity.dart';
 import '../domain/meeting_room.dart';
 import 'meeting_lifecycle_presenter.dart';
 
@@ -326,8 +327,15 @@ class _MeetingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final booking = meeting.booking;
-    final guestName = booking?.bookerName ?? _guestParticipant?.displayName;
-    final guestEmail = booking?.bookerEmail ?? _guestParticipant?.guestEmail;
+    final bookerIdentity = booking?.bookerIdentity;
+    final guestName =
+        bookerIdentity?.displayName ??
+        booking?.bookerName ??
+        _guestParticipant?.displayName;
+    final guestEmail =
+        bookerIdentity?.email ??
+        booking?.bookerEmail ??
+        _guestParticipant?.guestEmail;
     final source = _sourceLabel(meeting);
     final scheduledLabel = _scheduledLabel(context, meeting);
     final lifecycle = MeetingLifecyclePresenter.present(
@@ -388,11 +396,10 @@ class _MeetingCard extends ConsumerWidget {
                                 '$scheduledLabel • ${meeting.durationMinutes} min • ${meeting.timezone}',
                           ),
                           if (guestName != null)
-                            _Line(
-                              icon: Icons.person_outline_rounded,
-                              text: guestEmail?.isNotEmpty == true
-                                  ? '$guestName - $guestEmail'
-                                  : guestName,
+                            _IdentityLine(
+                              identity: bookerIdentity,
+                              fallbackName: guestName,
+                              fallbackEmail: guestEmail,
                             ),
                           if (source != null)
                             _Line(
@@ -667,6 +674,63 @@ class _Line extends StatelessWidget {
           Expanded(
             child: Text(
               text,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IdentityLine extends StatelessWidget {
+  final MeetingIdentityRef? identity;
+  final String fallbackName;
+  final String? fallbackEmail;
+
+  const _IdentityLine({
+    required this.identity,
+    required this.fallbackName,
+    required this.fallbackEmail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final name = identity?.displayName ?? fallbackName;
+    final email = identity?.email ?? fallbackEmail ?? '';
+    final avatar = identity?.avatarUrl;
+    final title = identity?.title;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AuraSpace.s4),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 8,
+            backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+            backgroundImage: avatar != null && avatar.trim().isNotEmpty
+                ? NetworkImage(avatar)
+                : null,
+            child: avatar == null || avatar.trim().isEmpty
+                ? Text(
+                    name.trim().isEmpty ? 'G' : name.trim()[0].toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(
+              [
+                name,
+                if (email.isNotEmpty) email,
+                if (title?.trim().isNotEmpty == true) title!.trim(),
+              ].join(' · '),
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),

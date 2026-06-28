@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/auth/session_providers.dart';
 import '../data/meetings_repository.dart';
 import '../data/availability_repository.dart';
 import '../domain/meeting.dart';
 import '../domain/availability_profile.dart';
+import '../domain/meeting_identity.dart';
 
 final meetingsRepositoryProvider = Provider<MeetingsRepository>((ref) {
   return MeetingsRepository(ref.watch(dioProvider));
@@ -46,11 +48,13 @@ final meetingProvider = FutureProvider.family<Meeting, String>((ref, id) async {
   return repo.getMeeting(id);
 });
 
-final meetingSummaryProvider =
-    FutureProvider.family<MeetingSummary?, String>((ref, id) async {
-      final repo = ref.watch(meetingsRepositoryProvider);
-      return repo.getMeetingSummary(id);
-    });
+final meetingSummaryProvider = FutureProvider.family<MeetingSummary?, String>((
+  ref,
+  id,
+) async {
+  final repo = ref.watch(meetingsRepositoryProvider);
+  return repo.getMeetingSummary(id);
+});
 
 // Meeting by code (public, used in join flow)
 final meetingByCodeProvider = FutureProvider.family<Meeting, String>((
@@ -74,6 +78,27 @@ final publicProfileProvider =
       final repo = ref.watch(availabilityRepositoryProvider);
       return repo.getPublicProfile(slug);
     });
+
+final currentBookingIdentityProvider = FutureProvider<MeetingIdentityRef?>((
+  ref,
+) async {
+  if (!ref.watch(isAuthedProvider)) return null;
+
+  final dio = ref.watch(dioProvider);
+  try {
+    final res = await dio.get('/users/me');
+    final data = res.data;
+    if (data is Map<String, dynamic>) {
+      return MeetingIdentityRef.fromUserJson(data);
+    }
+    if (data is Map) {
+      return MeetingIdentityRef.fromUserJson(Map<String, dynamic>.from(data));
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
+});
 
 // Available slots for booking
 class SlotQueryParams {

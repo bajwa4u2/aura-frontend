@@ -1,3 +1,4 @@
+import 'meeting_identity.dart';
 import 'meeting_room.dart';
 
 class MeetingHost {
@@ -118,6 +119,7 @@ class MeetingBookingDetails {
   final String status;
   final String? bookingPageName;
   final String? bookingPageSlug;
+  final MeetingIdentityRef? bookerIdentity;
   final MeetingInstitutionRef? institution;
   final MeetingHost? host;
 
@@ -133,6 +135,7 @@ class MeetingBookingDetails {
     required this.status,
     this.bookingPageName,
     this.bookingPageSlug,
+    this.bookerIdentity,
     this.institution,
     this.host,
   });
@@ -152,6 +155,11 @@ class MeetingBookingDetails {
         status: j['status'] as String? ?? 'CONFIRMED',
         bookingPageName: j['bookingPageName'] as String?,
         bookingPageSlug: j['bookingPageSlug'] as String?,
+        bookerIdentity: j['bookerIdentity'] is Map<String, dynamic>
+            ? MeetingIdentityRef.fromJson(
+                j['bookerIdentity'] as Map<String, dynamic>,
+              )
+            : null,
         institution: j['institution'] is Map<String, dynamic>
             ? MeetingInstitutionRef.fromJson(
                 j['institution'] as Map<String, dynamic>,
@@ -197,23 +205,23 @@ class MeetingSummary {
   });
 
   factory MeetingSummary.fromJson(Map<String, dynamic> j) => MeetingSummary(
-        id: j['id'] as String,
-        meetingId: j['meetingId'] as String,
-        institutionId: j['institutionId'] as String?,
-        summaryText: j['summaryText'] as String?,
-        attendanceSnapshot: _asMap(j['attendanceSnapshot']),
-        decisions: _asStringList(j['decisions']),
-        commitments: _asStringList(j['commitments']),
-        actions: _asStringList(j['actions']),
-        issues: _asStringList(j['issues']),
-        followUps: _asStringList(j['followUps']),
-        createdByUserId: j['createdByUserId'] as String?,
-        updatedByUserId: j['updatedByUserId'] as String?,
-        createdAt: DateTime.tryParse(j['createdAt'] as String? ?? '') ??
-            DateTime.now(),
-        updatedAt: DateTime.tryParse(j['updatedAt'] as String? ?? '') ??
-            DateTime.now(),
-      );
+    id: j['id'] as String,
+    meetingId: j['meetingId'] as String,
+    institutionId: j['institutionId'] as String?,
+    summaryText: j['summaryText'] as String?,
+    attendanceSnapshot: _asMap(j['attendanceSnapshot']),
+    decisions: _asStringList(j['decisions']),
+    commitments: _asStringList(j['commitments']),
+    actions: _asStringList(j['actions']),
+    issues: _asStringList(j['issues']),
+    followUps: _asStringList(j['followUps']),
+    createdByUserId: j['createdByUserId'] as String?,
+    updatedByUserId: j['updatedByUserId'] as String?,
+    createdAt:
+        DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
+    updatedAt:
+        DateTime.tryParse(j['updatedAt'] as String? ?? '') ?? DateTime.now(),
+  );
 }
 
 class Meeting {
@@ -317,18 +325,18 @@ class Meeting {
   bool get isScheduled =>
       state == 'SCHEDULED' &&
       (room == null ||
-          room?.status == 'SCHEDULED' ||
-          room?.status == 'STARTING_SOON' ||
-          room?.status == 'WAITING' ||
-          room?.status == 'HOST_WAITING' ||
-          room?.status == 'GUEST_WAITING');
+          room?.status == MeetingRoomStatus.scheduled ||
+          room?.status == MeetingRoomStatus.startingSoon ||
+          room?.status == MeetingRoomStatus.waiting ||
+          room?.status == MeetingRoomStatus.hostWaiting ||
+          room?.status == MeetingRoomStatus.guestWaiting);
   bool get isDraft => state == 'DRAFT';
   bool get isEnded =>
       state == 'ENDED' ||
       state == 'CANCELLED' ||
-      room?.status == 'ENDED' ||
-      room?.status == 'MISSED' ||
-      room?.status == 'CANCELLED';
+      room?.status == MeetingRoomStatus.ended ||
+      room?.status == MeetingRoomStatus.missed ||
+      room?.status == MeetingRoomStatus.cancelled;
   bool get isInstant => type == 'INSTANT';
 
   int get participantCount => participants.length;

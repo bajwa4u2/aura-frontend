@@ -9,6 +9,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
+import '../domain/meeting_identity.dart';
 
 class BookingConfirmScreen extends ConsumerStatefulWidget {
   final AvailabilityProfile profile;
@@ -35,6 +36,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
 
   bool _booking = false;
   BookingConfirmation? _confirmation;
+  bool _identityPrefilled = false;
 
   @override
   void dispose() {
@@ -91,6 +93,21 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     }
   }
 
+  void _applyIdentity(MeetingIdentityRef? identity) {
+    if (_identityPrefilled || identity == null) return;
+    _identityPrefilled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_nameCtrl.text.trim().isEmpty &&
+          identity.displayName.trim().isNotEmpty) {
+        _nameCtrl.text = identity.displayName.trim();
+      }
+      if (_emailCtrl.text.trim().isEmpty && identity.email.trim().isNotEmpty) {
+        _emailCtrl.text = identity.email.trim();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_confirmation != null) {
@@ -101,10 +118,13 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     }
 
     final theme = Theme.of(context);
+    final identityAsync = ref.watch(currentBookingIdentityProvider);
     final localTime = widget.slot.startAt.toLocal();
     final localizations = MaterialLocalizations.of(context);
     final timeLabel =
         '${localizations.formatFullDate(localTime)} · ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(localTime))}';
+
+    identityAsync.whenData(_applyIdentity);
 
     return AuraScaffold(
       title: 'Confirm booking',
@@ -137,6 +157,10 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               icon: Icons.timer_outlined,
               text: _durationLabel(widget.durationMinutes),
             ),
+            if (identityAsync.valueOrNull != null) ...[
+              const SizedBox(height: AuraSpace.s12),
+              _BookingIdentityCard(identity: identityAsync.valueOrNull!),
+            ],
 
             const SizedBox(height: AuraSpace.s20),
             const Divider(),
@@ -239,6 +263,7 @@ class _ConfirmationView extends ConsumerWidget {
     final isAuthed = ref.watch(isAuthedProvider);
     final institution = confirmation.institution ?? profile.institution;
     final host = confirmation.host ?? profile.effectiveHost;
+    final bookerIdentity = confirmation.bookerIdentity;
     final joinPath = '/meetings/join/${confirmation.meetingCode}';
     final loginPath = '/login?redirect=${Uri.encodeComponent(joinPath)}';
     final localTime = confirmation.scheduledAt.toLocal();
@@ -337,6 +362,10 @@ class _ConfirmationView extends ConsumerWidget {
                           ),
                       ],
                     ),
+                    const SizedBox(height: AuraSpace.s16),
+                  ],
+                  if (bookerIdentity != null) ...[
+                    _BookingIdentityCard(identity: bookerIdentity),
                     const SizedBox(height: AuraSpace.s16),
                   ],
                   Text(
@@ -539,6 +568,78 @@ class _InfoRow extends StatelessWidget {
             child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BookingIdentityCard extends StatelessWidget {
+  final MeetingIdentityRef identity;
+
+  const _BookingIdentityCard({required this.identity});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+              backgroundImage:
+                  identity.avatarUrl != null &&
+                      identity.avatarUrl!.trim().isNotEmpty
+                  ? NetworkImage(identity.avatarUrl!)
+                  : null,
+              child:
+                  identity.avatarUrl == null ||
+                      identity.avatarUrl!.trim().isEmpty
+                  ? Text(
+                      identity.displayName.trim().isEmpty
+                          ? 'G'
+                          : identity.displayName.trim()[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    identity.displayName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (identity.email.trim().isNotEmpty)
+                    Text(
+                      identity.email.trim(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (identity.identityType != 'GUEST')
+              const _PillChip(
+                icon: Icons.verified_rounded,
+                label: 'Resolved identity',
+              ),
+          ],
+        ),
       ),
     );
   }

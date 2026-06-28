@@ -8,6 +8,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_identity.dart';
 import 'meeting_lifecycle_presenter.dart';
 
 // Pre-join: shows meeting context (host, org, purpose) before entering.
@@ -25,6 +26,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   bool _joining = false;
+  bool _identityPrefilled = false;
 
   @override
   void dispose() {
@@ -80,10 +82,27 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     }
   }
 
+  void _applyIdentity(MeetingIdentityRef? identity) {
+    if (_identityPrefilled || identity == null) return;
+    _identityPrefilled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_nameCtrl.text.trim().isEmpty &&
+          identity.displayName.trim().isNotEmpty) {
+        _nameCtrl.text = identity.displayName.trim();
+      }
+      if (_emailCtrl.text.trim().isEmpty && identity.email.trim().isNotEmpty) {
+        _emailCtrl.text = identity.email.trim();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final meetingAsync = ref.watch(meetingByCodeProvider(widget.meetingCode));
+    final identityAsync = ref.watch(currentBookingIdentityProvider);
     final theme = Theme.of(context);
+    identityAsync.whenData(_applyIdentity);
 
     return meetingAsync.when(
       loading: () => AuraScaffold(
@@ -123,6 +142,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
         nameCtrl: _nameCtrl,
         emailCtrl: _emailCtrl,
         joining: _joining,
+        identity: identityAsync.valueOrNull,
         onJoin: () => _join(meeting),
       ),
     );
@@ -134,6 +154,7 @@ class _PreJoinBody extends ConsumerWidget {
   final TextEditingController nameCtrl;
   final TextEditingController emailCtrl;
   final bool joining;
+  final MeetingIdentityRef? identity;
   final VoidCallback onJoin;
 
   const _PreJoinBody({
@@ -141,6 +162,7 @@ class _PreJoinBody extends ConsumerWidget {
     required this.nameCtrl,
     required this.emailCtrl,
     required this.joining,
+    required this.identity,
     required this.onJoin,
   });
 
@@ -231,6 +253,10 @@ class _PreJoinBody extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (identity != null) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  _BookingIdentityCard(identity: identity!),
+                ],
                 if ((meeting.description ?? '').trim().isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.s8),
                   Text(
@@ -336,6 +362,73 @@ class _IdentityAvatar extends StatelessWidget {
       child: logoUrl == null || logoUrl!.trim().isEmpty
           ? Icon(icon, color: const Color(0xFFE5E7EB), size: 18)
           : null,
+    );
+  }
+}
+
+class _BookingIdentityCard extends StatelessWidget {
+  final MeetingIdentityRef identity;
+
+  const _BookingIdentityCard({required this.identity});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+              backgroundImage:
+                  identity.avatarUrl != null &&
+                      identity.avatarUrl!.trim().isNotEmpty
+                  ? NetworkImage(identity.avatarUrl!)
+                  : null,
+              child:
+                  identity.avatarUrl == null ||
+                      identity.avatarUrl!.trim().isEmpty
+                  ? Text(
+                      identity.displayName.trim().isEmpty
+                          ? 'G'
+                          : identity.displayName.trim()[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    identity.displayName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (identity.email.trim().isNotEmpty)
+                    Text(
+                      identity.email.trim(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

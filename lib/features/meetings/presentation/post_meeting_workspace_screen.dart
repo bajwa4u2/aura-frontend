@@ -80,7 +80,9 @@ class _PostMeetingWorkspaceScreenState
     setState(() => _saving = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(meetingsRepositoryProvider).saveMeetingSummary(
+      await ref
+          .read(meetingsRepositoryProvider)
+          .saveMeetingSummary(
             widget.meetingId,
             summaryText: _summaryCtrl.text.trim().isEmpty
                 ? null
@@ -376,6 +378,17 @@ class _MemoryPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rows = <Widget>[
+      if (booking?.bookerIdentity != null)
+        _MemoryRow(
+          title: 'Booked by',
+          body: [
+            booking!.bookerIdentity!.displayName,
+            if (booking!.bookerIdentity!.email.trim().isNotEmpty)
+              booking!.bookerIdentity!.email.trim(),
+            if (booking!.bookerIdentity!.title?.trim().isNotEmpty == true)
+              booking!.bookerIdentity!.title!.trim(),
+          ].join(' · '),
+        ),
       _MemoryRow(
         title: 'Attendance',
         body: meeting.participants.isEmpty

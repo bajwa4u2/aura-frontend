@@ -7,6 +7,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_identity.dart';
 import 'meeting_lifecycle_presenter.dart';
 
 class MeetingDetailScreen extends ConsumerWidget {
@@ -176,7 +177,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
     final theme = Theme.of(context);
     final booking = meeting.booking;
     final guest = _guestParticipant;
-    final institutionId = _resolvedInstitutionId;
+    final bookerIdentity = booking?.bookerIdentity;
 
     return AuraScaffold(
       title: 'Meeting details',
@@ -239,21 +240,29 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                       _InfoPanel(
                         title: 'Attendee details',
                         children: [
+                          if (bookerIdentity != null)
+                            _IdentityRow(identity: bookerIdentity),
                           _InfoRow(
                             icon: Icons.person_outline_rounded,
                             label: 'Guest',
                             value:
+                                bookerIdentity?.displayName ??
                                 booking?.bookerName ??
                                 guest?.displayName ??
                                 'No guest yet',
                           ),
-                          if ((booking?.bookerEmail ?? guest?.guestEmail)
+                          if ((bookerIdentity?.email ??
+                                      booking?.bookerEmail ??
+                                      guest?.guestEmail)
                                   ?.isNotEmpty ==
                               true)
                             _InfoRow(
                               icon: Icons.mail_outline_rounded,
                               label: 'Email',
-                              value: booking?.bookerEmail ?? guest!.guestEmail!,
+                              value:
+                                  bookerIdentity?.email ??
+                                  booking?.bookerEmail ??
+                                  guest!.guestEmail!,
                             ),
                           _InfoRow(
                             icon: Icons.check_circle_outline_rounded,
@@ -277,32 +286,6 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                     title: 'Source',
                     fullWidth: true,
                     children: [
-                      if (booking?.institution != null &&
-                          _resolvedInstitutionId == null)
-                        _InfoRow(
-                          icon: Icons.business_rounded,
-                          label: 'Institution',
-                          value: booking!.institution!.name,
-                        ),
-                      if ((booking?.institution?.tagline ?? '')
-                              .trim()
-                              .isNotEmpty &&
-                          _resolvedInstitutionId == null)
-                        _InfoRow(
-                          icon: Icons.verified_outlined,
-                          label: 'Tagline',
-                          value: booking!.institution!.tagline!.trim(),
-                        ),
-                      if ((booking?.institution?.description ?? '')
-                                  .trim()
-                                  .isNotEmpty ==
-                              true &&
-                          _resolvedInstitutionId == null)
-                        _InfoRow(
-                          icon: Icons.description_outlined,
-                          label: 'About',
-                          value: booking!.institution!.description!.trim(),
-                        ),
                       _InfoRow(
                         icon: Icons.calendar_today_rounded,
                         label: 'Booking page',
@@ -579,6 +562,58 @@ class _InfoPanel extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _IdentityRow extends StatelessWidget {
+  final MeetingIdentityRef identity;
+
+  const _IdentityRow({required this.identity});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s4),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 10,
+            backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+            backgroundImage:
+                identity.avatarUrl != null &&
+                    identity.avatarUrl!.trim().isNotEmpty
+                ? NetworkImage(identity.avatarUrl!)
+                : null,
+            child:
+                identity.avatarUrl == null || identity.avatarUrl!.trim().isEmpty
+                ? Text(
+                    identity.displayName.trim().isEmpty
+                        ? 'G'
+                        : identity.displayName.trim()[0].toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(
+              [
+                identity.displayName,
+                if (identity.email.trim().isNotEmpty) identity.email.trim(),
+                if (identity.title?.trim().isNotEmpty == true)
+                  identity.title!.trim(),
+              ].join(' · '),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
+            ),
+          ),
+        ],
       ),
     );
   }
