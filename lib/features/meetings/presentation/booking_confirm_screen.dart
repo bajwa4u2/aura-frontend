@@ -427,19 +427,17 @@ class _ConfirmationView extends ConsumerWidget {
                   const SizedBox(height: AuraSpace.s24),
                   FilledButton.icon(
                     icon: const Icon(Icons.video_call_rounded),
-                    label: Text(
-                      isAuthed ? 'Continue with Aura' : 'Join as guest',
-                    ),
+                    label: Text(isAuthed ? 'Open join page' : 'Join as guest'),
                     onPressed: () => context.push(joinPath),
                   ),
-                  const SizedBox(height: AuraSpace.s12),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.login_rounded),
-                    label: const Text('Continue with Aura'),
-                    onPressed: isAuthed
-                        ? () => context.push(joinPath)
-                        : () => context.go(loginPath),
-                  ),
+                  if (!isAuthed) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    TextButton.icon(
+                      icon: const Icon(Icons.login_rounded),
+                      label: const Text('Sign in with Aura'),
+                      onPressed: () => context.go(loginPath),
+                    ),
+                  ],
                   const SizedBox(height: AuraSpace.s12),
                   OutlinedButton(
                     onPressed: () => context.go(profile.publicUrl),

@@ -340,11 +340,7 @@ class _PreJoinBody extends ConsumerWidget {
                       height: 50,
                       child: FilledButton.icon(
                         icon: const Icon(Icons.video_call_rounded),
-                        label: Text(
-                          isAuthed
-                              ? 'Continue with Aura'
-                              : _buttonLabel(lifecycle),
-                        ),
+                        label: Text(_buttonLabel(lifecycle)),
                         onPressed: joining || lifecycle.isTerminal
                             ? null
                             : () {
@@ -353,18 +349,16 @@ class _PreJoinBody extends ConsumerWidget {
                               },
                       ),
                     ),
-                    const SizedBox(height: AuraSpace.s12),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.login_rounded),
-                      label: Text(
-                        isAuthed ? 'Join as guest' : 'Continue with Aura',
+                    if (!isAuthed) ...[
+                      const SizedBox(height: AuraSpace.s12),
+                      TextButton.icon(
+                        icon: const Icon(Icons.login_rounded),
+                        label: const Text('Sign in with Aura'),
+                        onPressed: () => context.go(
+                          '/login?redirect=${Uri.encodeComponent('/meetings/join/${meeting.meetingCode}')}',
+                        ),
                       ),
-                      onPressed: isAuthed
-                          ? onJoin
-                          : () => context.go(
-                              '/login?redirect=${Uri.encodeComponent('/meetings/join/${meeting.meetingCode}')}',
-                            ),
-                    ),
+                    ],
                     const SizedBox(height: AuraSpace.s32),
                     const ShellFooter(),
                   ],
