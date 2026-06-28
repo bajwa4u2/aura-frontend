@@ -57,31 +57,38 @@ class _NotFoundBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuraScaffold(
       title: '',
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AuraSpace.s24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.calendar_today_rounded,
-                size: 48,
-                color: Color(0xFF9CA3AF),
+      body: ListView(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        children: [
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: AuraSpace.s32),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.calendar_today_rounded,
+                    size: 48,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
+                  Text(
+                    'Booking page not found',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: AuraSpace.s8),
+                  const Text(
+                    'This booking link may be expired or invalid.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF6B7280)),
+                  ),
+                ],
               ),
-              const SizedBox(height: AuraSpace.s16),
-              Text(
-                'Booking page not found',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AuraSpace.s8),
-              const Text(
-                'This booking link may be expired or invalid.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF6B7280)),
-              ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: AuraSpace.s32),
+          const ShellFooter(),
+        ],
       ),
     );
   }
@@ -105,7 +112,8 @@ class _BookingPageBody extends StatelessWidget {
           vertical: AuraSpace.s24,
         ),
         children: [
-          Center(
+          Align(
+            alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1120),
               child: Column(

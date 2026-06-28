@@ -276,7 +276,8 @@ class _ConfirmationView extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s24),
         children: [
-          Center(
+          Align(
+            alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
               child: Column(

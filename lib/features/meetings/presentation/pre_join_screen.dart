@@ -181,164 +181,172 @@ class _PreJoinBody extends ConsumerWidget {
         icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () => context.pop(),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Padding(
-            padding: const EdgeInsets.all(AuraSpace.s24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    border: Border.all(color: const Color(0xFF243244)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AuraSpace.s16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (institution != null)
-                          _IdentityAvatar(
-                            name: institution.name,
-                            logoUrl: institution.logoUrl,
-                            icon: Icons.business_rounded,
-                          ),
-                        if (institution != null && host != null)
-                          const SizedBox(width: AuraSpace.s10),
-                        if (host != null)
-                          _IdentityAvatar(
-                            name: host.name,
-                            logoUrl: host.avatarUrl,
-                            icon: Icons.person_outline_rounded,
-                          ),
-                        const SizedBox(width: AuraSpace.s14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                institution?.name ??
-                                    host?.name ??
-                                    meeting.title,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
+      body: ListView(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        children: [
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      border: Border.all(color: const Color(0xFF243244)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AuraSpace.s16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (institution != null)
+                            _IdentityAvatar(
+                              name: institution.name,
+                              logoUrl: institution.logoUrl,
+                              icon: Icons.business_rounded,
+                            ),
+                          if (institution != null && host != null)
+                            const SizedBox(width: AuraSpace.s10),
+                          if (host != null)
+                            _IdentityAvatar(
+                              name: host.name,
+                              logoUrl: host.avatarUrl,
+                              icon: Icons.person_outline_rounded,
+                            ),
+                          const SizedBox(width: AuraSpace.s14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  institution?.name ??
+                                      host?.name ??
+                                      meeting.title,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                host == null
-                                    ? 'Host details unavailable'
-                                    : host.title?.trim().isNotEmpty == true
-                                    ? host.title!.trim()
-                                    : host.name,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: const Color(0xFFCBD5E1),
+                                const SizedBox(height: 4),
+                                Text(
+                                  host == null
+                                      ? 'Host details unavailable'
+                                      : host.title?.trim().isNotEmpty == true
+                                      ? host.title!.trim()
+                                      : host.name,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xFFCBD5E1),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AuraSpace.s20),
-                Text(
-                  meeting.title,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (identity != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  _BookingIdentityCard(identity: identity!),
-                ],
-                if ((meeting.description ?? '').trim().isNotEmpty) ...[
-                  const SizedBox(height: AuraSpace.s8),
+                  const SizedBox(height: AuraSpace.s20),
                   Text(
-                    meeting.description!.trim(),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFFCBD5E1),
-                      height: 1.45,
+                    meeting.title,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
-                const SizedBox(height: AuraSpace.s6),
-                _StatusPill(lifecycle: lifecycle),
-                const SizedBox(height: AuraSpace.s12),
-                _MeetingMetaRow(
-                  icon: Icons.schedule_rounded,
-                  text: _scheduledLabel(context, meeting),
-                ),
-                _MeetingMetaRow(
-                  icon: Icons.public_rounded,
-                  text: meeting.timezone,
-                ),
-                if (host?.title?.trim().isNotEmpty == true)
+                  if (identity != null) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    _BookingIdentityCard(identity: identity!),
+                  ],
+                  if ((meeting.description ?? '').trim().isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      meeting.description!.trim(),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFFCBD5E1),
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AuraSpace.s6),
+                  _StatusPill(lifecycle: lifecycle),
+                  const SizedBox(height: AuraSpace.s12),
                   _MeetingMetaRow(
-                    icon: Icons.badge_outlined,
-                    text: host!.title!.trim(),
+                    icon: Icons.schedule_rounded,
+                    text: _scheduledLabel(context, meeting),
                   ),
-                const SizedBox(height: AuraSpace.s24),
-                Text(
-                  isAuthed ? 'Join with your Aura account' : 'Join as a guest',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                  _MeetingMetaRow(
+                    icon: Icons.public_rounded,
+                    text: meeting.timezone,
                   ),
-                ),
-                const SizedBox(height: AuraSpace.s6),
-                TextField(
-                  controller: nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter your name',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person_outline_rounded),
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                TextField(
-                  controller: emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    hintText: 'your@email.com',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.mail_outline_rounded),
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s24),
-                SizedBox(
-                  height: 50,
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.video_call_rounded),
-                    label: Text(
-                      isAuthed ? 'Continue with Aura' : _buttonLabel(lifecycle),
+                  if (host?.title?.trim().isNotEmpty == true)
+                    _MeetingMetaRow(
+                      icon: Icons.badge_outlined,
+                      text: host!.title!.trim(),
                     ),
-                    onPressed: joining || lifecycle.isTerminal ? null : onJoin,
+                  const SizedBox(height: AuraSpace.s24),
+                  Text(
+                    isAuthed
+                        ? 'Join with your Aura account'
+                        : 'Join as a guest',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.login_rounded),
-                  label: Text(
-                    isAuthed ? 'Join as guest' : 'Continue with Aura',
+                  const SizedBox(height: AuraSpace.s6),
+                  TextField(
+                    controller: nameCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter your name',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person_outline_rounded),
+                    ),
                   ),
-                  onPressed: isAuthed
-                      ? onJoin
-                      : () => context.go(
-                          '/login?redirect=${Uri.encodeComponent('/meetings/join/${meeting.meetingCode}')}',
-                        ),
-                ),
-                const SizedBox(height: AuraSpace.s32),
-                const ShellFooter(),
-              ],
+                  const SizedBox(height: AuraSpace.s12),
+                  TextField(
+                    controller: emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      hintText: 'your@email.com',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.mail_outline_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s24),
+                  SizedBox(
+                    height: 50,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.video_call_rounded),
+                      label: Text(
+                        isAuthed
+                            ? 'Continue with Aura'
+                            : _buttonLabel(lifecycle),
+                      ),
+                      onPressed: joining || lifecycle.isTerminal
+                          ? null
+                          : onJoin,
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.login_rounded),
+                    label: Text(
+                      isAuthed ? 'Join as guest' : 'Continue with Aura',
+                    ),
+                    onPressed: isAuthed
+                        ? onJoin
+                        : () => context.go(
+                            '/login?redirect=${Uri.encodeComponent('/meetings/join/${meeting.meetingCode}')}',
+                          ),
+                  ),
+                  const SizedBox(height: AuraSpace.s32),
+                  const ShellFooter(),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -131,7 +131,8 @@ class _GuestWaitingRoomScreenState
           body: ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),
             children: [
-              Center(
+              Align(
+                alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 860),
                   child: Column(

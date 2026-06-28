@@ -67,7 +67,8 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen> {
           vertical: AuraSpace.s16,
         ),
         children: [
-          Center(
+          Align(
+            alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1180),
               child: Column(
