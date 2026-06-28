@@ -636,7 +636,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
                   // ── Main body ─────────────────────────────────────────────────
                   Expanded(
-                    child: state.isJoined
+                    child: isMeetingSession && state.isJoined
+                        ? _buildMeetingRoom(
+                            state: state,
+                            myUserId: myUserId,
+                            wide: wide,
+                          )
+                        : state.isJoined
                         ? _buildActiveCall(
                             state: state,
                             controller: controller,
@@ -655,28 +661,41 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
                   // ── Call controls ─────────────────────────────────────────────
                   if (state.isJoined)
-                    _CallControlDock(
-                      micOn: state.microphoneEnabled,
-                      cameraOn: state.cameraEnabled,
-                      isVideoMode: state.isVideoMode,
-                      activePanel: _activePanel,
-                      pendingRequests: canModerate ? joinRequestCount : 0,
-                      onToggleMic: controller.toggleMicrophone,
-                      onToggleCamera: controller.toggleCamera,
-                      onParticipants: () =>
-                          _togglePanel(_kPanelParticipants, wide),
-                      onMore: () => _togglePanel(_kPanelMore, wide),
-                      // Only the session host can end for everyone.
-                      // Non-hosts always leave; the backend auto-ends when the
-                      // last active participant leaves.
-                      isEndCall: isHost,
-                      isEnding: state.isEndingCall,
-                      onLeave: state.isEndingCall
-                          ? null
-                          : isHost
-                          ? () => unawaited(_endCallAndClose(controller))
-                          : () => unawaited(_leaveAndNavigate(controller)),
-                    ),
+                    isMeetingSession
+                        ? _MeetingControlDock(
+                            micOn: state.microphoneEnabled,
+                            cameraOn: state.cameraEnabled,
+                            isVideoMode: state.isVideoMode,
+                            onToggleMic: controller.toggleMicrophone,
+                            onToggleCamera: controller.toggleCamera,
+                            onLeave: state.isEndingCall
+                                ? null
+                                : isHost
+                                ? () => unawaited(_endCallAndClose(controller))
+                                : () =>
+                                      unawaited(_leaveAndNavigate(controller)),
+                            isEnding: state.isEndingCall,
+                          )
+                        : _CallControlDock(
+                            micOn: state.microphoneEnabled,
+                            cameraOn: state.cameraEnabled,
+                            isVideoMode: state.isVideoMode,
+                            activePanel: _activePanel,
+                            pendingRequests: canModerate ? joinRequestCount : 0,
+                            onToggleMic: controller.toggleMicrophone,
+                            onToggleCamera: controller.toggleCamera,
+                            onParticipants: () =>
+                                _togglePanel(_kPanelParticipants, wide),
+                            onMore: () => _togglePanel(_kPanelMore, wide),
+                            isEndCall: isHost,
+                            isEnding: state.isEndingCall,
+                            onLeave: state.isEndingCall
+                                ? null
+                                : isHost
+                                ? () => unawaited(_endCallAndClose(controller))
+                                : () =>
+                                      unawaited(_leaveAndNavigate(controller)),
+                          ),
                 ],
               );
             },
@@ -724,6 +743,97 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   // ── Pre-join / lobby view ─────────────────────────────────────────────────
+
+  Widget _buildMeetingRoom({
+    required RealtimeState state,
+    required String myUserId,
+    required bool wide,
+  }) {
+    final hasAnyRenderer =
+        state.localRenderer != null || state.remoteRenderers.isNotEmpty;
+    final body = hasAnyRenderer
+        ? _buildMeetingStage(state: state, myUserId: myUserId)
+        : _buildMeetingWaitingStage(state: state, myUserId: myUserId);
+
+    if (!wide || _activePanel == null) return body;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: body),
+        SizedBox(
+          width: 360,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AuraSurface.subtle,
+              border: Border(left: BorderSide(color: AuraSurface.divider)),
+            ),
+            child: _CallPanelContent(
+              panelId: _activePanel!,
+              sessionId: widget.sessionId,
+              myUserId: myUserId,
+              canModerate: true,
+              onClose: () => setState(() => _activePanel = null),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMeetingWaitingStage({
+    required RealtimeState state,
+    required String myUserId,
+  }) {
+    final waitingText = state.participants.length <= 1
+        ? 'Waiting for guest to join'
+        : 'Meeting in progress';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(waitingText, style: AuraText.headline),
+            const SizedBox(height: AuraSpace.s24),
+            SizedBox(
+              width: 280,
+              child: _AvatarStage(
+                participants: state.participants,
+                myUserId: myUserId,
+                micOn: state.microphoneEnabled,
+                isLoading: state.isMediaBusy && state.participants.isEmpty,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMeetingStage({
+    required RealtimeState state,
+    required String myUserId,
+  }) {
+    if (state.isVideoMode &&
+        (state.localRenderer != null || state.remoteRenderers.isNotEmpty)) {
+      return _VideoGrid(
+        localRenderer: state.localRenderer,
+        remoteRenderers: state.remoteRenderers,
+        participants: state.participants,
+        myUserId: myUserId,
+        micOn: state.microphoneEnabled,
+      );
+    }
+
+    return _AvatarStage(
+      participants: state.participants,
+      myUserId: myUserId,
+      micOn: state.microphoneEnabled,
+      isLoading: state.isMediaBusy && state.participants.isEmpty,
+    );
+  }
 
   Widget _buildPreJoin({
     required BuildContext context,
@@ -2166,6 +2276,72 @@ class _CallControlDock extends StatelessWidget {
           _LeaveButton(
             onPressed: onLeave,
             label: isEnding ? 'Ending…' : (isEndCall ? 'End' : 'Leave'),
+            busy: isEnding,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MeetingControlDock extends StatelessWidget {
+  const _MeetingControlDock({
+    required this.micOn,
+    required this.cameraOn,
+    required this.isVideoMode,
+    required this.onToggleMic,
+    required this.onToggleCamera,
+    required this.onLeave,
+    required this.isEnding,
+  });
+
+  final bool micOn;
+  final bool cameraOn;
+  final bool isVideoMode;
+  final VoidCallback onToggleMic;
+  final VoidCallback onToggleCamera;
+  final VoidCallback? onLeave;
+  final bool isEnding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s12,
+        AuraSpace.s16,
+        AuraSpace.s16,
+      ),
+      decoration: const BoxDecoration(
+        color: AuraSurface.subtle,
+        border: Border(top: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _DockButton(
+            icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+            label: micOn ? 'Mute' : 'Unmute',
+            active: micOn,
+            warning: !micOn,
+            onPressed: onToggleMic,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          if (isVideoMode) ...[
+            _DockButton(
+              icon: cameraOn
+                  ? Icons.videocam_rounded
+                  : Icons.videocam_off_rounded,
+              label: cameraOn ? 'Camera' : 'Camera off',
+              active: cameraOn,
+              warning: !cameraOn,
+              onPressed: onToggleCamera,
+            ),
+            const SizedBox(width: AuraSpace.s8),
+          ],
+          _LeaveButton(
+            onPressed: onLeave,
+            label: isEnding ? 'Ending…' : 'Leave meeting',
             busy: isEnding,
           ),
         ],
