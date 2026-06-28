@@ -338,6 +338,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     // Pre-join screen — guests arrive here from booking confirmation emails
     if (path.startsWith('/meetings/join/')) return true;
+    if (RegExp(
+      r'^/meetings/[^/]+/(room|waiting|summary|post-meeting)$',
+    ).hasMatch(path)) {
+      return true;
+    }
 
     return false;
   }

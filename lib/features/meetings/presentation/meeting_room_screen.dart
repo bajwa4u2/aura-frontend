@@ -1,3 +1,4 @@
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,8 @@ import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_room.dart';
 import 'meeting_lifecycle_presenter.dart';
+import '../../realtime/application/realtime_providers.dart';
+import '../../realtime/data/realtime_media_service.dart';
 
 class MeetingRoomScreen extends ConsumerStatefulWidget {
   final String meetingId;
@@ -31,6 +34,7 @@ class MeetingRoomScreen extends ConsumerStatefulWidget {
 
 class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
   bool _busy = false;
+  bool _roomOpen = false;
   String? _sessionId;
 
   @override
@@ -41,10 +45,15 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
         : widget.sessionId!.trim();
   }
 
-  String get _roomBasePath => widget.institutionId == null
-      ? '/meetings/${widget.meetingId}/room'
-      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/room';
-  String get _returnTo => widget.returnTo ?? Uri.encodeComponent(_roomBasePath);
+  @override
+  void dispose() {
+    try {
+      final media = ref.read(realtimeMediaServiceProvider);
+      Future.microtask(() => media.resetSessionMedia());
+    } catch (_) {}
+    super.dispose();
+  }
+
   String get _summaryPath => widget.institutionId == null
       ? '/meetings/${widget.meetingId}/summary'
       : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
@@ -62,7 +71,13 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
         _sessionId = updated.sessionId?.trim().isNotEmpty == true
             ? updated.sessionId!.trim()
             : _sessionId;
+        _roomOpen = true;
       });
+      try {
+        await ref
+            .read(realtimeMediaServiceProvider)
+            .ensureLocalMedia(audio: true, video: true);
+      } catch (_) {}
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(content: Text('Could not open meeting room: $e')),
@@ -72,11 +87,23 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
     }
   }
 
-  void _enterTransport(Meeting meeting) {
+  Future<void> _enterRoom(Meeting meeting) async {
     final sessionId = (_sessionId ?? meeting.room?.realtimeSessionId ?? '')
         .trim();
     if (sessionId.isEmpty) return;
-    context.push('/realtime/$sessionId?action=join&returnTo=$_returnTo');
+
+    if (!_roomOpen) setState(() => _busy = true);
+    try {
+      final media = ref.read(realtimeMediaServiceProvider);
+      await media.ensureLocalMedia(audio: true, video: true);
+      if (!mounted) return;
+      setState(() => _roomOpen = true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _roomOpen = true);
+    } finally {
+      if (mounted && _busy) setState(() => _busy = false);
+    }
   }
 
   void _copyLink(Meeting meeting) {
@@ -103,6 +130,7 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       data: (meeting) {
         final room = meeting.room;
         final isHost = (me['id']?.toString().trim() ?? '') == meeting.host?.id;
+        final mediaService = ref.watch(realtimeMediaServiceProvider);
         final lifecycle = MeetingLifecyclePresenter.present(
           meeting,
           room: room,
@@ -137,7 +165,7 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                             ? () => _startMeeting(meeting)
                             : null,
                         onEnter: sessionId.isNotEmpty
-                            ? () => _enterTransport(meeting)
+                            ? () => _enterRoom(meeting)
                             : null,
                         onOpenSummary: isTerminal
                             ? () => context.push(_summaryPath)
@@ -161,13 +189,24 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                             ? () => _startMeeting(meeting)
                             : null,
                         onEnter: sessionId.isNotEmpty
-                            ? () => _enterTransport(meeting)
+                            ? () => _enterRoom(meeting)
                             : null,
                         onOpenSummary: isTerminal
                             ? () => context.push(_summaryPath)
                             : null,
                         onCopy: () => _copyLink(meeting),
                         isTerminal: isTerminal,
+                      ),
+                      const SizedBox(height: AuraSpace.s16),
+                      _MeetingStudioCard(
+                        room: room,
+                        lifecycle: lifecycle,
+                        isHost: isHost,
+                        roomOpen: _roomOpen,
+                        mediaService: mediaService,
+                        onOpenRoom: sessionId.isNotEmpty
+                            ? () => _enterRoom(meeting)
+                            : null,
                       ),
                     ],
                   ),
@@ -381,7 +420,7 @@ class _RoomStateCard extends StatelessWidget {
             if (!isTerminal) ...[
               const SizedBox(height: AuraSpace.s16),
               Text(
-                'If the room is still loading, refresh to reconnect. The meeting stays open until the host ends it.',
+                'The room stays open until the host ends it. Camera and microphone preview appear here before you enter.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: const Color(0xFF6B7280),
                 ),
@@ -398,6 +437,210 @@ class _RoomStateCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MeetingStudioCard extends StatelessWidget {
+  final MeetingRoom? room;
+  final MeetingLifecycleViewModel lifecycle;
+  final bool isHost;
+  final bool roomOpen;
+  final RealtimeMediaService mediaService;
+  final VoidCallback? onOpenRoom;
+
+  const _MeetingStudioCard({
+    required this.room,
+    required this.lifecycle,
+    required this.isHost,
+    required this.roomOpen,
+    required this.mediaService,
+    required this.onOpenRoom,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final canOpen = onOpenRoom != null;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s20),
+        child: StreamBuilder<RealtimeMediaSnapshot>(
+          stream: mediaService.snapshots,
+          initialData: mediaService.currentSnapshot,
+          builder: (context, snapshot) {
+            final mediaState = snapshot.data ?? mediaService.currentSnapshot;
+            final preview = mediaState.localRenderer;
+            final hasPreview = preview != null;
+            final statusText = roomOpen
+                ? lifecycle.status == MeetingLifecycleStatus.inProgress
+                      ? 'The room is open.'
+                      : isHost
+                      ? 'Waiting for guest to join.'
+                      : 'Waiting for host to open the room.'
+                : 'Open the room to prepare your camera and microphone.';
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Meeting studio',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  statusText,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 640;
+                    final previewPane = ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        color: const Color(0xFF0F172A),
+                        height: 220,
+                        alignment: Alignment.center,
+                        child: hasPreview
+                            ? RTCVideoView(
+                                preview,
+                                mirror: true,
+                                objectFit: RTCVideoViewObjectFit
+                                    .RTCVideoViewObjectFitCover,
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.videocam_rounded,
+                                    color: Color(0xFF94A3B8),
+                                    size: 36,
+                                  ),
+                                  const SizedBox(height: AuraSpace.s8),
+                                  Text(
+                                    'Camera preview appears here',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: const Color(0xFF94A3B8),
+                                        ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    );
+
+                    final controls = Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _StudioStat(
+                          icon: Icons.people_alt_rounded,
+                          label: 'Participants',
+                          value: '${room?.activeParticipantCount ?? 0}',
+                        ),
+                        const SizedBox(height: AuraSpace.s8),
+                        _StudioStat(
+                          icon: Icons.schedule_rounded,
+                          label: 'Meeting',
+                          value: lifecycle.label,
+                        ),
+                        const SizedBox(height: AuraSpace.s16),
+                        FilledButton.icon(
+                          onPressed: canOpen ? onOpenRoom : null,
+                          icon: Icon(
+                            roomOpen
+                                ? Icons.meeting_room_rounded
+                                : Icons.play_arrow_rounded,
+                          ),
+                          label: Text(
+                            roomOpen
+                                ? (isHost ? 'Room open' : 'Enter room')
+                                : (isHost ? 'Open room' : 'Enter room'),
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s8),
+                        OutlinedButton.icon(
+                          onPressed: mediaState.localRenderer == null
+                              ? null
+                              : () async {
+                                  await mediaService.setMicrophoneEnabled(
+                                    !mediaState.micEnabled,
+                                  );
+                                },
+                          icon: Icon(
+                            mediaState.micEnabled
+                                ? Icons.mic_rounded
+                                : Icons.mic_off_rounded,
+                          ),
+                          label: Text(
+                            mediaState.micEnabled
+                                ? 'Mute microphone'
+                                : 'Unmute microphone',
+                          ),
+                        ),
+                      ],
+                    );
+
+                    if (wide) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 5, child: previewPane),
+                          const SizedBox(width: AuraSpace.s16),
+                          SizedBox(width: 240, child: controls),
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        previewPane,
+                        const SizedBox(height: AuraSpace.s16),
+                        controls,
+                      ],
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _StudioStat extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _StudioStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF6B7280)),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Text(
+            '$label: $value',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      ],
     );
   }
 }
