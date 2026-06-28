@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/shell_shared.dart';
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -18,6 +19,7 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
   final String? sessionId;
   final String? returnTo;
   final String? meetingCode;
+  final String? guestToken;
 
   const GuestWaitingRoomScreen({
     super.key,
@@ -26,6 +28,7 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
     this.sessionId,
     this.returnTo,
     this.meetingCode,
+    this.guestToken,
   });
 
   @override
@@ -40,6 +43,7 @@ class _GuestWaitingRoomScreenState
   @override
   void initState() {
     super.initState();
+    unawaited(_ensureGuestAuth());
     _poller = Timer.periodic(const Duration(seconds: 8), (_) {
       if (!mounted) return;
       _refresh();
@@ -66,8 +70,25 @@ class _GuestWaitingRoomScreenState
 
   String get _currentSessionId => (widget.sessionId ?? '').trim();
 
+  String get _guestToken => (widget.guestToken ?? '').trim();
+
   bool get _usePublicMeetingLookup =>
       (widget.meetingCode ?? '').trim().isNotEmpty;
+
+  Future<void> _ensureGuestAuth() async {
+    final tokenStore = ref.read(tokenStoreProvider);
+    await tokenStore.load();
+    if ((tokenStore.accessToken ?? '').trim().isNotEmpty) return;
+    if (_guestToken.isEmpty) return;
+    final guestAuth = await ref
+        .read(meetingsRepositoryProvider)
+        .exchangeGuestAuth(_guestToken);
+    if (!mounted) return;
+    await tokenStore.setSession(
+      accessToken: guestAuth.accessToken,
+      refreshToken: guestAuth.refreshToken,
+    );
+  }
 
   void _refresh() {
     if (_usePublicMeetingLookup) {
@@ -84,14 +105,19 @@ class _GuestWaitingRoomScreenState
     ).showSnackBar(const SnackBar(content: Text('Meeting link copied')));
   }
 
-  void _joinRoom(Meeting meeting) {
+  Future<void> _joinRoom(Meeting meeting) async {
+    await _ensureGuestAuth();
     final sessionId =
         (_currentSessionId.isNotEmpty
                 ? _currentSessionId
                 : meeting.sessionId ?? meeting.room?.realtimeSessionId ?? '')
             .trim();
     if (sessionId.isEmpty) return;
-    context.push('/realtime/$sessionId?action=join&returnTo=$_returnTo');
+    final guestToken = _guestToken;
+    context.push(
+      '/realtime/$sessionId?action=join&returnTo=$_returnTo'
+      '${guestToken.isNotEmpty ? '&guestToken=${Uri.encodeComponent(guestToken)}' : ''}',
+    );
   }
 
   @override

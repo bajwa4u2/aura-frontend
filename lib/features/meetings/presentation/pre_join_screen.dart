@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/shell_shared.dart';
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -53,10 +54,24 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
 
       if (!mounted) return;
 
+      if (result.guestToken != null && result.guestToken!.trim().isNotEmpty) {
+        final guestAuth = await repo.exchangeGuestAuth(
+          result.guestToken!.trim(),
+        );
+        if (!mounted) return;
+        await ref
+            .read(tokenStoreProvider)
+            .setSession(
+              accessToken: guestAuth.accessToken,
+              refreshToken: guestAuth.refreshToken,
+            );
+      }
+
       if (result.shouldWait) {
         final waitingPath =
             '/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}'
-            '&code=${Uri.encodeComponent(widget.meetingCode)}';
+            '&code=${Uri.encodeComponent(widget.meetingCode)}'
+            '${result.guestToken != null ? '&guestToken=${Uri.encodeComponent(result.guestToken!)}' : ''}';
         context.push(waitingPath);
         return;
       }

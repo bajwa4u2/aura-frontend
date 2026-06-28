@@ -180,6 +180,16 @@ class MeetingsRepository {
     return JoinMeetingResult.fromJson(data);
   }
 
+  Future<GuestAuthResult> exchangeGuestAuth(String guestToken) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/public/meetings/guest-auth',
+      data: {'guestToken': guestToken},
+      options: Options(extra: const {'__skip_auth': true}),
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return GuestAuthResult.fromJson(data);
+  }
+
   Future<void> inviteToMeeting(
     String meetingId, {
     String? userId,
@@ -195,4 +205,16 @@ class MeetingsRepository {
       },
     );
   }
+}
+
+class GuestAuthResult {
+  final String accessToken;
+  final String? refreshToken;
+
+  const GuestAuthResult({required this.accessToken, this.refreshToken});
+
+  factory GuestAuthResult.fromJson(Map<String, dynamic> j) => GuestAuthResult(
+    accessToken: j['accessToken'] as String? ?? '',
+    refreshToken: j['refreshToken'] as String?,
+  );
 }
