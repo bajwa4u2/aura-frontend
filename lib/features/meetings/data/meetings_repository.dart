@@ -156,7 +156,7 @@ class MeetingsRepository {
 
   Future<Meeting> getMeetingByCode(String code) async {
     final res = await _dio.get<Map<String, dynamic>>(
-      '/meetings/join/$code',
+      '/public/meetings/join/$code',
       options: Options(extra: const {'__skip_auth': true}),
     );
     final data = res.data!['data'] as Map<String, dynamic>;
@@ -169,7 +169,7 @@ class MeetingsRepository {
     String? guestEmail,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
-      '/meetings/join/$code',
+      '/public/meetings/join/$code',
       data: {
         if (guestName != null) 'guestName': guestName,
         if (guestEmail != null) 'guestEmail': guestEmail,
