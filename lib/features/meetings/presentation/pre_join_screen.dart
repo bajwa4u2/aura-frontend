@@ -54,10 +54,8 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       if (!mounted) return;
 
       if (result.shouldWait) {
-        final institutionId = meeting.booking?.institution?.id;
-        final waitingPath = institutionId == null
-            ? '/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}'
-            : '/institution/$institutionId/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}';
+        final waitingPath =
+            '/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}';
         context.push(waitingPath);
         return;
       }

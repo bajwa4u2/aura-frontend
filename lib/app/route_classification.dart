@@ -49,7 +49,7 @@ bool isMemberShellPath(String path) {
       // Meetings platform
       path == '/meetings' ||
       path == '/meetings/new' ||
-      path.startsWith('/meetings/') ||
+      RegExp(r'^/meetings/[^/]+$').hasMatch(path) ||
       path == '/availability' ||
       // Institution onboarding/entry points — these require personal auth
       // before institution auth. NOTE: `/institutions` itself is *public*
