@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config.dart';
+import '../../institutions/ui/institution_ds.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -45,30 +46,31 @@ class InstitutionAvailabilityScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Could not load: $e')),
         data: (profiles) {
-          if (profiles.isEmpty) {
-            return _EmptyState(
-              onCreateTap: () => _showCreateDialog(context, ref),
-            );
-          }
-          return ListView.separated(
+          return ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),
-            itemCount: profiles.length + 1,
-            separatorBuilder: (_, i) => i == 0
-                ? const SizedBox(height: AuraSpace.s16)
-                : const SizedBox(height: AuraSpace.s8),
-            itemBuilder: (_, i) {
-              if (i == 0) {
-                return OutlinedButton.icon(
+            children: [
+              const _Header(),
+              const SizedBox(height: AuraSpace.s20),
+              if (profiles.isEmpty)
+                _EmptyState(onCreateTap: () => _showCreateDialog(context, ref))
+              else ...[
+                OutlinedButton.icon(
                   icon: const Icon(Icons.add_rounded, size: 18),
                   label: const Text('New booking page'),
                   onPressed: () => _showCreateDialog(context, ref),
-                );
-              }
-              return _ProfileCard(
-                profile: profiles[i - 1],
-                institutionId: institutionId,
-              );
-            },
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                ...profiles.map(
+                  (profile) => Padding(
+                    padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+                    child: _ProfileCard(
+                      profile: profile,
+                      institutionId: institutionId,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           );
         },
       ),
@@ -80,6 +82,19 @@ class InstitutionAvailabilityScreen extends ConsumerWidget {
       context: context,
       builder: (_) =>
           _CreateProfileDialog(institutionId: institutionId, ref: ref),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    return const InsModeHeader(
+      title: 'Booking pages',
+      description:
+          'Manage the booking pages, public links, and availability windows used by the institution workspace.',
     );
   }
 }
@@ -108,8 +123,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AuraSpace.s8),
             const Text(
-              'Create a booking page so visitors can schedule meetings '
-              'with your workspace without using Calendly.',
+              'Create a booking page so visitors can schedule meetings with your workspace.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Color(0xFF6B7280)),
             ),
@@ -141,15 +155,7 @@ class _ProfileCard extends ConsumerWidget {
     final publicUrl = '$baseHost${profile.publicUrl}';
     final host = profile.effectiveHost;
 
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF374151).withValues(alpha: 0.4),
-        ),
-      ),
+    return InsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

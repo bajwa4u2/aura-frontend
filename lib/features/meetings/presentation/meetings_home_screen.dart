@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../institutions/ui/institution_ds.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -144,74 +145,39 @@ class _HostHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: const Color(0xFF243244)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s18),
-        child: Wrap(
-          spacing: AuraSpace.s16,
-          runSpacing: AuraSpace.s16,
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Meetings',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(
-                    'Manage guest bookings, upcoming conversations, and meeting links from one place.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF9CA3AF),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Wrap(
-              spacing: AuraSpace.s10,
-              runSpacing: AuraSpace.s10,
-              children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.login_rounded),
-                  label: const Text('Join by code'),
-                  onPressed: () => _showJoinDialog(context),
-                ),
-                FilledButton.icon(
-                  icon: const Icon(Icons.video_call_rounded),
-                  label: const Text('Start meeting'),
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      final meeting = await ref
-                          .read(meetingsRepositoryProvider)
-                          .startInstantMeeting();
-                      ref.invalidate(upcomingMeetingsProvider);
-                      if (!context.mounted) return;
-                      _showMeetingStarted(context, meeting);
-                    } catch (e) {
-                      messenger.showSnackBar(
-                        SnackBar(content: Text('Could not start meeting: $e')),
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
+    return InsModeHeader(
+      title: 'Meetings',
+      description:
+          'Manage guest bookings, upcoming conversations, and meeting links from the workspace.',
+      primaryAction: Wrap(
+        spacing: AuraSpace.s10,
+        runSpacing: AuraSpace.s10,
+        children: [
+          OutlinedButton.icon(
+            icon: const Icon(Icons.login_rounded),
+            label: const Text('Join by code'),
+            onPressed: () => _showJoinDialog(context),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.video_call_rounded),
+            label: const Text('Start meeting'),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                final meeting = await ref
+                    .read(meetingsRepositoryProvider)
+                    .startInstantMeeting();
+                ref.invalidate(upcomingMeetingsProvider);
+                if (!context.mounted) return;
+                _showMeetingStarted(context, meeting);
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Could not start meeting: $e')),
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }
@@ -320,31 +286,25 @@ class _MeetingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: AuraSpace.s4),
-          child: Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s10),
-        if (meetings.isEmpty)
-          _EmptyState(title: emptyTitle, body: emptyBody)
-        else
-          ...meetings.map(
-            (meeting) => _MeetingCard(
-              meeting: meeting,
-              institutionId: institutionId,
-              compact: compact,
-              highlight: highlightToday,
+    return InsSection(
+      title: title,
+      child: meetings.isEmpty
+          ? _EmptyState(title: emptyTitle, body: emptyBody)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < meetings.length; i++) ...[
+                  _MeetingCard(
+                    meeting: meetings[i],
+                    institutionId: institutionId,
+                    compact: compact,
+                    highlight: highlightToday,
+                  ),
+                  if (i != meetings.length - 1)
+                    const SizedBox(height: InsSpacing.cardGap),
+                ],
+              ],
             ),
-          ),
-      ],
     );
   }
 }

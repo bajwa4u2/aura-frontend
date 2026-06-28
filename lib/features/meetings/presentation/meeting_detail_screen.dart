@@ -25,11 +25,11 @@ class MeetingDetailScreen extends ConsumerWidget {
 
     return meetingAsync.when(
       loading: () => AuraScaffold(
-        title: 'Meeting',
+        title: 'Meeting details',
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => AuraScaffold(
-        title: 'Meeting',
+        title: 'Meeting details',
         body: Center(child: Text('Could not load meeting: $e')),
       ),
       data: (meeting) => _MeetingDetailBody(
@@ -179,7 +179,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
     final institutionId = _resolvedInstitutionId;
 
     return AuraScaffold(
-      title: institutionId == null ? 'Meeting details' : 'Institution meeting',
+      title: 'Meeting details',
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () => context.pop(),
@@ -277,22 +277,27 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                     title: 'Source',
                     fullWidth: true,
                     children: [
-                      if (booking?.institution != null)
+                      if (booking?.institution != null &&
+                          _resolvedInstitutionId == null)
                         _InfoRow(
                           icon: Icons.business_rounded,
                           label: 'Institution',
                           value: booking!.institution!.name,
                         ),
-                      if ((booking?.institution?.tagline ?? '').trim().isNotEmpty)
+                      if ((booking?.institution?.tagline ?? '')
+                              .trim()
+                              .isNotEmpty &&
+                          _resolvedInstitutionId == null)
                         _InfoRow(
                           icon: Icons.verified_outlined,
                           label: 'Tagline',
                           value: booking!.institution!.tagline!.trim(),
                         ),
                       if ((booking?.institution?.description ?? '')
-                              .trim()
-                              .isNotEmpty ==
-                          true)
+                                  .trim()
+                                  .isNotEmpty ==
+                              true &&
+                          _resolvedInstitutionId == null)
                         _InfoRow(
                           icon: Icons.description_outlined,
                           label: 'About',
@@ -316,15 +321,6 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                               booking.host!.title!.trim(),
                           ].join(' · '),
                         ),
-                          _InfoRow(
-                            icon: Icons.person_pin_circle_outlined,
-                            label: 'Host',
-                            value: [
-                              meeting.host?.name ?? 'Host',
-                              if (meeting.host?.title?.trim().isNotEmpty == true)
-                                meeting.host!.title!.trim(),
-                            ].join(' · '),
-                          ),
                       _InfoRow(
                         icon: Icons.mark_email_read_outlined,
                         label: 'Email status',
@@ -654,9 +650,9 @@ class _ListRow extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s6),
           ...values.map(
