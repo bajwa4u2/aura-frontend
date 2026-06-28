@@ -91,15 +91,18 @@ class MeetingsHomeScreen extends ConsumerWidget {
                               meetings: today,
                               institutionId: institutionId,
                               highlightToday: true,
+                              compact: true,
                             ),
                             const SizedBox(height: AuraSpace.s20),
-                            _MeetingSection(
+                            _CollapsibleMeetingSection(
                               title: 'Upcoming conversations',
                               emptyTitle: 'No upcoming conversations',
                               emptyBody:
                                   'Scheduled meetings and guest bookings will appear here.',
                               meetings: upcoming,
                               institutionId: institutionId,
+                              initiallyExpanded: false,
+                              compact: true,
                             ),
                             const SizedBox(height: AuraSpace.s20),
                             _MeetingSection(
@@ -119,14 +122,15 @@ class MeetingsHomeScreen extends ConsumerWidget {
                     pastAsync.when(
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => const SizedBox.shrink(),
-                      data: (meetings) => _MeetingSection(
+                      data: (meetings) => _CollapsibleMeetingSection(
                         title: 'Past meetings',
                         emptyTitle: 'No past meetings yet',
                         emptyBody:
                             'Completed and cancelled meetings appear here.',
-                        meetings: meetings.take(12).toList(growable: false),
+                        meetings: meetings.take(8).toList(growable: false),
                         institutionId: institutionId,
                         compact: true,
+                        initiallyExpanded: false,
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s32),
@@ -310,6 +314,77 @@ class _MeetingSection extends StatelessWidget {
   }
 }
 
+class _CollapsibleMeetingSection extends StatelessWidget {
+  final String title;
+  final String emptyTitle;
+  final String emptyBody;
+  final List<Meeting> meetings;
+  final String? institutionId;
+  final bool compact;
+  final bool initiallyExpanded;
+
+  const _CollapsibleMeetingSection({
+    required this.title,
+    required this.emptyTitle,
+    required this.emptyBody,
+    required this.meetings,
+    this.institutionId,
+    this.compact = false,
+    this.initiallyExpanded = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
+        tilePadding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s18,
+          vertical: AuraSpace.s4,
+        ),
+        childrenPadding: const EdgeInsets.only(
+          left: AuraSpace.s18,
+          right: AuraSpace.s18,
+          bottom: AuraSpace.s18,
+          top: InsSpacing.cardGap,
+        ),
+        collapsedIconColor: const Color(0xFF9CA3AF),
+        iconColor: const Color(0xFF9CA3AF),
+        title: Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        children: [
+          meetings.isEmpty
+              ? _EmptyState(title: emptyTitle, body: emptyBody)
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < meetings.length; i++) ...[
+                      _MeetingCard(
+                        meeting: meetings[i],
+                        institutionId: institutionId,
+                        compact: compact,
+                        highlight: false,
+                      ),
+                      if (i != meetings.length - 1)
+                        const SizedBox(height: InsSpacing.cardGap),
+                    ],
+                  ],
+                ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MeetingCard extends ConsumerWidget {
   final Meeting meeting;
   final String? institutionId;
@@ -449,9 +524,50 @@ class _MeetingCard extends ConsumerWidget {
                         );
                       },
                     ),
-                    TextButton(
-                      onPressed: () => context.push(_detailPath),
-                      child: const Text('Open details'),
+                    PopupMenuButton<_MeetingMenuAction>(
+                      tooltip: 'More actions',
+                      onSelected: (value) async {
+                        switch (value) {
+                          case _MeetingMenuAction.details:
+                            context.push(_detailPath);
+                            break;
+                          case _MeetingMenuAction.summary:
+                            context.push(_summaryPath);
+                            break;
+                          case _MeetingMenuAction.copyLink:
+                            Clipboard.setData(
+                              ClipboardData(text: meeting.joinUrl),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Meeting link copied'),
+                              ),
+                            );
+                            break;
+                          case _MeetingMenuAction.cancel:
+                            await _cancelMeeting(context, ref);
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: _MeetingMenuAction.details,
+                          child: Text('Open details'),
+                        ),
+                        const PopupMenuItem(
+                          value: _MeetingMenuAction.summary,
+                          child: Text('View summary'),
+                        ),
+                        const PopupMenuItem(
+                          value: _MeetingMenuAction.copyLink,
+                          child: Text('Copy meeting link'),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(
+                          value: _MeetingMenuAction.cancel,
+                          child: Text('Cancel meeting'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -522,7 +638,52 @@ class _MeetingCard extends ConsumerWidget {
       context.push(_roomPath);
     }
   }
+
+  Future<void> _cancelMeeting(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cancel meeting?'),
+        content: const Text('This will cancel the meeting for everyone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep meeting'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancel meeting'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await ref.read(meetingsRepositoryProvider).cancelMeeting(meeting.id);
+      ref.invalidate(meetingProvider(meeting.id));
+      if (institutionId == null) {
+        ref.invalidate(upcomingMeetingsProvider);
+        ref.invalidate(pastMeetingsProvider);
+      } else {
+        ref.invalidate(institutionUpcomingMeetingsProvider(institutionId!));
+        ref.invalidate(institutionPastMeetingsProvider(institutionId!));
+      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Meeting cancelled')));
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not cancel meeting: $e')));
+    }
+  }
 }
+
+enum _MeetingMenuAction { details, summary, copyLink, cancel }
 
 class _MeetingIcon extends StatelessWidget {
   final Meeting meeting;

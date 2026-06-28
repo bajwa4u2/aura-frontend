@@ -164,9 +164,8 @@ class MeetingSummaryScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: AuraSpace.s16),
-                      _SummaryPanel(
+                      _SummaryTile(
                         title: 'Booking source and notes',
-                        fullWidth: true,
                         children: [
                           _InfoRow(
                             icon: Icons.calendar_today_rounded,
@@ -192,9 +191,8 @@ class MeetingSummaryScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: AuraSpace.s16),
-                      _SummaryPanel(
+                      _SummaryTile(
                         title: 'Follow-up',
-                        fullWidth: true,
                         children: [
                           _FollowUpBlock(
                             title: 'Decisions',
@@ -220,8 +218,7 @@ class MeetingSummaryScreen extends ConsumerWidget {
                           _FollowUpBlock(
                             title: 'Issues',
                             values: summary?.issues ?? const [],
-                            fallback:
-                                'Record any blockers or open questions.',
+                            fallback: 'Record any blockers or open questions.',
                           ),
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
@@ -409,6 +406,45 @@ class _SummaryPanel extends StatelessWidget {
   }
 }
 
+class _SummaryTile extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _SummaryTile({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s18,
+          vertical: AuraSpace.s4,
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(
+          AuraSpace.s18,
+          0,
+          AuraSpace.s18,
+          AuraSpace.s18,
+        ),
+        collapsedIconColor: const Color(0xFF9CA3AF),
+        iconColor: const Color(0xFF9CA3AF),
+        title: Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        children: children,
+      ),
+    );
+  }
+}
+
 class _AttendanceRow extends StatelessWidget {
   final String label;
   final String value;
@@ -454,9 +490,9 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       '$title: $body',
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: const Color(0xFF9CA3AF),
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF)),
     );
   }
 }

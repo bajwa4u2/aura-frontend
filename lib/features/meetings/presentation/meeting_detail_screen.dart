@@ -102,6 +102,198 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
     }
   }
 
+  Future<void> _editMeeting() async {
+    final titleCtrl = TextEditingController(text: meeting.title);
+    final descCtrl = TextEditingController(text: meeting.description ?? '');
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    DateTime? scheduledAt = meeting.scheduledAt;
+    var durationMinutes = meeting.durationMinutes;
+    var waitingRoomEnabled = meeting.waitingRoomEnabled;
+    var allowGuests = meeting.allowGuests;
+    var saving = false;
+
+    Future<void> pickDateTime(
+      BuildContext pickerContext,
+      StateSetter setDialogState,
+    ) async {
+      final now = DateTime.now();
+      final base = scheduledAt ?? now.add(const Duration(hours: 1));
+      final date = await showDatePicker(
+        context: pickerContext,
+        initialDate: base,
+        firstDate: now.subtract(const Duration(days: 1)),
+        lastDate: now.add(const Duration(days: 365)),
+      );
+      if (date == null || !pickerContext.mounted) return;
+      final time = await showTimePicker(
+        context: pickerContext,
+        initialTime: TimeOfDay.fromDateTime(base),
+      );
+      if (time == null || !pickerContext.mounted) return;
+      setDialogState(() {
+        scheduledAt = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        );
+      });
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            final scheduledLabel = scheduledAt == null
+                ? 'Pick date and time'
+                : '${MaterialLocalizations.of(dialogContext).formatFullDate(scheduledAt!.toLocal())} at ${MaterialLocalizations.of(dialogContext).formatTimeOfDay(TimeOfDay.fromDateTime(scheduledAt!.toLocal()))}';
+            return AlertDialog(
+              title: const Text('Edit meeting'),
+              content: SizedBox(
+                width: 520,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: titleCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Meeting title',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
+                      TextField(
+                        controller: descCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.calendar_today_rounded),
+                        label: Text(scheduledLabel),
+                        onPressed: () =>
+                            pickDateTime(dialogContext, setDialogState),
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
+                      DropdownButtonFormField<int>(
+                        initialValue: durationMinutes,
+                        decoration: const InputDecoration(
+                          labelText: 'Duration',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [15, 30, 45, 60, 90, 120]
+                            .map(
+                              (minutes) => DropdownMenuItem(
+                                value: minutes,
+                                child: Text('$minutes min'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setDialogState(() => durationMinutes = value);
+                        },
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Waiting room'),
+                        value: waitingRoomEnabled,
+                        onChanged: (value) =>
+                            setDialogState(() => waitingRoomEnabled = value),
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Allow guests'),
+                        value: allowGuests,
+                        onChanged: (value) =>
+                            setDialogState(() => allowGuests = value),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          if (scheduledAt == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please pick a date and time'),
+                              ),
+                            );
+                            return;
+                          }
+                          setDialogState(() => saving = true);
+                          try {
+                            await ref
+                                .read(meetingsRepositoryProvider)
+                                .updateMeeting(
+                                  meeting.id,
+                                  title: titleCtrl.text.trim(),
+                                  description: descCtrl.text.trim().isEmpty
+                                      ? null
+                                      : descCtrl.text.trim(),
+                                  scheduledAt: scheduledAt!
+                                      .toUtc()
+                                      .toIso8601String(),
+                                  durationMinutes: durationMinutes,
+                                  timezone: meeting.timezone,
+                                  waitingRoomEnabled: waitingRoomEnabled,
+                                  allowGuests: allowGuests,
+                                );
+                            ref.invalidate(meetingProvider(meeting.id));
+                            _invalidateLists();
+                            if (!mounted) return;
+                            navigator.pop();
+                            messenger.showSnackBar(
+                              const SnackBar(content: Text('Meeting updated')),
+                            );
+                          } catch (e) {
+                            if (!mounted) return;
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Could not update meeting: $e'),
+                              ),
+                            );
+                          } finally {
+                            if (dialogContext.mounted) {
+                              setDialogState(() => saving = false);
+                            }
+                          }
+                        },
+                  child: saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save changes'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    titleCtrl.dispose();
+    descCtrl.dispose();
+  }
+
   Future<void> _cancelMeeting() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -198,6 +390,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                     meeting: meeting,
                     lifecycle: widget.lifecycle,
                     onStart: _actioning ? null : _startMeeting,
+                    onEdit: _actioning ? null : _editMeeting,
                     onJoin: _actioning ? null : _joinMeeting,
                     onCopy: _copyLink,
                     onOpenSummary: () => context.push(_summaryPath),
@@ -436,6 +629,7 @@ class _HeaderCard extends StatelessWidget {
   final Meeting meeting;
   final MeetingLifecycleViewModel lifecycle;
   final VoidCallback? onStart;
+  final VoidCallback? onEdit;
   final VoidCallback? onJoin;
   final VoidCallback onCopy;
   final VoidCallback onOpenSummary;
@@ -444,6 +638,7 @@ class _HeaderCard extends StatelessWidget {
     required this.meeting,
     required this.lifecycle,
     required this.onStart,
+    required this.onEdit,
     required this.onJoin,
     required this.onCopy,
     required this.onOpenSummary,
@@ -504,6 +699,12 @@ class _HeaderCard extends StatelessWidget {
                   onJoin: onJoin,
                   onOpenSummary: onOpenSummary,
                 ),
+                if (onEdit != null)
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.edit_rounded),
+                    label: const Text('Edit meeting'),
+                    onPressed: onEdit,
+                  ),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.content_copy_rounded),
                   label: const Text('Copy meeting link'),
