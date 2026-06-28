@@ -94,6 +94,13 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       await media.ensureLocalMedia(audio: true, video: true);
       if (!mounted) return;
       setState(() => _roomOpen = true);
+      final returnTo = Uri.encodeComponent(
+        widget.returnTo ??
+            (widget.institutionId == null
+                ? '/meetings/${meeting.id}/room'
+                : '/institution/${widget.institutionId}/meetings/${meeting.id}/room'),
+      );
+      context.push('/realtime/$sessionId?action=join&returnTo=$returnTo');
     } catch (_) {
       if (!mounted) return;
       setState(() => _roomOpen = true);
