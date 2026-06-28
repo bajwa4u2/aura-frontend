@@ -8,7 +8,6 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
-import '../domain/meeting_room.dart';
 import 'meeting_lifecycle_presenter.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/data/realtime_media_service.dart';
@@ -311,148 +310,6 @@ class _IdentityAvatar extends StatelessWidget {
   }
 }
 
-class _RoomStateCard extends StatelessWidget {
-  final Meeting meeting;
-  final MeetingRoom? room;
-  final bool isHost;
-  final bool busy;
-  final MeetingLifecycleViewModel lifecycle;
-  final VoidCallback? onStart;
-  final VoidCallback? onEnter;
-  final VoidCallback? onOpenSummary;
-  final VoidCallback onCopy;
-  final bool isTerminal;
-
-  const _RoomStateCard({
-    required this.meeting,
-    required this.room,
-    required this.isHost,
-    required this.busy,
-    required this.lifecycle,
-    required this.onStart,
-    required this.onEnter,
-    required this.onOpenSummary,
-    required this.onCopy,
-    required this.isTerminal,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final statusText = switch (lifecycle.status) {
-      MeetingLifecycleStatus.scheduled => 'Scheduled meeting',
-      MeetingLifecycleStatus.startingSoon => 'Starting soon',
-      MeetingLifecycleStatus.guestWaiting => 'Waiting for host to start',
-      MeetingLifecycleStatus.hostWaiting => 'Waiting for guest to join',
-      MeetingLifecycleStatus.inProgress => 'Meeting is live',
-      MeetingLifecycleStatus.ended => 'Meeting ended',
-      MeetingLifecycleStatus.missed => 'Meeting missed',
-      MeetingLifecycleStatus.cancelled => 'Meeting cancelled',
-      MeetingLifecycleStatus.connectionIssue => 'Connection issue',
-      MeetingLifecycleStatus.unknown => meeting.state,
-    };
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              statusText,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              isTerminal
-                  ? 'This meeting has ended.'
-                  : lifecycle.status == MeetingLifecycleStatus.inProgress
-                  ? 'The meeting room is open.'
-                  : 'The meeting is ready when you are.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF6B7280),
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s16),
-            if (!isTerminal) ...[
-              Row(
-                children: [
-                  Icon(
-                    lifecycle.status == MeetingLifecycleStatus.inProgress
-                        ? Icons.people_alt_rounded
-                        : Icons.schedule_rounded,
-                    size: 18,
-                    color: const Color(0xFF6B7280),
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                  Expanded(
-                    child: Text(
-                      lifecycle.status == MeetingLifecycleStatus.inProgress
-                          ? '${room?.activeParticipantCount ?? 0} people in the room'
-                          : isHost
-                          ? 'Waiting for guest to join'
-                          : 'Waiting for host to start',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AuraSpace.s16),
-            ],
-            Wrap(
-              spacing: AuraSpace.s12,
-              runSpacing: AuraSpace.s12,
-              children: [
-                if (!isTerminal && onStart != null)
-                  FilledButton.icon(
-                    onPressed: busy ? null : onStart,
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Start meeting'),
-                  ),
-                if (!isTerminal && onEnter != null)
-                  FilledButton.icon(
-                    onPressed: busy ? null : onEnter,
-                    icon: const Icon(Icons.meeting_room_outlined),
-                    label: const Text('Enter room'),
-                  ),
-                if (onOpenSummary != null)
-                  FilledButton.icon(
-                    onPressed: onOpenSummary,
-                    icon: const Icon(Icons.description_outlined),
-                    label: const Text('View summary'),
-                  ),
-                OutlinedButton.icon(
-                  onPressed: onCopy,
-                  icon: const Icon(Icons.content_copy_rounded),
-                  label: const Text('Copy link'),
-                ),
-              ],
-            ),
-            if (!isTerminal) ...[
-              const SizedBox(height: AuraSpace.s16),
-              Text(
-                'The room stays open until the host ends it. Camera and microphone preview appear here before you enter.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-            ] else ...[
-              const SizedBox(height: AuraSpace.s16),
-              Text(
-                'You can still open the meeting details page for notes and history.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _MeetingStudioCard extends StatelessWidget {
   final MeetingLifecycleViewModel lifecycle;
   final bool isHost;
@@ -468,219 +325,125 @@ class _MeetingStudioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s20),
-        child: StreamBuilder<RealtimeMediaSnapshot>(
-          stream: mediaService.snapshots,
-          initialData: mediaService.currentSnapshot,
-          builder: (context, snapshot) {
-            final mediaState = snapshot.data ?? mediaService.currentSnapshot;
-            final preview = mediaState.localRenderer;
-            final hasPreview = preview != null;
-            final statusText = roomOpen
-                ? switch (lifecycle.status) {
-                    MeetingLifecycleStatus.inProgress => 'The room is open.',
-                    MeetingLifecycleStatus.hostWaiting =>
-                      'Waiting for guest to join.',
-                    MeetingLifecycleStatus.guestWaiting =>
-                      'Waiting for host to start.',
-                    MeetingLifecycleStatus.connectionIssue =>
-                      'Connection issue.',
-                    MeetingLifecycleStatus.ended => 'Meeting ended.',
-                    MeetingLifecycleStatus.cancelled => 'Meeting cancelled.',
-                    MeetingLifecycleStatus.missed => 'Meeting missed.',
-                    MeetingLifecycleStatus.startingSoon => 'Starting soon.',
-                    MeetingLifecycleStatus.scheduled =>
-                      isHost
-                          ? 'Waiting for guest to join.'
-                          : 'Waiting for host to start.',
-                    MeetingLifecycleStatus.unknown => 'Waiting for room.',
-                  }
-                : isHost
-                ? 'Open room to begin.'
-                : 'Join room to wait.';
+    return StreamBuilder<RealtimeMediaSnapshot>(
+      stream: mediaService.snapshots,
+      initialData: mediaService.currentSnapshot,
+      builder: (context, snapshot) {
+        final mediaState = snapshot.data ?? mediaService.currentSnapshot;
+        final preview = mediaState.localRenderer;
+        final hasPreview = preview != null;
+        final statusText = roomOpen
+            ? switch (lifecycle.status) {
+                MeetingLifecycleStatus.inProgress => 'The room is open.',
+                MeetingLifecycleStatus.hostWaiting =>
+                  'Waiting for guest to join.',
+                MeetingLifecycleStatus.guestWaiting =>
+                  'Waiting for host to start.',
+                MeetingLifecycleStatus.connectionIssue => 'Connection issue.',
+                MeetingLifecycleStatus.ended => 'Meeting ended.',
+                MeetingLifecycleStatus.cancelled => 'Meeting cancelled.',
+                MeetingLifecycleStatus.missed => 'Meeting missed.',
+                MeetingLifecycleStatus.startingSoon => 'Starting soon.',
+                MeetingLifecycleStatus.scheduled =>
+                  isHost
+                      ? 'Waiting for guest to join.'
+                      : 'Waiting for host to start.',
+                MeetingLifecycleStatus.unknown => 'Waiting for room.',
+              }
+            : isHost
+            ? 'Open room to begin.'
+            : 'Join room to wait.';
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              statusText,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFE5E7EB),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  color: const Color(0xFF0F172A),
+                  alignment: Alignment.center,
+                  child: hasPreview
+                      ? RTCVideoView(
+                          preview,
+                          mirror: true,
+                          objectFit:
+                              RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.videocam_rounded,
+                              color: Color(0xFF94A3B8),
+                              size: 40,
+                            ),
+                            const SizedBox(height: AuraSpace.s8),
+                            Text(
+                              'Camera preview appears here',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: const Color(0xFF94A3B8)),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
               children: [
-                Text(
-                  statusText,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                OutlinedButton.icon(
+                  onPressed: mediaState.localRenderer == null
+                      ? null
+                      : () async {
+                          await mediaService.setMicrophoneEnabled(
+                            !mediaState.micEnabled,
+                          );
+                        },
+                  icon: Icon(
+                    mediaState.micEnabled
+                        ? Icons.mic_rounded
+                        : Icons.mic_off_rounded,
+                  ),
+                  label: Text(
+                    mediaState.micEnabled ? 'Mute mic' : 'Unmute mic',
                   ),
                 ),
-                const SizedBox(height: AuraSpace.s16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final wide = constraints.maxWidth >= 640;
-                    final previewPane = ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        color: const Color(0xFF0F172A),
-                        height: 220,
-                        alignment: Alignment.center,
-                        child: hasPreview
-                            ? RTCVideoView(
-                                preview,
-                                mirror: true,
-                                objectFit: RTCVideoViewObjectFit
-                                    .RTCVideoViewObjectFitCover,
-                              )
-                            : Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.videocam_rounded,
-                                    color: Color(0xFF94A3B8),
-                                    size: 36,
-                                  ),
-                                  const SizedBox(height: AuraSpace.s8),
-                                  Text(
-                                    'Camera preview appears here',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: const Color(0xFF94A3B8),
-                                        ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    );
-
-                    final controls = Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: mediaState.localRenderer == null
-                              ? null
-                              : () async {
-                                  await mediaService.setMicrophoneEnabled(
-                                    !mediaState.micEnabled,
-                                  );
-                                },
-                          icon: Icon(
-                            mediaState.micEnabled
-                                ? Icons.mic_rounded
-                                : Icons.mic_off_rounded,
-                          ),
-                          label: Text(
-                            mediaState.micEnabled ? 'Mute mic' : 'Unmute mic',
-                          ),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: mediaState.localRenderer == null
-                              ? null
-                              : () async {
-                                  await mediaService.setCameraEnabled(
-                                    !mediaState.cameraEnabled,
-                                  );
-                                },
-                          icon: Icon(
-                            mediaState.cameraEnabled
-                                ? Icons.videocam_rounded
-                                : Icons.videocam_off_rounded,
-                          ),
-                          label: Text(
-                            mediaState.cameraEnabled
-                                ? 'Turn camera off'
-                                : 'Turn camera on',
-                          ),
-                        ),
-                      ],
-                    );
-
-                    if (wide) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 5, child: previewPane),
-                          const SizedBox(width: AuraSpace.s16),
-                          SizedBox(width: 240, child: controls),
-                        ],
-                      );
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        previewPane,
-                        const SizedBox(height: AuraSpace.s16),
-                        controls,
-                      ],
-                    );
-                  },
+                OutlinedButton.icon(
+                  onPressed: mediaState.localRenderer == null
+                      ? null
+                      : () async {
+                          await mediaService.setCameraEnabled(
+                            !mediaState.cameraEnabled,
+                          );
+                        },
+                  icon: Icon(
+                    mediaState.cameraEnabled
+                        ? Icons.videocam_rounded
+                        : Icons.videocam_off_rounded,
+                  ),
+                  label: Text(
+                    mediaState.cameraEnabled
+                        ? 'Turn camera off'
+                        : 'Turn camera on',
+                  ),
                 ),
               ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _StudioStat extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _StudioStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF6B7280)),
-        const SizedBox(width: AuraSpace.s10),
-        Expanded(
-          child: Text(
-            '$label: $value',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MeetingStatusStrip extends StatelessWidget {
-  final Meeting meeting;
-  final MeetingRoom? room;
-  final MeetingLifecycleViewModel lifecycle;
-
-  const _MeetingStatusStrip({
-    required this.meeting,
-    required this.room,
-    required this.lifecycle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final chips = <Widget>[
-      _TinyChip(
-        icon: Icons.schedule_rounded,
-        label: _scheduledLabel(context, meeting),
-      ),
-      _TinyChip(icon: Icons.public_rounded, label: meeting.timezone),
-      _TinyChip(icon: Icons.event_available_rounded, label: lifecycle.label),
-      _TinyChip(
-        icon: Icons.people_alt_rounded,
-        label: '${room?.activeParticipantCount ?? 0} participants',
-      ),
-    ];
-
-    return Wrap(
-      spacing: AuraSpace.s8,
-      runSpacing: AuraSpace.s8,
-      children: chips,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -707,49 +470,4 @@ class _StatusBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-class _TinyChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _TinyChip({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        border: Border.all(color: const Color(0xFF243244)),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFFE5E7EB),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String _scheduledLabel(BuildContext context, Meeting meeting) {
-  final scheduledAt = meeting.scheduledAt;
-  if (scheduledAt == null) return 'Not scheduled';
-  final localizations = MaterialLocalizations.of(context);
-  final date = localizations.formatFullDate(scheduledAt.toLocal());
-  final time = localizations.formatTimeOfDay(
-    TimeOfDay.fromDateTime(scheduledAt.toLocal()),
-  );
-  return '$date · $time';
 }
