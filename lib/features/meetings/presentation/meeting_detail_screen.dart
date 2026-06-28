@@ -71,6 +71,9 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
       : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/room';
   String get _roomPath => _roomBasePath;
   String get _meetingRoomReturnTo => Uri.encodeComponent(_roomBasePath);
+  String get _summaryPath => _resolvedInstitutionId == null
+      ? '/meetings/${meeting.id}/summary'
+      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/summary';
 
   Future<void> _startMeeting() async {
     setState(() => _actioning = true);
@@ -196,6 +199,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                     onStart: _actioning ? null : _startMeeting,
                     onJoin: _actioning ? null : _joinMeeting,
                     onCopy: _copyLink,
+                    onOpenSummary: () => context.push(_summaryPath),
                   ),
                   const SizedBox(height: AuraSpace.s16),
                   Wrap(
@@ -279,6 +283,21 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                           label: 'Institution',
                           value: booking!.institution!.name,
                         ),
+                      if ((booking?.institution?.tagline ?? '').trim().isNotEmpty)
+                        _InfoRow(
+                          icon: Icons.verified_outlined,
+                          label: 'Tagline',
+                          value: booking!.institution!.tagline!.trim(),
+                        ),
+                      if ((booking?.institution?.description ?? '')
+                              .trim()
+                              .isNotEmpty ==
+                          true)
+                        _InfoRow(
+                          icon: Icons.description_outlined,
+                          label: 'About',
+                          value: booking!.institution!.description!.trim(),
+                        ),
                       _InfoRow(
                         icon: Icons.calendar_today_rounded,
                         label: 'Booking page',
@@ -287,11 +306,25 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                             ? booking!.bookingPageName!
                             : 'Not created from a booking page',
                       ),
-                      _InfoRow(
-                        icon: Icons.person_pin_circle_outlined,
-                        label: 'Host',
-                        value: meeting.host?.name ?? 'Host',
-                      ),
+                      if (booking?.host != null)
+                        _InfoRow(
+                          icon: Icons.person_outline_rounded,
+                          label: 'Assigned host',
+                          value: [
+                            booking!.host!.name,
+                            if (booking.host!.title?.trim().isNotEmpty == true)
+                              booking.host!.title!.trim(),
+                          ].join(' · '),
+                        ),
+                          _InfoRow(
+                            icon: Icons.person_pin_circle_outlined,
+                            label: 'Host',
+                            value: [
+                              meeting.host?.name ?? 'Host',
+                              if (meeting.host?.title?.trim().isNotEmpty == true)
+                                meeting.host!.title!.trim(),
+                            ].join(' · '),
+                          ),
                       _InfoRow(
                         icon: Icons.mark_email_read_outlined,
                         label: 'Email status',
@@ -390,6 +423,7 @@ class _HeaderCard extends StatelessWidget {
   final VoidCallback? onStart;
   final VoidCallback? onJoin;
   final VoidCallback onCopy;
+  final VoidCallback onOpenSummary;
 
   const _HeaderCard({
     required this.meeting,
@@ -397,6 +431,7 @@ class _HeaderCard extends StatelessWidget {
     required this.onStart,
     required this.onJoin,
     required this.onCopy,
+    required this.onOpenSummary,
   });
 
   @override
@@ -452,6 +487,7 @@ class _HeaderCard extends StatelessWidget {
                   lifecycle: lifecycle,
                   onStart: onStart,
                   onJoin: onJoin,
+                  onOpenSummary: onOpenSummary,
                 ),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.content_copy_rounded),
@@ -630,11 +666,13 @@ class _LifecycleActionButton extends StatelessWidget {
   final MeetingLifecycleViewModel lifecycle;
   final VoidCallback? onStart;
   final VoidCallback? onJoin;
+  final VoidCallback onOpenSummary;
 
   const _LifecycleActionButton({
     required this.lifecycle,
     required this.onStart,
     required this.onJoin,
+    required this.onOpenSummary,
   });
 
   @override
@@ -644,7 +682,7 @@ class _LifecycleActionButton extends StatelessWidget {
       return FilledButton.icon(
         icon: const Icon(Icons.description_outlined),
         label: Text(label),
-        onPressed: onJoin ?? onStart,
+        onPressed: onOpenSummary,
       );
     }
     if (label == 'Retry connection') {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -48,7 +49,11 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       if (!mounted) return;
 
       if (result.shouldWait) {
-        _showWaitingRoomMessage();
+        final institutionId = meeting.booking?.institution?.id;
+        final waitingPath = institutionId == null
+            ? '/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}'
+            : '/institution/$institutionId/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}';
+        context.push(waitingPath);
         return;
       }
 
@@ -72,25 +77,6 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     } finally {
       if (mounted) setState(() => _joining = false);
     }
-  }
-
-  void _showWaitingRoomMessage() {
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Waiting for host to start'),
-        content: const Text(
-          'This meeting room is not open yet. '
-          'You will be able to join as soon as the host starts it.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -161,12 +147,10 @@ class _PreJoinBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final lifecycle = MeetingLifecyclePresenter.present(meeting);
+    final isAuthed = ref.watch(isAuthedProvider);
 
-    // Is the authenticated user already a participant?
-    // If so we skip name/email fields. For now we detect by checking
-    // if the meeting has participants — the backend join endpoint will
-    // handle the actual auth check. We always show the guest fields
-    // as optional so unauthenticated visitors can identify themselves.
+    final institution = meeting.booking?.institution;
+    final host = meeting.host;
 
     return AuraScaffold(
       title: '',
@@ -176,78 +160,136 @@ class _PreJoinBody extends ConsumerWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: 560),
           child: Padding(
             padding: const EdgeInsets.all(AuraSpace.s24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Host context — org/host info before any platform mention
-                if (meeting.host != null) ...[
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: const Color(0xFF6C63FF),
-                        child: Text(
-                          meeting.host!.name.isNotEmpty
-                              ? meeting.host!.name[0].toUpperCase()
-                              : 'H',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6C63FF).withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.ring_volume_rounded,
+                        size: 18,
+                        color: Color(0xFF8B85FF),
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Aura',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            meeting.host!.name,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Verified meeting infrastructure',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF9CA3AF),
                           ),
-                          const Text(
-                            'has invited you to a meeting',
-                            style: TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.s20),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border.all(color: const Color(0xFF243244)),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(height: AuraSpace.s20),
-                  const Divider(),
-                  const SizedBox(height: AuraSpace.s20),
-                ],
-
-                // Meeting info
+                  child: Padding(
+                    padding: const EdgeInsets.all(AuraSpace.s16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (institution != null)
+                          _IdentityAvatar(
+                            name: institution.name,
+                            logoUrl: institution.logoUrl,
+                            icon: Icons.business_rounded,
+                          ),
+                        if (institution != null && host != null)
+                          const SizedBox(width: AuraSpace.s10),
+                        if (host != null)
+                          _IdentityAvatar(
+                            name: host.name,
+                            logoUrl: host.avatarUrl,
+                            icon: Icons.person_outline_rounded,
+                          ),
+                        const SizedBox(width: AuraSpace.s14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                institution?.name ?? host?.name ?? meeting.title,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                host == null
+                                    ? 'Hosted on Aura'
+                                    : 'Hosted by ${host.name}${host.title?.trim().isNotEmpty == true ? ' · ${host.title!}' : ''}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFFCBD5E1),
+                                ),
+                              ),
+                              if ((institution?.description ?? '').trim().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    institution!.description!.trim(),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: const Color(0xFF9CA3AF),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s20),
                 Text(
                   meeting.title,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: AuraSpace.s8),
-                if (meeting.booking?.institution != null)
-                  Text(
-                    meeting.booking!.institution!.name,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF6B7280),
-                    ),
-                  ),
-                if (meeting.description != null) ...[
+                if ((meeting.description ?? '').trim().isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.s8),
                   Text(
-                    meeting.description!,
+                    meeting.description!.trim(),
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF6B7280),
+                      color: const Color(0xFFCBD5E1),
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+                if ((institution?.tagline ?? '').trim().isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s8),
+                  Text(
+                    institution!.tagline!.trim(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF9CA3AF),
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
@@ -258,12 +300,18 @@ class _PreJoinBody extends ConsumerWidget {
                   icon: Icons.schedule_rounded,
                   text: _scheduledLabel(context, meeting),
                 ),
-
+                _MeetingMetaRow(
+                  icon: Icons.public_rounded,
+                  text: meeting.timezone,
+                ),
+                if (host?.title?.trim().isNotEmpty == true)
+                  _MeetingMetaRow(
+                    icon: Icons.badge_outlined,
+                    text: host!.title!.trim(),
+                  ),
                 const SizedBox(height: AuraSpace.s24),
-
-                // Guest identification (optional for signed-in users)
                 Text(
-                  'Your name',
+                  isAuthed ? 'Join with your Aura account' : 'Join as a guest',
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -279,13 +327,6 @@ class _PreJoinBody extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AuraSpace.s12),
-                Text(
-                  'Email (optional)',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s6),
                 TextField(
                   controller: emailCtrl,
                   keyboardType: TextInputType.emailAddress,
@@ -295,26 +336,33 @@ class _PreJoinBody extends ConsumerWidget {
                     prefixIcon: Icon(Icons.mail_outline_rounded),
                   ),
                 ),
-
                 const SizedBox(height: AuraSpace.s24),
-
                 SizedBox(
                   height: 50,
                   child: FilledButton.icon(
                     icon: const Icon(Icons.video_call_rounded),
-                    label: Text(_buttonLabel(lifecycle)),
+                    label: Text(
+                      isAuthed ? 'Continue with Aura' : _buttonLabel(lifecycle),
+                    ),
                     onPressed: joining || lifecycle.isTerminal ? null : onJoin,
                   ),
                 ),
-
+                const SizedBox(height: AuraSpace.s12),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.login_rounded),
+                  label: Text(isAuthed ? 'Join as guest' : 'Continue with Aura'),
+                  onPressed: isAuthed
+                      ? onJoin
+                      : () => context.go(
+                          '/login?redirect=${Uri.encodeComponent('/meetings/join/${meeting.meetingCode}')}',
+                        ),
+                ),
                 const SizedBox(height: AuraSpace.s20),
-
-                // Platform attribution — present, not promotional
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      'Powered by ',
+                      'Hosted on ',
                       style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
                     ),
                     Text(
@@ -332,6 +380,32 @@ class _PreJoinBody extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _IdentityAvatar extends StatelessWidget {
+  final String name;
+  final String? logoUrl;
+  final IconData icon;
+
+  const _IdentityAvatar({
+    required this.name,
+    required this.icon,
+    this.logoUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 22,
+      backgroundColor: const Color(0xFF111827),
+      backgroundImage: (logoUrl != null && logoUrl!.trim().isNotEmpty)
+          ? NetworkImage(logoUrl!)
+          : null,
+      child: logoUrl == null || logoUrl!.trim().isEmpty
+          ? Icon(icon, color: const Color(0xFFE5E7EB), size: 18)
+          : null,
     );
   }
 }

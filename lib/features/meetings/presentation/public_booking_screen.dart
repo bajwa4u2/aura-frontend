@@ -107,38 +107,45 @@ class _BookingPageBody extends StatelessWidget {
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1120),
-              child: isWide
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 7,
-                          child: _BookingIntro(
-                            profile: profile,
-                            institution: institution,
-                            host: host,
-                          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _PlatformIdentityBanner(),
+                  const SizedBox(height: AuraSpace.s24),
+                  isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 7,
+                              child: _BookingIntro(
+                                profile: profile,
+                                institution: institution,
+                                host: host,
+                              ),
+                            ),
+                            const SizedBox(width: AuraSpace.s32),
+                            SizedBox(
+                              width: 360,
+                              child: _BookingActionPanel(profile: profile),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _BookingIntro(
+                              profile: profile,
+                              institution: institution,
+                              host: host,
+                              compact: true,
+                            ),
+                            const SizedBox(height: AuraSpace.s20),
+                            _BookingActionPanel(profile: profile),
+                          ],
                         ),
-                        const SizedBox(width: AuraSpace.s32),
-                        SizedBox(
-                          width: 360,
-                          child: _BookingActionPanel(profile: profile),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _BookingIntro(
-                          profile: profile,
-                          institution: institution,
-                          host: host,
-                          compact: true,
-                        ),
-                        const SizedBox(height: AuraSpace.s20),
-                        _BookingActionPanel(profile: profile),
-                      ],
-                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -171,9 +178,10 @@ class _BookingIntro extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _IdentityMark(
+              _LogoMark(
                 label: institution!.name,
                 icon: Icons.business_rounded,
+                logoUrl: institution!.logoUrl,
               ),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
@@ -197,6 +205,32 @@ class _BookingIntro extends StatelessWidget {
                           ),
                         ),
                       ),
+                    if ((institution!.tagline ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        institution!.tagline!.trim(),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF9CA3AF),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (institution!.isVerified)
+                          const _DetailChip(
+                            icon: Icons.verified_rounded,
+                            label: 'Verified institution',
+                          ),
+                        _DetailChip(
+                          icon: Icons.public_rounded,
+                          label: institution!.slug,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -238,9 +272,13 @@ class _BookingIntro extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      host!.handle?.trim().isNotEmpty == true
-                          ? '@${host!.handle}'
-                          : 'Meeting host',
+                      [
+                        if (host!.title?.trim().isNotEmpty == true)
+                          host!.title!.trim(),
+                        if (host!.handle?.trim().isNotEmpty == true)
+                          '@${host!.handle}',
+                        'Host for ${institution?.name ?? 'this meeting'}',
+                      ].join(' · '),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: const Color(0xFF9CA3AF),
                       ),
@@ -319,6 +357,29 @@ class _BookingActionPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Text(
+              'Aura',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF8B85FF),
+                  ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Verified meeting infrastructure',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF9CA3AF),
+                  ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            Text(
+              'Aura helps institutions host meetings with identity, context, and follow-up continuity.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFCBD5E1),
+                    height: 1.45,
+                  ),
+            ),
+            const SizedBox(height: AuraSpace.s16),
             FilledButton.icon(
               icon: const Icon(Icons.calendar_month_rounded),
               label: const Text('Book a time'),
@@ -340,7 +401,7 @@ class _BookingActionPanel extends StatelessWidget {
             ),
             const _ReassuranceRow(
               icon: Icons.verified_outlined,
-              text: 'Hosted by Aura',
+              text: 'Verified meeting infrastructure',
             ),
           ],
         ),
@@ -349,18 +410,71 @@ class _BookingActionPanel extends StatelessWidget {
   }
 }
 
-class _IdentityMark extends StatelessWidget {
+class _PlatformIdentityBanner extends StatelessWidget {
+  const _PlatformIdentityBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFF6C63FF).withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.ring_volume_rounded,
+            color: Color(0xFF8B85FF),
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: AuraSpace.s12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Aura',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Hosted meetings with identity, context, and continuity',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF9CA3AF),
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LogoMark extends StatelessWidget {
   final String label;
   final IconData icon;
+  final String? logoUrl;
+  final double size;
 
-  const _IdentityMark({required this.label, required this.icon});
+  const _LogoMark({
+    required this.label,
+    required this.icon,
+    this.logoUrl,
+    this.size = 48,
+  });
 
   @override
   Widget build(BuildContext context) {
     final initial = label.trim().isEmpty ? 'A' : label.trim()[0].toUpperCase();
     return Container(
-      width: 48,
-      height: 48,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: const Color(0xFF6C63FF).withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(8),
@@ -368,10 +482,26 @@ class _IdentityMark extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(icon, color: const Color(0xFF8B85FF), size: 22),
+          if (logoUrl != null && logoUrl!.trim().isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                logoUrl!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Icon(
+                  icon,
+                  color: const Color(0xFF8B85FF),
+                  size: size * 0.46,
+                ),
+              ),
+            )
+          else
+            Icon(icon, color: const Color(0xFF8B85FF), size: size * 0.46),
           Positioned(
-            right: 5,
-            bottom: 4,
+            right: size * 0.1,
+            bottom: size * 0.08,
             child: Text(
               initial,
               style: const TextStyle(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -273,6 +274,11 @@ class _ConfirmationView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isAuthed = ref.watch(isAuthedProvider);
+    final institution = confirmation.institution ?? profile.institution;
+    final host = confirmation.host ?? profile.effectiveHost;
+    final joinPath = '/meetings/join/${confirmation.meetingCode}';
+    final loginPath = '/login?redirect=${Uri.encodeComponent(joinPath)}';
     final localTime = confirmation.scheduledAt.toLocal();
     final timeLabel =
         DateFormat('EEEE, MMMM d · h:mm a').format(localTime);
@@ -302,9 +308,166 @@ class _ConfirmationView extends ConsumerWidget {
                     style: theme.textTheme.bodyMedium?.copyWith(
                         color: const Color(0xFF6B7280))),
 
+                const SizedBox(height: AuraSpace.s20),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6C63FF).withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.ring_volume_rounded,
+                        color: Color(0xFF8B85FF),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Aura',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Verified meeting infrastructure',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: AuraSpace.s24),
                 const Divider(),
                 const SizedBox(height: AuraSpace.s16),
+
+                if (institution != null) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _IdentityAvatar(
+                        label: institution.name,
+                        icon: Icons.business_rounded,
+                        logoUrl: institution.logoUrl,
+                        size: 48,
+                      ),
+                      const SizedBox(width: AuraSpace.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              institution.name,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            if ((institution.description ?? '').trim().isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  institution.description!.trim(),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xFF9CA3AF),
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            if ((institution.tagline ?? '').trim().isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                institution.tagline!.trim(),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: const Color(0xFF9CA3AF),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (institution.isVerified)
+                                  const _PillChip(
+                                    icon: Icons.verified_rounded,
+                                    label: 'Verified institution',
+                                  ),
+                                _PillChip(
+                                  icon: Icons.public_rounded,
+                                  label: institution.slug,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
+                ],
+
+                if (host != null) ...[
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: const Color(0xFF6C63FF),
+                        backgroundImage: host.avatarUrl != null
+                            ? NetworkImage(host.avatarUrl!)
+                            : null,
+                        child: host.avatarUrl == null
+                            ? Text(
+                                host.name.isNotEmpty
+                                    ? host.name[0].toUpperCase()
+                                    : 'H',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: AuraSpace.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              host.name,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              [
+                                if (host.title?.trim().isNotEmpty == true)
+                                  host.title!.trim(),
+                                'Host for ${institution?.name ?? profile.name}',
+                              ].join(' · '),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF9CA3AF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
+                ],
 
                 // Meeting details
                 Text(confirmation.meetingTitle,
@@ -362,9 +525,17 @@ class _ConfirmationView extends ConsumerWidget {
 
                 FilledButton.icon(
                   icon: const Icon(Icons.video_call_rounded),
-                  label: const Text('Join meeting'),
-                  onPressed: () => context
-                      .push('/meetings/join/${confirmation.meetingCode}'),
+                  label: Text(isAuthed ? 'Continue with Aura' : 'Join as guest'),
+                  onPressed: () => context.push(joinPath),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.login_rounded),
+                  label: const Text('Continue with Aura'),
+                  onPressed: isAuthed
+                      ? () => context.push(joinPath)
+                      : () => context.go(loginPath),
                 ),
                 const SizedBox(height: AuraSpace.s12),
 
@@ -393,6 +564,104 @@ class _ConfirmationView extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _IdentityAvatar extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final String? logoUrl;
+  final double size;
+
+  const _IdentityAvatar({
+    required this.label,
+    required this.icon,
+    this.logoUrl,
+    this.size = 48,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = label.trim().isEmpty ? 'A' : label.trim()[0].toUpperCase();
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFF6C63FF).withOpacity(0.14),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (logoUrl != null && logoUrl!.trim().isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                logoUrl!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Icon(
+                  icon,
+                  color: const Color(0xFF8B85FF),
+                  size: size * 0.46,
+                ),
+              ),
+            )
+          else
+            Icon(icon, color: const Color(0xFF8B85FF), size: size * 0.46),
+          Positioned(
+            right: size * 0.1,
+            bottom: size * 0.08,
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: Color(0xFFE6E9EF),
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PillChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _PillChip({
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFE5E7EB),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -5,12 +5,14 @@ class MeetingHost {
   final String? displayName;
   final String? handle;
   final String? avatarUrl;
+  final String? title;
 
   const MeetingHost({
     required this.id,
     this.displayName,
     this.handle,
     this.avatarUrl,
+    this.title,
   });
 
   factory MeetingHost.fromJson(Map<String, dynamic> j) => MeetingHost(
@@ -18,6 +20,7 @@ class MeetingHost {
     displayName: j['displayName'] as String?,
     handle: j['handle'] as String?,
     avatarUrl: j['avatarUrl'] as String?,
+    title: j['title'] as String?,
   );
 
   String get name => displayName ?? handle ?? 'Unknown';
@@ -71,11 +74,21 @@ class MeetingInstitutionRef {
   final String id;
   final String name;
   final String slug;
+  final String? description;
+  final String? tagline;
+  final String? logoUrl;
+  final bool isVerified;
+  final DateTime? verifiedAt;
 
   const MeetingInstitutionRef({
     required this.id,
     required this.name,
     required this.slug,
+    this.description,
+    this.tagline,
+    this.logoUrl,
+    this.isVerified = false,
+    this.verifiedAt,
   });
 
   factory MeetingInstitutionRef.fromJson(Map<String, dynamic> j) =>
@@ -83,6 +96,13 @@ class MeetingInstitutionRef {
         id: j['id'] as String? ?? '',
         name: j['name'] as String? ?? 'Institution',
         slug: j['slug'] as String? ?? '',
+        description: j['description'] as String?,
+        tagline: j['tagline'] as String?,
+        logoUrl: j['logoUrl'] as String?,
+        isVerified: j['isVerified'] as bool? ?? false,
+        verifiedAt: j['verifiedAt'] != null
+            ? DateTime.tryParse(j['verifiedAt'] as String)
+            : null,
       );
 }
 
@@ -99,6 +119,7 @@ class MeetingBookingDetails {
   final String? bookingPageName;
   final String? bookingPageSlug;
   final MeetingInstitutionRef? institution;
+  final MeetingHost? host;
 
   const MeetingBookingDetails({
     required this.id,
@@ -113,6 +134,7 @@ class MeetingBookingDetails {
     this.bookingPageName,
     this.bookingPageSlug,
     this.institution,
+    this.host,
   });
 
   factory MeetingBookingDetails.fromJson(Map<String, dynamic> j) =>
@@ -135,6 +157,62 @@ class MeetingBookingDetails {
                 j['institution'] as Map<String, dynamic>,
               )
             : null,
+        host: j['host'] is Map<String, dynamic>
+            ? MeetingHost.fromJson(j['host'] as Map<String, dynamic>)
+            : null,
+      );
+}
+
+class MeetingSummary {
+  final String id;
+  final String meetingId;
+  final String? institutionId;
+  final String? summaryText;
+  final Map<String, dynamic> attendanceSnapshot;
+  final List<String> decisions;
+  final List<String> commitments;
+  final List<String> actions;
+  final List<String> issues;
+  final List<String> followUps;
+  final String? createdByUserId;
+  final String? updatedByUserId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const MeetingSummary({
+    required this.id,
+    required this.meetingId,
+    this.institutionId,
+    this.summaryText,
+    required this.attendanceSnapshot,
+    required this.decisions,
+    required this.commitments,
+    required this.actions,
+    required this.issues,
+    required this.followUps,
+    this.createdByUserId,
+    this.updatedByUserId,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory MeetingSummary.fromJson(Map<String, dynamic> j) => MeetingSummary(
+        id: j['id'] as String,
+        meetingId: j['meetingId'] as String,
+        institutionId: j['institutionId'] as String?,
+        summaryText: j['summaryText'] as String?,
+        attendanceSnapshot: _asMap(j['attendanceSnapshot']),
+        decisions: _asStringList(j['decisions']),
+        commitments: _asStringList(j['commitments']),
+        actions: _asStringList(j['actions']),
+        issues: _asStringList(j['issues']),
+        followUps: _asStringList(j['followUps']),
+        createdByUserId: j['createdByUserId'] as String?,
+        updatedByUserId: j['updatedByUserId'] as String?,
+        createdAt: DateTime.tryParse(j['createdAt'] as String? ?? '') ??
+            DateTime.now(),
+        updatedAt: DateTime.tryParse(j['updatedAt'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -161,6 +239,7 @@ class Meeting {
   final MeetingHost? host;
   final List<MeetingParticipant> participants;
   final MeetingBookingDetails? booking;
+  final MeetingSummary? summary;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -187,6 +266,7 @@ class Meeting {
     this.host,
     required this.participants,
     this.booking,
+    this.summary,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -223,6 +303,9 @@ class Meeting {
         .toList(),
     booking: j['booking'] is Map<String, dynamic>
         ? MeetingBookingDetails.fromJson(j['booking'] as Map<String, dynamic>)
+        : null,
+    summary: j['summary'] is Map<String, dynamic>
+        ? MeetingSummary.fromJson(j['summary'] as Map<String, dynamic>)
         : null,
     createdAt:
         DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
@@ -268,4 +351,20 @@ class JoinMeetingResult {
 
   bool get shouldJoinDirectly => action == 'join';
   bool get shouldWait => action == 'wait';
+}
+
+Map<String, dynamic> _asMap(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return const <String, dynamic>{};
+}
+
+List<String> _asStringList(dynamic value) {
+  if (value is List) {
+    return value
+        .map((entry) => entry?.toString().trim() ?? '')
+        .where((entry) => entry.isNotEmpty)
+        .toList();
+  }
+  return const <String>[];
 }

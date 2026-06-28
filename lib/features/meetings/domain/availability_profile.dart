@@ -55,12 +55,14 @@ class ProfileOwner {
   final String? displayName;
   final String? handle;
   final String? avatarUrl;
+  final String? title;
 
   const ProfileOwner({
     required this.id,
     this.displayName,
     this.handle,
     this.avatarUrl,
+    this.title,
   });
 
   factory ProfileOwner.fromJson(Map<String, dynamic> j) => ProfileOwner(
@@ -68,6 +70,7 @@ class ProfileOwner {
         displayName: j['displayName'] as String?,
         handle: j['handle'] as String?,
         avatarUrl: j['avatarUrl'] as String?,
+        title: j['title'] as String?,
       );
 
   String get name => displayName ?? handle ?? 'Unknown';
@@ -78,12 +81,20 @@ class InstitutionRef {
   final String name;
   final String slug;
   final String? description;
+  final String? tagline;
+  final String? logoUrl;
+  final bool isVerified;
+  final DateTime? verifiedAt;
 
   const InstitutionRef({
     required this.id,
     required this.name,
     required this.slug,
     this.description,
+    this.tagline,
+    this.logoUrl,
+    this.isVerified = false,
+    this.verifiedAt,
   });
 
   factory InstitutionRef.fromJson(Map<String, dynamic> j) => InstitutionRef(
@@ -91,6 +102,12 @@ class InstitutionRef {
         name: j['name'] as String,
         slug: j['slug'] as String,
         description: j['description'] as String?,
+        tagline: j['tagline'] as String?,
+        logoUrl: j['logoUrl'] as String?,
+        isVerified: j['isVerified'] as bool? ?? false,
+        verifiedAt: j['verifiedAt'] != null
+            ? DateTime.tryParse(j['verifiedAt'] as String)
+            : null,
       );
 }
 
@@ -221,6 +238,8 @@ class BookingConfirmation {
   final int durationMinutes;
   final String timezone;
   final String hostName;
+  final ProfileOwner? host;
+  final InstitutionRef? institution;
   final String meetingTitle;
 
   const BookingConfirmation({
@@ -233,6 +252,8 @@ class BookingConfirmation {
     required this.durationMinutes,
     required this.timezone,
     required this.hostName,
+    this.host,
+    this.institution,
     required this.meetingTitle,
   });
 
@@ -249,6 +270,12 @@ class BookingConfirmation {
         durationMinutes: (j['durationMinutes'] as num?)?.toInt() ?? 30,
         timezone: j['timezone'] as String? ?? 'UTC',
         hostName: j['hostName'] as String? ?? '',
+        host: j['host'] is Map<String, dynamic>
+            ? ProfileOwner.fromJson(j['host'] as Map<String, dynamic>)
+            : null,
+        institution: j['institution'] is Map<String, dynamic>
+            ? InstitutionRef.fromJson(j['institution'] as Map<String, dynamic>)
+            : null,
         meetingTitle: j['meetingTitle'] as String? ?? '',
       );
 }
