@@ -289,6 +289,28 @@ class _CompactIdentityRow extends StatelessWidget {
   }
 }
 
+class _IdentityAvatar extends StatelessWidget {
+  final String name;
+  final String? logoUrl;
+  final IconData icon;
+
+  const _IdentityAvatar({required this.name, required this.icon, this.logoUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 18,
+      backgroundColor: const Color(0xFF111827),
+      backgroundImage: (logoUrl != null && logoUrl!.trim().isNotEmpty)
+          ? NetworkImage(logoUrl!)
+          : null,
+      child: logoUrl == null || logoUrl!.trim().isEmpty
+          ? Icon(icon, color: const Color(0xFFE5E7EB), size: 16)
+          : null,
+    );
+  }
+}
+
 class _RoomStateCard extends StatelessWidget {
   final Meeting meeting;
   final MeetingRoom? room;
