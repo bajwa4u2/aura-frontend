@@ -94,7 +94,8 @@ class MeetingsRepository {
       '/meetings/$id/summary',
       data: {
         if (summaryText != null) 'summaryText': summaryText,
-        if (attendanceSnapshot != null) 'attendanceSnapshot': attendanceSnapshot,
+        if (attendanceSnapshot != null)
+          'attendanceSnapshot': attendanceSnapshot,
         if (decisions != null) 'decisions': decisions,
         if (commitments != null) 'commitments': commitments,
         if (actions != null) 'actions': actions,
@@ -154,7 +155,10 @@ class MeetingsRepository {
   }
 
   Future<Meeting> getMeetingByCode(String code) async {
-    final res = await _dio.get<Map<String, dynamic>>('/meetings/join/$code');
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/join/$code',
+      options: Options(extra: const {'__skip_auth': true}),
+    );
     final data = res.data!['data'] as Map<String, dynamic>;
     return Meeting.fromJson(data);
   }
@@ -170,6 +174,7 @@ class MeetingsRepository {
         if (guestName != null) 'guestName': guestName,
         if (guestEmail != null) 'guestEmail': guestEmail,
       },
+      options: Options(extra: const {'__skip_auth': true}),
     );
     final data = res.data!['data'] as Map<String, dynamic>;
     return JoinMeetingResult.fromJson(data);

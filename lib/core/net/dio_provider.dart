@@ -152,9 +152,7 @@ final dioProvider = Provider<Dio>((ref) {
       // immediately followed by a cookie-name=value boundary, which
       // never matches a value comma (e.g. dates inside Expires=).
       final boundary = RegExp(r',(?=\s*[A-Za-z_][\w-]*=)');
-      final cookies = <String>[
-        for (final line in raw) ...line.split(boundary),
-      ];
+      final cookies = <String>[for (final line in raw) ...line.split(boundary)];
       for (final cookie in cookies) {
         final firstPair = cookie.split(';').first.trim();
         final eq = firstPair.indexOf('=');
@@ -223,6 +221,10 @@ final dioProvider = Provider<Dio>((ref) {
     if (path.startsWith('/auth')) return true;
     if (path.startsWith('/v1/auth')) return true;
     return false;
+  }
+
+  bool shouldSkipAuth(RequestOptions o) {
+    return o.extra['__skip_auth'] == true;
   }
 
   bool shouldAttemptRefreshForRequest(RequestOptions req) {
@@ -406,6 +408,8 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
+        final skipAuth = shouldSkipAuth(options);
+
         // Reject immediately if the host is still in a 429 back-off window.
         final host = hostOf(options);
         if (host != null) {
@@ -428,25 +432,27 @@ final dioProvider = Provider<Dio>((ref) {
 
         final store = ref.read(tokenStoreProvider);
 
-        try {
-          await store.waitUntilLoaded();
-        } catch (_) {}
-
-        // Wait for session bootstrap to settle so a request fired during the
-        // /auth/refresh round-trip on app start does not race past it with no
-        // Authorization header — that race is a primary cause of "Sign in to
-        // use this feature" leaking into device registration and live-call
-        // join while a valid cookie session is being restored.
-        //
-        // Auth endpoints themselves must not wait on bootstrap (bootstrap
-        // performs an /auth/refresh through a separate Dio, and login/refresh
-        // run independently of bootstrap).
-        if (!isAuthEndpoint(options)) {
+        if (!skipAuth) {
           try {
-            await ref.read(sessionBootstrapProvider.future);
-          } catch (_) {
-            // Bootstrap is best-effort — a failure here must not block
-            // the request (see the note above).
+            await store.waitUntilLoaded();
+          } catch (_) {}
+
+          // Wait for session bootstrap to settle so a request fired during the
+          // /auth/refresh round-trip on app start does not race past it with no
+          // Authorization header — that race is a primary cause of "Sign in to
+          // use this feature" leaking into device registration and live-call
+          // join while a valid cookie session is being restored.
+          //
+          // Auth endpoints themselves must not wait on bootstrap (bootstrap
+          // performs an /auth/refresh through a separate Dio, and login/refresh
+          // run independently of bootstrap).
+          if (!isAuthEndpoint(options)) {
+            try {
+              await ref.read(sessionBootstrapProvider.future);
+            } catch (_) {
+              // Bootstrap is best-effort — a failure here must not block
+              // the request (see the note above).
+            }
           }
         }
 
@@ -469,9 +475,13 @@ final dioProvider = Provider<Dio>((ref) {
           });
         }
 
-        final token = store.accessToken;
-        if (token != null && token.trim().isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
+        if (!skipAuth) {
+          final token = store.accessToken;
+          if (token != null && token.trim().isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          } else {
+            options.headers.remove('Authorization');
+          }
         } else {
           options.headers.remove('Authorization');
         }
@@ -481,11 +491,11 @@ final dioProvider = Provider<Dio>((ref) {
       onError: (err, handler) async {
         final status = err.response?.statusCode;
         final req = err.requestOptions;
+        final skipAuth = shouldSkipAuth(req);
 
         if (isRateLimitedStatus(status)) {
           // Parse Retry-After header; default to 60s if absent.
-          final retryAfterHeader =
-              err.response?.headers.value('retry-after');
+          final retryAfterHeader = err.response?.headers.value('retry-after');
           int delaySecs = 60;
           if (retryAfterHeader != null) {
             final parsed = int.tryParse(retryAfterHeader.trim());
@@ -495,8 +505,9 @@ final dioProvider = Provider<Dio>((ref) {
           }
           final host = hostOf(err.requestOptions);
           if (host != null) {
-            rateLimitedUntil[host] =
-                DateTime.now().add(Duration(seconds: delaySecs));
+            rateLimitedUntil[host] = DateTime.now().add(
+              Duration(seconds: delaySecs),
+            );
           }
           handler.reject(mapDioException(err));
           return;
@@ -519,7 +530,7 @@ final dioProvider = Provider<Dio>((ref) {
           }
         }
 
-        if (status != 401 || isAuthEndpoint(req)) {
+        if (skipAuth || status != 401 || isAuthEndpoint(req)) {
           handler.reject(mapDioException(err));
           return;
         }
