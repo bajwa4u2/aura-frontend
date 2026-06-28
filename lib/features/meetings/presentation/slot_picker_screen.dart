@@ -192,22 +192,24 @@ class _MeetingSummary extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (institution != null) ...[
-              _SummaryLine(
-                icon: Icons.business_rounded,
+              _CompactIdentityRow(
+                avatarUrl: institution.logoUrl,
+                fallbackLabel: institution.name,
                 title: institution.name,
-                subtitle: (institution.description ?? '').trim().isEmpty
-                    ? null
-                    : institution.description!.trim(),
+                trailing: institution.isVerified
+                    ? const _MiniBadge(label: 'Verified')
+                    : null,
               ),
               const SizedBox(height: AuraSpace.s14),
             ],
             if (host != null) ...[
-              _SummaryLine(
-                icon: Icons.person_outline_rounded,
+              _CompactIdentityRow(
+                avatarUrl: host.avatarUrl,
+                fallbackLabel: host.name,
                 title: host.name,
-                subtitle: host.handle?.trim().isNotEmpty == true
-                    ? '@${host.handle}'
-                    : 'Meeting host',
+                subtitle: host.title?.trim().isNotEmpty == true
+                    ? host.title!.trim()
+                    : null,
               ),
               const SizedBox(height: AuraSpace.s14),
             ],
@@ -227,6 +229,8 @@ class _MeetingSummary extends StatelessWidget {
                   color: const Color(0xFF9CA3AF),
                   height: 1.35,
                 ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
             const SizedBox(height: AuraSpace.s16),
@@ -260,6 +264,83 @@ class _MeetingSummary extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CompactIdentityRow extends StatelessWidget {
+  final String? avatarUrl;
+  final String fallbackLabel;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+
+  const _CompactIdentityRow({
+    required this.avatarUrl,
+    required this.fallbackLabel,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final initial =
+        fallbackLabel.trim().isEmpty ? 'A' : fallbackLabel.trim()[0].toUpperCase();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.12),
+          backgroundImage: avatarUrl != null && avatarUrl!.trim().isNotEmpty
+              ? NetworkImage(avatarUrl!)
+              : null,
+          child: avatarUrl == null || avatarUrl!.trim().isEmpty
+              ? Text(
+                  initial,
+                  style: const TextStyle(
+                    color: Color(0xFFE6E9EF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                )
+              : null,
+        ),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF9CA3AF),
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: AuraSpace.s8),
+          trailing!,
+        ],
+      ],
     );
   }
 }
@@ -670,50 +751,6 @@ class _EmptyTimesMessage extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SummaryLine extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-
-  const _SummaryLine({required this.icon, required this.title, this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: const Color(0xFF8B85FF)),
-        const SizedBox(width: AuraSpace.s10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if (subtitle != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    subtitle!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF9CA3AF),
-                      height: 1.3,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
