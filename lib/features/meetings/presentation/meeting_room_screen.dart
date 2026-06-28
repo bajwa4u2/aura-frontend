@@ -1,6 +1,5 @@
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -56,10 +55,6 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
     super.dispose();
   }
 
-  String get _summaryPath => widget.institutionId == null
-      ? '/meetings/${widget.meetingId}/summary'
-      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
-
   Future<void> _startMeeting(Meeting meeting) async {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
@@ -108,13 +103,6 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
     }
   }
 
-  void _copyLink(Meeting meeting) {
-    Clipboard.setData(ClipboardData(text: meeting.joinUrl));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Meeting link copied')));
-  }
-
   @override
   Widget build(BuildContext context) {
     final usePublicMeetingLookup = (widget.meetingCode ?? '').trim().isNotEmpty;
@@ -143,7 +131,6 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
         );
         final canStart = room?.canStart == true && !_busy;
         final sessionId = (_sessionId ?? room?.realtimeSessionId ?? '').trim();
-        final isTerminal = room?.isTerminal == true || meeting.isEnded;
         final statusLabel = lifecycle.label;
 
         return AuraScaffold(
@@ -164,54 +151,19 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                       _HeaderCard(
                         meeting: meeting,
                         statusLabel: statusLabel,
-                        room: room,
-                        sessionId: sessionId,
                         onStart: canStart && isHost
                             ? () => _startMeeting(meeting)
                             : null,
                         onEnter: sessionId.isNotEmpty
                             ? () => _enterRoom(meeting)
                             : null,
-                        onOpenSummary: isTerminal
-                            ? () => context.push(_summaryPath)
-                            : null,
-                        onCopy: () => _copyLink(meeting),
-                      ),
-                      const SizedBox(height: AuraSpace.s16),
-                      _MeetingStatusStrip(
-                        meeting: meeting,
-                        room: room,
-                        lifecycle: lifecycle,
-                      ),
-                      const SizedBox(height: AuraSpace.s16),
-                      _RoomStateCard(
-                        meeting: meeting,
-                        room: room,
-                        isHost: isHost,
-                        busy: _busy,
-                        lifecycle: lifecycle,
-                        onStart: canStart && isHost
-                            ? () => _startMeeting(meeting)
-                            : null,
-                        onEnter: sessionId.isNotEmpty
-                            ? () => _enterRoom(meeting)
-                            : null,
-                        onOpenSummary: isTerminal
-                            ? () => context.push(_summaryPath)
-                            : null,
-                        onCopy: () => _copyLink(meeting),
-                        isTerminal: isTerminal,
                       ),
                       const SizedBox(height: AuraSpace.s16),
                       _MeetingStudioCard(
-                        room: room,
                         lifecycle: lifecycle,
                         isHost: isHost,
                         roomOpen: _roomOpen,
                         mediaService: mediaService,
-                        onOpenRoom: sessionId.isNotEmpty
-                            ? () => _enterRoom(meeting)
-                            : null,
                       ),
                     ],
                   ),
@@ -228,22 +180,14 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
 class _HeaderCard extends StatelessWidget {
   final Meeting meeting;
   final String statusLabel;
-  final MeetingRoom? room;
-  final String? sessionId;
   final VoidCallback? onStart;
   final VoidCallback? onEnter;
-  final VoidCallback? onOpenSummary;
-  final VoidCallback onCopy;
 
   const _HeaderCard({
     required this.meeting,
     required this.statusLabel,
-    required this.room,
-    required this.sessionId,
     required this.onStart,
     required this.onEnter,
-    required this.onOpenSummary,
-    required this.onCopy,
   });
 
   @override
@@ -254,7 +198,10 @@ class _HeaderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _CompactIdentityRow(meeting: meeting),
+            const SizedBox(height: AuraSpace.s16),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
@@ -264,42 +211,80 @@ class _HeaderCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(width: AuraSpace.s12),
                 _StatusBadge(label: statusLabel),
               ],
             ),
-            if ((meeting.description ?? '').trim().isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s8),
-              Text(meeting.description!.trim()),
-            ],
             const SizedBox(height: AuraSpace.s16),
             Wrap(
               spacing: AuraSpace.s12,
               runSpacing: AuraSpace.s12,
               children: [
-                if (onOpenSummary != null)
-                  FilledButton.icon(
-                    onPressed: onOpenSummary,
-                    icon: const Icon(Icons.description_outlined),
-                    label: const Text('View summary'),
-                  ),
-                if (onOpenSummary == null)
-                  FilledButton.icon(
-                    onPressed: sessionId != null ? onEnter : onStart,
-                    icon: const Icon(Icons.meeting_room_rounded),
-                    label: Text(
-                      sessionId != null ? 'Enter room' : 'Start meeting',
-                    ),
-                  ),
-                OutlinedButton.icon(
-                  onPressed: onCopy,
-                  icon: const Icon(Icons.content_copy_rounded),
-                  label: const Text('Copy link'),
+                FilledButton.icon(
+                  onPressed: onEnter ?? onStart,
+                  icon: const Icon(Icons.meeting_room_rounded),
+                  label: Text(onEnter != null ? 'Enter room' : 'Start meeting'),
                 ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CompactIdentityRow extends StatelessWidget {
+  final Meeting meeting;
+
+  const _CompactIdentityRow({required this.meeting});
+
+  @override
+  Widget build(BuildContext context) {
+    final institution = meeting.booking?.institution;
+    final host = meeting.host;
+
+    return Row(
+      children: [
+        if (institution != null)
+          _IdentityAvatar(
+            name: institution.name,
+            logoUrl: institution.logoUrl,
+            icon: Icons.business_rounded,
+          ),
+        if (institution != null && host != null) const SizedBox(width: 8),
+        if (host != null)
+          _IdentityAvatar(
+            name: host.name,
+            logoUrl: host.avatarUrl,
+            icon: Icons.person_outline_rounded,
+          ),
+        const SizedBox(width: AuraSpace.s12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                institution?.name ?? host?.name ?? meeting.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              if (host?.title?.trim().isNotEmpty == true)
+                Text(
+                  host!.title!.trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF9CA3AF),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -447,26 +432,20 @@ class _RoomStateCard extends StatelessWidget {
 }
 
 class _MeetingStudioCard extends StatelessWidget {
-  final MeetingRoom? room;
   final MeetingLifecycleViewModel lifecycle;
   final bool isHost;
   final bool roomOpen;
   final RealtimeMediaService mediaService;
-  final VoidCallback? onOpenRoom;
 
   const _MeetingStudioCard({
-    required this.room,
     required this.lifecycle,
     required this.isHost,
     required this.roomOpen,
     required this.mediaService,
-    required this.onOpenRoom,
   });
 
   @override
   Widget build(BuildContext context) {
-    final canOpen = onOpenRoom != null;
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AuraSpace.s20),
@@ -478,27 +457,35 @@ class _MeetingStudioCard extends StatelessWidget {
             final preview = mediaState.localRenderer;
             final hasPreview = preview != null;
             final statusText = roomOpen
-                ? lifecycle.status == MeetingLifecycleStatus.inProgress
-                      ? 'The room is open.'
-                      : isHost
-                      ? 'Waiting for guest to join.'
-                      : 'Waiting for host to open the room.'
-                : 'Open the room to prepare your camera and microphone.';
+                ? switch (lifecycle.status) {
+                    MeetingLifecycleStatus.inProgress => 'The room is open.',
+                    MeetingLifecycleStatus.hostWaiting =>
+                      'Waiting for guest to join.',
+                    MeetingLifecycleStatus.guestWaiting =>
+                      'Waiting for host to start.',
+                    MeetingLifecycleStatus.connectionIssue =>
+                      'Connection issue.',
+                    MeetingLifecycleStatus.ended => 'Meeting ended.',
+                    MeetingLifecycleStatus.cancelled => 'Meeting cancelled.',
+                    MeetingLifecycleStatus.missed => 'Meeting missed.',
+                    MeetingLifecycleStatus.startingSoon => 'Starting soon.',
+                    MeetingLifecycleStatus.scheduled =>
+                      isHost
+                          ? 'Waiting for guest to join.'
+                          : 'Waiting for host to start.',
+                    MeetingLifecycleStatus.unknown => 'Waiting for room.',
+                  }
+                : isHost
+                ? 'Open room to begin.'
+                : 'Join room to wait.';
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Meeting studio',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AuraSpace.s8),
-                Text(
                   statusText,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF6B7280),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: AuraSpace.s16),
@@ -541,35 +528,10 @@ class _MeetingStudioCard extends StatelessWidget {
                       ),
                     );
 
-                    final controls = Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    final controls = Wrap(
+                      spacing: AuraSpace.s10,
+                      runSpacing: AuraSpace.s10,
                       children: [
-                        _StudioStat(
-                          icon: Icons.people_alt_rounded,
-                          label: 'Participants',
-                          value: '${room?.activeParticipantCount ?? 0}',
-                        ),
-                        const SizedBox(height: AuraSpace.s8),
-                        _StudioStat(
-                          icon: Icons.schedule_rounded,
-                          label: 'Meeting',
-                          value: lifecycle.label,
-                        ),
-                        const SizedBox(height: AuraSpace.s16),
-                        FilledButton.icon(
-                          onPressed: canOpen ? onOpenRoom : null,
-                          icon: Icon(
-                            roomOpen
-                                ? Icons.meeting_room_rounded
-                                : Icons.play_arrow_rounded,
-                          ),
-                          label: Text(
-                            roomOpen
-                                ? (isHost ? 'Room open' : 'Enter room')
-                                : (isHost ? 'Open room' : 'Enter room'),
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s8),
                         OutlinedButton.icon(
                           onPressed: mediaState.localRenderer == null
                               ? null
@@ -584,9 +546,26 @@ class _MeetingStudioCard extends StatelessWidget {
                                 : Icons.mic_off_rounded,
                           ),
                           label: Text(
-                            mediaState.micEnabled
-                                ? 'Mute microphone'
-                                : 'Unmute microphone',
+                            mediaState.micEnabled ? 'Mute mic' : 'Unmute mic',
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: mediaState.localRenderer == null
+                              ? null
+                              : () async {
+                                  await mediaService.setCameraEnabled(
+                                    !mediaState.cameraEnabled,
+                                  );
+                                },
+                          icon: Icon(
+                            mediaState.cameraEnabled
+                                ? Icons.videocam_rounded
+                                : Icons.videocam_off_rounded,
+                          ),
+                          label: Text(
+                            mediaState.cameraEnabled
+                                ? 'Turn camera off'
+                                : 'Turn camera on',
                           ),
                         ),
                       ],
