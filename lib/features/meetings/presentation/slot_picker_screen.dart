@@ -229,16 +229,44 @@ class _MeetingSummary extends StatelessWidget {
                   color: const Color(0xFF9CA3AF),
                   height: 1.35,
                 ),
-                maxLines: 3,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
             const SizedBox(height: AuraSpace.s16),
-            _MetaRow(
-              icon: Icons.schedule_rounded,
-              text: _durationLabel(duration),
+            Row(
+              children: [
+                const Icon(
+                  Icons.schedule_rounded,
+                  size: 18,
+                  color: Color(0xFF9CA3AF),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  _durationLabel(duration),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFD1D5DB),
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s16),
+                const Icon(
+                  Icons.public_rounded,
+                  size: 18,
+                  color: Color(0xFF9CA3AF),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                Expanded(
+                  child: Text(
+                    timezone,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFFD1D5DB),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            _MetaRow(icon: Icons.public_rounded, text: timezone),
             if (profile.durationOptions.length > 1) ...[
               const SizedBox(height: AuraSpace.s14),
               Text(
@@ -285,8 +313,9 @@ class _CompactIdentityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial =
-        fallbackLabel.trim().isEmpty ? 'A' : fallbackLabel.trim()[0].toUpperCase();
+    final initial = fallbackLabel.trim().isEmpty
+        ? 'A'
+        : fallbackLabel.trim()[0].toUpperCase();
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -316,9 +345,9 @@ class _CompactIdentityRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -327,8 +356,8 @@ class _CompactIdentityRow extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF9CA3AF),
-                      ),
+                    color: const Color(0xFF9CA3AF),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -747,34 +776,6 @@ class _EmptyTimesMessage extends StatelessWidget {
             body,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: const Color(0xFF9CA3AF),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetaRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _MetaRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s6),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
-          const SizedBox(width: AuraSpace.s8),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFFD1D5DB)),
             ),
           ),
         ],
