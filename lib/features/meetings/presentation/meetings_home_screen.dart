@@ -165,7 +165,7 @@ class _HostHeader extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Scheduled meetings',
+                    'Meetings',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -470,6 +470,7 @@ class _MeetingCard extends ConsumerWidget {
                       onStart: () => _startMeeting(context, ref),
                       onEnter: () => _joinMeeting(context),
                       onOpenDetails: () => context.push(_detailPath),
+                      onOpenSummary: () => context.push(_summaryPath),
                     ),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.content_copy_rounded, size: 18),
@@ -508,6 +509,9 @@ class _MeetingCard extends ConsumerWidget {
   String get _detailPath => _resolvedInstitutionId == null
       ? '/meetings/${meeting.id}'
       : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}';
+  String get _summaryPath => _resolvedInstitutionId == null
+      ? '/meetings/${meeting.id}/summary'
+      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/summary';
   String get _roomBasePath => _resolvedInstitutionId == null
       ? '/meetings/${meeting.id}/room'
       : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/room';
@@ -644,12 +648,14 @@ class _PrimaryActionButton extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onEnter;
   final VoidCallback onOpenDetails;
+  final VoidCallback onOpenSummary;
 
   const _PrimaryActionButton({
     required this.lifecycle,
     required this.onStart,
     required this.onEnter,
     required this.onOpenDetails,
+    required this.onOpenSummary,
   });
 
   @override
@@ -659,7 +665,7 @@ class _PrimaryActionButton extends StatelessWidget {
       return FilledButton.icon(
         icon: const Icon(Icons.description_outlined, size: 18),
         label: Text(label),
-        onPressed: onOpenDetails,
+        onPressed: onOpenSummary,
       );
     }
     if (label == 'Retry connection') {

@@ -70,6 +70,42 @@ class MeetingsRepository {
     return Meeting.fromJson(data);
   }
 
+  Future<MeetingSummary?> getMeetingSummary(String id) async {
+    final res = await _dio.get<Map<String, dynamic>>('/meetings/$id/summary');
+    final data = res.data?['data'];
+    if (data is Map<String, dynamic>) return MeetingSummary.fromJson(data);
+    if (data is Map) {
+      return MeetingSummary.fromJson(Map<String, dynamic>.from(data));
+    }
+    return null;
+  }
+
+  Future<MeetingSummary> saveMeetingSummary(
+    String id, {
+    String? summaryText,
+    Map<String, dynamic>? attendanceSnapshot,
+    List<String>? decisions,
+    List<String>? commitments,
+    List<String>? actions,
+    List<String>? issues,
+    List<String>? followUps,
+  }) async {
+    final res = await _dio.put<Map<String, dynamic>>(
+      '/meetings/$id/summary',
+      data: {
+        if (summaryText != null) 'summaryText': summaryText,
+        if (attendanceSnapshot != null) 'attendanceSnapshot': attendanceSnapshot,
+        if (decisions != null) 'decisions': decisions,
+        if (commitments != null) 'commitments': commitments,
+        if (actions != null) 'actions': actions,
+        if (issues != null) 'issues': issues,
+        if (followUps != null) 'followUps': followUps,
+      },
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return MeetingSummary.fromJson(data);
+  }
+
   Future<Meeting> updateMeeting(
     String id, {
     String? title,

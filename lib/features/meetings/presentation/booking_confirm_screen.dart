@@ -120,54 +120,10 @@ class _BookingConfirmScreenState
               ),
             ),
             const SizedBox(height: AuraSpace.s8),
-            // Meeting summary — institution/org context first
-            if (widget.profile.institution != null)
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6C63FF).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                        child: Icon(Icons.business_rounded,
-                            color: Color(0xFF6C63FF), size: 18)),
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  Text(widget.profile.institution!.name,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                ],
-              )
-            else if (widget.profile.effectiveHost != null)
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: const Color(0xFF6C63FF),
-                    child: Text(
-                      widget.profile.effectiveHost!.name.isNotEmpty
-                          ? widget.profile.effectiveHost!.name[0]
-                              .toUpperCase()
-                          : 'H',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  Text(widget.profile.effectiveHost!.name,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                ],
-              ),
-
-            const SizedBox(height: AuraSpace.s12),
-            Text(widget.profile.meetingTitle,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: AuraSpace.s12),
+                Text(widget.profile.meetingTitle,
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: AuraSpace.s6),
 
             // Time and duration
@@ -307,46 +263,6 @@ class _ConfirmationView extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                         color: const Color(0xFF6B7280))),
-
-                const SizedBox(height: AuraSpace.s20),
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6C63FF).withOpacity(0.14),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.ring_volume_rounded,
-                        color: Color(0xFF8B85FF),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: AuraSpace.s12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Aura',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Verified meeting infrastructure',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF9CA3AF),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
 
                 const SizedBox(height: AuraSpace.s24),
                 const Divider(),

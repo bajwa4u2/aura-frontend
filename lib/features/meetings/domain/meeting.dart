@@ -313,10 +313,22 @@ class Meeting {
         DateTime.tryParse(j['updatedAt'] as String? ?? '') ?? DateTime.now(),
   );
 
-  bool get isActive => state == 'ACTIVE';
-  bool get isScheduled => state == 'SCHEDULED';
+  bool get isActive => state == 'ACTIVE' && !isEnded;
+  bool get isScheduled =>
+      state == 'SCHEDULED' &&
+      (room == null ||
+          room?.status == 'SCHEDULED' ||
+          room?.status == 'STARTING_SOON' ||
+          room?.status == 'WAITING' ||
+          room?.status == 'HOST_WAITING' ||
+          room?.status == 'GUEST_WAITING');
   bool get isDraft => state == 'DRAFT';
-  bool get isEnded => state == 'ENDED' || state == 'CANCELLED';
+  bool get isEnded =>
+      state == 'ENDED' ||
+      state == 'CANCELLED' ||
+      room?.status == 'ENDED' ||
+      room?.status == 'MISSED' ||
+      room?.status == 'CANCELLED';
   bool get isInstant => type == 'INSTANT';
 
   int get participantCount => participants.length;

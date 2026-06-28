@@ -133,53 +133,9 @@ class _GuestWaitingRoomScreenState
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 860),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6C63FF)
-                                  .withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.ring_volume_rounded,
-                              color: Color(0xFF8B85FF),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: AuraSpace.s12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Aura',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.w800),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Verified meeting infrastructure',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: const Color(0xFF9CA3AF),
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AuraSpace.s16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                       DecoratedBox(
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,

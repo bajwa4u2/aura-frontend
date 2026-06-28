@@ -167,43 +167,6 @@ class _PreJoinBody extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6C63FF).withOpacity(0.14),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.ring_volume_rounded,
-                        size: 18,
-                        color: Color(0xFF8B85FF),
-                      ),
-                    ),
-                    const SizedBox(width: AuraSpace.s10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Aura',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Verified meeting infrastructure',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF9CA3AF),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AuraSpace.s20),
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
@@ -243,7 +206,7 @@ class _PreJoinBody extends ConsumerWidget {
                               const SizedBox(height: 4),
                               Text(
                                 host == null
-                                    ? 'Hosted on Aura'
+                                    ? 'Host details unavailable'
                                     : 'Hosted by ${host.name}${host.title?.trim().isNotEmpty == true ? ' · ${host.title!}' : ''}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: const Color(0xFFCBD5E1),
@@ -356,24 +319,6 @@ class _PreJoinBody extends ConsumerWidget {
                       : () => context.go(
                           '/login?redirect=${Uri.encodeComponent('/meetings/join/${meeting.meetingCode}')}',
                         ),
-                ),
-                const SizedBox(height: AuraSpace.s20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Hosted on ',
-                      style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-                    ),
-                    Text(
-                      'Aura',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),

@@ -46,6 +46,12 @@ final meetingProvider = FutureProvider.family<Meeting, String>((ref, id) async {
   return repo.getMeeting(id);
 });
 
+final meetingSummaryProvider =
+    FutureProvider.family<MeetingSummary?, String>((ref, id) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      return repo.getMeetingSummary(id);
+    });
+
 // Meeting by code (public, used in join flow)
 final meetingByCodeProvider = FutureProvider.family<Meeting, String>((
   ref,

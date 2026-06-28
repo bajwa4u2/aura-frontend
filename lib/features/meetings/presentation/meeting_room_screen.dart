@@ -45,6 +45,9 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       ? '/meetings/${widget.meetingId}/room'
       : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/room';
   String get _returnTo => widget.returnTo ?? Uri.encodeComponent(_roomBasePath);
+  String get _summaryPath => widget.institutionId == null
+      ? '/meetings/${widget.meetingId}/summary'
+      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
 
   Future<void> _startMeeting(Meeting meeting) async {
     setState(() => _busy = true);
@@ -136,6 +139,9 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                         onEnter: sessionId.isNotEmpty
                             ? () => _enterTransport(meeting)
                             : null,
+                        onOpenSummary: isTerminal
+                            ? () => context.push(_summaryPath)
+                            : null,
                         onCopy: () => _copyLink(meeting),
                       ),
                       const SizedBox(height: AuraSpace.s16),
@@ -156,6 +162,9 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                             : null,
                         onEnter: sessionId.isNotEmpty
                             ? () => _enterTransport(meeting)
+                            : null,
+                        onOpenSummary: isTerminal
+                            ? () => context.push(_summaryPath)
                             : null,
                         onCopy: () => _copyLink(meeting),
                         isTerminal: isTerminal,
@@ -179,6 +188,7 @@ class _HeaderCard extends StatelessWidget {
   final String? sessionId;
   final VoidCallback? onStart;
   final VoidCallback? onEnter;
+  final VoidCallback? onOpenSummary;
   final VoidCallback onCopy;
 
   const _HeaderCard({
@@ -188,6 +198,7 @@ class _HeaderCard extends StatelessWidget {
     required this.sessionId,
     required this.onStart,
     required this.onEnter,
+    required this.onOpenSummary,
     required this.onCopy,
   });
 
@@ -221,13 +232,20 @@ class _HeaderCard extends StatelessWidget {
               spacing: AuraSpace.s12,
               runSpacing: AuraSpace.s12,
               children: [
-                FilledButton.icon(
-                  onPressed: sessionId != null ? onEnter : onStart,
-                  icon: const Icon(Icons.meeting_room_rounded),
-                  label: Text(
-                    sessionId != null ? 'Enter room' : 'Start meeting',
+                if (onOpenSummary != null)
+                  FilledButton.icon(
+                    onPressed: onOpenSummary,
+                    icon: const Icon(Icons.description_outlined),
+                    label: const Text('View summary'),
                   ),
-                ),
+                if (onOpenSummary == null)
+                  FilledButton.icon(
+                    onPressed: sessionId != null ? onEnter : onStart,
+                    icon: const Icon(Icons.meeting_room_rounded),
+                    label: Text(
+                      sessionId != null ? 'Enter room' : 'Start meeting',
+                    ),
+                  ),
                 OutlinedButton.icon(
                   onPressed: onCopy,
                   icon: const Icon(Icons.content_copy_rounded),
@@ -250,6 +268,7 @@ class _RoomStateCard extends StatelessWidget {
   final MeetingLifecycleViewModel lifecycle;
   final VoidCallback? onStart;
   final VoidCallback? onEnter;
+  final VoidCallback? onOpenSummary;
   final VoidCallback onCopy;
   final bool isTerminal;
 
@@ -261,6 +280,7 @@ class _RoomStateCard extends StatelessWidget {
     required this.lifecycle,
     required this.onStart,
     required this.onEnter,
+    required this.onOpenSummary,
     required this.onCopy,
     required this.isTerminal,
   });
@@ -333,17 +353,23 @@ class _RoomStateCard extends StatelessWidget {
               spacing: AuraSpace.s12,
               runSpacing: AuraSpace.s12,
               children: [
-                if (onStart != null)
+                if (!isTerminal && onStart != null)
                   FilledButton.icon(
                     onPressed: busy ? null : onStart,
                     icon: const Icon(Icons.play_arrow_rounded),
                     label: const Text('Start meeting'),
                   ),
-                if (onEnter != null)
+                if (!isTerminal && onEnter != null)
                   FilledButton.icon(
                     onPressed: busy ? null : onEnter,
                     icon: const Icon(Icons.meeting_room_outlined),
                     label: const Text('Enter room'),
+                  ),
+                if (onOpenSummary != null)
+                  FilledButton.icon(
+                    onPressed: onOpenSummary,
+                    icon: const Icon(Icons.description_outlined),
+                    label: const Text('View summary'),
                   ),
                 OutlinedButton.icon(
                   onPressed: onCopy,

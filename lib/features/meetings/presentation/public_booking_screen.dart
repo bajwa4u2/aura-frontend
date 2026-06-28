@@ -110,8 +110,6 @@ class _BookingPageBody extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _PlatformIdentityBanner(),
-                  const SizedBox(height: AuraSpace.s24),
                   isWide
                       ? Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,28 +355,7 @@ class _BookingActionPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Aura',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF8B85FF),
-                  ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Verified meeting infrastructure',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF9CA3AF),
-                  ),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            Text(
-              'Aura helps institutions host meetings with identity, context, and follow-up continuity.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFCBD5E1),
-                    height: 1.45,
-                  ),
-            ),
+            _MeetingAtAGlance(profile: profile),
             const SizedBox(height: AuraSpace.s16),
             FilledButton.icon(
               icon: const Icon(Icons.calendar_month_rounded),
@@ -410,47 +387,126 @@ class _BookingActionPanel extends StatelessWidget {
   }
 }
 
-class _PlatformIdentityBanner extends StatelessWidget {
-  const _PlatformIdentityBanner();
+class _MeetingAtAGlance extends StatelessWidget {
+  final AvailabilityProfile profile;
+
+  const _MeetingAtAGlance({required this.profile});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final institution = profile.institution;
+    final host = profile.effectiveHost;
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFF6C63FF).withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.ring_volume_rounded,
-            color: Color(0xFF8B85FF),
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: AuraSpace.s12),
-        Expanded(
-          child: Column(
+        if (institution != null) ...[
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Aura',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+              _LogoMark(
+                label: institution.name,
+                icon: Icons.business_rounded,
+                logoUrl: institution.logoUrl,
+                size: 44,
               ),
-              const SizedBox(height: 2),
-              Text(
-                'Hosted meetings with identity, context, and continuity',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF9CA3AF),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      institution.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
+                    if ((institution.tagline ?? '').trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          institution.tagline!.trim(),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      ),
+                    if (institution.isVerified)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 6),
+                        child: _DetailChip(
+                          icon: Icons.verified_rounded,
+                          label: 'Verified institution',
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
+          const SizedBox(height: AuraSpace.s14),
+        ],
+        if (host != null) ...[
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFF111827),
+                backgroundImage: host.avatarUrl != null
+                    ? NetworkImage(host.avatarUrl!)
+                    : null,
+                child: host.avatarUrl == null
+                    ? Text(
+                        host.name.isNotEmpty ? host.name[0].toUpperCase() : 'H',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      host.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if ((host.title ?? '').trim().isNotEmpty)
+                      Text(
+                        host.title!.trim(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF9CA3AF),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s14),
+        ],
+        Text(
+          profile.meetingTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
+        if ((profile.meetingDescription ?? '').trim().isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            profile.meetingDescription!.trim(),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFFCBD5E1),
+              height: 1.45,
+            ),
+          ),
+        ],
       ],
     );
   }

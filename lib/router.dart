@@ -103,6 +103,21 @@ import 'features/invitations/presentation/invite_create_screen.dart';
 import 'features/invitations/presentation/contact_import_screen.dart';
 import 'features/realtime/presentation/realtime_lobby_screen.dart';
 import 'features/realtime/presentation/realtime_room_screen.dart';
+import 'features/meetings/presentation/booking_cancel_screen.dart';
+import 'features/meetings/presentation/booking_confirm_screen.dart';
+import 'features/meetings/presentation/create_meeting_screen.dart';
+import 'features/meetings/presentation/guest_waiting_room_screen.dart';
+import 'features/meetings/presentation/institution_availability_screen.dart';
+import 'features/meetings/presentation/meeting_detail_screen.dart';
+import 'features/meetings/presentation/meeting_room_screen.dart';
+import 'features/meetings/presentation/meeting_summary_screen.dart';
+import 'features/meetings/presentation/post_meeting_workspace_screen.dart';
+import 'features/meetings/presentation/pre_join_screen.dart';
+import 'features/meetings/presentation/public_booking_screen.dart';
+import 'features/meetings/presentation/slot_picker_screen.dart';
+import 'features/meetings/presentation/meetings_home_screen.dart';
+import 'features/meetings/presentation/availability_setup_screen.dart';
+import 'features/meetings/domain/availability_profile.dart';
 
 // Static screens
 import 'screens/support_fallback_screen.dart';
@@ -123,20 +138,6 @@ import 'screens/child_safety_screen.dart';
 import 'screens/terms_screen.dart';
 import 'features/support/presentation/support_agent_screen.dart';
 import 'features/support/presentation/admin_support_console_screen.dart';
-
-// Meetings
-import 'features/meetings/presentation/meetings_home_screen.dart';
-import 'features/meetings/presentation/create_meeting_screen.dart';
-import 'features/meetings/presentation/meeting_room_screen.dart';
-import 'features/meetings/presentation/meeting_detail_screen.dart';
-import 'features/meetings/presentation/pre_join_screen.dart';
-import 'features/meetings/presentation/availability_setup_screen.dart';
-import 'features/meetings/presentation/institution_availability_screen.dart';
-import 'features/meetings/presentation/public_booking_screen.dart';
-import 'features/meetings/presentation/slot_picker_screen.dart';
-import 'features/meetings/presentation/booking_confirm_screen.dart';
-import 'features/meetings/presentation/booking_cancel_screen.dart';
-import 'features/meetings/domain/availability_profile.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -935,6 +936,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/meetings/:meetingId/prep',
+            builder: (context, state) => MeetingDetailScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+            ),
+          ),
+          GoRoute(
             path: '/meetings/:meetingId/room',
             builder: (context, state) => MeetingRoomScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
@@ -943,7 +950,34 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/meetings/:meetingId/waiting',
+            builder: (context, state) => GuestWaitingRoomScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              sessionId: state.uri.queryParameters['sessionId'],
+              returnTo: state.uri.queryParameters['returnTo'],
+            ),
+          ),
+          GoRoute(
+            path: '/meetings/:meetingId/summary',
+            builder: (context, state) => MeetingSummaryScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/meetings/:meetingId/post-meeting',
+            builder: (context, state) => PostMeetingWorkspaceScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+            ),
+          ),
+          GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId',
+            builder: (context, state) => MeetingDetailScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              institutionId: state.pathParameters['institutionId'],
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/meetings/:meetingId/prep',
             builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
               institutionId: state.pathParameters['institutionId'],
@@ -956,6 +990,30 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.pathParameters['institutionId'],
               sessionId: state.uri.queryParameters['sessionId'],
               returnTo: state.uri.queryParameters['returnTo'],
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/meetings/:meetingId/waiting',
+            builder: (context, state) => GuestWaitingRoomScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              institutionId: state.pathParameters['institutionId'],
+              sessionId: state.uri.queryParameters['sessionId'],
+              returnTo: state.uri.queryParameters['returnTo'],
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/meetings/:meetingId/summary',
+            builder: (context, state) => MeetingSummaryScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              institutionId: state.pathParameters['institutionId'],
+            ),
+          ),
+          GoRoute(
+            path:
+                '/institution/:institutionId/meetings/:meetingId/post-meeting',
+            builder: (context, state) => PostMeetingWorkspaceScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              institutionId: state.pathParameters['institutionId'],
             ),
           ),
           GoRoute(

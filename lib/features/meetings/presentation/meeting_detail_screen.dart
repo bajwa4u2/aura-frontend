@@ -382,6 +382,42 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                       ),
                     ],
                   ),
+                  if (meeting.summary != null) ...[
+                    const SizedBox(height: AuraSpace.s16),
+                    _InfoPanel(
+                      title: 'Meeting summary',
+                      fullWidth: true,
+                      children: [
+                        if (meeting.summary?.summaryText?.trim().isNotEmpty ==
+                            true)
+                          _InfoRow(
+                            icon: Icons.subject_rounded,
+                            label: 'Summary',
+                            value: meeting.summary!.summaryText!.trim(),
+                          ),
+                        if (meeting.summary?.decisions.isNotEmpty == true)
+                          _ListRow(
+                            title: 'Decisions',
+                            values: meeting.summary!.decisions,
+                          ),
+                        if (meeting.summary?.commitments.isNotEmpty == true)
+                          _ListRow(
+                            title: 'Commitments',
+                            values: meeting.summary!.commitments,
+                          ),
+                        if (meeting.summary?.actions.isNotEmpty == true)
+                          _ListRow(
+                            title: 'Actions',
+                            values: meeting.summary!.actions,
+                          ),
+                        if (meeting.summary?.followUps.isNotEmpty == true)
+                          _ListRow(
+                            title: 'Follow-ups',
+                            values: meeting.summary!.followUps,
+                          ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: AuraSpace.s16),
                   if (!meeting.isEnded)
                     OutlinedButton.icon(
@@ -598,6 +634,41 @@ class _InfoRow extends StatelessWidget {
             if (trailing != null) trailing!,
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ListRow extends StatelessWidget {
+  final String title;
+  final List<String> values;
+
+  const _ListRow({required this.title, required this.values});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s6),
+          ...values.map(
+            (value) => Padding(
+              padding: const EdgeInsets.only(bottom: AuraSpace.s4),
+              child: Text(
+                '• $value',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
