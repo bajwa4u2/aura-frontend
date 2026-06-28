@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/shell_shared.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -133,6 +134,8 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen> {
               ),
             ),
           ),
+          const SizedBox(height: AuraSpace.s32),
+          const ShellFooter(),
         ],
       ),
     );

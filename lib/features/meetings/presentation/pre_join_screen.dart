@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/shell_shared.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -198,7 +199,9 @@ class _PreJoinBody extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                institution?.name ?? host?.name ?? meeting.title,
+                                institution?.name ??
+                                    host?.name ??
+                                    meeting.title,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -207,21 +210,13 @@ class _PreJoinBody extends ConsumerWidget {
                               Text(
                                 host == null
                                     ? 'Host details unavailable'
-                                    : 'Hosted by ${host.name}${host.title?.trim().isNotEmpty == true ? ' · ${host.title!}' : ''}',
+                                    : host.title?.trim().isNotEmpty == true
+                                    ? host.title!.trim()
+                                    : host.name,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: const Color(0xFFCBD5E1),
                                 ),
                               ),
-                              if ((institution?.description ?? '').trim().isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    institution!.description!.trim(),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: const Color(0xFF9CA3AF),
-                                    ),
-                                  ),
-                                ),
                             ],
                           ),
                         ),
@@ -243,16 +238,6 @@ class _PreJoinBody extends ConsumerWidget {
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: const Color(0xFFCBD5E1),
                       height: 1.45,
-                    ),
-                  ),
-                ],
-                if ((institution?.tagline ?? '').trim().isNotEmpty) ...[
-                  const SizedBox(height: AuraSpace.s8),
-                  Text(
-                    institution!.tagline!.trim(),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF9CA3AF),
-                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
@@ -313,13 +298,17 @@ class _PreJoinBody extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s12),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.login_rounded),
-                  label: Text(isAuthed ? 'Join as guest' : 'Continue with Aura'),
+                  label: Text(
+                    isAuthed ? 'Join as guest' : 'Continue with Aura',
+                  ),
                   onPressed: isAuthed
                       ? onJoin
                       : () => context.go(
                           '/login?redirect=${Uri.encodeComponent('/meetings/join/${meeting.meetingCode}')}',
                         ),
                 ),
+                const SizedBox(height: AuraSpace.s32),
+                const ShellFooter(),
               ],
             ),
           ),
@@ -334,11 +323,7 @@ class _IdentityAvatar extends StatelessWidget {
   final String? logoUrl;
   final IconData icon;
 
-  const _IdentityAvatar({
-    required this.name,
-    required this.icon,
-    this.logoUrl,
-  });
+  const _IdentityAvatar({required this.name, required this.icon, this.logoUrl});
 
   @override
   Widget build(BuildContext context) {

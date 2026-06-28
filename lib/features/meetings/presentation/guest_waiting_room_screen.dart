@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/shell_shared.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -133,9 +134,9 @@ class _GuestWaitingRoomScreenState
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 860),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                       DecoratedBox(
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
@@ -164,7 +165,8 @@ class _GuestWaitingRoomScreenState
                               Row(
                                 children: [
                                   _IdentityAvatar(
-                                    name: meeting.booking?.institution?.name ??
+                                    name:
+                                        meeting.booking?.institution?.name ??
                                         institutionName,
                                     logoUrl:
                                         meeting.booking?.institution?.logoUrl,
@@ -197,14 +199,13 @@ class _GuestWaitingRoomScreenState
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(color: const Color(0xFF9CA3AF)),
                               ),
-                              if (meeting.host?.title?.trim().isNotEmpty == true)
+                              if (meeting.host?.title?.trim().isNotEmpty ==
+                                  true)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
                                     meeting.host!.title!.trim(),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: const Color(0xFF9CA3AF),
                                         ),
@@ -279,6 +280,8 @@ class _GuestWaitingRoomScreenState
                       ),
                       const SizedBox(height: AuraSpace.s16),
                       _WaitingCard(lifecycle: lifecycle, meeting: meeting),
+                      const SizedBox(height: AuraSpace.s32),
+                      const ShellFooter(),
                     ],
                   ),
                 ),
@@ -357,11 +360,7 @@ class _IdentityAvatar extends StatelessWidget {
   final String? logoUrl;
   final IconData icon;
 
-  const _IdentityAvatar({
-    required this.name,
-    required this.icon,
-    this.logoUrl,
-  });
+  const _IdentityAvatar({required this.name, required this.icon, this.logoUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -377,15 +376,10 @@ class _IdentityAvatar extends StatelessWidget {
           ? Image.network(
               logoUrl!,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Icon(
-                icon,
-                color: const Color(0xFF9CA3AF),
-              ),
+              errorBuilder: (_, __, ___) =>
+                  Icon(icon, color: const Color(0xFF9CA3AF)),
             )
-          : Icon(
-              icon,
-              color: const Color(0xFF9CA3AF),
-            ),
+          : Icon(icon, color: const Color(0xFF9CA3AF)),
     );
   }
 }
