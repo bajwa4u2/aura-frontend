@@ -52,10 +52,6 @@ class _GuestWaitingRoomScreenState
     super.dispose();
   }
 
-  String get _roomPath => widget.institutionId == null
-      ? '/meetings/${widget.meetingId}/room'
-      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/room';
-
   String get _summaryPath => widget.institutionId == null
       ? '/meetings/${widget.meetingId}/summary'
       : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
@@ -95,7 +91,7 @@ class _GuestWaitingRoomScreenState
                 : meeting.sessionId ?? meeting.room?.realtimeSessionId ?? '')
             .trim();
     if (sessionId.isEmpty) return;
-    context.push('$_roomPath?sessionId=$sessionId&returnTo=$_returnTo');
+    context.push('/realtime/$sessionId?action=join&returnTo=$_returnTo');
   }
 
   @override
