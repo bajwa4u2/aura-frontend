@@ -196,9 +196,6 @@ class _MeetingSummary extends StatelessWidget {
                 avatarUrl: institution.logoUrl,
                 fallbackLabel: institution.name,
                 title: institution.name,
-                trailing: institution.isVerified
-                    ? const _MiniBadge(label: 'Verified')
-                    : null,
               ),
               const SizedBox(height: AuraSpace.s14),
             ],
@@ -301,14 +298,12 @@ class _CompactIdentityRow extends StatelessWidget {
   final String fallbackLabel;
   final String title;
   final String? subtitle;
-  final Widget? trailing;
 
   const _CompactIdentityRow({
     required this.avatarUrl,
     required this.fallbackLabel,
     required this.title,
     this.subtitle,
-    this.trailing,
   });
 
   @override
@@ -365,10 +360,6 @@ class _CompactIdentityRow extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: AuraSpace.s8),
-          trailing!,
-        ],
       ],
     );
   }
