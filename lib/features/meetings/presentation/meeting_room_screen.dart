@@ -19,6 +19,7 @@ class MeetingRoomScreen extends ConsumerStatefulWidget {
   final String? institutionId;
   final String? returnTo;
   final String? sessionId;
+  final String? meetingCode;
 
   const MeetingRoomScreen({
     super.key,
@@ -26,6 +27,7 @@ class MeetingRoomScreen extends ConsumerStatefulWidget {
     this.institutionId,
     this.returnTo,
     this.sessionId,
+    this.meetingCode,
   });
 
   @override
@@ -115,7 +117,10 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final meetingAsync = ref.watch(meetingProvider(widget.meetingId));
+    final usePublicMeetingLookup = (widget.meetingCode ?? '').trim().isNotEmpty;
+    final meetingAsync = usePublicMeetingLookup
+        ? ref.watch(meetingByCodeProvider(widget.meetingCode!.trim()))
+        : ref.watch(meetingProvider(widget.meetingId));
     final me = ref.watch(authMeDataProvider).valueOrNull ?? const {};
 
     return meetingAsync.when(

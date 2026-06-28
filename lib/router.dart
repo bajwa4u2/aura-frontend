@@ -952,6 +952,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               meetingId: state.pathParameters['meetingId'] ?? '',
               sessionId: state.uri.queryParameters['sessionId'],
               returnTo: state.uri.queryParameters['returnTo'],
+              meetingCode: state.uri.queryParameters['code'],
             ),
           ),
           GoRoute(
@@ -960,6 +961,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               meetingId: state.pathParameters['meetingId'] ?? '',
               sessionId: state.uri.queryParameters['sessionId'],
               returnTo: state.uri.queryParameters['returnTo'],
+              meetingCode: state.uri.queryParameters['code'],
             ),
           ),
           GoRoute(

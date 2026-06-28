@@ -17,6 +17,7 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
   final String? institutionId;
   final String? sessionId;
   final String? returnTo;
+  final String? meetingCode;
 
   const GuestWaitingRoomScreen({
     super.key,
@@ -24,6 +25,7 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
     this.institutionId,
     this.sessionId,
     this.returnTo,
+    this.meetingCode,
   });
 
   @override
@@ -40,7 +42,7 @@ class _GuestWaitingRoomScreenState
     super.initState();
     _poller = Timer.periodic(const Duration(seconds: 8), (_) {
       if (!mounted) return;
-      ref.invalidate(meetingProvider(widget.meetingId));
+      _refresh();
     });
   }
 
@@ -68,7 +70,14 @@ class _GuestWaitingRoomScreenState
 
   String get _currentSessionId => (widget.sessionId ?? '').trim();
 
+  bool get _usePublicMeetingLookup =>
+      (widget.meetingCode ?? '').trim().isNotEmpty;
+
   void _refresh() {
+    if (_usePublicMeetingLookup) {
+      ref.invalidate(meetingByCodeProvider(widget.meetingCode!.trim()));
+      return;
+    }
     ref.invalidate(meetingProvider(widget.meetingId));
   }
 
@@ -91,7 +100,9 @@ class _GuestWaitingRoomScreenState
 
   @override
   Widget build(BuildContext context) {
-    final meetingAsync = ref.watch(meetingProvider(widget.meetingId));
+    final meetingAsync = _usePublicMeetingLookup
+        ? ref.watch(meetingByCodeProvider(widget.meetingCode!.trim()))
+        : ref.watch(meetingProvider(widget.meetingId));
 
     return meetingAsync.when(
       loading: () => AuraScaffold(

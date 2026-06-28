@@ -55,7 +55,8 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
 
       if (result.shouldWait) {
         final waitingPath =
-            '/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}';
+            '/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}'
+            '&code=${Uri.encodeComponent(widget.meetingCode)}';
         context.push(waitingPath);
         return;
       }
@@ -63,6 +64,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       if (result.sessionId != null) {
         context.push(
           '/meetings/${result.meetingId}/room?sessionId=${result.sessionId}'
+          '&code=${Uri.encodeComponent(widget.meetingCode)}'
           '${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
         );
       } else {
