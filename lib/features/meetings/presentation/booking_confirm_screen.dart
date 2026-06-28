@@ -248,191 +248,180 @@ class _ConfirmationView extends ConsumerWidget {
 
     return AuraScaffold(
       title: '',
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Padding(
-            padding: const EdgeInsets.all(AuraSpace.s24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Success indicator
-                const Icon(
-                  Icons.check_circle_rounded,
-                  size: 60,
-                  color: Color(0xFF10B981),
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                Text(
-                  'Booking confirmed',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+      body: ListView(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 60,
+                    color: Color(0xFF10B981),
                   ),
-                ),
-                const SizedBox(height: AuraSpace.s6),
-                Text(
-                  'A confirmation has been sent to your email.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF6B7280),
+                  const SizedBox(height: AuraSpace.s16),
+                  Text(
+                    'Booking confirmed',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: AuraSpace.s24),
-                const Divider(),
-                const SizedBox(height: AuraSpace.s16),
-
-                if (institution != null || host != null) ...[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      if (institution != null)
-                        _IdentityAvatar(
-                          label: institution.name,
-                          icon: Icons.business_rounded,
-                          logoUrl: institution.logoUrl,
-                          size: 40,
-                        ),
-                      if (institution != null && host != null)
-                        const SizedBox(width: AuraSpace.s10),
-                      if (host != null)
-                        _IdentityAvatar(
-                          label: host.name,
-                          icon: Icons.person_outline_rounded,
-                          logoUrl: host.avatarUrl,
-                          size: 40,
-                        ),
-                      const SizedBox(width: AuraSpace.s12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              institution?.name ?? host?.name ?? profile.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (host != null &&
-                                host.title?.trim().isNotEmpty == true)
+                  const SizedBox(height: AuraSpace.s6),
+                  Text(
+                    'A confirmation has been sent to your email.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s24),
+                  const Divider(),
+                  const SizedBox(height: AuraSpace.s16),
+                  if (institution != null || host != null) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (institution != null)
+                          _IdentityAvatar(
+                            label: institution.name,
+                            icon: Icons.business_rounded,
+                            logoUrl: institution.logoUrl,
+                            size: 40,
+                          ),
+                        if (institution != null && host != null)
+                          const SizedBox(width: AuraSpace.s10),
+                        if (host != null)
+                          _IdentityAvatar(
+                            label: host.name,
+                            icon: Icons.person_outline_rounded,
+                            logoUrl: host.avatarUrl,
+                            size: 40,
+                          ),
+                        const SizedBox(width: AuraSpace.s12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                host.title!.trim(),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: const Color(0xFF9CA3AF),
+                                institution?.name ?? host?.name ?? profile.name,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                          ],
-                        ),
-                      ),
-                      if (institution?.isVerified == true)
-                        const Padding(
-                          padding: EdgeInsets.only(left: AuraSpace.s8),
-                          child: _PillChip(
-                            icon: Icons.verified_rounded,
-                            label: 'Verified',
+                              if (host != null &&
+                                  host.title?.trim().isNotEmpty == true)
+                                Text(
+                                  host.title!.trim(),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: const Color(0xFF9CA3AF),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                ],
-
-                // Meeting details
-                Text(
-                  confirmation.meetingTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s8),
-                _InfoRow(icon: Icons.schedule_rounded, text: timeLabel),
-                _InfoRow(
-                  icon: Icons.timer_outlined,
-                  text: '${confirmation.durationMinutes} minutes',
-                ),
-                _InfoRow(
-                  icon: Icons.person_outline_rounded,
-                  text: confirmation.hostName,
-                ),
-
-                const SizedBox(height: AuraSpace.s16),
-
-                // Meeting link
-                Container(
-                  padding: const EdgeInsets.all(AuraSpace.s14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6C63FF).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
+                        if (institution?.isVerified == true)
+                          const Padding(
+                            padding: EdgeInsets.only(left: AuraSpace.s8),
+                            child: _PillChip(
+                              icon: Icons.verified_rounded,
+                              label: 'Verified',
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AuraSpace.s16),
+                  ],
+                  Text(
+                    confirmation.meetingTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          confirmation.meetingCode,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                            color: const Color(0xFF6C63FF),
+                  const SizedBox(height: AuraSpace.s8),
+                  _InfoRow(icon: Icons.schedule_rounded, text: timeLabel),
+                  _InfoRow(
+                    icon: Icons.timer_outlined,
+                    text: '${confirmation.durationMinutes} minutes',
+                  ),
+                  _InfoRow(
+                    icon: Icons.person_outline_rounded,
+                    text: confirmation.hostName,
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
+                  Container(
+                    padding: const EdgeInsets.all(AuraSpace.s14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6C63FF).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            confirmation.meetingCode,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                              color: const Color(0xFF6C63FF),
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.copy_rounded, size: 18),
-                        color: const Color(0xFF6C63FF),
-                        onPressed: () {
-                          Clipboard.setData(
-                            ClipboardData(text: confirmation.joinUrl),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Meeting link copied'),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          color: const Color(0xFF6C63FF),
+                          onPressed: () {
+                            Clipboard.setData(
+                              ClipboardData(text: confirmation.joinUrl),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Meeting link copied'),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: AuraSpace.s24),
-
-                FilledButton.icon(
-                  icon: const Icon(Icons.video_call_rounded),
-                  label: Text(
-                    isAuthed ? 'Continue with Aura' : 'Join as guest',
+                  const SizedBox(height: AuraSpace.s24),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.video_call_rounded),
+                    label: Text(
+                      isAuthed ? 'Continue with Aura' : 'Join as guest',
+                    ),
+                    onPressed: () => context.push(joinPath),
                   ),
-                  onPressed: () => context.push(joinPath),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.login_rounded),
-                  label: const Text('Continue with Aura'),
-                  onPressed: isAuthed
-                      ? () => context.push(joinPath)
-                      : () => context.go(loginPath),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-
-                OutlinedButton(
-                  onPressed: () => context.go(profile.publicUrl),
-                  child: const Text('Done'),
-                ),
-                const SizedBox(height: AuraSpace.s32),
-                const ShellFooter(),
-              ],
+                  const SizedBox(height: AuraSpace.s12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.login_rounded),
+                    label: const Text('Continue with Aura'),
+                    onPressed: isAuthed
+                        ? () => context.push(joinPath)
+                        : () => context.go(loginPath),
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  OutlinedButton(
+                    onPressed: () => context.go(profile.publicUrl),
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: AuraSpace.s32),
+          const ShellFooter(),
+        ],
       ),
     );
   }
