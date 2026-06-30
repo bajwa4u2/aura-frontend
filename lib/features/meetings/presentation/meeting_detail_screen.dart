@@ -967,7 +967,7 @@ class _LifecycleActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = lifecycle.primaryAction;
-    if (label == 'View summary' || label == 'Review missed') {
+    if (label == 'View summary') {
       return FilledButton.icon(
         icon: const Icon(Icons.description_outlined),
         label: Text(label),

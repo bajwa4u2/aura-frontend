@@ -135,8 +135,7 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                             _MeetingSection(
                               title: "Today's meetings",
                               emptyTitle: 'No meetings today',
-                              emptyBody:
-                                  'New guest bookings will appear here when they are scheduled for today.',
+                              emptyBody: 'No bookings confirmed for today.',
                               meetings: today,
                               institutionId: institutionId,
                               highlightToday: true,
@@ -157,8 +156,7 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                             _MeetingSection(
                               title: 'Booking requests received',
                               emptyTitle: 'No guest bookings yet',
-                              emptyBody:
-                                  'When a guest books from a public booking page, their details and source page will appear here.',
+                              emptyBody: 'Confirmed guest bookings appear here.',
                               meetings: requests,
                               institutionId: institutionId,
                               compact: true,
@@ -841,7 +839,7 @@ class _PrimaryActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = lifecycle.primaryAction;
-    if (label == 'View summary' || label == 'Review missed') {
+    if (label == 'View summary') {
       return FilledButton.icon(
         icon: const Icon(Icons.description_outlined, size: 18),
         label: Text(label),

@@ -1093,7 +1093,7 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
               contentPadding: EdgeInsets.zero,
               value: _requireApproval,
               title: const Text(
-                'Require approval',
+                'Guests need approval to join',
                 style: TextStyle(fontSize: 14),
               ),
               onChanged: (v) => setState(() => _requireApproval = v),

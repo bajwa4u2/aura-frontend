@@ -96,7 +96,7 @@ class MeetingLifecyclePresenter {
         label = 'Missed';
         subtitle = 'The meeting window passed without a live session.';
         cue = 'Review the meeting and decide whether to follow up.';
-        primaryAction = 'Review missed';
+        primaryAction = 'View summary';
         canStart = false;
         canEnter = false;
         canRetryTransport = false;
@@ -150,7 +150,7 @@ class MeetingLifecyclePresenter {
           label = 'Missed';
           subtitle = 'The scheduled time passed without an active meeting.';
           cue = 'Review the meeting and decide whether to follow up.';
-          primaryAction = 'Review missed';
+          primaryAction = 'View summary';
           canStart = false;
           canEnter = false;
           canRetryTransport = false;
@@ -176,7 +176,7 @@ class MeetingLifecyclePresenter {
           label = 'Missed';
           subtitle = 'The scheduled time passed without an active meeting.';
           cue = 'Review the meeting and decide whether to follow up.';
-          primaryAction = 'Review missed';
+          primaryAction = 'View summary';
           canStart = false;
           canEnter = false;
           canRetryTransport = false;
