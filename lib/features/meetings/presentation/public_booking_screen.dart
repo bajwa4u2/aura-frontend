@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/shell/shell_shared.dart';
-import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/guest_shell.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
@@ -16,9 +15,8 @@ class PublicBookingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(publicProfileProvider(slug));
     return profileAsync.when(
-      loading: () => AuraScaffold(
-        title: '',
-        body: const Center(child: CircularProgressIndicator()),
+      loading: () => const GuestShell(
+        body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => const _NotFoundBody(),
       data: (profile) => _BookingPageBody(profile: profile),
@@ -40,9 +38,8 @@ class InstitutionPublicBookingScreen extends ConsumerWidget {
     final key = InstitutionBookingKey(institutionSlug, bookingSlug);
     final profileAsync = ref.watch(institutionPublicProfileProvider(key));
     return profileAsync.when(
-      loading: () => AuraScaffold(
-        title: '',
-        body: const Center(child: CircularProgressIndicator()),
+      loading: () => const GuestShell(
+        body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => const _NotFoundBody(),
       data: (profile) => _BookingPageBody(profile: profile),
@@ -55,8 +52,7 @@ class _NotFoundBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AuraScaffold(
-      title: '',
+    return GuestShell(
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s24),
         children: [
@@ -87,7 +83,6 @@ class _NotFoundBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s32),
-          const ShellFooter(),
         ],
       ),
     );
@@ -104,8 +99,9 @@ class _BookingPageBody extends StatelessWidget {
     final host = profile.effectiveHost;
     final isWide = MediaQuery.sizeOf(context).width >= 900;
 
-    return AuraScaffold(
-      title: '',
+    return GuestShell(
+      institutionName: institution?.name ?? host?.name,
+      institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
       body: ListView(
         padding: EdgeInsets.symmetric(
           horizontal: isWide ? AuraSpace.s32 : AuraSpace.s16,
@@ -155,7 +151,6 @@ class _BookingPageBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s32),
-          const ShellFooter(),
         ],
       ),
     );

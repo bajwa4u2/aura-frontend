@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/shell/shell_shared.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 
@@ -73,7 +72,7 @@ class _BookingRescheduleScreenState
           );
       setState(() => _done = true);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = 'Unable to reschedule. Try again.');
     } finally {
       if (mounted) setState(() => _rescheduling = false);
     }
@@ -83,9 +82,13 @@ class _BookingRescheduleScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final institution = profile.institution;
+    final host = profile.effectiveHost;
+
     if (_done) {
-      return AuraScaffold(
-        title: '',
+      return GuestShell(
+        institutionName: institution?.name ?? host?.name,
+        institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
         body: ListView(
           padding: const EdgeInsets.all(AuraSpace.s24),
           children: [
@@ -124,7 +127,6 @@ class _BookingRescheduleScreenState
               ),
             ),
             const SizedBox(height: AuraSpace.s32),
-            const ShellFooter(),
           ],
         ),
       );
@@ -133,8 +135,10 @@ class _BookingRescheduleScreenState
     final slotsAsync = _slotsForDate();
     final localizations = MaterialLocalizations.of(context);
 
-    return AuraScaffold(
-      title: 'Pick a new time',
+    return GuestShell(
+      institutionName: institution?.name ?? host?.name,
+      institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
+      showBackButton: true,
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s16),
         children: [
@@ -145,14 +149,6 @@ class _BookingRescheduleScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                      label: const Text('Back'),
-                      onPressed: () => context.pop(),
-                    ),
-                  ),
                   const SizedBox(height: AuraSpace.s8),
                   Text(
                     'Reschedule: ${profile.meetingTitle}',
@@ -165,7 +161,7 @@ class _BookingRescheduleScreenState
                     Padding(
                       padding: const EdgeInsets.only(bottom: AuraSpace.s12),
                       child: Text(
-                        'Error: $_error',
+                        _error!,
                         style: const TextStyle(color: Color(0xFFEF4444)),
                       ),
                     ),
@@ -220,9 +216,8 @@ class _BookingRescheduleScreenState
                           child: CircularProgressIndicator(),
                         ),
                       ),
-                      error: (e, _) => Text('Could not load slots: $e',
-                          style:
-                              const TextStyle(color: Color(0xFFEF4444))),
+                      error: (e, _) => const Text('Unable to load available times. Try again.',
+                          style: TextStyle(color: Color(0xFFEF4444))),
                       data: (slots) {
                         if (slots.isEmpty) {
                           return const Text(
@@ -265,7 +260,6 @@ class _BookingRescheduleScreenState
             ),
           ),
           const SizedBox(height: AuraSpace.s32),
-          const ShellFooter(),
         ],
       ),
     );

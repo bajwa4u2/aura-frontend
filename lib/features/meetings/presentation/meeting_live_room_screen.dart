@@ -134,7 +134,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       if (!mounted) return;
       setState(() => _endingMeeting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not end meeting: $e')),
+        const SnackBar(content: Text('Unable to end meeting. Try again or leave the room.')),
       );
     }
   }
@@ -152,7 +152,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not share screen: $e')),
+          const SnackBar(content: Text('Unable to start screen share. Try again.')),
         );
       }
     } finally {

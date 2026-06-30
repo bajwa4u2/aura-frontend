@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/shell/shell_shared.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/errors/app_error_mapper.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_identity.dart';
@@ -125,16 +124,11 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     identityAsync.whenData(_applyIdentity);
 
     return meetingAsync.when(
-      loading: () => AuraScaffold(
-        title: '',
-        body: const Center(child: CircularProgressIndicator()),
+      loading: () => const GuestShell(
+        body: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => AuraScaffold(
-        title: '',
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
-        ),
+      error: (e, _) => GuestShell(
+        showBackButton: true,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -198,12 +192,10 @@ class _PreJoinBody extends ConsumerWidget {
     final institution = meeting.booking?.institution;
     final host = meeting.host;
 
-    return AuraScaffold(
-      title: '',
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => context.pop(),
-      ),
+    return GuestShell(
+      institutionName: institution?.name ?? host?.name,
+      institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
+      showBackButton: true,
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s24),
         children: [
@@ -377,7 +369,6 @@ class _PreJoinBody extends ConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: AuraSpace.s32),
-                    const ShellFooter(),
                   ],
                 ),
               ),

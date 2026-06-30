@@ -27,7 +27,7 @@ class AvailabilitySetupScreen extends ConsumerWidget {
       body: profilesAsync.when(
         loading: () =>
             const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Could not load: $e')),
+        error: (e, _) => const Center(child: Text('Unable to load booking pages.')),
         data: (profiles) {
           if (profiles.isEmpty) {
             return _EmptyState(
@@ -73,7 +73,7 @@ class _EmptyState extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AuraSpace.s8),
             const Text(
-              'Create a booking page so others can schedule time with you — without using Calendly.',
+              'Create a booking page so guests can schedule time with you.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Color(0xFF6B7280)),
             ),
@@ -258,7 +258,7 @@ class _WindowManagerSection extends ConsumerWidget {
                   } catch (e) {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')));
+                        const SnackBar(content: Text('Something went wrong. Try again.')));
                   }
                 },
               ),
@@ -350,7 +350,7 @@ class _WindowManagerSection extends ConsumerWidget {
               } catch (e) {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text('Error: $e')));
+                    .showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
               }
             },
             child: const Text('Add'),
@@ -478,7 +478,7 @@ class _CreateProfileDialogState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+          .showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -598,7 +598,7 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+          .showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

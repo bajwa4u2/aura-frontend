@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/shell/shell_shared.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
 
 class BookingCancelScreen extends ConsumerStatefulWidget {
@@ -38,7 +37,7 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = 'This link may have already been used or has expired.';
         _loading = false;
       });
     }
@@ -48,8 +47,7 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AuraScaffold(
-      title: '',
+    return GuestShell(
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s24),
         children: [
@@ -127,7 +125,6 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
             ),
           ),
           const SizedBox(height: AuraSpace.s32),
-          const ShellFooter(),
         ],
       ),
     );

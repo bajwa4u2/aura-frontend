@@ -36,7 +36,7 @@ class MeetingSummaryScreen extends ConsumerWidget {
       ),
       error: (e, _) => AuraScaffold(
         title: 'Meeting summary',
-        body: Center(child: Text('Could not load meeting: $e')),
+        body: const Center(child: Text('Unable to load meeting summary.')),
       ),
       data: (meeting) {
         final room = meeting.room;

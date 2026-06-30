@@ -90,7 +90,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed to create meeting: $e')));
+          .showSnackBar(const SnackBar(content: Text('Unable to create meeting. Try again.')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

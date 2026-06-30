@@ -31,7 +31,7 @@ class MeetingDetailScreen extends ConsumerWidget {
       ),
       error: (e, _) => AuraScaffold(
         title: 'Meeting details',
-        body: Center(child: Text('Could not load meeting: $e')),
+        body: const Center(child: Text('Unable to load meeting details.')),
       ),
       data: (meeting) => _MeetingDetailBody(
         meeting: meeting,
@@ -95,7 +95,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
       }
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not start meeting: $e')),
+        const SnackBar(content: Text('Unable to start meeting. Try again.')),
       );
     } finally {
       if (mounted) setState(() => _actioning = false);
@@ -266,7 +266,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                             if (!mounted) return;
                             messenger.showSnackBar(
                               SnackBar(
-                                content: Text('Could not update meeting: $e'),
+                                content: const Text('Unable to update meeting. Try again.'),
                               ),
                             );
                           } finally {
@@ -329,7 +329,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
       router.pop();
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not cancel meeting: $e')),
+        const SnackBar(content: Text('Unable to cancel meeting. Try again.')),
       );
     } finally {
       if (mounted) setState(() => _actioning = false);
@@ -1086,7 +1086,7 @@ class _PreparationNotesSectionState
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not save notes: $e')),
+        const SnackBar(content: Text('Unable to save notes. Try again.')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);

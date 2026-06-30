@@ -229,7 +229,7 @@ class _HostHeader extends ConsumerWidget {
                 _showMeetingStarted(context, meeting);
               } catch (e) {
                 messenger.showSnackBar(
-                  SnackBar(content: Text('Could not start meeting: $e')),
+                  const SnackBar(content: Text('Unable to start meeting. Try again.')),
                 );
               }
             },
@@ -676,7 +676,7 @@ class _MeetingCard extends ConsumerWidget {
       }
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not start meeting: $e')),
+        const SnackBar(content: Text('Unable to start meeting. Try again.')),
       );
     }
   }
@@ -730,7 +730,7 @@ class _MeetingCard extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Could not cancel meeting: $e')));
+      ).showSnackBar(const SnackBar(content: Text('Unable to cancel meeting. Try again.')));
     }
   }
 }

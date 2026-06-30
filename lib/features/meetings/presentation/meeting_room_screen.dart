@@ -76,7 +76,7 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       } catch (_) {}
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not open meeting room: $e')),
+        const SnackBar(content: Text('Unable to open meeting room. Try again.')),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -121,7 +121,7 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       ),
       error: (e, _) => AuraScaffold(
         title: 'Meeting workspace',
-        body: Center(child: Text('Could not load meeting: $e')),
+        body: const Center(child: Text('Unable to load meeting workspace.')),
       ),
       data: (meeting) {
         final room = meeting.room;

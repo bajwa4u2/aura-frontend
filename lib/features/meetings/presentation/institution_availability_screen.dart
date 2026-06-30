@@ -46,7 +46,7 @@ class InstitutionAvailabilityScreen extends ConsumerWidget {
       ],
       body: profilesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Could not load: $e')),
+        error: (e, _) => const Center(child: Text('Unable to load availability settings.')),
         data: (profiles) {
           return ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),
@@ -198,7 +198,7 @@ class _ProfileCard extends ConsumerWidget {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(
                         context,
-                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                      ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
                     }
                   } else if (v == 'bookings') {
                     await _afterPopupClosed(
@@ -408,7 +408,7 @@ class _ProfileCard extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
     }
   }
 
@@ -527,7 +527,7 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(
                       context,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
                   }
                 },
               ),
@@ -574,7 +574,7 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
     }
   }
 
@@ -887,7 +887,7 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1185,7 +1185,7 @@ class _BookingInboxDialog extends ConsumerWidget {
             ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('Could not load bookings: $e'),
+              child: const Text('Unable to load bookings.'),
             ),
             data: (bookings) {
               if (bookings.isEmpty) {

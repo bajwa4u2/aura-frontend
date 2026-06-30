@@ -4,11 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../app/shell/shell_shared.dart';
 import '../../../config.dart';
 import '../../../core/auth/session_providers.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
@@ -87,9 +86,9 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       setState(() => _confirmation = conf);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Booking failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to confirm booking. Try again.')),
+      );
     } finally {
       if (mounted) setState(() => _booking = false);
     }
@@ -128,22 +127,18 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
 
     identityAsync.whenData(_applyIdentity);
 
-    return AuraScaffold(
-      title: 'Confirm booking',
+    final profileInstitution = widget.profile.institution;
+    final profileHost = widget.profile.effectiveHost;
+
+    return GuestShell(
+      institutionName: profileInstitution?.name ?? profileHost?.name,
+      institutionLogoUrl: profileInstitution?.logoUrl ?? profileHost?.avatarUrl,
+      showBackButton: true,
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(AuraSpace.s16),
           children: [
-            // Back navigation (AuraScaffold drops leading/actions)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: const Text('Back'),
-                onPressed: () => context.pop(),
-              ),
-            ),
             const SizedBox(height: AuraSpace.s8),
             Text(
               widget.profile.meetingTitle,
@@ -273,8 +268,9 @@ class _ConfirmationView extends ConsumerWidget {
     final timeLabel =
         '${localizations.formatFullDate(localTime)} · ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(localTime))}';
 
-    return AuraScaffold(
-      title: '',
+    return GuestShell(
+      institutionName: institution?.name ?? host?.name,
+      institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s24),
         children: [
@@ -459,7 +455,6 @@ class _ConfirmationView extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s32),
-          const ShellFooter(),
         ],
       ),
     );

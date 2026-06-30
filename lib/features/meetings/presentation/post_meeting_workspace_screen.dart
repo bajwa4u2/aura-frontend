@@ -103,7 +103,7 @@ class _PostMeetingWorkspaceScreenState
       );
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not save meeting summary: $e')),
+        const SnackBar(content: Text('Unable to save summary. Try again.')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -122,7 +122,7 @@ class _PostMeetingWorkspaceScreenState
       ),
       error: (e, _) => AuraScaffold(
         title: 'Post-meeting workspace',
-        body: Center(child: Text('Could not load meeting: $e')),
+        body: const Center(child: Text('Unable to load post-meeting workspace.')),
       ),
       data: (meeting) {
         final summary = summaryAsync.valueOrNull ?? meeting.summary;

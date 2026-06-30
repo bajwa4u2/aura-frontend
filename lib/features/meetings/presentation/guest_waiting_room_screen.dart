@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_providers.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import 'meeting_lifecycle_presenter.dart';
@@ -107,13 +107,26 @@ class _GuestWaitingRoomScreenState
         : ref.watch(meetingProvider(widget.meetingId));
 
     return meetingAsync.when(
-      loading: () => AuraScaffold(
-        title: 'Waiting room',
-        body: const Center(child: CircularProgressIndicator()),
+      loading: () => const GuestShell(
+        body: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => AuraScaffold(
-        title: 'Waiting room',
-        body: Center(child: Text('Could not load meeting: $e')),
+      error: (e, _) => GuestShell(
+        showBackButton: true,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline_rounded,
+                  size: 48, color: Color(0xFF9CA3AF)),
+              const SizedBox(height: AuraSpace.s16),
+              const Text('Unable to load meeting.',
+                  style: TextStyle(color: Color(0xFFE2ECF5), fontSize: 16)),
+              const SizedBox(height: AuraSpace.s8),
+              const Text('Check your connection and try again.',
+                  style: TextStyle(color: Color(0xFF9CA3AF))),
+            ],
+          ),
+        ),
       ),
       data: (meeting) {
         final lifecycle = MeetingLifecyclePresenter.present(
@@ -135,12 +148,10 @@ class _GuestWaitingRoomScreenState
             meeting.host?.name ??
             'Meeting';
 
-        return AuraScaffold(
-          title: meeting.booking?.institution?.name ?? meeting.title,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => context.pop(),
-          ),
+        return GuestShell(
+          institutionName: meeting.booking?.institution?.name ?? meeting.host?.name,
+          institutionLogoUrl: meeting.booking?.institution?.logoUrl ?? meeting.host?.avatarUrl,
+          showBackButton: true,
           body: ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),
             children: [
