@@ -36,6 +36,7 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
 class _GuestWaitingRoomScreenState
     extends ConsumerState<GuestWaitingRoomScreen> {
   Timer? _poller;
+  bool _redirected = false;
 
   @override
   void initState() {
@@ -110,19 +111,19 @@ class _GuestWaitingRoomScreenState
       loading: () => const GuestShell(
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => GuestShell(
+      error: (e, _) => const GuestShell(
         showBackButton: true,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline_rounded,
+              Icon(Icons.error_outline_rounded,
                   size: 48, color: Color(0xFF9CA3AF)),
-              const SizedBox(height: AuraSpace.s16),
-              const Text('Unable to load meeting.',
+              SizedBox(height: AuraSpace.s16),
+              Text('Unable to load meeting.',
                   style: TextStyle(color: Color(0xFFE2ECF5), fontSize: 16)),
-              const SizedBox(height: AuraSpace.s8),
-              const Text('Check your connection and try again.',
+              SizedBox(height: AuraSpace.s8),
+              Text('Check your connection and try again.',
                   style: TextStyle(color: Color(0xFF9CA3AF))),
             ],
           ),
@@ -142,6 +143,16 @@ class _GuestWaitingRoomScreenState
                           '')
                 .trim();
         final isTerminal = meeting.isEnded || lifecycle.isTerminal;
+
+        // Auto-redirect when the session becomes available (host has started).
+        if (!_redirected && !isTerminal && sessionId.isNotEmpty) {
+          _redirected = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _joinRoom(meeting);
+          });
+        }
+
         final institutionName =
             meeting.booking?.institution?.name ??
             meeting.booking?.bookingPageName ??
