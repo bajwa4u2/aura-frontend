@@ -285,6 +285,38 @@ class _PreJoinBody extends ConsumerWidget {
                         ),
                       ),
                     ],
+                    if ((meeting.preparationNotes ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s16),
+                      Text(
+                        'Agenda',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: const Color(0xFF9CA3AF),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s8),
+                      ...meeting.preparationNotes!.trim().split('\n').where((l) => l.trim().isNotEmpty).map(
+                        (line) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('· ', style: TextStyle(color: Color(0xFF6C63FF))),
+                              Expanded(
+                                child: Text(
+                                  line.trim(),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xFFCBD5E1),
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: AuraSpace.s6),
                     _StatusPill(lifecycle: lifecycle),
                     const SizedBox(height: AuraSpace.s12),
