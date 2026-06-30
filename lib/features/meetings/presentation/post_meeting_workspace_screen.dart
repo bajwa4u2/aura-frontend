@@ -405,12 +405,13 @@ class _MemoryPanel extends StatelessWidget {
         title: 'Attendance',
         body: meeting.participants.isEmpty
             ? 'Attendance will appear once participants join.'
-            : meeting.participants
-                  .map(
-                    (p) =>
-                        '${p.displayName} · ${p.attended ? 'joined' : 'not joined'}',
-                  )
-                  .join('\n'),
+            : meeting.participants.map((p) {
+                if (!p.attended) return '${p.displayName} · not joined';
+                final dur = p.durationMinutes;
+                return dur != null
+                    ? '${p.displayName} · ${dur}m'
+                    : '${p.displayName} · joined';
+              }).join('\n'),
       ),
       if (booking?.bookerNotes?.trim().isNotEmpty == true)
         _MemoryRow(title: 'Guest note', body: booking!.bookerNotes!.trim()),

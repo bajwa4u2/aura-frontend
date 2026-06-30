@@ -36,6 +36,8 @@ class MeetingParticipant {
   final String role;
   final String rsvpStatus;
   final bool attended;
+  final DateTime? joinedAt;
+  final DateTime? leftAt;
   final MeetingHost? user;
 
   const MeetingParticipant({
@@ -47,6 +49,8 @@ class MeetingParticipant {
     required this.role,
     required this.rsvpStatus,
     required this.attended,
+    this.joinedAt,
+    this.leftAt,
     this.user,
   });
 
@@ -60,6 +64,12 @@ class MeetingParticipant {
         role: j['role'] as String? ?? 'PARTICIPANT',
         rsvpStatus: j['rsvpStatus'] as String? ?? 'PENDING',
         attended: j['attended'] as bool? ?? false,
+        joinedAt: j['joinedAt'] != null
+            ? DateTime.tryParse(j['joinedAt'] as String)
+            : null,
+        leftAt: j['leftAt'] != null
+            ? DateTime.tryParse(j['leftAt'] as String)
+            : null,
         user: j['user'] != null
             ? MeetingHost.fromJson(j['user'] as Map<String, dynamic>)
             : null,
@@ -69,6 +79,11 @@ class MeetingParticipant {
 
   bool get isHost => role == 'HOST';
   bool get isGuest => role == 'GUEST';
+
+  int? get durationMinutes {
+    if (joinedAt == null || leftAt == null) return null;
+    return leftAt!.difference(joinedAt!).inMinutes;
+  }
 }
 
 class MeetingInstitutionRef {
