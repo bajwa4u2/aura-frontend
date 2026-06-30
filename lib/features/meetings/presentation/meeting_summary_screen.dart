@@ -123,17 +123,24 @@ class MeetingSummaryScreen extends ConsumerWidget {
                               ),
                               ...meeting.participants
                                   .where((p) => !p.isHost)
-                                  .map(
-                                    (participant) => _AttendanceRow(
+                                  .map((participant) {
+                                    String status;
+                                    if (!participant.attended) {
+                                      status = 'Not joined';
+                                    } else {
+                                      final dur = participant.durationMinutes;
+                                      status = dur != null
+                                          ? 'Joined · ${dur}m'
+                                          : 'Joined';
+                                    }
+                                    return _AttendanceRow(
                                       label: participant.isGuest
                                           ? 'Guest'
                                           : 'Participant',
                                       value: participant.displayName,
-                                      status: participant.attended
-                                          ? 'Joined'
-                                          : 'Not joined',
-                                    ),
-                                  ),
+                                      status: status,
+                                    );
+                                  }),
                             ],
                           ),
                           _SummaryPanel(
