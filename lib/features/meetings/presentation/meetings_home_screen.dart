@@ -565,16 +565,6 @@ class _MeetingCard extends ConsumerWidget {
                       onOpenDetails: () => context.push(_detailPath),
                       onOpenSummary: () => context.push(_summaryPath),
                     ),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.content_copy_rounded, size: 18),
-                      label: const Text('Copy meeting link'),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: meeting.joinUrl));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Meeting link copied')),
-                        );
-                      },
-                    ),
                     PopupMenuButton<_MeetingMenuAction>(
                       tooltip: 'More actions',
                       onSelected: (value) async {

@@ -93,6 +93,11 @@ class MeetingSummaryScreen extends ConsumerWidget {
                         institutionName: institutionName,
                         onCopy: () => _copyLink(context, meeting),
                         onOpenWorkspace: () => context.push(_postMeetingPath),
+                        onOpenDetails: () => context.push(
+                          institutionId == null
+                              ? '/meetings/$meetingId'
+                              : '/institution/$institutionId/meetings/$meetingId',
+                        ),
                         onOpenRoom:
                             !meeting.isEnded && meeting.sessionId != null
                             ? () => context.push(
@@ -307,6 +312,7 @@ class _SummaryHeader extends StatelessWidget {
   final String institutionName;
   final VoidCallback onCopy;
   final VoidCallback onOpenWorkspace;
+  final VoidCallback onOpenDetails;
   final VoidCallback? onOpenRoom;
 
   const _SummaryHeader({
@@ -315,6 +321,7 @@ class _SummaryHeader extends StatelessWidget {
     required this.institutionName,
     required this.onCopy,
     required this.onOpenWorkspace,
+    required this.onOpenDetails,
     required this.onOpenRoom,
   });
 
@@ -383,6 +390,11 @@ class _SummaryHeader extends StatelessWidget {
                     label: const Text('Open room'),
                     onPressed: onOpenRoom,
                   ),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.info_outline_rounded),
+                  label: const Text('View details'),
+                  onPressed: onOpenDetails,
+                ),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.content_copy_rounded),
                   label: const Text('Copy meeting link'),
