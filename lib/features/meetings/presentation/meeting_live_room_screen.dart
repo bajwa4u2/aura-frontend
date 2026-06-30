@@ -289,7 +289,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               micOn: state.microphoneEnabled,
               isLocalScreenSharing: state.isScreenSharing,
               screenSharingPeerId: screenSharingPeerId,
-              waitingParticipants: state.participants,
+              participants: state.participants,
+              localUserId: myUserId,
             ),
           ),
 
@@ -441,40 +442,114 @@ class _MeetingVideoGrid extends StatelessWidget {
   final bool micOn;
   final bool isLocalScreenSharing;
   final String? screenSharingPeerId;
-  final List<RealtimeParticipant> waitingParticipants;
+  final List<RealtimeParticipant> participants;
+  final String localUserId;
 
   const _MeetingVideoGrid({
     required this.localRenderer,
     required this.remoteRenderers,
     required this.micOn,
     required this.isLocalScreenSharing,
-    required this.waitingParticipants,
+    required this.participants,
+    required this.localUserId,
     this.screenSharingPeerId,
   });
 
+  RealtimeParticipant? _participantForKey(String key) {
+    for (final p in participants) {
+      if ((p.runtimeDeviceId ?? '') == key) return p;
+    }
+    return null;
+  }
+
+  Widget _buildRemoteTile(String key, RTCVideoRenderer renderer) {
+    final p = _participantForKey(key);
+    final videoOn = p?.videoOn ?? true;
+    if (videoOn) {
+      return RTCVideoView(
+        renderer,
+        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+      );
+    }
+    final name = (p?.displayName ?? '').trim();
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return ColoredBox(
+      color: const Color(0xFF1E293B),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 36,
+              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.25),
+              backgroundImage: p?.avatarUrl?.trim().isNotEmpty == true
+                  ? NetworkImage(p!.avatarUrl!)
+                  : null,
+              child: p?.avatarUrl?.trim().isNotEmpty == true
+                  ? null
+                  : Text(
+                      initial,
+                      style: const TextStyle(
+                        color: Color(0xFFE5E7EB),
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+            if (name.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                name,
+                style: const TextStyle(
+                  color: Color(0xFFCBD5E1),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 4),
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.videocam_off_rounded,
+                    size: 14, color: Color(0xFF6B7280)),
+                SizedBox(width: 4),
+                Text(
+                  'Camera off',
+                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final remotes = remoteRenderers.values.toList();
+    final remoteEntries = remoteRenderers.entries.toList();
 
     // I1: Remote screen share — promote that participant to spotlight.
     if (screenSharingPeerId != null) {
       final screenRenderer = remoteRenderers[screenSharingPeerId];
       if (screenRenderer != null) {
-        return _buildSpotlightLayout(screenRenderer, localRenderer);
+        return _buildSpotlightLayout(
+            screenSharingPeerId!, screenRenderer, localRenderer);
       }
     }
 
-    if (remotes.isEmpty) {
+    if (remoteEntries.isEmpty) {
       return _buildWaitingLayout(localRenderer, isLocalScreenSharing);
     }
 
-    if (remotes.length == 1) {
-      // Spotlight: remote fills screen, local in corner
-      return _buildSpotlightLayout(remotes.first, localRenderer);
+    if (remoteEntries.length == 1) {
+      final entry = remoteEntries.first;
+      return _buildSpotlightLayout(entry.key, entry.value, localRenderer);
     }
 
     // Grid: up to 4 participants in 2×2
-    return _buildGridLayout(remotes, localRenderer);
+    return _buildGridLayout(remoteEntries, localRenderer);
   }
 
   Widget _buildWaitingLayout(RTCVideoRenderer? local, bool isScreenSharing) {
@@ -542,7 +617,7 @@ class _MeetingVideoGrid extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _waitingLabel(waitingParticipants),
+                    _waitingLabel(participants, localUserId),
                     style: const TextStyle(
                       color: Color(0xFF9CA3AF),
                       fontSize: 14,
@@ -584,16 +659,14 @@ class _MeetingVideoGrid extends StatelessWidget {
   }
 
   Widget _buildSpotlightLayout(
+    String remoteKey,
     RTCVideoRenderer remote,
     RTCVideoRenderer? local,
   ) {
     return Stack(
       children: [
         Positioned.fill(
-          child: RTCVideoView(
-            remote,
-            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-          ),
+          child: _buildRemoteTile(remoteKey, remote),
         ),
         if (local != null)
           Positioned(
@@ -606,8 +679,7 @@ class _MeetingVideoGrid extends StatelessWidget {
               child: RTCVideoView(
                 local,
                 mirror: true,
-                objectFit:
-                    RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
               ),
             ),
           ),
@@ -616,12 +688,19 @@ class _MeetingVideoGrid extends StatelessWidget {
   }
 
   Widget _buildGridLayout(
-    List<RTCVideoRenderer> remotes,
+    List<MapEntry<String, RTCVideoRenderer>> remoteEntries,
     RTCVideoRenderer? local,
   ) {
-    final all = <RTCVideoRenderer>[...remotes];
-    if (local != null) all.add(local);
-    final tiles = all.take(4).toList();
+    final tiles = <Widget>[
+      ...remoteEntries.take(3).map((e) => _buildRemoteTile(e.key, e.value)),
+    ];
+    if (local != null && tiles.length < 4) {
+      tiles.add(RTCVideoView(
+        local,
+        mirror: true,
+        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+      ));
+    }
 
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
@@ -632,20 +711,20 @@ class _MeetingVideoGrid extends StatelessWidget {
         crossAxisSpacing: 2,
       ),
       itemCount: tiles.length,
-      itemBuilder: (context, index) {
-        final isLocal = local != null && tiles[index] == local;
-        return RTCVideoView(
-          tiles[index],
-          mirror: isLocal,
-          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-        );
-      },
+      itemBuilder: (context, index) => tiles[index],
     );
   }
 
-  static String _waitingLabel(List<RealtimeParticipant> participants) {
-    if (participants.isEmpty) return 'Waiting for guests to join…';
-    final names = participants
+  static String _waitingLabel(
+    List<RealtimeParticipant> participants,
+    String localUserId,
+  ) {
+    // Filter out the local participant — we're waiting for *others*, not ourselves.
+    final others = localUserId.isEmpty
+        ? participants
+        : participants.where((p) => p.userId != localUserId).toList();
+    if (others.isEmpty) return 'Waiting for guests to join…';
+    final names = others
         .map((p) => (p.displayName ?? '').trim())
         .where((n) => n.isNotEmpty)
         .toList();
