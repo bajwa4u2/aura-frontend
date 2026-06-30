@@ -6,6 +6,25 @@ import '../data/availability_repository.dart';
 import '../domain/meeting.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
+import '../../realtime/application/realtime_providers.dart';
+
+class MeetingStateChangedEvent {
+  final String meetingId;
+  final String state;
+  const MeetingStateChangedEvent({required this.meetingId, required this.state});
+}
+
+final meetingStateChangedEventProvider =
+    StreamProvider<MeetingStateChangedEvent>((ref) {
+      final socket = ref.watch(realtimeSocketServiceProvider);
+      return socket.events
+          .where((e) => e.name == 'meeting.state_changed')
+          .map((e) => MeetingStateChangedEvent(
+                meetingId: e.payload['meetingId'] as String? ?? '',
+                state: e.payload['state'] as String? ?? '',
+              ))
+          .where((e) => e.meetingId.isNotEmpty);
+    });
 
 final meetingsRepositoryProvider = Provider<MeetingsRepository>((ref) {
   return MeetingsRepository(ref.watch(dioProvider));
@@ -55,6 +74,18 @@ final meetingSummaryProvider = FutureProvider.family<MeetingSummary?, String>((
   final repo = ref.watch(meetingsRepositoryProvider);
   return repo.getMeetingSummary(id);
 });
+
+final meetingOutcomesProvider =
+    FutureProvider.family<List<MeetingOutcome>, String>((ref, meetingId) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      return repo.getMeetingOutcomes(meetingId);
+    });
+
+final institutionOpenOutcomesProvider =
+    FutureProvider.family<List<MeetingOutcome>, String>((ref, institutionId) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      return repo.getInstitutionOutcomes(institutionId, status: 'OPEN');
+    });
 
 // Meeting by code (public, used in join flow)
 final meetingByCodeProvider = FutureProvider.family<Meeting, String>((
@@ -184,3 +215,26 @@ final institutionPublicProfileProvider =
         key.bookingSlug,
       );
     });
+
+// J1: Booking inbox — all non-cancelled bookings for an institution profile.
+class InstitutionProfileBookingsKey {
+  final String institutionId;
+  final String profileId;
+  const InstitutionProfileBookingsKey(this.institutionId, this.profileId);
+  @override
+  bool operator ==(Object other) =>
+      other is InstitutionProfileBookingsKey &&
+      other.institutionId == institutionId &&
+      other.profileId == profileId;
+  @override
+  int get hashCode => Object.hash(institutionId, profileId);
+}
+
+final institutionProfileBookingsProvider = FutureProvider.family<
+    List<Map<String, dynamic>>, InstitutionProfileBookingsKey>((
+  ref,
+  key,
+) async {
+  final repo = ref.watch(availabilityRepositoryProvider);
+  return repo.listInstitutionProfileBookings(key.institutionId, key.profileId);
+});

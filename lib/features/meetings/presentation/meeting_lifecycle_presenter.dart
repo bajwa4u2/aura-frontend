@@ -97,9 +97,9 @@ class MeetingLifecyclePresenter {
         subtitle = 'The meeting window passed without a live session.';
         cue = 'Review the meeting and decide whether to follow up.';
         primaryAction = 'Review missed';
-        canStart = true;
+        canStart = false;
         canEnter = false;
-        canRetryTransport = true;
+        canRetryTransport = false;
         isTerminal = true;
         break;
       case MeetingRoomStatus.connectionIssue:
@@ -167,7 +167,7 @@ class MeetingLifecyclePresenter {
           primaryAction = 'Review missed';
           canStart = false;
           canEnter = false;
-          canRetryTransport = true;
+          canRetryTransport = false;
           isTerminal = true;
         } else if (scheduledStart != null &&
             minutesToStart != null &&

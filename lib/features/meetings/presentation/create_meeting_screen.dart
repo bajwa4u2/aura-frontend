@@ -113,7 +113,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AuraSpace.s16),
           children: [
-            _SectionLabel('Meeting title'),
+            const _SectionLabel('Meeting title'),
             TextFormField(
               controller: _titleCtrl,
               autofocus: true,
@@ -128,7 +128,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
             ),
             const SizedBox(height: AuraSpace.s16),
 
-            _SectionLabel('Description (optional)'),
+            const _SectionLabel('Description (optional)'),
             TextFormField(
               controller: _descCtrl,
               maxLines: 3,
@@ -140,7 +140,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
             ),
             const SizedBox(height: AuraSpace.s16),
 
-            _SectionLabel('Date and time'),
+            const _SectionLabel('Date and time'),
             OutlinedButton.icon(
               icon: const Icon(Icons.calendar_today_rounded, size: 18),
               label: Text(dateLabel),
@@ -153,9 +153,9 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
             ),
             const SizedBox(height: AuraSpace.s16),
 
-            _SectionLabel('Duration'),
+            const _SectionLabel('Duration'),
             DropdownButtonFormField<int>(
-              value: _durationMinutes,
+              initialValue: _durationMinutes,
               decoration: const InputDecoration(border: OutlineInputBorder()),
               items: _durations
                   .map((d) => DropdownMenuItem(

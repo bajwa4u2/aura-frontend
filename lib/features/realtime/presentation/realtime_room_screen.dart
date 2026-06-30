@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
@@ -19,7 +18,6 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../correspondence/presentation/thread_screen.dart';
-import '../../meetings/application/meetings_provider.dart';
 import '../../institutions/live_rooms/institution_session_meta.dart';
 import '../../search/search_repository.dart';
 import '../application/caller_ringback_provider.dart';
@@ -81,7 +79,6 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
     this.insSessionType,
     this.insSessionAudience,
     this.insSessionTitle,
-    this.guestToken,
   });
 
   final String sessionId;
@@ -96,7 +93,6 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
   final String? insSessionType;
   final String? insSessionAudience;
   final String? insSessionTitle;
-  final String? guestToken;
 
   @override
   ConsumerState<RealtimeRoomScreen> createState() => _RealtimeRoomScreenState();
@@ -124,7 +120,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   RealtimeSurfaceType? _lastKnownSurfaceType;
   String? _lastKnownSurfaceId;
   String? _lastKnownInstitutionId;
-  String? _guestToken;
   Timer? _durationTimer;
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
@@ -139,8 +134,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     _capturedContainer ??= ProviderScope.containerOf(context, listen: false);
     if (_didBoot) return;
     _didBoot = true;
-    _guestToken = (widget.guestToken ?? '').trim();
-
     // A4: publish that the dedicated full-screen call surface is mounted.
     // The PiP widget reads `state.isCallRoomVisible` instead of route path,
     // so the transition between full and PiP is driven by the same state
@@ -169,10 +162,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       final controller = ref.read(realtimeControllerProvider.notifier);
       final action = (widget.action ?? '').trim().toLowerCase();
 
-      if ((_guestToken ?? '').isNotEmpty) {
-        await _ensureGuestAuth();
-      }
-
       if (action == 'join') {
         await controller.join(widget.sessionId);
       } else if (action == 'resume') {
@@ -195,21 +184,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
   }
 
-  Future<void> _ensureGuestAuth() async {
-    final guestToken = (_guestToken ?? '').trim();
-    if (guestToken.isEmpty) return;
-    final tokenStore = ref.read(tokenStoreProvider);
-    await tokenStore.load();
-    if ((tokenStore.accessToken ?? '').trim().isNotEmpty) return;
-    final guestAuth = await ref
-        .read(meetingsRepositoryProvider)
-        .exchangeGuestAuth(guestToken);
-    if (!mounted) return;
-    await tokenStore.setSession(
-      accessToken: guestAuth.accessToken,
-      refreshToken: guestAuth.refreshToken,
-    );
-  }
 
   @override
   void dispose() {

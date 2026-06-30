@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/shell/shell_shared.dart';
+import '../../../config.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -429,6 +431,15 @@ class _ConfirmationView extends ConsumerWidget {
                     icon: const Icon(Icons.video_call_rounded),
                     label: Text(isAuthed ? 'Open join page' : 'Join as guest'),
                     onPressed: () => context.push(joinPath),
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.calendar_month_rounded),
+                    label: const Text('Add to calendar'),
+                    onPressed: () {
+                      final icsUrl = '${AppConfig.apiBaseUrl}/book/ics/${confirmation.bookingId}';
+                      launchUrl(Uri.parse(icsUrl), mode: LaunchMode.externalApplication);
+                    },
                   ),
                   if (!isAuthed) ...[
                     const SizedBox(height: AuraSpace.s12),

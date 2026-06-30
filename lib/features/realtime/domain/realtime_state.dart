@@ -28,6 +28,7 @@ class RealtimeState {
     required this.mediaError,
     required this.callMode,
     required this.incomingCall,
+    this.isScreenSharing = false,
     this.isCallRoomVisible = false,
     this.isEndingCall = false,
   });
@@ -55,6 +56,9 @@ class RealtimeState {
   final String? mediaError;
   final String? callMode;
   final Map<String, dynamic>? incomingCall;
+
+  /// I1: True while the local user is broadcasting their screen.
+  final bool isScreenSharing;
 
   /// A4: True while the dedicated /realtime/:id room screen is mounted and
   /// covering the rest of the UI. Drives PiP visibility from state instead
@@ -92,6 +96,7 @@ class RealtimeState {
       mediaError: null,
       callMode: null,
       incomingCall: null,
+      isScreenSharing: false,
       isCallRoomVisible: false,
       isEndingCall: false,
     );
@@ -132,6 +137,7 @@ class RealtimeState {
     bool clearCallMode = false,
     Map<String, dynamic>? incomingCall,
     bool clearIncomingCall = false,
+    bool? isScreenSharing,
     bool? isCallRoomVisible,
     bool? isEndingCall,
   }) {
@@ -161,6 +167,7 @@ class RealtimeState {
       mediaError: clearMediaError ? null : (mediaError ?? this.mediaError),
       callMode: clearCallMode ? null : (callMode ?? this.callMode),
       incomingCall: clearIncomingCall ? null : (incomingCall ?? this.incomingCall),
+      isScreenSharing: isScreenSharing ?? this.isScreenSharing,
       isCallRoomVisible: isCallRoomVisible ?? this.isCallRoomVisible,
       isEndingCall: isEndingCall ?? this.isEndingCall,
     );

@@ -814,6 +814,49 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     _patchMyTrack(videoOn: enabled);
   }
 
+  /// I1: Start broadcasting the local screen. Replaces the video track in each
+  /// peer connection with the display media track and signals the change.
+  Future<void> startScreenShare() async {
+    final sessionId = state.sessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+
+    await _mediaService.startScreenShare();
+
+    unawaited(
+      _socketService
+          .emitAck('session:screen.set', <String, dynamic>{
+            'sessionId': sessionId,
+            'enabled': true,
+          })
+          .catchError((Object _) => <String, dynamic>{}),
+    );
+  }
+
+  /// I1: Stop broadcasting the local screen. Restores the camera track in each
+  /// peer connection and signals the change.
+  Future<void> stopScreenShare() async {
+    final sessionId = state.sessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+
+    await _mediaService.stopScreenShare();
+
+    unawaited(
+      _socketService
+          .emitAck('session:screen.set', <String, dynamic>{
+            'sessionId': sessionId,
+            'enabled': false,
+          })
+          .catchError((Object _) => <String, dynamic>{}),
+    );
+  }
+
+  /// I4: Flip between front and rear camera. No-op when not in a video session
+  /// or when media is not ready.
+  Future<void> flipCamera() async {
+    if (!state.isMediaReady || !state.isVideoMode) return;
+    await _mediaService.switchCamera();
+  }
+
   Future<void> requestJoin(String sessionId) async {
     await _repository.createJoinRequest(sessionId);
     state = state.copyWith(
@@ -1203,6 +1246,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       microphoneEnabled: snapshot.micEnabled,
       cameraEnabled: snapshot.cameraEnabled,
       mediaError: snapshot.error,
+      isScreenSharing: snapshot.isScreenSharing,
     );
 
     if (snapshot.ready && state.isJoined) {

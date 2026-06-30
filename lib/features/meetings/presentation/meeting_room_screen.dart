@@ -83,7 +83,7 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
     }
   }
 
-  Future<void> _enterRoom(Meeting meeting) async {
+  Future<void> _enterRoom(Meeting meeting, {required bool isHost}) async {
     final sessionId = (_sessionId ?? meeting.room?.realtimeSessionId ?? '')
         .trim();
     if (sessionId.isEmpty) return;
@@ -94,13 +94,10 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       await media.ensureLocalMedia(audio: true, video: true);
       if (!mounted) return;
       setState(() => _roomOpen = true);
-      final returnTo = Uri.encodeComponent(
-        widget.returnTo ??
-            (widget.institutionId == null
-                ? '/meetings/${meeting.id}/room'
-                : '/institution/${widget.institutionId}/meetings/${meeting.id}/room'),
-      );
-      context.push('/realtime/$sessionId?action=join&returnTo=$returnTo');
+      final livePath = widget.institutionId == null
+          ? '/meetings/${meeting.id}/live'
+          : '/institution/${widget.institutionId}/meetings/${meeting.id}/live';
+      context.push('$livePath?sessionId=$sessionId&isHost=${isHost ? 'true' : 'false'}');
     } catch (_) {
       if (!mounted) return;
       setState(() => _roomOpen = true);
@@ -161,7 +158,7 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                             ? () => _startMeeting(meeting)
                             : null,
                         onEnter: sessionId.isNotEmpty
-                            ? () => _enterRoom(meeting)
+                            ? () => _enterRoom(meeting, isHost: isHost)
                             : null,
                       ),
                       const SizedBox(height: AuraSpace.s16),

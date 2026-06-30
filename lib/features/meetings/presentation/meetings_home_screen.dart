@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,14 +14,61 @@ import '../domain/meeting_identity.dart';
 import '../domain/meeting_room.dart';
 import 'meeting_lifecycle_presenter.dart';
 
-class MeetingsHomeScreen extends ConsumerWidget {
+class MeetingsHomeScreen extends ConsumerStatefulWidget {
   final String? institutionId;
 
   const MeetingsHomeScreen({super.key, this.institutionId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final institutionId = this.institutionId;
+  ConsumerState<MeetingsHomeScreen> createState() => _MeetingsHomeScreenState();
+}
+
+class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // F3 — Poll every 30 seconds to catch state changes for near-start meetings.
+    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      _refreshIfNearStartMeeting();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _refreshIfNearStartMeeting() {
+    final institutionId = widget.institutionId;
+    // Always invalidate upcoming list when near-start window polling fires;
+    // the check for ±30 min meetings happens implicitly after the refresh.
+    if (institutionId == null) {
+      ref.invalidate(upcomingMeetingsProvider);
+    } else {
+      ref.invalidate(institutionUpcomingMeetingsProvider(institutionId));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final institutionId = widget.institutionId;
+
+    // F2 — Invalidate providers when a meeting.state_changed WebSocket event arrives.
+    ref.listen(meetingStateChangedEventProvider, (_, next) {
+      next.whenData((event) {
+        ref.invalidate(meetingProvider(event.meetingId));
+        if (institutionId == null) {
+          ref.invalidate(upcomingMeetingsProvider);
+        } else {
+          ref.invalidate(institutionUpcomingMeetingsProvider(institutionId));
+        }
+      });
+    });
+
     final upcomingAsync = institutionId == null
         ? ref.watch(upcomingMeetingsProvider)
         : ref.watch(institutionUpcomingMeetingsProvider(institutionId));
@@ -95,8 +144,8 @@ class MeetingsHomeScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: AuraSpace.s20),
                             _CollapsibleMeetingSection(
-                              title: 'Upcoming conversations',
-                              emptyTitle: 'No upcoming conversations',
+                              title: 'Upcoming meetings',
+                              emptyTitle: 'No upcoming meetings',
                               emptyBody:
                                   'Scheduled meetings and guest bookings will appear here.',
                               meetings: upcoming,
@@ -133,6 +182,9 @@ class MeetingsHomeScreen extends ConsumerWidget {
                         initiallyExpanded: false,
                       ),
                     ),
+                    const SizedBox(height: AuraSpace.s32),
+                    if (institutionId != null)
+                      _OpenCommitmentsSection(institutionId: institutionId),
                     const SizedBox(height: AuraSpace.s32),
                   ],
                 ),
@@ -994,6 +1046,154 @@ String _scheduledLabel(BuildContext context, Meeting meeting) {
   final date = localizations.formatMediumDate(local);
   final time = TimeOfDay.fromDateTime(local).format(context);
   return '$date at $time';
+}
+
+class _OpenCommitmentsSection extends ConsumerWidget {
+  final String institutionId;
+  const _OpenCommitmentsSection({required this.institutionId});
+
+  Future<void> _markComplete(WidgetRef ref, MeetingOutcome o) async {
+    try {
+      await ref
+          .read(meetingsRepositoryProvider)
+          .updateOutcome(o.id, status: 'COMPLETED');
+    } catch (_) {}
+    ref.invalidate(institutionOpenOutcomesProvider(institutionId));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final outcomesAsync = ref.watch(institutionOpenOutcomesProvider(institutionId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Open commitments',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFFE5E7EB),
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        outcomesAsync.when(
+          loading: () => const SizedBox(
+            height: 40,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (outcomes) {
+            if (outcomes.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(AuraSpace.s16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  border: Border.all(color: const Color(0xFF243244)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'No open commitments across meetings.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF9CA3AF),
+                  ),
+                ),
+              );
+            }
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                border: Border.all(color: const Color(0xFF243244)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: outcomes.map((o) {
+                  final typeLabel = switch (o.type.toUpperCase()) {
+                    'COMMITMENT' => 'Commitment',
+                    'ACTION'     => 'Action',
+                    'DECISION'   => 'Decision',
+                    'ISSUE'      => 'Issue',
+                    'FOLLOW_UP'  => 'Follow-up',
+                    _            => o.type,
+                  };
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s14,
+                      vertical: AuraSpace.s10,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          margin: const EdgeInsets.only(right: 8, top: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1C2B1F),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            typeLabel,
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: const Color(0xFF86EFAC),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                o.text,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFFE5E7EB),
+                                ),
+                              ),
+                              if (o.ownerName != null || o.dueDate != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    [
+                                      if (o.ownerName != null) o.ownerName!,
+                                      if (o.dueDate != null)
+                                        'Due ${o.dueDate!.toLocal().toString().split(' ').first}',
+                                    ].join(' · '),
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: const Color(0xFF6B7280),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _markComplete(ref, o),
+                          child: const Padding(
+                            padding: EdgeInsets.only(left: 8, top: 1),
+                            child: Tooltip(
+                              message: 'Mark complete',
+                              child: Icon(
+                                Icons.check_circle_outline_rounded,
+                                size: 18,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
 }
 
 String? _sourceLabel(Meeting meeting) {

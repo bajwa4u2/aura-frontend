@@ -130,6 +130,9 @@ class InstitutionActivityEvent {
     if (k.startsWith('POST_') || k.startsWith('ANNOUNCEMENT_')) {
       return 'posts';
     }
+    if (k.startsWith('MEETING_')) {
+      return 'meetings';
+    }
     if (visibility == InstitutionActivityVisibility.admin ||
         k.startsWith('ADMIN_') ||
         k.startsWith('SECURITY_') ||

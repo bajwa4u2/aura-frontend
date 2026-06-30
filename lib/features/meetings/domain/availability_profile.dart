@@ -125,6 +125,7 @@ class AvailabilityProfile {
   final int bufferAfter;
   final int minimumNotice;
   final int maximumAdvance;
+  final int? maxBookingsPerDay;
   final String timezone;
   final bool isActive;
   final bool allowGuests;
@@ -150,6 +151,7 @@ class AvailabilityProfile {
     required this.bufferAfter,
     required this.minimumNotice,
     required this.maximumAdvance,
+    this.maxBookingsPerDay,
     required this.timezone,
     required this.isActive,
     required this.allowGuests,
@@ -178,6 +180,7 @@ class AvailabilityProfile {
         bufferAfter: (j['bufferAfter'] as num?)?.toInt() ?? 15,
         minimumNotice: (j['minimumNotice'] as num?)?.toInt() ?? 60,
         maximumAdvance: (j['maximumAdvance'] as num?)?.toInt() ?? 43200,
+        maxBookingsPerDay: (j['maxBookingsPerDay'] as num?)?.toInt(),
         timezone: j['timezone'] as String? ?? 'UTC',
         isActive: j['isActive'] as bool? ?? true,
         allowGuests: j['allowGuests'] as bool? ?? true,

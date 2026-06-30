@@ -54,9 +54,10 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
 
       if (!mounted) return;
 
-      if (result.guestToken != null && result.guestToken!.trim().isNotEmpty) {
+      if (result.guestSessionId != null &&
+          result.guestSessionId!.trim().isNotEmpty) {
         final guestAuth = await repo.exchangeGuestAuth(
-          result.guestToken!.trim(),
+          result.guestSessionId!.trim(),
         );
         if (!mounted) return;
         await ref
@@ -65,22 +66,23 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
               accessToken: guestAuth.accessToken,
               refreshToken: guestAuth.refreshToken,
             );
+        if (!mounted) return;
       }
 
       if (result.shouldWait) {
-        final waitingPath =
-            '/meetings/${result.meetingId}/waiting?sessionId=${result.sessionId ?? ''}'
-            '&code=${Uri.encodeComponent(widget.meetingCode)}'
-            '${result.guestToken != null ? '&guestToken=${Uri.encodeComponent(result.guestToken!)}' : ''}';
-        context.push(waitingPath);
+        context.push(
+          '/meetings/${result.meetingId}/waiting'
+          '?sessionId=${result.sessionId ?? ''}'
+          '&code=${Uri.encodeComponent(widget.meetingCode)}',
+        );
         return;
       }
 
       if (result.sessionId != null) {
         context.push(
-          '/meetings/${result.meetingId}/room?sessionId=${result.sessionId}'
-          '&code=${Uri.encodeComponent(widget.meetingCode)}'
-          '${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
+          '/meetings/${result.meetingId}/room'
+          '?sessionId=${result.sessionId}'
+          '&code=${Uri.encodeComponent(widget.meetingCode)}',
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

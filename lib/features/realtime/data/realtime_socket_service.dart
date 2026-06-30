@@ -258,6 +258,7 @@ class RealtimeSocketService {
       'call:declined',
       'call:terminal',
       'call:incoming',
+      'meeting.state_changed',
     ];
 
     for (final name in names) {

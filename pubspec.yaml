@@ -42,6 +42,9 @@ dependencies:
   # min-version enforcement, and protocol compatibility.
   package_info_plus: ^8.0.0
 
+  # Date formatting (direct dependency — used by CreateMeetingScreen)
+  intl: ^0.20.0
+
   # External links
   url_launcher: ^6.3.0
 

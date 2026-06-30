@@ -512,21 +512,7 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
                         ),
                       ),
                       const SizedBox(height: AuraSpace.s6),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AuraSpace.s12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0F172A),
-                          border: Border.all(color: const Color(0xFF243244)),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Add notes, prep points, and follow-up items here.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF9CA3AF),
-                          ),
-                        ),
-                      ),
+                      _PreparationNotesSection(meeting: meeting),
                       const SizedBox(height: AuraSpace.s12),
                       Text(
                         'Waiting and attendance',
@@ -1042,6 +1028,101 @@ class _SmallChip extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PreparationNotesSection extends ConsumerStatefulWidget {
+  final Meeting meeting;
+
+  const _PreparationNotesSection({required this.meeting});
+
+  @override
+  ConsumerState<_PreparationNotesSection> createState() =>
+      _PreparationNotesSectionState();
+}
+
+class _PreparationNotesSectionState
+    extends ConsumerState<_PreparationNotesSection> {
+  late final TextEditingController _ctrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(
+      text: widget.meeting.preparationNotes ?? '',
+    );
+  }
+
+  @override
+  void didUpdateWidget(_PreparationNotesSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.meeting.preparationNotes !=
+        widget.meeting.preparationNotes) {
+      _ctrl.text = widget.meeting.preparationNotes ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(meetingsRepositoryProvider).updateMeeting(
+        widget.meeting.id,
+        preparationNotes: _ctrl.text.trim(),
+      );
+      ref.invalidate(meetingProvider(widget.meeting.id));
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Preparation notes saved')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not save notes: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _ctrl,
+          maxLines: 5,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            hintText: 'Add notes, prep points, and follow-up items here.',
+            border: OutlineInputBorder(),
+            alignLabelWithHint: true,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton.tonal(
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Save notes'),
+          ),
+        ),
+      ],
     );
   }
 }

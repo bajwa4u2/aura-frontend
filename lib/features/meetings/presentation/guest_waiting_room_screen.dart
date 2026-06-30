@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/shell/shell_shared.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -19,7 +18,6 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
   final String? sessionId;
   final String? returnTo;
   final String? meetingCode;
-  final String? guestToken;
 
   const GuestWaitingRoomScreen({
     super.key,
@@ -28,7 +26,6 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
     this.sessionId,
     this.returnTo,
     this.meetingCode,
-    this.guestToken,
   });
 
   @override
@@ -60,17 +57,7 @@ class _GuestWaitingRoomScreenState
       ? '/meetings/${widget.meetingId}/summary'
       : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
 
-  String get _returnTo =>
-      widget.returnTo ??
-      Uri.encodeComponent(
-        widget.institutionId == null
-            ? '/meetings/${widget.meetingId}/waiting'
-            : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/waiting',
-      );
-
   String get _currentSessionId => (widget.sessionId ?? '').trim();
-
-  String get _guestToken => (widget.guestToken ?? '').trim();
 
   bool get _usePublicMeetingLookup =>
       (widget.meetingCode ?? '').trim().isNotEmpty;
@@ -78,16 +65,7 @@ class _GuestWaitingRoomScreenState
   Future<void> _ensureGuestAuth() async {
     final tokenStore = ref.read(tokenStoreProvider);
     await tokenStore.load();
-    if ((tokenStore.accessToken ?? '').trim().isNotEmpty) return;
-    if (_guestToken.isEmpty) return;
-    final guestAuth = await ref
-        .read(meetingsRepositoryProvider)
-        .exchangeGuestAuth(_guestToken);
-    if (!mounted) return;
-    await tokenStore.setSession(
-      accessToken: guestAuth.accessToken,
-      refreshToken: guestAuth.refreshToken,
-    );
+    // Auth is exchanged in pre_join_screen before navigation; nothing to do here.
   }
 
   void _refresh() {
@@ -113,11 +91,11 @@ class _GuestWaitingRoomScreenState
                 : meeting.sessionId ?? meeting.room?.realtimeSessionId ?? '')
             .trim();
     if (sessionId.isEmpty) return;
-    final guestToken = _guestToken;
-    context.push(
-      '/realtime/$sessionId?action=join&returnTo=$_returnTo'
-      '${guestToken.isNotEmpty ? '&guestToken=${Uri.encodeComponent(guestToken)}' : ''}',
-    );
+    if (!mounted) return;
+    final livePath = widget.institutionId == null
+        ? '/meetings/${widget.meetingId}/live'
+        : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/live';
+    context.push('$livePath?sessionId=$sessionId&isHost=false');
   }
 
   @override
@@ -156,7 +134,7 @@ class _GuestWaitingRoomScreenState
             'Meeting';
 
         return AuraScaffold(
-          title: 'Waiting room',
+          title: meeting.booking?.institution?.name ?? meeting.title,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
@@ -287,7 +265,7 @@ class _GuestWaitingRoomScreenState
                           if (!isTerminal && sessionId.isNotEmpty)
                             FilledButton.icon(
                               icon: const Icon(Icons.meeting_room_rounded),
-                              label: const Text('Join room'),
+                              label: const Text('Join meeting'),
                               onPressed: () => _joinRoom(meeting),
                             ),
                           OutlinedButton.icon(
@@ -314,8 +292,6 @@ class _GuestWaitingRoomScreenState
                       ),
                       const SizedBox(height: AuraSpace.s16),
                       _WaitingCard(lifecycle: lifecycle, meeting: meeting),
-                      const SizedBox(height: AuraSpace.s32),
-                      const ShellFooter(),
                     ],
                   ),
                 ),
@@ -376,8 +352,8 @@ class _WaitingCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s12),
             Text(
               meeting.room?.activeParticipantCount == 0
-                  ? 'No one else is in the room yet.'
-                  : '${meeting.room?.activeParticipantCount ?? 0} participant(s) are connected.',
+                  ? 'No one else has joined yet.'
+                  : '${meeting.room?.activeParticipantCount ?? 0} participant(s) are in the meeting.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280)),

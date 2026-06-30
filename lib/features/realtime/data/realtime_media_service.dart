@@ -10,6 +10,7 @@ class RealtimeMediaSnapshot {
     required this.localRenderer,
     required this.remoteRenderers,
     required this.error,
+    required this.isScreenSharing,
   });
 
   final bool ready;
@@ -18,6 +19,7 @@ class RealtimeMediaSnapshot {
   final RTCVideoRenderer? localRenderer;
   final Map<String, RTCVideoRenderer> remoteRenderers;
   final String? error;
+  final bool isScreenSharing;
 }
 
 class RealtimeMediaService {
@@ -33,9 +35,11 @@ class RealtimeMediaService {
 
   MediaStream? _localStream;
   RTCVideoRenderer? _localRenderer;
+  MediaStream? _screenStream;
   bool _ready = false;
   bool _micEnabled = true;
   bool _cameraEnabled = true;
+  bool _isScreenSharing = false;
   String? _error;
   bool _disposed = false;
 
@@ -48,6 +52,7 @@ class RealtimeMediaService {
         localRenderer: _localRenderer,
         remoteRenderers: Map<String, RTCVideoRenderer>.from(_remoteRenderers),
         error: _error,
+        isScreenSharing: _isScreenSharing,
       );
 
   Future<void> ensureLocalMedia({
@@ -281,6 +286,63 @@ class RealtimeMediaService {
     }
   }
 
+  Future<void> startScreenShare() async {
+    if (_disposed || _isScreenSharing) return;
+
+    final stream = await navigator.mediaDevices.getDisplayMedia(<String, dynamic>{
+      'video': <String, dynamic>{'cursor': 'always'},
+      'audio': false,
+    });
+
+    _screenStream = stream;
+
+    final screenTracks = stream.getVideoTracks();
+    if (screenTracks.isNotEmpty) {
+      final screenTrack = screenTracks.first;
+      for (final peer in _peers.values) {
+        final senders = await peer.getSenders();
+        for (final sender in senders) {
+          if (sender.track?.kind == 'video') {
+            await sender.replaceTrack(screenTrack);
+          }
+        }
+      }
+    }
+
+    _isScreenSharing = true;
+    _publish();
+  }
+
+  Future<void> stopScreenShare() async {
+    if (_disposed || !_isScreenSharing) return;
+
+    _isScreenSharing = false;
+
+    final cameraTracks = _localStream?.getVideoTracks();
+    if (cameraTracks != null && cameraTracks.isNotEmpty) {
+      final cameraTrack = cameraTracks.first;
+      for (final peer in _peers.values) {
+        final senders = await peer.getSenders();
+        for (final sender in senders) {
+          if (sender.track?.kind == 'video') {
+            await sender.replaceTrack(cameraTrack);
+          }
+        }
+      }
+    }
+
+    await _disposeStream(_screenStream);
+    _screenStream = null;
+    _publish();
+  }
+
+  Future<void> switchCamera() async {
+    if (_disposed) return;
+    final tracks = _localStream?.getVideoTracks();
+    if (tracks == null || tracks.isEmpty) return;
+    await Helper.switchCamera(tracks.first);
+  }
+
   Future<void> removePeer(String peerKey) async {
     await _disposePeerConnection(_peers.remove(peerKey));
     await _disposeRenderer(_remoteRenderers.remove(peerKey));
@@ -298,9 +360,14 @@ class RealtimeMediaService {
   Future<void> resetSessionMedia() async {
     await disposeAllPeers();
     await _resetLocalMediaOnly();
+    if (_screenStream != null) {
+      await _disposeStream(_screenStream);
+      _screenStream = null;
+    }
     _ready = false;
     _micEnabled = false;
     _cameraEnabled = false;
+    _isScreenSharing = false;
     _error = null;
     _publish();
   }

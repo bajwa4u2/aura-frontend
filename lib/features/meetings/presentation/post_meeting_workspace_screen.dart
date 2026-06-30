@@ -30,6 +30,7 @@ class _PostMeetingWorkspaceScreenState
   final _decisionsCtrl = TextEditingController();
   final _commitmentsCtrl = TextEditingController();
   final _actionsCtrl = TextEditingController();
+  final _issuesCtrl = TextEditingController();
   final _followUpsCtrl = TextEditingController();
   String? _loadedSummaryId;
   bool _saving = false;
@@ -40,6 +41,7 @@ class _PostMeetingWorkspaceScreenState
     _decisionsCtrl.dispose();
     _commitmentsCtrl.dispose();
     _actionsCtrl.dispose();
+    _issuesCtrl.dispose();
     _followUpsCtrl.dispose();
     super.dispose();
   }
@@ -57,6 +59,7 @@ class _PostMeetingWorkspaceScreenState
       _decisionsCtrl.text = summary.decisions.join('\n');
       _commitmentsCtrl.text = summary.commitments.join('\n');
       _actionsCtrl.text = summary.actions.join('\n');
+      _issuesCtrl.text = summary.issues.join('\n');
       _followUpsCtrl.text = summary.followUps.join('\n');
     });
   }
@@ -90,6 +93,7 @@ class _PostMeetingWorkspaceScreenState
             decisions: _splitLines(_decisionsCtrl.text),
             commitments: _splitLines(_commitmentsCtrl.text),
             actions: _splitLines(_actionsCtrl.text),
+            issues: _splitLines(_issuesCtrl.text),
             followUps: _splitLines(_followUpsCtrl.text),
           );
       ref.invalidate(meetingSummaryProvider(widget.meetingId));
@@ -193,6 +197,13 @@ class _PostMeetingWorkspaceScreenState
                                 'List concrete follow-up tasks that should move forward after the call.',
                           ),
                           _EditorPanel(
+                            title: 'Issues',
+                            width: 510,
+                            controller: _issuesCtrl,
+                            hint:
+                                'Record any blockers, open questions, or unresolved concerns.',
+                          ),
+                          _EditorPanel(
                             title: 'Follow-ups',
                             width: 510,
                             controller: _followUpsCtrl,
@@ -208,7 +219,7 @@ class _PostMeetingWorkspaceScreenState
                         children: [
                           FilledButton.icon(
                             icon: const Icon(Icons.save_rounded),
-                            label: const Text('Capture draft'),
+                            label: const Text('Save outcomes'),
                             onPressed: _saving ? null : _saveDraft,
                           ),
                           OutlinedButton.icon(

@@ -1,0 +1,1057 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Length 3469 >>
+stream
+BT /F2 18 Tf 54 732.00 Td (Aura Accountability and Routing Framework Audit) Tj ET
+BT /F2 18 Tf 54 709.00 Td (Proposal) Tj ET
+BT /F1 10 Tf 54 673.00 Td (Date: 2026-06-20) Tj ET
+BT /F1 10 Tf 54 655.00 Td (Scope: audit-derived proposal for the public composer model and the hidden institutional) Tj ET
+BT /F1 10 Tf 54 642.00 Td (accountability engine.) Tj ET
+BT /F1 10 Tf 54 624.00 Td (Hard product rule: Aura must remain a social, familiar public experience. The) Tj ET
+BT /F1 10 Tf 54 611.00 Td (operational routing and accountability machinery should work underneath and should not) Tj ET
+BT /F1 10 Tf 54 598.00 Td (turn the product into a complaint portal.) Tj ET
+BT /F2 14 Tf 54 572.00 Td (1. Executive Summary) Tj ET
+BT /F1 10 Tf 54 546.00 Td (Aura already contains a strong foundation for public discourse, institutional identity,) Tj ET
+BT /F1 10 Tf 54 533.00 Td (official voice, activity, notifications, topics, discourse intelligence, and) Tj ET
+BT /F1 10 Tf 54 520.00 Td (accountability labels.) Tj ET
+BT /F1 10 Tf 54 502.00 Td (The key missing layer is not another public feed feature. The missing layer is a) Tj ET
+BT /F1 10 Tf 54 489.00 Td (canonical routing and attention model that connects public social posts to institutional) Tj ET
+BT /F1 10 Tf 54 476.00 Td (workspace action.) Tj ET
+BT /F1 10 Tf 54 458.00 Td (Current state:) Tj ET
+BT /F1 10 Tf 64 440.00 Td (- Public users can compose with Ask, Raise issue, and Share update chips.) Tj ET
+BT /F1 10 Tf 64 427.00 Td (- The composer sends topics, but public intent is not persisted in the backend.) Tj ET
+BT /F1 10 Tf 64 414.00 Td (- Topics exist as a content taxonomy.) Tj ET
+BT /F1 10 Tf 64 401.00 Td (- Institutions have ontology metadata, domain tags, members, roles, domains, units,) Tj ET
+BT /F1 10 Tf 64 388.00 Td (  posts, announcements, activity, spaces, and correspondence.) Tj ET
+BT /F1 10 Tf 64 375.00 Td (- Official voice exists through institution-authored posts and institution replies.) Tj ET
+BT /F1 10 Tf 64 362.00 Td (- Accountability tags exist on institution replies: COMMITMENT, UPDATE, RESOLVED.) Tj ET
+BT /F1 10 Tf 64 349.00 Td (- Discourse intelligence endpoints aggregate ongoing issues, unanswered questions,) Tj ET
+BT /F1 10 Tf 64 336.00 Td (  responsiveness, accountability, and participation.) Tj ET
+BT /F1 10 Tf 54 318.00 Td (Primary gap:) Tj ET
+BT /F1 10 Tf 54 300.00 Td (There is no first-class routed attention item representing:) Tj ET
+BT /F1 10 Tf 54 282.00 Td (Intent -> Topic -> Institution routing -> Institution workspace attention -> Official) Tj ET
+BT /F1 10 Tf 54 269.00 Td (response -> Commitment/progress -> Resolution/closure -> Continuity record.) Tj ET
+BT /F1 10 Tf 54 251.00 Td (The minimum viable architecture should preserve the public social surface and add a) Tj ET
+BT /F1 10 Tf 54 238.00 Td (private institution attention layer that indexes public posts, routes them to relevant) Tj ET
+BT /F1 10 Tf 54 225.00 Td (institutions, and tracks lifecycle without making the public interface bureaucratic.) Tj ET
+BT /F2 14 Tf 54 199.00 Td (2. Existing Backend Assets) Tj ET
+BT /F2 12 Tf 54 168.00 Td (2.1 Public posts) Tj ET
+BT /F1 10 Tf 54 145.00 Td (The backend has a `Post` model with:) Tj ET
+BT /F1 10 Tf 64 127.00 Td (- author) Tj ET
+BT /F1 10 Tf 64 114.00 Td (- text) Tj ET
+BT /F1 10 Tf 64 101.00 Td (- status) Tj ET
+BT /F1 10 Tf 64 88.00 Td (- visibility) Tj ET
+BT /F1 10 Tf 64 75.00 Td (- replies and reposts) Tj ET
+BT /F1 8 Tf 286.00 28 Td (1) Tj ET
+endstream
+endobj
+4 0 obj
+<< /Length 3240 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- institution attribution fields) Tj ET
+BT /F1 10 Tf 64 723.00 Td (- public space association) Tj ET
+BT /F1 10 Tf 64 710.00 Td (- primary and secondary topics) Tj ET
+BT /F1 10 Tf 64 697.00 Td (- media) Tj ET
+BT /F1 10 Tf 64 684.00 Td (- notifications and communications) Tj ET
+BT /F1 10 Tf 54 666.00 Td (Reusable value:) Tj ET
+BT /F1 10 Tf 64 648.00 Td (- Public posts should remain the source object for public questions, issues, and) Tj ET
+BT /F1 10 Tf 64 635.00 Td (  updates.) Tj ET
+BT /F1 10 Tf 64 622.00 Td (- Public replies and feed projection should remain the public discussion model.) Tj ET
+BT /F1 10 Tf 64 609.00 Td (- `publicSpaceId`, `primaryTopic`, and `secondaryTopics` can seed routing.) Tj ET
+BT /F1 10 Tf 54 591.00 Td (Current limitation:) Tj ET
+BT /F1 10 Tf 64 573.00 Td (- There is no persisted public `intent`.) Tj ET
+BT /F1 10 Tf 64 560.00 Td (- There is no routing status or routed institution relationship.) Tj ET
+BT /F1 10 Tf 64 547.00 Td (- There is no canonical link from a public post to institution attention workflow.) Tj ET
+BT /F2 12 Tf 54 524.00 Td (2.2 Institution posts and official responses) Tj ET
+BT /F1 10 Tf 54 501.00 Td (The backend has an `InstitutionPost` model with:) Tj ET
+BT /F1 10 Tf 64 483.00 Td (- institution home) Tj ET
+BT /F1 10 Tf 64 470.00 Td (- author user) Tj ET
+BT /F1 10 Tf 64 457.00 Td (- actor institution) Tj ET
+BT /F1 10 Tf 64 444.00 Td (- replies) Tj ET
+BT /F1 10 Tf 64 431.00 Td (- reposts) Tj ET
+BT /F1 10 Tf 64 418.00 Td (- visibility) Tj ET
+BT /F1 10 Tf 64 405.00 Td (- distribution) Tj ET
+BT /F1 10 Tf 64 392.00 Td (- status) Tj ET
+BT /F1 10 Tf 64 379.00 Td (- primary and secondary topics) Tj ET
+BT /F1 10 Tf 64 366.00 Td (- public space association) Tj ET
+BT /F1 10 Tf 64 353.00 Td (- accountability tag) Tj ET
+BT /F1 10 Tf 64 340.00 Td (- paid action label) Tj ET
+BT /F1 10 Tf 64 327.00 Td (- resolution and continuation pointers) Tj ET
+BT /F1 10 Tf 54 309.00 Td (Reusable value:) Tj ET
+BT /F1 10 Tf 64 291.00 Td (- Institution replies already distinguish official institutional voice via) Tj ET
+BT /F1 10 Tf 64 278.00 Td (  `actorInstitutionId`.) Tj ET
+BT /F1 10 Tf 64 265.00 Td (- Institution post replies can carry `COMMITMENT`, `UPDATE`, and `RESOLVED`.) Tj ET
+BT /F1 10 Tf 64 252.00 Td (- The current thread UI can already render institutional accountability events.) Tj ET
+BT /F1 10 Tf 54 234.00 Td (Current limitation:) Tj ET
+BT /F1 10 Tf 64 216.00 Td (- `resolvesInstitutionPostId` and `continuesInstitutionPostId` are scoped to) Tj ET
+BT /F1 10 Tf 64 203.00 Td (  institution posts, not public user posts.) Tj ET
+BT /F1 10 Tf 64 190.00 Td (- The accountability tag is attached to a reply, not to a durable commitment object.) Tj ET
+BT /F1 10 Tf 64 177.00 Td (- There is no "this is the official response to routed item X" link.) Tj ET
+BT /F2 12 Tf 54 154.00 Td (2.3 Topics and ontology) Tj ET
+BT /F1 10 Tf 54 131.00 Td (The backend has:) Tj ET
+BT /F1 10 Tf 64 113.00 Td (- `Topic` enum for content topics.) Tj ET
+BT /F1 10 Tf 64 100.00 Td (- Institution ontology: class, type, and domain tags.) Tj ET
+BT /F1 10 Tf 64 87.00 Td (- Public spaces.) Tj ET
+BT /F1 10 Tf 54 69.00 Td (Reusable value:) Tj ET
+BT /F1 8 Tf 286.00 28 Td (2) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Length 2996 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- `Topic` should remain the public content dimension.) Tj ET
+BT /F1 10 Tf 64 723.00 Td (- Institution class/type/domain tags should remain institution metadata.) Tj ET
+BT /F1 10 Tf 64 710.00 Td (- Routing can map topics and public spaces to institution domain metadata.) Tj ET
+BT /F1 10 Tf 54 692.00 Td (Current limitation:) Tj ET
+BT /F1 10 Tf 64 674.00 Td (- There is no mapping table from topic/public space/jurisdiction to institution.) Tj ET
+BT /F1 10 Tf 64 661.00 Td (- There is no routing rules engine.) Tj ET
+BT /F1 10 Tf 64 648.00 Td (- Topic selection currently supports discovery, not institutional routing.) Tj ET
+BT /F2 12 Tf 54 625.00 Td (2.4 Institution workspace) Tj ET
+BT /F1 10 Tf 54 602.00 Td (The backend has:) Tj ET
+BT /F1 10 Tf 64 584.00 Td (- institutions) Tj ET
+BT /F1 10 Tf 64 571.00 Td (- members) Tj ET
+BT /F1 10 Tf 64 558.00 Td (- roles) Tj ET
+BT /F1 10 Tf 64 545.00 Td (- domains) Tj ET
+BT /F1 10 Tf 64 532.00 Td (- units) Tj ET
+BT /F1 10 Tf 64 519.00 Td (- posts) Tj ET
+BT /F1 10 Tf 64 506.00 Td (- announcements) Tj ET
+BT /F1 10 Tf 64 493.00 Td (- activity events) Tj ET
+BT /F1 10 Tf 64 480.00 Td (- spaces) Tj ET
+BT /F1 10 Tf 64 467.00 Td (- correspondence) Tj ET
+BT /F1 10 Tf 64 454.00 Td (- direct threads) Tj ET
+BT /F1 10 Tf 64 441.00 Td (- notifications) Tj ET
+BT /F1 10 Tf 54 423.00 Td (Reusable value:) Tj ET
+BT /F1 10 Tf 64 405.00 Td (- A routed attention queue can live inside institution workspace.) Tj ET
+BT /F1 10 Tf 64 392.00 Td (- Activity events can record important lifecycle events.) Tj ET
+BT /F1 10 Tf 64 379.00 Td (- Notifications can alert authorized institutional members.) Tj ET
+BT /F1 10 Tf 54 361.00 Td (Current limitation:) Tj ET
+BT /F1 10 Tf 64 343.00 Td (- Institution activity is an audit/activity feed, not a work queue.) Tj ET
+BT /F1 10 Tf 64 330.00 Td (- Correspondence is private messaging, not routed public attention.) Tj ET
+BT /F1 10 Tf 64 317.00 Td (- No object stores assignment, status, acknowledgement, closure, or routing reason.) Tj ET
+BT /F2 12 Tf 54 294.00 Td (2.5 Discourse intelligence) Tj ET
+BT /F1 10 Tf 54 271.00 Td (The backend has read endpoints for:) Tj ET
+BT /F1 10 Tf 64 253.00 Td (- issues) Tj ET
+BT /F1 10 Tf 64 240.00 Td (- unanswered questions) Tj ET
+BT /F1 10 Tf 64 227.00 Td (- responsiveness) Tj ET
+BT /F1 10 Tf 64 214.00 Td (- related institutions) Tj ET
+BT /F1 10 Tf 64 201.00 Td (- accountability) Tj ET
+BT /F1 10 Tf 64 188.00 Td (- institution participation) Tj ET
+BT /F1 10 Tf 54 170.00 Td (Reusable value:) Tj ET
+BT /F1 10 Tf 64 152.00 Td (- These can remain public observational signals.) Tj ET
+BT /F1 10 Tf 64 139.00 Td (- They can later use routed attention and commitments for more precise measurement.) Tj ET
+BT /F1 10 Tf 54 121.00 Td (Current limitation:) Tj ET
+BT /F1 10 Tf 64 103.00 Td (- These endpoints infer signals from existing post/reply rows.) Tj ET
+BT /F1 10 Tf 64 90.00 Td (- They do not create or manage workflow.) Tj ET
+BT /F1 8 Tf 286.00 28 Td (3) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Length 2742 >>
+stream
+BT /F2 14 Tf 54 736.00 Td (3. Existing Frontend Assets) Tj ET
+BT /F2 12 Tf 54 705.00 Td (3.1 Public composer) Tj ET
+BT /F1 10 Tf 54 682.00 Td (The public composer has:) Tj ET
+BT /F1 10 Tf 64 664.00 Td (- Ask) Tj ET
+BT /F1 10 Tf 64 651.00 Td (- Raise issue) Tj ET
+BT /F1 10 Tf 64 638.00 Td (- Share update) Tj ET
+BT /F1 10 Tf 64 625.00 Td (- topic selector) Tj ET
+BT /F1 10 Tf 64 612.00 Td (- attachment support) Tj ET
+BT /F1 10 Tf 64 599.00 Td (- visibility) Tj ET
+BT /F1 10 Tf 64 586.00 Td (- draft save and publish) Tj ET
+BT /F1 10 Tf 54 568.00 Td (Reusable value:) Tj ET
+BT /F1 10 Tf 64 550.00 Td (- The public UI already matches the desired model.) Tj ET
+BT /F1 10 Tf 64 537.00 Td (- It should remain social and lightweight.) Tj ET
+BT /F1 10 Tf 54 519.00 Td (Current limitation:) Tj ET
+BT /F1 10 Tf 64 501.00 Td (- The intent chips are currently UX-only.) Tj ET
+BT /F1 10 Tf 64 488.00 Td (- The backend does not persist intent.) Tj ET
+BT /F1 10 Tf 64 475.00 Td (- The composer does not need to expose routing or workflow language.) Tj ET
+BT /F2 12 Tf 54 452.00 Td (3.2 Public thread and feed) Tj ET
+BT /F1 10 Tf 54 429.00 Td (The frontend has:) Tj ET
+BT /F1 10 Tf 64 411.00 Td (- unified feed cards) Tj ET
+BT /F1 10 Tf 64 398.00 Td (- public thread screen) Tj ET
+BT /F1 10 Tf 64 385.00 Td (- official response band) Tj ET
+BT /F1 10 Tf 64 372.00 Td (- reply units) Tj ET
+BT /F1 10 Tf 64 359.00 Td (- accountability chips) Tj ET
+BT /F1 10 Tf 64 346.00 Td (- timeline rendering for commitment, update, and resolved) Tj ET
+BT /F1 10 Tf 64 333.00 Td (- continuity cues) Tj ET
+BT /F1 10 Tf 54 315.00 Td (Reusable value:) Tj ET
+BT /F1 10 Tf 64 297.00 Td (- Public continuity can be shown without changing the public product shape.) Tj ET
+BT /F1 10 Tf 64 284.00 Td (- Official responses can remain replies in the social thread.) Tj ET
+BT /F1 10 Tf 54 266.00 Td (Current limitation:) Tj ET
+BT /F1 10 Tf 64 248.00 Td (- State labels are derived from replies/tags rather than a canonical lifecycle.) Tj ET
+BT /F1 10 Tf 64 235.00 Td (- There is no public continuity endpoint summarizing official response, open) Tj ET
+BT /F1 10 Tf 64 222.00 Td (  commitments, progress, and closure.) Tj ET
+BT /F2 12 Tf 54 199.00 Td (3.3 Institution workspace) Tj ET
+BT /F1 10 Tf 54 176.00 Td (The frontend has institution workspace routes for:) Tj ET
+BT /F1 10 Tf 64 158.00 Td (- dashboard) Tj ET
+BT /F1 10 Tf 64 145.00 Td (- profile) Tj ET
+BT /F1 10 Tf 64 132.00 Td (- edit profile) Tj ET
+BT /F1 10 Tf 64 119.00 Td (- request verification) Tj ET
+BT /F1 10 Tf 64 106.00 Td (- correspondence) Tj ET
+BT /F1 10 Tf 64 93.00 Td (- domains) Tj ET
+BT /F1 10 Tf 64 80.00 Td (- announcements) Tj ET
+BT /F1 10 Tf 64 67.00 Td (- spaces) Tj ET
+BT /F1 8 Tf 286.00 28 Td (4) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Length 2749 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- messages) Tj ET
+BT /F1 10 Tf 64 723.00 Td (- activity) Tj ET
+BT /F1 10 Tf 64 710.00 Td (- live rooms) Tj ET
+BT /F1 10 Tf 64 697.00 Td (- invites) Tj ET
+BT /F1 10 Tf 64 684.00 Td (- members) Tj ET
+BT /F1 10 Tf 64 671.00 Td (- join requests) Tj ET
+BT /F1 10 Tf 64 658.00 Td (- explore) Tj ET
+BT /F1 10 Tf 64 645.00 Td (- units) Tj ET
+BT /F1 10 Tf 64 632.00 Td (- billing) Tj ET
+BT /F1 10 Tf 54 614.00 Td (Reusable value:) Tj ET
+BT /F1 10 Tf 64 596.00 Td (- A new attention route can fit naturally in this workspace.) Tj ET
+BT /F1 10 Tf 64 583.00 Td (- The dashboard can show queue counters.) Tj ET
+BT /F1 10 Tf 64 570.00 Td (- Existing feed/thread cards can render routed items.) Tj ET
+BT /F1 10 Tf 54 552.00 Td (Current limitation:) Tj ET
+BT /F1 10 Tf 64 534.00 Td (- No attention queue surface exists.) Tj ET
+BT /F1 10 Tf 64 521.00 Td (- Activity is chronological, not actionable.) Tj ET
+BT /F1 10 Tf 64 508.00 Td (- Correspondence should not become the routed public attention surface.) Tj ET
+BT /F2 14 Tf 54 482.00 Td (4. Required Product Model) Tj ET
+BT /F2 12 Tf 54 451.00 Td (4.1 Public model) Tj ET
+BT /F1 10 Tf 54 428.00 Td (Public composer options:) Tj ET
+BT /F1 10 Tf 64 410.00 Td (- Ask) Tj ET
+BT /F1 10 Tf 64 397.00 Td (- Raise issue) Tj ET
+BT /F1 10 Tf 64 384.00 Td (- Share update) Tj ET
+BT /F1 10 Tf 54 366.00 Td (Public user mental model:) Tj ET
+BT /F1 10 Tf 64 348.00 Td (- "I am posting something in public.") Tj ET
+BT /F1 10 Tf 64 335.00 Td (- "I can choose a topic so the right people and institutions can find it.") Tj ET
+BT /F1 10 Tf 64 322.00 Td (- "Institutions may respond officially.") Tj ET
+BT /F1 10 Tf 64 309.00 Td (- "If an institution commits to something, Aura can show progress.") Tj ET
+BT /F1 10 Tf 54 291.00 Td (Avoid:) Tj ET
+BT /F1 10 Tf 64 273.00 Td (- complaint portal) Tj ET
+BT /F1 10 Tf 64 260.00 Td (- ticket numbers) Tj ET
+BT /F1 10 Tf 64 247.00 Td (- case ownership language) Tj ET
+BT /F1 10 Tf 64 234.00 Td (- SLA language) Tj ET
+BT /F1 10 Tf 64 221.00 Td (- department handoff language) Tj ET
+BT /F2 12 Tf 54 198.00 Td (4.2 Hidden operating model) Tj ET
+BT /F1 10 Tf 54 175.00 Td (Internal engine:) Tj ET
+BT /F1 10 Tf 54 157.00 Td (1. Intent captured.) Tj ET
+BT /F1 10 Tf 54 144.00 Td (2. Topic selected.) Tj ET
+BT /F1 10 Tf 54 131.00 Td (3. Routing service evaluates topic, public space, geography, institution metadata,) Tj ET
+BT /F1 10 Tf 54 118.00 Td (domain trust, and explicit follows/mentions.) Tj ET
+BT /F1 10 Tf 54 105.00 Td (4. Institution attention item is created.) Tj ET
+BT /F1 10 Tf 54 92.00 Td (5. Institution workspace receives item.) Tj ET
+BT /F1 10 Tf 54 79.00 Td (6. Institution acknowledges or dismisses/misroutes.) Tj ET
+BT /F1 8 Tf 286.00 28 Td (5) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Length 2673 >>
+stream
+BT /F1 10 Tf 54 736.00 Td (7. Institution replies officially.) Tj ET
+BT /F1 10 Tf 54 723.00 Td (8. Institution optionally marks commitment.) Tj ET
+BT /F1 10 Tf 54 710.00 Td (9. Institution posts progress updates.) Tj ET
+BT /F1 10 Tf 54 697.00 Td (10. Institution marks resolved.) Tj ET
+BT /F1 10 Tf 54 684.00 Td (11. Item closes.) Tj ET
+BT /F1 10 Tf 54 671.00 Td (12. Public thread retains continuity record.) Tj ET
+BT /F2 14 Tf 54 645.00 Td (5. Proposed Minimum Data Model Expansion) Tj ET
+BT /F2 12 Tf 54 614.00 Td (5.1 PostIntent enum) Tj ET
+BT /F1 10 Tf 54 591.00 Td (Add:) Tj ET
+BT /F1 10 Tf 64 573.00 Td (- ASK) Tj ET
+BT /F1 10 Tf 64 560.00 Td (- ISSUE) Tj ET
+BT /F1 10 Tf 64 547.00 Td (- UPDATE) Tj ET
+BT /F1 10 Tf 54 529.00 Td (Attach to public top-level posts.) Tj ET
+BT /F1 10 Tf 54 511.00 Td (Rollout:) Tj ET
+BT /F1 10 Tf 64 493.00 Td (- nullable at first) Tj ET
+BT /F1 10 Tf 64 480.00 Td (- required for new public top-level posts after frontend/backend contract is stable) Tj ET
+BT /F1 10 Tf 64 467.00 Td (- null allowed for legacy rows and replies) Tj ET
+BT /F2 12 Tf 54 444.00 Td (5.2 RoutedAttentionItem) Tj ET
+BT /F1 10 Tf 54 421.00 Td (Purpose:) Tj ET
+BT /F1 10 Tf 54 403.00 Td (Canonical workflow object connecting public social content to institutional attention.) Tj ET
+BT /F1 10 Tf 54 385.00 Td (Recommended fields:) Tj ET
+BT /F1 10 Tf 64 367.00 Td (- id) Tj ET
+BT /F1 10 Tf 64 354.00 Td (- sourceType: POST, INSTITUTION_POST, PUBLIC_SPACE_THREAD, OTHER) Tj ET
+BT /F1 10 Tf 64 341.00 Td (- sourcePostId) Tj ET
+BT /F1 10 Tf 64 328.00 Td (- sourceInstitutionPostId) Tj ET
+BT /F1 10 Tf 64 315.00 Td (- sourceAuthorUserId) Tj ET
+BT /F1 10 Tf 64 302.00 Td (- intent) Tj ET
+BT /F1 10 Tf 64 289.00 Td (- primaryTopic) Tj ET
+BT /F1 10 Tf 64 276.00 Td (- secondaryTopics) Tj ET
+BT /F1 10 Tf 64 263.00 Td (- publicSpaceId) Tj ET
+BT /F1 10 Tf 64 250.00 Td (- routedInstitutionId) Tj ET
+BT /F1 10 Tf 64 237.00 Td (- routingRuleId) Tj ET
+BT /F1 10 Tf 64 224.00 Td (- routingReason) Tj ET
+BT /F1 10 Tf 64 211.00 Td (- routingConfidence) Tj ET
+BT /F1 10 Tf 64 198.00 Td (- status) Tj ET
+BT /F1 10 Tf 64 185.00 Td (- assignedUserId) Tj ET
+BT /F1 10 Tf 64 172.00 Td (- acknowledgedByUserId) Tj ET
+BT /F1 10 Tf 64 159.00 Td (- acknowledgedAt) Tj ET
+BT /F1 10 Tf 64 146.00 Td (- firstOfficialResponsePostId) Tj ET
+BT /F1 10 Tf 64 133.00 Td (- firstOfficialResponseInstitutionPostId) Tj ET
+BT /F1 10 Tf 64 120.00 Td (- lastOfficialActivityAt) Tj ET
+BT /F1 10 Tf 64 107.00 Td (- resolvedAt) Tj ET
+BT /F1 10 Tf 64 94.00 Td (- closedAt) Tj ET
+BT /F1 10 Tf 64 81.00 Td (- closedByUserId) Tj ET
+BT /F1 10 Tf 64 68.00 Td (- closeReason) Tj ET
+BT /F1 8 Tf 286.00 28 Td (6) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Length 2410 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- misroutedAt) Tj ET
+BT /F1 10 Tf 64 723.00 Td (- reroutedFromItemId) Tj ET
+BT /F1 10 Tf 64 710.00 Td (- createdAt) Tj ET
+BT /F1 10 Tf 64 697.00 Td (- updatedAt) Tj ET
+BT /F1 10 Tf 54 679.00 Td (Status enum:) Tj ET
+BT /F1 10 Tf 64 661.00 Td (- NEW) Tj ET
+BT /F1 10 Tf 64 648.00 Td (- SEEN) Tj ET
+BT /F1 10 Tf 64 635.00 Td (- ACKNOWLEDGED) Tj ET
+BT /F1 10 Tf 64 622.00 Td (- RESPONDED) Tj ET
+BT /F1 10 Tf 64 609.00 Td (- COMMITTED) Tj ET
+BT /F1 10 Tf 64 596.00 Td (- IN_PROGRESS) Tj ET
+BT /F1 10 Tf 64 583.00 Td (- RESOLVED) Tj ET
+BT /F1 10 Tf 64 570.00 Td (- CLOSED) Tj ET
+BT /F1 10 Tf 64 557.00 Td (- DECLINED) Tj ET
+BT /F1 10 Tf 64 544.00 Td (- MISROUTED) Tj ET
+BT /F2 12 Tf 54 521.00 Td (5.3 InstitutionRoutingRule) Tj ET
+BT /F1 10 Tf 54 498.00 Td (Purpose:) Tj ET
+BT /F1 10 Tf 54 480.00 Td (Declarative mapping between public content context and institutions.) Tj ET
+BT /F1 10 Tf 54 462.00 Td (Recommended fields:) Tj ET
+BT /F1 10 Tf 64 444.00 Td (- id) Tj ET
+BT /F1 10 Tf 64 431.00 Td (- institutionId) Tj ET
+BT /F1 10 Tf 64 418.00 Td (- topic) Tj ET
+BT /F1 10 Tf 64 405.00 Td (- publicSpaceId) Tj ET
+BT /F1 10 Tf 64 392.00 Td (- institutionClass) Tj ET
+BT /F1 10 Tf 64 379.00 Td (- institutionType) Tj ET
+BT /F1 10 Tf 64 366.00 Td (- domainTag) Tj ET
+BT /F1 10 Tf 64 353.00 Td (- jurisdiction) Tj ET
+BT /F1 10 Tf 64 340.00 Td (- region) Tj ET
+BT /F1 10 Tf 64 327.00 Td (- country) Tj ET
+BT /F1 10 Tf 64 314.00 Td (- priority) Tj ET
+BT /F1 10 Tf 64 301.00 Td (- active) Tj ET
+BT /F1 10 Tf 64 288.00 Td (- createdByUserId) Tj ET
+BT /F1 10 Tf 64 275.00 Td (- createdAt) Tj ET
+BT /F1 10 Tf 64 262.00 Td (- updatedAt) Tj ET
+BT /F1 10 Tf 54 244.00 Td (Notes:) Tj ET
+BT /F1 10 Tf 64 226.00 Td (- Routing rules should support many-to-one and one-to-many routing.) Tj ET
+BT /F1 10 Tf 64 213.00 Td (- Rules should be auditable and admin-visible.) Tj ET
+BT /F1 10 Tf 64 200.00 Td (- Initial version can be simple and conservative.) Tj ET
+BT /F2 12 Tf 54 177.00 Td (5.4 OfficialResponseLink) Tj ET
+BT /F1 10 Tf 54 154.00 Td (Purpose:) Tj ET
+BT /F1 10 Tf 54 136.00 Td (Canonical link proving that a reply/post is an official response to an attention item.) Tj ET
+BT /F1 10 Tf 54 118.00 Td (Recommended fields:) Tj ET
+BT /F1 10 Tf 64 100.00 Td (- id) Tj ET
+BT /F1 10 Tf 64 87.00 Td (- attentionItemId) Tj ET
+BT /F1 10 Tf 64 74.00 Td (- institutionId) Tj ET
+BT /F1 8 Tf 286.00 28 Td (7) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Length 2466 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- actorUserId) Tj ET
+BT /F1 10 Tf 64 723.00 Td (- actorInstitutionId) Tj ET
+BT /F1 10 Tf 64 710.00 Td (- responsePostId) Tj ET
+BT /F1 10 Tf 64 697.00 Td (- responseInstitutionPostId) Tj ET
+BT /F1 10 Tf 64 684.00 Td (- responseKind: ACKNOWLEDGEMENT, ANSWER, COMMITMENT, UPDATE, RESOLUTION) Tj ET
+BT /F1 10 Tf 64 671.00 Td (- createdAt) Tj ET
+BT /F2 12 Tf 54 648.00 Td (5.5 Commitment) Tj ET
+BT /F1 10 Tf 54 625.00 Td (Purpose:) Tj ET
+BT /F1 10 Tf 54 607.00 Td (Durable commitment object, not just a reply label.) Tj ET
+BT /F1 10 Tf 54 589.00 Td (Recommended fields:) Tj ET
+BT /F1 10 Tf 64 571.00 Td (- id) Tj ET
+BT /F1 10 Tf 64 558.00 Td (- attentionItemId) Tj ET
+BT /F1 10 Tf 64 545.00 Td (- institutionId) Tj ET
+BT /F1 10 Tf 64 532.00 Td (- sourceResponseLinkId) Tj ET
+BT /F1 10 Tf 64 519.00 Td (- sourcePostId or sourceInstitutionPostId) Tj ET
+BT /F1 10 Tf 64 506.00 Td (- summary) Tj ET
+BT /F1 10 Tf 64 493.00 Td (- status: OPEN, IN_PROGRESS, RESOLVED, CLOSED, WITHDRAWN) Tj ET
+BT /F1 10 Tf 64 480.00 Td (- dueAt) Tj ET
+BT /F1 10 Tf 64 467.00 Td (- createdByUserId) Tj ET
+BT /F1 10 Tf 64 454.00 Td (- createdAt) Tj ET
+BT /F1 10 Tf 64 441.00 Td (- updatedAt) Tj ET
+BT /F1 10 Tf 64 428.00 Td (- resolvedAt) Tj ET
+BT /F1 10 Tf 64 415.00 Td (- closedAt) Tj ET
+BT /F2 12 Tf 54 392.00 Td (5.6 CommitmentProgress) Tj ET
+BT /F1 10 Tf 54 369.00 Td (Purpose:) Tj ET
+BT /F1 10 Tf 54 351.00 Td (Track progress updates over time.) Tj ET
+BT /F1 10 Tf 54 333.00 Td (Recommended fields:) Tj ET
+BT /F1 10 Tf 64 315.00 Td (- id) Tj ET
+BT /F1 10 Tf 64 302.00 Td (- commitmentId) Tj ET
+BT /F1 10 Tf 64 289.00 Td (- responseLinkId) Tj ET
+BT /F1 10 Tf 64 276.00 Td (- note) Tj ET
+BT /F1 10 Tf 64 263.00 Td (- progressStatus) Tj ET
+BT /F1 10 Tf 64 250.00 Td (- createdByUserId) Tj ET
+BT /F1 10 Tf 64 237.00 Td (- createdAt) Tj ET
+BT /F2 12 Tf 54 214.00 Td (5.7 ContinuityRecord) Tj ET
+BT /F1 10 Tf 54 191.00 Td (Optional later abstraction:) Tj ET
+BT /F1 10 Tf 54 173.00 Td (If response, commitment, update, and resolution records become scattered, add a read-) Tj ET
+BT /F1 10 Tf 54 160.00 Td (optimized continuity record or materialized view.) Tj ET
+BT /F1 10 Tf 54 142.00 Td (Minimum first pass:) Tj ET
+BT /F1 10 Tf 64 124.00 Td (- derive public continuity from attention item, response links, commitments, and) Tj ET
+BT /F1 10 Tf 64 111.00 Td (  progress.) Tj ET
+BT /F2 14 Tf 54 85.00 Td (6. Proposed API Expansion) Tj ET
+BT /F1 8 Tf 286.00 28 Td (8) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Length 2884 >>
+stream
+BT /F2 12 Tf 54 736.00 Td (6.1 Public composer APIs) Tj ET
+BT /F1 10 Tf 54 713.00 Td (Update draft and publish payloads:) Tj ET
+BT /F1 10 Tf 64 695.00 Td (- intent) Tj ET
+BT /F1 10 Tf 64 682.00 Td (- primaryTopic) Tj ET
+BT /F1 10 Tf 64 669.00 Td (- secondaryTopics) Tj ET
+BT /F1 10 Tf 64 656.00 Td (- publicSpaceId) Tj ET
+BT /F1 10 Tf 64 643.00 Td (- media) Tj ET
+BT /F1 10 Tf 64 630.00 Td (- visibility) Tj ET
+BT /F1 10 Tf 54 612.00 Td (Endpoints:) Tj ET
+BT /F1 10 Tf 64 594.00 Td (- PUT /posts/draft) Tj ET
+BT /F1 10 Tf 64 581.00 Td (- POST /posts/draft/publish) Tj ET
+BT /F1 10 Tf 54 563.00 Td (Backend behavior:) Tj ET
+BT /F1 10 Tf 64 545.00 Td (- validate intent on top-level public posts) Tj ET
+BT /F1 10 Tf 64 532.00 Td (- validate primary topic on top-level public posts) Tj ET
+BT /F1 10 Tf 64 519.00 Td (- allow null intent/topic on replies and legacy rows during rollout) Tj ET
+BT /F1 10 Tf 64 506.00 Td (- trigger routing after publish) Tj ET
+BT /F2 12 Tf 54 483.00 Td (6.2 Routing APIs) Tj ET
+BT /F1 10 Tf 54 460.00 Td (Internal service, not public-first:) Tj ET
+BT /F1 10 Tf 64 442.00 Td (- route newly published public post) Tj ET
+BT /F1 10 Tf 64 429.00 Td (- route updated topic/intent if still not acknowledged) Tj ET
+BT /F1 10 Tf 64 416.00 Td (- recompute route only with audit trail) Tj ET
+BT /F1 10 Tf 54 398.00 Td (Admin endpoints:) Tj ET
+BT /F1 10 Tf 64 380.00 Td (- GET /admin/routing-rules) Tj ET
+BT /F1 10 Tf 64 367.00 Td (- POST /admin/routing-rules) Tj ET
+BT /F1 10 Tf 64 354.00 Td (- PATCH /admin/routing-rules/:id) Tj ET
+BT /F1 10 Tf 64 341.00 Td (- DELETE or archive /admin/routing-rules/:id) Tj ET
+BT /F1 10 Tf 54 323.00 Td (Institution endpoints:) Tj ET
+BT /F1 10 Tf 64 305.00 Td (- GET /institutions/:institutionId/attention) Tj ET
+BT /F1 10 Tf 64 292.00 Td (- GET /institutions/:institutionId/attention/:itemId) Tj ET
+BT /F1 10 Tf 64 279.00 Td (- POST /institutions/:institutionId/attention/:itemId/ack) Tj ET
+BT /F1 10 Tf 64 266.00 Td (- POST /institutions/:institutionId/attention/:itemId/decline) Tj ET
+BT /F1 10 Tf 64 253.00 Td (- POST /institutions/:institutionId/attention/:itemId/reroute-request) Tj ET
+BT /F2 12 Tf 54 230.00 Td (6.3 Official response APIs) Tj ET
+BT /F1 10 Tf 54 207.00 Td (Minimum:) Tj ET
+BT /F1 10 Tf 64 189.00 Td (- POST /institutions/:institutionId/attention/:itemId/respond) Tj ET
+BT /F1 10 Tf 54 171.00 Td (Behavior:) Tj ET
+BT /F1 10 Tf 64 153.00 Td (- creates an official reply in the public thread when applicable) Tj ET
+BT /F1 10 Tf 64 140.00 Td (- creates OfficialResponseLink) Tj ET
+BT /F1 10 Tf 64 127.00 Td (- updates attention item status to RESPONDED) Tj ET
+BT /F1 10 Tf 64 114.00 Td (- emits activity and notification events) Tj ET
+BT /F1 10 Tf 54 96.00 Td (Alternative:) Tj ET
+BT /F1 10 Tf 64 78.00 Td (- use existing reply endpoints and add optional `attentionItemId`) Tj ET
+BT /F1 8 Tf 286.00 28 Td (9) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Length 2691 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- service creates OfficialResponseLink after validating actor rights) Tj ET
+BT /F1 10 Tf 54 718.00 Td (Preferred:) Tj ET
+BT /F1 10 Tf 64 700.00 Td (- use dedicated attention response endpoint for clarity and audit, while internally) Tj ET
+BT /F1 10 Tf 64 687.00 Td (  reusing existing reply creation logic.) Tj ET
+BT /F2 12 Tf 54 664.00 Td (6.4 Commitment APIs) Tj ET
+BT /F1 10 Tf 54 641.00 Td (Endpoints:) Tj ET
+BT /F1 10 Tf 64 623.00 Td (- POST /institutions/:institutionId/attention/:itemId/commitments) Tj ET
+BT /F1 10 Tf 64 610.00 Td (- GET /institutions/:institutionId/commitments) Tj ET
+BT /F1 10 Tf 64 597.00 Td (- POST /institutions/:institutionId/commitments/:commitmentId/progress) Tj ET
+BT /F1 10 Tf 64 584.00 Td (- POST /institutions/:institutionId/commitments/:commitmentId/resolve) Tj ET
+BT /F1 10 Tf 64 571.00 Td (- POST /institutions/:institutionId/commitments/:commitmentId/close) Tj ET
+BT /F1 10 Tf 54 553.00 Td (Behavior:) Tj ET
+BT /F1 10 Tf 64 535.00 Td (- creates public-visible reply/update when appropriate) Tj ET
+BT /F1 10 Tf 64 522.00 Td (- stores durable commitment/progress record) Tj ET
+BT /F1 10 Tf 64 509.00 Td (- emits notifications to post author, thread followers, and relevant participants) Tj ET
+BT /F2 12 Tf 54 486.00 Td (6.5 Public continuity APIs) Tj ET
+BT /F1 10 Tf 54 463.00 Td (Endpoints:) Tj ET
+BT /F1 10 Tf 64 445.00 Td (- GET /posts/:postId/continuity) Tj ET
+BT /F1 10 Tf 64 432.00 Td (- GET /feed/items/:type/:id/continuity) Tj ET
+BT /F1 10 Tf 54 414.00 Td (Response:) Tj ET
+BT /F1 10 Tf 64 396.00 Td (- intent) Tj ET
+BT /F1 10 Tf 64 383.00 Td (- topic) Tj ET
+BT /F1 10 Tf 64 370.00 Td (- routed institutions visible to viewer) Tj ET
+BT /F1 10 Tf 64 357.00 Td (- official response summary) Tj ET
+BT /F1 10 Tf 64 344.00 Td (- commitment count) Tj ET
+BT /F1 10 Tf 64 331.00 Td (- open commitment count) Tj ET
+BT /F1 10 Tf 64 318.00 Td (- latest progress) Tj ET
+BT /F1 10 Tf 64 305.00 Td (- resolved flag) Tj ET
+BT /F1 10 Tf 64 292.00 Td (- closed flag) Tj ET
+BT /F1 10 Tf 64 279.00 Td (- public-safe labels) Tj ET
+BT /F2 14 Tf 54 253.00 Td (7. Institution Workspace Representation) Tj ET
+BT /F2 12 Tf 54 222.00 Td (7.1 New workspace section) Tj ET
+BT /F1 10 Tf 54 199.00 Td (Recommended route:) Tj ET
+BT /F1 10 Tf 64 181.00 Td (- /institution/:institutionId/attention) Tj ET
+BT /F1 10 Tf 54 163.00 Td (Recommended nav label:) Tj ET
+BT /F1 10 Tf 64 145.00 Td (- Attention) Tj ET
+BT /F1 10 Tf 54 127.00 Td (Acceptable alternatives:) Tj ET
+BT /F1 10 Tf 64 109.00 Td (- Public attention) Tj ET
+BT /F1 10 Tf 64 96.00 Td (- Needs response) Tj ET
+BT /F1 10 Tf 64 83.00 Td (- Inquiries) Tj ET
+BT /F1 8 Tf 286.00 28 Td (10) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Length 2272 >>
+stream
+BT /F1 10 Tf 54 736.00 Td (Avoid:) Tj ET
+BT /F1 10 Tf 64 718.00 Td (- Complaints) Tj ET
+BT /F1 10 Tf 64 705.00 Td (- Cases) Tj ET
+BT /F1 10 Tf 64 692.00 Td (- Tickets) Tj ET
+BT /F1 10 Tf 64 679.00 Td (- Claims) Tj ET
+BT /F2 12 Tf 54 656.00 Td (7.2 Dashboard counters) Tj ET
+BT /F1 10 Tf 54 633.00 Td (Add dashboard cards:) Tj ET
+BT /F1 10 Tf 64 615.00 Td (- Needs attention) Tj ET
+BT /F1 10 Tf 64 602.00 Td (- Awaiting response) Tj ET
+BT /F1 10 Tf 64 589.00 Td (- Open commitments) Tj ET
+BT /F1 10 Tf 64 576.00 Td (- Recently resolved) Tj ET
+BT /F1 10 Tf 54 558.00 Td (These counters should be private to authorized institution members.) Tj ET
+BT /F2 12 Tf 54 535.00 Td (7.3 Attention queue list) Tj ET
+BT /F1 10 Tf 54 512.00 Td (List fields:) Tj ET
+BT /F1 10 Tf 64 494.00 Td (- public post excerpt) Tj ET
+BT /F1 10 Tf 64 481.00 Td (- author display) Tj ET
+BT /F1 10 Tf 64 468.00 Td (- intent chip) Tj ET
+BT /F1 10 Tf 64 455.00 Td (- topic) Tj ET
+BT /F1 10 Tf 64 442.00 Td (- public space) Tj ET
+BT /F1 10 Tf 64 429.00 Td (- routed reason) Tj ET
+BT /F1 10 Tf 64 416.00 Td (- status) Tj ET
+BT /F1 10 Tf 64 403.00 Td (- last activity) Tj ET
+BT /F1 10 Tf 64 390.00 Td (- assigned member) Tj ET
+BT /F1 10 Tf 64 377.00 Td (- quick action) Tj ET
+BT /F1 10 Tf 54 359.00 Td (Filters:) Tj ET
+BT /F1 10 Tf 64 341.00 Td (- All) Tj ET
+BT /F1 10 Tf 64 328.00 Td (- New) Tj ET
+BT /F1 10 Tf 64 315.00 Td (- Awaiting response) Tj ET
+BT /F1 10 Tf 64 302.00 Td (- Open commitments) Tj ET
+BT /F1 10 Tf 64 289.00 Td (- Resolved) Tj ET
+BT /F1 10 Tf 64 276.00 Td (- Closed) Tj ET
+BT /F1 10 Tf 64 263.00 Td (- Misrouted) Tj ET
+BT /F1 10 Tf 54 245.00 Td (Sort:) Tj ET
+BT /F1 10 Tf 64 227.00 Td (- newest) Tj ET
+BT /F1 10 Tf 64 214.00 Td (- oldest unanswered) Tj ET
+BT /F1 10 Tf 64 201.00 Td (- last activity) Tj ET
+BT /F1 10 Tf 64 188.00 Td (- open commitments first) Tj ET
+BT /F2 12 Tf 54 165.00 Td (7.4 Attention detail) Tj ET
+BT /F1 10 Tf 54 142.00 Td (Detail view should include:) Tj ET
+BT /F1 10 Tf 64 124.00 Td (- source post card) Tj ET
+BT /F1 10 Tf 64 111.00 Td (- thread preview) Tj ET
+BT /F1 10 Tf 64 98.00 Td (- routing reason) Tj ET
+BT /F1 10 Tf 64 85.00 Td (- institution status) Tj ET
+BT /F1 10 Tf 64 72.00 Td (- official response composer) Tj ET
+BT /F1 8 Tf 286.00 28 Td (11) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Length 2308 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- commitment controls) Tj ET
+BT /F1 10 Tf 64 723.00 Td (- progress update controls) Tj ET
+BT /F1 10 Tf 64 710.00 Td (- resolution/closure controls) Tj ET
+BT /F1 10 Tf 64 697.00 Td (- internal notes later, if needed) Tj ET
+BT /F2 12 Tf 54 674.00 Td (7.5 Permissions) Tj ET
+BT /F1 10 Tf 54 651.00 Td (Suggested:) Tj ET
+BT /F1 10 Tf 64 633.00 Td (- MEMBER: view items) Tj ET
+BT /F1 10 Tf 64 620.00 Td (- EDITOR: respond officially if can speak) Tj ET
+BT /F1 10 Tf 64 607.00 Td (- ADMIN/OWNER: assign, mark commitment, resolve, close, reroute/decline) Tj ET
+BT /F1 10 Tf 54 589.00 Td (Respect existing:) Tj ET
+BT /F1 10 Tf 64 571.00 Td (- InstitutionRoleGuard) Tj ET
+BT /F1 10 Tf 64 558.00 Td (- canSpeakOfficially) Tj ET
+BT /F1 10 Tf 64 545.00 Td (- official voice entitlement checks) Tj ET
+BT /F2 14 Tf 54 519.00 Td (8. Public Representation) Tj ET
+BT /F2 12 Tf 54 488.00 Td (8.1 Public composer) Tj ET
+BT /F1 10 Tf 54 465.00 Td (Keep current structure:) Tj ET
+BT /F1 10 Tf 64 447.00 Td (- Ask) Tj ET
+BT /F1 10 Tf 64 434.00 Td (- Raise issue) Tj ET
+BT /F1 10 Tf 64 421.00 Td (- Share update) Tj ET
+BT /F1 10 Tf 64 408.00 Td (- Topic) Tj ET
+BT /F1 10 Tf 64 395.00 Td (- Attachments) Tj ET
+BT /F1 10 Tf 64 382.00 Td (- Visibility) Tj ET
+BT /F1 10 Tf 54 364.00 Td (Do not show:) Tj ET
+BT /F1 10 Tf 64 346.00 Td (- routed institutions before publish unless explicitly designed as discovery) Tj ET
+BT /F1 10 Tf 64 333.00 Td (- case status) Tj ET
+BT /F1 10 Tf 64 320.00 Td (- assignment) Tj ET
+BT /F1 10 Tf 64 307.00 Td (- workflow terms) Tj ET
+BT /F2 12 Tf 54 284.00 Td (8.2 Public cards) Tj ET
+BT /F1 10 Tf 54 261.00 Td (Use light labels:) Tj ET
+BT /F1 10 Tf 64 243.00 Td (- Asked) Tj ET
+BT /F1 10 Tf 64 230.00 Td (- Issue raised) Tj ET
+BT /F1 10 Tf 64 217.00 Td (- Update shared) Tj ET
+BT /F1 10 Tf 64 204.00 Td (- Official response) Tj ET
+BT /F1 10 Tf 64 191.00 Td (- Update from institution) Tj ET
+BT /F1 10 Tf 64 178.00 Td (- Resolved) Tj ET
+BT /F1 10 Tf 54 160.00 Td (Avoid:) Tj ET
+BT /F1 10 Tf 64 142.00 Td (- ticket created) Tj ET
+BT /F1 10 Tf 64 129.00 Td (- routed to department) Tj ET
+BT /F1 10 Tf 64 116.00 Td (- awaiting assignee) Tj ET
+BT /F1 10 Tf 64 103.00 Td (- closed by agent) Tj ET
+BT /F2 12 Tf 54 80.00 Td (8.3 Public thread) Tj ET
+BT /F1 8 Tf 286.00 28 Td (12) Tj ET
+endstream
+endobj
+15 0 obj
+<< /Length 2838 >>
+stream
+BT /F1 10 Tf 54 736.00 Td (Keep official responses as replies.) Tj ET
+BT /F1 10 Tf 54 718.00 Td (Show:) Tj ET
+BT /F1 10 Tf 64 700.00 Td (- official response band) Tj ET
+BT /F1 10 Tf 64 687.00 Td (- commitment/update/resolved timeline) Tj ET
+BT /F1 10 Tf 64 674.00 Td (- "Resolved" or "Answered" label when lifecycle reaches public closure) Tj ET
+BT /F1 10 Tf 64 661.00 Td (- continuity panel where useful) Tj ET
+BT /F1 10 Tf 54 643.00 Td (Hide:) Tj ET
+BT /F1 10 Tf 64 625.00 Td (- private routing reason) Tj ET
+BT /F1 10 Tf 64 612.00 Td (- internal assignee) Tj ET
+BT /F1 10 Tf 64 599.00 Td (- declined/misrouted details unless institution publishes a public note) Tj ET
+BT /F1 10 Tf 64 586.00 Td (- admin-only notes) Tj ET
+BT /F2 14 Tf 54 560.00 Td (9. End-to-End Implementation Sequence) Tj ET
+BT /F2 12 Tf 54 529.00 Td (Phase 1: Contract hardening) Tj ET
+BT /F1 10 Tf 54 506.00 Td (Goal:) Tj ET
+BT /F1 10 Tf 54 488.00 Td (Persist public composer intent and make topic contract explicit.) Tj ET
+BT /F1 10 Tf 54 470.00 Td (Backend:) Tj ET
+BT /F1 10 Tf 64 452.00 Td (- Add `PostIntent` enum.) Tj ET
+BT /F1 10 Tf 64 439.00 Td (- Add nullable `Post.intent`.) Tj ET
+BT /F1 10 Tf 64 426.00 Td (- Update public post DTOs to include `intent`, `primaryTopic`, `secondaryTopics`.) Tj ET
+BT /F1 10 Tf 64 413.00 Td (- Stop relying on `any` for public draft payloads where possible.) Tj ET
+BT /F1 10 Tf 64 400.00 Td (- Validate intent/topic for new top-level public posts.) Tj ET
+BT /F1 10 Tf 54 382.00 Td (Frontend:) Tj ET
+BT /F1 10 Tf 64 364.00 Td (- Send intent in compose payload.) Tj ET
+BT /F1 10 Tf 64 351.00 Td (- Block publish if no intent or primary topic for top-level public post.) Tj ET
+BT /F1 10 Tf 64 338.00 Td (- Keep UI language unchanged.) Tj ET
+BT /F1 10 Tf 54 320.00 Td (Checks:) Tj ET
+BT /F1 10 Tf 64 302.00 Td (- backend unit tests for draft save and publish) Tj ET
+BT /F1 10 Tf 64 289.00 Td (- frontend widget test for intent/topic required publish) Tj ET
+BT /F1 10 Tf 64 276.00 Td (- smoke test publish Ask, Issue, Update) Tj ET
+BT /F1 10 Tf 54 258.00 Td (Rollback:) Tj ET
+BT /F1 10 Tf 64 240.00 Td (- keep field nullable) Tj ET
+BT /F1 10 Tf 64 227.00 Td (- ignore intent server-side if needed) Tj ET
+BT /F1 10 Tf 64 214.00 Td (- frontend can stop sending intent without breaking legacy rows) Tj ET
+BT /F2 12 Tf 54 191.00 Td (Phase 2: Routing foundation) Tj ET
+BT /F1 10 Tf 54 168.00 Td (Goal:) Tj ET
+BT /F1 10 Tf 54 150.00 Td (Create minimal routing rules and attention items.) Tj ET
+BT /F1 10 Tf 54 132.00 Td (Backend:) Tj ET
+BT /F1 10 Tf 64 114.00 Td (- Add `InstitutionRoutingRule`.) Tj ET
+BT /F1 10 Tf 64 101.00 Td (- Add `RoutedAttentionItem`.) Tj ET
+BT /F1 10 Tf 64 88.00 Td (- Add routing service.) Tj ET
+BT /F1 10 Tf 64 75.00 Td (- Trigger routing after public post publish.) Tj ET
+BT /F1 8 Tf 286.00 28 Td (13) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Length 2809 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- Emit institution activity and notifications when item is created.) Tj ET
+BT /F1 10 Tf 54 718.00 Td (Frontend:) Tj ET
+BT /F1 10 Tf 64 700.00 Td (- No public UI change.) Tj ET
+BT /F1 10 Tf 64 687.00 Td (- Add hidden or basic institution attention list if backend is ready.) Tj ET
+BT /F1 10 Tf 54 669.00 Td (Checks:) Tj ET
+BT /F1 10 Tf 64 651.00 Td (- route by topic to configured institution) Tj ET
+BT /F1 10 Tf 64 638.00 Td (- no route when no active rule) Tj ET
+BT /F1 10 Tf 64 625.00 Td (- no duplicate attention item for same source/institution) Tj ET
+BT /F1 10 Tf 64 612.00 Td (- routing audit stored) Tj ET
+BT /F1 10 Tf 54 594.00 Td (Rollback:) Tj ET
+BT /F1 10 Tf 64 576.00 Td (- disable routing trigger behind feature flag) Tj ET
+BT /F1 10 Tf 64 563.00 Td (- preserve data without surfacing queue) Tj ET
+BT /F2 12 Tf 54 540.00 Td (Phase 3: Institution attention workspace) Tj ET
+BT /F1 10 Tf 54 517.00 Td (Goal:) Tj ET
+BT /F1 10 Tf 54 499.00 Td (Give institutions a private surface to process routed public posts.) Tj ET
+BT /F1 10 Tf 54 481.00 Td (Backend:) Tj ET
+BT /F1 10 Tf 64 463.00 Td (- GET attention list.) Tj ET
+BT /F1 10 Tf 64 450.00 Td (- GET attention detail.) Tj ET
+BT /F1 10 Tf 64 437.00 Td (- POST acknowledge.) Tj ET
+BT /F1 10 Tf 64 424.00 Td (- POST decline/misrouted.) Tj ET
+BT /F1 10 Tf 54 406.00 Td (Frontend:) Tj ET
+BT /F1 10 Tf 64 388.00 Td (- Add `/institution/:institutionId/attention`.) Tj ET
+BT /F1 10 Tf 64 375.00 Td (- Add dashboard counters.) Tj ET
+BT /F1 10 Tf 64 362.00 Td (- Use existing post/thread card components.) Tj ET
+BT /F1 10 Tf 64 349.00 Td (- Add filters and empty states.) Tj ET
+BT /F1 10 Tf 54 331.00 Td (Checks:) Tj ET
+BT /F1 10 Tf 64 313.00 Td (- member can view) Tj ET
+BT /F1 10 Tf 64 300.00 Td (- non-member cannot view) Tj ET
+BT /F1 10 Tf 64 287.00 Td (- admin/editor actions work by role) Tj ET
+BT /F1 10 Tf 64 274.00 Td (- queue updates after acknowledge) Tj ET
+BT /F1 10 Tf 54 256.00 Td (Rollback:) Tj ET
+BT /F1 10 Tf 64 238.00 Td (- remove nav entry while keeping backend data) Tj ET
+BT /F1 10 Tf 64 225.00 Td (- attention records remain auditable) Tj ET
+BT /F2 12 Tf 54 202.00 Td (Phase 4: Official response linkage) Tj ET
+BT /F1 10 Tf 54 179.00 Td (Goal:) Tj ET
+BT /F1 10 Tf 54 161.00 Td (Connect institution replies to attention items.) Tj ET
+BT /F1 10 Tf 54 143.00 Td (Backend:) Tj ET
+BT /F1 10 Tf 64 125.00 Td (- Add `OfficialResponseLink`.) Tj ET
+BT /F1 10 Tf 64 112.00 Td (- Add response endpoint or extend existing reply endpoint with attention item id.) Tj ET
+BT /F1 10 Tf 64 99.00 Td (- Reuse official voice validation.) Tj ET
+BT /F1 10 Tf 64 86.00 Td (- Update attention status to RESPONDED.) Tj ET
+BT /F1 10 Tf 64 73.00 Td (- Notify source author and thread followers.) Tj ET
+BT /F1 8 Tf 286.00 28 Td (14) Tj ET
+endstream
+endobj
+17 0 obj
+<< /Length 2939 >>
+stream
+BT /F1 10 Tf 54 736.00 Td (Frontend:) Tj ET
+BT /F1 10 Tf 64 718.00 Td (- Add official response composer/action from attention detail.) Tj ET
+BT /F1 10 Tf 64 705.00 Td (- Deep link back to public thread.) Tj ET
+BT /F1 10 Tf 64 692.00 Td (- Public thread continues rendering official replies.) Tj ET
+BT /F1 10 Tf 54 674.00 Td (Checks:) Tj ET
+BT /F1 10 Tf 64 656.00 Td (- only authorized institution speakers can respond) Tj ET
+BT /F1 10 Tf 64 643.00 Td (- response appears publicly) Tj ET
+BT /F1 10 Tf 64 630.00 Td (- response is linked to attention item) Tj ET
+BT /F1 10 Tf 64 617.00 Td (- duplicate first-response handling is stable) Tj ET
+BT /F1 10 Tf 54 599.00 Td (Rollback:) Tj ET
+BT /F1 10 Tf 64 581.00 Td (- response remains a normal public reply even if link creation fails) Tj ET
+BT /F1 10 Tf 64 568.00 Td (- retry link creation from audit job) Tj ET
+BT /F2 12 Tf 54 545.00 Td (Phase 5: Commitments and progress) Tj ET
+BT /F1 10 Tf 54 522.00 Td (Goal:) Tj ET
+BT /F1 10 Tf 54 504.00 Td (Make commitments durable and auditable.) Tj ET
+BT /F1 10 Tf 54 486.00 Td (Backend:) Tj ET
+BT /F1 10 Tf 64 468.00 Td (- Add `Commitment`.) Tj ET
+BT /F1 10 Tf 64 455.00 Td (- Add `CommitmentProgress`.) Tj ET
+BT /F1 10 Tf 64 442.00 Td (- Create commitment from official response or attention detail.) Tj ET
+BT /F1 10 Tf 64 429.00 Td (- Add progress and resolve endpoints.) Tj ET
+BT /F1 10 Tf 64 416.00 Td (- Map legacy accountability tags to new commitment events where possible.) Tj ET
+BT /F1 10 Tf 54 398.00 Td (Frontend:) Tj ET
+BT /F1 10 Tf 64 380.00 Td (- Add commitment controls for admins.) Tj ET
+BT /F1 10 Tf 64 367.00 Td (- Show open commitments in attention queue.) Tj ET
+BT /F1 10 Tf 64 354.00 Td (- Keep public labels lightweight.) Tj ET
+BT /F1 10 Tf 54 336.00 Td (Checks:) Tj ET
+BT /F1 10 Tf 64 318.00 Td (- commitment creation requires official response or explicit institutional actor) Tj ET
+BT /F1 10 Tf 64 305.00 Td (- progress appears in public thread/continuity) Tj ET
+BT /F1 10 Tf 64 292.00 Td (- open commitment count is correct) Tj ET
+BT /F1 10 Tf 64 279.00 Td (- resolution cannot close unrelated commitment) Tj ET
+BT /F1 10 Tf 54 261.00 Td (Rollback:) Tj ET
+BT /F1 10 Tf 64 243.00 Td (- keep existing accountability tags as display fallback) Tj ET
+BT /F1 10 Tf 64 230.00 Td (- commitment tables can be ignored by frontend until stable) Tj ET
+BT /F2 12 Tf 54 207.00 Td (Phase 6: Resolution and closure) Tj ET
+BT /F1 10 Tf 54 184.00 Td (Goal:) Tj ET
+BT /F1 10 Tf 54 166.00 Td (Close the lifecycle without exposing bureaucratic language publicly.) Tj ET
+BT /F1 10 Tf 54 148.00 Td (Backend:) Tj ET
+BT /F1 10 Tf 64 130.00 Td (- Resolve attention item.) Tj ET
+BT /F1 10 Tf 64 117.00 Td (- Close attention item.) Tj ET
+BT /F1 10 Tf 64 104.00 Td (- Add public continuity endpoint.) Tj ET
+BT /F1 10 Tf 64 91.00 Td (- Emit notifications and activity.) Tj ET
+BT /F1 10 Tf 54 73.00 Td (Frontend:) Tj ET
+BT /F1 8 Tf 286.00 28 Td (15) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Length 2818 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- Add resolve/close controls in attention detail.) Tj ET
+BT /F1 10 Tf 64 723.00 Td (- Public thread shows "Resolved" or "Answered".) Tj ET
+BT /F1 10 Tf 64 710.00 Td (- Activity/notifications deep link to thread.) Tj ET
+BT /F1 10 Tf 54 692.00 Td (Checks:) Tj ET
+BT /F1 10 Tf 64 674.00 Td (- resolved item remains readable) Tj ET
+BT /F1 10 Tf 64 661.00 Td (- closed item no longer appears in active queue) Tj ET
+BT /F1 10 Tf 64 648.00 Td (- public continuity hides internal assignee and routing metadata) Tj ET
+BT /F1 10 Tf 54 630.00 Td (Rollback:) Tj ET
+BT /F1 10 Tf 64 612.00 Td (- mark items reopened) Tj ET
+BT /F1 10 Tf 64 599.00 Td (- leave public thread unchanged) Tj ET
+BT /F2 12 Tf 54 576.00 Td (Phase 7: Analytics and hardening) Tj ET
+BT /F1 10 Tf 54 553.00 Td (Goal:) Tj ET
+BT /F1 10 Tf 54 535.00 Td (Use the canonical lifecycle for better discourse intelligence.) Tj ET
+BT /F1 10 Tf 54 517.00 Td (Backend:) Tj ET
+BT /F1 10 Tf 64 499.00 Td (- Update discourse intelligence to use attention and commitment records where) Tj ET
+BT /F1 10 Tf 64 486.00 Td (  available.) Tj ET
+BT /F1 10 Tf 64 473.00 Td (- Add indexes for queue/status queries.) Tj ET
+BT /F1 10 Tf 64 460.00 Td (- Add admin tools for routing health.) Tj ET
+BT /F1 10 Tf 54 442.00 Td (Frontend:) Tj ET
+BT /F1 10 Tf 64 424.00 Td (- Add institution-level continuity summaries.) Tj ET
+BT /F1 10 Tf 64 411.00 Td (- Add empty/loading/error states.) Tj ET
+BT /F1 10 Tf 54 393.00 Td (Checks:) Tj ET
+BT /F1 10 Tf 64 375.00 Td (- query performance on large data) Tj ET
+BT /F1 10 Tf 64 362.00 Td (- privacy review for all public continuity fields) Tj ET
+BT /F1 10 Tf 64 349.00 Td (- migration tests for legacy posts) Tj ET
+BT /F1 10 Tf 54 331.00 Td (Rollback:) Tj ET
+BT /F1 10 Tf 64 313.00 Td (- discourse endpoints can fall back to existing inference queries) Tj ET
+BT /F2 14 Tf 54 287.00 Td (10. Risk Register) Tj ET
+BT /F2 12 Tf 54 256.00 Td (Product risks) Tj ET
+BT /F1 10 Tf 54 233.00 Td (Risk: Public users experience Aura as a complaint system.) Tj ET
+BT /F1 10 Tf 54 215.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 197.00 Td (- Keep public labels social.) Tj ET
+BT /F1 10 Tf 64 184.00 Td (- Hide queue terminology.) Tj ET
+BT /F1 10 Tf 64 171.00 Td (- Do not expose assignment, routing, or case identifiers.) Tj ET
+BT /F1 10 Tf 54 153.00 Td (Risk: Institutions feel publicly shamed by routed issues.) Tj ET
+BT /F1 10 Tf 54 135.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 117.00 Td (- Make routing private by default.) Tj ET
+BT /F1 10 Tf 64 104.00 Td (- Public official response is voluntary.) Tj ET
+BT /F1 10 Tf 64 91.00 Td (- Misrouting and decline actions are internal unless institution publishes a note.) Tj ET
+BT /F1 10 Tf 54 73.00 Td (Risk: Users expect guaranteed service levels.) Tj ET
+BT /F1 8 Tf 286.00 28 Td (16) Tj ET
+endstream
+endobj
+19 0 obj
+<< /Length 2910 >>
+stream
+BT /F1 10 Tf 54 736.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 718.00 Td (- Avoid SLA language.) Tj ET
+BT /F1 10 Tf 64 705.00 Td (- Use "may respond", "official response", and "updates" language.) Tj ET
+BT /F2 12 Tf 54 682.00 Td (Data risks) Tj ET
+BT /F1 10 Tf 54 659.00 Td (Risk: Topic-only routing creates false positives.) Tj ET
+BT /F1 10 Tf 54 641.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 623.00 Td (- Use institution domain tags, public spaces, jurisdiction, and explicit rules.) Tj ET
+BT /F1 10 Tf 64 610.00 Td (- Start conservative.) Tj ET
+BT /F1 10 Tf 64 597.00 Td (- Allow misroute/decline without public penalty.) Tj ET
+BT /F1 10 Tf 54 579.00 Td (Risk: Duplicate attention items.) Tj ET
+BT /F1 10 Tf 54 561.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 543.00 Td (- Unique constraint on source object plus routed institution.) Tj ET
+BT /F1 10 Tf 64 530.00 Td (- Idempotent routing service.) Tj ET
+BT /F1 10 Tf 54 512.00 Td (Risk: Legacy rows lack intent/topic.) Tj ET
+BT /F1 10 Tf 54 494.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 476.00 Td (- Keep fields nullable initially.) Tj ET
+BT /F1 10 Tf 64 463.00 Td (- Backfill only where reliable.) Tj ET
+BT /F1 10 Tf 64 450.00 Td (- Do not infer sensitive issue intent from old text automatically.) Tj ET
+BT /F2 12 Tf 54 427.00 Td (Permission risks) Tj ET
+BT /F1 10 Tf 54 404.00 Td (Risk: Unauthorized member responds officially.) Tj ET
+BT /F1 10 Tf 54 386.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 368.00 Td (- Reuse InstitutionRoleGuard.) Tj ET
+BT /F1 10 Tf 64 355.00 Td (- Check canSpeakOfficially.) Tj ET
+BT /F1 10 Tf 64 342.00 Td (- Preserve official voice entitlement checks.) Tj ET
+BT /F1 10 Tf 54 324.00 Td (Risk: Public continuity leaks internal workflow.) Tj ET
+BT /F1 10 Tf 54 306.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 288.00 Td (- Separate internal attention detail DTO from public continuity DTO.) Tj ET
+BT /F1 10 Tf 64 275.00 Td (- Public endpoint returns only safe fields.) Tj ET
+BT /F2 12 Tf 54 252.00 Td (Migration risks) Tj ET
+BT /F1 10 Tf 54 229.00 Td (Risk: Existing accountability tags conflict with new commitments.) Tj ET
+BT /F1 10 Tf 54 211.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 193.00 Td (- Treat tags as legacy display/event hints.) Tj ET
+BT /F1 10 Tf 64 180.00 Td (- Add durable commitment records going forward.) Tj ET
+BT /F1 10 Tf 64 167.00 Td (- Optionally create commitments from old COMMITMENT-tagged replies in a careful) Tj ET
+BT /F1 10 Tf 64 154.00 Td (  backfill.) Tj ET
+BT /F1 10 Tf 54 136.00 Td (Risk: Two post systems create confusion.) Tj ET
+BT /F1 10 Tf 54 118.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 100.00 Td (- Keep public user posts as public roots.) Tj ET
+BT /F1 10 Tf 64 87.00 Td (- Use institution replies as official responses where possible.) Tj ET
+BT /F1 10 Tf 64 74.00 Td (- Do not duplicate public roots into institution posts unless explicitly required.) Tj ET
+BT /F1 8 Tf 286.00 28 Td (17) Tj ET
+endstream
+endobj
+20 0 obj
+<< /Length 3355 >>
+stream
+BT /F2 12 Tf 54 736.00 Td (Technical risks) Tj ET
+BT /F1 10 Tf 54 713.00 Td (Risk: Queue queries become expensive.) Tj ET
+BT /F1 10 Tf 54 695.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 677.00 Td (- Index institutionId/status/updatedAt.) Tj ET
+BT /F1 10 Tf 64 664.00 Td (- Index source post id.) Tj ET
+BT /F1 10 Tf 64 651.00 Td (- Cap page sizes.) Tj ET
+BT /F1 10 Tf 54 633.00 Td (Risk: Notification fanout becomes noisy.) Tj ET
+BT /F1 10 Tf 54 615.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 597.00 Td (- Notify author and explicit followers first.) Tj ET
+BT /F1 10 Tf 64 584.00 Td (- Batch lower-priority updates.) Tj ET
+BT /F1 10 Tf 64 571.00 Td (- Use existing notification preference infrastructure.) Tj ET
+BT /F1 10 Tf 54 553.00 Td (Risk: Routing side effects break publish flow.) Tj ET
+BT /F1 10 Tf 54 535.00 Td (Mitigation:) Tj ET
+BT /F1 10 Tf 64 517.00 Td (- Routing should be best-effort after successful publish.) Tj ET
+BT /F1 10 Tf 64 504.00 Td (- Failed routing should log and retry, not block post creation.) Tj ET
+BT /F2 14 Tf 54 478.00 Td (11. Acceptance Criteria) Tj ET
+BT /F1 10 Tf 54 452.00 Td (End-to-end readiness requires:) Tj ET
+BT /F1 10 Tf 54 434.00 Td (1. Public user can publish Ask, Raise issue, and Share update with required topic.) Tj ET
+BT /F1 10 Tf 54 421.00 Td (2. Backend persists intent and topic.) Tj ET
+BT /F1 10 Tf 54 408.00 Td (3. Routing service creates attention items for configured institutions.) Tj ET
+BT /F1 10 Tf 54 395.00 Td (4. Institution member sees item in private attention workspace.) Tj ET
+BT /F1 10 Tf 54 382.00 Td (5. Authorized institution actor can acknowledge item.) Tj ET
+BT /F1 10 Tf 54 369.00 Td (6. Authorized institution actor can post official response.) Tj ET
+BT /F1 10 Tf 54 356.00 Td (7. Official response appears in public thread and links to attention item.) Tj ET
+BT /F1 10 Tf 54 343.00 Td (8. Institution can create a commitment.) Tj ET
+BT /F1 10 Tf 54 330.00 Td (9. Institution can post progress update.) Tj ET
+BT /F1 10 Tf 54 317.00 Td (10. Institution can mark resolved and close.) Tj ET
+BT /F1 10 Tf 54 304.00 Td (11. Public thread shows calm continuity labels.) Tj ET
+BT /F1 10 Tf 54 291.00 Td (12. Internal queue shows precise operational state.) Tj ET
+BT /F1 10 Tf 54 278.00 Td (13. Notifications and activity events are emitted.) Tj ET
+BT /F1 10 Tf 54 265.00 Td (14. Public users never see internal assignee, routing confidence, private notes, or) Tj ET
+BT /F1 10 Tf 54 252.00 Td (case-like workflow language.) Tj ET
+BT /F1 10 Tf 54 239.00 Td (15. Tests cover routing, permissions, official response linkage, commitment lifecycle,) Tj ET
+BT /F1 10 Tf 54 226.00 Td (and public DTO privacy.) Tj ET
+BT /F2 14 Tf 54 200.00 Td (12. Files Inspected During Audit) Tj ET
+BT /F1 10 Tf 54 174.00 Td (Backend:) Tj ET
+BT /F1 10 Tf 64 156.00 Td (- aura-backend/prisma/schema.prisma) Tj ET
+BT /F1 10 Tf 64 143.00 Td (- aura-backend/src/app.module.ts) Tj ET
+BT /F1 10 Tf 64 130.00 Td (- aura-backend/src/main.ts) Tj ET
+BT /F1 10 Tf 64 117.00 Td (- aura-backend/src/posts/posts.controller.ts) Tj ET
+BT /F1 10 Tf 64 104.00 Td (- aura-backend/src/posts/posts.service.ts) Tj ET
+BT /F1 10 Tf 64 91.00 Td (- aura-backend/src/posts/dto/create-post.dto.ts) Tj ET
+BT /F1 10 Tf 64 78.00 Td (- aura-backend/src/institutions/posts/institution-posts.controller.ts) Tj ET
+BT /F1 8 Tf 286.00 28 Td (18) Tj ET
+endstream
+endobj
+21 0 obj
+<< /Length 3886 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- aura-backend/src/institutions/posts/institution-posts.service.ts) Tj ET
+BT /F1 10 Tf 64 723.00 Td (- aura-backend/src/institutions/posts/dto/create-institution-post.dto.ts) Tj ET
+BT /F1 10 Tf 64 710.00 Td (- aura-backend/src/institutions/posts/dto/set-accountability.dto.ts) Tj ET
+BT /F1 10 Tf 64 697.00 Td (- aura-backend/src/institutions/activity/institution-activity.controller.ts) Tj ET
+BT /F1 10 Tf 64 684.00 Td (- aura-backend/src/institutions/activity/institution-activity.service.ts) Tj ET
+BT /F1 10 Tf 64 671.00 Td (- aura-backend/src/discourse-intelligence/discourse-intelligence.controller.ts) Tj ET
+BT /F1 10 Tf 64 658.00 Td (- aura-backend/src/discourse-intelligence/discourse-intelligence.service.ts) Tj ET
+BT /F1 10 Tf 64 645.00 Td (- aura-backend/src/feed/feed.module.ts) Tj ET
+BT /F1 10 Tf 64 632.00 Td (- aura-backend/src/posts/posts.module.ts) Tj ET
+BT /F1 10 Tf 64 619.00 Td (- aura-backend/src/institutions/institutions.module.ts) Tj ET
+BT /F1 10 Tf 54 601.00 Td (Frontend:) Tj ET
+BT /F1 10 Tf 64 583.00 Td (- aura_final/lib/router.dart) Tj ET
+BT /F1 10 Tf 64 570.00 Td (- aura_final/lib/core/institutions/institution_paths.dart) Tj ET
+BT /F1 10 Tf 64 557.00 Td (- aura_final/lib/features/posts/presentation/compose_screen.dart) Tj ET
+BT /F1 10 Tf 64 544.00 Td (- aura_final/lib/features/topics/topic.dart) Tj ET
+BT /F1 10 Tf 64 531.00 Td (- aura_final/lib/features/topics/aura_topic_selector.dart) Tj ET
+BT /F1 10 Tf 64 518.00 Td (- aura_final/lib/features/institutions/data/institutions_repository.dart) Tj ET
+BT /F1 10 Tf 64 505.00 Td (- aura_final/lib/features/institutions/presentation/institution_dashboard_screen.dar) Tj ET
+BT /F1 10 Tf 64 492.00 Td (  t) Tj ET
+BT /F1 10 Tf 64 479.00 Td (- aura_final/lib/features/institutions/activity/institution_activity_screen.dart) Tj ET
+BT /F1 10 Tf 64 466.00 Td (- aura_final/lib/features/institutions/correspondence/institution_correspondence_scr) Tj ET
+BT /F1 10 Tf 64 453.00 Td (  een.dart) Tj ET
+BT /F1 10 Tf 64 440.00 Td (- aura_final/lib/features/public/data/institution_action_repository.dart) Tj ET
+BT /F1 10 Tf 64 427.00 Td (- aura_final/lib/features/public/widgets/institution_action_sheet.dart) Tj ET
+BT /F1 10 Tf 64 414.00 Td (- aura_final/lib/features/public/presentation/thread_screen.dart) Tj ET
+BT /F1 10 Tf 64 401.00 Td (- aura_final/lib/features/public/widgets/reply_unit.dart) Tj ET
+BT /F1 10 Tf 64 388.00 Td (- aura_final/lib/features/feed/domain/feed_item.dart) Tj ET
+BT /F1 10 Tf 64 375.00 Td (- aura_final/lib/features/discourse_intelligence/widgets/discourse_continuity_panel.) Tj ET
+BT /F1 10 Tf 64 362.00 Td (  dart) Tj ET
+BT /F1 10 Tf 64 349.00 Td (- aura_final/lib/features/discourse_intelligence/providers.dart) Tj ET
+BT /F2 14 Tf 54 323.00 Td (13. Recommended Next Patch List) Tj ET
+BT /F1 10 Tf 54 297.00 Td (Patch 1:) Tj ET
+BT /F1 10 Tf 64 279.00 Td (- Add `PostIntent` enum and nullable `Post.intent`.) Tj ET
+BT /F1 10 Tf 64 266.00 Td (- Add DTO validation for public draft/publish intent and topics.) Tj ET
+BT /F1 10 Tf 64 253.00 Td (- Persist intent from composer.) Tj ET
+BT /F1 10 Tf 54 235.00 Td (Patch 2:) Tj ET
+BT /F1 10 Tf 64 217.00 Td (- Add routing tables and idempotent routing service.) Tj ET
+BT /F1 10 Tf 64 204.00 Td (- Add post-publish routing hook behind feature flag.) Tj ET
+BT /F1 10 Tf 54 186.00 Td (Patch 3:) Tj ET
+BT /F1 10 Tf 64 168.00 Td (- Add institution attention list/detail APIs.) Tj ET
+BT /F1 10 Tf 64 155.00 Td (- Add workspace route and dashboard counters.) Tj ET
+BT /F1 10 Tf 54 137.00 Td (Patch 4:) Tj ET
+BT /F1 10 Tf 64 119.00 Td (- Add official response link.) Tj ET
+BT /F1 10 Tf 64 106.00 Td (- Wire response from attention detail to existing official reply path.) Tj ET
+BT /F1 10 Tf 54 88.00 Td (Patch 5:) Tj ET
+BT /F1 10 Tf 64 70.00 Td (- Add commitment and progress records.) Tj ET
+BT /F1 8 Tf 286.00 28 Td (19) Tj ET
+endstream
+endobj
+22 0 obj
+<< /Length 377 >>
+stream
+BT /F1 10 Tf 64 736.00 Td (- Migrate public timeline rendering to canonical lifecycle where available.) Tj ET
+BT /F1 10 Tf 54 718.00 Td (Patch 6:) Tj ET
+BT /F1 10 Tf 64 700.00 Td (- Add resolve/close actions and public continuity endpoint.) Tj ET
+BT /F1 10 Tf 64 687.00 Td (- Update discourse intelligence to prefer canonical records.) Tj ET
+BT /F1 8 Tf 286.00 28 Td (20) Tj ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 3 0 R >>
+endobj
+24 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 4 0 R >>
+endobj
+25 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 5 0 R >>
+endobj
+26 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 6 0 R >>
+endobj
+27 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 7 0 R >>
+endobj
+28 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 8 0 R >>
+endobj
+29 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 9 0 R >>
+endobj
+30 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 10 0 R >>
+endobj
+31 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 11 0 R >>
+endobj
+32 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 12 0 R >>
+endobj
+33 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 13 0 R >>
+endobj
+34 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 14 0 R >>
+endobj
+35 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 15 0 R >>
+endobj
+36 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 16 0 R >>
+endobj
+37 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 17 0 R >>
+endobj
+38 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 18 0 R >>
+endobj
+39 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 19 0 R >>
+endobj
+40 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 20 0 R >>
+endobj
+41 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 21 0 R >>
+endobj
+42 0 obj
+<< /Type /Page /Parent 43 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 22 0 R >>
+endobj
+43 0 obj
+<< /Type /Pages /Kids [23 0 R 24 0 R 25 0 R 26 0 R 27 0 R 28 0 R 29 0 R 30 0 R 31 0 R 32 0 R 33 0 R 34 0 R 35 0 R 36 0 R 37 0 R 38 0 R 39 0 R 40 0 R 41 0 R 42 0 R] /Count 20 >>
+endobj
+44 0 obj
+<< /Type /Catalog /Pages 43 0 R >>
+endobj
+xref
+0 45
+0000000000 65535 f 
+0000000015 00000 n 
+0000000085 00000 n 
+0000000160 00000 n 
+0000003681 00000 n 
+0000006973 00000 n 
+0000010021 00000 n 
+0000012815 00000 n 
+0000015616 00000 n 
+0000018341 00000 n 
+0000020803 00000 n 
+0000023322 00000 n 
+0000026259 00000 n 
+0000029003 00000 n 
+0000031328 00000 n 
+0000033689 00000 n 
+0000036580 00000 n 
+0000039442 00000 n 
+0000042434 00000 n 
+0000045305 00000 n 
+0000048268 00000 n 
+0000051676 00000 n 
+0000055615 00000 n 
+0000056044 00000 n 
+0000056182 00000 n 
+0000056320 00000 n 
+0000056458 00000 n 
+0000056596 00000 n 
+0000056734 00000 n 
+0000056872 00000 n 
+0000057010 00000 n 
+0000057149 00000 n 
+0000057288 00000 n 
+0000057427 00000 n 
+0000057566 00000 n 
+0000057705 00000 n 
+0000057844 00000 n 
+0000057983 00000 n 
+0000058122 00000 n 
+0000058261 00000 n 
+0000058400 00000 n 
+0000058539 00000 n 
+0000058678 00000 n 
+0000058817 00000 n 
+0000059010 00000 n 
+trailer
+<< /Size 45 /Root 44 0 R >>
+startxref
+59061
+%%EOF

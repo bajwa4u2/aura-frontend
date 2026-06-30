@@ -80,6 +80,54 @@ class MeetingsRepository {
     return null;
   }
 
+  Future<List<MeetingOutcome>> getMeetingOutcomes(String meetingId) async {
+    final res = await _dio.get<Map<String, dynamic>>('/meetings/$meetingId/outcomes');
+    final data = res.data?['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(MeetingOutcome.fromJson)
+          .toList();
+    }
+    return const [];
+  }
+
+  Future<MeetingOutcome> updateOutcome(
+    String outcomeId, {
+    String? status,
+    String? ownerId,
+    String? dueDate,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/meetings/outcomes/$outcomeId',
+      data: {
+        if (status != null) 'status': status,
+        if (ownerId != null) 'ownerId': ownerId,
+        if (dueDate != null) 'dueDate': dueDate,
+      },
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return MeetingOutcome.fromJson(data);
+  }
+
+  Future<List<MeetingOutcome>> getInstitutionOutcomes(
+    String institutionId, {
+    String? status,
+  }) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/institution/$institutionId/outcomes',
+      queryParameters: {if (status != null) 'status': status},
+    );
+    final data = res.data?['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(MeetingOutcome.fromJson)
+          .toList();
+    }
+    return const [];
+  }
+
   Future<MeetingSummary> saveMeetingSummary(
     String id, {
     String? summaryText,
@@ -117,6 +165,7 @@ class MeetingsRepository {
     bool? waitingRoomEnabled,
     bool? recordingEnabled,
     bool? allowGuests,
+    String? preparationNotes,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/meetings/$id',
@@ -130,6 +179,7 @@ class MeetingsRepository {
           'waitingRoomEnabled': waitingRoomEnabled,
         if (recordingEnabled != null) 'recordingEnabled': recordingEnabled,
         if (allowGuests != null) 'allowGuests': allowGuests,
+        if (preparationNotes != null) 'preparationNotes': preparationNotes,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;
@@ -180,10 +230,10 @@ class MeetingsRepository {
     return JoinMeetingResult.fromJson(data);
   }
 
-  Future<GuestAuthResult> exchangeGuestAuth(String guestToken) async {
+  Future<GuestAuthResult> exchangeGuestAuth(String guestSessionId) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/public/meetings/guest-auth',
-      data: {'guestToken': guestToken},
+      data: {'guestSessionId': guestSessionId},
       options: Options(extra: const {'__skip_auth': true}),
     );
     final data = res.data!['data'] as Map<String, dynamic>;

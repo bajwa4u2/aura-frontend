@@ -6,6 +6,8 @@ import '../../../config.dart';
 import '../../institutions/ui/institution_ds.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import 'package:go_router/go_router.dart';
+import '../../institutions/data/institutions_repository.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 
@@ -198,6 +200,17 @@ class _ProfileCard extends ConsumerWidget {
                         context,
                       ).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
+                  } else if (v == 'bookings') {
+                    await _afterPopupClosed(
+                      context,
+                      () => showDialog<void>(
+                        context: context,
+                        builder: (_) => _BookingInboxDialog(
+                          profile: profile,
+                          institutionId: institutionId,
+                        ),
+                      ),
+                    );
                   } else if (v == 'edit') {
                     await _afterPopupClosed(
                       context,
@@ -214,6 +227,10 @@ class _ProfileCard extends ConsumerWidget {
                   const PopupMenuItem(
                     value: 'copy',
                     child: Text('Copy booking link'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'bookings',
+                    child: Text('View bookings'),
                   ),
                   const PopupMenuItem(
                     value: 'edit',
@@ -351,75 +368,13 @@ class _ProfileCard extends ConsumerWidget {
   }
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref) async {
-    final titleCtrl = TextEditingController(text: profile.meetingTitle);
-    final descCtrl = TextEditingController(
-      text: profile.meetingDescription ?? '',
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _EditProfileDialog(
+        profile: profile,
+        institutionId: institutionId,
+      ),
     );
-    try {
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Edit booking page'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Meeting title',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descCtrl,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                try {
-                  await ref
-                      .read(availabilityRepositoryProvider)
-                      .updateInstitutionProfile(
-                        institutionId,
-                        profile.id,
-                        meetingTitle: titleCtrl.text.trim(),
-                        meetingDescription: descCtrl.text.trim().isEmpty
-                            ? null
-                            : descCtrl.text.trim(),
-                      );
-                  await _refreshInstitutionProfiles(ref, institutionId);
-                  if (!dialogContext.mounted) return;
-                  Navigator.pop(dialogContext);
-                } catch (e) {
-                  if (!dialogContext.mounted) return;
-                  ScaffoldMessenger.of(
-                    dialogContext,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      titleCtrl.dispose();
-      descCtrl.dispose();
-    }
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
@@ -770,6 +725,36 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
   final _slugCtrl = TextEditingController();
   final _titleCtrl = TextEditingController();
   bool _saving = false;
+  List<Map<String, dynamic>> _members = [];
+  String? _selectedHostId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final data = await ref
+          .read(institutionsRepositoryProvider)
+          .listMembers(widget.institutionId);
+      final raw = data['members'];
+      if (raw is List && mounted) {
+        setState(() {
+          _members = raw
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  String _memberName(Map<String, dynamic> m) =>
+      (m['displayName'] as String?)?.isNotEmpty == true
+          ? m['displayName'] as String
+          : (m['handle'] as String? ?? 'Unknown');
 
   @override
   void dispose() {
@@ -819,6 +804,37 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
                 border: OutlineInputBorder(),
               ),
             ),
+            // J2: Assigned host selection using real institution members.
+            if (_members.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Assigned host (optional)',
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                ),
+                child: DropdownButton<String?>(
+                  value: _selectedHostId,
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  isDense: true,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Creator (default)'),
+                    ),
+                    ..._members.map(
+                      (m) => DropdownMenuItem<String?>(
+                        value: m['id'] as String,
+                        child: Text(_memberName(m)),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _selectedHostId = v),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -862,6 +878,7 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
             durationOptions: const [30, 60],
             defaultDuration: 30,
             timezone: DateTime.now().timeZoneName,
+            assignedHostId: _selectedHostId,
           );
       await _refreshInstitutionProfiles(ref, widget.institutionId);
       if (!mounted) return;
@@ -878,4 +895,478 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
 
   String _toSlug(String v) =>
       v.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+}
+
+// ── J2 + J3: Edit profile dialog (host assignment + operational settings) ─────
+
+class _EditProfileDialog extends ConsumerStatefulWidget {
+  final AvailabilityProfile profile;
+  final String institutionId;
+  const _EditProfileDialog(
+      {required this.profile, required this.institutionId});
+
+  @override
+  ConsumerState<_EditProfileDialog> createState() => _EditProfileDialogState();
+}
+
+class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
+  late final TextEditingController _titleCtrl;
+  late final TextEditingController _descCtrl;
+  late final TextEditingController _bufferBeforeCtrl;
+  late final TextEditingController _bufferAfterCtrl;
+  late final TextEditingController _minNoticeCtrl;
+  late final TextEditingController _maxBookingsCtrl;
+  late bool _requireApproval;
+  List<Map<String, dynamic>> _members = [];
+  String? _selectedHostId;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.profile;
+    _titleCtrl = TextEditingController(text: p.meetingTitle);
+    _descCtrl = TextEditingController(text: p.meetingDescription ?? '');
+    _bufferBeforeCtrl =
+        TextEditingController(text: p.bufferBefore.toString());
+    _bufferAfterCtrl =
+        TextEditingController(text: p.bufferAfter.toString());
+    _minNoticeCtrl =
+        TextEditingController(text: p.minimumNotice.toString());
+    _maxBookingsCtrl =
+        TextEditingController(text: p.maxBookingsPerDay?.toString() ?? '');
+    _requireApproval = p.requireApproval;
+    _selectedHostId = p.assignedHost?.id;
+    _loadMembers();
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    _bufferBeforeCtrl.dispose();
+    _bufferAfterCtrl.dispose();
+    _minNoticeCtrl.dispose();
+    _maxBookingsCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final data = await ref
+          .read(institutionsRepositoryProvider)
+          .listMembers(widget.institutionId);
+      final raw = data['members'];
+      if (raw is List && mounted) {
+        setState(() {
+          _members = raw
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  String _memberName(Map<String, dynamic> m) =>
+      (m['displayName'] as String?)?.isNotEmpty == true
+          ? m['displayName'] as String
+          : (m['handle'] as String? ?? 'Unknown');
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit booking page'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Meeting title',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            // J2: Host assignment from real institution member list.
+            if (_members.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Assigned host',
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                ),
+                child: DropdownButton<String?>(
+                  value: _selectedHostId,
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  isDense: true,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Creator (default)'),
+                    ),
+                    ..._members.map(
+                      (m) => DropdownMenuItem<String?>(
+                        value: m['id'] as String,
+                        child: Text(_memberName(m)),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _selectedHostId = v),
+                ),
+              ),
+            ],
+            // J3: Booking behavior settings.
+            const SizedBox(height: 20),
+            const Text(
+              'Booking behavior',
+              style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _bufferBeforeCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Buffer before (min)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _bufferAfterCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Buffer after (min)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minNoticeCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Min notice (min)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _maxBookingsCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Max per day',
+                      hintText: 'Unlimited',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _requireApproval,
+              title: const Text(
+                'Require approval',
+                style: TextStyle(fontSize: 14),
+              ),
+              onChanged: (v) => setState(() => _requireApproval = v),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final prevHostId = widget.profile.assignedHost?.id;
+      final hostChanged = _selectedHostId != prevHostId;
+      final desc = _descCtrl.text.trim();
+      await ref
+          .read(availabilityRepositoryProvider)
+          .updateInstitutionProfile(
+            widget.institutionId,
+            widget.profile.id,
+            meetingTitle: _titleCtrl.text.trim(),
+            meetingDescription: desc.isEmpty ? null : desc,
+            assignedHostId:
+                (hostChanged && _selectedHostId != null) ? _selectedHostId : null,
+            clearAssignedHost: hostChanged && _selectedHostId == null,
+            bufferBefore: int.tryParse(_bufferBeforeCtrl.text.trim()),
+            bufferAfter: int.tryParse(_bufferAfterCtrl.text.trim()),
+            minimumNotice: int.tryParse(_minNoticeCtrl.text.trim()),
+            maxBookingsPerDay:
+                int.tryParse(_maxBookingsCtrl.text.trim()),
+            requireApproval: _requireApproval,
+          );
+      await _refreshInstitutionProfiles(ref, widget.institutionId);
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+}
+
+// ── J1: Booking inbox dialog ──────────────────────────────────────────────────
+
+class _BookingInboxDialog extends ConsumerWidget {
+  final AvailabilityProfile profile;
+  final String institutionId;
+  const _BookingInboxDialog(
+      {required this.profile, required this.institutionId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key =
+        InstitutionProfileBookingsKey(institutionId, profile.id);
+    final async = ref.watch(institutionProfileBookingsProvider(key));
+
+    return AlertDialog(
+      title: Text('Bookings — ${profile.name}'),
+      contentPadding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 480),
+          child: async.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('Could not load bookings: $e'),
+            ),
+            data: (bookings) {
+              if (bookings.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.calendar_today_outlined,
+                          size: 40, color: Color(0xFF9CA3AF)),
+                      SizedBox(height: 12),
+                      Text(
+                        'No upcoming bookings',
+                        style: TextStyle(color: Color(0xFF9CA3AF)),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: bookings.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(height: 1, color: Color(0xFF1F2937)),
+                itemBuilder: (ctx, i) => _BookingRow(
+                  booking: bookings[i],
+                  institutionId: institutionId,
+                  onNavigate: () => Navigator.pop(context),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
+
+class _BookingRow extends StatelessWidget {
+  final Map<String, dynamic> booking;
+  final String institutionId;
+  final VoidCallback onNavigate;
+  const _BookingRow({
+    required this.booking,
+    required this.institutionId,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bookerName = booking['bookerName'] as String? ?? '';
+    final bookerEmail = booking['bookerEmail'] as String? ?? '';
+    final scheduledAt = booking['scheduledAt'] as String? ?? '';
+    final durationMinutes =
+        (booking['durationMinutes'] as num?)?.toInt() ?? 30;
+    final status = booking['status'] as String? ?? 'CONFIRMED';
+    final notes = booking['bookerNotes'] as String?;
+    final meetingId = booking['meetingId'] as String?;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  bookerName,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+              ),
+              _StatusChip(status: status),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            bookerEmail,
+            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(Icons.schedule_rounded,
+                  size: 13, color: Color(0xFF6B7280)),
+              const SizedBox(width: 4),
+              Text(
+                _formatTime(scheduledAt),
+                style: const TextStyle(
+                    fontSize: 12, color: Color(0xFF6B7280)),
+              ),
+              const SizedBox(width: 12),
+              const Icon(Icons.timelapse_rounded,
+                  size: 13, color: Color(0xFF6B7280)),
+              const SizedBox(width: 4),
+              Text(
+                '$durationMinutes min',
+                style: const TextStyle(
+                    fontSize: 12, color: Color(0xFF6B7280)),
+              ),
+            ],
+          ),
+          if (notes != null && notes.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Note: $notes',
+              style: const TextStyle(
+                  fontSize: 11, color: Color(0xFF9CA3AF)),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (meetingId != null) ...[
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: () {
+                onNavigate();
+                context.go(
+                    '/institution/$institutionId/meetings/$meetingId');
+              },
+              child: const Text(
+                'View meeting',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6C63FF),
+                  decoration: TextDecoration.underline,
+                  decorationColor: Color(0xFF6C63FF),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(String iso) {
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return iso;
+    final local = dt.toLocal();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final h = local.hour.toString().padLeft(2, '0');
+    final m = local.minute.toString().padLeft(2, '0');
+    return '${months[local.month - 1]} ${local.day}, ${local.year} · $h:$m';
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String status;
+  const _StatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final isConfirmed = status == 'CONFIRMED';
+    final color =
+        isConfirmed ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        isConfirmed ? 'Confirmed' : 'Pending',
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
 }

@@ -105,10 +105,12 @@ import 'features/realtime/presentation/realtime_lobby_screen.dart';
 import 'features/realtime/presentation/realtime_room_screen.dart';
 import 'features/meetings/presentation/booking_cancel_screen.dart';
 import 'features/meetings/presentation/booking_confirm_screen.dart';
+import 'features/meetings/presentation/booking_reschedule_screen.dart';
 import 'features/meetings/presentation/create_meeting_screen.dart';
 import 'features/meetings/presentation/guest_waiting_room_screen.dart';
 import 'features/meetings/presentation/institution_availability_screen.dart';
 import 'features/meetings/presentation/meeting_detail_screen.dart';
+import 'features/meetings/presentation/meeting_live_room_screen.dart';
 import 'features/meetings/presentation/meeting_room_screen.dart';
 import 'features/meetings/presentation/meeting_summary_screen.dart';
 import 'features/meetings/presentation/post_meeting_workspace_screen.dart';
@@ -965,6 +967,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/meetings/:meetingId/live',
+            builder: (context, state) => MeetingLiveRoomScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              sessionId: state.uri.queryParameters['sessionId'] ?? '',
+              isHost: state.uri.queryParameters['isHost'] == 'true',
+            ),
+          ),
+          GoRoute(
             path: '/meetings/:meetingId/summary',
             builder: (context, state) => MeetingSummaryScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
@@ -1006,6 +1016,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.pathParameters['institutionId'],
               sessionId: state.uri.queryParameters['sessionId'],
               returnTo: state.uri.queryParameters['returnTo'],
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/meetings/:meetingId/live',
+            builder: (context, state) => MeetingLiveRoomScreen(
+              meetingId: state.pathParameters['meetingId'] ?? '',
+              institutionId: state.pathParameters['institutionId'],
+              sessionId: state.uri.queryParameters['sessionId'] ?? '',
+              isHost: state.uri.queryParameters['isHost'] == 'true',
             ),
           ),
           GoRoute(
@@ -1053,6 +1072,35 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/meet/cancel/:token',
             builder: (context, state) =>
                 BookingCancelScreen(token: state.pathParameters['token'] ?? ''),
+          ),
+          // H4: reschedule routes
+          GoRoute(
+            path: '/i/:institutionSlug/meet/reschedule/:token',
+            builder: (context, state) {
+              final extra = state.extra;
+              final profile = extra is AvailabilityProfile ? extra : null;
+              if (profile != null) {
+                return BookingRescheduleScreen(
+                  token: state.pathParameters['token'] ?? '',
+                  profile: profile,
+                );
+              }
+              return const BookingCancelScreen(token: ''); // fallback
+            },
+          ),
+          GoRoute(
+            path: '/meet/reschedule/:token',
+            builder: (context, state) {
+              final extra = state.extra;
+              final profile = extra is AvailabilityProfile ? extra : null;
+              if (profile != null) {
+                return BookingRescheduleScreen(
+                  token: state.pathParameters['token'] ?? '',
+                  profile: profile,
+                );
+              }
+              return const BookingCancelScreen(token: ''); // fallback
+            },
           ),
           GoRoute(
             path: '/i/:institutionSlug/meet/:bookingSlug/book',
@@ -1654,7 +1702,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           insSessionType: state.uri.queryParameters['sessionType'],
           insSessionAudience: state.uri.queryParameters['sessionAudience'],
           insSessionTitle: state.uri.queryParameters['sessionTitle'],
-          guestToken: state.uri.queryParameters['guestToken'],
         ),
       ),
     ],

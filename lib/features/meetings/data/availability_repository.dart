@@ -108,6 +108,60 @@ class AvailabilityRepository {
     await _dio.patch<void>('/book/cancel/$token');
   }
 
+  Future<Map<String, dynamic>> rescheduleBookingByToken(
+    String token, {
+    required DateTime scheduledAt,
+    String? timezone,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/book/reschedule/$token',
+      data: {
+        'scheduledAt': scheduledAt.toUtc().toIso8601String(),
+        if (timezone != null) 'timezone': timezone,
+      },
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return data;
+  }
+
+  Future<AvailabilityProfile> updateProfile(
+    String profileId, {
+    String? name,
+    String? meetingTitle,
+    String? meetingDescription,
+    int? bufferBefore,
+    int? bufferAfter,
+    int? minimumNotice,
+    int? maximumAdvance,
+    int? maxBookingsPerDay,
+    String? timezone,
+    bool? isActive,
+    bool? allowGuests,
+    bool? waitingRoomEnabled,
+    bool? requireApproval,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/availability/$profileId',
+      data: {
+        if (name != null) 'name': name,
+        if (meetingTitle != null) 'meetingTitle': meetingTitle,
+        if (meetingDescription != null) 'meetingDescription': meetingDescription,
+        if (bufferBefore != null) 'bufferBefore': bufferBefore,
+        if (bufferAfter != null) 'bufferAfter': bufferAfter,
+        if (minimumNotice != null) 'minimumNotice': minimumNotice,
+        if (maximumAdvance != null) 'maximumAdvance': maximumAdvance,
+        if (maxBookingsPerDay != null) 'maxBookingsPerDay': maxBookingsPerDay,
+        if (timezone != null) 'timezone': timezone,
+        if (isActive != null) 'isActive': isActive,
+        if (allowGuests != null) 'allowGuests': allowGuests,
+        if (waitingRoomEnabled != null) 'waitingRoomEnabled': waitingRoomEnabled,
+        if (requireApproval != null) 'requireApproval': requireApproval,
+      },
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return AvailabilityProfile.fromJson(data);
+  }
+
   Future<void> addWindow(
     String profileId, {
     required String dayOfWeek,
@@ -208,10 +262,15 @@ class AvailabilityRepository {
     String? meetingTitle,
     String? meetingDescription,
     String? assignedHostId,
+    bool clearAssignedHost = false,
     bool? isActive,
     bool? allowGuests,
     bool? waitingRoomEnabled,
     bool? requireApproval,
+    int? bufferBefore,
+    int? bufferAfter,
+    int? minimumNotice,
+    int? maxBookingsPerDay,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/institution/$institutionId/availability/$profileId',
@@ -219,11 +278,16 @@ class AvailabilityRepository {
         if (name != null) 'name': name,
         if (meetingTitle != null) 'meetingTitle': meetingTitle,
         if (meetingDescription != null) 'meetingDescription': meetingDescription,
-        if (assignedHostId != null) 'assignedHostId': assignedHostId,
+        if (clearAssignedHost || assignedHostId != null)
+          'assignedHostId': clearAssignedHost ? null : assignedHostId,
         if (isActive != null) 'isActive': isActive,
         if (allowGuests != null) 'allowGuests': allowGuests,
         if (waitingRoomEnabled != null) 'waitingRoomEnabled': waitingRoomEnabled,
         if (requireApproval != null) 'requireApproval': requireApproval,
+        if (bufferBefore != null) 'bufferBefore': bufferBefore,
+        if (bufferAfter != null) 'bufferAfter': bufferAfter,
+        if (minimumNotice != null) 'minimumNotice': minimumNotice,
+        if (maxBookingsPerDay != null) 'maxBookingsPerDay': maxBookingsPerDay,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;
@@ -234,6 +298,15 @@ class AvailabilityRepository {
       String institutionId, String profileId) async {
     await _dio.delete<void>(
         '/institution/$institutionId/availability/$profileId');
+  }
+
+  // J1: Returns all non-cancelled bookings for an institution-owned profile.
+  Future<List<Map<String, dynamic>>> listInstitutionProfileBookings(
+      String institutionId, String profileId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+        '/institution/$institutionId/availability/$profileId/bookings');
+    final list = res.data!['data'] as List<dynamic>;
+    return list.map((b) => Map<String, dynamic>.from(b as Map)).toList();
   }
 
   Future<void> addInstitutionWindow(

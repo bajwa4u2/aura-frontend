@@ -257,13 +257,29 @@ class _MeetingSummary extends StatelessWidget {
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
-                  child: Text(
-                    timezone,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFFD1D5DB),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        timezone,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFFD1D5DB),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (profile.timezone.isNotEmpty &&
+                          profile.timezone != 'UTC' &&
+                          profile.timezone != timezone)
+                        Text(
+                          'Host: ${profile.timezone}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF6B7280),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -638,7 +654,7 @@ class _TimesPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: AuraSpace.s4),
                     Text(
-                      'Times shown in ${DateTime.now().timeZoneName}',
+                      'Times shown in your local time (${DateTime.now().timeZoneName})',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: const Color(0xFF9CA3AF),
                       ),

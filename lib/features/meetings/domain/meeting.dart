@@ -247,6 +247,7 @@ class Meeting {
   final MeetingHost? host;
   final List<MeetingParticipant> participants;
   final MeetingBookingDetails? booking;
+  final String? preparationNotes;
   final MeetingSummary? summary;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -274,6 +275,7 @@ class Meeting {
     this.host,
     required this.participants,
     this.booking,
+    this.preparationNotes,
     this.summary,
     required this.createdAt,
     required this.updatedAt,
@@ -312,6 +314,7 @@ class Meeting {
     booking: j['booking'] is Map<String, dynamic>
         ? MeetingBookingDetails.fromJson(j['booking'] as Map<String, dynamic>)
         : null,
+    preparationNotes: j['preparationNotes'] as String?,
     summary: j['summary'] is Map<String, dynamic>
         ? MeetingSummary.fromJson(j['summary'] as Map<String, dynamic>)
         : null,
@@ -346,7 +349,7 @@ class JoinMeetingResult {
   final String meetingId;
   final String? sessionId;
   final String action;
-  final String? guestToken;
+  final String? guestSessionId;
   final String meetingCode;
   final String title;
 
@@ -354,7 +357,7 @@ class JoinMeetingResult {
     required this.meetingId,
     this.sessionId,
     required this.action,
-    this.guestToken,
+    this.guestSessionId,
     required this.meetingCode,
     required this.title,
   });
@@ -364,7 +367,7 @@ class JoinMeetingResult {
         meetingId: j['meetingId'] as String,
         sessionId: j['sessionId'] as String?,
         action: j['action'] as String? ?? 'join',
-        guestToken: j['guestToken'] as String?,
+        guestSessionId: j['guestSessionId'] as String?,
         meetingCode: j['meetingCode'] as String? ?? '',
         title: j['title'] as String? ?? '',
       );
@@ -387,4 +390,64 @@ List<String> _asStringList(dynamic value) {
         .toList();
   }
   return const <String>[];
+}
+
+enum OutcomeStatus { open, completed, deferred, cancelled }
+
+OutcomeStatus _parseOutcomeStatus(dynamic v) {
+  switch ((v as String? ?? '').toUpperCase()) {
+    case 'COMPLETED':
+      return OutcomeStatus.completed;
+    case 'DEFERRED':
+      return OutcomeStatus.deferred;
+    case 'CANCELLED':
+      return OutcomeStatus.cancelled;
+    default:
+      return OutcomeStatus.open;
+  }
+}
+
+class MeetingOutcome {
+  final String id;
+  final String meetingId;
+  final String type;
+  final String text;
+  final OutcomeStatus status;
+  final String? ownerId;
+  final String? ownerName;
+  final DateTime? dueDate;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const MeetingOutcome({
+    required this.id,
+    required this.meetingId,
+    required this.type,
+    required this.text,
+    required this.status,
+    this.ownerId,
+    this.ownerName,
+    this.dueDate,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory MeetingOutcome.fromJson(Map<String, dynamic> j) {
+    final owner = j['owner'];
+    final ownerMap = owner is Map ? Map<String, dynamic>.from(owner) : null;
+    return MeetingOutcome(
+      id: j['id'] as String,
+      meetingId: j['meetingId'] as String,
+      type: j['type'] as String? ?? '',
+      text: j['text'] as String? ?? '',
+      status: _parseOutcomeStatus(j['status']),
+      ownerId: ownerMap?['id'] as String?,
+      ownerName: ownerMap?['displayName'] as String?,
+      dueDate: j['dueDate'] != null
+          ? DateTime.tryParse(j['dueDate'] as String)
+          : null,
+      createdAt: DateTime.parse(j['createdAt'] as String),
+      updatedAt: DateTime.parse(j['updatedAt'] as String),
+    );
+  }
 }

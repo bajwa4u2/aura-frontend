@@ -27,6 +27,7 @@ class MeetingSummaryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final meetingAsync = ref.watch(meetingProvider(meetingId));
     final summaryAsync = ref.watch(meetingSummaryProvider(meetingId));
+    final outcomesAsync = ref.watch(meetingOutcomesProvider(meetingId));
 
     return meetingAsync.when(
       loading: () => AuraScaffold(
@@ -45,6 +46,24 @@ class MeetingSummaryScreen extends ConsumerWidget {
           isHost: true,
         );
         final summary = summaryAsync.valueOrNull ?? meeting.summary;
+        final outcomes = outcomesAsync.valueOrNull ?? <MeetingOutcome>[];
+        final outcomeStatusByText = {
+          for (final o in outcomes) o.text: o.status,
+        };
+        // OPEN outcome id keyed by text — used to wire the mark-complete tap.
+        final openOutcomeIdByText = {
+          for (final o in outcomes)
+            if (o.status == OutcomeStatus.open) o.text: o.id,
+        };
+
+        Future<void> markComplete(String outcomeId) async {
+          try {
+            await ref
+                .read(meetingsRepositoryProvider)
+                .updateOutcome(outcomeId, status: 'COMPLETED');
+          } catch (_) {}
+          ref.invalidate(meetingOutcomesProvider(meetingId));
+        }
         final booking = meeting.booking;
         final institutionName =
             booking?.institution?.name ??
@@ -193,12 +212,16 @@ class MeetingSummaryScreen extends ConsumerWidget {
                       const SizedBox(height: AuraSpace.s16),
                       _SummaryTile(
                         title: 'Follow-up',
+                        initiallyExpanded: true,
                         children: [
                           _FollowUpBlock(
                             title: 'Decisions',
                             values: summary?.decisions ?? const [],
                             fallback:
                                 'Record the decision you reached in the meeting.',
+                            statusByText: outcomeStatusByText,
+                            openIdByText: openOutcomeIdByText,
+                            onMarkComplete: markComplete,
                           ),
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
@@ -206,6 +229,9 @@ class MeetingSummaryScreen extends ConsumerWidget {
                             values: summary?.commitments ?? const [],
                             fallback:
                                 'Capture anything the host or guest agreed to do next.',
+                            statusByText: outcomeStatusByText,
+                            openIdByText: openOutcomeIdByText,
+                            onMarkComplete: markComplete,
                           ),
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
@@ -213,12 +239,18 @@ class MeetingSummaryScreen extends ConsumerWidget {
                             values: summary?.actions ?? const [],
                             fallback:
                                 'Track the work that should continue after the meeting.',
+                            statusByText: outcomeStatusByText,
+                            openIdByText: openOutcomeIdByText,
+                            onMarkComplete: markComplete,
                           ),
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
                             title: 'Issues',
                             values: summary?.issues ?? const [],
                             fallback: 'Record any blockers or open questions.',
+                            statusByText: outcomeStatusByText,
+                            openIdByText: openOutcomeIdByText,
+                            onMarkComplete: markComplete,
                           ),
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
@@ -226,6 +258,9 @@ class MeetingSummaryScreen extends ConsumerWidget {
                             values: summary?.followUps ?? const [],
                             fallback:
                                 'Record the next check-in, reply, or milestone.',
+                            statusByText: outcomeStatusByText,
+                            openIdByText: openOutcomeIdByText,
+                            onMarkComplete: markComplete,
                           ),
                         ],
                       ),
@@ -409,8 +444,13 @@ class _SummaryPanel extends StatelessWidget {
 class _SummaryTile extends StatelessWidget {
   final String title;
   final List<Widget> children;
+  final bool initiallyExpanded;
 
-  const _SummaryTile({required this.title, required this.children});
+  const _SummaryTile({
+    required this.title,
+    required this.children,
+    this.initiallyExpanded = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -421,6 +461,7 @@ class _SummaryTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
         tilePadding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s18,
           vertical: AuraSpace.s4,
@@ -501,11 +542,18 @@ class _FollowUpBlock extends StatelessWidget {
   final String title;
   final List<String> values;
   final String fallback;
+  final Map<String, OutcomeStatus> statusByText;
+  // text → outcomeId for OPEN items only; present means item is tappable.
+  final Map<String, String> openIdByText;
+  final Future<void> Function(String outcomeId)? onMarkComplete;
 
   const _FollowUpBlock({
     required this.title,
     required this.values,
     required this.fallback,
+    this.statusByText = const {},
+    this.openIdByText = const {},
+    this.onMarkComplete,
   });
 
   @override
@@ -536,18 +584,77 @@ class _FollowUpBlock extends StatelessWidget {
                 ),
               )
             else
-              ...values.map(
-                (value) => Padding(
+              ...values.map((value) {
+                final outcomeId = openIdByText[value];
+                final canComplete =
+                    outcomeId != null && onMarkComplete != null;
+                return Padding(
                   padding: const EdgeInsets.only(bottom: AuraSpace.s6),
-                  child: Text(
-                    '• $value',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFFE5E7EB),
-                    ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '• $value',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: const Color(0xFFE5E7EB),
+                              ),
+                        ),
+                      ),
+                      if (statusByText.containsKey(value))
+                        _OutcomeStatusBadge(statusByText[value]!),
+                      if (canComplete)
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => onMarkComplete!(outcomeId),
+                          child: const Padding(
+                            padding: EdgeInsets.only(left: 6, top: 1),
+                            child: Tooltip(
+                              message: 'Mark complete',
+                              child: Icon(
+                                Icons.check_circle_outline_rounded,
+                                size: 18,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-              ),
+                );
+              }),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OutcomeStatusBadge extends StatelessWidget {
+  final OutcomeStatus status;
+  const _OutcomeStatusBadge(this.status);
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, bg, fg) = switch (status) {
+      OutcomeStatus.completed => ('Done', const Color(0xFF064E3B), const Color(0xFF6EE7B7)),
+      OutcomeStatus.deferred  => ('Deferred', const Color(0xFF1E3A5F), const Color(0xFF93C5FD)),
+      OutcomeStatus.cancelled => ('Cancelled', const Color(0xFF3B1F1F), const Color(0xFFFCA5A5)),
+      OutcomeStatus.open      => ('Open', const Color(0xFF1C2B1F), const Color(0xFF86EFAC)),
+    };
+    return Container(
+      margin: const EdgeInsets.only(left: 6, top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

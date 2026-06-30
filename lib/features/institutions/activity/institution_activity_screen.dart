@@ -59,6 +59,23 @@ String _summaryForKind(InstitutionActivityEvent e) {
       return 'Institution was suspended.';
     case 'INSTITUTION_UPDATED':
       return 'Institution profile was updated.';
+    case 'MEETING_STARTED':
+      final mTitle = e.metadata?['meetingTitle']?.toString().trim() ?? '';
+      return mTitle.isNotEmpty
+          ? '$actorName started "$mTitle".'
+          : '$actorName started a meeting.';
+    case 'MEETING_ENDED':
+      final mTitle = e.metadata?['meetingTitle']?.toString().trim() ?? '';
+      return mTitle.isNotEmpty
+          ? 'Meeting "$mTitle" ended.'
+          : 'A meeting ended.';
+    case 'MEETING_OUTCOMES_SAVED':
+      final mTitle = e.metadata?['meetingTitle']?.toString().trim() ?? '';
+      final count = e.metadata?['outcomeCount'];
+      final countLabel = count != null ? ' ($count item${count == 1 ? '' : 's'})' : '';
+      return mTitle.isNotEmpty
+          ? '$actorName saved outcomes for "$mTitle"$countLabel.'
+          : '$actorName saved meeting outcomes$countLabel.';
     default:
       return e.kind;
   }

@@ -90,15 +90,15 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _ProfileCard extends StatelessWidget {
+class _ProfileCard extends ConsumerWidget {
   final AvailabilityProfile profile;
   const _ProfileCard({required this.profile});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final _baseHost = AppConfig.publicWebUrl.replaceFirst(RegExp(r'^https?://'), '');
-    final publicUrl = '$_baseHost${profile.publicUrl}';
+    final baseHost = AppConfig.publicWebUrl.replaceFirst(RegExp(r'^https?://'), '');
+    final publicUrl = '$baseHost${profile.publicUrl}';
 
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
@@ -106,7 +106,7 @@ class _ProfileCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF374151).withOpacity(0.4),
+          color: const Color(0xFF374151).withValues(alpha: 0.4),
         ),
       ),
       child: Column(
@@ -124,7 +124,7 @@ class _ProfileCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.12),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text('Active',
@@ -193,6 +193,21 @@ class _ProfileCard extends StatelessWidget {
             ],
           ),
 
+          const SizedBox(height: AuraSpace.s10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.settings_rounded, size: 16),
+                  label: const Text('Edit settings'),
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => _EditProfileDialog(profile: profile, ref: ref),
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AuraSpace.s10),
           _WindowManagerSection(profile: profile),
         ],
@@ -275,7 +290,7 @@ class _WindowManagerSection extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: selectedDay,
+              initialValue: selectedDay,
               decoration: const InputDecoration(
                   labelText: 'Day', border: OutlineInputBorder()),
               items: const {
@@ -471,4 +486,146 @@ class _CreateProfileDialogState
 
   String _toSlug(String v) =>
       v.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+}
+
+// H9: Edit profile settings dialog
+class _EditProfileDialog extends ConsumerStatefulWidget {
+  final AvailabilityProfile profile;
+  final WidgetRef ref;
+  const _EditProfileDialog({required this.profile, required this.ref});
+
+  @override
+  ConsumerState<_EditProfileDialog> createState() => _EditProfileDialogState();
+}
+
+class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
+  late final TextEditingController _bufferBeforeCtrl;
+  late final TextEditingController _bufferAfterCtrl;
+  late final TextEditingController _minNoticeCtrl;
+  late final TextEditingController _maxPerDayCtrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bufferBeforeCtrl = TextEditingController(
+        text: widget.profile.bufferBefore.toString());
+    _bufferAfterCtrl = TextEditingController(
+        text: widget.profile.bufferAfter.toString());
+    _minNoticeCtrl = TextEditingController(
+        text: widget.profile.minimumNotice.toString());
+    _maxPerDayCtrl = TextEditingController(
+        text: widget.profile.maxBookingsPerDay?.toString() ?? '');
+  }
+
+  @override
+  void dispose() {
+    _bufferBeforeCtrl.dispose();
+    _bufferAfterCtrl.dispose();
+    _minNoticeCtrl.dispose();
+    _maxPerDayCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit booking settings'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _IntField(
+              controller: _bufferBeforeCtrl,
+              label: 'Buffer before (min)',
+              hint: 'Minutes blocked before each booking',
+            ),
+            const SizedBox(height: 12),
+            _IntField(
+              controller: _bufferAfterCtrl,
+              label: 'Buffer after (min)',
+              hint: 'Minutes blocked after each booking',
+            ),
+            const SizedBox(height: 12),
+            _IntField(
+              controller: _minNoticeCtrl,
+              label: 'Minimum notice (min)',
+              hint: 'Earliest a booking can be made',
+            ),
+            const SizedBox(height: 12),
+            _IntField(
+              controller: _maxPerDayCtrl,
+              label: 'Max bookings per day (optional)',
+              hint: 'Leave blank for no limit',
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
+              : const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final maxPerDay = _maxPerDayCtrl.text.trim().isEmpty
+          ? null
+          : int.tryParse(_maxPerDayCtrl.text.trim());
+      await widget.ref.read(availabilityRepositoryProvider).updateProfile(
+            widget.profile.id,
+            bufferBefore: int.tryParse(_bufferBeforeCtrl.text.trim()),
+            bufferAfter: int.tryParse(_bufferAfterCtrl.text.trim()),
+            minimumNotice: int.tryParse(_minNoticeCtrl.text.trim()),
+            maxBookingsPerDay: maxPerDay,
+          );
+      widget.ref.invalidate(myAvailabilityProfilesProvider);
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+}
+
+class _IntField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+
+  const _IntField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
 }
