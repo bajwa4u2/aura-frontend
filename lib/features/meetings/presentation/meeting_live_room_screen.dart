@@ -84,8 +84,34 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   bool _showNotes = false;
   bool _meetingEnded = false;
   bool _togglingScreenShare = false;
+  // L3c: auto-hide control bar
+  bool _controlsVisible = true;
+  Timer? _controlBarTimer;
+  // L2: arrival/departure toast
+  String? _arrivalToast;
+  Timer? _arrivalTimer;
   late final DateTime _joinedAt;
   late final MeetingTransportBridge _bridge;
+
+  void _scheduleControlBarHide() {
+    _controlBarTimer?.cancel();
+    _controlBarTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _controlsVisible = false);
+    });
+  }
+
+  void _onUserInteraction() {
+    if (!_controlsVisible) setState(() => _controlsVisible = true);
+    _scheduleControlBarHide();
+  }
+
+  void _showArrivalToast(String message) {
+    _arrivalTimer?.cancel();
+    setState(() => _arrivalToast = message);
+    _arrivalTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _arrivalToast = null);
+    });
+  }
 
   @override
   void initState() {
@@ -100,11 +126,14 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
       ref.read(realtimeControllerProvider.notifier).join(widget.sessionId);
+      _scheduleControlBarHide();
     });
   }
 
   @override
   void dispose() {
+    _controlBarTimer?.cancel();
+    _arrivalTimer?.cancel();
     ref
         .read(realtimeControllerProvider.notifier)
         .setCallRoomVisible(false);
@@ -215,6 +244,25 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       },
     );
 
+    // L2: participant arrival/departure toasts
+    ref.listen(
+      realtimeControllerProvider.select((s) => s.participants),
+      (prev, next) {
+        final prevList = prev ?? const <RealtimeParticipant>[];
+        if (next.length > prevList.length) {
+          final added = next.where(
+            (p) => !prevList.any((q) => q.userId == p.userId),
+          );
+          final name = (added.firstOrNull?.displayName ?? '').trim();
+          _showArrivalToast(
+            name.isNotEmpty ? '$name has joined' : 'Someone has joined',
+          );
+        } else if (next.length < prevList.length && next.isNotEmpty) {
+          _showArrivalToast('A participant has left');
+        }
+      },
+    );
+
     final remoteRenderers = state.remoteRenderers;
     final localRenderer = state.localRenderer;
 
@@ -227,7 +275,11 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF030712),
-      body: Stack(
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: _onUserInteraction,
+        onPanUpdate: (_) => _onUserInteraction(),
+        child: Stack(
         children: [
           // E3 — Video grid fills the screen
           Positioned.fill(
@@ -237,6 +289,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               micOn: state.microphoneEnabled,
               isLocalScreenSharing: state.isScreenSharing,
               screenSharingPeerId: screenSharingPeerId,
+              waitingParticipants: state.participants,
             ),
           ),
 
@@ -303,12 +356,50 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               ),
             ),
 
+          // L2: arrival/departure toast
+          if (_arrivalToast != null)
+            Positioned(
+              top: 80,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: AnimatedOpacity(
+                  opacity: _arrivalToast != null ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xCC0F172A),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
+                    ),
+                    child: Text(
+                      _arrivalToast ?? '',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
           // E4 — Control bar at bottom. All media ops route through _bridge.
+          // L3c: auto-hides after 4s of inactivity; reappears on any interaction.
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: _MeetingControlBar(
+            child: AnimatedOpacity(
+              opacity: _controlsVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 250),
+              child: IgnorePointer(
+                ignoring: !_controlsVisible,
+                child: _MeetingControlBar(
               state: state,
               isHost: widget.isHost,
               showParticipants: _showParticipants,
@@ -330,8 +421,11 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               onEndMeeting: _endMeeting,
               onLeaveMeeting: _leaveMeeting,
             ),
+              ),
+            ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -347,12 +441,14 @@ class _MeetingVideoGrid extends StatelessWidget {
   final bool micOn;
   final bool isLocalScreenSharing;
   final String? screenSharingPeerId;
+  final List<RealtimeParticipant> waitingParticipants;
 
   const _MeetingVideoGrid({
     required this.localRenderer,
     required this.remoteRenderers,
     required this.micOn,
     required this.isLocalScreenSharing,
+    required this.waitingParticipants,
     this.screenSharingPeerId,
   });
 
@@ -430,12 +526,12 @@ class _MeetingVideoGrid extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.08),
                 ),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _PulsingReadyDot(),
-                  SizedBox(height: 12),
-                  Text(
+                  const _PulsingReadyDot(),
+                  const SizedBox(height: 12),
+                  const Text(
                     'You\'re ready',
                     style: TextStyle(
                       color: Colors.white,
@@ -444,10 +540,10 @@ class _MeetingVideoGrid extends StatelessWidget {
                       letterSpacing: -0.3,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
-                    'Waiting for guests to join…',
-                    style: TextStyle(
+                    _waitingLabel(waitingParticipants),
+                    style: const TextStyle(
                       color: Color(0xFF9CA3AF),
                       fontSize: 14,
                     ),
@@ -545,6 +641,18 @@ class _MeetingVideoGrid extends StatelessWidget {
         );
       },
     );
+  }
+
+  static String _waitingLabel(List<RealtimeParticipant> participants) {
+    if (participants.isEmpty) return 'Waiting for guests to join…';
+    final names = participants
+        .map((p) => (p.displayName ?? '').trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+    if (names.isEmpty) return 'Waiting for guests to join…';
+    if (names.length == 1) return 'Waiting for ${names[0]} to join…';
+    if (names.length == 2) return 'Waiting for ${names[0]} and ${names[1]}…';
+    return 'Waiting for ${names[0]} and ${names.length - 1} others…';
   }
 }
 
@@ -1147,27 +1255,40 @@ class _MeetingNotesDrawer extends ConsumerStatefulWidget {
 
 class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
   late final TextEditingController _ctrl;
+  Timer? _debounce;
   bool _saving = false;
+  bool _saved = false;
 
   @override
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.initialNotes ?? '');
+    _ctrl.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _ctrl.removeListener(_onTextChanged);
     _ctrl.dispose();
     super.dispose();
   }
 
+  void _onTextChanged() {
+    if (_saved) setState(() => _saved = false);
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 1500), _save);
+  }
+
   Future<void> _save() async {
+    if (_saving) return;
     setState(() => _saving = true);
     try {
       await ref
           .read(meetingsRepositoryProvider)
           .updateMeeting(widget.meetingId, preparationNotes: _ctrl.text.trim());
       ref.invalidate(meetingProvider(widget.meetingId));
+      if (mounted) setState(() => _saved = true);
     } catch (_) {
       // Best-effort during live session; don't interrupt the meeting.
     } finally {
@@ -1188,7 +1309,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
               children: [
                 const Expanded(
                   child: Text(
-                    'Preparation notes',
+                    'Notes',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -1198,13 +1319,23 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
                 ),
                 if (_saving)
                   const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: 14,
+                    height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Color(0xFF6C63FF),
                     ),
+                  )
+                else if (_saved)
+                  const Text(
+                    'Saved',
+                    style: TextStyle(
+                      color: Color(0xFF10B981),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                const SizedBox(width: 4),
                 IconButton(
                   icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
                   onPressed: widget.onClose,
@@ -1227,20 +1358,10 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
                   fontSize: 13,
                 ),
                 decoration: const InputDecoration(
-                  hintText: 'Quick notes for this meeting...',
+                  hintText: 'Quick notes for this meeting…',
                   hintStyle: TextStyle(color: Color(0xFF4B5563)),
                   border: InputBorder.none,
                 ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonal(
-                onPressed: _saving ? null : _save,
-                child: const Text('Save notes'),
               ),
             ),
           ),
