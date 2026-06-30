@@ -13,6 +13,7 @@ import '../domain/meeting.dart';
 import '../domain/meeting_identity.dart';
 import '../domain/meeting_room.dart';
 import 'meeting_lifecycle_presenter.dart';
+import 'meeting_status_chip.dart';
 
 class MeetingsHomeScreen extends ConsumerStatefulWidget {
   final String? institutionId;
@@ -511,7 +512,7 @@ class _MeetingCard extends ConsumerWidget {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              _StatusChip(lifecycle: lifecycle),
+                              MeetingStatusChip(lifecycle: lifecycle),
                             ],
                           ),
                           const SizedBox(height: AuraSpace.s6),
@@ -757,65 +758,6 @@ class _MeetingIcon extends StatelessWidget {
             : Icons.calendar_today_rounded,
         color: Colors.white,
         size: 20,
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final MeetingLifecycleViewModel lifecycle;
-
-  const _StatusChip({required this.lifecycle});
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (lifecycle.status) {
-      MeetingLifecycleStatus.scheduled => (
-        'Scheduled',
-        const Color(0xFF6C63FF),
-      ),
-      MeetingLifecycleStatus.startingSoon => (
-        'Starting soon',
-        const Color(0xFF8B85FF),
-      ),
-      MeetingLifecycleStatus.guestWaiting => (
-        'Guest waiting',
-        const Color(0xFFF59E0B),
-      ),
-      MeetingLifecycleStatus.hostWaiting => (
-        'Host waiting',
-        const Color(0xFFF59E0B),
-      ),
-      MeetingLifecycleStatus.inProgress => (
-        'In progress',
-        const Color(0xFF10B981),
-      ),
-      MeetingLifecycleStatus.ended => ('Ended', const Color(0xFF9CA3AF)),
-      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
-      MeetingLifecycleStatus.cancelled => (
-        'Cancelled',
-        const Color(0xFFEF4444),
-      ),
-      MeetingLifecycleStatus.connectionIssue => (
-        'Connection issue',
-        const Color(0xFFF97316),
-      ),
-      MeetingLifecycleStatus.unknown => ('Scheduled', const Color(0xFF9CA3AF)),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }
