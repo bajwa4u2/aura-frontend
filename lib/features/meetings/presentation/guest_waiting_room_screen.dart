@@ -95,7 +95,9 @@ class _GuestWaitingRoomScreenState
     final livePath = widget.institutionId == null
         ? '/meetings/${widget.meetingId}/live'
         : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/live';
-    context.push('$livePath?sessionId=$sessionId&isHost=false');
+    final code = (widget.meetingCode ?? '').trim();
+    final codeParam = code.isNotEmpty ? '&code=${Uri.encodeComponent(code)}' : '';
+    context.push('$livePath?sessionId=$sessionId&isHost=false$codeParam');
   }
 
   @override

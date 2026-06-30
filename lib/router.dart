@@ -340,8 +340,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     // Pre-join screen — guests arrive here from booking confirmation emails
     if (path.startsWith('/meetings/join/')) return true;
+    // Guest-reachable meeting paths: room (pre-live lobby), waiting, live, summary
     if (RegExp(
-      r'^/meetings/[^/]+/(room|waiting|summary|post-meeting)$',
+      r'^/meetings/[^/]+/(room|waiting|live|summary|post-meeting)$',
     ).hasMatch(path)) {
       return true;
     }
@@ -972,6 +973,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               meetingId: state.pathParameters['meetingId'] ?? '',
               sessionId: state.uri.queryParameters['sessionId'] ?? '',
               isHost: state.uri.queryParameters['isHost'] == 'true',
+              meetingCode: state.uri.queryParameters['code'],
             ),
           ),
           GoRoute(
@@ -1025,6 +1027,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.pathParameters['institutionId'],
               sessionId: state.uri.queryParameters['sessionId'] ?? '',
               isHost: state.uri.queryParameters['isHost'] == 'true',
+              meetingCode: state.uri.queryParameters['code'],
             ),
           ),
           GoRoute(

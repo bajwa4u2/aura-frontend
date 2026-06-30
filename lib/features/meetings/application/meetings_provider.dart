@@ -96,6 +96,17 @@ final meetingByCodeProvider = FutureProvider.family<Meeting, String>((
   return repo.getMeetingByCode(code);
 });
 
+// Meeting context for guest deep-links that arrive without a ?code= param.
+// Requires a valid guest JWT in the token store; the backend validates the
+// JWT's meetingId claim against the path parameter before returning data.
+final guestMeetingContextProvider = FutureProvider.family<Meeting, String>((
+  ref,
+  meetingId,
+) async {
+  final repo = ref.watch(meetingsRepositoryProvider);
+  return repo.getGuestMeetingContext(meetingId);
+});
+
 // My availability profiles
 final myAvailabilityProfilesProvider =
     FutureProvider<List<AvailabilityProfile>>((ref) async {

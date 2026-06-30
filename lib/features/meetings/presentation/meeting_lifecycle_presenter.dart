@@ -145,16 +145,28 @@ class MeetingLifecyclePresenter {
         canRetryTransport = true;
         break;
       case MeetingRoomStatus.startingSoon:
-        status = MeetingLifecycleStatus.startingSoon;
-        label = 'Starting soon';
-        subtitle = minutesToStart == null
-            ? 'The meeting is about to begin.'
-            : 'Starts in ${minutesToStart.abs()} min';
-        cue = 'Everything is ready.';
-        primaryAction = 'Start meeting';
-        canStart = true;
-        canEnter = true;
-        canRetryTransport = true;
+        if (isPastScheduledEnd) {
+          status = MeetingLifecycleStatus.missed;
+          label = 'Missed';
+          subtitle = 'The scheduled time passed without an active meeting.';
+          cue = 'Review the meeting and decide whether to follow up.';
+          primaryAction = 'Review missed';
+          canStart = false;
+          canEnter = false;
+          canRetryTransport = false;
+          isTerminal = true;
+        } else {
+          status = MeetingLifecycleStatus.startingSoon;
+          label = 'Starting soon';
+          subtitle = minutesToStart == null
+              ? 'The meeting is about to begin.'
+              : 'Starts in ${minutesToStart.abs()} min';
+          cue = 'Everything is ready.';
+          primaryAction = 'Start meeting';
+          canStart = true;
+          canEnter = true;
+          canRetryTransport = true;
+        }
         break;
       case MeetingRoomStatus.waiting:
       case MeetingRoomStatus.scheduled:

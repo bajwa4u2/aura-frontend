@@ -59,6 +59,9 @@ class MeetingLiveRoomScreen extends ConsumerStatefulWidget {
   final String sessionId;
   final String? institutionId;
   final bool isHost;
+  // meetingCode allows guest sessions to fetch meeting metadata via the
+  // public endpoint when the member endpoint is inaccessible for the token.
+  final String? meetingCode;
 
   const MeetingLiveRoomScreen({
     super.key,
@@ -66,6 +69,7 @@ class MeetingLiveRoomScreen extends ConsumerStatefulWidget {
     required this.sessionId,
     this.institutionId,
     this.isHost = false,
+    this.meetingCode,
   });
 
   @override
@@ -168,8 +172,20 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(realtimeControllerProvider);
+    // Provider priority for meeting metadata:
+    // 1. meetingProvider   — member JWT; succeeds for host/member sessions.
+    // 2. meetingByCodeProvider — public endpoint; used when ?code= is present (normal guest flow).
+    // 3. guestMeetingContextProvider — guest JWT endpoint; fallback for cold-launch
+    //    deep-links that reach the live room without a ?code= param. Only activated
+    //    when the member endpoint fails AND no code was supplied.
     final meetingAsync = ref.watch(meetingProvider(widget.meetingId));
-    final meeting = meetingAsync.valueOrNull;
+    final codeAsync = (widget.meetingCode?.trim().isNotEmpty == true)
+        ? ref.watch(meetingByCodeProvider(widget.meetingCode!.trim()))
+        : null;
+    final contextAsync = (codeAsync == null && meetingAsync.hasError)
+        ? ref.watch(guestMeetingContextProvider(widget.meetingId))
+        : null;
+    final meeting = meetingAsync.valueOrNull ?? codeAsync?.valueOrNull ?? contextAsync?.valueOrNull;
 
     // I3: local user ID for host participant controls.
     final meAsync = ref.watch(authMeDataProvider);
@@ -366,74 +382,108 @@ class _MeetingVideoGrid extends StatelessWidget {
   }
 
   Widget _buildWaitingLayout(RTCVideoRenderer? local, bool isScreenSharing) {
-    return Container(
-      color: const Color(0xFF030712),
-      child: Stack(
-        children: [
-          if (local != null)
-            Center(
-              child: SizedBox(
-                width: 280,
-                height: 210,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: RTCVideoView(
-                    local,
-                    mirror: true,
-                    objectFit:
-                        RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                  ),
-                ),
+    return Stack(
+      children: [
+        // Local camera fills the full background when available.
+        if (local != null)
+          Positioned.fill(
+            child: RTCVideoView(
+              local,
+              mirror: true,
+              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+            ),
+          )
+        else
+          const Positioned.fill(
+            child: ColoredBox(color: Color(0xFF030712)),
+          ),
+
+        // Dark gradient overlay — lets text sit above the camera feed.
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF030712).withValues(alpha: 0.55),
+                  Colors.transparent,
+                  Colors.transparent,
+                  const Color(0xFF030712).withValues(alpha: 0.70),
+                ],
+                stops: const [0.0, 0.25, 0.65, 1.0],
               ),
             ),
+          ),
+        ),
+
+        // Centre presence card — shows host is live and ready.
+        if (!isScreenSharing)
           Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 240),
-                if (isScreenSharing)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6C63FF).withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.screen_share_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Sharing your screen',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  const Text(
-                    'Waiting for others to join...',
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 32),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF030712).withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _PulsingReadyDot(),
+                  SizedBox(height: 12),
+                  Text(
+                    'You\'re ready',
                     style: TextStyle(
-                      color: Color(0xFF9CA3AF),
-                      fontSize: 15,
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
                     ),
                   ),
-              ],
+                  SizedBox(height: 6),
+                  Text(
+                    'Waiting for guests to join…',
+                    style: TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+
+        // Screen-share badge.
+        if (isScreenSharing)
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6C63FF).withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.screen_share_rounded, color: Colors.white, size: 14),
+                  SizedBox(width: 6),
+                  Text(
+                    'Sharing your screen',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -518,16 +568,16 @@ class _MeetingLiveHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xCC030712), Colors.transparent],
+          colors: [Color(0xDD030712), Colors.transparent],
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (institution != null) ...[
             CircleAvatar(
-              radius: 14,
+              radius: 18,
               backgroundColor: const Color(0xFF1E293B),
               backgroundImage: institution.logoUrl?.trim().isNotEmpty == true
                   ? NetworkImage(institution.logoUrl!)
@@ -536,11 +586,11 @@ class _MeetingLiveHeader extends StatelessWidget {
                   ? null
                   : const Icon(
                       Icons.business_rounded,
-                      size: 14,
+                      size: 18,
                       color: Color(0xFF9CA3AF),
                     ),
             ),
-            const SizedBox(width: AuraSpace.s8),
+            const SizedBox(width: AuraSpace.s10),
           ],
           Expanded(
             child: Column(
@@ -550,9 +600,10 @@ class _MeetingLiveHeader extends StatelessWidget {
                   Text(
                     institution.name,
                     style: const TextStyle(
-                      color: Color(0xFF9CA3AF),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      color: Color(0xFFCBD5E1),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.1,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -562,8 +613,9 @@ class _MeetingLiveHeader extends StatelessWidget {
                     title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -574,6 +626,66 @@ class _MeetingLiveHeader extends StatelessWidget {
           const SizedBox(width: AuraSpace.s8),
           _ElapsedTimer(joinedAt: joinedAt),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pulsing "ready" indicator shown in the host-alone waiting state.
+// ---------------------------------------------------------------------------
+
+class _PulsingReadyDot extends StatefulWidget {
+  const _PulsingReadyDot();
+
+  @override
+  State<_PulsingReadyDot> createState() => _PulsingReadyDotState();
+}
+
+class _PulsingReadyDotState extends State<_PulsingReadyDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+    _opacity = Tween<double>(begin: 0.55, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) => Transform.scale(
+        scale: _scale.value,
+        child: Opacity(
+          opacity: _opacity.value,
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: const BoxDecoration(
+              color: Color(0xFF10B981),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
       ),
     );
   }

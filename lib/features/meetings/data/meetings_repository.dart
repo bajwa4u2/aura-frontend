@@ -213,6 +213,18 @@ class MeetingsRepository {
     return Meeting.fromJson(data);
   }
 
+  /// Loads meeting metadata using the guest JWT stored in the token store.
+  /// Used as a fallback when the guest reaches the live room via a direct
+  /// deep-link that does not carry a ?code= query parameter.
+  /// The backend cross-checks that the JWT's meetingId matches the path param.
+  Future<Meeting> getGuestMeetingContext(String meetingId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/public/meetings/$meetingId/guest-context',
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data);
+  }
+
   Future<JoinMeetingResult> joinMeeting(
     String code, {
     String? guestName,
