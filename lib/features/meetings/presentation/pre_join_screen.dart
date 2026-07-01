@@ -68,11 +68,16 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
         if (!mounted) return;
       }
 
+      final guestIdSuffix = (result.guestSessionId ?? '').trim().isNotEmpty
+          ? '&guestId=${Uri.encodeComponent(result.guestSessionId!.trim())}'
+          : '';
+
       if (result.shouldWait) {
         context.push(
           '/meetings/${result.meetingId}/waiting'
           '?sessionId=${result.sessionId ?? ''}'
-          '&code=${Uri.encodeComponent(widget.meetingCode)}',
+          '&code=${Uri.encodeComponent(widget.meetingCode)}'
+          '$guestIdSuffix',
         );
         return;
       }
@@ -81,7 +86,8 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
         context.push(
           '/meetings/${result.meetingId}/room'
           '?sessionId=${result.sessionId}'
-          '&code=${Uri.encodeComponent(widget.meetingCode)}',
+          '&code=${Uri.encodeComponent(widget.meetingCode)}'
+          '$guestIdSuffix',
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

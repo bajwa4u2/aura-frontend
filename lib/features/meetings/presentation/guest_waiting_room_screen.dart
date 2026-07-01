@@ -18,6 +18,7 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
   final String? sessionId;
   final String? returnTo;
   final String? meetingCode;
+  final String? guestId;
 
   const GuestWaitingRoomScreen({
     super.key,
@@ -26,6 +27,7 @@ class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
     this.sessionId,
     this.returnTo,
     this.meetingCode,
+    this.guestId,
   });
 
   @override
@@ -98,7 +100,10 @@ class _GuestWaitingRoomScreenState
         : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/live';
     final code = (widget.meetingCode ?? '').trim();
     final codeParam = code.isNotEmpty ? '&code=${Uri.encodeComponent(code)}' : '';
-    context.push('$livePath?sessionId=$sessionId&isHost=false$codeParam');
+    final guestParam = (widget.guestId ?? '').trim().isNotEmpty
+        ? '&guestId=${Uri.encodeComponent(widget.guestId!.trim())}'
+        : '';
+    context.push('$livePath?sessionId=$sessionId&isHost=false$codeParam$guestParam');
   }
 
   @override

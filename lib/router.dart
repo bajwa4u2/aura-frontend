@@ -956,6 +956,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               sessionId: state.uri.queryParameters['sessionId'],
               returnTo: state.uri.queryParameters['returnTo'],
               meetingCode: state.uri.queryParameters['code'],
+              guestId: state.uri.queryParameters['guestId'],
             ),
           ),
           GoRoute(
@@ -965,6 +966,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               sessionId: state.uri.queryParameters['sessionId'],
               returnTo: state.uri.queryParameters['returnTo'],
               meetingCode: state.uri.queryParameters['code'],
+              guestId: state.uri.queryParameters['guestId'],
             ),
           ),
           GoRoute(
@@ -974,6 +976,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               sessionId: state.uri.queryParameters['sessionId'] ?? '',
               isHost: state.uri.queryParameters['isHost'] == 'true',
               meetingCode: state.uri.queryParameters['code'],
+              guestUserId: state.uri.queryParameters['guestId'],
             ),
           ),
           GoRoute(
@@ -1009,6 +1012,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.pathParameters['institutionId'],
               sessionId: state.uri.queryParameters['sessionId'],
               returnTo: state.uri.queryParameters['returnTo'],
+              guestId: state.uri.queryParameters['guestId'],
             ),
           ),
           GoRoute(
@@ -1018,6 +1022,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.pathParameters['institutionId'],
               sessionId: state.uri.queryParameters['sessionId'],
               returnTo: state.uri.queryParameters['returnTo'],
+              guestId: state.uri.queryParameters['guestId'],
             ),
           ),
           GoRoute(
@@ -1028,6 +1033,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               sessionId: state.uri.queryParameters['sessionId'] ?? '',
               isHost: state.uri.queryParameters['isHost'] == 'true',
               meetingCode: state.uri.queryParameters['code'],
+              guestUserId: state.uri.queryParameters['guestId'],
             ),
           ),
           GoRoute(

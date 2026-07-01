@@ -62,6 +62,9 @@ class MeetingLiveRoomScreen extends ConsumerStatefulWidget {
   // meetingCode allows guest sessions to fetch meeting metadata via the
   // public endpoint when the member endpoint is inaccessible for the token.
   final String? meetingCode;
+  // guestUserId is the GuestSession.id — passed through URL params from
+  // pre_join_screen so guests have a stable local identity without /auth/me.
+  final String? guestUserId;
 
   const MeetingLiveRoomScreen({
     super.key,
@@ -70,6 +73,7 @@ class MeetingLiveRoomScreen extends ConsumerStatefulWidget {
     this.institutionId,
     this.isHost = false,
     this.meetingCode,
+    this.guestUserId,
   });
 
   @override
@@ -217,10 +221,19 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     final meeting = meetingAsync.valueOrNull ?? codeAsync?.valueOrNull ?? contextAsync?.valueOrNull;
 
     // I3: local user ID for host participant controls.
+    // /auth/me returns { user: { id: ... }, accountType, emailVerified } — read
+    // the nested user.id, not the top-level id which does not exist in this envelope.
+    // For guests (token rejected by /auth/me) fall back to widget.guestUserId which
+    // is the GuestSession.id threaded through URL params from pre_join_screen.
     final meAsync = ref.watch(authMeDataProvider);
     final myUserId = meAsync.maybeWhen(
-      data: (me) => (me['id'] ?? '').toString(),
-      orElse: () => '',
+      data: (me) {
+        final userMap = me['user'];
+        final id = userMap is Map ? (userMap['id'] ?? me['id'] ?? '') : (me['id'] ?? '');
+        final resolved = id.toString().trim();
+        return resolved.isNotEmpty ? resolved : (widget.guestUserId ?? '');
+      },
+      orElse: () => widget.guestUserId ?? '',
     );
 
     // I2: Distinguish host-ended meeting from network drop.

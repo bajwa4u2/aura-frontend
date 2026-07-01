@@ -18,6 +18,7 @@ class MeetingRoomScreen extends ConsumerStatefulWidget {
   final String? returnTo;
   final String? sessionId;
   final String? meetingCode;
+  final String? guestId;
 
   const MeetingRoomScreen({
     super.key,
@@ -26,6 +27,7 @@ class MeetingRoomScreen extends ConsumerStatefulWidget {
     this.returnTo,
     this.sessionId,
     this.meetingCode,
+    this.guestId,
   });
 
   @override
@@ -100,8 +102,11 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       final codeParam = (widget.meetingCode ?? '').trim().isNotEmpty
           ? '&code=${Uri.encodeComponent(widget.meetingCode!.trim())}'
           : '';
+      final guestParam = (widget.guestId ?? '').trim().isNotEmpty
+          ? '&guestId=${Uri.encodeComponent(widget.guestId!.trim())}'
+          : '';
       context.push(
-        '$livePath?sessionId=$sessionId&isHost=${isHost ? 'true' : 'false'}$codeParam',
+        '$livePath?sessionId=$sessionId&isHost=${isHost ? 'true' : 'false'}$codeParam$guestParam',
       );
     } catch (_) {
       if (!mounted) return;
