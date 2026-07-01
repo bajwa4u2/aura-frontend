@@ -32,4 +32,11 @@ const Map<String, String> _displayNameToIana = {
   'mst': 'America/Denver',
   'pdt': 'America/Los_Angeles',
   'pst': 'America/Los_Angeles',
+  'alaska daylight time': 'America/Anchorage',
+  'alaska standard time': 'America/Anchorage',
+  'akdt': 'America/Anchorage',
+  'akst': 'America/Anchorage',
+  'hawaii-aleutian standard time': 'Pacific/Honolulu',
+  'hawaii standard time': 'Pacific/Honolulu',
+  'hst': 'Pacific/Honolulu',
 };
