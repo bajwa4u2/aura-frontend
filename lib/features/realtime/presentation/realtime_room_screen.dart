@@ -487,6 +487,25 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         (state.session?.surfaceType ?? _lastKnownSurfaceType) ==
         RealtimeSurfaceType.meeting;
 
+    // Guard: meeting sessions must render in MeetingLiveRoomScreen, not here.
+    // Redirect immediately when the hydrated session is a meeting surface.
+    final sessionForGuard = state.session;
+    if (sessionForGuard != null &&
+        sessionForGuard.surfaceType == RealtimeSurfaceType.meeting &&
+        !_hasNavigatedAway) {
+      final meetingId = (sessionForGuard.surfaceId ?? '').trim();
+      final sid = sessionForGuard.id.trim().isNotEmpty
+          ? sessionForGuard.id.trim()
+          : (state.sessionId ?? widget.sessionId).trim();
+      if (meetingId.isNotEmpty && sid.isNotEmpty) {
+        _hasNavigatedAway = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/meetings/$meetingId/live?sessionId=$sid');
+        });
+        return const _CallRouteRedirectingFallback();
+      }
+    }
+
     // After teardown, leave the realtime route immediately. Do not render a
     // blank scaffold on /realtime/:id; that was the source of the grey/wrapped
     // post-call screen.

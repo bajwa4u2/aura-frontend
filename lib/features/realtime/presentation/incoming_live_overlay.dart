@@ -13,6 +13,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../updates/incoming_call_bridge.dart';
 import '../../updates/providers.dart';
 import '../application/realtime_providers.dart';
+import '../domain/realtime_enums.dart';
 import '../domain/realtime_state.dart';
 import 'widgets/floating_call_widget.dart';
 
@@ -316,7 +317,17 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
       if (!context.mounted) return;
       navigated = true;
-      router.go('/realtime/$sessionId?returnTo=$returnTo');
+      final joinedSession = ref.read(realtimeControllerProvider).session;
+      if (joinedSession?.surfaceType == RealtimeSurfaceType.meeting) {
+        final meetingId = (joinedSession!.surfaceId ?? '').trim();
+        if (meetingId.isNotEmpty) {
+          router.go('/meetings/$meetingId/live?sessionId=$sessionId');
+        } else {
+          router.go('/realtime/$sessionId?returnTo=$returnTo');
+        }
+      } else {
+        router.go('/realtime/$sessionId?returnTo=$returnTo');
+      }
     } catch (e) {
       final msg = e.toString().toLowerCase();
       final isExpired = msg.contains('invite_expired') ||

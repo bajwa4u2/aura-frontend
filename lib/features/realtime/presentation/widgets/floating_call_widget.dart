@@ -13,6 +13,7 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../application/realtime_providers.dart';
+import '../../domain/realtime_enums.dart';
 import '../../domain/realtime_models.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,6 +194,15 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
           (local.sessionId ?? '') == info.sessionId;
       if (!stillActive) {
         ref.read(realtimeControllerProvider.notifier).clearLocalSession();
+        return;
+      }
+    }
+    final liveState = ref.read(realtimeControllerProvider);
+    final liveSession = liveState.session;
+    if (liveSession?.surfaceType == RealtimeSurfaceType.meeting) {
+      final meetingId = (liveSession!.surfaceId ?? '').trim();
+      if (meetingId.isNotEmpty) {
+        context.go('/meetings/$meetingId/live?sessionId=${info.sessionId}');
         return;
       }
     }

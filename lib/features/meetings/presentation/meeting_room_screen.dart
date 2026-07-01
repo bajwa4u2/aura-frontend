@@ -97,7 +97,12 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       final livePath = widget.institutionId == null
           ? '/meetings/${meeting.id}/live'
           : '/institution/${widget.institutionId}/meetings/${meeting.id}/live';
-      context.push('$livePath?sessionId=$sessionId&isHost=${isHost ? 'true' : 'false'}');
+      final codeParam = (widget.meetingCode ?? '').trim().isNotEmpty
+          ? '&code=${Uri.encodeComponent(widget.meetingCode!.trim())}'
+          : '';
+      context.push(
+        '$livePath?sessionId=$sessionId&isHost=${isHost ? 'true' : 'false'}$codeParam',
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _roomOpen = true);
