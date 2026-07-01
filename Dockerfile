@@ -1,5 +1,10 @@
 # ---- build stage ----
-FROM ghcr.io/cirruslabs/flutter:stable AS build
+# PIN the Flutter SDK. `:stable` is a moving tag — a rebuild silently pulls a
+# newer engine than the one developed/tested locally. On 2026-07-01 that drift
+# shipped a build whose CanvasKit canvas rendered fully blank (layout ran, DOM
+# text-field proxies appeared, zero JS errors) on every device. Keep this tag
+# in lockstep with the local `flutter --version` used to verify releases.
+FROM ghcr.io/cirruslabs/flutter:3.41.4 AS build
 
 WORKDIR /app
 
