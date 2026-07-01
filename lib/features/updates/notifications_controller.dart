@@ -86,11 +86,16 @@ class NotificationsController extends StateNotifier<NotificationsState>
     with WidgetsBindingObserver {
   NotificationsController(this.ref, this._repo) : super(NotificationsState.initial()) {
     WidgetsBinding.instance.addObserver(this);
-    _syncAuth(ref.read(isAuthedProvider));
-    ref.listen<bool>(isAuthedProvider, (_, next) {
-      _syncAuth(next);
-    });
+    // Notifications are member-only (/notifications 401s for a guest). Treat a
+    // meeting guest as "not authed" for fetch purposes so guest mode never
+    // fires the member feed. Re-evaluate on either auth or guest-mode change.
+    _syncAuth(_effectiveAuthed());
+    ref.listen<bool>(isAuthedProvider, (_, __) => _syncAuth(_effectiveAuthed()));
+    ref.listen<bool>(isGuestSessionProvider, (_, __) => _syncAuth(_effectiveAuthed()));
   }
+
+  bool _effectiveAuthed() =>
+      ref.read(isAuthedProvider) && !ref.read(isGuestSessionProvider);
 
   final Ref ref;
   final NotificationsRepository _repo;

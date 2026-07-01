@@ -60,6 +60,8 @@ final liveSessionsProvider = FutureProvider<List<RealtimeSession>>((ref) async {
   await ref.watch(sessionBootstrapProvider.future);
   final authStatus = ref.watch(authStatusProvider);
   if (authStatus != AuthStatus.authed) return [];
+  // Guest mode: /realtime/sessions?scope=me is member-only (401 for guests).
+  if (ref.watch(isGuestSessionProvider)) return [];
 
   // Re-fetch whenever the local controller transitions joined→idle so the
   // header "Live" pill, the conversation ribbons, and any other surface

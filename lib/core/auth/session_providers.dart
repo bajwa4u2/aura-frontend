@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,6 +24,32 @@ final tokenStoreLoadedProvider = Provider<bool>((ref) {
 final isAuthedProvider = Provider<bool>((ref) {
   final store = ref.watch(tokenStoreProvider);
   return store.isLoaded && store.isAuthed;
+});
+
+/// Decodes the access token and reports whether it is a meeting GUEST token
+/// (`type: guest`). Guests have no member identity, so member-only providers
+/// (`/auth/me`, `/notifications`, `/realtime/sessions?scope=me`) must not fire
+/// for them — those endpoints 401 for a guest and only add console noise and
+/// interceptor churn. Pure/synchronous so callers can gate cheaply.
+bool isGuestAccessToken(String? token) {
+  final t = (token ?? '').trim();
+  if (t.isEmpty) return false;
+  try {
+    final parts = t.split('.');
+    if (parts.length != 3) return false;
+    final payload =
+        jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+    return payload is Map && payload['type'] == 'guest';
+  } catch (_) {
+    return false;
+  }
+}
+
+/// True while the active session is a meeting guest (see [isGuestAccessToken]).
+/// Watch this to skip member-only data fetches in guest mode.
+final isGuestSessionProvider = Provider<bool>((ref) {
+  final store = ref.watch(tokenStoreProvider);
+  return isGuestAccessToken(store.accessToken);
 });
 
 /// Router/guards helper.
@@ -63,6 +90,9 @@ dynamic _unwrapData(dynamic v) {
 final authMeDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final store = ref.watch(tokenStoreProvider);
   if (!store.isAuthed) return {};
+  // Guest mode: /auth/me is member-only (401 for guests). Skip the call — the
+  // result is the same {} it would return on the 401, minus the noise/churn.
+  if (isGuestAccessToken(store.accessToken)) return {};
 
   final dio = ref.watch(dioProvider);
 
