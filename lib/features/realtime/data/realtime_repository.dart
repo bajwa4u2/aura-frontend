@@ -44,7 +44,13 @@ class RealtimeRepository {
 
   Future<Response<dynamic>?> _safeGet(
     String path, {
-    List<int> toleratedStatusCodes = const <int>[403, 404],
+    // 401 is tolerated so a meeting GUEST (whose token resolves no member
+    // userId, making strict @CurrentUserId member endpoints like
+    // /realtime/sessions/:id/policy return 401) still gets a session bundle:
+    // the supplementary policy/consent/recordings fetches degrade to empty
+    // instead of throwing and failing the whole join. Members are authed and
+    // won't 401 on these, so this never masks a real member auth failure here.
+    List<int> toleratedStatusCodes = const <int>[401, 403, 404],
   }) async {
     try {
       return await _dio.get(path);
