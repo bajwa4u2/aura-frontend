@@ -68,7 +68,18 @@ class _GuestWaitingRoomScreenState
   Future<void> _ensureGuestAuth() async {
     final tokenStore = ref.read(tokenStoreProvider);
     await tokenStore.load();
-    // Auth is exchanged in pre_join_screen before navigation; nothing to do here.
+    // If the token was wiped (e.g. page refresh on web clears the in-memory
+    // token), re-exchange using the guestId URL param which survives reloads.
+    final guestId = (widget.guestId ?? '').trim();
+    if (!tokenStore.isAuthed && guestId.isNotEmpty) {
+      try {
+        final repo = ref.read(meetingsRepositoryProvider);
+        final guestAuth = await repo.exchangeGuestAuth(guestId);
+        if (guestAuth.accessToken.trim().isNotEmpty) {
+          await tokenStore.setSession(accessToken: guestAuth.accessToken);
+        }
+      } catch (_) {}
+    }
   }
 
   void _refresh() {

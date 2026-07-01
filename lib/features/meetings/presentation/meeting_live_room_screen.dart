@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -127,7 +128,24 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       mediaService: ref.read(realtimeMediaServiceProvider),
       controller: ref.read(realtimeControllerProvider.notifier),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      // If the in-memory guest token was cleared (e.g. page refresh on web),
+      // re-exchange using the guestUserId URL param before attempting to connect.
+      final guestId = (widget.guestUserId ?? '').trim();
+      if (guestId.isNotEmpty) {
+        final tokenStore = ref.read(tokenStoreProvider);
+        if (!tokenStore.isAuthed) {
+          try {
+            final repo = ref.read(meetingsRepositoryProvider);
+            final guestAuth = await repo.exchangeGuestAuth(guestId);
+            if (guestAuth.accessToken.trim().isNotEmpty) {
+              await tokenStore.setSession(accessToken: guestAuth.accessToken);
+            }
+          } catch (_) {}
+        }
+      }
+      if (!mounted) return;
       ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
       ref.read(realtimeControllerProvider.notifier).join(widget.sessionId);
       _scheduleControlBarHide();
