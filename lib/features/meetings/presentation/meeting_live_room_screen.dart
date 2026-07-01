@@ -128,6 +128,14 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       mediaService: ref.read(realtimeMediaServiceProvider),
       controller: ref.read(realtimeControllerProvider.notifier),
     );
+    // Production-visible sync diagnostic: compare across host/guest consoles to
+    // confirm SAME meetingId + sessionId. A mismatch means each side is in a
+    // different realtime room and can never see the other.
+    debugPrint(
+      '[meeting-live] mounted meetingId=${widget.meetingId}'
+      ' sessionId=${widget.sessionId} isHost=${widget.isHost}'
+      ' guestId=${(widget.guestUserId ?? '').trim()} code=${(widget.meetingCode ?? '').trim()}',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
@@ -287,6 +295,13 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       realtimeControllerProvider.select((s) => s.participants),
       (prev, next) {
         final prevList = prev ?? const <RealtimeParticipant>[];
+        // Production-visible roster diagnostic: confirms whether the other
+        // party's participant.joined actually reached this side.
+        debugPrint(
+          '[meeting-live] roster sessionId=${widget.sessionId}'
+          ' isHost=${widget.isHost} count=${next.length}'
+          ' ids=${next.map((p) => '${p.userId}/${(p.displayName ?? '').trim()}').join(',')}',
+        );
         if (next.length > prevList.length) {
           final added = next.where(
             (p) => !prevList.any((q) => q.userId == p.userId),
@@ -329,6 +344,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               screenSharingPeerId: screenSharingPeerId,
               participants: state.participants,
               localUserId: myUserId,
+              isHost: widget.isHost,
             ),
           ),
 
@@ -481,6 +497,7 @@ class _MeetingVideoGrid extends StatelessWidget {
   final String? screenSharingPeerId;
   final List<RealtimeParticipant> participants;
   final String localUserId;
+  final bool isHost;
 
   const _MeetingVideoGrid({
     required this.localRenderer,
@@ -489,6 +506,7 @@ class _MeetingVideoGrid extends StatelessWidget {
     required this.isLocalScreenSharing,
     required this.participants,
     required this.localUserId,
+    required this.isHost,
     this.screenSharingPeerId,
   });
 
@@ -654,7 +672,7 @@ class _MeetingVideoGrid extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _waitingLabel(participants, localUserId),
+                    _waitingLabel(participants, localUserId, isHost),
                     style: const TextStyle(
                       color: Color(0xFF9CA3AF),
                       fontSize: 14,
@@ -755,17 +773,30 @@ class _MeetingVideoGrid extends StatelessWidget {
   static String _waitingLabel(
     List<RealtimeParticipant> participants,
     String localUserId,
+    bool isHost,
   ) {
     // Filter out the local participant — we're waiting for *others*, not ourselves.
     final others = localUserId.isEmpty
         ? participants
         : participants.where((p) => p.userId != localUserId).toList();
-    if (others.isEmpty) return 'Waiting for guests to join…';
+    // Role-aware alone state: a host waits for guests, a guest waits for the
+    // host. Never tell the guest "waiting for guest" when the guest is the one
+    // present. (This layout only renders when there is no remote media yet, so
+    // "both connected" already shows video instead of any waiting copy.)
+    if (others.isEmpty) {
+      return isHost
+          ? 'Waiting for guests to join…'
+          : 'Waiting for the host to join…';
+    }
     final names = others
         .map((p) => (p.displayName ?? '').trim())
         .where((n) => n.isNotEmpty)
         .toList();
-    if (names.isEmpty) return 'Waiting for guests to join…';
+    if (names.isEmpty) {
+      return isHost
+          ? 'Waiting for guests to join…'
+          : 'Waiting for the host to join…';
+    }
     if (names.length == 1) return 'Waiting for ${names[0]} to join…';
     if (names.length == 2) return 'Waiting for ${names[0]} and ${names[1]}…';
     return 'Waiting for ${names[0]} and ${names.length - 1} others…';
