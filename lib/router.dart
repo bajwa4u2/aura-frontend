@@ -1854,6 +1854,28 @@ final routerProvider = Provider<GoRouter>((ref) {
             );
             return target;
           }
+
+          // SIGNED-OUT HARD BLOCK — RealtimeRoomScreen is member-only. Every
+          // legitimate realtime participant is an authed member (direct calls /
+          // live rooms) or a meeting guest (handled above). A visitor with NO
+          // token on `/realtime/:sessionId` is therefore always a misrouted
+          // meeting guest (e.g. a stale `/realtime/` link with no guestId, or a
+          // navigation that fired before guest-auth was exchanged). Never render
+          // the legacy "Audio meeting / Could not join" screen for them — send
+          // them to the meeting code-entry recovery instead.
+          // Load persisted tokens first so a member cold-deep-linking to their
+          // own direct call on web (in-memory token not yet restored) is not
+          // mistaken for a signed-out visitor.
+          final tokenStore = ref.read(tokenStoreProvider);
+          await tokenStore.load();
+          if (!tokenStore.isAuthed) {
+            debugPrint(
+              '[killswitch] realtime->join (unauthenticated)'
+              ' from=${state.uri} sessionId=$sessionId'
+              ' screen=RealtimeRoomScreen',
+            );
+            return '/meetings/join';
+          }
           return null;
         },
         builder: (context, state) => RealtimeRoomScreen(
