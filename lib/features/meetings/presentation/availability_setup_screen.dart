@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/utils/local_timezone.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 
@@ -470,7 +471,7 @@ class _CreateProfileDialogState
             meetingTitle: title,
             durationOptions: const [30, 60],
             defaultDuration: 30,
-            timezone: DateTime.now().timeZoneName,
+            timezone: resolveLocalTimezone(),
           );
       ref.invalidate(myAvailabilityProfilesProvider);
       if (!mounted) return;

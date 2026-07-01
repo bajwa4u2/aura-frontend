@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/utils/local_timezone.dart';
 import '../application/meetings_provider.dart';
 
 class CreateMeetingScreen extends ConsumerStatefulWidget {
@@ -78,7 +79,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         type: 'SCHEDULED',
         scheduledAt: _scheduledAt!.toUtc().toIso8601String(),
         durationMinutes: _durationMinutes,
-        timezone: DateTime.now().timeZoneName,
+        timezone: resolveLocalTimezone(),
         waitingRoomEnabled: _waitingRoom,
         allowGuests: _allowGuests,
       );

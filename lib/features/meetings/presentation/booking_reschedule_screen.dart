@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/guest_shell.dart';
+import '../../../core/utils/local_timezone.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 
@@ -68,7 +69,7 @@ class _BookingRescheduleScreenState
       await ref.read(availabilityRepositoryProvider).rescheduleBookingByToken(
             widget.token,
             scheduledAt: slot.startAt,
-            timezone: DateTime.now().timeZoneName,
+            timezone: resolveLocalTimezone(),
           );
       setState(() => _done = true);
     } catch (e) {

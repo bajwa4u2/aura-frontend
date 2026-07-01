@@ -8,6 +8,7 @@ import '../../../config.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/guest_shell.dart';
+import '../../../core/utils/local_timezone.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
@@ -68,7 +69,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               : _notesCtrl.text.trim(),
           scheduledAt: widget.slot.startAt,
           durationMinutes: widget.durationMinutes,
-          timezone: DateTime.now().timeZoneName,
+          timezone: resolveLocalTimezone(),
         );
       } else {
         conf = await repo.createBooking(
@@ -80,7 +81,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               : _notesCtrl.text.trim(),
           scheduledAt: widget.slot.startAt,
           durationMinutes: widget.durationMinutes,
-          timezone: DateTime.now().timeZoneName,
+          timezone: resolveLocalTimezone(),
         );
       }
       setState(() => _confirmation = conf);
