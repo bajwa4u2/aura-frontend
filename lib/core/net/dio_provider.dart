@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -251,9 +252,31 @@ final dioProvider = Provider<Dio>((ref) {
   /// - web: HttpOnly cookie (Dart can't see it; assume present unless
   ///   bootstrap already proved otherwise this load).
   /// - native: refresh token in storage.
+  /// True when the current access token is a meeting GUEST token (type=guest).
+  /// Guests have no refresh token/cookie, and their 401s on member endpoints
+  /// are expected — the refresh-on-401 path must be skipped for them, or the
+  /// two-strike clearSessionState() wipes the guest token mid-meeting (socket
+  /// then can't authenticate → stuck "Connecting…").
+  bool isGuestAccessToken() {
+    final token = ref.read(tokenStoreProvider).accessToken;
+    if (token == null || token.trim().isEmpty) return false;
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final payload =
+          jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+      return payload is Map && payload['type'] == 'guest';
+    } catch (_) {
+      return false;
+    }
+  }
+
   bool canAttemptRefreshNow() {
     final store = ref.read(tokenStoreProvider);
     if (!store.isLoaded) return false;
+
+    // Never refresh (or reset) a guest session — see isGuestAccessToken.
+    if (isGuestAccessToken()) return false;
 
     if (kIsWeb) {
       // Cookie-based refresh. The interceptor will downgrade to a clean
