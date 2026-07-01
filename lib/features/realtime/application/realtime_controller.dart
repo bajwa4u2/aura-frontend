@@ -555,8 +555,23 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       );
     }
 
-    final joinedBundle = await _repository.joinSession(session);
-    _applyBundle(joinedBundle);
+    if (isMeetingSession) {
+      // Meeting GUESTS are not DB RealtimeSessionParticipants, so the member
+      // REST join (POST /realtime/sessions/:id/join, strict @CurrentUserId)
+      // 401s for them. For meetings the socket `session:join` below is
+      // authoritative (it registers guests in-memory and broadcasts), so a REST
+      // join failure must not abort — otherwise the guest never reaches the
+      // socket join and the room shows "Something went wrong".
+      try {
+        final joinedBundle = await _repository.joinSession(session);
+        _applyBundle(joinedBundle);
+      } catch (_) {
+        // Non-fatal for meetings — proceed to the socket join.
+      }
+    } else {
+      final joinedBundle = await _repository.joinSession(session);
+      _applyBundle(joinedBundle);
+    }
 
     await connect();
     await _socketService.emitAck('session:join', <String, dynamic>{
