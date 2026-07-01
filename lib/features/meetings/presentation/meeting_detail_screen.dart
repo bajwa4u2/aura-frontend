@@ -327,7 +327,14 @@ class _MeetingDetailBodyState extends ConsumerState<_MeetingDetailBody> {
       ref.invalidate(meetingProvider(meeting.id));
       _invalidateLists();
       if (!mounted) return;
-      router.pop();
+      // Navigate to a guaranteed-valid destination rather than a bare pop().
+      // On web, a detail page opened via a direct link has no navigation stack,
+      // so router.pop() pops the only route and renders a blank page. Going to
+      // the meetings list always resolves to a real screen.
+      final listPath = _resolvedInstitutionId == null
+          ? '/meetings'
+          : '/institution/$_resolvedInstitutionId/meetings';
+      router.go(listPath);
     } catch (e) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Unable to cancel meeting. Try again.')),
