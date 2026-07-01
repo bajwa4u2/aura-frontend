@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../meetings/application/meetings_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/services/call_presence_bridge.dart';
 import '../../../core/ui/aura_card.dart';
@@ -79,6 +81,7 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
     this.insSessionType,
     this.insSessionAudience,
     this.insSessionTitle,
+    this.guestId,
   });
 
   final String sessionId;
@@ -93,6 +96,11 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
   final String? insSessionType;
   final String? insSessionAudience;
   final String? insSessionTitle;
+
+  /// GuestSession.id threaded through URL params for meeting guest flows.
+  /// Used to re-exchange a guest JWT when the in-memory token was cleared
+  /// (e.g. web page refresh) before the socket connection is attempted.
+  final String? guestId;
 
   @override
   ConsumerState<RealtimeRoomScreen> createState() => _RealtimeRoomScreenState();
@@ -117,6 +125,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   // call and produced the "blank wrapped" UI the user reported.
   bool _intentToLeave = false;
   String? _lastConsentSyncKey;
+  bool _guestAuthAttempted = false;
   RealtimeSurfaceType? _lastKnownSurfaceType;
   String? _lastKnownSurfaceId;
   String? _lastKnownInstitutionId;
@@ -159,6 +168,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     _resolveInsSessionMeta();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await _ensureGuestAuth();
+      if (!mounted) return;
       final controller = ref.read(realtimeControllerProvider.notifier);
       final action = (widget.action ?? '').trim().toLowerCase();
 
@@ -237,6 +249,23 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       }
     }
     super.dispose();
+  }
+
+  /// Re-exchanges a guest JWT if the in-memory token was cleared (web page
+  /// refresh wipes TokenStore._accessToken). Only runs once per screen mount.
+  Future<void> _ensureGuestAuth() async {
+    final guestId = (widget.guestId ?? '').trim();
+    if (guestId.isEmpty || _guestAuthAttempted) return;
+    _guestAuthAttempted = true;
+    final tokenStore = ref.read(tokenStoreProvider);
+    if (tokenStore.isAuthed) return;
+    try {
+      final repo = ref.read(meetingsRepositoryProvider);
+      final guestAuth = await repo.exchangeGuestAuth(guestId);
+      if (guestAuth.accessToken.trim().isNotEmpty) {
+        await tokenStore.setSession(accessToken: guestAuth.accessToken);
+      }
+    } catch (_) {}
   }
 
   void _syncConsentsIfNeeded({
@@ -500,7 +529,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       if (meetingId.isNotEmpty && sid.isNotEmpty) {
         _hasNavigatedAway = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go('/meetings/$meetingId/live?sessionId=$sid');
+          if (!mounted) return;
+          final guestParam = (widget.guestId ?? '').trim().isNotEmpty
+              ? '&guestId=${Uri.encodeComponent(widget.guestId!.trim())}'
+              : '';
+          context.go('/meetings/$meetingId/live?sessionId=$sid$guestParam');
         });
         return const _CallRouteRedirectingFallback();
       }

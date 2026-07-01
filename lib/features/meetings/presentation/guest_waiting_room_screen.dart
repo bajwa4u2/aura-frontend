@@ -352,23 +352,54 @@ class _WaitingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final message = switch (lifecycle.status) {
-      MeetingLifecycleStatus.inProgress =>
-        'The meeting is live. You can join now.',
-      MeetingLifecycleStatus.guestWaiting =>
-        'Waiting for the host to start the room.',
-      MeetingLifecycleStatus.hostWaiting => 'The guest is waiting in the room.',
-      MeetingLifecycleStatus.startingSoon => 'The meeting is starting soon.',
-      MeetingLifecycleStatus.cancelled => 'This meeting was cancelled.',
-      MeetingLifecycleStatus.ended => 'This meeting has ended.',
-      MeetingLifecycleStatus.missed => 'This meeting was missed.',
-      MeetingLifecycleStatus.connectionIssue =>
-        'The room is active but needs a reconnect.',
-      MeetingLifecycleStatus.scheduled =>
-        'The room will stay open until the host starts it.',
-      MeetingLifecycleStatus.unknown =>
-        'Waiting for the room to become available.',
-    };
+    final now = DateTime.now();
+    final scheduledAt = meeting.scheduledAt;
+    final isEarly = scheduledAt != null && now.isBefore(scheduledAt);
+    final minutesUntil = scheduledAt?.difference(now).inMinutes;
+
+    String message;
+    String? timeNote;
+
+    switch (lifecycle.status) {
+      case MeetingLifecycleStatus.inProgress:
+        message = 'The meeting is live. You can join now.';
+      case MeetingLifecycleStatus.guestWaiting:
+        if (isEarly && minutesUntil != null) {
+          message = 'You are early — the meeting has not started yet.';
+          timeNote = minutesUntil >= 60
+              ? 'Scheduled to start in ${minutesUntil ~/ 60}h ${minutesUntil % 60}m. The host can start it at any time.'
+              : 'Scheduled to start in ${minutesUntil}m. The host can start it at any time.';
+        } else {
+          message = 'Waiting for the host to start the room.';
+        }
+      case MeetingLifecycleStatus.hostWaiting:
+        message = 'The host is in the room and waiting for you.';
+      case MeetingLifecycleStatus.startingSoon:
+        message = 'The meeting is starting soon.';
+      case MeetingLifecycleStatus.cancelled:
+        message = 'This meeting was cancelled.';
+      case MeetingLifecycleStatus.ended:
+        message = 'This meeting has ended.';
+      case MeetingLifecycleStatus.missed:
+        message = 'This meeting was missed.';
+      case MeetingLifecycleStatus.connectionIssue:
+        message = 'The room is active but needs a reconnect.';
+      case MeetingLifecycleStatus.scheduled:
+        if (isEarly && minutesUntil != null) {
+          message = 'You are early — this link is valid and will work when the host starts the meeting.';
+          timeNote = minutesUntil >= 60
+              ? 'Scheduled to start in ${minutesUntil ~/ 60}h ${minutesUntil % 60}m.'
+              : minutesUntil > 0
+              ? 'Scheduled to start in ${minutesUntil}m.'
+              : 'Scheduled time has passed — waiting for the host to start.';
+        } else {
+          message = 'The room will stay open until the host starts it.';
+        }
+      case MeetingLifecycleStatus.unknown:
+        message = 'Waiting for the room to become available.';
+    }
+
+    final participantCount = meeting.room?.activeParticipantCount ?? 0;
 
     return Card(
       child: Padding(
@@ -389,11 +420,30 @@ class _WaitingCard extends StatelessWidget {
                 context,
               ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF)),
             ),
+            if (timeNote != null) ...[
+              const SizedBox(height: AuraSpace.s8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF6C63FF)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      timeNote,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF6C63FF),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: AuraSpace.s12),
             Text(
-              meeting.room?.activeParticipantCount == 0
+              participantCount == 0
                   ? 'No one else has joined yet.'
-                  : '${meeting.room?.activeParticipantCount ?? 0} participant(s) are in the meeting.',
+                  : '$participantCount participant${participantCount == 1 ? '' : 's'} in the meeting.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280)),

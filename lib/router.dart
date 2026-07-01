@@ -1711,6 +1711,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           insSessionType: state.uri.queryParameters['sessionType'],
           insSessionAudience: state.uri.queryParameters['sessionAudience'],
           insSessionTitle: state.uri.queryParameters['sessionTitle'],
+          guestId: state.uri.queryParameters['guestId'],
         ),
       ),
     ],
