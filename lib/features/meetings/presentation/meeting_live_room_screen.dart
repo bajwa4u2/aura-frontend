@@ -130,26 +130,33 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      // If the in-memory guest token was cleared (e.g. page refresh on web),
-      // re-exchange using the guestUserId URL param before attempting to connect.
-      final guestId = (widget.guestUserId ?? '').trim();
-      if (guestId.isNotEmpty) {
-        final tokenStore = ref.read(tokenStoreProvider);
-        if (!tokenStore.isAuthed) {
-          try {
-            final repo = ref.read(meetingsRepositoryProvider);
-            final guestAuth = await repo.exchangeGuestAuth(guestId);
-            if (guestAuth.accessToken.trim().isNotEmpty) {
-              await tokenStore.setSession(accessToken: guestAuth.accessToken);
-            }
-          } catch (_) {}
-        }
-      }
-      if (!mounted) return;
       ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
-      ref.read(realtimeControllerProvider.notifier).join(widget.sessionId);
+      await _ensureGuestAuthAndJoin();
       _scheduleControlBarHide();
     });
+  }
+
+  // Establish (or refresh) the guest session before joining the realtime room.
+  // Also used by the connecting-overlay Retry: a transient guest-auth failure
+  // (e.g. token cleared on web reload) is recoverable only if we re-exchange
+  // before re-joining — a bare re-join would fail identically.
+  Future<void> _ensureGuestAuthAndJoin() async {
+    if (!mounted) return;
+    final guestId = (widget.guestUserId ?? '').trim();
+    if (guestId.isNotEmpty) {
+      final tokenStore = ref.read(tokenStoreProvider);
+      if (!tokenStore.isAuthed) {
+        try {
+          final repo = ref.read(meetingsRepositoryProvider);
+          final guestAuth = await repo.exchangeGuestAuth(guestId);
+          if (guestAuth.accessToken.trim().isNotEmpty) {
+            await tokenStore.setSession(accessToken: guestAuth.accessToken);
+          }
+        } catch (_) {}
+      }
+    }
+    if (!mounted) return;
+    ref.read(realtimeControllerProvider.notifier).join(widget.sessionId);
   }
 
   @override
@@ -371,8 +378,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             Positioned.fill(
               child: _ConnectingOverlay(
                 state: state,
-                onRetry: () =>
-                    ref.read(realtimeControllerProvider.notifier).join(widget.sessionId),
+                onRetry: _ensureGuestAuthAndJoin,
               ),
             ),
 

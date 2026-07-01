@@ -72,6 +72,8 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           ? '&guestId=${Uri.encodeComponent(result.guestSessionId!.trim())}'
           : '';
 
+      final guestId = (result.guestSessionId ?? '').trim();
+
       if (result.shouldWait) {
         final target = '/meetings/${result.meetingId}/waiting'
             '?sessionId=${result.sessionId ?? ''}'
@@ -82,6 +84,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           target: target,
           meetingId: result.meetingId,
           sessionId: result.sessionId,
+          guestId: guestId,
         );
         context.push(target);
         return;
@@ -97,6 +100,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           target: target,
           meetingId: result.meetingId,
           sessionId: result.sessionId,
+          guestId: guestId,
         );
         context.push(target);
       } else {
@@ -125,14 +129,15 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     required String target,
     required String? meetingId,
     required String? sessionId,
+    required String guestId,
   }) {
     // Production-visible (not kDebugMode-gated): proves the guest routes to a
     // meeting surface, never the generic `/realtime/` transport screen.
     debugPrint(
-      '[meeting-join] PreJoinScreen'
-      ' from=${GoRouterState.of(context).uri} to=$target'
+      '[guest-join-click] PreJoinScreen'
+      ' currentUrl=${GoRouterState.of(context).uri} targetUrl=$target'
       ' meetingId=${meetingId ?? ''} sessionId=${sessionId ?? ''}'
-      ' code=${widget.meetingCode} screen=PreJoinScreen',
+      ' code=${widget.meetingCode} guestId=$guestId',
     );
   }
 

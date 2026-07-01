@@ -105,9 +105,16 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       final guestParam = (widget.guestId ?? '').trim().isNotEmpty
           ? '&guestId=${Uri.encodeComponent(widget.guestId!.trim())}'
           : '';
-      context.push(
-        '$livePath?sessionId=$sessionId&isHost=${isHost ? 'true' : 'false'}$codeParam$guestParam',
+      final target =
+          '$livePath?sessionId=$sessionId&isHost=${isHost ? 'true' : 'false'}$codeParam$guestParam';
+      // Production-visible: proves "Enter room" lands on MeetingLiveRoomScreen.
+      debugPrint(
+        '[guest-join-click] MeetingRoomScreen'
+        ' currentUrl=${GoRouterState.of(context).uri} targetUrl=$target'
+        ' meetingId=${meeting.id} sessionId=$sessionId'
+        ' code=${(widget.meetingCode ?? '').trim()} guestId=${(widget.guestId ?? '').trim()}',
       );
+      context.push(target);
     } catch (_) {
       if (!mounted) return;
       setState(() => _roomOpen = true);

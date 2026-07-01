@@ -114,6 +114,8 @@ import 'features/meetings/presentation/create_meeting_screen.dart';
 import 'features/meetings/presentation/guest_waiting_room_screen.dart';
 import 'features/meetings/presentation/institution_availability_screen.dart';
 import 'features/meetings/presentation/meeting_detail_screen.dart';
+import 'features/meetings/presentation/meeting_join_error_screen.dart';
+import 'features/meetings/presentation/meeting_join_fallback_screen.dart';
 import 'features/meetings/presentation/meeting_live_room_screen.dart';
 import 'features/meetings/presentation/meeting_room_screen.dart';
 import 'features/meetings/presentation/meeting_summary_screen.dart';
@@ -342,7 +344,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Institution-owned public booking pages — /i/:slug/meet/:bookingSlug
     if (path.startsWith('/i/')) return true;
 
-    // Pre-join screen — guests arrive here from booking confirmation emails
+    // Pre-join screen — guests arrive here from booking confirmation emails.
+    // The bare `/meetings/join` (codeless legacy links) is public too so an
+    // external guest reaches the code-entry recovery screen, never a login wall.
+    if (path == '/meetings/join') return true;
+    if (path == '/meetings/join-error') return true;
     if (path.startsWith('/meetings/join/')) return true;
     // Guest-reachable meeting paths: room (pre-live lobby), waiting, live, summary
     if (RegExp(
@@ -950,6 +956,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/meetings/new',
             builder: (_, __) => const CreateMeetingScreen(),
+          ),
+          // Codeless recovery route — MUST precede `/meetings/join/:code` and
+          // `/meetings/:id`. Older emails shipped a codeless `/meetings/join`
+          // button; without this it fell through to `/meetings/:id` (id="join")
+          // → 404 → DioException. Renders a guest-safe code-entry fallback.
+          GoRoute(
+            path: '/meetings/join',
+            builder: (context, state) => const MeetingJoinFallbackScreen(),
+          ),
+          // Guest-safe terminal fallback — a MEETING context that could not be
+          // resolved must land here, never on the generic RealtimeRoomScreen.
+          GoRoute(
+            path: '/meetings/join-error',
+            builder: (context, state) => MeetingJoinErrorScreen(
+              meetingId: state.uri.queryParameters['meetingId'],
+              sessionId: state.uri.queryParameters['sessionId'],
+              code: state.uri.queryParameters['code'],
+              guestId: state.uri.queryParameters['guestId'],
+              reason: state.uri.queryParameters['reason'],
+            ),
           ),
           GoRoute(
             path: '/meetings/join/:code',
@@ -1800,6 +1826,31 @@ final routerProvider = Provider<GoRouter>((ref) {
               ' from=${state.uri} to=$target'
               ' meetingId=$meetingId sessionId=$sessionId'
               ' code=$code guestId=$guestId screen=RealtimeRoomScreen',
+            );
+            return target;
+          }
+
+          // HARD BLOCK — a `guestId` on a `/realtime/` link is a meeting-guest
+          // signal (guests only ever exist for meetings). If we reach here the
+          // surface could NOT be resolved (transport error / expired guest
+          // token / unknown session). We must NOT fall through to
+          // RealtimeRoomScreen for a meeting guest, so divert to the guest-safe
+          // error screen with diagnostics instead.
+          if (guestId.isNotEmpty) {
+            final target = Uri(
+              path: '/meetings/join-error',
+              queryParameters: <String, String>{
+                'sessionId': sessionId,
+                if (code.isNotEmpty) 'code': code,
+                'guestId': guestId,
+                'reason': 'surface_unresolved',
+              },
+            ).toString();
+            debugPrint(
+              '[killswitch] realtime->join-error'
+              ' from=${state.uri} to=$target'
+              ' sessionId=$sessionId code=$code guestId=$guestId'
+              ' screen=RealtimeRoomScreen',
             );
             return target;
           }

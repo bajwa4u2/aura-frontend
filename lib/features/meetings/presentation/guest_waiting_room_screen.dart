@@ -119,10 +119,10 @@ class _GuestWaitingRoomScreenState
     // Production-visible (not kDebugMode-gated): proves the guest routes to a
     // meeting surface, never the generic `/realtime/` transport screen.
     debugPrint(
-      '[meeting-join] GuestWaitingRoomScreen'
-      ' from=${GoRouterState.of(context).uri} to=$target'
+      '[guest-join-click] GuestWaitingRoomScreen'
+      ' currentUrl=${GoRouterState.of(context).uri} targetUrl=$target'
       ' meetingId=${widget.meetingId} sessionId=$sessionId'
-      ' code=$code screen=GuestWaitingRoomScreen',
+      ' code=$code guestId=${(widget.guestId ?? '').trim()}',
     );
     context.push(target);
   }

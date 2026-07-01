@@ -49,7 +49,11 @@ bool isMemberShellPath(String path) {
       // Meetings platform
       path == '/meetings' ||
       path == '/meetings/new' ||
-      RegExp(r'^/meetings/[^/]+$').hasMatch(path) ||
+      // `/meetings/join` (codeless legacy links) is a PUBLIC guest recovery
+      // route — exclude it from member gating so guests are never bounced to
+      // login / verify-email. Real meeting detail ids still gate normally.
+      (RegExp(r'^/meetings/[^/]+$').hasMatch(path) &&
+          path != '/meetings/join') ||
       path == '/availability' ||
       // Institution onboarding/entry points — these require personal auth
       // before institution auth. NOTE: `/institutions` itself is *public*
