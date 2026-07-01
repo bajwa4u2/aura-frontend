@@ -68,7 +68,19 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  port_in_redirect off;' \
 '  server_tokens off;' \
 '' \
-'  # Cache static assets aggressively.' \
+'  # App shell / entrypoints have STABLE names but change every build, so' \
+'  # they MUST revalidate. Serving them immutable (below) froze returning' \
+'  # users on the old build for up to 30 days — the root cause of the' \
+'  # "stale frontend after deploy" problem. no-cache still allows etag 304s.' \
+'  # Exact (=) and the .part.js regex are matched before the immutable rule.' \
+'  location = /index.html { add_header Cache-Control "no-cache"; }' \
+'  location = /flutter_service_worker.js { add_header Cache-Control "no-cache"; }' \
+'  location = /flutter_bootstrap.js { add_header Cache-Control "no-cache"; }' \
+'  location = /version.json { add_header Cache-Control "no-cache"; }' \
+'  location = /main.dart.js { add_header Cache-Control "no-cache"; }' \
+'  location ~* \.part\.js$ { try_files $uri =404; add_header Cache-Control "no-cache"; }' \
+'' \
+'  # Cache truly content-addressed assets aggressively (hashed names).' \
 '  location ~* \.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$ {' \
 '    try_files $uri =404;' \
 '    expires 30d;' \
