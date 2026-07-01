@@ -114,7 +114,17 @@ class _GuestWaitingRoomScreenState
     final guestParam = (widget.guestId ?? '').trim().isNotEmpty
         ? '&guestId=${Uri.encodeComponent(widget.guestId!.trim())}'
         : '';
-    context.push('$livePath?sessionId=$sessionId&isHost=false$codeParam$guestParam');
+    final target =
+        '$livePath?sessionId=$sessionId&isHost=false$codeParam$guestParam';
+    // Production-visible (not kDebugMode-gated): proves the guest routes to a
+    // meeting surface, never the generic `/realtime/` transport screen.
+    debugPrint(
+      '[meeting-join] GuestWaitingRoomScreen'
+      ' from=${GoRouterState.of(context).uri} to=$target'
+      ' meetingId=${widget.meetingId} sessionId=$sessionId'
+      ' code=$code screen=GuestWaitingRoomScreen',
+    );
+    context.push(target);
   }
 
   @override

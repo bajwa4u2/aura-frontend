@@ -217,6 +217,22 @@ class RealtimeRepository {
     });
   }
 
+  /// Router kill-switch support — resolve just enough of a session to decide
+  /// whether a `/realtime/:sessionId` deep link actually points at a MEETING
+  /// surface (which must be diverted to the meeting live room rather than the
+  /// generic realtime call screen). Best-effort: a single GET, and any failure
+  /// returns null so legitimate direct-call navigation is never blocked.
+  Future<RealtimeSession?> fetchSessionCore(String sessionId) async {
+    final id = sessionId.trim();
+    if (id.isEmpty) return null;
+    try {
+      final res = await _dio.get('/realtime/sessions/$id');
+      return RealtimeSession.fromJson(_unwrapMap(res.data));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<List<RealtimeSession>> listMySessions() async {
     final res = await _dio.get('/realtime/sessions', queryParameters: {'scope': 'me'});
     final raw = _unwrapData(res.data);

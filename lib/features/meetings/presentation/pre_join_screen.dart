@@ -73,22 +73,32 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           : '';
 
       if (result.shouldWait) {
-        context.push(
-          '/meetings/${result.meetingId}/waiting'
-          '?sessionId=${result.sessionId ?? ''}'
-          '&code=${Uri.encodeComponent(widget.meetingCode)}'
-          '$guestIdSuffix',
+        final target = '/meetings/${result.meetingId}/waiting'
+            '?sessionId=${result.sessionId ?? ''}'
+            '&code=${Uri.encodeComponent(widget.meetingCode)}'
+            '$guestIdSuffix';
+        _logGuestJoin(
+          context,
+          target: target,
+          meetingId: result.meetingId,
+          sessionId: result.sessionId,
         );
+        context.push(target);
         return;
       }
 
       if (result.sessionId != null) {
-        context.push(
-          '/meetings/${result.meetingId}/room'
-          '?sessionId=${result.sessionId}'
-          '&code=${Uri.encodeComponent(widget.meetingCode)}'
-          '$guestIdSuffix',
+        final target = '/meetings/${result.meetingId}/room'
+            '?sessionId=${result.sessionId}'
+            '&code=${Uri.encodeComponent(widget.meetingCode)}'
+            '$guestIdSuffix';
+        _logGuestJoin(
+          context,
+          target: target,
+          meetingId: result.meetingId,
+          sessionId: result.sessionId,
         );
+        context.push(target);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -105,6 +115,25 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     } finally {
       if (mounted) setState(() => _joining = false);
     }
+  }
+
+  // P0 guest-join telemetry — proves guest links resolve to meeting routes,
+  // never the generic `/realtime/` transport screen. Kept deliberately loud
+  // so a regression is visible in the trace without a repro.
+  void _logGuestJoin(
+    BuildContext context, {
+    required String target,
+    required String? meetingId,
+    required String? sessionId,
+  }) {
+    // Production-visible (not kDebugMode-gated): proves the guest routes to a
+    // meeting surface, never the generic `/realtime/` transport screen.
+    debugPrint(
+      '[meeting-join] PreJoinScreen'
+      ' from=${GoRouterState.of(context).uri} to=$target'
+      ' meetingId=${meetingId ?? ''} sessionId=${sessionId ?? ''}'
+      ' code=${widget.meetingCode} screen=PreJoinScreen',
+    );
   }
 
   void _applyIdentity(MeetingIdentityRef? identity) {

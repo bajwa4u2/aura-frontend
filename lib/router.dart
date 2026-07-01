@@ -8,10 +8,14 @@ import 'app/app_shell.dart';
 import 'app/route_classification.dart';
 import 'app/route_targets.dart';
 import 'core/auth/admin_access_provider.dart';
+import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
 import 'core/auth/session_providers.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
+import 'features/meetings/application/meetings_provider.dart';
+import 'features/realtime/application/realtime_providers.dart';
+import 'features/realtime/domain/realtime_enums.dart';
 
 // Auth
 import 'features/auth/presentation/auth_screen.dart';
@@ -395,6 +399,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     );
     return '$kRouterBootRoute?redirect=$encoded';
   }
+
+  // ── MEETING KILL SWITCH ────────────────────────────────────────────
+  //
+  // A `/realtime/:sessionId` deep link must NEVER render RealtimeRoomScreen
+  // (the generic "Audio meeting / Join call / Connection lost" transport
+  // screen) when the underlying session is a MEETING surface. No current
+  // meeting code path emits `/realtime/` links — but stale links, cached
+  // deep links, and pre-split deployments can still exist in the wild, so
+  // the router diverts them architecturally, before the screen ever mounts.
+  //
+  // Resolutions are cached per sessionId to keep legitimate direct-call and
+  // live-room navigation on the fast path (no extra fetch after the first)
+  // and to guard against redirect loops.
+  final realtimeMeetingRedirects = <String, String>{}; // sessionId → meetingId
+  final realtimeSurfaceResolved = <String>{}; // sessionIds confirmed non-meeting
 
   return GoRouter(
     refreshListenable: refresh,
@@ -1704,6 +1723,88 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/realtime/:sessionId',
+        // MEETING KILL SWITCH — divert meeting sessions to the meeting live
+        // room before RealtimeRoomScreen can mount. See notes near the
+        // realtimeMeetingRedirects cache above.
+        redirect: (context, state) async {
+          final sessionId = (state.pathParameters['sessionId'] ?? '').trim();
+          if (sessionId.isEmpty) return null;
+
+          final guestId = (state.uri.queryParameters['guestId'] ?? '').trim();
+          final code = (state.uri.queryParameters['code'] ?? '').trim();
+
+          // Fast path: already confirmed non-meeting → let the call screen render.
+          if (realtimeSurfaceResolved.contains(sessionId) &&
+              !realtimeMeetingRedirects.containsKey(sessionId)) {
+            return null;
+          }
+
+          var meetingId = realtimeMeetingRedirects[sessionId];
+          if (meetingId == null && !realtimeSurfaceResolved.contains(sessionId)) {
+            // Guests arriving on a stale `/realtime/` deep link may not be
+            // authed yet; exchange the guest token first (using the guestId
+            // that survives web reloads) so the surface lookup can succeed.
+            // Without this the lookup 401s and the guest falls through to the
+            // very screen we are trying to avoid.
+            if (guestId.isNotEmpty) {
+              final tokenStore = ref.read(tokenStoreProvider);
+              await tokenStore.load();
+              if (!tokenStore.isAuthed) {
+                try {
+                  final guestAuth = await ref
+                      .read(meetingsRepositoryProvider)
+                      .exchangeGuestAuth(guestId);
+                  if (guestAuth.accessToken.trim().isNotEmpty) {
+                    await tokenStore.setSession(
+                      accessToken: guestAuth.accessToken,
+                    );
+                  }
+                } catch (_) {}
+              }
+            }
+
+            final session = await ref
+                .read(realtimeRepositoryProvider)
+                .fetchSessionCore(sessionId);
+            if (session != null) {
+              if (session.surfaceType == RealtimeSurfaceType.meeting) {
+                final resolved = (session.surfaceId ?? '').trim();
+                if (resolved.isNotEmpty) {
+                  meetingId = resolved;
+                  realtimeMeetingRedirects[sessionId] = resolved;
+                }
+              } else {
+                // Confirmed non-meeting (direct call / live room) — cache so
+                // we never re-fetch on subsequent navigations to this session.
+                realtimeSurfaceResolved.add(sessionId);
+              }
+            }
+            // On a null session (transport error / not authed) we intentionally
+            // do NOT cache, so a later retry can still resolve and divert.
+          }
+
+          if (meetingId != null && meetingId.isNotEmpty) {
+            final target = Uri(
+              path: '/meetings/$meetingId/live',
+              queryParameters: <String, String>{
+                'sessionId': sessionId,
+                'isHost': 'false',
+                if (code.isNotEmpty) 'code': code,
+                if (guestId.isNotEmpty) 'guestId': guestId,
+              },
+            ).toString();
+            // Production-visible (not kDebugMode-gated) so a live diversion is
+            // observable in the browser/device console without a repro build.
+            debugPrint(
+              '[killswitch] realtime->meeting'
+              ' from=${state.uri} to=$target'
+              ' meetingId=$meetingId sessionId=$sessionId'
+              ' code=$code guestId=$guestId screen=RealtimeRoomScreen',
+            );
+            return target;
+          }
+          return null;
+        },
         builder: (context, state) => RealtimeRoomScreen(
           sessionId: state.pathParameters['sessionId'] ?? '',
           action: state.uri.queryParameters['action'],
