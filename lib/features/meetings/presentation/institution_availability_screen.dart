@@ -751,10 +751,14 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
     } catch (_) {}
   }
 
-  String _memberName(Map<String, dynamic> m) =>
-      (m['displayName'] as String?)?.isNotEmpty == true
-          ? m['displayName'] as String
-          : (m['handle'] as String? ?? 'Unknown');
+  String _memberName(Map<String, dynamic> m) {
+    final user = m['user'];
+    final displayName = user is Map ? (user['displayName'] as String?) : null;
+    final handle = user is Map ? (user['handle'] as String?) : null;
+    if (displayName?.isNotEmpty == true) return displayName!;
+    if (handle?.isNotEmpty == true) return handle!;
+    return 'Unknown';
+  }
 
   @override
   void dispose() {
@@ -826,7 +830,7 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
                     ),
                     ..._members.map(
                       (m) => DropdownMenuItem<String?>(
-                        value: m['id'] as String,
+                        value: (m['userId'] ?? m['user']?['id'] ?? m['id']) as String?,
                         child: Text(_memberName(m)),
                       ),
                     ),
@@ -968,10 +972,14 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
     } catch (_) {}
   }
 
-  String _memberName(Map<String, dynamic> m) =>
-      (m['displayName'] as String?)?.isNotEmpty == true
-          ? m['displayName'] as String
-          : (m['handle'] as String? ?? 'Unknown');
+  String _memberName(Map<String, dynamic> m) {
+    final user = m['user'];
+    final displayName = user is Map ? (user['displayName'] as String?) : null;
+    final handle = user is Map ? (user['handle'] as String?) : null;
+    if (displayName?.isNotEmpty == true) return displayName!;
+    if (handle?.isNotEmpty == true) return handle!;
+    return 'Unknown';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1020,7 +1028,7 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
                     ),
                     ..._members.map(
                       (m) => DropdownMenuItem<String?>(
-                        value: m['id'] as String,
+                        value: (m['userId'] ?? m['user']?['id'] ?? m['id']) as String?,
                         child: Text(_memberName(m)),
                       ),
                     ),
