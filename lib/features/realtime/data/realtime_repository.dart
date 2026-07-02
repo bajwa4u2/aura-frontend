@@ -177,9 +177,14 @@ class RealtimeRepository {
     final sessionRes = await _dio.get('/realtime/sessions/$sessionId');
 
     final policyRes = await _safeGet('/realtime/sessions/$sessionId/policy');
+    // Consent is a strict @CurrentUserId member endpoint: a meeting GUEST's
+    // token resolves no member userId, so it 401s (403 on some paths) exactly
+    // like /policy. It MUST tolerate 401/403 (the _safeGet default), not just
+    // 404 — otherwise a guest's consent 401 rethrows and fails the whole
+    // bundle fetch → hydrateSession → _performJoin → "Sign in to join this
+    // call." (The [404]-only override was the bug; guests could never join.)
     final consentRes = await _safeGet(
       '/realtime/sessions/$sessionId/consent',
-      toleratedStatusCodes: const <int>[404],
     );
     final recordingsRes = await _safeGet(
       '/realtime/sessions/$sessionId/recordings',
