@@ -693,6 +693,19 @@ class _MeetingVideoGrid extends StatelessWidget {
     }
 
     if (remoteEntries.isEmpty) {
+      // A remote participant may be in the roster but its media renderer hasn't
+      // arrived yet. In that case show a CONNECTING avatar — never the local
+      // camera in the main slot (that was the "each side sees its own video"
+      // bug). Local stays a PiP. Only when we're genuinely alone do we show the
+      // local-preview "waiting" layout.
+      final remotes = participants
+          .where((p) =>
+              p.userId.trim().isNotEmpty &&
+              p.userId.trim() != localUserId.trim())
+          .toList();
+      if (remotes.isNotEmpty) {
+        return _buildConnectingLayout(remotes.first, localRenderer);
+      }
       return _buildWaitingLayout(localRenderer, isLocalScreenSharing);
     }
 
@@ -703,6 +716,70 @@ class _MeetingVideoGrid extends StatelessWidget {
 
     // Grid: up to 4 participants in 2×2
     return _buildGridLayout(remoteEntries, localRenderer);
+  }
+
+  /// Remote participant present but no remote renderer yet. Shows an avatar +
+  /// "Connecting…" as the MAIN view with the local camera as a PiP — never the
+  /// local camera masquerading as the remote tile.
+  Widget _buildConnectingLayout(
+    RealtimeParticipant remote,
+    RTCVideoRenderer? local,
+  ) {
+    final name = (remote.displayName ?? '').trim();
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return Stack(
+      children: [
+        const Positioned.fill(child: ColoredBox(color: Color(0xFF0B1120))),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 44,
+                backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.25),
+                backgroundImage: remote.avatarUrl?.trim().isNotEmpty == true
+                    ? NetworkImage(remote.avatarUrl!)
+                    : null,
+                child: remote.avatarUrl?.trim().isNotEmpty == true
+                    ? null
+                    : Text(
+                        initial,
+                        style: const TextStyle(
+                          color: Color(0xFFE5E7EB),
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                name.isNotEmpty ? 'Connecting to $name…' : 'Connecting…',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (local != null)
+          Positioned(
+            right: 12,
+            bottom: 130,
+            width: 100,
+            height: 140,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: RTCVideoView(
+                local,
+                mirror: true,
+                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildWaitingLayout(RTCVideoRenderer? local, bool isScreenSharing) {

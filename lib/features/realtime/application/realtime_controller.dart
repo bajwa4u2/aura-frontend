@@ -259,7 +259,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         metadata: metadata,
       );
       _applyBundle(bundle);
-      await _forceNegotiationIfNeeded();
+      await _reconcileRtcPeers('hydrate');
       final normalizedKind = kind.trim().toLowerCase();
       state = state.copyWith(
         isBusy: false,
@@ -361,7 +361,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     try {
       final bundle = await _repository.loadSessionBundle(trimmed);
       _applyBundle(bundle);
-      await _forceNegotiationIfNeeded();
+      await _reconcileRtcPeers('hydrate-live');
       state = state.copyWith(
         isBusy: false,
         infoMessage: state.isJoined ? state.infoMessage : 'Live loaded.',
@@ -675,8 +675,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     // self-retries, so a media/negotiation hiccup must not un-join the user.
     try {
       await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
-      await _flushPendingOffers(refreshTurnCredentials: true);
-      await _forceNegotiationIfNeeded();
+      await _reconcileRtcPeers('join', refreshTurnCredentials: true);
       debugPrint('[join-seq] 8 media+negotiation complete sessionId=$sessionId');
     } catch (e, st) {
       debugPrint(
@@ -716,8 +715,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         infoMessage: 'Your live session was restored.',
       );
       _startHeartbeat();
-      await _flushPendingOffers(refreshTurnCredentials: true);
-      await _forceNegotiationIfNeeded();
+      await _reconcileRtcPeers('resume', refreshTurnCredentials: true);
     } catch (error) {
       state = state.copyWith(
         joinState: _mapJoinError(error),
@@ -1400,8 +1398,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     if (snapshot.ready && state.isJoined) {
-      unawaited(_flushPendingOffers());
-      unawaited(_forceNegotiationIfNeeded());
+      unawaited(_reconcileRtcPeers('media-ready'));
     }
   }
 
@@ -1433,11 +1430,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       },
     );
 
+    debugPrint('[rtc-offer] created target=${_rawSocket(targetSocketId)}');
     await _socketService.emitAck('session:offer', <String, dynamic>{
       'sessionId': sessionId,
       'targetSocketId': targetSocketId,
       'sdp': <String, dynamic>{'sdp': offer.sdp, 'type': offer.type},
     });
+    debugPrint('[rtc-offer] sent target=${_rawSocket(targetSocketId)}');
   }
 
   void _patchMyTrack({bool? audioOn, bool? videoOn}) {
@@ -1541,14 +1540,12 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         // answers. One-directional, so no glare, and the offerer always has a
         // valid target socketId.
         if (state.isJoined) {
-          // Roster-driven, glare-safe offering. The merge above has already put
-          // the newcomer into state.participants, so the sweep offers to them
-          // (if we're the deterministic initiator) using the roster socketId.
-          // This fires reliably whether we learned the peer via this event or
-          // the hydrate roster — the earlier event-only path left both sides
-          // sent=[] when neither got the event.
-          unawaited(_flushPendingOffers());
-          unawaited(_forceNegotiationIfNeeded());
+          // Convergence-based negotiation. The merge above put the newcomer
+          // (with its live socketId from this broadcast) into state.participants;
+          // as the EXISTING peer we now offer to it. The newcomer running the
+          // same reconcile has us WITHOUT a live socketId (REST/hydrate) and is
+          // filtered out, so it only answers — one-directional, no arbitration.
+          unawaited(_reconcileRtcPeers('participant.joined'));
         }
         return;
       case 'session:participant.left':
@@ -1614,9 +1611,19 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           if (peerKey.isEmpty || fromSocketId == null || fromSocketId.isEmpty) {
             return;
           }
+          // Perfect-negotiation politeness: the LOWER raw socket id is polite
+          // (yields on a glare collision). Deterministic and symmetric, so both
+          // ends agree on who yields without any extra signaling.
+          final meSocketId = _socketService.socketId ?? '';
+          final polite =
+              _rawSocket(meSocketId).compareTo(_rawSocket(fromSocketId)) < 0;
+          debugPrint(
+            '[rtc-offer] received peer=${_rawSocket(fromSocketId)} polite=$polite',
+          );
           final answer = await _mediaService.handleRemoteOffer(
             peerKey: peerKey,
             targetSocketId: fromSocketId,
+            polite: polite,
             configuration: configuration,
             sdp: Map<String, dynamic>.from(
               (event.payload['sdp'] ?? const <String, dynamic>{}) as Map,
@@ -1638,6 +1645,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
               );
             },
           );
+          if (answer == null) {
+            // Glare: the impolite peer ignored this offer and keeps its own.
+            debugPrint(
+              '[rtc-offer] ignored (glare) peer=${_rawSocket(fromSocketId)}',
+            );
+            return;
+          }
+          debugPrint('[rtc-answer] sent peer=${_rawSocket(fromSocketId)}');
           await _socketService.emitAck('session:answer', <String, dynamic>{
             'sessionId': sessionId,
             'targetSocketId': fromSocketId,
@@ -1652,6 +1667,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           if (peerKey.isEmpty) return;
           final sdp = event.payload['sdp'];
           if (sdp is Map) {
+            debugPrint('[rtc-answer] received peer=${_rawSocket(peerKey)}');
             await _mediaService.handleRemoteAnswer(
               peerKey: peerKey,
               sdp: Map<String, dynamic>.from(sdp),
@@ -1967,50 +1983,66 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     return value.isEmpty ? null : value;
   }
 
-  Future<void> _forceNegotiationIfNeeded() async {
+  String _rawSocket(String s) =>
+      s.startsWith('socket:') ? s.substring('socket:'.length) : s;
+
+  /// SINGLE convergence-based RTC negotiation entry point. Every source that can
+  /// change presence or local media routes through here (join, hydrate,
+  /// media-ready, camera/mic/screen toggle, participant.joined, reconnect,
+  /// resume) — negotiation never depends on the participant.joined event alone.
+  ///
+  /// Invariant (dictated by the backend join contract): the EXISTING peer offers
+  /// to the NEWCOMER; the newcomer only answers. We only ever hold a peer's LIVE
+  /// socketId if we learned it from a participant.joined broadcast — i.e. we
+  /// were already in the room when they joined. A newcomer sees existing peers
+  /// only via the REST/hydrate roster, WITHOUT a live socketId, so it is
+  /// filtered out below and never offers. Therefore "I hold this peer's live
+  /// socketId and have no peer yet" ≡ "I am the existing peer for them" ≡ "I
+  /// offer". Reconnect races where both briefly hold each other's socket are
+  /// resolved by perfect-negotiation in the media service's handleRemoteOffer,
+  /// NOT by any arbitration here.
+  Future<void> _reconcileRtcPeers(
+    String reason, {
+    bool refreshTurnCredentials = false,
+  }) async {
     final sessionId = _managedSessionId;
-    if (sessionId.isEmpty) return;
-    if (!state.isJoined) return;
-    if (!state.isMediaReady) return;
+    if (sessionId.isEmpty || !state.isJoined) return;
 
     final meSocketId = _socketService.socketId;
     if (meSocketId == null || meSocketId.isEmpty) return;
+    final myRaw = _rawSocket(meSocketId);
 
-    String rawSock(String s) =>
-        s.startsWith('socket:') ? s.substring('socket:'.length) : s;
-    final myRaw = rawSock(meSocketId);
+    // An EXISTING peer is only re-offered on a local media change (a track was
+    // added/removed). enabled-toggles don't need SDP renegotiation.
+    const renegotiationReasons = {
+      'camera-toggle',
+      'mic-toggle',
+      'screen-toggle',
+      'track-change',
+    };
+    final allowRenegotiate = renegotiationReasons.contains(reason);
 
     for (final participant in state.participants) {
-      final peerSocketId = participant.runtimeDeviceId?.trim() ?? '';
-      if (peerSocketId.isEmpty) continue;
-      final peerRaw = rawSock(peerSocketId);
-      if (peerRaw.isEmpty || peerRaw == myRaw) continue;
+      final peerSocketId = (participant.runtimeDeviceId ?? '').trim();
+      if (peerSocketId.isEmpty) continue; // REST-only roster entry: no live socket
+      final peerRaw = _rawSocket(peerSocketId);
+      if (peerRaw.isEmpty || peerRaw == myRaw) continue; // self
 
-      final peerKey = peerSocketId;
+      final hasPeer = _mediaService.hasPeer(peerSocketId);
+      final shouldOffer = !hasPeer || allowRenegotiate;
 
-      // The offerer must be the peer that HAS the other's live socketId — which
-      // is the EXISTING peer, not the higher socket. A NEWCOMER learns an
-      // already-present peer via the hydrate roster WITHOUT its live socketId
-      // (runtimeDeviceId empty), so it hits the `peerSocketId.isEmpty` continue
-      // above and never offers — only the existing peer (which got the
-      // newcomer's socketId from participant.joined) reaches here. Using the
-      // higher-socket rule instead deadlocked when the existing peer was the
-      // lower socket: it had the target but "waited", while the higher newcomer
-      // had no target.
-      //   - NEW connection: offer to any peer whose socketId we have. No glare,
-      //     because the newcomer lacks OUR socketId and is filtered out above.
-      //   - RENEGOTIATION (already connected, both have sockets): only the
-      //     higher raw socket re-offers, to avoid a media-change collision.
-      final hasConn = _mediaService.hasPeer(peerKey);
-      if (hasConn && myRaw.compareTo(peerRaw) <= 0) continue;
+      debugPrint(
+        '[rtc-reconcile] reason=$reason peer=$peerRaw self=$myRaw'
+        ' hasPeer=$hasPeer shouldOffer=$shouldOffer',
+      );
 
-      if (_pendingOfferTargets.containsKey(peerKey)) continue;
-
-      _queueOfferTarget(peerKey: peerKey, targetSocketId: peerSocketId);
+      if (!shouldOffer) continue;
+      if (_pendingOfferTargets.containsKey(peerSocketId)) continue;
+      _queueOfferTarget(peerKey: peerSocketId, targetSocketId: peerSocketId);
     }
 
     if (_pendingOfferTargets.isNotEmpty) {
-      await _flushPendingOffers();
+      await _flushPendingOffers(refreshTurnCredentials: refreshTurnCredentials);
     }
   }
 

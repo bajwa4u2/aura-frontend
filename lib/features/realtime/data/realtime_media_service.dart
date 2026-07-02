@@ -44,6 +44,8 @@ class RealtimeMediaService {
   final Map<String, RTCVideoRenderer> _remoteRenderers =
       <String, RTCVideoRenderer>{};
   final Map<String, MediaStream> _remoteStreams = <String, MediaStream>{};
+  // Perfect-negotiation: peers for which we currently have an offer in flight.
+  final Map<String, bool> _makingOffer = <String, bool>{};
 
   MediaStream? _localStream;
   RTCVideoRenderer? _localRenderer;
@@ -154,7 +156,7 @@ class RealtimeMediaService {
       }
     }
     _lastSentTrackKinds = kinds;
-    debugPrint('[rtc] local tracks attached peerKey=$peerKey tracks=$kinds');
+    debugPrint('[rtc-track] local attached peer=$peerKey kinds=$kinds');
     _publish();
   }
 
@@ -199,7 +201,7 @@ class RealtimeMediaService {
       if (kind == 'audio') _onTrackAudioSeen = true;
       if (kind == 'video') _onTrackVideoSeen = true;
       debugPrint(
-        '[rtc] onTrack REMOTE peerKey=$peerKey kind=$kind'
+        '[rtc-track] remote onTrack peer=$peerKey kind=$kind'
         ' streams=${event.streams.length}',
       );
       try {
@@ -212,7 +214,7 @@ class RealtimeMediaService {
         _remoteRenderers[peerKey] = renderer;
         _error = null;
         _publish();
-        debugPrint('[rtc] remote renderer attached peerKey=$peerKey');
+        debugPrint('[rtc-render] renderer stored key=$peerKey (onTrack)');
       } catch (error) {
         debugPrint('[rtc] onTrack ERROR peerKey=$peerKey err=$error');
         _error = error.toString();
@@ -229,7 +231,7 @@ class RealtimeMediaService {
       _onTrackAudioSeen = _onTrackAudioSeen || stream.getAudioTracks().isNotEmpty;
       _onTrackVideoSeen = _onTrackVideoSeen || stream.getVideoTracks().isNotEmpty;
       debugPrint(
-        '[rtc] onAddStream REMOTE peerKey=$peerKey id=${stream.id}'
+        '[rtc-track] remote onAddStream peer=$peerKey id=${stream.id}'
         ' a=${stream.getAudioTracks().length} v=${stream.getVideoTracks().length}',
       );
       unawaited(() async {
@@ -241,7 +243,7 @@ class RealtimeMediaService {
           _remoteRenderers[peerKey] = renderer;
           _error = null;
           _publish();
-          debugPrint('[rtc] remote renderer attached (onAddStream) peerKey=$peerKey');
+          debugPrint('[rtc-render] renderer stored key=$peerKey (onAddStream)');
         } catch (error) {
           debugPrint('[rtc] onAddStream ERROR peerKey=$peerKey err=$error');
         }
@@ -297,21 +299,59 @@ class RealtimeMediaService {
       peerKey: peerKey,
     );
 
-    final offer = await connection.createOffer(<String, dynamic>{
-      'offerToReceiveAudio': true,
-      'offerToReceiveVideo': true,
-    });
-    await connection.setLocalDescription(offer);
-    return offer;
+    // Perfect-negotiation: mark that we have an offer in flight so a colliding
+    // inbound offer is detected in handleRemoteOffer. Cleared once our local
+    // description is set (after which signalingState alone flags the collision).
+    _makingOffer[peerKey] = true;
+    try {
+      final offer = await connection.createOffer(<String, dynamic>{
+        'offerToReceiveAudio': true,
+        'offerToReceiveVideo': true,
+      });
+      await connection.setLocalDescription(offer);
+      return offer;
+    } finally {
+      _makingOffer[peerKey] = false;
+    }
   }
 
-  Future<RTCSessionDescription> handleRemoteOffer({
+  /// Returns the answer to send, or `null` when this offer must be IGNORED
+  /// (perfect-negotiation glare: we are the impolite peer and a collision
+  /// occurred — we keep our own offer and send no answer).
+  Future<RTCSessionDescription?> handleRemoteOffer({
     required String peerKey,
     required String? targetSocketId,
+    required bool polite,
     required Map<String, dynamic> configuration,
     required Map<String, dynamic> sdp,
     required void Function(RTCIceCandidate candidate) onIceCandidate,
   }) async {
+    final existing = _peers[peerKey];
+
+    // Perfect-negotiation collision handling. A collision = an inbound offer
+    // arrives while we have our own offer outstanding (making it, or signaling
+    // state is not stable). The IMPOLITE peer ignores the inbound offer (keeps
+    // its own); the POLITE peer rolls back its offer and accepts the inbound.
+    if (existing != null) {
+      final st = existing.signalingState;
+      final collision = (_makingOffer[peerKey] == true) ||
+          (st != null && st != RTCSignalingState.RTCSignalingStateStable);
+      if (collision) {
+        if (!polite) {
+          debugPrint('[rtc] glare: impolite IGNORES offer peer=$peerKey');
+          return null;
+        }
+        debugPrint('[rtc] glare: polite ROLLS BACK then accepts peer=$peerKey');
+        try {
+          await existing.setLocalDescription(
+            RTCSessionDescription(null, 'rollback'),
+          );
+        } catch (error) {
+          debugPrint('[rtc] rollback failed peer=$peerKey err=$error');
+        }
+      }
+    }
+
     final isNewPeer = !_peers.containsKey(peerKey);
     final connection = await _ensurePeer(
       configuration: configuration,
