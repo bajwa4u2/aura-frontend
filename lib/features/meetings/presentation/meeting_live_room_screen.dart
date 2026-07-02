@@ -361,6 +361,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             child: _RtcDebugBadge(
               mediaService: ref.read(realtimeMediaServiceProvider),
               participants: state.participants,
+              meSocket: ref.read(realtimeSocketServiceProvider).socketId ?? '',
+              isJoined: state.isJoined,
+              isMediaReady: state.isMediaReady,
             ),
           ),
 
@@ -513,12 +516,19 @@ class _RtcDebugBadge extends StatelessWidget {
   const _RtcDebugBadge({
     required this.mediaService,
     required this.participants,
+    required this.meSocket,
+    required this.isJoined,
+    required this.isMediaReady,
   });
 
   final RealtimeMediaService mediaService;
   final List<RealtimeParticipant> participants;
+  final String meSocket;
+  final bool isJoined;
+  final bool isMediaReady;
 
   String _short(String k) => k.length > 6 ? k.substring(0, 6) : k;
+  String _raw(String s) => s.startsWith('socket:') ? s.substring(7) : s;
 
   @override
   Widget build(BuildContext context) {
@@ -534,13 +544,19 @@ class _RtcDebugBadge extends StatelessWidget {
               .where((x) => x.isNotEmpty)
               .toList();
           final mapped = rKeys.where(partIds.contains).length;
+          final myRaw = _raw(meSocket);
+          // For each peer, 'I' if I'm the deterministic initiator (higher raw
+          // socket) so I should be offering; 'w' if I should wait for theirs.
+          final initFlags = partIds
+              .map((p) => myRaw.compareTo(_raw(p)) > 0 ? 'I' : 'w')
+              .join(',');
           final lines = <String>[
-            'RTC DEBUG',
+            'RTC DEBUG me=${_short(meSocket)} join=$isJoined mediaRdy=$isMediaReady',
             'sent=${s.sentTrackKinds} localVid=${s.localVideoTrackPresent} cam=${s.cameraEnabled}',
             'onTrack A=${s.onTrackAudioSeen} V=${s.onTrackVideoSeen}',
             'remoteRenderers=${rKeys.length} remoteVid=${s.remoteVideoRendererAttached}',
-            'rKeys=${rKeys.map(_short).toList()}',
-            'partIds=${partIds.map(_short).toList()} mapped=$mapped/${rKeys.length}',
+            'peers=${partIds.map(_short).toList()} initiator=[$initFlags]',
+            'rKeys=${rKeys.map(_short).toList()} mapped=$mapped/${rKeys.length}',
           ];
           return Container(
             padding: const EdgeInsets.all(6),
