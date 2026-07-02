@@ -1541,25 +1541,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         // answers. One-directional, so no glare, and the offerer always has a
         // valid target socketId.
         if (state.isJoined) {
-          final newcomerSocket = _transportPeerKeyFromPayload(event.payload);
-          final meSocket = (_socketService.socketId ?? '').trim();
-          String rawSock(String s) =>
-              s.startsWith('socket:') ? s.substring('socket:'.length) : s;
-          final isSelf = newcomerSocket.isNotEmpty &&
-              rawSock(newcomerSocket) == rawSock(meSocket);
-          if (newcomerSocket.isNotEmpty && !isSelf) {
-            debugPrint(
-              '[rtc-init] existing->newcomer offer target=$newcomerSocket'
-              ' me=$meSocket',
-            );
-            _queueOfferTarget(
-              peerKey: newcomerSocket,
-              targetSocketId: newcomerSocket,
-            );
-            unawaited(_flushPendingOffers());
-          }
-          // Renegotiate ONLY peers we already have a connection with (media
-          // changes); this never initiates a new connection.
+          // Roster-driven, glare-safe offering. The merge above has already put
+          // the newcomer into state.participants, so the sweep offers to them
+          // (if we're the deterministic initiator) using the roster socketId.
+          // This fires reliably whether we learned the peer via this event or
+          // the hydrate roster — the earlier event-only path left both sides
+          // sent=[] when neither got the event.
+          unawaited(_flushPendingOffers());
           unawaited(_forceNegotiationIfNeeded());
         }
         return;
@@ -2000,13 +1988,16 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
       final peerKey = peerSocketId;
 
-      // RENEGOTIATION ONLY: re-offer to peers we ALREADY have a connection
-      // with (e.g. after a local media change). New connections are initiated
-      // solely from the participant.joined handler (existing peer → newcomer),
-      // so this never makes a newcomer proactively offer to existing roster
-      // peers — which was the "both waiting" deadlock. No socket-id initiator
-      // rule, no glare, because only one side ever creates the initial offer.
-      if (!_mediaService.hasPeer(peerKey)) continue;
+      // DETERMINISTIC INITIATOR (roster-driven, glare-free). Only the peer with
+      // the higher RAW socket id ever creates the offer (new connection AND
+      // renegotiation); the lower one answers. This is roster-driven so it
+      // fires reliably from ANY trigger (join, media-ready, participant change)
+      // — not only from the participant.joined event, which both sides can miss
+      // when they learn each other via the hydrate roster instead (that gap
+      // left BOTH sides sent=[] / neither offering). Both sides now carry the
+      // peer's socketId in the roster, so the higher side can always build the
+      // offer to the correct target.
+      if (myRaw.compareTo(peerRaw) <= 0) continue;
 
       if (_pendingOfferTargets.containsKey(peerKey)) continue;
 
