@@ -111,10 +111,25 @@ class RealtimeMediaService {
     }
   }
 
+  Future<void> _attachLocalTracks(
+    RTCPeerConnection connection,
+    String peerKey,
+  ) async {
+    final local = _localStream;
+    if (local == null) return;
+    final kinds = <String>[];
+    for (final track in local.getTracks()) {
+      await connection.addTrack(track, local);
+      kinds.add(track.kind ?? '?');
+    }
+    debugPrint('[rtc] local tracks attached peerKey=$peerKey tracks=$kinds');
+  }
+
   Future<RTCPeerConnection> _ensurePeer({
     required String peerKey,
     required Map<String, dynamic> configuration,
     required void Function(RTCIceCandidate candidate) onIceCandidate,
+    bool addLocalTracks = true,
   }) async {
     final existing = _peers[peerKey];
     if (existing != null) return existing;
@@ -123,17 +138,18 @@ class RealtimeMediaService {
     final iceServerCount = (configuration['iceServers'] is List)
         ? (configuration['iceServers'] as List).length
         : 0;
-    final local = _localStream;
-    final localTrackKinds = <String>[];
-    if (local != null) {
-      for (final track in local.getTracks()) {
-        await connection.addTrack(track, local);
-        localTrackKinds.add(track.kind ?? '?');
-      }
+    // OFFERER attaches local tracks up front (it creates the transceivers).
+    // The ANSWERER must NOT — it attaches AFTER setRemoteDescription so the
+    // tracks bind to the offered transceivers (recvonly → sendrecv). Adding
+    // them before setRemoteDescription misaligned the m-lines, so the
+    // answerer's media never reached the offerer → one-way video (host stuck
+    // "waiting for guest" while the guest saw the host).
+    if (addLocalTracks) {
+      await _attachLocalTracks(connection, peerKey);
     }
     debugPrint(
       '[rtc] peer created peerKey=$peerKey iceServers=$iceServerCount'
-      ' localTracks=$localTrackKinds',
+      ' addLocalTracks=$addLocalTracks',
     );
 
     connection.onIceCandidate = (RTCIceCandidate candidate) {
@@ -232,10 +248,12 @@ class RealtimeMediaService {
     required Map<String, dynamic> sdp,
     required void Function(RTCIceCandidate candidate) onIceCandidate,
   }) async {
+    final isNewPeer = !_peers.containsKey(peerKey);
     final connection = await _ensurePeer(
       configuration: configuration,
       onIceCandidate: onIceCandidate,
       peerKey: peerKey,
+      addLocalTracks: false,
     );
 
     await connection.setRemoteDescription(
@@ -244,6 +262,14 @@ class RealtimeMediaService {
         (sdp['type'] ?? 'offer').toString(),
       ),
     );
+
+    // Attach local tracks AFTER setRemoteDescription (answerer path) so they
+    // bind to the offered transceivers and actually reach the offerer. Only for
+    // a freshly-created peer — a renegotiation offer arrives on a peer that
+    // already has its tracks.
+    if (isNewPeer) {
+      await _attachLocalTracks(connection, peerKey);
+    }
 
     final answer = await connection.createAnswer(<String, dynamic>{
       'offerToReceiveAudio': true,
