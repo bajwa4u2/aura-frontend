@@ -354,6 +354,16 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             ),
           ),
 
+          // ── TEMPORARY RTC DEBUG BADGE (video track/render diagnosis) ──
+          Positioned(
+            top: 72,
+            left: 8,
+            child: _RtcDebugBadge(
+              mediaService: ref.read(realtimeMediaServiceProvider),
+              participants: state.participants,
+            ),
+          ),
+
           // E2 — Meeting-branded header with institution + elapsed timer
           Positioned(
             top: 0,
@@ -494,6 +504,72 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 // ---------------------------------------------------------------------------
 // E3 — Video grid: spotlight (1 remote) or grid (2+)
 // ---------------------------------------------------------------------------
+
+// ── TEMPORARY on-screen RTC debug badge ──────────────────────────────────
+// Surfaces the video track/render truth so we stop guessing: what tracks we
+// sent to the peer, whether we received the remote audio/video tracks, how many
+// remote renderers exist, and whether their keys map to roster participants.
+class _RtcDebugBadge extends StatelessWidget {
+  const _RtcDebugBadge({
+    required this.mediaService,
+    required this.participants,
+  });
+
+  final RealtimeMediaService mediaService;
+  final List<RealtimeParticipant> participants;
+
+  String _short(String k) => k.length > 6 ? k.substring(0, 6) : k;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: StreamBuilder<RealtimeMediaSnapshot>(
+        stream: mediaService.snapshots,
+        initialData: mediaService.currentSnapshot,
+        builder: (context, snap) {
+          final s = snap.data ?? mediaService.currentSnapshot;
+          final rKeys = s.remoteRenderers.keys.toList();
+          final partIds = participants
+              .map((p) => (p.runtimeDeviceId ?? '').trim())
+              .where((x) => x.isNotEmpty)
+              .toList();
+          final mapped = rKeys.where(partIds.contains).length;
+          final lines = <String>[
+            'RTC DEBUG',
+            'sent=${s.sentTrackKinds} localVid=${s.localVideoTrackPresent} cam=${s.cameraEnabled}',
+            'onTrack A=${s.onTrackAudioSeen} V=${s.onTrackVideoSeen}',
+            'remoteRenderers=${rKeys.length} remoteVid=${s.remoteVideoRendererAttached}',
+            'rKeys=${rKeys.map(_short).toList()}',
+            'partIds=${partIds.map(_short).toList()} mapped=$mapped/${rKeys.length}',
+          ];
+          return Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final l in lines)
+                  Text(
+                    l,
+                    style: const TextStyle(
+                      color: Color(0xFF6EE7B7),
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                      height: 1.3,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
 
 class _MeetingVideoGrid extends StatelessWidget {
   final RTCVideoRenderer? localRenderer;

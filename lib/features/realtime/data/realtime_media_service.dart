@@ -12,6 +12,11 @@ class RealtimeMediaSnapshot {
     required this.remoteRenderers,
     required this.error,
     required this.isScreenSharing,
+    this.sentTrackKinds = const <String>[],
+    this.onTrackAudioSeen = false,
+    this.onTrackVideoSeen = false,
+    this.localVideoTrackPresent = false,
+    this.remoteVideoRendererAttached = false,
   });
 
   final bool ready;
@@ -21,6 +26,12 @@ class RealtimeMediaSnapshot {
   final Map<String, RTCVideoRenderer> remoteRenderers;
   final String? error;
   final bool isScreenSharing;
+  // ── Temporary RTC debug (on-screen badge) ────────────────────────────
+  final List<String> sentTrackKinds; // kinds addTrack'd to the peer
+  final bool onTrackAudioSeen;
+  final bool onTrackVideoSeen;
+  final bool localVideoTrackPresent; // local stream has a video track
+  final bool remoteVideoRendererAttached; // a remote stream has a video track
 }
 
 class RealtimeMediaService {
@@ -43,6 +54,10 @@ class RealtimeMediaService {
   bool _isScreenSharing = false;
   String? _error;
   bool _disposed = false;
+  // ── Temporary RTC debug ──────────────────────────────────────────────
+  List<String> _lastSentTrackKinds = const <String>[];
+  bool _onTrackAudioSeen = false;
+  bool _onTrackVideoSeen = false;
 
   Stream<RealtimeMediaSnapshot> get snapshots => _snapshots.stream;
 
@@ -59,6 +74,13 @@ class RealtimeMediaService {
         remoteRenderers: Map<String, RTCVideoRenderer>.from(_remoteRenderers),
         error: _error,
         isScreenSharing: _isScreenSharing,
+        sentTrackKinds: List<String>.from(_lastSentTrackKinds),
+        onTrackAudioSeen: _onTrackAudioSeen,
+        onTrackVideoSeen: _onTrackVideoSeen,
+        localVideoTrackPresent:
+            _localStream?.getVideoTracks().isNotEmpty ?? false,
+        remoteVideoRendererAttached:
+            _remoteStreams.values.any((s) => s.getVideoTracks().isNotEmpty),
       );
 
   Future<void> ensureLocalMedia({
@@ -116,13 +138,24 @@ class RealtimeMediaService {
     String peerKey,
   ) async {
     final local = _localStream;
-    if (local == null) return;
+    if (local == null) {
+      debugPrint('[rtc] attach: NO local stream peerKey=$peerKey');
+      return;
+    }
     final kinds = <String>[];
     for (final track in local.getTracks()) {
-      await connection.addTrack(track, local);
-      kinds.add(track.kind ?? '?');
+      try {
+        await connection.addTrack(track, local);
+        kinds.add(track.kind ?? '?');
+      } catch (e) {
+        debugPrint(
+          '[rtc] addTrack FAILED kind=${track.kind} peerKey=$peerKey err=$e',
+        );
+      }
     }
+    _lastSentTrackKinds = kinds;
     debugPrint('[rtc] local tracks attached peerKey=$peerKey tracks=$kinds');
+    _publish();
   }
 
   Future<RTCPeerConnection> _ensurePeer({
@@ -162,8 +195,11 @@ class RealtimeMediaService {
     };
 
     connection.onTrack = (RTCTrackEvent event) async {
+      final kind = event.track.kind ?? '';
+      if (kind == 'audio') _onTrackAudioSeen = true;
+      if (kind == 'video') _onTrackVideoSeen = true;
       debugPrint(
-        '[rtc] onTrack REMOTE peerKey=$peerKey kind=${event.track.kind}'
+        '[rtc] onTrack REMOTE peerKey=$peerKey kind=$kind'
         ' streams=${event.streams.length}',
       );
       try {
