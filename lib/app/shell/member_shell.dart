@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../route_classification.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/institutions/institution_access_provider.dart';
 import '../../core/institutions/institution_paths.dart';
@@ -143,6 +144,9 @@ class MemberShell extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final isTablet = width >= _tabletBreakpoint; // 900
+        // ACTIVE MEETING = focus surface: drop the persistent rail (and bottom
+        // nav) to a hamburger drawer so the participant grid gets full width.
+        final isMeetingFocus = isMeetingFocusPath(path);
 
         // Member navigation doctrine:
         //   * DESKTOP / TABLET (≥900): persistent LEFT RAIL — member identity +
@@ -150,7 +154,7 @@ class MemberShell extends StatelessWidget {
         //   * MOBILE (<900): no persistent bottom nav. A slim bar carries a
         //     menu button (opens the nav drawer) + identity; the full rail
         //     opens on demand as a drawer. Content gets the whole viewport.
-        final showLeftRail = isTablet;
+        final showLeftRail = isTablet && !isMeetingFocus;
 
         return Scaffold(
           key: showLeftRail ? null : _memberScaffoldKey,
@@ -173,7 +177,10 @@ class MemberShell extends StatelessWidget {
           // single hidden hamburger away. Suppressed on immersive routes
           // (realtime, thread/live) via the same predicate as the slim bar.
           bottomNavigationBar:
-              (!showLeftRail && _showMemberMobileBar(path) && !keyboardOpen)
+              (!showLeftRail &&
+                  !isMeetingFocus &&
+                  _showMemberMobileBar(path) &&
+                  !keyboardOpen)
               ? _MemberBottomNav(
                   items: _items,
                   selectedIndex: selectedIndex,
@@ -249,8 +256,12 @@ class InstitutionShell extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final isDesktop = width >= kDesktopBreak; // 1200
-        final isTablet = width >= kTabletBreak; // 900
+        // ACTIVE MEETING = focus surface: collapse the persistent rails to a
+        // hamburger drawer so the participant grid takes the full width. The
+        // drawer still opens the full institution navigation on demand.
+        final isMeetingFocus = isMeetingFocusPath(path);
+        final isDesktop = width >= kDesktopBreak && !isMeetingFocus; // 1200
+        final isTablet = width >= kTabletBreak && !isMeetingFocus; // 900
 
         // Workspace navigation doctrine (institution workspace only):
         //   * DESKTOP / TABLET (≥900): the persistent LEFT RAIL is the single

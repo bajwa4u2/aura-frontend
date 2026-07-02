@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../route_classification.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/ui/aura_design_system.dart';
 import '../../core/ui/aura_radius.dart';
@@ -29,6 +30,12 @@ class PublicShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ACTIVE MEETING = focus surface. A guest lives in the PublicShell, which
+    // has no left rail; suppress the public header too so the meeting's own
+    // header/timer is the only top bar and the participant grid is full-bleed.
+    final isMeetingFocus =
+        isMeetingFocusPath(GoRouterState.of(context).uri.path);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -47,7 +54,8 @@ class PublicShell extends StatelessWidget {
             // Admin) never reference `ShellFooter` — that is the boundary.
             child: Column(
               children: [
-                _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
+                if (!isMeetingFocus)
+                  _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
                 Expanded(child: child),
               ],
             ),

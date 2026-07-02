@@ -66,3 +66,13 @@ bool isMemberShellPath(String path) {
 }
 
 bool isPublicInviteAcceptPath(String path) => path == '/invite/accept';
+
+/// True for the ACTIVE meeting room — a focus surface, not a normal workspace
+/// page. In these routes the shell drops its persistent left navigation rail
+/// (and context rail) down to a hamburger drawer so the participant grid takes
+/// the full width. Matches both the member (`/meetings/:id/live`) and
+/// institution (`/institution/:id/meetings/:id/live`) live routes, but NOT the
+/// correspondence thread live route (`.../live/:sessionId`) or `/live-rooms`.
+bool isMeetingFocusPath(String path) {
+  return path.endsWith('/live') && path.contains('/meetings/');
+}

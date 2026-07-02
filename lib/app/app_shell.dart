@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'route_classification.dart';
 import '../core/auth/auth_providers.dart';
+import '../core/auth/session_providers.dart';
 import '../core/diagnostics/runtime_trace.dart';
 import 'shell/admin_shell.dart';
 import 'shell/member_shell.dart';
@@ -64,10 +65,19 @@ class AppShell extends ConsumerWidget {
     final store = ref.watch(tokenStoreProvider);
     final isAuthed =
         store.isLoaded && (store.accessToken?.trim().isNotEmpty ?? false);
+    // A meeting GUEST carries a guest-type token but no member identity. Guests
+    // are PUBLIC actors and must always live in the PublicShell — mounting them
+    // in the member/institution workspace (the shell-ownership drift) fired
+    // member-only fetches that 401 and put guest meetings behind member chrome.
+    // Host ownership is handled by the institution path → InstitutionShell.
+    final isGuest = isGuestAccessToken(store.accessToken);
 
     final Widget shell;
     final String chose;
-    if (isAdminShellPath(path)) {
+    if (isGuest) {
+      shell = PublicShell(child: child);
+      chose = 'PublicShell(guest)';
+    } else if (isAdminShellPath(path)) {
       shell = AdminShell(child: child);
       chose = 'AdminShell';
     } else if (isInstitutionShellPath(path)) {
