@@ -220,6 +220,34 @@ class RealtimeMediaService {
       }
     };
 
+    // FALLBACK: on some flutter_webrtc web builds the remote media arrives via
+    // onAddStream (plan-b style) and onTrack never fires — audio auto-plays
+    // natively so it "works", but no remote RENDERER is created and video never
+    // shows (remoteRenderers=0, onTrackVideoSeen=false). Attach the remote
+    // stream here too so video renders regardless of which callback fires.
+    connection.onAddStream = (MediaStream stream) {
+      _onTrackAudioSeen = _onTrackAudioSeen || stream.getAudioTracks().isNotEmpty;
+      _onTrackVideoSeen = _onTrackVideoSeen || stream.getVideoTracks().isNotEmpty;
+      debugPrint(
+        '[rtc] onAddStream REMOTE peerKey=$peerKey id=${stream.id}'
+        ' a=${stream.getAudioTracks().length} v=${stream.getVideoTracks().length}',
+      );
+      unawaited(() async {
+        try {
+          _remoteStreams[peerKey] = stream;
+          final renderer =
+              _remoteRenderers[peerKey] ?? await _createRemoteRenderer();
+          renderer.srcObject = stream;
+          _remoteRenderers[peerKey] = renderer;
+          _error = null;
+          _publish();
+          debugPrint('[rtc] remote renderer attached (onAddStream) peerKey=$peerKey');
+        } catch (error) {
+          debugPrint('[rtc] onAddStream ERROR peerKey=$peerKey err=$error');
+        }
+      }());
+    };
+
     connection.onConnectionState = (RTCPeerConnectionState state) async {
       debugPrint('[rtc] connectionState peerKey=$peerKey state=$state');
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
