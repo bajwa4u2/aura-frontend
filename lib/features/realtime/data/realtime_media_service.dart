@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class RealtimeMediaSnapshot {
@@ -114,16 +115,36 @@ class RealtimeMediaService {
     if (existing != null) return existing;
 
     final connection = await createPeerConnection(configuration);
+    final iceServerCount = (configuration['iceServers'] is List)
+        ? (configuration['iceServers'] as List).length
+        : 0;
     final local = _localStream;
+    final localTrackKinds = <String>[];
     if (local != null) {
       for (final track in local.getTracks()) {
         await connection.addTrack(track, local);
+        localTrackKinds.add(track.kind ?? '?');
       }
     }
+    debugPrint(
+      '[rtc] peer created peerKey=$peerKey iceServers=$iceServerCount'
+      ' localTracks=$localTrackKinds',
+    );
 
-    connection.onIceCandidate = onIceCandidate;
+    connection.onIceCandidate = (RTCIceCandidate candidate) {
+      debugPrint('[rtc] ice-candidate LOCAL peerKey=$peerKey');
+      onIceCandidate(candidate);
+    };
+
+    connection.onIceConnectionState = (RTCIceConnectionState state) {
+      debugPrint('[rtc] iceConnectionState peerKey=$peerKey state=$state');
+    };
 
     connection.onTrack = (RTCTrackEvent event) async {
+      debugPrint(
+        '[rtc] onTrack REMOTE peerKey=$peerKey kind=${event.track.kind}'
+        ' streams=${event.streams.length}',
+      );
       try {
         final stream = await _resolveRemoteStream(peerKey, event);
         if (stream == null) return;
@@ -134,15 +155,19 @@ class RealtimeMediaService {
         _remoteRenderers[peerKey] = renderer;
         _error = null;
         _publish();
+        debugPrint('[rtc] remote renderer attached peerKey=$peerKey');
       } catch (error) {
+        debugPrint('[rtc] onTrack ERROR peerKey=$peerKey err=$error');
         _error = error.toString();
         _publish();
       }
     };
 
     connection.onConnectionState = (RTCPeerConnectionState state) async {
+      debugPrint('[rtc] connectionState peerKey=$peerKey state=$state');
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
           state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
+        debugPrint('[rtc] peer REMOVED (failed/closed) peerKey=$peerKey');
         await removePeer(peerKey);
       }
     };

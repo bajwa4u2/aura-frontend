@@ -611,11 +611,24 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     _startHeartbeat();
     debugPrint('[join-seq] 5 heartbeat started sessionId=$sessionId');
 
-    // Media + negotiation now run AFTER the heartbeat is live, so a slow or
-    // failing media path can no longer starve the heartbeat into a stale sweep.
-    await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
-    await _flushPendingOffers(refreshTurnCredentials: true);
-    await _forceNegotiationIfNeeded();
+    // Media + negotiation run AFTER the heartbeat is live AND are wrapped so
+    // they can NEVER throw out of _performJoin. Previously a failure here
+    // bubbled to join()'s catch, which flips joinState off `joined`; the
+    // heartbeat ticker then skips on its `!isJoined` guard, the participant
+    // goes stale, and the guest drops back to "Connecting…" + reconnect. The
+    // socket join is already acked and authoritative — media is best-effort and
+    // self-retries, so a media/negotiation hiccup must not un-join the user.
+    try {
+      await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
+      await _flushPendingOffers(refreshTurnCredentials: true);
+      await _forceNegotiationIfNeeded();
+      debugPrint('[join-seq] 8 media+negotiation complete sessionId=$sessionId');
+    } catch (e, st) {
+      debugPrint(
+        '[join-seq] media/negotiation NON-FATAL error sessionId=$sessionId'
+        ' err=$e\n$st',
+      );
+    }
   }
 
   Future<void> resume(String sessionId) async {
