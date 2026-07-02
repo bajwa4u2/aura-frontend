@@ -1445,16 +1445,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           lastSocketEvent: event.name,
         );
 
-        final peerKey = _transportPeerKeyFromPayload(event.payload);
-        final targetSocketId = (event.payload['socketId'] ?? '')
-            .toString()
-            .trim();
-        if (peerKey.isNotEmpty && targetSocketId.isNotEmpty) {
-          _queueOfferTarget(peerKey: peerKey, targetSocketId: targetSocketId);
-          if (state.isJoined) {
-            unawaited(_flushPendingOffers());
-            unawaited(_forceNegotiationIfNeeded());
-          }
+        // Offer initiation is centralized in _forceNegotiationIfNeeded, which
+        // applies the deterministic-initiator glare guard. Queuing an offer
+        // directly here bypassed that guard and re-introduced glare (both peers
+        // offering at once → collision → connection failed → reconnect loop).
+        // Just run the negotiation sweep: we offer to the peers we initiate for
+        // and answer the offers from the rest.
+        if (state.isJoined) {
+          unawaited(_flushPendingOffers());
+          unawaited(_forceNegotiationIfNeeded());
         }
         return;
       case 'session:participant.left':
@@ -1867,6 +1866,17 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       final peerSocketId = participant.runtimeDeviceId?.trim() ?? '';
       if (peerSocketId.isEmpty) continue;
       if (peerSocketId == meSocketId) continue;
+
+      // GLARE AVOIDANCE (deterministic initiator). Both peers run this method,
+      // so without arbitration both createOffer + setLocalDescription at once;
+      // the incoming offer then arrives in `have-local-offer` state, the
+      // negotiation collides, the RTCPeerConnection goes to `failed`, and
+      // onConnectionState → removePeer → the "connects for a moment then back
+      // to connecting" loop (made worse by the video track adding a second
+      // renegotiation). Only ONE side offers: the peer with the higher socketId
+      // initiates; the lower waits for the offer and answers (the session:offer
+      // handler is unconditional, so the answer path always runs).
+      if (meSocketId.compareTo(peerSocketId) <= 0) continue;
 
       final peerKey = peerSocketId;
 
