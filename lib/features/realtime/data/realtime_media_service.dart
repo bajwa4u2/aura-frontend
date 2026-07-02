@@ -157,11 +157,6 @@ class RealtimeMediaService {
     var gotVideo = video;
     try {
       stream = await navigator.mediaDevices.getUserMedia(constraints(video));
-      debugPrint(
-        '[rtc-media] getUserMedia OK audio=$audio video=$video'
-        ' aTracks=${stream.getAudioTracks().length}'
-        ' vTracks=${stream.getVideoTracks().length}',
-      );
     } catch (error) {
       // NotReadableError / TrackStartError ⇒ the camera is held by ANOTHER
       // app/browser (host + guest on ONE laptop share a single physical camera;
@@ -220,15 +215,8 @@ class RealtimeMediaService {
       debugPrint('[rtc] attach: NO local stream peerKey=$peerKey');
       return;
     }
-    final tracks = local.getTracks();
-    for (final track in tracks) {
-      debugPrint(
-        '[rtc-track] local track kind=${track.kind}'
-        ' enabled=${track.enabled} muted=${track.muted} id=${track.id}',
-      );
-    }
     final kinds = <String>[];
-    for (final track in tracks) {
+    for (final track in local.getTracks()) {
       try {
         await connection.addTrack(track, local);
         kinds.add(track.kind ?? '?');
@@ -239,23 +227,6 @@ class RealtimeMediaService {
       }
     }
     _lastSentTrackKinds = kinds;
-    debugPrint('[rtc-track] local attached peer=$peerKey kinds=$kinds');
-
-    // Confirm what the peer connection will actually send (senders), so a badge
-    // reading "sent=[audio]" vs "[audio,video]" can be traced to a real sender
-    // rather than a guessed track kind.
-    try {
-      final senders = await connection.getSenders();
-      for (final sender in senders) {
-        final t = sender.track;
-        debugPrint(
-          '[rtc-track] sender kind=${t?.kind} enabled=${t?.enabled}',
-        );
-      }
-      debugPrint('[rtc-track] senders total=${senders.length} peer=$peerKey');
-    } catch (e) {
-      debugPrint('[rtc-track] getSenders failed peer=$peerKey err=$e');
-    }
     _publish();
   }
 
@@ -299,10 +270,6 @@ class RealtimeMediaService {
       final kind = event.track.kind ?? '';
       if (kind == 'audio') _onTrackAudioSeen = true;
       if (kind == 'video') _onTrackVideoSeen = true;
-      debugPrint(
-        '[rtc-track] remote onTrack peer=$peerKey kind=$kind'
-        ' streams=${event.streams.length}',
-      );
       try {
         final stream = await _resolveRemoteStream(peerKey, event);
         if (stream == null) return;
@@ -313,7 +280,6 @@ class RealtimeMediaService {
         _remoteRenderers[peerKey] = renderer;
         _error = null;
         _publish();
-        debugPrint('[rtc-render] renderer stored key=$peerKey (onTrack)');
       } catch (error) {
         debugPrint('[rtc] onTrack ERROR peerKey=$peerKey err=$error');
         _error = error.toString();
@@ -329,10 +295,6 @@ class RealtimeMediaService {
     connection.onAddStream = (MediaStream stream) {
       _onTrackAudioSeen = _onTrackAudioSeen || stream.getAudioTracks().isNotEmpty;
       _onTrackVideoSeen = _onTrackVideoSeen || stream.getVideoTracks().isNotEmpty;
-      debugPrint(
-        '[rtc-track] remote onAddStream peer=$peerKey id=${stream.id}'
-        ' a=${stream.getAudioTracks().length} v=${stream.getVideoTracks().length}',
-      );
       unawaited(() async {
         try {
           _remoteStreams[peerKey] = stream;
@@ -342,7 +304,6 @@ class RealtimeMediaService {
           _remoteRenderers[peerKey] = renderer;
           _error = null;
           _publish();
-          debugPrint('[rtc-render] renderer stored key=$peerKey (onAddStream)');
         } catch (error) {
           debugPrint('[rtc] onAddStream ERROR peerKey=$peerKey err=$error');
         }
@@ -407,13 +368,6 @@ class RealtimeMediaService {
         'offerToReceiveAudio': true,
         'offerToReceiveVideo': true,
       });
-      final sdp = offer.sdp ?? '';
-      debugPrint(
-        '[rtc-offer] sdp peer=$peerKey hasAudioM=${sdp.contains('m=audio')}'
-        ' hasVideoM=${sdp.contains('m=video')}'
-        ' sendrecv=${sdp.contains('a=sendrecv')}'
-        ' sendonly=${sdp.contains('a=sendonly')}',
-      );
       await connection.setLocalDescription(offer);
       return offer;
     } finally {

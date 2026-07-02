@@ -174,10 +174,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }).toList();
     if (changed) {
       state = state.copyWith(participants: updated);
-      debugPrint(
-        '[rtc-roster] backfilled socket userId=$userId'
-        ' socket=${_rawSocket(socketId)}',
-      );
     }
   }
 
@@ -1457,13 +1453,11 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       },
     );
 
-    debugPrint('[rtc-offer] created target=${_rawSocket(targetSocketId)}');
     await _socketService.emitAck('session:offer', <String, dynamic>{
       'sessionId': sessionId,
       'targetSocketId': targetSocketId,
       'sdp': <String, dynamic>{'sdp': offer.sdp, 'type': offer.type},
     });
-    debugPrint('[rtc-offer] sent target=${_rawSocket(targetSocketId)}');
   }
 
   void _patchMyTrack({bool? audioOn, bool? videoOn}) {
@@ -1647,9 +1641,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           final meSocketId = _socketService.socketId ?? '';
           final polite =
               _rawSocket(meSocketId).compareTo(_rawSocket(fromSocketId)) < 0;
-          debugPrint(
-            '[rtc-offer] received peer=${_rawSocket(fromSocketId)} polite=$polite',
-          );
           final answer = await _mediaService.handleRemoteOffer(
             peerKey: peerKey,
             targetSocketId: fromSocketId,
@@ -1677,12 +1668,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           );
           if (answer == null) {
             // Glare: the impolite peer ignored this offer and keeps its own.
-            debugPrint(
-              '[rtc-offer] ignored (glare) peer=${_rawSocket(fromSocketId)}',
-            );
             return;
           }
-          debugPrint('[rtc-answer] sent peer=${_rawSocket(fromSocketId)}');
           await _socketService.emitAck('session:answer', <String, dynamic>{
             'sessionId': sessionId,
             'targetSocketId': fromSocketId,
@@ -1697,7 +1684,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           if (peerKey.isEmpty) return;
           final sdp = event.payload['sdp'];
           if (sdp is Map) {
-            debugPrint('[rtc-answer] received peer=${_rawSocket(peerKey)}');
             await _mediaService.handleRemoteAnswer(
               peerKey: peerKey,
               sdp: Map<String, dynamic>.from(sdp),
@@ -2060,12 +2046,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
       final hasPeer = _mediaService.hasPeer(peerSocketId);
       final shouldOffer = !hasPeer || allowRenegotiate;
-
-      debugPrint(
-        '[rtc-reconcile] reason=$reason peer=$peerRaw self=$myRaw'
-        ' hasPeer=$hasPeer shouldOffer=$shouldOffer',
-      );
-
       if (!shouldOffer) continue;
       if (_pendingOfferTargets.containsKey(peerSocketId)) continue;
       _queueOfferTarget(peerKey: peerSocketId, targetSocketId: peerSocketId);

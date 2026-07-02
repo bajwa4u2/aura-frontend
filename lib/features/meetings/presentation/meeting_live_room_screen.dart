@@ -350,20 +350,6 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               screenSharingPeerId: screenSharingPeerId,
               participants: state.participants,
               localUserId: myUserId,
-              isHost: widget.isHost,
-            ),
-          ),
-
-          // ── TEMPORARY RTC DEBUG BADGE (video track/render diagnosis) ──
-          Positioned(
-            top: 72,
-            left: 8,
-            child: _RtcDebugBadge(
-              mediaService: ref.read(realtimeMediaServiceProvider),
-              participants: state.participants,
-              meSocket: ref.read(realtimeSocketServiceProvider).socketId ?? '',
-              isJoined: state.isJoined,
-              isMediaReady: state.isMediaReady,
             ),
           ),
 
@@ -567,85 +553,6 @@ class _CameraUnavailableBanner extends StatelessWidget {
   }
 }
 
-// ── TEMPORARY on-screen RTC debug badge ──────────────────────────────────
-// Surfaces the video track/render truth so we stop guessing: what tracks we
-// sent to the peer, whether we received the remote audio/video tracks, how many
-// remote renderers exist, and whether their keys map to roster participants.
-class _RtcDebugBadge extends StatelessWidget {
-  const _RtcDebugBadge({
-    required this.mediaService,
-    required this.participants,
-    required this.meSocket,
-    required this.isJoined,
-    required this.isMediaReady,
-  });
-
-  final RealtimeMediaService mediaService;
-  final List<RealtimeParticipant> participants;
-  final String meSocket;
-  final bool isJoined;
-  final bool isMediaReady;
-
-  String _short(String k) => k.length > 6 ? k.substring(0, 6) : k;
-  String _raw(String s) => s.startsWith('socket:') ? s.substring(7) : s;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: StreamBuilder<RealtimeMediaSnapshot>(
-        stream: mediaService.snapshots,
-        initialData: mediaService.currentSnapshot,
-        builder: (context, snap) {
-          final s = snap.data ?? mediaService.currentSnapshot;
-          final rKeys = s.remoteRenderers.keys.toList();
-          final partIds = participants
-              .map((p) => (p.runtimeDeviceId ?? '').trim())
-              .where((x) => x.isNotEmpty)
-              .toList();
-          final mapped = rKeys.where(partIds.contains).length;
-          final myRaw = _raw(meSocket);
-          // For each peer, 'I' if I'm the deterministic initiator (higher raw
-          // socket) so I should be offering; 'w' if I should wait for theirs.
-          final initFlags = partIds
-              .map((p) => myRaw.compareTo(_raw(p)) > 0 ? 'I' : 'w')
-              .join(',');
-          final lines = <String>[
-            'RTC DEBUG me=${_short(meSocket)} join=$isJoined mediaRdy=$isMediaReady',
-            'sent=${s.sentTrackKinds} localVid=${s.localVideoTrackPresent} cam=${s.cameraEnabled} camBusy=${s.cameraUnavailable}',
-            'onTrack A=${s.onTrackAudioSeen} V=${s.onTrackVideoSeen}',
-            'remoteRenderers=${rKeys.length} remoteVid=${s.remoteVideoRendererAttached}',
-            'peers=${partIds.map(_short).toList()} initiator=[$initFlags]',
-            'rKeys=${rKeys.map(_short).toList()} mapped=$mapped/${rKeys.length}',
-          ];
-          return Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final l in lines)
-                  Text(
-                    l,
-                    style: const TextStyle(
-                      color: Color(0xFF6EE7B7),
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                      height: 1.3,
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class _MeetingVideoGrid extends StatelessWidget {
   final RTCVideoRenderer? localRenderer;
   final Map<String, RTCVideoRenderer> remoteRenderers;
@@ -654,7 +561,6 @@ class _MeetingVideoGrid extends StatelessWidget {
   final String? screenSharingPeerId;
   final List<RealtimeParticipant> participants;
   final String localUserId;
-  final bool isHost;
 
   const _MeetingVideoGrid({
     required this.localRenderer,
@@ -663,7 +569,6 @@ class _MeetingVideoGrid extends StatelessWidget {
     required this.isLocalScreenSharing,
     required this.participants,
     required this.localUserId,
-    required this.isHost,
     this.screenSharingPeerId,
   });
 
@@ -746,11 +651,19 @@ class _MeetingVideoGrid extends StatelessWidget {
     );
   }
 
+  RealtimeParticipant? _participantForUserId(String userId) {
+    final id = userId.trim();
+    if (id.isEmpty) return null;
+    for (final p in participants) {
+      if (p.userId.trim() == id) return p;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final remoteEntries = remoteRenderers.entries.toList();
-
-    // I1: Remote screen share — promote that participant to spotlight.
+    // Remote screen share stays a spotlight (shared surface + presenter PiP) —
+    // a screen is not a participant tile.
     if (screenSharingPeerId != null) {
       final screenRenderer = remoteRenderers[screenSharingPeerId];
       if (screenRenderer != null) {
@@ -759,200 +672,79 @@ class _MeetingVideoGrid extends StatelessWidget {
       }
     }
 
-    if (remoteEntries.isEmpty) {
-      // A remote participant may be in the roster but its media renderer hasn't
-      // arrived yet. In that case show a CONNECTING avatar — never the local
-      // camera in the main slot (that was the "each side sees its own video"
-      // bug). Local stays a PiP. Only when we're genuinely alone do we show the
-      // local-preview "waiting" layout.
-      final remotes = participants
-          .where((p) =>
-              p.userId.trim().isNotEmpty &&
-              p.userId.trim() != localUserId.trim())
-          .toList();
-      if (remotes.isNotEmpty) {
-        return _buildConnectingLayout(remotes.first, localRenderer);
-      }
-      return _buildWaitingLayout(localRenderer, isLocalScreenSharing);
-    }
-
-    if (remoteEntries.length == 1) {
-      final entry = remoteEntries.first;
-      return _buildSpotlightLayout(entry.key, entry.value, localRenderer);
-    }
-
-    // Grid: up to 4 participants in 2×2
-    return _buildGridLayout(remoteEntries, localRenderer);
+    // Unified participant grid: the local participant and every remote are
+    // first-class tiles in ONE grid — no floating self-preview, no separate
+    // "waiting" screen once we're live. A camera-off / audio-only participant
+    // gets an avatar tile in the same grid; the layout auto-adjusts as people
+    // join. (Small self-preview belongs to pre-join, a different screen.)
+    return _buildParticipantGrid();
   }
 
-  /// Remote participant present but no remote renderer yet. Shows an avatar +
-  /// "Connecting…" as the MAIN view with the local camera as a PiP — never the
-  /// local camera masquerading as the remote tile.
-  Widget _buildConnectingLayout(
-    RealtimeParticipant remote,
-    RTCVideoRenderer? local,
-  ) {
-    final name = (remote.displayName ?? '').trim();
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    return Stack(
-      children: [
-        const Positioned.fill(child: ColoredBox(color: Color(0xFF0B1120))),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 44,
-                backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.25),
-                backgroundImage: remote.avatarUrl?.trim().isNotEmpty == true
-                    ? NetworkImage(remote.avatarUrl!)
-                    : null,
-                child: remote.avatarUrl?.trim().isNotEmpty == true
-                    ? null
-                    : Text(
-                        initial,
-                        style: const TextStyle(
-                          color: Color(0xFFE5E7EB),
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                name.isNotEmpty ? 'Connecting to $name…' : 'Connecting…',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (local != null)
-          Positioned(
-            right: 12,
-            bottom: 130,
-            width: 100,
-            height: 140,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: RTCVideoView(
-                local,
-                mirror: true,
-                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-              ),
-            ),
-          ),
-      ],
+  Widget _buildParticipantGrid() {
+    final tiles = <_ParticipantTile>[];
+
+    // Local participant — always a tile, labelled "You", never a floating PiP.
+    final localP = _participantForUserId(localUserId);
+    final localHasVideo =
+        localRenderer?.srcObject?.getVideoTracks().isNotEmpty ?? false;
+    tiles.add(_ParticipantTile(
+      renderer: localRenderer,
+      videoOn: localHasVideo && !isLocalScreenSharing,
+      mirror: true,
+      isLocal: true,
+      label: 'You',
+      avatarUrl: localP?.avatarUrl,
+      micOn: micOn,
+    ));
+
+    // One tile per remote renderer, mapped to its roster identity when known.
+    for (final entry in remoteRenderers.entries) {
+      final p = _participantForKey(entry.key);
+      final hasVideo =
+          entry.value.srcObject?.getVideoTracks().isNotEmpty ?? false;
+      tiles.add(_ParticipantTile(
+        renderer: entry.value,
+        videoOn: (p?.videoOn ?? true) && hasVideo,
+        mirror: false,
+        isLocal: false,
+        label: p?.identityLabel ?? 'Participant',
+        avatarUrl: p?.avatarUrl,
+        micOn: p?.audioOn ?? true,
+      ));
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final count = tiles.length;
+        final columns = _gridColumns(count, constraints);
+        final rows = (count / columns).ceil();
+        final cellW = (constraints.maxWidth - (columns + 1) * 4) / columns;
+        final cellH = (constraints.maxHeight - (rows + 1) * 4) / rows;
+        final aspect =
+            (cellW > 0 && cellH > 0) ? (cellW / cellH) : (16 / 9);
+        return GridView.count(
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: columns,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          padding: const EdgeInsets.all(4),
+          childAspectRatio: aspect,
+          children: tiles,
+        );
+      },
     );
   }
 
-  Widget _buildWaitingLayout(RTCVideoRenderer? local, bool isScreenSharing) {
-    return Stack(
-      children: [
-        // Local camera fills the full background when available.
-        if (local != null)
-          Positioned.fill(
-            child: RTCVideoView(
-              local,
-              mirror: true,
-              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-            ),
-          )
-        else
-          const Positioned.fill(
-            child: ColoredBox(color: Color(0xFF030712)),
-          ),
-
-        // Dark gradient overlay — lets text sit above the camera feed.
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF030712).withValues(alpha: 0.55),
-                  Colors.transparent,
-                  Colors.transparent,
-                  const Color(0xFF030712).withValues(alpha: 0.70),
-                ],
-                stops: const [0.0, 0.25, 0.65, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        // Centre presence card — shows host is live and ready.
-        if (!isScreenSharing)
-          Center(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 32),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF030712).withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const _PulsingReadyDot(),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'You\'re ready',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _waitingLabel(participants, localUserId, isHost),
-                    style: const TextStyle(
-                      color: Color(0xFF9CA3AF),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-        // Screen-share badge.
-        if (isScreenSharing)
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF6C63FF).withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.screen_share_rounded, color: Colors.white, size: 14),
-                  SizedBox(width: 6),
-                  Text(
-                    'Sharing your screen',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
+  // Column count that keeps tiles roughly square and readable. 2 participants
+  // split equally (side-by-side in landscape, stacked in portrait); 3–4 use a
+  // 2-wide grid; more scale to 3–4 columns.
+  int _gridColumns(int count, BoxConstraints c) {
+    if (count <= 1) return 1;
+    final landscape = c.maxWidth >= c.maxHeight;
+    if (count == 2) return landscape ? 2 : 1;
+    if (count <= 4) return 2;
+    if (count <= 9) return 3;
+    return 4;
   }
 
   Widget _buildSpotlightLayout(
@@ -983,65 +775,132 @@ class _MeetingVideoGrid extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildGridLayout(
-    List<MapEntry<String, RTCVideoRenderer>> remoteEntries,
-    RTCVideoRenderer? local,
-  ) {
-    final tiles = <Widget>[
-      ...remoteEntries.take(3).map((e) => _buildRemoteTile(e.key, e.value)),
-    ];
-    if (local != null && tiles.length < 4) {
-      tiles.add(RTCVideoView(
-        local,
-        mirror: true,
-        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-      ));
-    }
+// One participant tile — local or remote, first-class in the grid. Renders the
+// video when a live video track exists, otherwise an avatar + "Camera off".
+// Always carries the identity label and a mic indicator.
+class _ParticipantTile extends StatelessWidget {
+  const _ParticipantTile({
+    required this.renderer,
+    required this.videoOn,
+    required this.mirror,
+    required this.isLocal,
+    required this.label,
+    required this.avatarUrl,
+    required this.micOn,
+  });
 
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 4 / 3,
-        mainAxisSpacing: 2,
-        crossAxisSpacing: 2,
+  final RTCVideoRenderer? renderer;
+  final bool videoOn;
+  final bool mirror;
+  final bool isLocal;
+  final String label;
+  final String? avatarUrl;
+  final bool micOn;
+
+  @override
+  Widget build(BuildContext context) {
+    final showVideo = videoOn && renderer != null;
+    final trimmed = label.trim();
+    final initial = trimmed.isNotEmpty ? trimmed[0].toUpperCase() : '?';
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1120),
+        borderRadius: BorderRadius.circular(12),
+        border: isLocal
+            ? Border.all(color: const Color(0xFF6C63FF), width: 1.5)
+            : null,
       ),
-      itemCount: tiles.length,
-      itemBuilder: (context, index) => tiles[index],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (showVideo)
+              RTCVideoView(
+                renderer!,
+                mirror: mirror,
+                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+              )
+            else
+              _avatar(initial),
+
+            // Identity label + mic indicator (bottom-left).
+            Positioned(
+              left: 8,
+              bottom: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+                      size: 13,
+                      color: micOn
+                          ? const Color(0xFFE5E7EB)
+                          : const Color(0xFFF87171),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: Color(0xFFE5E7EB),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  static String _waitingLabel(
-    List<RealtimeParticipant> participants,
-    String localUserId,
-    bool isHost,
-  ) {
-    // Filter out the local participant — we're waiting for *others*, not ourselves.
-    final others = localUserId.isEmpty
-        ? participants
-        : participants.where((p) => p.userId != localUserId).toList();
-    // Role-aware alone state: a host waits for guests, a guest waits for the
-    // host. Never tell the guest "waiting for guest" when the guest is the one
-    // present. (This layout only renders when there is no remote media yet, so
-    // "both connected" already shows video instead of any waiting copy.)
-    if (others.isEmpty) {
-      return isHost
-          ? 'Waiting for guests to join…'
-          : 'Waiting for the host to join…';
-    }
-    final names = others
-        .map((p) => (p.displayName ?? '').trim())
-        .where((n) => n.isNotEmpty)
-        .toList();
-    if (names.isEmpty) {
-      return isHost
-          ? 'Waiting for guests to join…'
-          : 'Waiting for the host to join…';
-    }
-    if (names.length == 1) return 'Waiting for ${names[0]} to join…';
-    if (names.length == 2) return 'Waiting for ${names[0]} and ${names[1]}…';
-    return 'Waiting for ${names[0]} and ${names.length - 1} others…';
+  Widget _avatar(String initial) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 34,
+            backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.25),
+            backgroundImage: avatarUrl?.trim().isNotEmpty == true
+                ? NetworkImage(avatarUrl!)
+                : null,
+            child: avatarUrl?.trim().isNotEmpty == true
+                ? null
+                : Text(
+                    initial,
+                    style: const TextStyle(
+                      color: Color(0xFFE5E7EB),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 8),
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.videocam_off_rounded,
+                  size: 13, color: Color(0xFF6B7280)),
+              SizedBox(width: 4),
+              Text('Camera off',
+                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 11)),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1123,66 +982,6 @@ class _MeetingLiveHeader extends StatelessWidget {
           const SizedBox(width: AuraSpace.s8),
           _ElapsedTimer(joinedAt: joinedAt),
         ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Pulsing "ready" indicator shown in the host-alone waiting state.
-// ---------------------------------------------------------------------------
-
-class _PulsingReadyDot extends StatefulWidget {
-  const _PulsingReadyDot();
-
-  @override
-  State<_PulsingReadyDot> createState() => _PulsingReadyDotState();
-}
-
-class _PulsingReadyDotState extends State<_PulsingReadyDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _scale;
-  late final Animation<double> _opacity;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.85, end: 1.15).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-    _opacity = Tween<double>(begin: 0.55, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, __) => Transform.scale(
-        scale: _scale.value,
-        child: Opacity(
-          opacity: _opacity.value,
-          child: Container(
-            width: 12,
-            height: 12,
-            decoration: const BoxDecoration(
-              color: Color(0xFF10B981),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
       ),
     );
   }
