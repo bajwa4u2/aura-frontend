@@ -1862,21 +1862,34 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final meSocketId = _socketService.socketId;
     if (meSocketId == null || meSocketId.isEmpty) return;
 
+    // runtimeDeviceId can arrive either as the bare socket id ("XXX") or as
+    // "socket:XXX" depending on which payload populated it, while
+    // _socketService.socketId is always the bare id. Compare on the RAW id so
+    // the deterministic-initiator decision is consistent on both peers —
+    // comparing mixed formats made BOTH sides skip and wait forever.
+    String rawSock(String s) =>
+        s.startsWith('socket:') ? s.substring('socket:'.length) : s;
+    final myRaw = rawSock(meSocketId);
+
     for (final participant in state.participants) {
       final peerSocketId = participant.runtimeDeviceId?.trim() ?? '';
       if (peerSocketId.isEmpty) continue;
-      if (peerSocketId == meSocketId) continue;
+      final peerRaw = rawSock(peerSocketId);
+      if (peerRaw.isEmpty || peerRaw == myRaw) continue;
 
       // GLARE AVOIDANCE (deterministic initiator). Both peers run this method,
       // so without arbitration both createOffer + setLocalDescription at once;
       // the incoming offer then arrives in `have-local-offer` state, the
       // negotiation collides, the RTCPeerConnection goes to `failed`, and
-      // onConnectionState → removePeer → the "connects for a moment then back
-      // to connecting" loop (made worse by the video track adding a second
-      // renegotiation). Only ONE side offers: the peer with the higher socketId
-      // initiates; the lower waits for the offer and answers (the session:offer
-      // handler is unconditional, so the answer path always runs).
-      if (meSocketId.compareTo(peerSocketId) <= 0) continue;
+      // onConnectionState → removePeer → reconnect. Only ONE side offers: the
+      // peer with the higher RAW socket id initiates; the lower waits for the
+      // offer and answers (the session:offer handler is unconditional).
+      final iInitiate = myRaw.compareTo(peerRaw) > 0;
+      debugPrint(
+        '[rtc-init] peer=$peerRaw me=$myRaw iInitiate=$iInitiate'
+        ' mediaReady=${state.isMediaReady}',
+      );
+      if (!iInitiate) continue;
 
       final peerKey = peerSocketId;
 
