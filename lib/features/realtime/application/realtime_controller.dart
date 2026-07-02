@@ -1988,16 +1988,21 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
       final peerKey = peerSocketId;
 
-      // DETERMINISTIC INITIATOR (roster-driven, glare-free). Only the peer with
-      // the higher RAW socket id ever creates the offer (new connection AND
-      // renegotiation); the lower one answers. This is roster-driven so it
-      // fires reliably from ANY trigger (join, media-ready, participant change)
-      // — not only from the participant.joined event, which both sides can miss
-      // when they learn each other via the hydrate roster instead (that gap
-      // left BOTH sides sent=[] / neither offering). Both sides now carry the
-      // peer's socketId in the roster, so the higher side can always build the
-      // offer to the correct target.
-      if (myRaw.compareTo(peerRaw) <= 0) continue;
+      // The offerer must be the peer that HAS the other's live socketId — which
+      // is the EXISTING peer, not the higher socket. A NEWCOMER learns an
+      // already-present peer via the hydrate roster WITHOUT its live socketId
+      // (runtimeDeviceId empty), so it hits the `peerSocketId.isEmpty` continue
+      // above and never offers — only the existing peer (which got the
+      // newcomer's socketId from participant.joined) reaches here. Using the
+      // higher-socket rule instead deadlocked when the existing peer was the
+      // lower socket: it had the target but "waited", while the higher newcomer
+      // had no target.
+      //   - NEW connection: offer to any peer whose socketId we have. No glare,
+      //     because the newcomer lacks OUR socketId and is filtered out above.
+      //   - RENEGOTIATION (already connected, both have sockets): only the
+      //     higher raw socket re-offers, to avoid a media-change collision.
+      final hasConn = _mediaService.hasPeer(peerKey);
+      if (hasConn && myRaw.compareTo(peerRaw) <= 0) continue;
 
       if (_pendingOfferTargets.containsKey(peerKey)) continue;
 
