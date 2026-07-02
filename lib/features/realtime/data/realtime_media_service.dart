@@ -46,6 +46,11 @@ class RealtimeMediaService {
 
   Stream<RealtimeMediaSnapshot> get snapshots => _snapshots.stream;
 
+  /// True when a peer connection already exists for [peerKey]. Used so
+  /// renegotiation only re-offers to already-connected peers; NEW connections
+  /// are initiated exclusively from the participant.joined path.
+  bool hasPeer(String peerKey) => _peers.containsKey(peerKey);
+
   RealtimeMediaSnapshot get currentSnapshot => RealtimeMediaSnapshot(
         ready: _ready,
         micEnabled: _micEnabled,
