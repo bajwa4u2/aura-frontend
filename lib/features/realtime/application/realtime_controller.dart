@@ -154,6 +154,33 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     return (payload['userId'] ?? '').toString().trim();
   }
 
+  /// Backfill an existing peer's live [socketId] onto its roster participant,
+  /// matched by [userId]. A NEWCOMER learns existing peers via the hydrate
+  /// roster, which carries no live socketId — so the peer's video renderer
+  /// (keyed by the socket) can't be mapped to a named participant (badge
+  /// mapped=0/1, tile shows no identity). The offer/answer relay DOES carry the
+  /// sender's userId + socketId, so when we receive one we stamp the socket
+  /// onto the matching participant → the renderer key now maps to the roster
+  /// entry (mapped=1/1, the host's name/avatar appears on the tile).
+  void _backfillPeerSocket(String userId, String socketId) {
+    if (userId.isEmpty || socketId.isEmpty) return;
+    var changed = false;
+    final updated = state.participants.map((p) {
+      if (p.userId == userId && (p.runtimeDeviceId ?? '').trim() != socketId) {
+        changed = true;
+        return p.copyWith(runtimeDeviceId: socketId);
+      }
+      return p;
+    }).toList();
+    if (changed) {
+      state = state.copyWith(participants: updated);
+      debugPrint(
+        '[rtc-roster] backfilled socket userId=$userId'
+        ' socket=${_rawSocket(socketId)}',
+      );
+    }
+  }
+
   Future<void> _flushPendingOffers({
     bool refreshTurnCredentials = false,
   }) async {
@@ -1611,6 +1638,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           if (peerKey.isEmpty || fromSocketId == null || fromSocketId.isEmpty) {
             return;
           }
+          // Map this peer's renderer (keyed by peerKey) to its roster identity,
+          // so the newcomer can name/label the existing peer's tile.
+          _backfillPeerSocket(_participantUserIdFromPayload(event.payload), peerKey);
           // Perfect-negotiation politeness: the LOWER raw socket id is polite
           // (yields on a glare collision). Deterministic and symmetric, so both
           // ends agree on who yields without any extra signaling.

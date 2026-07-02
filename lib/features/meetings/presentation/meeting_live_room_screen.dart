@@ -372,7 +372,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           // same laptop — the second browser can't open it). We join audio-only
           // instead of silently publishing nothing.
           Positioned(
-            top: 12,
+            bottom: 96,
             left: 16,
             right: 16,
             child: _CameraUnavailableBanner(
@@ -676,7 +676,15 @@ class _MeetingVideoGrid extends StatelessWidget {
 
   Widget _buildRemoteTile(String key, RTCVideoRenderer renderer) {
     final p = _participantForKey(key);
-    final videoOn = p?.videoOn ?? true;
+    // Render video ONLY when the renderer's stream actually carries a video
+    // track. A peer that degraded to audio-only (camera busy on its machine)
+    // has a renderer but no video track — relying on the roster's videoOn flag
+    // (which stays true because it never explicitly turned video off) painted a
+    // black RTCVideoView. Check the real track so we fall through to the
+    // avatar/"camera off" tile instead of a black void.
+    final hasVideoTrack =
+        renderer.srcObject?.getVideoTracks().isNotEmpty ?? false;
+    final videoOn = (p?.videoOn ?? true) && hasVideoTrack;
     if (videoOn) {
       return RTCVideoView(
         renderer,
