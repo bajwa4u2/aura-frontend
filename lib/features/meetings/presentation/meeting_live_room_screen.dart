@@ -350,6 +350,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               screenSharingPeerId: screenSharingPeerId,
               participants: state.participants,
               localUserId: myUserId,
+              localSocketId:
+                  ref.read(realtimeSocketServiceProvider).socketId ?? '',
             ),
           ),
 
@@ -561,6 +563,7 @@ class _MeetingVideoGrid extends StatelessWidget {
   final String? screenSharingPeerId;
   final List<RealtimeParticipant> participants;
   final String localUserId;
+  final String localSocketId;
 
   const _MeetingVideoGrid({
     required this.localRenderer,
@@ -569,8 +572,11 @@ class _MeetingVideoGrid extends StatelessWidget {
     required this.isLocalScreenSharing,
     required this.participants,
     required this.localUserId,
+    required this.localSocketId,
     this.screenSharingPeerId,
   });
+
+  String _raw(String s) => s.startsWith('socket:') ? s.substring(7) : s;
 
   RealtimeParticipant? _participantForKey(String key) {
     for (final p in participants) {
@@ -697,19 +703,56 @@ class _MeetingVideoGrid extends StatelessWidget {
       micOn: micOn,
     ));
 
-    // One tile per remote renderer, mapped to its roster identity when known.
+    // INVENTORY-DRIVEN remote tiles. Every remote PARTICIPANT gets a tile;
+    // video is a tile STATE (attach the renderer if one exists for this
+    // participant, else a camera-off avatar). A participant is NEVER hidden
+    // because its video track is absent — that caused the asymmetry where the
+    // host dropped the audio-only guest's tile while the guest still rendered
+    // the host. Both sides share the same participant inventory, so both render
+    // the same set of tiles.
+    final myUserId = localUserId.trim();
+    final mySocket = _raw(localSocketId);
+    bool isSelf(RealtimeParticipant p) {
+      if (myUserId.isNotEmpty && p.userId.trim() == myUserId) return true;
+      final key = _raw((p.runtimeDeviceId ?? '').trim());
+      return mySocket.isNotEmpty && key == mySocket;
+    }
+
+    final claimed = <String>{};
+    for (final p in participants) {
+      if (isSelf(p)) continue;
+      final key = (p.runtimeDeviceId ?? '').trim();
+      if (key.isNotEmpty) claimed.add(key);
+      final renderer = key.isNotEmpty ? remoteRenderers[key] : null;
+      final hasVideo =
+          renderer?.srcObject?.getVideoTracks().isNotEmpty ?? false;
+      tiles.add(_ParticipantTile(
+        renderer: renderer,
+        videoOn: p.videoOn && hasVideo,
+        mirror: false,
+        isLocal: false,
+        label: p.identityLabel,
+        avatarUrl: p.avatarUrl,
+        micOn: p.audioOn,
+      ));
+    }
+
+    // Fallback: a live renderer whose peer isn't in the roster yet (socketId
+    // not backfilled) still gets a tile so media is never dropped. Deduped
+    // against the inventory above by renderer key.
     for (final entry in remoteRenderers.entries) {
-      final p = _participantForKey(entry.key);
+      if (claimed.contains(entry.key)) continue;
+      if (mySocket.isNotEmpty && _raw(entry.key) == mySocket) continue;
       final hasVideo =
           entry.value.srcObject?.getVideoTracks().isNotEmpty ?? false;
       tiles.add(_ParticipantTile(
         renderer: entry.value,
-        videoOn: (p?.videoOn ?? true) && hasVideo,
+        videoOn: hasVideo,
         mirror: false,
         isLocal: false,
-        label: p?.identityLabel ?? 'Participant',
-        avatarUrl: p?.avatarUrl,
-        micOn: p?.audioOn ?? true,
+        label: 'Participant',
+        avatarUrl: null,
+        micOn: true,
       ));
     }
 
