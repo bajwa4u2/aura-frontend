@@ -45,13 +45,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   bool _terminating = false;
   bool _endingCall = false;
 
-  /// D4: client-side heartbeat ticker fires `session:heartbeat` every 20s
-  /// while joined. The backend's stale-presence sweeper compares this
-  /// against `heartbeatStaleAfterSeconds` (default 30) so a wedged client
-  /// is reaped within ~45s of falling silent. Slow networks still get 1.5×
-  /// the heartbeat interval before being treated as ghost.
+  /// Client-side heartbeat ticker fires `session:heartbeat` while joined.
+  /// 10s (was 20s): with the backend stale window widened to 60s, this gives
+  /// ~6× margin, so a single skipped beat — during the join/renegotiation
+  /// churn that flips joinState off `joined` for a tick, or a mobile timer
+  /// throttle — no longer lets a live GUEST cross the stale threshold and get
+  /// reaped every ~30s (the guest reconnect loop). The immediate first beat in
+  /// _startHeartbeat plus this cadence keep presence fresh through churn.
   Timer? _heartbeatTimer;
-  static const Duration _heartbeatInterval = Duration(seconds: 20);
+  static const Duration _heartbeatInterval = Duration(seconds: 10);
 
   Map<String, dynamic>? _rtcConfiguration;
   String? _rtcConfigurationSessionId;
