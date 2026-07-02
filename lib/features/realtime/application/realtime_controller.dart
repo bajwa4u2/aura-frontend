@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
@@ -574,16 +575,29 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
 
     await connect();
-    await _socketService.emitAck('session:join', <String, dynamic>{
-      'sessionId': sessionId,
-    });
+    final meSocketId = _socketService.socketId ?? '';
+    debugPrint(
+      '[join-seq] 1 socket connected socketId=$meSocketId'
+      ' sessionId=$sessionId isMeeting=$isMeetingSession',
+    );
 
-    // joinSession() returns and applies a fresh bundle — no need to hydrate
-    // again here. The bundle cache is also busted by the POST so a subsequent
-    // hydrateSession call would re-fetch; removing this avoids the extra round
-    // trip and the isBusy flicker it caused.
-    await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
+    debugPrint('[join-seq] 2 session join emitted sessionId=$sessionId');
+    final Map<String, dynamic> joinAck = await _socketService.emitAck(
+      'session:join',
+      <String, dynamic>{'sessionId': sessionId},
+    );
+    debugPrint(
+      '[join-seq] 3 session join ack received sessionId=$sessionId'
+      ' ack=$joinAck',
+    );
 
+    // P0 FIX (guest reconnect storm): start the heartbeat the INSTANT the
+    // socket join is acknowledged — BEFORE media/room readiness. Previously
+    // _startHeartbeat ran only after _ensureMediaReady + negotiation at the end
+    // of _performJoin; a guest that stalled in the media path never reached it,
+    // so no heartbeat was ever sent, the server's 30s stale sweep expired the
+    // participant, the socket recycled, and it reconnected forever. The
+    // heartbeat only needs a joined socket, not media, so it must not wait.
     state = state.copyWith(
       joinState: RealtimeJoinState.joined,
       clearIncomingCall: true,
@@ -591,7 +605,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           ? 'Waiting for guest to join.'
           : 'You joined live.',
     );
+    debugPrint(
+      '[join-seq] 4 state.isJoined=${state.isJoined} sessionId=$sessionId',
+    );
     _startHeartbeat();
+    debugPrint('[join-seq] 5 heartbeat started sessionId=$sessionId');
+
+    // Media + negotiation now run AFTER the heartbeat is live, so a slow or
+    // failing media path can no longer starve the heartbeat into a stale sweep.
+    await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
     await _flushPendingOffers(refreshTurnCredentials: true);
     await _forceNegotiationIfNeeded();
   }
@@ -743,20 +765,53 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
   void _startHeartbeat() {
     _stopHeartbeat();
+    var firstBeat = true;
+    // Fire one heartbeat immediately so the server's lastSeenAt is refreshed
+    // right after join — don't wait a full interval for the first beat.
+    _sendHeartbeat(isFirst: true);
+    firstBeat = false;
     _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
-      final sessionId = _managedSessionId;
-      if (sessionId.isEmpty || !state.isJoined) return;
-      // emitAck is best-effort — a transient network blip drops the beat
-      // but the next 20s tick recovers. The server ignores heartbeats from
-      // non-joined sockets, so the ticker is safe to keep running.
-      unawaited(
-        _socketService
-            .emitAck('session:heartbeat', <String, dynamic>{
-              'sessionId': sessionId,
-            })
-            .catchError((Object _) => <String, dynamic>{}),
-      );
+      _sendHeartbeat(isFirst: firstBeat);
+      firstBeat = false;
     });
+  }
+
+  void _sendHeartbeat({required bool isFirst}) {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty || !state.isJoined) {
+      debugPrint(
+        '[join-seq] heartbeat SKIPPED sessionId=$sessionId'
+        ' isJoined=${state.isJoined}',
+      );
+      return;
+    }
+    if (isFirst) {
+      debugPrint('[join-seq] 6 first heartbeat sent sessionId=$sessionId');
+    }
+    // emitAck is best-effort — a transient network blip drops the beat
+    // but the next 20s tick recovers. The server ignores heartbeats from
+    // non-joined sockets, so the ticker is safe to keep running.
+    unawaited(
+      _socketService
+          .emitAck('session:heartbeat', <String, dynamic>{
+            'sessionId': sessionId,
+          })
+          .then((ack) {
+            if (isFirst) {
+              debugPrint(
+                '[join-seq] 7 heartbeat ack received sessionId=$sessionId'
+                ' ack=$ack',
+              );
+            }
+          })
+          .catchError((Object e) {
+            if (isFirst) {
+              debugPrint(
+                '[join-seq] 7 heartbeat ack FAILED sessionId=$sessionId err=$e',
+              );
+            }
+          }),
+    );
   }
 
   void _stopHeartbeat() {
