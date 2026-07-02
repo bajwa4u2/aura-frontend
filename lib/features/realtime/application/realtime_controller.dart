@@ -60,6 +60,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   final Map<String, String> _pendingOfferTargets = <String, String>{};
   bool _flushingPendingOffers = false;
 
+  // Reconnect resilience. The session to silently rejoin if the socket drops
+  // while the user is still in the room (backgrounded desktop tab, mobile
+  // app-switch/resume, transient network). Cleared ONLY on an intentional
+  // leave/terminate — never on a socket disconnect.
+  String? _resumeSessionId;
+  bool _awaitingReconnectRejoin = false;
+
   String get _managedSessionId =>
       (state.sessionId ?? state.session?.id ?? '').trim();
 
@@ -395,6 +402,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
 
     _joiningSessionId = trimmed;
+    _resumeSessionId = trimmed;
     _clearRtcConfiguration();
 
     // Show "Connecting..." immediately — the user should see progress even
@@ -437,6 +445,51 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         errorMessage: _safeJoinErrorMessage(error),
       );
       rethrow;
+    } finally {
+      if (_joiningSessionId == trimmed) {
+        _joiningSessionId = null;
+      }
+    }
+  }
+
+  /// Silent rejoin after an involuntary socket drop while the user stayed in
+  /// the room. Unlike join(), it does NOT early-return when joinState is still
+  /// `joined` (it is, by design, so the room UI persists through the gap). It
+  /// re-runs the full join (rehydrate → socket session:join → media → heartbeat
+  /// → renegotiation). On a retryable failure it stays in the reconnecting
+  /// state and re-arms for the next 'socket:connected'.
+  Future<void> _rejoinAfterReconnect(String sessionId) async {
+    final trimmed = sessionId.trim();
+    if (trimmed.isEmpty || _terminating) return;
+    _joiningSessionId = trimmed;
+    _clearRtcConfiguration();
+    state = state.copyWith(
+      joinState: RealtimeJoinState.joining,
+      sessionId: trimmed,
+      connectionStatus: RealtimeConnectionStatus.reconnecting,
+      infoMessage: 'Reconnecting…',
+      clearErrorMessage: true,
+    );
+    try {
+      if (!_socketService.isConnected) {
+        await connect();
+      }
+      await _performJoinWithRetry(trimmed);
+    } catch (error) {
+      if (_terminating) return;
+      if (_isRetryableConnectionError(error)) {
+        _awaitingReconnectRejoin = true; // retry on next connect
+        state = state.copyWith(
+          connectionStatus: RealtimeConnectionStatus.reconnecting,
+          infoMessage: 'Reconnecting…',
+          clearErrorMessage: true,
+        );
+        return;
+      }
+      state = state.copyWith(
+        joinState: _mapJoinError(error),
+        errorMessage: _safeJoinErrorMessage(error),
+      );
     } finally {
       if (_joiningSessionId == trimmed) {
         _joiningSessionId = null;
@@ -702,6 +755,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     _joiningSessionId = null;
     _hydratingSessionId = null;
     _terminating = false;
+    _resumeSessionId = null;
+    _awaitingReconnectRejoin = false;
     _clearRtcConfiguration();
     _clearPendingOfferTargets();
     state = _copyWithDetachedMediaState(
@@ -1204,6 +1259,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }) async {
     if (_terminating) return;
     _terminating = true;
+    // Intentional teardown — do NOT auto-rejoin.
+    _resumeSessionId = null;
+    _awaitingReconnectRejoin = false;
     _stopHeartbeat();
 
     final session = state.session;
@@ -1406,23 +1464,51 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           connectionStatus: RealtimeConnectionStatus.connected,
           lastSocketEvent: event.name,
         );
+        // RECONNECT RESILIENCE: the socket came back while we were still in the
+        // room — silently rejoin (rehydrate → socket session:join → media →
+        // heartbeat → renegotiation → room restored). Uses a dedicated path
+        // because join() early-returns for the same session while joinState is
+        // still `joined` (which we kept so the room UI persisted through the
+        // gap).
+        if (_awaitingReconnectRejoin &&
+            (_resumeSessionId?.trim().isNotEmpty ?? false) &&
+            state.isCallRoomVisible &&
+            !_terminating) {
+          _awaitingReconnectRejoin = false;
+          final sid = _resumeSessionId!.trim();
+          unawaited(_rejoinAfterReconnect(sid));
+        }
         return;
       case 'socket:disconnected':
-        // R4 — Cancel the heartbeat ticker on disconnect. The body
-        // already skips emits when `!state.isJoined`, but the periodic
-        // timer keeps the scheduler waking up every 20s and can leak
-        // across a sign-out / sign-in on the same tab if the controller
-        // isn't disposed. Stopping it on disconnect is defensive — a
-        // fresh join restarts it through `_startHeartbeat`.
         _stopHeartbeat();
         _clearPendingOfferTargets();
         unawaited(_mediaService.resetSessionMedia());
-        state = _copyWithDetachedMediaState(
-          connectionStatus: RealtimeConnectionStatus.disconnected,
-          joinState: RealtimeJoinState.idle,
-          clearSessionContext: true,
-          lastSocketEvent: event.name,
-        );
+        final canResume = (_resumeSessionId?.trim().isNotEmpty ?? false) &&
+            state.isCallRoomVisible &&
+            !_terminating;
+        if (canResume) {
+          // Involuntary drop while still in the room (backgrounded tab, mobile
+          // resume, network blip). Keep the session context and show
+          // "Reconnecting…" instead of tearing down to idle (which bounced the
+          // user to the workspace). joinState stays `joined` so the room UI
+          // persists; dead peer media is detached and re-acquired by the
+          // rejoin on the next 'socket:connected'.
+          _awaitingReconnectRejoin = true;
+          state = _copyWithDetachedMediaState(
+            joinState: RealtimeJoinState.joined,
+            connectionStatus: RealtimeConnectionStatus.reconnecting,
+            infoMessage: 'Reconnecting…',
+            clearErrorMessage: true,
+            lastSocketEvent: event.name,
+          );
+        } else {
+          state = _copyWithDetachedMediaState(
+            connectionStatus: RealtimeConnectionStatus.disconnected,
+            joinState: RealtimeJoinState.idle,
+            clearSessionContext: true,
+            lastSocketEvent: event.name,
+          );
+        }
         return;
       case 'socket:connect_error':
       case 'socket:error':
@@ -1498,13 +1584,32 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
 
         if (updatedParticipants.length <= 1 && state.isJoined) {
-          unawaited(
-            _terminateSession(
-              keepSocketConnected: true,
-              infoMessage: 'Call ended.',
-              alsoCallRepository: false,
-            ),
-          );
+          final leftReason =
+              (event.payload['reason'] ?? '').toString().trim().toLowerCase();
+          final isMeeting =
+              state.session?.surfaceType == RealtimeSurfaceType.meeting;
+          final transientDrop =
+              leftReason == 'disconnect' || leftReason == 'heartbeat_timeout';
+          if (isMeeting && transientDrop) {
+            // HOST-GRACE (client-side): the other party dropped INVOLUNTARILY
+            // (tab switch / mobile resume / network). Don't end the meeting —
+            // hold the room and show a waiting state. They rejoin via their own
+            // reconnect path, the backend re-broadcasts participant.joined, and
+            // the lifecycle negotiation re-offers to them. Only an intentional
+            // leave/end (reason 'leave'/'ended') tears the room down.
+            state = state.copyWith(
+              infoMessage: 'Waiting for the other participant to reconnect…',
+              clearErrorMessage: true,
+            );
+          } else {
+            unawaited(
+              _terminateSession(
+                keepSocketConnected: true,
+                infoMessage: 'Call ended.',
+                alsoCallRepository: false,
+              ),
+            );
+          }
         }
         return;
       case 'session:offer':
