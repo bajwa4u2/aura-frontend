@@ -273,7 +273,13 @@ class _HostHeader extends ConsumerWidget {
                 debugPrint('[instant] before clipboard');
                 Clipboard.setData(ClipboardData(text: meeting.joinUrl));
                 debugPrint('[instant] after clipboard');
-                Navigator.pop(dialogContext);
+                // Do NOT pop the dialog here. Closing it forced the host to
+                // re-tap "Start meeting" to reach "Enter room", which minted a
+                // SECOND instant session — so the host joined a different
+                // realtime session than the link the guest already had, and
+                // both sides waited forever. Keep the dialog open so the host
+                // copies the link AND enters the SAME session (meeting.id /
+                // meeting.sessionId).
                 debugPrint('[instant] before snackbar');
                 messenger.showSnackBar(
                   const SnackBar(content: Text('Meeting link copied')),
