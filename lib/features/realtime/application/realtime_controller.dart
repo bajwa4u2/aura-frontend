@@ -1166,8 +1166,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     // session.kind is the sole authority for call mode. Participant media
     // state (hasVideo) reflects capability, not the call type the host chose.
+    //
+    // MIXED must map to 'video': meetings are created with kind=MIXED
+    // (MeetingSessionBridgeService), and leaving it null made isVideoMode=false,
+    // so _ensureMediaReady captured an AUDIO-ONLY stream — no video track was
+    // ever published and "Show camera" (setCameraEnabled) had no track to
+    // enable. That is the "guest side is just audio" defect. MIXED is
+    // video-capable; users can still turn their camera off.
     final String? callMode;
-    if (sessionKind == 'VIDEO') {
+    if (sessionKind == 'VIDEO' || sessionKind == 'MIXED') {
       callMode = 'video';
     } else if (sessionKind == 'AUDIO') {
       callMode = 'audio';
