@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
@@ -121,6 +122,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   @override
   void initState() {
     super.initState();
+    // Keep the mobile device screen awake for the whole live session — a video
+    // call must not let the phone dim/sleep while the user is in the room.
+    WakelockPlus.enable();
     _joinedAt = DateTime.now();
     _bridge = MeetingTransportBridge(
       sessionId: widget.sessionId,
@@ -169,6 +173,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 
   @override
   void dispose() {
+    // Release the wake lock when leaving the live room.
+    WakelockPlus.disable();
     _controlBarTimer?.cancel();
     _arrivalTimer?.cancel();
     ref
