@@ -17,6 +17,7 @@ class RealtimeMediaSnapshot {
     this.onTrackVideoSeen = false,
     this.localVideoTrackPresent = false,
     this.remoteVideoRendererAttached = false,
+    this.cameraUnavailable = false,
   });
 
   final bool ready;
@@ -26,6 +27,9 @@ class RealtimeMediaSnapshot {
   final Map<String, RTCVideoRenderer> remoteRenderers;
   final String? error;
   final bool isScreenSharing;
+  // Video capture failed but audio succeeded — camera busy in another
+  // app/browser. Audio still publishes; UI shows an explicit message.
+  final bool cameraUnavailable;
   // ── Temporary RTC debug (on-screen badge) ────────────────────────────
   final List<String> sentTrackKinds; // kinds addTrack'd to the peer
   final bool onTrackAudioSeen;
@@ -56,6 +60,15 @@ class RealtimeMediaService {
   bool _isScreenSharing = false;
   String? _error;
   bool _disposed = false;
+  // Coalesces concurrent ensureLocalMedia() calls (join + offer + reconcile can
+  // all fire near-simultaneously); the winner's future is shared so a later
+  // call never resets the freshly-acquired stream mid-flight.
+  Future<void>? _mediaAcquisition;
+  // True when video acquisition failed but audio succeeded — the camera is held
+  // by another app/browser (host + guest sharing one physical camera on the
+  // same laptop). The UI shows an explicit "camera busy" message; audio still
+  // publishes so the peer connection is not empty.
+  bool _cameraUnavailable = false;
   // ── Temporary RTC debug ──────────────────────────────────────────────
   List<String> _lastSentTrackKinds = const <String>[];
   bool _onTrackAudioSeen = false;
@@ -83,6 +96,7 @@ class RealtimeMediaService {
             _localStream?.getVideoTracks().isNotEmpty ?? false,
         remoteVideoRendererAttached:
             _remoteStreams.values.any((s) => s.getVideoTracks().isNotEmpty),
+        cameraUnavailable: _cameraUnavailable,
       );
 
   Future<void> ensureLocalMedia({
@@ -101,38 +115,100 @@ class RealtimeMediaService {
       return;
     }
 
-    await _resetLocalMediaOnly();
-
+    // Coalesce concurrent acquisitions. join, session:offer and reconcile can
+    // all call this near-simultaneously; without a guard the second call's
+    // _resetLocalMediaOnly() nulls the first call's freshly-acquired stream
+    // mid-flight — so the answerer attaches NO local stream and never publishes
+    // to the peer (guest badge localVid=false / "attach: NO local stream").
+    final inflight = _mediaAcquisition;
+    if (inflight != null) return inflight;
+    final future = _acquireLocalMedia(audio: audio, video: video);
+    _mediaAcquisition = future;
     try {
-      final renderer = RTCVideoRenderer();
-      await renderer.initialize();
+      await future;
+    } finally {
+      _mediaAcquisition = null;
+    }
+  }
 
-      final stream = await navigator.mediaDevices.getUserMedia(<String, dynamic>{
-        'audio': audio,
-        'video': video
-            ? <String, dynamic>{
-                'facingMode': 'user',
-                'width': <String, dynamic>{'ideal': 1280},
-                'height': <String, dynamic>{'ideal': 720},
-                'frameRate': <String, dynamic>{'ideal': 24},
-              }
-            : false,
-      });
+  Future<void> _acquireLocalMedia({
+    required bool audio,
+    required bool video,
+  }) async {
+    await _resetLocalMediaOnly();
+    _cameraUnavailable = false;
 
-      renderer.srcObject = stream;
-      _localRenderer = renderer;
-      _localStream = stream;
-      _ready = true;
-      _micEnabled = audio;
-      _cameraEnabled = video;
-      _error = null;
-      _publish();
+    final renderer = RTCVideoRenderer();
+    await renderer.initialize();
+
+    Map<String, dynamic> constraints(bool wantVideo) => <String, dynamic>{
+          'audio': audio,
+          'video': wantVideo
+              ? <String, dynamic>{
+                  'facingMode': 'user',
+                  'width': <String, dynamic>{'ideal': 1280},
+                  'height': <String, dynamic>{'ideal': 720},
+                  'frameRate': <String, dynamic>{'ideal': 24},
+                }
+              : false,
+        };
+
+    MediaStream? stream;
+    var gotVideo = video;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints(video));
+      debugPrint(
+        '[rtc-media] getUserMedia OK audio=$audio video=$video'
+        ' aTracks=${stream.getAudioTracks().length}'
+        ' vTracks=${stream.getVideoTracks().length}',
+      );
     } catch (error) {
-      _error = error.toString();
+      // NotReadableError / TrackStartError ⇒ the camera is held by ANOTHER
+      // app/browser (host + guest on ONE laptop share a single physical camera;
+      // the second browser can't open it). NotAllowedError ⇒ permission denied.
+      // Rather than fail the whole acquisition (publishing NOTHING — the old
+      // "attach: NO local stream" bug), DEGRADE to audio-only so this side
+      // still publishes audio and the peer connection has a live sender.
+      debugPrint(
+        '[rtc-media] getUserMedia FAILED audio=$audio video=$video err=$error',
+      );
+      if (video && audio) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints(false));
+          gotVideo = false;
+          _cameraUnavailable = true;
+          debugPrint(
+            '[rtc-media] degraded to AUDIO-ONLY (camera busy)'
+            ' aTracks=${stream.getAudioTracks().length}',
+          );
+        } catch (audioError) {
+          debugPrint('[rtc-media] audio-only ALSO failed err=$audioError');
+        }
+      }
+    }
+
+    if (stream == null) {
+      // Nothing acquired at all — surface the error but do NOT rethrow, so the
+      // caller stays joined (they can retry via the camera/mic toggle).
+      await renderer.dispose();
+      _error = 'Camera and microphone are unavailable. '
+          'Another app or browser may be using them.';
       _ready = false;
       _publish();
-      rethrow;
+      return;
     }
+
+    renderer.srcObject = stream;
+    _localRenderer = renderer;
+    _localStream = stream;
+    _ready = true;
+    _micEnabled = audio && stream.getAudioTracks().isNotEmpty;
+    _cameraEnabled = gotVideo && stream.getVideoTracks().isNotEmpty;
+    _error = _cameraUnavailable
+        ? 'Camera unavailable in this browser. '
+            'Another browser or app may be using it — joined with audio only.'
+        : null;
+    _publish();
   }
 
   Future<void> _attachLocalTracks(
@@ -144,8 +220,15 @@ class RealtimeMediaService {
       debugPrint('[rtc] attach: NO local stream peerKey=$peerKey');
       return;
     }
+    final tracks = local.getTracks();
+    for (final track in tracks) {
+      debugPrint(
+        '[rtc-track] local track kind=${track.kind}'
+        ' enabled=${track.enabled} muted=${track.muted} id=${track.id}',
+      );
+    }
     final kinds = <String>[];
-    for (final track in local.getTracks()) {
+    for (final track in tracks) {
       try {
         await connection.addTrack(track, local);
         kinds.add(track.kind ?? '?');
@@ -157,6 +240,22 @@ class RealtimeMediaService {
     }
     _lastSentTrackKinds = kinds;
     debugPrint('[rtc-track] local attached peer=$peerKey kinds=$kinds');
+
+    // Confirm what the peer connection will actually send (senders), so a badge
+    // reading "sent=[audio]" vs "[audio,video]" can be traced to a real sender
+    // rather than a guessed track kind.
+    try {
+      final senders = await connection.getSenders();
+      for (final sender in senders) {
+        final t = sender.track;
+        debugPrint(
+          '[rtc-track] sender kind=${t?.kind} enabled=${t?.enabled}',
+        );
+      }
+      debugPrint('[rtc-track] senders total=${senders.length} peer=$peerKey');
+    } catch (e) {
+      debugPrint('[rtc-track] getSenders failed peer=$peerKey err=$e');
+    }
     _publish();
   }
 
@@ -308,6 +407,13 @@ class RealtimeMediaService {
         'offerToReceiveAudio': true,
         'offerToReceiveVideo': true,
       });
+      final sdp = offer.sdp ?? '';
+      debugPrint(
+        '[rtc-offer] sdp peer=$peerKey hasAudioM=${sdp.contains('m=audio')}'
+        ' hasVideoM=${sdp.contains('m=video')}'
+        ' sendrecv=${sdp.contains('a=sendrecv')}'
+        ' sendonly=${sdp.contains('a=sendonly')}',
+      );
       await connection.setLocalDescription(offer);
       return offer;
     } finally {
@@ -429,11 +535,19 @@ class RealtimeMediaService {
   }
 
   Future<void> setCameraEnabled(bool enabled) async {
+    final videoTracks =
+        _localStream?.getVideoTracks() ?? const <MediaStreamTrack>[];
+    // No video track means we degraded to audio-only (camera busy in another
+    // app/browser). Don't claim the camera is "on" — that produced the
+    // misleading cam=true / localVid=false badge. Stay off until a real
+    // re-acquire succeeds.
+    if (enabled && videoTracks.isEmpty) {
+      _cameraEnabled = false;
+      _publish();
+      return;
+    }
     _cameraEnabled = enabled;
-    await _setTrackEnabled(
-      tracks: _localStream?.getVideoTracks() ?? const <MediaStreamTrack>[],
-      enabled: enabled,
-    );
+    await _setTrackEnabled(tracks: videoTracks, enabled: enabled);
     _publish();
   }
 

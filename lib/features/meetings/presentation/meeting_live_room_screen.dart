@@ -367,6 +367,19 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             ),
           ),
 
+          // Camera-busy banner: shown when video capture failed but audio
+          // succeeded (e.g. host + guest sharing one physical camera on the
+          // same laptop — the second browser can't open it). We join audio-only
+          // instead of silently publishing nothing.
+          Positioned(
+            top: 12,
+            left: 16,
+            right: 16,
+            child: _CameraUnavailableBanner(
+              mediaService: ref.read(realtimeMediaServiceProvider),
+            ),
+          ),
+
           // E2 — Meeting-branded header with institution + elapsed timer
           Positioned(
             top: 0,
@@ -508,6 +521,52 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 // E3 — Video grid: spotlight (1 remote) or grid (2+)
 // ---------------------------------------------------------------------------
 
+// Banner shown when the local camera couldn't be opened (busy in another
+// app/browser) but audio succeeded — the call continues audio-only.
+class _CameraUnavailableBanner extends StatelessWidget {
+  const _CameraUnavailableBanner({required this.mediaService});
+
+  final RealtimeMediaService mediaService;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<RealtimeMediaSnapshot>(
+      stream: mediaService.snapshots,
+      initialData: mediaService.currentSnapshot,
+      builder: (context, snap) {
+        final s = snap.data ?? mediaService.currentSnapshot;
+        if (!s.cameraUnavailable) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF7C2D12).withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFF59E0B), width: 1),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.videocam_off, color: Color(0xFFFDE68A), size: 18),
+              SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  'Camera unavailable in this browser. Another browser or app '
+                  'may be using it — you joined with audio only.',
+                  style: TextStyle(
+                    color: Color(0xFFFDE68A),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 // ── TEMPORARY on-screen RTC debug badge ──────────────────────────────────
 // Surfaces the video track/render truth so we stop guessing: what tracks we
 // sent to the peer, whether we received the remote audio/video tracks, how many
@@ -552,7 +611,7 @@ class _RtcDebugBadge extends StatelessWidget {
               .join(',');
           final lines = <String>[
             'RTC DEBUG me=${_short(meSocket)} join=$isJoined mediaRdy=$isMediaReady',
-            'sent=${s.sentTrackKinds} localVid=${s.localVideoTrackPresent} cam=${s.cameraEnabled}',
+            'sent=${s.sentTrackKinds} localVid=${s.localVideoTrackPresent} cam=${s.cameraEnabled} camBusy=${s.cameraUnavailable}',
             'onTrack A=${s.onTrackAudioSeen} V=${s.onTrackVideoSeen}',
             'remoteRenderers=${rKeys.length} remoteVid=${s.remoteVideoRendererAttached}',
             'peers=${partIds.map(_short).toList()} initiator=[$initFlags]',
