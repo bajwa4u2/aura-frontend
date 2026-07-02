@@ -219,16 +219,22 @@ class _HostHeader extends ConsumerWidget {
             label: const Text('Start meeting'),
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
+              debugPrint('[instant] tap start');
               try {
                 final meeting = await ref
                     .read(meetingsRepositoryProvider)
                     .startInstantMeeting();
+                debugPrint(
+                  '[instant] meeting created id=${meeting.id}'
+                  ' joinUrl=${meeting.joinUrl} sessionId=${meeting.sessionId}',
+                );
                 ref.invalidate(upcomingMeetingsProvider);
                 if (!context.mounted) return;
                 _showMeetingStarted(context, meeting);
-              } catch (e) {
+              } catch (e, st) {
+                debugPrint('[instant][fatal] start: $e\n$st');
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Unable to start meeting. Try again.')),
+                  SnackBar(content: Text('Start meeting failed: $e')),
                 );
               }
             },
@@ -239,9 +245,14 @@ class _HostHeader extends ConsumerWidget {
   }
 
   void _showMeetingStarted(BuildContext context, Meeting meeting) {
+    // Capture the messenger from the SCREEN context up front so the action
+    // handlers never call ScaffoldMessenger.of() on the dialog context after
+    // it has been popped (a dead-context lookup there throws and, mid-gesture,
+    // blanks the surface). Pops target the dialog's own context.
+    final messenger = ScaffoldMessenger.of(context);
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Meeting started'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -255,22 +266,42 @@ class _HostHeader extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: meeting.joinUrl));
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Meeting link copied')),
+              debugPrint(
+                '[instant] copy link pressed joinUrl=${meeting.joinUrl}',
               );
+              try {
+                debugPrint('[instant] before clipboard');
+                Clipboard.setData(ClipboardData(text: meeting.joinUrl));
+                debugPrint('[instant] after clipboard');
+                Navigator.pop(dialogContext);
+                debugPrint('[instant] before snackbar');
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Meeting link copied')),
+                );
+              } catch (e, st) {
+                debugPrint('[instant][fatal] copy: $e\n$st');
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Copy link failed: $e')),
+                );
+              }
             },
             child: const Text('Copy meeting link'),
           ),
           FilledButton(
             onPressed: () {
-              Navigator.pop(context);
-              context.push(
-                meeting.sessionId != null
-                    ? '/meetings/${meeting.id}/room?sessionId=${meeting.sessionId}'
-                    : '/meetings/${meeting.id}/room',
-              );
+              final route = meeting.sessionId != null
+                  ? '/meetings/${meeting.id}/room?sessionId=${meeting.sessionId}'
+                  : '/meetings/${meeting.id}/room';
+              debugPrint('[instant] before navigate route=$route');
+              try {
+                Navigator.pop(dialogContext);
+                context.push(route);
+              } catch (e, st) {
+                debugPrint('[instant][fatal] enter room: $e\n$st');
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Enter room failed: $e')),
+                );
+              }
             },
             child: const Text('Enter room'),
           ),
@@ -576,14 +607,25 @@ class _MeetingCard extends ConsumerWidget {
                             context.push(_summaryPath);
                             break;
                           case _MeetingMenuAction.copyLink:
-                            Clipboard.setData(
-                              ClipboardData(text: meeting.joinUrl),
+                            debugPrint(
+                              '[instant] card copy link joinUrl=${meeting.joinUrl}',
                             );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Meeting link copied'),
-                              ),
-                            );
+                            final messenger = ScaffoldMessenger.of(context);
+                            try {
+                              Clipboard.setData(
+                                ClipboardData(text: meeting.joinUrl),
+                              );
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Meeting link copied'),
+                                ),
+                              );
+                            } catch (e, st) {
+                              debugPrint('[instant][fatal] card copy: $e\n$st');
+                              messenger.showSnackBar(
+                                SnackBar(content: Text('Copy link failed: $e')),
+                              );
+                            }
                             break;
                           case _MeetingMenuAction.cancel:
                             await _cancelMeeting(context, ref);
