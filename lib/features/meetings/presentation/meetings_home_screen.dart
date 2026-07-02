@@ -295,8 +295,16 @@ class _HostHeader extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () {
+              // Go STRAIGHT to the live room (deep-linkable with sessionId) —
+              // not the /room lobby. This makes the host's URL reloadable: a
+              // page refresh re-mounts the live room and rejoins the SAME
+              // session instead of bouncing to the workspace / forcing a new
+              // instant meeting. isHost=true is correct here (this user just
+              // created the instant meeting) and also fixes the "waiting for
+              // the host" label + host-only controls.
               final route = meeting.sessionId != null
-                  ? '/meetings/${meeting.id}/room?sessionId=${meeting.sessionId}'
+                  ? '/meetings/${meeting.id}/live'
+                        '?sessionId=${meeting.sessionId}&isHost=true'
                   : '/meetings/${meeting.id}/room';
               debugPrint('[instant] before navigate route=$route');
               try {
