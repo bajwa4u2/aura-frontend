@@ -18,6 +18,12 @@ ENV AURA_ADMIN_USER_IDS=${AURA_ADMIN_USER_IDS}
 COPY . .
 
 RUN flutter pub get
+# Pristine build. A prior deploy shipped STALE build/web even though source
+# changed (the compiled main.dart.js kept an old mtime/content) — Docker COPY
+# normalises source mtimes, which can defeat Flutter's incremental build cache
+# so a changed file is not recompiled. `flutter clean` removes build/ and
+# .dart_tool so `flutter build web` always regenerates from the current source.
+RUN flutter clean
 RUN flutter build web --release --no-wasm-dry-run \
   --dart-define=API_BASE_URL=${API_BASE_URL} \
   --dart-define=AURA_ADMIN_USER_IDS=${AURA_ADMIN_USER_IDS} \
