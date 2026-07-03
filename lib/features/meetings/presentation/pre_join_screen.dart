@@ -12,6 +12,7 @@ import '../domain/meeting.dart';
 import '../domain/meeting_identity.dart';
 import 'meeting_lifecycle_presenter.dart';
 import 'widgets/meeting_device_check.dart';
+import 'widgets/meeting_preparation_panel.dart';
 
 // Pre-join: shows meeting context (host, org, purpose) before entering.
 // Applies the "organization first, Aura second" principle — the guest
@@ -261,131 +262,14 @@ class _PreJoinBody extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        border: Border.all(color: const Color(0xFF243244)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AuraSpace.s16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (institution != null)
-                              _IdentityAvatar(
-                                name: institution.name,
-                                logoUrl: institution.logoUrl,
-                                icon: Icons.business_rounded,
-                              ),
-                            if (institution != null && host != null)
-                              const SizedBox(width: AuraSpace.s10),
-                            if (host != null)
-                              _IdentityAvatar(
-                                name: host.name,
-                                logoUrl: host.avatarUrl,
-                                icon: Icons.person_outline_rounded,
-                              ),
-                            const SizedBox(width: AuraSpace.s14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    institution?.name ??
-                                        host?.name ??
-                                        meeting.title,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    host == null
-                                        ? 'Host details unavailable'
-                                        : host.title?.trim().isNotEmpty == true
-                                        ? host.title!.trim()
-                                        : host.name,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: const Color(0xFFCBD5E1),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s20),
-                    Text(
-                      meeting.title,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    // First-class preparation brief (shared with the host lobby).
+                    MeetingPreparationPanel(meeting: meeting),
+                    const SizedBox(height: AuraSpace.s12),
+                    _StatusPill(lifecycle: lifecycle),
                     if (identity != null) ...[
                       const SizedBox(height: AuraSpace.s12),
                       _BookingIdentityCard(identity: identity!),
                     ],
-                    if ((meeting.description ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s8),
-                      Text(
-                        meeting.description!.trim(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFFCBD5E1),
-                          height: 1.45,
-                        ),
-                      ),
-                    ],
-                    if ((meeting.preparationNotes ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s16),
-                      Text(
-                        'Agenda',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: const Color(0xFF9CA3AF),
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: AuraSpace.s8),
-                      ...meeting.preparationNotes!.trim().split('\n').where((l) => l.trim().isNotEmpty).map(
-                        (line) => Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('· ', style: TextStyle(color: Color(0xFF6C63FF))),
-                              Expanded(
-                                child: Text(
-                                  line.trim(),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: const Color(0xFFCBD5E1),
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: AuraSpace.s6),
-                    _StatusPill(lifecycle: lifecycle),
-                    const SizedBox(height: AuraSpace.s12),
-                    _MeetingMetaRow(
-                      icon: Icons.schedule_rounded,
-                      text: _scheduledLabel(context, meeting),
-                    ),
-                    _MeetingMetaRow(
-                      icon: Icons.public_rounded,
-                      text: meeting.timezone,
-                    ),
-                    if (host?.title?.trim().isNotEmpty == true)
-                      _MeetingMetaRow(
-                        icon: Icons.badge_outlined,
-                        text: host!.title!.trim(),
-                      ),
                     const SizedBox(height: AuraSpace.s24),
                     Text(
                       'Camera & microphone',
@@ -472,28 +356,6 @@ class _PreJoinBody extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _IdentityAvatar extends StatelessWidget {
-  final String name;
-  final String? logoUrl;
-  final IconData icon;
-
-  const _IdentityAvatar({required this.name, required this.icon, this.logoUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return CircleAvatar(
-      radius: 22,
-      backgroundColor: const Color(0xFF111827),
-      backgroundImage: (logoUrl != null && logoUrl!.trim().isNotEmpty)
-          ? NetworkImage(logoUrl!)
-          : null,
-      child: logoUrl == null || logoUrl!.trim().isEmpty
-          ? Icon(icon, color: const Color(0xFFE5E7EB), size: 18)
-          : null,
     );
   }
 }
@@ -645,27 +507,3 @@ String _buttonLabel(MeetingLifecycleViewModel lifecycle) {
   };
 }
 
-String _scheduledLabel(BuildContext context, Meeting meeting) {
-  final scheduledAt = meeting.scheduledAt;
-  if (scheduledAt == null) return 'Time will be confirmed by the host';
-  final local = scheduledAt.toLocal();
-  return '${MaterialLocalizations.of(context).formatFullDate(local)} · ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
-}
-
-class _MeetingMetaRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _MeetingMetaRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF6B7280)),
-        const SizedBox(width: AuraSpace.s10),
-        Expanded(child: Text(text)),
-      ],
-    );
-  }
-}

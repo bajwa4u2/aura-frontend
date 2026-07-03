@@ -9,6 +9,7 @@ import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import 'meeting_lifecycle_presenter.dart';
+import 'widgets/meeting_preparation_panel.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/data/realtime_media_service.dart';
 
@@ -204,6 +205,9 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
                         roomOpen: _roomOpen,
                         mediaService: mediaService,
                       ),
+                      const SizedBox(height: AuraSpace.s16),
+                      // Shared first-class preparation brief.
+                      MeetingPreparationPanel(meeting: meeting, dense: true),
                     ],
                   ),
                 ),
