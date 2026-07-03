@@ -9,6 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_space.dart';
+import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../../realtime/application/realtime_controller.dart';
@@ -98,6 +99,10 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   Timer? _arrivalTimer;
   late final DateTime _joinedAt;
   late final MeetingTransportBridge _bridge;
+  // Applies the user's pre-join camera/mic choice ONCE, after local media is
+  // ready, via the public media controls. Never touches the join/RTC path.
+  StreamSubscription<RealtimeMediaSnapshot>? _entryPrefsSub;
+  bool _entryPrefsApplied = false;
 
   void _scheduleControlBarHide() {
     _controlBarTimer?.cancel();
@@ -169,12 +174,41 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     }
     if (!mounted) return;
     ref.read(realtimeControllerProvider.notifier).join(widget.sessionId);
+    _applyEntryPrefsWhenReady();
+  }
+
+  /// Applies the pre-join camera/mic ON-OFF choice once local media is ready.
+  /// Uses the same public controls the in-room buttons use — no join/RTC change.
+  void _applyEntryPrefsWhenReady() {
+    if (_entryPrefsApplied) return;
+    final media = ref.read(realtimeMediaServiceProvider);
+    if (media.currentSnapshot.ready) {
+      _applyEntryPrefs(media);
+      return;
+    }
+    _entryPrefsSub = media.snapshots.listen((snap) {
+      if (snap.ready) {
+        _entryPrefsSub?.cancel();
+        _entryPrefsSub = null;
+        _applyEntryPrefs(media);
+      }
+    });
+  }
+
+  Future<void> _applyEntryPrefs(RealtimeMediaService media) async {
+    if (_entryPrefsApplied) return;
+    _entryPrefsApplied = true;
+    final prefs = ref.read(meetingEntryPrefsProvider);
+    // Only act when the user opted OUT; defaults are on (a no-op otherwise).
+    if (!prefs.micOn) await media.setMicrophoneEnabled(false);
+    if (!prefs.cameraOn) await media.setCameraEnabled(false);
   }
 
   @override
   void dispose() {
     // Release the wake lock when leaving the live room.
     WakelockPlus.disable();
+    _entryPrefsSub?.cancel();
     _controlBarTimer?.cancel();
     _arrivalTimer?.cancel();
     ref

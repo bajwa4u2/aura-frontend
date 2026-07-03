@@ -11,6 +11,7 @@ import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_identity.dart';
 import 'meeting_lifecycle_presenter.dart';
+import 'widgets/meeting_device_check.dart';
 
 // Pre-join: shows meeting context (host, org, purpose) before entering.
 // Applies the "organization first, Aura second" principle — the guest
@@ -27,6 +28,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final _deviceCheck = MeetingDeviceCheckController();
   bool _joining = false;
   bool _identityPrefilled = false;
 
@@ -86,6 +88,9 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           sessionId: result.sessionId,
           guestId: guestId,
         );
+        // Free the preview camera before entering so the room can acquire it.
+        await _deviceCheck.release();
+        if (!mounted) return;
         context.push(target);
         return;
       }
@@ -102,6 +107,8 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           sessionId: result.sessionId,
           guestId: guestId,
         );
+        await _deviceCheck.release();
+        if (!mounted) return;
         context.push(target);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -199,6 +206,10 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
         joining: _joining,
         identity: identityAsync.valueOrNull,
         onJoin: () => _join(meeting),
+        deviceCheck: MeetingDeviceCheck(
+          controller: _deviceCheck,
+          displayName: identityAsync.valueOrNull?.displayName,
+        ),
       ),
     );
   }
@@ -212,6 +223,7 @@ class _PreJoinBody extends ConsumerWidget {
   final bool joining;
   final MeetingIdentityRef? identity;
   final VoidCallback onJoin;
+  final Widget deviceCheck;
 
   const _PreJoinBody({
     required this.meeting,
@@ -221,6 +233,7 @@ class _PreJoinBody extends ConsumerWidget {
     required this.joining,
     required this.identity,
     required this.onJoin,
+    required this.deviceCheck,
   });
 
   @override
@@ -373,6 +386,17 @@ class _PreJoinBody extends ConsumerWidget {
                         icon: Icons.badge_outlined,
                         text: host!.title!.trim(),
                       ),
+                    const SizedBox(height: AuraSpace.s24),
+                    Text(
+                      'Camera & microphone',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: const Color(0xFF9CA3AF),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                    deviceCheck,
                     const SizedBox(height: AuraSpace.s24),
                     Text(
                       isAuthed
