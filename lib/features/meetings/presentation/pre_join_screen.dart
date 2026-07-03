@@ -19,7 +19,17 @@ import 'widgets/meeting_preparation_panel.dart';
 // sees WHO is hosting before they encounter any platform branding.
 class PreJoinScreen extends ConsumerStatefulWidget {
   final String meetingCode;
-  const PreJoinScreen({super.key, required this.meetingCode});
+
+  /// Booking confirmation token (the `bt` link param). Present when the BOOKER
+  /// of a scheduled meeting opens their identity-bound link — we then resolve
+  /// their identity from the booking and skip the name/email prompt.
+  final String? bookerToken;
+
+  const PreJoinScreen({
+    super.key,
+    required this.meetingCode,
+    this.bookerToken,
+  });
 
   @override
   ConsumerState<PreJoinScreen> createState() => _PreJoinScreenState();
@@ -52,6 +62,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
         guestEmail: _emailCtrl.text.trim().isEmpty
             ? null
             : _emailCtrl.text.trim(),
+        bookerToken: widget.bookerToken,
       );
 
       if (!mounted) return;
@@ -207,9 +218,11 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
         joining: _joining,
         identity: identityAsync.valueOrNull,
         onJoin: () => _join(meeting),
+        isBooker: (widget.bookerToken ?? '').trim().isNotEmpty,
         deviceCheck: MeetingDeviceCheck(
           controller: _deviceCheck,
-          displayName: identityAsync.valueOrNull?.displayName,
+          displayName: identityAsync.valueOrNull?.displayName ??
+              meeting.booking?.bookerName,
         ),
       ),
     );
@@ -225,6 +238,7 @@ class _PreJoinBody extends ConsumerWidget {
   final MeetingIdentityRef? identity;
   final VoidCallback onJoin;
   final Widget deviceCheck;
+  final bool isBooker;
 
   const _PreJoinBody({
     required this.meeting,
@@ -235,6 +249,7 @@ class _PreJoinBody extends ConsumerWidget {
     required this.identity,
     required this.onJoin,
     required this.deviceCheck,
+    required this.isBooker,
   });
 
   @override
@@ -282,49 +297,73 @@ class _PreJoinBody extends ConsumerWidget {
                     const SizedBox(height: AuraSpace.s10),
                     deviceCheck,
                     const SizedBox(height: AuraSpace.s24),
-                    Text(
-                      isAuthed
-                          ? 'Join with your Aura account'
-                          : 'Join as a guest',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    if (isBooker) ...[
+                      // Booker joins with the identity from their booking — no
+                      // name/email prompt, and one stable participant.
+                      Row(
+                        children: [
+                          const Icon(Icons.verified_user_rounded,
+                              size: 18, color: Color(0xFF10B981)),
+                          const SizedBox(width: AuraSpace.s10),
+                          Expanded(
+                            child: Text(
+                              meeting.booking?.bookerName.trim().isNotEmpty ==
+                                      true
+                                  ? 'Joining as ${meeting.booking!.bookerName.trim()}'
+                                  : 'Joining with your booking',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: AuraSpace.s6),
-                    TextFormField(
-                      controller: nameCtrl,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter your name',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person_outline_rounded),
+                      const SizedBox(height: AuraSpace.s16),
+                    ] else ...[
+                      Text(
+                        isAuthed
+                            ? 'Join with your Aura account'
+                            : 'Join as a guest',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Enter your name to join';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    TextFormField(
-                      controller: emailCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        hintText: 'your@email.com',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.mail_outline_rounded),
+                      const SizedBox(height: AuraSpace.s6),
+                      TextFormField(
+                        controller: nameCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter your name',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_outline_rounded),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Enter your name to join';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return null;
-                        if (!text.contains('@')) {
-                          return 'Enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AuraSpace.s24),
+                      const SizedBox(height: AuraSpace.s12),
+                      TextFormField(
+                        controller: emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          hintText: 'your@email.com',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.mail_outline_rounded),
+                        ),
+                        validator: (value) {
+                          final text = value?.trim() ?? '';
+                          if (text.isEmpty) return null;
+                          if (!text.contains('@')) {
+                            return 'Enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AuraSpace.s24),
+                    ],
                     SizedBox(
                       height: 50,
                       child: FilledButton.icon(
@@ -333,12 +372,15 @@ class _PreJoinBody extends ConsumerWidget {
                         onPressed: joining || lifecycle.isTerminal
                             ? null
                             : () {
-                                if (!formKey.currentState!.validate()) return;
+                                if (!isBooker &&
+                                    !formKey.currentState!.validate()) {
+                                  return;
+                                }
                                 onJoin();
                               },
                       ),
                     ),
-                    if (!isAuthed) ...[
+                    if (!isAuthed && !isBooker) ...[
                       const SizedBox(height: AuraSpace.s12),
                       TextButton.icon(
                         icon: const Icon(Icons.login_rounded),

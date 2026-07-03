@@ -979,8 +979,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/meetings/join/:code',
-            builder: (context, state) =>
-                PreJoinScreen(meetingCode: state.pathParameters['code'] ?? ''),
+            builder: (context, state) => PreJoinScreen(
+              meetingCode: state.pathParameters['code'] ?? '',
+              bookerToken: state.uri.queryParameters['bt'],
+            ),
           ),
           GoRoute(
             path: '/meetings/:id',

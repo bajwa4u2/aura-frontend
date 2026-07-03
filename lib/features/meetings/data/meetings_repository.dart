@@ -229,12 +229,15 @@ class MeetingsRepository {
     String code, {
     String? guestName,
     String? guestEmail,
+    String? bookerToken,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/public/meetings/join/$code',
       data: {
         if (guestName != null) 'guestName': guestName,
         if (guestEmail != null) 'guestEmail': guestEmail,
+        if (bookerToken != null && bookerToken.isNotEmpty)
+          'bookerToken': bookerToken,
       },
       options: Options(extra: const {'__skip_auth': true}),
     );
