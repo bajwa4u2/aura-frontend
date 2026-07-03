@@ -263,6 +263,7 @@ class Meeting {
   final List<MeetingParticipant> participants;
   final MeetingBookingDetails? booking;
   final String? preparationNotes;
+  final String? liveNotes;
   final MeetingSummary? summary;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -291,6 +292,7 @@ class Meeting {
     required this.participants,
     this.booking,
     this.preparationNotes,
+    this.liveNotes,
     this.summary,
     required this.createdAt,
     required this.updatedAt,
@@ -330,6 +332,7 @@ class Meeting {
         ? MeetingBookingDetails.fromJson(j['booking'] as Map<String, dynamic>)
         : null,
     preparationNotes: j['preparationNotes'] as String?,
+    liveNotes: j['liveNotes'] as String?,
     summary: j['summary'] is Map<String, dynamic>
         ? MeetingSummary.fromJson(j['summary'] as Map<String, dynamic>)
         : null,

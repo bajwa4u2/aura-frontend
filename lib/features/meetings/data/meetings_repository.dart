@@ -166,6 +166,7 @@ class MeetingsRepository {
     bool? recordingEnabled,
     bool? allowGuests,
     String? preparationNotes,
+    String? liveNotes,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/meetings/$id',
@@ -180,6 +181,7 @@ class MeetingsRepository {
         if (recordingEnabled != null) 'recordingEnabled': recordingEnabled,
         if (allowGuests != null) 'allowGuests': allowGuests,
         if (preparationNotes != null) 'preparationNotes': preparationNotes,
+        if (liveNotes != null) 'liveNotes': liveNotes,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;

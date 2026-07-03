@@ -498,7 +498,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               bottom: 0,
               child: _MeetingNotesDrawer(
                 meetingId: widget.meetingId,
-                initialNotes: meeting?.preparationNotes,
+                initialNotes: meeting?.liveNotes,
                 onClose: () => setState(() => _showNotes = false),
               ),
             ),
@@ -1579,7 +1579,9 @@ class _ParticipantRow extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// E6 — Notes drawer: saves to preparationNotes via updateMeeting()
+// E6 — Notes drawer: saves LIVE notes (Meeting.liveNotes) via updateMeeting().
+// Kept distinct from preparationNotes (the pre-meeting agenda/brief) so live
+// note-taking never overwrites the host's preparation material.
 // ---------------------------------------------------------------------------
 
 class _MeetingNotesDrawer extends ConsumerStatefulWidget {
@@ -1631,7 +1633,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
     try {
       await ref
           .read(meetingsRepositoryProvider)
-          .updateMeeting(widget.meetingId, preparationNotes: _ctrl.text.trim());
+          .updateMeeting(widget.meetingId, liveNotes: _ctrl.text.trim());
       ref.invalidate(meetingProvider(widget.meetingId));
       if (mounted) setState(() => _saved = true);
     } catch (_) {
