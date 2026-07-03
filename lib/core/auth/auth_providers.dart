@@ -42,6 +42,38 @@ class TokenStore extends ChangeNotifier {
     return !_isJwtExpired(token);
   }
 
+  /// True when the current session is an authenticated MEMBER — an Aura account
+  /// JWT — as opposed to a meeting GUEST token (which carries `type: "guest"`).
+  ///
+  /// Guards a member's session from being clobbered when they open a meeting
+  /// join link: a guest/booker join must never downgrade a logged-in member to
+  /// a guest token. Doing so 403s their host-only actions (e.g. cancelling a
+  /// meeting) with no recovery, because refresh-on-401 is deliberately skipped
+  /// for guest tokens.
+  bool get isMemberSession {
+    if (!isAuthed) return false;
+    return _jwtType(_accessToken) != 'guest';
+  }
+
+  /// Reads the `type` claim from a JWT payload (null if absent/unparseable).
+  static String? _jwtType(String? jwt) {
+    if (jwt == null) return null;
+    try {
+      final parts = jwt.split('.');
+      if (parts.length != 3) return null;
+      final payload = parts[1];
+      final padLen = (4 - payload.length % 4) % 4;
+      final json = jsonDecode(
+        utf8.decode(base64Url.decode(payload + ('=' * padLen))),
+      );
+      if (json is! Map) return null;
+      final t = json['type'];
+      return t is String ? t : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// True only when token is present AND not yet expired (with 30s skew).
   /// Returns false on parse error so a malformed token cannot lock the
   /// account into a permanent "authed" state with no way to refresh.

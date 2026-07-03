@@ -67,18 +67,25 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
 
       if (!mounted) return;
 
-      if (result.guestSessionId != null &&
+      // Never downgrade a logged-in MEMBER to a guest token. If the host (or any
+      // member) opens a join/booker link in their signed-in browser, keep their
+      // member session — the realtime socket authenticates them as themselves,
+      // and their host-only actions (cancel, etc.) keep working. Only a true
+      // guest (unauthed, or already a guest token) exchanges the guest session.
+      // The room's own _ensureGuestAuth is already isAuthed-guarded, so it won't
+      // re-clobber either.
+      final tokenStore = ref.read(tokenStoreProvider);
+      if (!tokenStore.isMemberSession &&
+          result.guestSessionId != null &&
           result.guestSessionId!.trim().isNotEmpty) {
         final guestAuth = await repo.exchangeGuestAuth(
           result.guestSessionId!.trim(),
         );
         if (!mounted) return;
-        await ref
-            .read(tokenStoreProvider)
-            .setSession(
-              accessToken: guestAuth.accessToken,
-              refreshToken: guestAuth.refreshToken,
-            );
+        await tokenStore.setSession(
+          accessToken: guestAuth.accessToken,
+          refreshToken: guestAuth.refreshToken,
+        );
         if (!mounted) return;
       }
 
