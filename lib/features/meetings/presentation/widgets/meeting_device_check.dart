@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../realtime/application/realtime_providers.dart';
 import '../../application/meeting_entry_prefs.dart';
+import 'meeting_device_picker.dart';
 
 /// Handle the parent uses to release the preview camera/mic BEFORE navigating
 /// into the live room. The device-check preview holds its own getUserMedia
@@ -50,6 +52,9 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
   bool _ready = false;
   bool _initializing = true;
   String? _error;
+  String? _cameraId;
+  String? _micId;
+  String? _speakerId;
 
   @override
   void initState() {
@@ -69,53 +74,12 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
     try {
       final renderer = RTCVideoRenderer();
       await renderer.initialize();
-
-      MediaStream? stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(<String, dynamic>{
-          'audio': true,
-          'video': <String, dynamic>{'facingMode': 'user'},
-        });
-      } catch (_) {
-        // Camera busy/denied → try audio-only so the mic check still works and
-        // the user is told their camera is unavailable (same behaviour the room
-        // uses when a single camera is shared across apps/browsers).
-        try {
-          stream = await navigator.mediaDevices.getUserMedia(
-            <String, dynamic>{'audio': true, 'video': false},
-          );
-          _cameraUnavailable = true;
-        } catch (_) {
-          stream = null;
-        }
-      }
-
       if (!mounted) {
         await renderer.dispose();
-        await stream?.dispose();
         return;
       }
-
-      if (stream == null) {
-        setState(() {
-          _initializing = false;
-          _ready = false;
-          _error = 'Camera and microphone are unavailable. '
-              'Check your browser permissions.';
-        });
-        await renderer.dispose();
-        return;
-      }
-
-      renderer.srcObject = stream;
-      final hasVideo = stream.getVideoTracks().isNotEmpty;
-      setState(() {
-        _renderer = renderer;
-        _stream = stream;
-        _initializing = false;
-        _ready = true;
-        _cameraOn = hasVideo;
-      });
+      _renderer = renderer;
+      await _acquireStream();
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -124,6 +88,109 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
         _error = error.toString();
       });
     }
+  }
+
+  /// (Re)acquires the preview with the currently selected camera/mic. Called on
+  /// first load and whenever a device is picked. Isolated stream — the live
+  /// media service is untouched (it only receives the recorded preference).
+  Future<void> _acquireStream() async {
+    final prev = _stream;
+    _stream = null;
+    if (prev != null) {
+      for (final t in prev.getTracks()) {
+        await t.stop();
+      }
+      await prev.dispose();
+    }
+    _cameraUnavailable = false;
+
+    Map<String, dynamic> build(bool wantVideo) => <String, dynamic>{
+          'audio': (_micId?.isNotEmpty ?? false)
+              ? <String, dynamic>{
+                  'deviceId': <String, dynamic>{'exact': _micId},
+                }
+              : true,
+          'video': wantVideo
+              ? <String, dynamic>{
+                  'facingMode': 'user',
+                  if (_cameraId?.isNotEmpty ?? false)
+                    'deviceId': <String, dynamic>{'exact': _cameraId},
+                }
+              : false,
+        };
+
+    MediaStream? stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(build(true));
+    } catch (_) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(build(false));
+        _cameraUnavailable = true;
+      } catch (_) {
+        stream = null;
+      }
+    }
+
+    if (!mounted) {
+      for (final t in stream?.getTracks() ?? const []) {
+        await t.stop();
+      }
+      await stream?.dispose();
+      return;
+    }
+
+    if (stream == null) {
+      setState(() {
+        _initializing = false;
+        _ready = false;
+        _error = 'Camera and microphone are unavailable. '
+            'Check your browser permissions.';
+      });
+      return;
+    }
+
+    final hasVideo = stream.getVideoTracks().isNotEmpty;
+    // Carry the current on/off state onto the freshly-acquired tracks.
+    for (final t in stream.getVideoTracks()) {
+      t.enabled = _cameraOn;
+    }
+    for (final t in stream.getAudioTracks()) {
+      t.enabled = _micOn;
+    }
+    _renderer?.srcObject = stream;
+    setState(() {
+      _stream = stream;
+      _initializing = false;
+      _ready = true;
+      _error = null;
+      if (!hasVideo) _cameraOn = false;
+    });
+  }
+
+  void _onCameraChanged(String id) {
+    _cameraId = id;
+    ref.read(realtimeMediaServiceProvider).setPreferredDevices(videoDeviceId: id);
+    ref.read(meetingEntryPrefsProvider.notifier).setDevices(camera: id);
+    setState(() => _initializing = true);
+    _acquireStream();
+  }
+
+  void _onMicChanged(String id) {
+    _micId = id;
+    ref.read(realtimeMediaServiceProvider).setPreferredDevices(audioDeviceId: id);
+    ref.read(meetingEntryPrefsProvider.notifier).setDevices(mic: id);
+    setState(() => _initializing = true);
+    _acquireStream();
+  }
+
+  void _onSpeakerChanged(String id) {
+    _speakerId = id;
+    ref
+        .read(realtimeMediaServiceProvider)
+        .setPreferredDevices(audioOutputDeviceId: id);
+    ref.read(meetingEntryPrefsProvider.notifier).setDevices(speaker: id);
+    _renderer?.audioOutput(id);
+    setState(() {});
   }
 
   Future<void> _stop() async {
@@ -238,6 +305,15 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
         ),
         const SizedBox(height: 10),
         _buildReadiness(),
+        const SizedBox(height: 14),
+        MeetingDevicePicker(
+          cameraId: _cameraId,
+          micId: _micId,
+          speakerId: _speakerId,
+          onCameraChanged: _onCameraChanged,
+          onMicChanged: _onMicChanged,
+          onSpeakerChanged: _onSpeakerChanged,
+        ),
       ],
     );
   }

@@ -60,6 +60,11 @@ class RealtimeMediaService {
   bool _isScreenSharing = false;
   String? _error;
   bool _disposed = false;
+  // Preferred input/output devices (chosen in pre-join or the in-meeting device
+  // menu). Honoured by acquisition constraints and by the live-switch methods.
+  String? _preferredVideoDeviceId;
+  String? _preferredAudioDeviceId;
+  String? _preferredAudioOutputDeviceId;
   // Coalesces concurrent ensureLocalMedia() calls (join + offer + reconcile can
   // all fire near-simultaneously); the winner's future is shared so a later
   // call never resets the freshly-acquired stream mid-flight.
@@ -141,17 +146,29 @@ class RealtimeMediaService {
     final renderer = RTCVideoRenderer();
     await renderer.initialize();
 
-    Map<String, dynamic> constraints(bool wantVideo) => <String, dynamic>{
-          'audio': audio,
-          'video': wantVideo
+    // Honour the user's preferred devices when set (chosen in pre-join or the
+    // in-meeting device menu). `ideal` — not `exact` — so a removed/unplugged
+    // device falls back to the system default instead of failing acquisition.
+    Map<String, dynamic> constraints(bool wantVideo) {
+      final audioConstraint = audio
+          ? ((_preferredAudioDeviceId?.isNotEmpty ?? false)
               ? <String, dynamic>{
-                  'facingMode': 'user',
-                  'width': <String, dynamic>{'ideal': 1280},
-                  'height': <String, dynamic>{'ideal': 720},
-                  'frameRate': <String, dynamic>{'ideal': 24},
+                  'deviceId': <String, dynamic>{'ideal': _preferredAudioDeviceId},
                 }
-              : false,
-        };
+              : true)
+          : false;
+      final videoConstraint = wantVideo
+          ? <String, dynamic>{
+              'facingMode': 'user',
+              'width': <String, dynamic>{'ideal': 1280},
+              'height': <String, dynamic>{'ideal': 720},
+              'frameRate': <String, dynamic>{'ideal': 24},
+              if (_preferredVideoDeviceId?.isNotEmpty ?? false)
+                'deviceId': <String, dynamic>{'ideal': _preferredVideoDeviceId},
+            }
+          : false;
+      return <String, dynamic>{'audio': audioConstraint, 'video': videoConstraint};
+    }
 
     MediaStream? stream;
     var gotVideo = video;
@@ -569,6 +586,172 @@ class RealtimeMediaService {
     final tracks = _localStream?.getVideoTracks();
     if (tracks == null || tracks.isEmpty) return;
     await Helper.switchCamera(tracks.first);
+  }
+
+  // ── Device selection (Phase 1 · Priority 2) ──────────────────────────────
+  // Additive: preferred devices are honoured by the acquisition constraints
+  // above, and switched live via replaceTrack on the EXISTING senders (no new
+  // offer/answer — replaceTrack does not renegotiate). The join/signalling path
+  // is untouched.
+
+  String? get preferredVideoDeviceId => _preferredVideoDeviceId;
+  String? get preferredAudioDeviceId => _preferredAudioDeviceId;
+  String? get preferredAudioOutputDeviceId => _preferredAudioOutputDeviceId;
+
+  Future<List<MediaDeviceInfo>> enumerateDevices() async {
+    try {
+      return await navigator.mediaDevices.enumerateDevices();
+    } catch (_) {
+      return const <MediaDeviceInfo>[];
+    }
+  }
+
+  /// Records the preferred devices WITHOUT re-acquiring. The next acquisition
+  /// (e.g. when the room joins) picks them up. Used by pre-join so the room's
+  /// own getUserMedia opens the chosen camera/mic.
+  void setPreferredDevices({
+    String? videoDeviceId,
+    String? audioDeviceId,
+    String? audioOutputDeviceId,
+  }) {
+    if (videoDeviceId != null) {
+      _preferredVideoDeviceId = videoDeviceId.isEmpty ? null : videoDeviceId;
+    }
+    if (audioDeviceId != null) {
+      _preferredAudioDeviceId = audioDeviceId.isEmpty ? null : audioDeviceId;
+    }
+    if (audioOutputDeviceId != null) {
+      _preferredAudioOutputDeviceId =
+          audioOutputDeviceId.isEmpty ? null : audioOutputDeviceId;
+    }
+  }
+
+  /// Live-switch the camera. Acquires the chosen device, swaps it onto every
+  /// peer sender via replaceTrack (no renegotiation), and refreshes the local
+  /// stream/renderer. Defensive: a failure leaves the current track in place.
+  Future<void> switchVideoInput(String deviceId) async {
+    if (_disposed || deviceId.isEmpty) return;
+    _preferredVideoDeviceId = deviceId;
+    final local = _localStream;
+    if (local == null) return;
+    final wasEnabled = _cameraEnabled;
+
+    MediaStream? fresh;
+    try {
+      fresh = await navigator.mediaDevices.getUserMedia(<String, dynamic>{
+        'audio': false,
+        'video': <String, dynamic>{
+          'deviceId': <String, dynamic>{'exact': deviceId},
+          'width': <String, dynamic>{'ideal': 1280},
+          'height': <String, dynamic>{'ideal': 720},
+        },
+      });
+    } catch (error) {
+      debugPrint('[rtc-media] switchVideoInput failed err=$error');
+      return;
+    }
+    final newTrack =
+        fresh.getVideoTracks().isNotEmpty ? fresh.getVideoTracks().first : null;
+    if (newTrack == null) {
+      await fresh.dispose();
+      return;
+    }
+    newTrack.enabled = wasEnabled;
+
+    for (final peer in _peers.values) {
+      try {
+        for (final sender in await peer.getSenders()) {
+          if (sender.track?.kind == 'video') {
+            await sender.replaceTrack(newTrack);
+          }
+        }
+      } catch (error) {
+        debugPrint('[rtc-media] switchVideoInput replaceTrack err=$error');
+      }
+    }
+
+    for (final old in local.getVideoTracks()) {
+      try {
+        await local.removeTrack(old);
+        await old.stop();
+      } catch (_) {}
+    }
+    try {
+      await local.addTrack(newTrack);
+      await fresh.removeTrack(newTrack);
+    } catch (_) {}
+    _localRenderer?.srcObject = local;
+    _cameraEnabled = wasEnabled;
+    _publish();
+  }
+
+  /// Live-switch the microphone (replaceTrack on audio senders).
+  Future<void> switchAudioInput(String deviceId) async {
+    if (_disposed || deviceId.isEmpty) return;
+    _preferredAudioDeviceId = deviceId;
+    final local = _localStream;
+    if (local == null) return;
+    final wasEnabled = _micEnabled;
+
+    MediaStream? fresh;
+    try {
+      fresh = await navigator.mediaDevices.getUserMedia(<String, dynamic>{
+        'audio': <String, dynamic>{
+          'deviceId': <String, dynamic>{'exact': deviceId},
+        },
+        'video': false,
+      });
+    } catch (error) {
+      debugPrint('[rtc-media] switchAudioInput failed err=$error');
+      return;
+    }
+    final newTrack =
+        fresh.getAudioTracks().isNotEmpty ? fresh.getAudioTracks().first : null;
+    if (newTrack == null) {
+      await fresh.dispose();
+      return;
+    }
+    newTrack.enabled = wasEnabled;
+
+    for (final peer in _peers.values) {
+      try {
+        for (final sender in await peer.getSenders()) {
+          if (sender.track?.kind == 'audio') {
+            await sender.replaceTrack(newTrack);
+          }
+        }
+      } catch (error) {
+        debugPrint('[rtc-media] switchAudioInput replaceTrack err=$error');
+      }
+    }
+
+    for (final old in local.getAudioTracks()) {
+      try {
+        await local.removeTrack(old);
+        await old.stop();
+      } catch (_) {}
+    }
+    try {
+      await local.addTrack(newTrack);
+      await fresh.removeTrack(newTrack);
+    } catch (_) {}
+    _micEnabled = wasEnabled;
+    _publish();
+  }
+
+  /// Route audio output (speaker/headset) — applies to every renderer so the
+  /// remote audio plays out of the chosen device.
+  Future<void> setAudioOutput(String deviceId) async {
+    if (_disposed || deviceId.isEmpty) return;
+    _preferredAudioOutputDeviceId = deviceId;
+    try {
+      await _localRenderer?.audioOutput(deviceId);
+      for (final renderer in _remoteRenderers.values) {
+        await renderer.audioOutput(deviceId);
+      }
+    } catch (error) {
+      debugPrint('[rtc-media] setAudioOutput failed err=$error');
+    }
   }
 
   Future<void> removePeer(String peerKey) async {

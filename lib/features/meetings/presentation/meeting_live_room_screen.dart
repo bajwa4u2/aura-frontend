@@ -11,6 +11,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
+import 'widgets/meeting_device_picker.dart';
 import '../domain/meeting.dart';
 import '../../realtime/application/realtime_controller.dart';
 import '../../realtime/application/realtime_providers.dart';
@@ -267,6 +268,65 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   }
 
   Future<void> _flipCamera() => _bridge.flipCamera();
+
+  /// In-meeting device menu: live-switches camera/mic (replaceTrack — no
+  /// renegotiation) and routes speaker output. Reuses the same picker as
+  /// pre-join. Frozen join/signalling path untouched.
+  void _showDeviceSettings() {
+    final media = ref.read(realtimeMediaServiceProvider);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheet) => Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 18,
+              bottom: 24 + MediaQuery.of(sheetContext).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Devices',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                MeetingDevicePicker(
+                  cameraId: media.preferredVideoDeviceId,
+                  micId: media.preferredAudioDeviceId,
+                  speakerId: media.preferredAudioOutputDeviceId,
+                  onCameraChanged: (id) {
+                    media.switchVideoInput(id);
+                    setSheet(() {});
+                  },
+                  onMicChanged: (id) {
+                    media.switchAudioInput(id);
+                    setSheet(() {});
+                  },
+                  onSpeakerChanged: (id) {
+                    media.setAudioOutput(id);
+                    setSheet(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _leaveMeeting() async {
     _intentToLeave = true;
@@ -526,6 +586,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                   setState(() => _showNotes = !_showNotes),
               onShareScreen: _toggleScreenShare,
               onFlipCamera: _flipCamera,
+              onDeviceSettings: _showDeviceSettings,
               onEndMeeting: _endMeeting,
               onLeaveMeeting: _leaveMeeting,
             ),
@@ -1141,6 +1202,7 @@ class _MeetingControlBar extends StatelessWidget {
   final VoidCallback onToggleNotes;
   final VoidCallback onShareScreen;
   final VoidCallback onFlipCamera;
+  final VoidCallback onDeviceSettings;
   final VoidCallback onEndMeeting;
   final VoidCallback onLeaveMeeting;
 
@@ -1157,6 +1219,7 @@ class _MeetingControlBar extends StatelessWidget {
     required this.onToggleNotes,
     required this.onShareScreen,
     required this.onFlipCamera,
+    required this.onDeviceSettings,
     required this.onEndMeeting,
     required this.onLeaveMeeting,
   });
@@ -1211,6 +1274,14 @@ class _MeetingControlBar extends StatelessWidget {
             label: 'Notes',
             active: showNotes,
             onTap: onToggleNotes,
+          ),
+
+          // Devices — camera / microphone / speaker selection.
+          _ControlButton(
+            icon: Icons.tune_rounded,
+            label: 'Devices',
+            active: false,
+            onTap: onDeviceSettings,
           ),
 
           // I1: Share screen — active when broadcasting.
