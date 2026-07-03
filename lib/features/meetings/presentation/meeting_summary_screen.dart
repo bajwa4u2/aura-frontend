@@ -210,6 +210,42 @@ class MeetingSummaryScreen extends ConsumerWidget {
                                   )
                                   .toList(),
                             ),
+                          if ((meeting.liveNotes ?? '').trim().isNotEmpty)
+                            _SummaryPanel(
+                              title: 'Live notes',
+                              width: 510,
+                              children: meeting.liveNotes!
+                                  .trim()
+                                  .split('\n')
+                                  .where((l) => l.trim().isNotEmpty)
+                                  .map(
+                                    (line) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 6),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            '·  ',
+                                            style: TextStyle(
+                                              color: Color(0xFF10B981),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              line.trim(),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
                         ],
                       ),
                       const SizedBox(height: AuraSpace.s16),

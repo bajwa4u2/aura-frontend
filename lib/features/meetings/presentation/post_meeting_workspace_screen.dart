@@ -35,6 +35,11 @@ class _PostMeetingWorkspaceScreenState
   final _followUpsCtrl = TextEditingController();
   String? _loadedSummaryId;
   bool _saving = false;
+  // Phase 2.2 — Live Notes → Summary bridge. Seed the editor from the meeting's
+  // live notes exactly once, only when no summary exists yet (never clobbers a
+  // saved summary or the host's edits).
+  bool _seeded = false;
+  bool _seededFromLiveNotes = false;
 
   @override
   void dispose() {
@@ -63,6 +68,78 @@ class _PostMeetingWorkspaceScreenState
       _issuesCtrl.text = summary.issues.join('\n');
       _followUpsCtrl.text = summary.followUps.join('\n');
     });
+  }
+
+  // Seed the workspace from live notes when starting a fresh summary. Runs once,
+  // and only after the summary provider has resolved to "no summary" — so it can
+  // never overwrite a saved summary or in-flight edits.
+  void _seedFromLiveNotes(
+    Meeting meeting,
+    MeetingSummary? summary,
+    bool summaryLoading,
+  ) {
+    if (_seeded || summaryLoading || summary != null) return;
+    _seeded = true;
+    final notes = (meeting.liveNotes ?? '').trim();
+    if (notes.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _importLiveNotes(notes);
+        _seededFromLiveNotes = true;
+      });
+    });
+  }
+
+  // Deterministic parse: lines prefixed like "Decision:", "Commitment:",
+  // "Action:/TODO:", "Issue:/Risk:", "Follow-up:/Next step:" route into their
+  // lists; everything else becomes the free-text summary. Fully editable before
+  // the host saves (which syncs to MeetingOutcome records on the backend).
+  static final _prefixRe = RegExp(
+    r'^(decisions?|decided|commitments?|committ?ed|commit|actions?|tasks?|to-?dos?|issues?|risks?|blockers?|follow[\s-]?ups?|next steps?)\s*[:\-–]\s*(.+)$',
+    caseSensitive: false,
+  );
+
+  void _importLiveNotes(String notes) {
+    final summaryLines = <String>[];
+    final decisions = <String>[];
+    final commitments = <String>[];
+    final actions = <String>[];
+    final issues = <String>[];
+    final followUps = <String>[];
+    for (final raw in notes.split(RegExp(r'\r?\n'))) {
+      final line = raw.trim().replaceFirst(RegExp(r'^[-*•]\s+'), '').trim();
+      if (line.isEmpty) continue;
+      final m = _prefixRe.firstMatch(line);
+      if (m == null) {
+        summaryLines.add(line);
+        continue;
+      }
+      final key = m.group(1)!.toLowerCase();
+      final rest = m.group(2)!.trim();
+      if (key.startsWith('decision') || key == 'decided') {
+        decisions.add(rest);
+      } else if (key.startsWith('commit')) {
+        commitments.add(rest);
+      } else if (key.startsWith('action') ||
+          key.startsWith('task') ||
+          key.startsWith('todo') ||
+          key.startsWith('to-do')) {
+        actions.add(rest);
+      } else if (key.startsWith('issue') ||
+          key.startsWith('risk') ||
+          key.startsWith('blocker')) {
+        issues.add(rest);
+      } else {
+        followUps.add(rest);
+      }
+    }
+    _summaryCtrl.text = summaryLines.join('\n');
+    if (decisions.isNotEmpty) _decisionsCtrl.text = decisions.join('\n');
+    if (commitments.isNotEmpty) _commitmentsCtrl.text = commitments.join('\n');
+    if (actions.isNotEmpty) _actionsCtrl.text = actions.join('\n');
+    if (issues.isNotEmpty) _issuesCtrl.text = issues.join('\n');
+    if (followUps.isNotEmpty) _followUpsCtrl.text = followUps.join('\n');
   }
 
   List<String> _splitLines(String value) {
@@ -128,6 +205,7 @@ class _PostMeetingWorkspaceScreenState
       data: (meeting) {
         final summary = summaryAsync.valueOrNull ?? meeting.summary;
         _loadSummary(summary);
+        _seedFromLiveNotes(meeting, summary, summaryAsync.isLoading);
         final room = meeting.room;
         final lifecycle = MeetingLifecyclePresenter.present(
           meeting,
@@ -164,6 +242,13 @@ class _PostMeetingWorkspaceScreenState
                         onSummary: () => context.go(_summaryPath),
                       ),
                       const SizedBox(height: AuraSpace.s16),
+                      if ((meeting.liveNotes ?? '').trim().isNotEmpty) ...[
+                        _LiveNotesReference(
+                          notes: meeting.liveNotes!.trim(),
+                          seeded: _seededFromLiveNotes,
+                        ),
+                        const SizedBox(height: AuraSpace.s16),
+                      ],
                       Wrap(
                         spacing: AuraSpace.s16,
                         runSpacing: AuraSpace.s16,
@@ -245,6 +330,84 @@ class _PostMeetingWorkspaceScreenState
           ),
         );
       },
+    );
+  }
+}
+
+// Phase 2.2 — read-only source panel showing the notes captured live, kept
+// visible so the host can reconcile the summary against what was actually said.
+class _LiveNotesReference extends StatelessWidget {
+  final String notes;
+  final bool seeded;
+
+  const _LiveNotesReference({required this.notes, required this.seeded});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.edit_note_rounded,
+                    size: 18, color: Color(0xFF6C63FF)),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  'Live notes',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  'captured during the meeting',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: const Color(0xFF9CA3AF)),
+                ),
+              ],
+            ),
+            if (seeded) ...[
+              const SizedBox(height: AuraSpace.s8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.auto_awesome_rounded,
+                      size: 14, color: Color(0xFF10B981)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Pre-filled the summary below from these notes — review and edit before saving.',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: const Color(0xFF10B981)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: AuraSpace.s10),
+            SelectableText(
+              notes,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFCBD5E1),
+                    height: 1.4,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
