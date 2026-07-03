@@ -578,6 +578,15 @@ class _MeetingVideoGrid extends StatelessWidget {
 
   String _raw(String s) => s.startsWith('socket:') ? s.substring(7) : s;
 
+  // Ground-truth video state for a renderer: a video track is present AND not
+  // muted (a muted receive-track = the peer's camera is actually off). Used
+  // instead of the roster's videoOn flag, which can be stale.
+  bool _hasLiveVideo(RTCVideoRenderer? renderer) {
+    final tracks = renderer?.srcObject?.getVideoTracks() ?? const [];
+    if (tracks.isEmpty) return false;
+    return tracks.first.muted != true;
+  }
+
   RealtimeParticipant? _participantForKey(String key) {
     for (final p in participants) {
       if ((p.runtimeDeviceId ?? '') == key) return p;
@@ -724,11 +733,13 @@ class _MeetingVideoGrid extends StatelessWidget {
       final key = (p.runtimeDeviceId ?? '').trim();
       if (key.isNotEmpty) claimed.add(key);
       final renderer = key.isNotEmpty ? remoteRenderers[key] : null;
-      final hasVideo =
-          renderer?.srcObject?.getVideoTracks().isNotEmpty ?? false;
       tiles.add(_ParticipantTile(
+        // Video state is the LIVE track, not the roster's videoOn hint. The
+        // roster flag can be stale-false (a peer's camera-on didn't propagate),
+        // which hid a real incoming video — the "host sees Camera off while the
+        // guest is on camera" bug. The received track is ground truth.
         renderer: renderer,
-        videoOn: p.videoOn && hasVideo,
+        videoOn: _hasLiveVideo(renderer),
         mirror: false,
         isLocal: false,
         label: p.identityLabel,
@@ -743,11 +754,9 @@ class _MeetingVideoGrid extends StatelessWidget {
     for (final entry in remoteRenderers.entries) {
       if (claimed.contains(entry.key)) continue;
       if (mySocket.isNotEmpty && _raw(entry.key) == mySocket) continue;
-      final hasVideo =
-          entry.value.srcObject?.getVideoTracks().isNotEmpty ?? false;
       tiles.add(_ParticipantTile(
         renderer: entry.value,
-        videoOn: hasVideo,
+        videoOn: _hasLiveVideo(entry.value),
         mirror: false,
         isLocal: false,
         label: 'Participant',
