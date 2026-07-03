@@ -127,6 +127,18 @@ class _GuestWaitingRoomScreenState
     context.push(target);
   }
 
+  /// Whether THIS guest is still pending host approval.
+  ///
+  /// The meeting DTO does not yet expose a per-guest admission status (guests
+  /// are persisted rsvpStatus=ACCEPTED on join and participants carry no
+  /// guestSessionId), so there is no signal to distinguish "pending" from
+  /// "admitted". We therefore never report pending — gating on the meeting-level
+  /// `guestApprovalRequired` flag alone would strand every guest, since nothing
+  /// would ever release them. When a backend host-admit signal exists (an admit
+  /// endpoint + per-guest status, or a realtime "admitted" event), return its
+  /// value here and the waiting room will correctly hold the guest until admitted.
+  bool _guestApprovalPending(Meeting meeting) => false;
+
   @override
   Widget build(BuildContext context) {
     final meetingAsync = _usePublicMeetingLookup
@@ -170,8 +182,31 @@ class _GuestWaitingRoomScreenState
                 .trim();
         final isTerminal = meeting.isEnded || lifecycle.isTerminal;
 
+        // Guest-approval gate (scheduled lifecycle).
+        //   * no approval required  → auto-enter once the session is live.
+        //   * approval required     → must wait until THIS guest is admitted.
+        // The meeting DTO exposes `guestApprovalRequired` but NOT a per-guest
+        // admission status (participants carry no guestSessionId, and guests are
+        // persisted rsvpStatus=ACCEPTED on join), so there is currently no
+        // signal to release an approval-required guest. Gating on the flag alone
+        // would strand every guest forever — so approval is NOT enforceable here
+        // until a backend admit signal (host-admit endpoint + per-guest status)
+        // lands. `approvalPending` is the seam where that signal plugs in.
+        final approvalRequired = meeting.guestApprovalRequired;
+        final approvalPending = _guestApprovalPending(meeting);
+        final autoEnter =
+            !_redirected && !isTerminal && sessionId.isNotEmpty && !approvalPending;
+        if (!_redirected) {
+          debugPrint(
+            '[scheduled-guest] poll state=${meeting.state} sessionId=$sessionId'
+            ' approvalRequired=$approvalRequired'
+            ' approvalStatus=${approvalPending ? 'PENDING' : 'n/a'}'
+            ' autoEnter=$autoEnter',
+          );
+        }
+
         // Auto-redirect when the session becomes available (host has started).
-        if (!_redirected && !isTerminal && sessionId.isNotEmpty) {
+        if (autoEnter) {
           _redirected = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;

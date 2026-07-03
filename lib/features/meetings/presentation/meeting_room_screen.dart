@@ -63,6 +63,12 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
       final updated = await ref
           .read(meetingsRepositoryProvider)
           .startMeeting(meeting.id);
+      // Lifecycle trace: host started a scheduled meeting → session minted.
+      debugPrint(
+        '[scheduled-host] start meetingId=${meeting.id}'
+        ' state=${updated.state}'
+        ' sessionId=${updated.sessionId ?? updated.room?.realtimeSessionId ?? ''}',
+      );
       ref.invalidate(meetingProvider(meeting.id));
       if (!mounted) return;
       setState(() {
@@ -107,6 +113,12 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
           : '';
       final target =
           '$livePath?sessionId=$sessionId&isHost=${isHost ? 'true' : 'false'}$codeParam$guestParam';
+      if (isHost) {
+        debugPrint(
+          '[scheduled-host] route meetingId=${meeting.id}'
+          ' sessionId=$sessionId isHost=true target=$target',
+        );
+      }
       // Production-visible: proves "Enter room" lands on MeetingLiveRoomScreen.
       debugPrint(
         '[guest-join-click] MeetingRoomScreen'
@@ -152,6 +164,13 @@ class _MeetingRoomScreenState extends ConsumerState<MeetingRoomScreen> {
         final canStart = room?.canStart == true && !_busy;
         final sessionId = (_sessionId ?? room?.realtimeSessionId ?? '').trim();
         final statusLabel = lifecycle.label;
+        if (isHost) {
+          debugPrint(
+            '[scheduled-host] canStart=$canStart roomCanStart=${room?.canStart}'
+            ' state=${meeting.state} status=$statusLabel'
+            ' sessionId=$sessionId',
+          );
+        }
 
         return AuraScaffold(
           title: meeting.title,
