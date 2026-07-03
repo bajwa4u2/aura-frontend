@@ -17,6 +17,7 @@ import '../domain/meeting.dart';
 import '../../realtime/application/realtime_controller.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/data/realtime_media_service.dart';
+import '../../realtime/data/realtime_event_parser.dart';
 import '../../realtime/domain/realtime_enums.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
@@ -106,6 +107,116 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   StreamSubscription<RealtimeMediaSnapshot>? _entryPrefsSub;
   bool _entryPrefsApplied = false;
 
+  // Phase 3.2 — in-call participation (ephemeral, additive over the socket).
+  StreamSubscription<RealtimeParsedEvent>? _participationSub;
+  final List<_FlyingReaction> _reactions = [];
+  final Set<String> _raisedHands = {};
+  bool _handRaised = false;
+  String _myUserId = '';
+
+  void _onParticipationEvent(RealtimeParsedEvent e) {
+    if (!mounted) return;
+    switch (e.name) {
+      case 'session:reaction':
+        final emoji = (e.payload['emoji'] ?? '👍').toString();
+        final id = DateTime.now().microsecondsSinceEpoch;
+        setState(() => _reactions.add(_FlyingReaction(id: id, emoji: emoji)));
+        Timer(const Duration(milliseconds: 3200), () {
+          if (!mounted) return;
+          setState(() => _reactions.removeWhere((r) => r.id == id));
+        });
+        break;
+      case 'session:hand.updated':
+        final uid = (e.payload['userId'] ?? '').toString().trim();
+        if (uid.isEmpty) break;
+        final raised = e.payload['raised'] == true;
+        setState(() {
+          if (raised) {
+            _raisedHands.add(uid);
+          } else {
+            _raisedHands.remove(uid);
+          }
+          if (uid == _myUserId) _handRaised = raised;
+        });
+        break;
+      case 'session:mute-request':
+        final target = (e.payload['targetUserId'] ?? '').toString().trim();
+        if (target.isNotEmpty && target == _myUserId) {
+          _bridge.muteLocalMic();
+          _showArrivalToast('You were muted by the host');
+        }
+        break;
+    }
+  }
+
+  void _sendReaction(String emoji) {
+    unawaited(
+      ref
+          .read(realtimeSocketServiceProvider)
+          .emitAck('session:reaction', {
+            'sessionId': widget.sessionId,
+            'emoji': emoji,
+          })
+          .catchError((_) => <String, dynamic>{}),
+    );
+  }
+
+  void _toggleHand() {
+    final next = !_handRaised;
+    setState(() => _handRaised = next);
+    unawaited(
+      ref
+          .read(realtimeSocketServiceProvider)
+          .emitAck('session:hand.set', {
+            'sessionId': widget.sessionId,
+            'raised': next,
+          })
+          .catchError((_) => <String, dynamic>{}),
+    );
+  }
+
+  void _requestMute(String targetUserId) {
+    unawaited(
+      ref
+          .read(realtimeSocketServiceProvider)
+          .emitAck('session:mute-request', {
+            'sessionId': widget.sessionId,
+            'targetUserId': targetUserId,
+          })
+          .catchError((_) => <String, dynamic>{}),
+    );
+  }
+
+  void _showReactionPicker(BuildContext context) {
+    const emojis = ['👍', '❤️', '😂', '🎉', '👏', '😮'];
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              for (final e in emojis)
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _sendReaction(e);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(e, style: const TextStyle(fontSize: 30)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _scheduleControlBarHide() {
     _controlBarTimer?.cancel();
     _controlBarTimer = Timer(const Duration(seconds: 4), () {
@@ -139,6 +250,13 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       mediaService: ref.read(realtimeMediaServiceProvider),
       controller: ref.read(realtimeControllerProvider.notifier),
     );
+    // Phase 3.2 — listen for in-call participation signals (reactions, hands,
+    // mute requests) on the existing realtime event stream. Additive: the
+    // frozen controller is untouched; these are handled here as ephemeral UI.
+    _participationSub = ref
+        .read(realtimeSocketServiceProvider)
+        .events
+        .listen(_onParticipationEvent);
     // Production-visible sync diagnostic: compare across host/guest consoles to
     // confirm SAME meetingId + sessionId. A mismatch means each side is in a
     // different realtime room and can never see the other.
@@ -211,6 +329,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     // Release the wake lock when leaving the live room.
     WakelockPlus.disable();
     _entryPrefsSub?.cancel();
+    _participationSub?.cancel();
     _controlBarTimer?.cancel();
     _arrivalTimer?.cancel();
     ref
@@ -369,6 +488,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       },
       orElse: () => widget.guestUserId ?? '',
     );
+    _myUserId = myUserId.toString().trim();
 
     // I2: Distinguish host-ended meeting from network drop.
     // session:ended / call:terminal = host ended → show ended overlay.
@@ -474,6 +594,30 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             ),
           ),
 
+          // Phase 3.2 — flying reaction overlay (never blocks pointer input).
+          if (_reactions.isNotEmpty)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: _ReactionsOverlay(reactions: _reactions),
+              ),
+            ),
+
+          // Phase 3.2 — raised-hands strip (who currently has a hand up).
+          if (_raisedHands.isNotEmpty)
+            Positioned(
+              top: 56,
+              left: 0,
+              right: 0,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: _RaisedHandsStrip(
+                  raised: _raisedHands,
+                  participants: state.participants,
+                  localUserId: myUserId,
+                ),
+              ),
+            ),
+
           // Guest-approval — host-only "waiting to join" panel (polls /pending;
           // renders nothing when no one is knocking).
           if (widget.isHost)
@@ -493,10 +637,12 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 participants: state.participants,
                 isHost: widget.isHost,
                 localUserId: myUserId,
+                raisedHands: _raisedHands,
                 onClose: () => setState(() => _showParticipants = false),
                 onRemoveParticipant: widget.isHost
                     ? (userId) => _bridge.removeParticipantFromMeeting(userId)
                     : null,
+                onMuteParticipant: widget.isHost ? _requestMute : null,
               ),
             ),
 
@@ -599,6 +745,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               onDeviceSettings: _showDeviceSettings,
               onEndMeeting: _endMeeting,
               onLeaveMeeting: _leaveMeeting,
+              handRaised: _handRaised,
+              onToggleHand: _toggleHand,
+              onReact: () => _showReactionPicker(context),
             ),
               ),
             ),
@@ -1215,6 +1364,9 @@ class _MeetingControlBar extends StatelessWidget {
   final VoidCallback onDeviceSettings;
   final VoidCallback onEndMeeting;
   final VoidCallback onLeaveMeeting;
+  final bool handRaised;
+  final VoidCallback onToggleHand;
+  final VoidCallback onReact;
 
   const _MeetingControlBar({
     required this.state,
@@ -1232,6 +1384,9 @@ class _MeetingControlBar extends StatelessWidget {
     required this.onDeviceSettings,
     required this.onEndMeeting,
     required this.onLeaveMeeting,
+    required this.handRaised,
+    required this.onToggleHand,
+    required this.onReact,
   });
 
   @override
@@ -1268,6 +1423,24 @@ class _MeetingControlBar extends StatelessWidget {
             label: state.cameraEnabled ? 'Hide camera' : 'Show camera',
             active: state.cameraEnabled,
             onTap: onToggleCamera,
+          ),
+
+          // React — send an emoji reaction to the room.
+          _ControlButton(
+            icon: Icons.add_reaction_outlined,
+            label: 'React',
+            active: false,
+            onTap: onReact,
+          ),
+
+          // Raise / lower hand.
+          _ControlButton(
+            icon: handRaised
+                ? Icons.back_hand_rounded
+                : Icons.back_hand_outlined,
+            label: handRaised ? 'Lower hand' : 'Raise hand',
+            active: handRaised,
+            onTap: onToggleHand,
           ),
 
           // Participants
@@ -1401,15 +1574,19 @@ class _MeetingParticipantPanel extends StatelessWidget {
   final List<RealtimeParticipant> participants;
   final bool isHost;
   final String localUserId;
+  final Set<String> raisedHands;
   final VoidCallback onClose;
   final void Function(String userId)? onRemoveParticipant;
+  final void Function(String userId)? onMuteParticipant;
 
   const _MeetingParticipantPanel({
     required this.participants,
     required this.isHost,
     required this.localUserId,
+    required this.raisedHands,
     required this.onClose,
     this.onRemoveParticipant,
+    this.onMuteParticipant,
   });
 
   @override
@@ -1459,8 +1636,15 @@ class _MeetingParticipantPanel extends StatelessWidget {
                         participant: p,
                         isHost: isHost,
                         isMe: isMe,
+                        handRaised: raisedHands.contains(p.userId.trim()),
                         onRemove: (isHost && !isMe && onRemoveParticipant != null)
                             ? () => onRemoveParticipant!(p.userId)
+                            : null,
+                        onMute: (isHost &&
+                                !isMe &&
+                                p.audioOn &&
+                                onMuteParticipant != null)
+                            ? () => onMuteParticipant!(p.userId)
                             : null,
                       );
                     },
@@ -1476,13 +1660,17 @@ class _ParticipantRow extends StatelessWidget {
   final RealtimeParticipant participant;
   final bool isHost;
   final bool isMe;
+  final bool handRaised;
   final VoidCallback? onRemove;
+  final VoidCallback? onMute;
 
   const _ParticipantRow({
     required this.participant,
     required this.isHost,
     required this.isMe,
+    this.handRaised = false,
     this.onRemove,
+    this.onMute,
   });
 
   @override
@@ -1543,6 +1731,10 @@ class _ParticipantRow extends StatelessWidget {
               ],
             ),
           ),
+          if (handRaised) ...[
+            const SizedBox(width: AuraSpace.s6),
+            const Text('✋', style: TextStyle(fontSize: 14)),
+          ],
           const SizedBox(width: AuraSpace.s6),
           Icon(
             participant.audioOn ? Icons.mic_rounded : Icons.mic_off_rounded,
@@ -1568,6 +1760,21 @@ class _ParticipantRow extends StatelessWidget {
               Icons.screen_share_rounded,
               size: 16,
               color: Color(0xFF6C63FF),
+            ),
+          ],
+          // Host mute request (shown when the participant's mic is on).
+          if (onMute != null) ...[
+            const SizedBox(width: AuraSpace.s6),
+            GestureDetector(
+              onTap: onMute,
+              child: const Tooltip(
+                message: 'Ask to mute',
+                child: Icon(
+                  Icons.mic_off_rounded,
+                  size: 16,
+                  color: Color(0xFFF59E0B),
+                ),
+              ),
             ),
           ],
           // I3: Host remove button (not shown for self)
@@ -1837,6 +2044,117 @@ class _MeetingEndedOverlay extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3.2 — in-call participation UI (reactions overlay, raised-hands strip)
+// ---------------------------------------------------------------------------
+
+class _FlyingReaction {
+  final int id;
+  final String emoji;
+  final double lane;
+  _FlyingReaction({required this.id, required this.emoji})
+      : lane = (id % 100) / 100.0;
+}
+
+class _ReactionsOverlay extends StatelessWidget {
+  final List<_FlyingReaction> reactions;
+  const _ReactionsOverlay({required this.reactions});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        for (final r in reactions)
+          Positioned.fill(
+            key: ValueKey(r.id),
+            child: _RisingReaction(reaction: r),
+          ),
+      ],
+    );
+  }
+}
+
+class _RisingReaction extends StatelessWidget {
+  final _FlyingReaction reaction;
+  const _RisingReaction({required this.reaction});
+
+  @override
+  Widget build(BuildContext context) {
+    final xAlign = -0.55 + reaction.lane * 1.1;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 3000),
+      curve: Curves.easeOut,
+      builder: (context, t, child) {
+        final yAlign = 0.75 - t * 1.45;
+        final opacity = t < 0.8 ? 1.0 : (1.0 - (t - 0.8) / 0.2);
+        return Align(
+          alignment: Alignment(xAlign, yAlign),
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Text(reaction.emoji, style: const TextStyle(fontSize: 36)),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RaisedHandsStrip extends StatelessWidget {
+  final Set<String> raised;
+  final List<RealtimeParticipant> participants;
+  final String localUserId;
+
+  const _RaisedHandsStrip({
+    required this.raised,
+    required this.participants,
+    required this.localUserId,
+  });
+
+  String _labelFor(String userId) {
+    if (userId == localUserId) return 'You';
+    for (final p in participants) {
+      if (p.userId.trim() == userId) return p.identityLabel;
+    }
+    return 'Someone';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final names = raised.map(_labelFor).toList();
+    final text = names.length <= 2
+        ? names.join(', ')
+        : '${names.take(2).join(', ')} +${names.length - 2}';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xF20F172A),
+        border: Border.all(color: const Color(0x66F59E0B)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('✋', style: TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              names.length == 1 ? '$text raised a hand' : '$text raised hands',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFFF59E0B),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

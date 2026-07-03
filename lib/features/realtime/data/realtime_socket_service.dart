@@ -259,6 +259,10 @@ class RealtimeSocketService {
       'call:terminal',
       'call:incoming',
       'meeting.state_changed',
+      // Phase 3.2 — in-call participation (ephemeral fan-out).
+      'session:reaction',
+      'session:hand.updated',
+      'session:mute-request',
     ];
 
     for (final name in names) {
