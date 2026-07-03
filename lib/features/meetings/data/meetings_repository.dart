@@ -272,6 +272,43 @@ class MeetingsRepository {
       },
     );
   }
+
+  // Guest-approval — waiting guest polls its admission by guestSessionId (no
+  // token; a PENDING guest has none yet). Returns 'PENDING' | 'ADMITTED' | 'DENIED'.
+  Future<String?> guestAdmissionStatus(
+    String meetingId,
+    String guestSessionId,
+  ) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/public/meetings/$meetingId/admission/$guestSessionId',
+      options: Options(extra: const {'__skip_auth': true}),
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return data['admissionState'] as String?;
+  }
+
+  // Guest-approval — host side.
+  Future<List<Map<String, dynamic>>> pendingGuests(String meetingId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/$meetingId/pending',
+    );
+    final list = res.data!['data'] as List<dynamic>;
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  Future<void> admitGuest(String meetingId, String participantId) async {
+    await _dio.post<void>(
+      '/meetings/$meetingId/admit',
+      data: {'participantId': participantId},
+    );
+  }
+
+  Future<void> denyGuest(String meetingId, String participantId) async {
+    await _dio.post<void>(
+      '/meetings/$meetingId/deny',
+      data: {'participantId': participantId},
+    );
+  }
 }
 
 class GuestAuthResult {

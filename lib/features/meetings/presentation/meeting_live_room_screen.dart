@@ -12,6 +12,7 @@ import '../../../core/ui/aura_space.dart';
 import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
 import 'widgets/meeting_device_picker.dart';
+import 'widgets/meeting_pending_guests_panel.dart';
 import '../domain/meeting.dart';
 import '../../realtime/application/realtime_controller.dart';
 import '../../realtime/application/realtime_providers.dart';
@@ -472,6 +473,15 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               joinedAt: _joinedAt,
             ),
           ),
+
+          // Guest-approval — host-only "waiting to join" panel (polls /pending;
+          // renders nothing when no one is knocking).
+          if (widget.isHost)
+            Positioned(
+              top: 64,
+              left: 16,
+              child: MeetingPendingGuestsPanel(meetingId: widget.meetingId),
+            ),
 
           // E5 — Participant panel (right sidebar)
           if (_showParticipants)

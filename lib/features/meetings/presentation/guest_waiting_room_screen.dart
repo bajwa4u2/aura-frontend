@@ -39,14 +39,20 @@ class _GuestWaitingRoomScreenState
     extends ConsumerState<GuestWaitingRoomScreen> {
   Timer? _poller;
   bool _redirected = false;
+  // Guest-approval: last known admission state for THIS guest and whether the
+  // first poll has resolved (so an unreachable endpoint never strands a guest).
+  String? _admissionState;
+  bool _firstPollDone = false;
 
   @override
   void initState() {
     super.initState();
     unawaited(_ensureGuestAuth());
-    _poller = Timer.periodic(const Duration(seconds: 8), (_) {
+    unawaited(_pollAdmission());
+    _poller = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
       _refresh();
+      unawaited(_pollAdmission());
     });
   }
 
@@ -127,17 +133,46 @@ class _GuestWaitingRoomScreenState
     context.push(target);
   }
 
-  /// Whether THIS guest is still pending host approval.
-  ///
-  /// The meeting DTO does not yet expose a per-guest admission status (guests
-  /// are persisted rsvpStatus=ACCEPTED on join and participants carry no
-  /// guestSessionId), so there is no signal to distinguish "pending" from
-  /// "admitted". We therefore never report pending — gating on the meeting-level
-  /// `guestApprovalRequired` flag alone would strand every guest, since nothing
-  /// would ever release them. When a backend host-admit signal exists (an admit
-  /// endpoint + per-guest status, or a realtime "admitted" event), return its
-  /// value here and the waiting room will correctly hold the guest until admitted.
-  bool _guestApprovalPending(Meeting meeting) => false;
+  /// Poll THIS guest's admission by its guestSessionId (the guest holds no
+  /// realtime token while pending, so this is the token-less signal). Marks the
+  /// first poll done even on failure, so an unreachable endpoint (e.g. backend
+  /// not yet deployed) never strands the guest on the waiting screen.
+  Future<void> _pollAdmission() async {
+    final guestId = (widget.guestId ?? '').trim();
+    if (guestId.isEmpty) {
+      _firstPollDone = true;
+      return;
+    }
+    try {
+      final state = await ref
+          .read(meetingsRepositoryProvider)
+          .guestAdmissionStatus(widget.meetingId, guestId);
+      if (!mounted) return;
+      if (state != _admissionState) setState(() => _admissionState = state);
+    } catch (_) {
+      // Endpoint unavailable/old backend — fall back to the pre-approval flow.
+    } finally {
+      if (mounted && !_firstPollDone) setState(() => _firstPollDone = true);
+    }
+  }
+
+  /// Whether THIS guest is still pending host approval — the seam the waiting
+  /// room gates entry on. Backed by the per-guest admission poll:
+  ///   * ADMITTED           → release (enter).
+  ///   * PENDING / DENIED    → hold.
+  ///   * unknown (pre-poll)  → hold only until the first poll resolves, and only
+  ///     when the meeting actually gates guests, so an unreachable endpoint
+  ///     never strands the guest.
+  bool _guestApprovalPending(Meeting meeting) {
+    if ((widget.guestId ?? '').trim().isEmpty) return false;
+    if (_admissionState == 'ADMITTED') return false;
+    if (_admissionState == 'PENDING' || _admissionState == 'DENIED') return true;
+    return !_firstPollDone &&
+        meeting.guestApprovalRequired == true &&
+        meeting.waitingRoomEnabled == true;
+  }
+
+  bool get _admissionDenied => _admissionState == 'DENIED';
 
   @override
   Widget build(BuildContext context) {
@@ -343,11 +378,17 @@ class _GuestWaitingRoomScreenState
                         ),
                       ),
                       const SizedBox(height: AuraSpace.s16),
+                      if (approvalPending || _admissionDenied) ...[
+                        _AdmissionBanner(denied: _admissionDenied),
+                        const SizedBox(height: AuraSpace.s16),
+                      ],
                       Wrap(
                         spacing: AuraSpace.s10,
                         runSpacing: AuraSpace.s10,
                         children: [
-                          if (!isTerminal && sessionId.isNotEmpty)
+                          if (!isTerminal &&
+                              sessionId.isNotEmpty &&
+                              !approvalPending)
                             FilledButton.icon(
                               icon: const Icon(Icons.meeting_room_rounded),
                               label: const Text('Join meeting'),
@@ -385,6 +426,65 @@ class _GuestWaitingRoomScreenState
           ),
         );
       },
+    );
+  }
+}
+
+// Guest-approval status banner shown while the host has not yet admitted this
+// guest (amber) or has denied entry (red).
+class _AdmissionBanner extends StatelessWidget {
+  final bool denied;
+
+  const _AdmissionBanner({required this.denied});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = denied ? const Color(0xFFEF4444) : const Color(0xFFF59E0B);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        border: Border.all(color: color.withValues(alpha: 0.40)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              denied
+                  ? Icons.block_rounded
+                  : Icons.hourglass_top_rounded,
+              size: 20,
+              color: color,
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    denied
+                        ? 'The host did not admit you'
+                        : 'Waiting for the host to admit you',
+                    style: TextStyle(color: color, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    denied
+                        ? 'You have not been admitted to this meeting. You can close this window.'
+                        : 'The host has been notified that you are here. You will join automatically once admitted.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: const Color(0xFF9CA3AF)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
