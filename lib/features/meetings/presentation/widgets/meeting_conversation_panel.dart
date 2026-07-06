@@ -18,6 +18,11 @@ class MeetingConversationPanel extends StatefulWidget {
   final Future<bool> Function(String body, MeetingMessageType type) onSend;
   final void Function(String messageId)? onDelete;
 
+  /// Phase 4.5 — host-only: lift a message into a MeetingOutcome. The live
+  /// room owns the REST call and the local promoted-state update.
+  final Future<bool> Function(String messageId, MeetingMessageType type)?
+      onPromote;
+
   const MeetingConversationPanel({
     super.key,
     required this.messages,
@@ -27,6 +32,7 @@ class MeetingConversationPanel extends StatefulWidget {
     required this.onClose,
     required this.onSend,
     this.onDelete,
+    this.onPromote,
   });
 
   @override
@@ -38,6 +44,14 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
   final _ctrl = TextEditingController();
   MeetingMessageType _type = MeetingMessageType.chat;
   bool _sending = false;
+  final Set<String> _promoting = {};
+
+  Future<void> _promote(String messageId, MeetingMessageType type) async {
+    if (widget.onPromote == null || _promoting.contains(messageId)) return;
+    setState(() => _promoting.add(messageId));
+    await widget.onPromote!(messageId, type);
+    if (mounted) setState(() => _promoting.remove(messageId));
+  }
 
   @override
   void dispose() {
@@ -112,8 +126,14 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                       return _ConversationTile(
                         message: msg,
                         isOwn: msg.senderId == widget.localUserId,
+                        promoting: _promoting.contains(msg.id),
                         onDelete: widget.isHost && widget.onDelete != null
                             ? () => widget.onDelete!(msg.id)
+                            : null,
+                        onPromote: widget.isHost &&
+                                widget.onPromote != null &&
+                                !msg.isPromoted
+                            ? (type) => _promote(msg.id, type)
                             : null,
                       );
                     },
@@ -310,12 +330,16 @@ class _TypeChip extends StatelessWidget {
 class _ConversationTile extends StatelessWidget {
   final MeetingConversationMessage message;
   final bool isOwn;
+  final bool promoting;
   final VoidCallback? onDelete;
+  final void Function(MeetingMessageType type)? onPromote;
 
   const _ConversationTile({
     required this.message,
     required this.isOwn,
+    this.promoting = false,
     this.onDelete,
+    this.onPromote,
   });
 
   @override
@@ -354,7 +378,79 @@ class _ConversationTile extends StatelessWidget {
                 style: const TextStyle(color: Color(0xFF4B5563), fontSize: 10),
               ),
               const Spacer(),
-              if (onDelete != null)
+              if (message.isPromoted)
+                Tooltip(
+                  message: 'Promoted to a meeting outcome',
+                  child: Icon(
+                    Icons.task_alt_rounded,
+                    size: 14,
+                    // Typed messages keep their type colour; a promoted plain
+                    // chat message gets the outcome emerald, not neutral grey.
+                    color: message.messageType == MeetingMessageType.chat
+                        ? const Color(0xFF10B981)
+                        : _typeColor(message.messageType),
+                  ),
+                )
+              else if (promoting)
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    color: Color(0xFF6C63FF),
+                  ),
+                )
+              else if (onPromote != null)
+                // Host-only: promote this message into a meeting outcome.
+                PopupMenuButton<MeetingMessageType>(
+                  tooltip: 'Promote to outcome',
+                  color: const Color(0xFF1E293B),
+                  padding: EdgeInsets.zero,
+                  iconSize: 14,
+                  icon: const Icon(
+                    Icons.arrow_circle_up_rounded,
+                    size: 14,
+                    color: Color(0xFF6C63FF),
+                  ),
+                  onSelected: (t) => onPromote!(t),
+                  itemBuilder: (context) => [
+                    for (final t in const [
+                      MeetingMessageType.decision,
+                      MeetingMessageType.commitment,
+                      MeetingMessageType.action,
+                      MeetingMessageType.issue,
+                      MeetingMessageType.followUp,
+                    ])
+                      PopupMenuItem(
+                        value: t,
+                        height: 36,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _typeColor(t),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Promote to ${t.label}',
+                              style: TextStyle(
+                                color: t == message.messageType
+                                    ? _typeColor(t)
+                                    : const Color(0xFFE5E7EB),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              if (onDelete != null) ...[
+                const SizedBox(width: 8),
                 GestureDetector(
                   onTap: onDelete,
                   child: const Icon(
@@ -363,6 +459,7 @@ class _ConversationTile extends StatelessWidget {
                     color: Color(0xFF4B5563),
                   ),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 2),

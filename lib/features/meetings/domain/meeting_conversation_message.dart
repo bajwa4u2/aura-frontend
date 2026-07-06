@@ -96,6 +96,22 @@ class MeetingConversationMessage {
     this.promotedOutcomeId,
   });
 
+  bool get isPromoted => (promotedOutcomeId ?? '').isNotEmpty;
+
+  MeetingConversationMessage copyWith({String? promotedOutcomeId}) {
+    return MeetingConversationMessage(
+      id: id,
+      meetingId: meetingId,
+      senderId: senderId,
+      senderName: senderName,
+      isGuest: isGuest,
+      messageType: messageType,
+      body: body,
+      createdAt: createdAt,
+      promotedOutcomeId: promotedOutcomeId ?? this.promotedOutcomeId,
+    );
+  }
+
   factory MeetingConversationMessage.fromJson(Map<String, dynamic> j) {
     final promoted = (j['promotedOutcomeId'] ?? '').toString().trim();
     return MeetingConversationMessage(

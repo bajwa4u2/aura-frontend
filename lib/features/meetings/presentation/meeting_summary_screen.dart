@@ -302,6 +302,17 @@ class MeetingSummaryScreen extends ConsumerWidget {
                                                   TextSpan(
                                                     text: '  ${msg.body}',
                                                   ),
+                                                  if (msg.isPromoted)
+                                                    const TextSpan(
+                                                      text: '   ✓ outcome',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xFF10B981),
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
                                                 ],
                                               ),
                                               style: Theme.of(context)

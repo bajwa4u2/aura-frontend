@@ -111,6 +111,27 @@ class MeetingsRepository {
     return const [];
   }
 
+  // Phase 4.5 — promote a conversation message into a MeetingOutcome (host
+  // only, server-enforced). Returns the created/existing outcome id.
+  Future<String?> promoteConversationMessage(
+    String meetingId,
+    String messageId, {
+    required String type,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/conversation/$messageId/promote',
+      data: {'type': type},
+    );
+    final data = res.data?['data'];
+    if (data is Map) {
+      final id = (Map<String, dynamic>.from(data)['promotedOutcomeId'] ?? '')
+          .toString()
+          .trim();
+      return id.isEmpty ? null : id;
+    }
+    return null;
+  }
+
   Future<MeetingOutcome> updateOutcome(
     String outcomeId, {
     String? status,

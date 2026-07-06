@@ -207,6 +207,69 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     );
   }
 
+  // Phase 4.5 — host promotes a message into a MeetingOutcome over REST (the
+  // chat transport is untouched); local list reflects it immediately.
+  Future<bool> _promoteConversationMessage(
+    String messageId,
+    MeetingMessageType type,
+  ) async {
+    try {
+      final outcomeId = await ref
+          .read(meetingsRepositoryProvider)
+          .promoteConversationMessage(
+            widget.meetingId,
+            messageId,
+            type: type.wire,
+          );
+      if (outcomeId == null) return false;
+      if (mounted) {
+        setState(() {
+          final i = _conversation.indexWhere((m) => m.id == messageId);
+          if (i >= 0) {
+            _conversation[i] =
+                _conversation[i].copyWith(promotedOutcomeId: outcomeId);
+          }
+        });
+        _showArrivalToast('Promoted to ${type.label}');
+      }
+      ref.invalidate(meetingOutcomesProvider(widget.meetingId));
+      ref.invalidate(meetingConversationProvider(widget.meetingId));
+      return true;
+    } catch (_) {
+      if (mounted) _showArrivalToast('Could not promote message');
+      return false;
+    }
+  }
+
+  // Socket history carries no promoted state (transport untouched) — the
+  // host merges it from the member REST transcript, best-effort.
+  Future<void> _hydratePromotedState() async {
+    if (!widget.isHost) return;
+    try {
+      final rows = await ref
+          .read(meetingsRepositoryProvider)
+          .getMeetingConversation(widget.meetingId);
+      if (!mounted) return;
+      final promotedById = {
+        for (final r in rows)
+          if (r.isPromoted) r.id: r.promotedOutcomeId,
+      };
+      if (promotedById.isEmpty) return;
+      setState(() {
+        for (var i = 0; i < _conversation.length; i++) {
+          final promoted = promotedById[_conversation[i].id];
+          if (promoted != null && !_conversation[i].isPromoted) {
+            _conversation[i] =
+                _conversation[i].copyWith(promotedOutcomeId: promoted);
+          }
+        }
+      });
+    } catch (_) {
+      // Best-effort: promote buttons simply reappear; re-promoting is
+      // idempotent server-side.
+    }
+  }
+
   // Backfill (and re-backfill after a reconnect) the conversation over the
   // socket ack; appended messages dedupe by id against live fan-out.
   Future<void> _requestConversationHistory() async {
@@ -233,6 +296,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           fetched.where((m) => !known.contains(m.id)),
         );
       });
+      unawaited(_hydratePromotedState());
     } catch (_) {
       // Best-effort: a failed backfill must never disturb the live session.
       // Allow a later join transition to retry.
@@ -775,6 +839,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 onSend: _sendConversationMessage,
                 onDelete:
                     widget.isHost ? _deleteConversationMessage : null,
+                onPromote:
+                    widget.isHost ? _promoteConversationMessage : null,
               ),
             ),
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -56,6 +57,34 @@ class _PostMeetingWorkspaceScreenState
   String get _summaryPath => widget.institutionId == null
       ? '/meetings/${widget.meetingId}/summary'
       : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
+
+  // Phase 4.5 — promote a conversation message into a MeetingOutcome, then
+  // refresh the transcript (promoted marker) and outcome surfaces.
+  Future<void> _promoteMessage(
+    String messageId,
+    MeetingMessageType type,
+  ) async {
+    try {
+      await ref.read(meetingsRepositoryProvider).promoteConversationMessage(
+            widget.meetingId,
+            messageId,
+            type: type.wire,
+          );
+      ref.invalidate(meetingConversationProvider(widget.meetingId));
+      ref.invalidate(meetingOutcomesProvider(widget.meetingId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Promoted to ${type.label}')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not promote message')),
+        );
+      }
+    }
+  }
 
   void _loadSummary(MeetingSummary? summary) {
     if (summary == null || summary.id == _loadedSummaryId) return;
@@ -250,8 +279,10 @@ class _PostMeetingWorkspaceScreenState
                         ),
                         const SizedBox(height: AuraSpace.s16),
                       ],
-                      // Phase 4 — read-only conversation reference so the host
-                      // can reconcile outcomes against what was said in chat.
+                      // Phase 4 — conversation reference so the host can
+                      // reconcile outcomes against what was said in chat.
+                      // Phase 4.5 — the host can promote messages into
+                      // MeetingOutcome rows from here too.
                       Consumer(
                         builder: (context, ref, _) {
                           final conversation = ref
@@ -262,12 +293,28 @@ class _PostMeetingWorkspaceScreenState
                           if (conversation.isEmpty) {
                             return const SizedBox.shrink();
                           }
+                          final myId = ref
+                                  .watch(authMeDataProvider)
+                                  .maybeWhen(
+                                    data: (me) {
+                                      final u = me['user'];
+                                      return (u is Map
+                                              ? (u['id'] ?? '')
+                                              : (me['id'] ?? ''))
+                                          .toString()
+                                          .trim();
+                                    },
+                                    orElse: () => '',
+                                  );
+                          final isHost = myId.isNotEmpty &&
+                              myId == (meeting.host?.id ?? '');
                           return Padding(
                             padding: const EdgeInsets.only(
                               bottom: AuraSpace.s16,
                             ),
                             child: _ConversationReference(
                               messages: conversation,
+                              onPromote: isHost ? _promoteMessage : null,
                             ),
                           );
                         },
@@ -441,7 +488,11 @@ class _LiveNotesReference extends StatelessWidget {
 class _ConversationReference extends StatelessWidget {
   final List<MeetingConversationMessage> messages;
 
-  const _ConversationReference({required this.messages});
+  /// Phase 4.5 — host-only promote action; null hides the affordance.
+  final Future<void> Function(String messageId, MeetingMessageType type)?
+      onPromote;
+
+  const _ConversationReference({required this.messages, this.onPromote});
 
   Color _typeColor(MeetingMessageType type) {
     switch (type) {
@@ -500,29 +551,75 @@ class _ConversationReference extends StatelessWidget {
             for (final msg in messages)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: SelectableText.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: msg.senderName,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      if (msg.messageType != MeetingMessageType.chat)
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SelectableText.rich(
                         TextSpan(
-                          text: ' · ${msg.messageType.label}',
-                          style: TextStyle(
-                            color: _typeColor(msg.messageType),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
+                          children: [
+                            TextSpan(
+                              text: msg.senderName,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            if (msg.messageType != MeetingMessageType.chat)
+                              TextSpan(
+                                text: ' · ${msg.messageType.label}',
+                                style: TextStyle(
+                                  color: _typeColor(msg.messageType),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            TextSpan(text: '  ${msg.body}'),
+                          ],
+                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFFCBD5E1),
+                              height: 1.4,
+                            ),
+                      ),
+                    ),
+                    if (msg.isPromoted)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8, top: 2),
+                        child: Tooltip(
+                          message: 'Tracked as a meeting outcome',
+                          child: Icon(
+                            Icons.task_alt_rounded,
+                            size: 16,
+                            color: Color(0xFF10B981),
                           ),
                         ),
-                      TextSpan(text: '  ${msg.body}'),
-                    ],
-                  ),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFCBD5E1),
-                        height: 1.4,
+                      )
+                    else if (onPromote != null)
+                      PopupMenuButton<MeetingMessageType>(
+                        tooltip: 'Promote to outcome',
+                        padding: EdgeInsets.zero,
+                        iconSize: 16,
+                        icon: const Icon(
+                          Icons.arrow_circle_up_rounded,
+                          size: 16,
+                          color: Color(0xFF6C63FF),
+                        ),
+                        onSelected: (t) => onPromote!(msg.id, t),
+                        itemBuilder: (context) => [
+                          for (final t in const [
+                            MeetingMessageType.decision,
+                            MeetingMessageType.commitment,
+                            MeetingMessageType.action,
+                            MeetingMessageType.issue,
+                            MeetingMessageType.followUp,
+                          ])
+                            PopupMenuItem(
+                              value: t,
+                              height: 36,
+                              child: Text('Promote to ${t.label}'),
+                            ),
+                        ],
                       ),
+                  ],
                 ),
               ),
           ],
