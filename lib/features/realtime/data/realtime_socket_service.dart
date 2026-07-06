@@ -263,6 +263,9 @@ class RealtimeSocketService {
       'session:reaction',
       'session:hand.updated',
       'session:mute-request',
+      // Phase 4 — Meeting Conversation Stream (persisted, meeting-owned).
+      'session:conversation.message',
+      'session:conversation.deleted',
     ];
 
     for (final name in names) {

@@ -11,9 +11,11 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
+import 'widgets/meeting_conversation_panel.dart';
 import 'widgets/meeting_device_picker.dart';
 import 'widgets/meeting_pending_guests_panel.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_conversation_message.dart';
 import '../../realtime/application/realtime_controller.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/data/realtime_media_service.dart';
@@ -114,6 +116,15 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   bool _handRaised = false;
   String _myUserId = '';
 
+  // Phase 4 — Meeting Conversation Stream. The screen owns the message list
+  // (not the panel) so the unread badge keeps counting while the panel is
+  // closed. History backfills over the socket ack once joined — works for
+  // guests too, who cannot call member REST endpoints.
+  bool _showChat = false;
+  final List<MeetingConversationMessage> _conversation = [];
+  int _unseenChat = 0;
+  bool _chatHistoryRequested = false;
+
   void _onParticipationEvent(RealtimeParsedEvent e) {
     if (!mounted) return;
     switch (e.name) {
@@ -146,6 +157,86 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           _showArrivalToast('You were muted by the host');
         }
         break;
+      case 'session:conversation.message':
+        final msg = MeetingConversationMessage.fromJson(
+          Map<String, dynamic>.from(e.payload),
+        );
+        if (msg.id.isEmpty) break;
+        setState(() {
+          if (!_conversation.any((m) => m.id == msg.id)) {
+            _conversation.add(msg);
+            if (!_showChat) _unseenChat++;
+          }
+        });
+        break;
+      case 'session:conversation.deleted':
+        final mid = (e.payload['messageId'] ?? '').toString().trim();
+        if (mid.isEmpty) break;
+        setState(() => _conversation.removeWhere((m) => m.id == mid));
+        break;
+    }
+  }
+
+  Future<bool> _sendConversationMessage(
+    String body,
+    MeetingMessageType type,
+  ) async {
+    try {
+      final res = await ref
+          .read(realtimeSocketServiceProvider)
+          .emitAck('session:conversation.post', {
+        'sessionId': widget.sessionId,
+        'body': body,
+        'messageType': type.wire,
+      });
+      return res['ok'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _deleteConversationMessage(String messageId) {
+    unawaited(
+      ref
+          .read(realtimeSocketServiceProvider)
+          .emitAck('session:conversation.delete', {
+            'sessionId': widget.sessionId,
+            'messageId': messageId,
+          })
+          .catchError((_) => <String, dynamic>{}),
+    );
+  }
+
+  // Backfill (and re-backfill after a reconnect) the conversation over the
+  // socket ack; appended messages dedupe by id against live fan-out.
+  Future<void> _requestConversationHistory() async {
+    try {
+      final res = await ref
+          .read(realtimeSocketServiceProvider)
+          .emitAck('session:conversation.history', {
+        'sessionId': widget.sessionId,
+      });
+      if (!mounted || res['ok'] != true) return;
+      final list = res['messages'];
+      if (list is! List) return;
+      final fetched = list
+          .whereType<Map>()
+          .map((m) =>
+              MeetingConversationMessage.fromJson(Map<String, dynamic>.from(m)))
+          .where((m) => m.id.isNotEmpty)
+          .toList();
+      if (fetched.isEmpty) return;
+      setState(() {
+        final known = _conversation.map((m) => m.id).toSet();
+        _conversation.insertAll(
+          0,
+          fetched.where((m) => !known.contains(m.id)),
+        );
+      });
+    } catch (_) {
+      // Best-effort: a failed backfill must never disturb the live session.
+      // Allow a later join transition to retry.
+      _chatHistoryRequested = false;
     }
   }
 
@@ -547,6 +638,15 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         .whereType<String>()
         .firstOrNull;
 
+    // Phase 4 — backfill the conversation once joined; re-arms after a
+    // reconnect (isJoined dips false, then true again) and dedupes by id.
+    if (!state.isJoined) {
+      _chatHistoryRequested = false;
+    } else if (!_chatHistoryRequested) {
+      _chatHistoryRequested = true;
+      Future.microtask(_requestConversationHistory);
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF030712),
       body: GestureDetector(
@@ -659,6 +759,25 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               ),
             ),
 
+          // Phase 4 — Meeting Conversation Stream panel (right, shifts past
+          // the participant/notes panels when they are open).
+          if (_showChat)
+            Positioned(
+              top: 0,
+              right: (_showParticipants ? 300 : 0) + (_showNotes ? 300 : 0),
+              bottom: 0,
+              child: MeetingConversationPanel(
+                messages: _conversation,
+                localUserId: _myUserId,
+                isHost: widget.isHost,
+                chatEnabled: meeting?.chatEnabled ?? true,
+                onClose: () => setState(() => _showChat = false),
+                onSend: _sendConversationMessage,
+                onDelete:
+                    widget.isHost ? _deleteConversationMessage : null,
+              ),
+            ),
+
           // I2: Connecting / reconnecting overlay (initial join and auto-reconnect).
           if (!state.isJoined && !_meetingEnded)
             Positioned.fill(
@@ -740,6 +859,12 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                   setState(() => _showParticipants = !_showParticipants),
               onToggleNotes: () =>
                   setState(() => _showNotes = !_showNotes),
+              showChat: _showChat,
+              unreadChat: _unseenChat,
+              onToggleChat: () => setState(() {
+                _showChat = !_showChat;
+                if (_showChat) _unseenChat = 0;
+              }),
               onShareScreen: _toggleScreenShare,
               onFlipCamera: _flipCamera,
               onDeviceSettings: _showDeviceSettings,
@@ -1353,12 +1478,15 @@ class _MeetingControlBar extends StatelessWidget {
   final bool isHost;
   final bool showParticipants;
   final bool showNotes;
+  final bool showChat;
+  final int unreadChat;
   final bool endingMeeting;
   final bool togglingScreenShare;
   final VoidCallback onToggleMic;
   final VoidCallback onToggleCamera;
   final VoidCallback onToggleParticipants;
   final VoidCallback onToggleNotes;
+  final VoidCallback onToggleChat;
   final VoidCallback onShareScreen;
   final VoidCallback onFlipCamera;
   final VoidCallback onDeviceSettings;
@@ -1373,12 +1501,15 @@ class _MeetingControlBar extends StatelessWidget {
     required this.isHost,
     required this.showParticipants,
     required this.showNotes,
+    required this.showChat,
+    required this.unreadChat,
     required this.endingMeeting,
     required this.togglingScreenShare,
     required this.onToggleMic,
     required this.onToggleCamera,
     required this.onToggleParticipants,
     required this.onToggleNotes,
+    required this.onToggleChat,
     required this.onShareScreen,
     required this.onFlipCamera,
     required this.onDeviceSettings,
@@ -1459,6 +1590,15 @@ class _MeetingControlBar extends StatelessWidget {
             onTap: onToggleNotes,
           ),
 
+          // Phase 4 — meeting conversation stream.
+          _ControlButton(
+            icon: Icons.chat_bubble_outline_rounded,
+            label: 'Chat',
+            active: showChat,
+            badge: unreadChat,
+            onTap: onToggleChat,
+          ),
+
           // Devices — camera / microphone / speaker selection.
           _ControlButton(
             icon: Icons.tune_rounded,
@@ -1514,6 +1654,8 @@ class _ControlButton extends StatelessWidget {
   final String label;
   final bool active;
   final bool danger;
+  // Unread count bubble (e.g. chat); hidden when 0.
+  final int badge;
   final VoidCallback? onTap;
 
   const _ControlButton({
@@ -1521,6 +1663,7 @@ class _ControlButton extends StatelessWidget {
     required this.label,
     required this.active,
     this.danger = false,
+    this.badge = 0,
     this.onTap,
   });
 
@@ -1538,19 +1681,48 @@ class _ControlButton extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: onTap == null ? bg.withValues(alpha: 0.5) : bg,
-              borderRadius: BorderRadius.circular(12),
-              border: active && !danger
-                  ? Border.all(
-                      color: const Color(0xFF6C63FF).withValues(alpha: 0.5),
-                    )
-                  : null,
-            ),
-            child: Icon(icon, color: fg, size: 22),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: onTap == null ? bg.withValues(alpha: 0.5) : bg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: active && !danger
+                      ? Border.all(
+                          color:
+                              const Color(0xFF6C63FF).withValues(alpha: 0.5),
+                        )
+                      : null,
+                ),
+                child: Icon(icon, color: fg, size: 22),
+              ),
+              if (badge > 0)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6C63FF),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(

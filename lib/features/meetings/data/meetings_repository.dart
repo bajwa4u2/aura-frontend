@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_conversation_message.dart';
 
 class MeetingsRepository {
   MeetingsRepository(this._dio);
@@ -87,6 +88,24 @@ class MeetingsRepository {
       return data
           .whereType<Map<String, dynamic>>()
           .map(MeetingOutcome.fromJson)
+          .toList();
+    }
+    return const [];
+  }
+
+  // Phase 4 — Meeting Conversation Stream transcript (member/host only; the
+  // live stream itself flows over the realtime socket).
+  Future<List<MeetingConversationMessage>> getMeetingConversation(
+    String meetingId,
+  ) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/$meetingId/conversation',
+    );
+    final data = res.data?['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(MeetingConversationMessage.fromJson)
           .toList();
     }
     return const [];

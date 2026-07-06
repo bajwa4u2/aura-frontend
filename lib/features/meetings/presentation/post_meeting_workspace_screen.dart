@@ -7,6 +7,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_conversation_message.dart';
 import 'meeting_lifecycle_presenter.dart';
 import 'meeting_status_chip.dart';
 
@@ -249,6 +250,28 @@ class _PostMeetingWorkspaceScreenState
                         ),
                         const SizedBox(height: AuraSpace.s16),
                       ],
+                      // Phase 4 — read-only conversation reference so the host
+                      // can reconcile outcomes against what was said in chat.
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final conversation = ref
+                                  .watch(meetingConversationProvider(
+                                      widget.meetingId))
+                                  .valueOrNull ??
+                              const <MeetingConversationMessage>[];
+                          if (conversation.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AuraSpace.s16,
+                            ),
+                            child: _ConversationReference(
+                              messages: conversation,
+                            ),
+                          );
+                        },
+                      ),
                       Wrap(
                         spacing: AuraSpace.s16,
                         runSpacing: AuraSpace.s16,
@@ -405,6 +428,103 @@ class _LiveNotesReference extends StatelessWidget {
                     height: 1.4,
                   ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Phase 4 — read-only conversation reference. Typed messages (decisions,
+// commitments, …) are highlighted so the host can lift them into the outcome
+// editors; message promotion to first-class outcomes is a later step.
+class _ConversationReference extends StatelessWidget {
+  final List<MeetingConversationMessage> messages;
+
+  const _ConversationReference({required this.messages});
+
+  Color _typeColor(MeetingMessageType type) {
+    switch (type) {
+      case MeetingMessageType.decision:
+        return const Color(0xFF10B981);
+      case MeetingMessageType.commitment:
+        return const Color(0xFFF59E0B);
+      case MeetingMessageType.action:
+        return const Color(0xFF38BDF8);
+      case MeetingMessageType.issue:
+        return const Color(0xFFF43F5E);
+      case MeetingMessageType.followUp:
+        return const Color(0xFF8B5CF6);
+      case MeetingMessageType.chat:
+      case MeetingMessageType.system:
+        return const Color(0xFF9CA3AF);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.chat_bubble_outline_rounded,
+                    size: 18, color: Color(0xFF6C63FF)),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  'Conversation',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  'captured during the meeting',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: const Color(0xFF9CA3AF)),
+                ),
+              ],
+            ),
+            const SizedBox(height: AuraSpace.s10),
+            for (final msg in messages)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: SelectableText.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: msg.senderName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      if (msg.messageType != MeetingMessageType.chat)
+                        TextSpan(
+                          text: ' · ${msg.messageType.label}',
+                          style: TextStyle(
+                            color: _typeColor(msg.messageType),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      TextSpan(text: '  ${msg.body}'),
+                    ],
+                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFFCBD5E1),
+                        height: 1.4,
+                      ),
+                ),
+              ),
           ],
         ),
       ),

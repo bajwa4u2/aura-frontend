@@ -7,6 +7,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_conversation_message.dart';
 import 'meeting_lifecycle_presenter.dart';
 import 'meeting_status_chip.dart';
 
@@ -29,6 +30,11 @@ class MeetingSummaryScreen extends ConsumerWidget {
     final meetingAsync = ref.watch(meetingProvider(meetingId));
     final summaryAsync = ref.watch(meetingSummaryProvider(meetingId));
     final outcomesAsync = ref.watch(meetingOutcomesProvider(meetingId));
+    // Phase 4 — conversation transcript (renders nothing when empty or when
+    // the caller is not a participant).
+    final conversationAsync = ref.watch(meetingConversationProvider(meetingId));
+    final conversation =
+        conversationAsync.valueOrNull ?? const <MeetingConversationMessage>[];
 
     return meetingAsync.when(
       loading: () => AuraScaffold(
@@ -246,6 +252,69 @@ class MeetingSummaryScreen extends ConsumerWidget {
                                   )
                                   .toList(),
                             ),
+                          if (conversation.isNotEmpty)
+                            _SummaryPanel(
+                              title: 'Conversation',
+                              width: 510,
+                              children: conversation
+                                  .map(
+                                    (msg) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 6),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '·  ',
+                                            style: TextStyle(
+                                              color: _messageTypeColor(
+                                                msg.messageType,
+                                              ),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text.rich(
+                                              TextSpan(
+                                                children: [
+                                                  TextSpan(
+                                                    text: msg.senderName,
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  if (msg.messageType !=
+                                                      MeetingMessageType.chat)
+                                                    TextSpan(
+                                                      text:
+                                                          ' · ${msg.messageType.label}',
+                                                      style: TextStyle(
+                                                        color:
+                                                            _messageTypeColor(
+                                                          msg.messageType,
+                                                        ),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  TextSpan(
+                                                    text: '  ${msg.body}',
+                                                  ),
+                                                ],
+                                              ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
                         ],
                       ),
                       const SizedBox(height: AuraSpace.s16),
@@ -382,6 +451,26 @@ class MeetingSummaryScreen extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Meeting link copied')));
+  }
+}
+
+// Phase 4 — bullet/badge colour per conversation message type (chat stays
+// neutral; continuity types match the outcome palette).
+Color _messageTypeColor(MeetingMessageType type) {
+  switch (type) {
+    case MeetingMessageType.decision:
+      return const Color(0xFF10B981);
+    case MeetingMessageType.commitment:
+      return const Color(0xFFF59E0B);
+    case MeetingMessageType.action:
+      return const Color(0xFF38BDF8);
+    case MeetingMessageType.issue:
+      return const Color(0xFFF43F5E);
+    case MeetingMessageType.followUp:
+      return const Color(0xFF8B5CF6);
+    case MeetingMessageType.chat:
+    case MeetingMessageType.system:
+      return const Color(0xFF6C63FF);
   }
 }
 

@@ -5,6 +5,7 @@ import '../data/meetings_repository.dart';
 import '../data/availability_repository.dart';
 import '../domain/meeting.dart';
 import '../domain/availability_profile.dart';
+import '../domain/meeting_conversation_message.dart';
 import '../domain/meeting_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
 
@@ -79,6 +80,17 @@ final meetingOutcomesProvider =
     FutureProvider.family<List<MeetingOutcome>, String>((ref, meetingId) async {
       final repo = ref.watch(meetingsRepositoryProvider);
       return repo.getMeetingOutcomes(meetingId);
+    });
+
+// Phase 4 — Meeting Conversation Stream transcript (member/host post-meeting
+// read; guests receive the live stream over the realtime socket instead).
+final meetingConversationProvider =
+    FutureProvider.family<List<MeetingConversationMessage>, String>((
+      ref,
+      meetingId,
+    ) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      return repo.getMeetingConversation(meetingId);
     });
 
 final institutionOpenOutcomesProvider =
