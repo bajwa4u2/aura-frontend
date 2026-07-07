@@ -117,9 +117,6 @@ import 'features/meetings/presentation/meeting_detail_screen.dart';
 import 'features/meetings/presentation/meeting_join_error_screen.dart';
 import 'features/meetings/presentation/meeting_join_fallback_screen.dart';
 import 'features/meetings/presentation/meeting_live_room_screen.dart';
-import 'features/meetings/presentation/meeting_room_screen.dart';
-import 'features/meetings/presentation/meeting_summary_screen.dart';
-import 'features/meetings/presentation/post_meeting_workspace_screen.dart';
 import 'features/meetings/presentation/pre_join_screen.dart';
 import 'features/meetings/presentation/public_booking_screen.dart';
 import 'features/meetings/presentation/slot_picker_screen.dart';
@@ -996,14 +993,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               meetingId: state.pathParameters['meetingId'] ?? '',
             ),
           ),
+          // Lobby retired: the Meeting Record is the doorway to the room.
+          // Guests never land here anymore (pre-join routes straight to
+          // /live); members see the record with its Enter room banner.
           GoRoute(
             path: '/meetings/:meetingId/room',
-            builder: (context, state) => MeetingRoomScreen(
+            builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
-              sessionId: state.uri.queryParameters['sessionId'],
-              returnTo: state.uri.queryParameters['returnTo'],
-              meetingCode: state.uri.queryParameters['code'],
-              guestId: state.uri.queryParameters['guestId'],
             ),
           ),
           GoRoute(
@@ -1026,15 +1022,17 @@ final routerProvider = Provider<GoRouter>((ref) {
               guestUserId: state.uri.queryParameters['guestId'],
             ),
           ),
+          // Summary and workspace merged into the Meeting Record — one page
+          // is the meeting before, during, and after. Old links keep working.
           GoRoute(
             path: '/meetings/:meetingId/summary',
-            builder: (context, state) => MeetingSummaryScreen(
+            builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
             ),
           ),
           GoRoute(
             path: '/meetings/:meetingId/post-meeting',
-            builder: (context, state) => PostMeetingWorkspaceScreen(
+            builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
             ),
           ),
@@ -1054,12 +1052,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/room',
-            builder: (context, state) => MeetingRoomScreen(
+            builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
               institutionId: state.pathParameters['institutionId'],
-              sessionId: state.uri.queryParameters['sessionId'],
-              returnTo: state.uri.queryParameters['returnTo'],
-              guestId: state.uri.queryParameters['guestId'],
             ),
           ),
           GoRoute(
@@ -1085,7 +1080,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/summary',
-            builder: (context, state) => MeetingSummaryScreen(
+            builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
               institutionId: state.pathParameters['institutionId'],
             ),
@@ -1093,7 +1088,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path:
                 '/institution/:institutionId/meetings/:meetingId/post-meeting',
-            builder: (context, state) => PostMeetingWorkspaceScreen(
+            builder: (context, state) => MeetingDetailScreen(
               meetingId: state.pathParameters['meetingId'] ?? '',
               institutionId: state.pathParameters['institutionId'],
             ),

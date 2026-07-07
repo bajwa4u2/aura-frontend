@@ -115,7 +115,9 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       }
 
       if (result.sessionId != null) {
-        final target = '/meetings/${result.meetingId}/room'
+        // Lobby retired: pre-join already covers identity + device readiness,
+        // so a live meeting is entered directly — no intermediate room screen.
+        final target = '/meetings/${result.meetingId}/live'
             '?sessionId=${result.sessionId}'
             '&code=${Uri.encodeComponent(widget.meetingCode)}'
             '$guestIdSuffix';

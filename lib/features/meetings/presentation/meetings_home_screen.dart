@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../institutions/ui/institution_ds.dart';
+import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
@@ -117,52 +118,31 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                       ),
                       data: (meetings) {
                         final now = DateTime.now();
+                        // One list, one grammar: everything that is live or
+                        // ahead of you, today first. Booking-sourced meetings
+                        // are rows in the same list (their cards carry the
+                        // guest context), not a separate section.
                         final active = meetings
                             .where((m) => !m.isEnded)
-                            .toList(growable: false);
-                        final today = active
-                            .where((m) => _isToday(m.scheduledAt, now))
-                            .toList(growable: false);
-                        final upcoming = active
-                            .where((m) => !_isToday(m.scheduledAt, now))
-                            .toList(growable: false);
-                        final requests = active
-                            .where((m) => m.booking != null)
-                            .toList(growable: false);
+                            .toList(growable: false)
+                          ..sort((a, b) {
+                            final aToday = _isToday(a.scheduledAt, now) ? 0 : 1;
+                            final bToday = _isToday(b.scheduledAt, now) ? 0 : 1;
+                            if (aToday != bToday) return aToday - bToday;
+                            final aAt = a.scheduledAt ?? now;
+                            final bAt = b.scheduledAt ?? now;
+                            return aAt.compareTo(bAt);
+                          });
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _MeetingSection(
-                              title: "Today's meetings",
-                              emptyTitle: 'No meetings today',
-                              emptyBody: 'No bookings confirmed for today.',
-                              meetings: today,
-                              institutionId: institutionId,
-                              highlightToday: true,
-                              compact: true,
-                            ),
-                            const SizedBox(height: AuraSpace.s20),
-                            _CollapsibleMeetingSection(
-                              title: 'Upcoming meetings',
-                              emptyTitle: 'No upcoming meetings',
-                              emptyBody:
-                                  'Scheduled meetings and guest bookings will appear here.',
-                              meetings: upcoming,
-                              institutionId: institutionId,
-                              initiallyExpanded: false,
-                              compact: true,
-                            ),
-                            const SizedBox(height: AuraSpace.s20),
-                            _MeetingSection(
-                              title: 'Booking requests received',
-                              emptyTitle: 'No guest bookings yet',
-                              emptyBody: 'Confirmed guest bookings appear here.',
-                              meetings: requests,
-                              institutionId: institutionId,
-                              compact: true,
-                            ),
-                          ],
+                        return _MeetingSection(
+                          title: 'Happening & next',
+                          emptyTitle: 'Nothing scheduled',
+                          emptyBody:
+                              'Schedule a meeting, start one now, or share your booking page — everything ahead of you appears here.',
+                          meetings: active,
+                          institutionId: institutionId,
+                          highlightToday: true,
+                          compact: true,
                         );
                       },
                     ),
@@ -171,7 +151,7 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => const SizedBox.shrink(),
                       data: (meetings) => _CollapsibleMeetingSection(
-                        title: 'Past meetings',
+                        title: 'Archive',
                         emptyTitle: 'No past meetings yet',
                         emptyBody:
                             'Completed and cancelled meetings appear here.',
@@ -205,11 +185,17 @@ class _HostHeader extends ConsumerWidget {
     return InsModeHeader(
       title: 'Meetings',
       description:
-          'Manage guest bookings, upcoming conversations, and meeting links from the workspace.',
+          'Your meetings — scheduled, live, and on the record.',
       primaryAction: Wrap(
         spacing: AuraSpace.s10,
         runSpacing: AuraSpace.s10,
         children: [
+          // Scheduling lives where meetings live.
+          OutlinedButton.icon(
+            icon: const Icon(Icons.event_rounded),
+            label: const Text('Schedule'),
+            onPressed: () => context.push('/meetings/new'),
+          ),
           OutlinedButton.icon(
             icon: const Icon(Icons.login_rounded),
             label: const Text('Join by code'),
@@ -306,7 +292,7 @@ class _HostHeader extends ConsumerWidget {
               final route = meeting.sessionId != null
                   ? '/meetings/${meeting.id}/live'
                         '?sessionId=${meeting.sessionId}&isHost=true'
-                  : '/meetings/${meeting.id}/room';
+                  : '/meetings/${meeting.id}';
               debugPrint('[instant] before navigate route=$route');
               try {
                 Navigator.pop(dialogContext);
@@ -432,14 +418,12 @@ class _CollapsibleMeetingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: const Color(0xFF243244)),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return AuraCard(
+      padding: EdgeInsets.zero,
       child: ExpansionTile(
         initiallyExpanded: initiallyExpanded,
+        shape: const Border(),
+        collapsedShape: const Border(),
         tilePadding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s18,
           vertical: AuraSpace.s4,
@@ -693,12 +677,9 @@ class _MeetingCard extends ConsumerWidget {
   String get _summaryPath => _resolvedInstitutionId == null
       ? '/meetings/${meeting.id}/summary'
       : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/summary';
-  String get _roomBasePath => _resolvedInstitutionId == null
-      ? '/meetings/${meeting.id}/room'
-      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/room';
-  String get _roomPath => _roomBasePath;
-
-  String get _meetingRoomReturnTo => Uri.encodeComponent(_roomBasePath);
+  String get _liveBasePath => _resolvedInstitutionId == null
+      ? '/meetings/${meeting.id}/live'
+      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/live';
 
   Future<void> _startMeeting(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -713,12 +694,14 @@ class _MeetingCard extends ConsumerWidget {
         ref.invalidate(institutionUpcomingMeetingsProvider(institutionId!));
       }
       if (!context.mounted) return;
+      // Lobby retired: starting from the Desk goes straight into the room;
+      // without a session yet, the Meeting Record is the doorway.
       if (updated.sessionId != null) {
         context.push(
-          '$_roomPath?sessionId=${updated.sessionId}&returnTo=$_meetingRoomReturnTo',
+          '$_liveBasePath?sessionId=${updated.sessionId}&isHost=true',
         );
       } else {
-        context.push(_roomPath);
+        context.push(_detailPath);
       }
     } catch (e) {
       messenger.showSnackBar(
@@ -728,13 +711,10 @@ class _MeetingCard extends ConsumerWidget {
   }
 
   void _joinMeeting(BuildContext context) {
-    if (meeting.sessionId != null) {
-      context.push(
-        '$_roomPath?sessionId=${meeting.sessionId}&returnTo=$_meetingRoomReturnTo',
-      );
-    } else {
-      context.push(_roomPath);
-    }
+    // The Desk can't know whether the viewer hosts this meeting (their list
+    // includes meetings they merely attend), so joining goes through the
+    // Meeting Record, which resolves the viewer's role and opens the room.
+    context.push(_detailPath);
   }
 
   Future<void> _cancelMeeting(BuildContext context, WidgetRef ref) async {
@@ -1078,13 +1058,8 @@ class _OpenCommitmentsSection extends ConsumerWidget {
           error: (_, __) => const SizedBox.shrink(),
           data: (outcomes) {
             if (outcomes.isEmpty) {
-              return Container(
+              return AuraCard(
                 padding: const EdgeInsets.all(AuraSpace.s16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
-                  border: Border.all(color: const Color(0xFF243244)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
                 child: Text(
                   'No open commitments across meetings.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1093,12 +1068,8 @@ class _OpenCommitmentsSection extends ConsumerWidget {
                 ),
               );
             }
-            return Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F172A),
-                border: Border.all(color: const Color(0xFF243244)),
-                borderRadius: BorderRadius.circular(8),
-              ),
+            return AuraCard(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
               child: Column(
                 children: outcomes.map((o) {
                   final typeLabel = switch (o.type.toUpperCase()) {

@@ -4,7 +4,16 @@ import 'meeting_lifecycle_presenter.dart';
 class MeetingStatusChip extends StatelessWidget {
   final MeetingLifecycleViewModel lifecycle;
 
-  const MeetingStatusChip({super.key, required this.lifecycle});
+  /// Labels must read from the VIEWER's perspective: "Host waiting" makes
+  /// sense to a guest, but a host reading their own record should see
+  /// "Room open".
+  final bool viewerIsHost;
+
+  const MeetingStatusChip({
+    super.key,
+    required this.lifecycle,
+    this.viewerIsHost = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,15 +27,15 @@ class MeetingStatusChip extends StatelessWidget {
         const Color(0xFF8B85FF),
       ),
       MeetingLifecycleStatus.guestWaiting => (
-        'Guest waiting',
+        viewerIsHost ? 'Guest is waiting' : 'You are in the room',
         const Color(0xFFF59E0B),
       ),
       MeetingLifecycleStatus.hostWaiting => (
-        'Host waiting',
+        viewerIsHost ? 'Room open' : 'Host waiting',
         const Color(0xFFF59E0B),
       ),
       MeetingLifecycleStatus.inProgress => (
-        'In progress',
+        'Live now',
         const Color(0xFF10B981),
       ),
       MeetingLifecycleStatus.ended => ('Ended', const Color(0xFF9CA3AF)),
