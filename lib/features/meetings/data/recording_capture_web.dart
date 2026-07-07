@@ -40,6 +40,11 @@ class MeetingRecordingCapture {
   final List<JSObject> _chunks = [];
   DateTime? _startedAt;
 
+  /// Fired when the capture ends OUTSIDE the app's own Stop control (the
+  /// browser's "Stop sharing" bar). A recording that already happened must
+  /// NEVER be silently discarded — the room finalizes the upload from here.
+  void Function()? onExternalStop;
+
   bool get isSupported => true;
   bool get isRecording => _recorder != null;
 
@@ -72,6 +77,8 @@ class MeetingRecordingCapture {
       final onEnded = (() {
         final r = _recorder;
         if (r != null && r.state == 'recording') r.stop();
+        // Let the room run the full stop-and-save flow.
+        onExternalStop?.call();
       }).toJS;
       for (final track in tracks) {
         track.setProperty('onended'.toJS, onEnded);

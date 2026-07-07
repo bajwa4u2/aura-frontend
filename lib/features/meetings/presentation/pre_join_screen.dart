@@ -315,21 +315,40 @@ class _PreJoinBody extends ConsumerWidget {
                     const SizedBox(height: AuraSpace.s24),
                     if (isBooker) ...[
                       // Booker joins with the identity from their booking — no
-                      // name/email prompt, and one stable participant.
+                      // name/email prompt, one stable participant across every
+                      // re-join. The identity is DISPLAYED, never re-asked.
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Icon(Icons.verified_user_rounded,
                               size: 18, color: Color(0xFF10B981)),
                           const SizedBox(width: AuraSpace.s10),
                           Expanded(
-                            child: Text(
-                              meeting.booking?.bookerName.trim().isNotEmpty ==
-                                      true
-                                  ? 'Joining as ${meeting.booking!.bookerName.trim()}'
-                                  : 'Joining with your booking',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  meeting.booking?.bookerName
+                                              .trim()
+                                              .isNotEmpty ==
+                                          true
+                                      ? 'Joining as ${meeting.booking!.bookerName.trim()}'
+                                      : 'Joining with your booking',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if ((meeting.booking?.bookerEmail ?? '')
+                                    .trim()
+                                    .isNotEmpty)
+                                  Text(
+                                    meeting.booking!.bookerEmail.trim(),
+                                    style:
+                                        theme.textTheme.bodySmall?.copyWith(
+                                      color: const Color(0xFF9CA3AF),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ],
@@ -366,12 +385,19 @@ class _PreJoinBody extends ConsumerWidget {
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
                           hintText: 'your@email.com',
+                          helperText:
+                              'The meeting summary and follow-ups arrive here.',
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.mail_outline_rounded),
                         ),
                         validator: (value) {
+                          // Identity continuity: a guest without an email
+                          // cannot receive summaries or follow-ups — email
+                          // is required, exactly like a booking.
                           final text = value?.trim() ?? '';
-                          if (text.isEmpty) return null;
+                          if (text.isEmpty) {
+                            return 'Email is required to join';
+                          }
                           if (!text.contains('@')) {
                             return 'Enter a valid email';
                           }

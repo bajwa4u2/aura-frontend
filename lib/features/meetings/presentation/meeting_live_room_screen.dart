@@ -149,6 +149,15 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           : 'Recording could not start');
       return;
     }
+    await _stopAndSaveRecording();
+  }
+
+  /// The ONLY exit path for a recording: stop capture, upload, attach to the
+  /// Meeting Record. Called by the Stop control, by the browser's own
+  /// "Stop sharing" (external stop), and before End/Leave — a captured
+  /// recording is never silently discarded.
+  Future<void> _stopAndSaveRecording() async {
+    if (_savingRecording) return;
     setState(() {
       _recording = false;
       _savingRecording = true;
@@ -603,6 +612,11 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         .read(realtimeSocketServiceProvider)
         .events
         .listen(_onParticipationEvent);
+    // Recording lifecycle: the browser's own "Stop sharing" bar must run the
+    // full stop-and-save flow, not just kill the tracks.
+    _recorder.onExternalStop = () {
+      if (mounted && _recording) unawaited(_stopAndSaveRecording());
+    };
     // Production-visible sync diagnostic: compare across host/guest consoles to
     // confirm SAME meetingId + sessionId. A mismatch means each side is in a
     // different realtime room and can never see the other.
@@ -703,6 +717,11 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/post-meeting';
 
   Future<void> _endMeeting() async {
+    if (_endingMeeting) return;
+    // A recording in progress is finalized BEFORE the meeting ends — the
+    // artifact belongs to the record, not to the host's memory of pressing
+    // Stop at the right moment.
+    if (_recording) await _stopAndSaveRecording();
     if (_endingMeeting) return;
     setState(() => _endingMeeting = true);
     _intentToLeave = true;
@@ -810,6 +829,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   }
 
   Future<void> _leaveMeeting() async {
+    if (_recording) await _stopAndSaveRecording();
     _intentToLeave = true;
     _clearReturnEntry();
     await ref.read(realtimeControllerProvider.notifier).leave();

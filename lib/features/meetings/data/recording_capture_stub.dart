@@ -15,6 +15,10 @@ class RecordingResult {
 }
 
 class MeetingRecordingCapture {
+  /// Fired when the capture ends OUTSIDE the app's own Stop control (e.g.
+  /// the browser's "Stop sharing" bar) so the room can finalize the upload.
+  void Function()? onExternalStop;
+
   bool get isSupported => false;
   bool get isRecording => false;
 
