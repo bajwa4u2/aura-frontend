@@ -66,9 +66,8 @@ class _MeetingJoinFallbackScreenState extends State<MeetingJoinFallbackScreen> {
                   ),
                   const SizedBox(height: AuraSpace.s8),
                   Text(
-                    'This link is missing its meeting code. Open the code from '
-                    'your confirmation or reminder email (shown as "Meeting '
-                    'code") and enter it below to join.',
+                    'Type the meeting code from your invitation, confirmation, '
+                    'or reminder email to join.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: const Color(0xFF9CA3AF),

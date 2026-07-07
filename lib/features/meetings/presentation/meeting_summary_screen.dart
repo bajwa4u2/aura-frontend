@@ -43,7 +43,30 @@ class MeetingSummaryScreen extends ConsumerWidget {
       ),
       error: (e, _) => AuraScaffold(
         title: 'Meeting summary',
-        body: const Center(child: Text('Unable to load meeting summary.')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline_rounded,
+                  size: 40, color: Color(0xFF6B7280)),
+              const SizedBox(height: AuraSpace.s12),
+              const Text('This summary is available to meeting members.'),
+              const SizedBox(height: AuraSpace.s6),
+              const Text(
+                'Sign in with the account that hosted or attended this meeting.',
+                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+              ),
+              const SizedBox(height: AuraSpace.s16),
+              FilledButton.icon(
+                icon: const Icon(Icons.login_rounded),
+                label: const Text('Sign in'),
+                onPressed: () => context.go(
+                  '/login?redirect=${Uri.encodeComponent('/meetings/$meetingId/summary')}',
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       data: (meeting) {
         final room = meeting.room;
@@ -54,6 +77,28 @@ class MeetingSummaryScreen extends ConsumerWidget {
         );
         final summary = summaryAsync.valueOrNull ?? meeting.summary;
         final outcomes = outcomesAsync.valueOrNull ?? <MeetingOutcome>[];
+        // One outcome representation: rows are the source of truth; the
+        // summary Json lists are their server-maintained mirror (kept as a
+        // fallback for meetings saved before consolidation).
+        List<String> rowTexts(String type) => [
+              for (final o in outcomes)
+                if (o.type == type) o.text,
+            ];
+        final decisionValues = outcomes.isNotEmpty
+            ? rowTexts('DECISION')
+            : (summary?.decisions ?? const <String>[]);
+        final commitmentValues = outcomes.isNotEmpty
+            ? rowTexts('COMMITMENT')
+            : (summary?.commitments ?? const <String>[]);
+        final actionValues = outcomes.isNotEmpty
+            ? rowTexts('ACTION')
+            : (summary?.actions ?? const <String>[]);
+        final issueValues = outcomes.isNotEmpty
+            ? rowTexts('ISSUE')
+            : (summary?.issues ?? const <String>[]);
+        final followUpValues = outcomes.isNotEmpty
+            ? rowTexts('FOLLOW_UP')
+            : (summary?.followUps ?? const <String>[]);
         final outcomeStatusByText = {
           for (final o in outcomes) o.text: o.status,
         };
@@ -135,9 +180,13 @@ class MeetingSummaryScreen extends ConsumerWidget {
                                       status = 'Not joined';
                                     } else {
                                       final dur = participant.durationMinutes;
-                                      status = dur != null
-                                          ? 'Joined · ${dur}m'
-                                          : 'Joined';
+                                      // "0m" reads like a bug — a short real
+                                      // session rounds up to under a minute.
+                                      status = dur == null
+                                          ? 'Joined'
+                                          : (dur < 1
+                                              ? 'Joined · under 1m'
+                                              : 'Joined · ${dur}m');
                                     }
                                     return _AttendanceRow(
                                       label: participant.isGuest
@@ -381,7 +430,7 @@ class MeetingSummaryScreen extends ConsumerWidget {
                         children: [
                           _FollowUpBlock(
                             title: 'Decisions',
-                            values: summary?.decisions ?? const [],
+                            values: decisionValues,
                             fallback:
                                 'Record the decision you reached in the meeting.',
                             statusByText: outcomeStatusByText,
@@ -391,7 +440,7 @@ class MeetingSummaryScreen extends ConsumerWidget {
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
                             title: 'Commitments',
-                            values: summary?.commitments ?? const [],
+                            values: commitmentValues,
                             fallback:
                                 'Capture anything the host or guest agreed to do next.',
                             statusByText: outcomeStatusByText,
@@ -401,7 +450,7 @@ class MeetingSummaryScreen extends ConsumerWidget {
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
                             title: 'Actions and next steps',
-                            values: summary?.actions ?? const [],
+                            values: actionValues,
                             fallback:
                                 'Track the work that should continue after the meeting.',
                             statusByText: outcomeStatusByText,
@@ -411,7 +460,7 @@ class MeetingSummaryScreen extends ConsumerWidget {
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
                             title: 'Issues',
-                            values: summary?.issues ?? const [],
+                            values: issueValues,
                             fallback: 'Record any blockers or open questions.',
                             statusByText: outcomeStatusByText,
                             openIdByText: openOutcomeIdByText,
@@ -420,7 +469,7 @@ class MeetingSummaryScreen extends ConsumerWidget {
                           const SizedBox(height: AuraSpace.s12),
                           _FollowUpBlock(
                             title: 'Follow-ups',
-                            values: summary?.followUps ?? const [],
+                            values: followUpValues,
                             fallback:
                                 'Record the next check-in, reply, or milestone.',
                             statusByText: outcomeStatusByText,

@@ -78,6 +78,13 @@ class _NotFoundBody extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF6B7280)),
                   ),
+                  const SizedBox(height: AuraSpace.s16),
+                  // No dead ends: give the visitor somewhere to go next.
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.home_outlined, size: 18),
+                    label: const Text('Go to Aura'),
+                    onPressed: () => context.go('/'),
+                  ),
                 ],
               ),
             ),

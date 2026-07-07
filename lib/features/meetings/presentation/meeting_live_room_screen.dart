@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
@@ -342,6 +343,103 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     );
   }
 
+  // In-call invite: growing a live meeting must not require leaving it.
+  void _showInviteSheet(Meeting? meeting) {
+    final joinUrl = (meeting?.joinUrl ?? '').trim();
+    final code = (meeting?.meetingCode ?? widget.meetingCode ?? '').trim();
+    if (joinUrl.isEmpty && code.isEmpty) {
+      _showArrivalToast('Meeting link unavailable');
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Invite to this meeting',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 14),
+              if (joinUrl.isNotEmpty) ...[
+                const Text(
+                  'Share the link',
+                  style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        joinUrl,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFCBD5E1),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.copy_rounded, size: 16),
+                      label: const Text('Copy link'),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: joinUrl));
+                        Navigator.pop(sheetContext);
+                        _showArrivalToast('Meeting link copied');
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+              ],
+              if (code.isNotEmpty) ...[
+                const Text(
+                  'Or share the meeting code',
+                  style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      code,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    IconButton(
+                      icon: const Icon(Icons.copy_rounded,
+                          size: 18, color: Color(0xFF6C63FF)),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: code));
+                        Navigator.pop(sheetContext);
+                        _showArrivalToast('Meeting code copied');
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showReactionPicker(BuildContext context) {
     const emojis = ['👍', '❤️', '😂', '🎉', '👏', '😮'];
     showModalBottomSheet<void>(
@@ -500,6 +598,10 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       ? '/meetings/${widget.meetingId}/summary'
       : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
 
+  String get _workspacePath => widget.institutionId == null
+      ? '/meetings/${widget.meetingId}/post-meeting'
+      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/post-meeting';
+
   Future<void> _endMeeting() async {
     if (_endingMeeting) return;
     setState(() => _endingMeeting = true);
@@ -510,7 +612,10 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           .endMeeting(widget.meetingId);
       await ref.read(realtimeControllerProvider.notifier).endCall();
       if (!mounted) return;
-      context.go(_summaryPath);
+      // Exit handoff: ending a meeting lands the host in the workspace —
+      // conversation reference, outcome capture, and summary editing at the
+      // moment of maximum recall — not on a passive summary page.
+      context.go(_workspacePath);
     } catch (e) {
       _intentToLeave = false;
       if (!mounted) return;
@@ -819,6 +924,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               child: _MeetingNotesDrawer(
                 meetingId: widget.meetingId,
                 initialNotes: meeting?.liveNotes,
+                agenda: meeting?.preparationNotes,
                 onClose: () => setState(() => _showNotes = false),
               ),
             ),
@@ -857,6 +963,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           if (_meetingEnded)
             Positioned.fill(
               child: _MeetingEndedOverlay(
+                isGuest: (widget.guestUserId ?? '').trim().isNotEmpty,
+                hostName: meeting?.host?.name,
                 onViewSummary: () => context.go(_summaryPath),
                 onLeave: () {
                   _intentToLeave = true;
@@ -931,6 +1039,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 _showChat = !_showChat;
                 if (_showChat) _unseenChat = 0;
               }),
+              onInvite: () => _showInviteSheet(meeting),
               onShareScreen: _toggleScreenShare,
               onFlipCamera: _flipCamera,
               onDeviceSettings: _showDeviceSettings,
@@ -1553,6 +1662,7 @@ class _MeetingControlBar extends StatelessWidget {
   final VoidCallback onToggleParticipants;
   final VoidCallback onToggleNotes;
   final VoidCallback onToggleChat;
+  final VoidCallback onInvite;
   final VoidCallback onShareScreen;
   final VoidCallback onFlipCamera;
   final VoidCallback onDeviceSettings;
@@ -1576,6 +1686,7 @@ class _MeetingControlBar extends StatelessWidget {
     required this.onToggleParticipants,
     required this.onToggleNotes,
     required this.onToggleChat,
+    required this.onInvite,
     required this.onShareScreen,
     required this.onFlipCamera,
     required this.onDeviceSettings,
@@ -1663,6 +1774,14 @@ class _MeetingControlBar extends StatelessWidget {
             active: showChat,
             badge: unreadChat,
             onTap: onToggleChat,
+          ),
+
+          // In-call invite — share the join link/code without leaving.
+          _ControlButton(
+            icon: Icons.person_add_alt_rounded,
+            label: 'Invite',
+            active: false,
+            onTap: onInvite,
           ),
 
           // Devices — camera / microphone / speaker selection.
@@ -2042,11 +2161,17 @@ class _ParticipantRow extends StatelessWidget {
 class _MeetingNotesDrawer extends ConsumerStatefulWidget {
   final String meetingId;
   final String? initialNotes;
+
+  /// Agenda continuity: the preparation notes travel INTO the meeting as a
+  /// read-only tab beside live notes — the plan stays visible while it is
+  /// being executed.
+  final String? agenda;
   final VoidCallback onClose;
 
   const _MeetingNotesDrawer({
     required this.meetingId,
     required this.initialNotes,
+    this.agenda,
     required this.onClose,
   });
 
@@ -2060,6 +2185,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
   Timer? _debounce;
   bool _saving = false;
   bool _saved = false;
+  bool _showAgenda = false;
 
   @override
   void initState() {
@@ -2098,8 +2224,28 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
     }
   }
 
+  Widget _tab(String label, bool selected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : const Color(0xFF64748B),
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final agenda = (widget.agenda ?? '').trim();
+    final hasAgenda = agenda.isNotEmpty;
     return Container(
       width: 300,
       color: const Color(0xFF0F172A),
@@ -2109,15 +2255,25 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
             padding: const EdgeInsets.fromLTRB(16, 48, 8, 8),
             child: Row(
               children: [
-                const Expanded(
-                  child: Text(
-                    'Notes',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
+                Expanded(
+                  child: hasAgenda
+                      ? Row(
+                          children: [
+                            _tab('Notes', !_showAgenda,
+                                () => setState(() => _showAgenda = false)),
+                            const SizedBox(width: 4),
+                            _tab('Agenda', _showAgenda,
+                                () => setState(() => _showAgenda = true)),
+                          ],
+                        )
+                      : const Text(
+                          'Notes',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
                 ),
                 if (_saving)
                   const SizedBox(
@@ -2147,25 +2303,60 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
           ),
           const Divider(color: Color(0xFF1E293B), height: 1),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(AuraSpace.s12),
-              child: TextField(
-                controller: _ctrl,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                textCapitalization: TextCapitalization.sentences,
-                style: const TextStyle(
-                  color: Color(0xFFE5E7EB),
-                  fontSize: 13,
-                ),
-                decoration: const InputDecoration(
-                  hintText: 'Quick notes for this meeting…',
-                  hintStyle: TextStyle(color: Color(0xFF4B5563)),
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
+            child: _showAgenda && hasAgenda
+                ? ListView(
+                    padding: const EdgeInsets.all(AuraSpace.s12),
+                    children: [
+                      for (final line in agenda
+                          .split('\n')
+                          .map((l) => l.trim())
+                          .where((l) => l.isNotEmpty))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '·  ',
+                                style: TextStyle(
+                                  color: Color(0xFF6C63FF),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  line,
+                                  style: const TextStyle(
+                                    color: Color(0xFFCBD5E1),
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(AuraSpace.s12),
+                    child: TextField(
+                      controller: _ctrl,
+                      maxLines: null,
+                      expands: true,
+                      textAlignVertical: TextAlignVertical.top,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: const TextStyle(
+                        color: Color(0xFFE5E7EB),
+                        fontSize: 13,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: 'Quick notes for this meeting…',
+                        hintStyle: TextStyle(color: Color(0xFF4B5563)),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -2234,13 +2425,24 @@ class _MeetingEndedOverlay extends StatelessWidget {
   final VoidCallback onViewSummary;
   final VoidCallback onLeave;
 
+  /// Exit truthfulness: the summary is a MEMBER surface. Offering it to a
+  /// guest sent them to "Unable to load meeting summary" — the last thing
+  /// they ever saw. Guests get a warm, honest close instead.
+  final bool isGuest;
+  final String? hostName;
+
   const _MeetingEndedOverlay({
     required this.onViewSummary,
     required this.onLeave,
+    this.isGuest = false,
+    this.hostName,
   });
 
   @override
   Widget build(BuildContext context) {
+    final thanks = (hostName ?? '').trim().isNotEmpty
+        ? 'Thanks for meeting with ${hostName!.trim()}.'
+        : 'Thanks for joining.';
     return Container(
       color: const Color(0xEE030712),
       child: Center(
@@ -2262,23 +2464,33 @@ class _MeetingEndedOverlay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AuraSpace.s8),
-            const Text(
-              'The host has ended the meeting.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+            Text(
+              isGuest ? thanks : 'The host has ended the meeting.',
+              style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
             ),
+            if (isGuest) ...[
+              const SizedBox(height: AuraSpace.s6),
+              const Text(
+                'If the host shares the meeting summary,\nit will arrive by email.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+              ),
+            ],
             const SizedBox(height: AuraSpace.s24),
-            FilledButton.icon(
-              onPressed: onViewSummary,
-              icon: const Icon(Icons.description_outlined),
-              label: const Text('View summary'),
-            ),
-            const SizedBox(height: AuraSpace.s12),
+            if (!isGuest) ...[
+              FilledButton.icon(
+                onPressed: onViewSummary,
+                icon: const Icon(Icons.description_outlined),
+                label: const Text('View summary'),
+              ),
+              const SizedBox(height: AuraSpace.s12),
+            ],
             OutlinedButton(
               onPressed: onLeave,
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF9CA3AF),
               ),
-              child: const Text('Leave'),
+              child: Text(isGuest ? 'Done' : 'Leave'),
             ),
           ],
         ),

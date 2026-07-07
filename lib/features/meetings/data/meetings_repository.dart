@@ -137,6 +137,7 @@ class MeetingsRepository {
     String? status,
     String? ownerId,
     String? dueDate,
+    String? text,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/meetings/outcomes/$outcomeId',
@@ -144,10 +145,59 @@ class MeetingsRepository {
         if (status != null) 'status': status,
         if (ownerId != null) 'ownerId': ownerId,
         if (dueDate != null) 'dueDate': dueDate,
+        if (text != null) 'text': text,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;
     return MeetingOutcome.fromJson(data);
+  }
+
+  // One outcome representation — direct row CRUD (host only).
+  Future<MeetingOutcome> createOutcome(
+    String meetingId, {
+    required String type,
+    required String text,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/outcomes',
+      data: {'type': type, 'text': text},
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return MeetingOutcome.fromJson(data);
+  }
+
+  Future<void> deleteOutcome(String outcomeId) async {
+    await _dio.delete<Map<String, dynamic>>('/meetings/outcomes/$outcomeId');
+  }
+
+  // Continuity distribution — host shares the saved summary with attendees.
+  Future<({bool alreadyShared, int recipients})> shareSummary(
+    String meetingId, {
+    bool force = false,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/summary/share',
+      data: {'force': force},
+    );
+    final data = res.data?['data'];
+    final map = data is Map ? Map<String, dynamic>.from(data) : const {};
+    return (
+      alreadyShared: map['alreadyShared'] == true,
+      recipients: (map['recipients'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  // Personal follow-up continuity (open outcomes across my meetings).
+  Future<List<MeetingOutcome>> getMyOpenOutcomes() async {
+    final res = await _dio.get<Map<String, dynamic>>('/meetings/my/outcomes');
+    final data = res.data?['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(MeetingOutcome.fromJson)
+          .toList();
+    }
+    return const [];
   }
 
   Future<List<MeetingOutcome>> getInstitutionOutcomes(

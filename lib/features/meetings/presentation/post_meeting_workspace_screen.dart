@@ -27,31 +27,97 @@ class PostMeetingWorkspaceScreen extends ConsumerStatefulWidget {
       _PostMeetingWorkspaceScreenState();
 }
 
+// One editable outcome row in the workspace. Rows with an id exist on the
+// server (MeetingOutcome); id == null is a local draft created on save.
+class _OutcomeDraft {
+  String? id;
+  String original;
+  bool promoted;
+  final TextEditingController ctrl;
+
+  _OutcomeDraft({this.id, required String text, this.promoted = false})
+      : original = text,
+        ctrl = TextEditingController(text: text);
+
+  void dispose() => ctrl.dispose();
+}
+
+const _outcomeTypes = <(String, String, String)>[
+  ('DECISION', 'Decisions', 'Capture the decision reached during the meeting.'),
+  ('COMMITMENT', 'Commitments',
+      'Track what the host, guest, or institution committed to do next.'),
+  ('ACTION', 'Actions',
+      'List concrete follow-up tasks that should move forward after the call.'),
+  ('ISSUE', 'Issues',
+      'Record any blockers, open questions, or unresolved concerns.'),
+  ('FOLLOW_UP', 'Follow-ups', 'Record the next check-in, reply, or milestone.'),
+];
+
 class _PostMeetingWorkspaceScreenState
     extends ConsumerState<PostMeetingWorkspaceScreen> {
   final _summaryCtrl = TextEditingController();
-  final _decisionsCtrl = TextEditingController();
-  final _commitmentsCtrl = TextEditingController();
-  final _actionsCtrl = TextEditingController();
-  final _issuesCtrl = TextEditingController();
-  final _followUpsCtrl = TextEditingController();
   String? _loadedSummaryId;
   bool _saving = false;
+  bool _sharing = false;
   // Phase 2.2 — Live Notes → Summary bridge. Seed the editor from the meeting's
   // live notes exactly once, only when no summary exists yet (never clobbers a
   // saved summary or the host's edits).
   bool _seeded = false;
   bool _seededFromLiveNotes = false;
 
+  // One outcome representation: these drafts ARE the MeetingOutcome rows
+  // (loaded once from the provider); saving diffs them back as row CRUD.
+  final Map<String, List<_OutcomeDraft>> _drafts = {
+    for (final (type, _, _) in _outcomeTypes) type: <_OutcomeDraft>[],
+  };
+  final Set<String> _deletedOutcomeIds = {};
+  bool _outcomesLoaded = false;
+
   @override
   void dispose() {
     _summaryCtrl.dispose();
-    _decisionsCtrl.dispose();
-    _commitmentsCtrl.dispose();
-    _actionsCtrl.dispose();
-    _issuesCtrl.dispose();
-    _followUpsCtrl.dispose();
+    for (final list in _drafts.values) {
+      for (final d in list) {
+        d.dispose();
+      }
+    }
     super.dispose();
+  }
+
+  void _loadOutcomes(List<MeetingOutcome> rows) {
+    if (_outcomesLoaded) return;
+    _outcomesLoaded = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        for (final row in rows) {
+          final list = _drafts[row.type];
+          if (list == null) continue;
+          if (list.any((d) => d.id == row.id)) continue;
+          list.add(_OutcomeDraft(id: row.id, text: row.text));
+        }
+      });
+    });
+  }
+
+  // Promoted provenance arrives separately (outcome rows do not carry it) —
+  // mark drafts whose id is a conversation promotion target.
+  void _markPromoted(Set<String> promotedOutcomeIds) {
+    if (promotedOutcomeIds.isEmpty) return;
+    var changed = false;
+    for (final list in _drafts.values) {
+      for (final d in list) {
+        if (d.id != null && promotedOutcomeIds.contains(d.id) && !d.promoted) {
+          d.promoted = true;
+          changed = true;
+        }
+      }
+    }
+    if (changed && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    }
   }
 
   String get _summaryPath => widget.institutionId == null
@@ -62,10 +128,13 @@ class _PostMeetingWorkspaceScreenState
   // refresh the transcript (promoted marker) and outcome surfaces.
   Future<void> _promoteMessage(
     String messageId,
-    MeetingMessageType type,
-  ) async {
+    MeetingMessageType type, {
+    String? body,
+  }) async {
     try {
-      await ref.read(meetingsRepositoryProvider).promoteConversationMessage(
+      final outcomeId = await ref
+          .read(meetingsRepositoryProvider)
+          .promoteConversationMessage(
             widget.meetingId,
             messageId,
             type: type.wire,
@@ -73,6 +142,20 @@ class _PostMeetingWorkspaceScreenState
       ref.invalidate(meetingConversationProvider(widget.meetingId));
       ref.invalidate(meetingOutcomesProvider(widget.meetingId));
       if (mounted) {
+        // One representation: the promoted row appears in its outcome section
+        // immediately, marked with its conversation provenance.
+        if (outcomeId != null && (body ?? '').trim().isNotEmpty) {
+          setState(() {
+            final list = _drafts[type.wire];
+            if (list != null && !list.any((d) => d.id == outcomeId)) {
+              list.add(_OutcomeDraft(
+                id: outcomeId,
+                text: body!.trim(),
+                promoted: true,
+              ));
+            }
+          });
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Promoted to ${type.label}')),
         );
@@ -91,18 +174,16 @@ class _PostMeetingWorkspaceScreenState
     _loadedSummaryId = summary.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Outcome sections load from MeetingOutcome rows (the single source of
+      // truth) — the summary contributes only its narrative text here.
       _summaryCtrl.text = summary.summaryText ?? '';
-      _decisionsCtrl.text = summary.decisions.join('\n');
-      _commitmentsCtrl.text = summary.commitments.join('\n');
-      _actionsCtrl.text = summary.actions.join('\n');
-      _issuesCtrl.text = summary.issues.join('\n');
-      _followUpsCtrl.text = summary.followUps.join('\n');
     });
   }
 
   // Seed the workspace from live notes when starting a fresh summary. Runs once,
   // and only after the summary provider has resolved to "no summary" — so it can
-  // never overwrite a saved summary or in-flight edits.
+  // never overwrite a saved summary or in-flight edits. Typed lines become
+  // UNSAVED outcome drafts (created as rows on save).
   void _seedFromLiveNotes(
     Meeting meeting,
     MeetingSummary? summary,
@@ -132,11 +213,13 @@ class _PostMeetingWorkspaceScreenState
 
   void _importLiveNotes(String notes) {
     final summaryLines = <String>[];
-    final decisions = <String>[];
-    final commitments = <String>[];
-    final actions = <String>[];
-    final issues = <String>[];
-    final followUps = <String>[];
+    void addDraft(String type, String text) {
+      final list = _drafts[type];
+      if (list == null) return;
+      if (list.any((d) => d.ctrl.text.trim() == text)) return;
+      list.add(_OutcomeDraft(text: text));
+    }
+
     for (final raw in notes.split(RegExp(r'\r?\n'))) {
       final line = raw.trim().replaceFirst(RegExp(r'^[-*•]\s+'), '').trim();
       if (line.isEmpty) continue;
@@ -148,36 +231,23 @@ class _PostMeetingWorkspaceScreenState
       final key = m.group(1)!.toLowerCase();
       final rest = m.group(2)!.trim();
       if (key.startsWith('decision') || key == 'decided') {
-        decisions.add(rest);
+        addDraft('DECISION', rest);
       } else if (key.startsWith('commit')) {
-        commitments.add(rest);
+        addDraft('COMMITMENT', rest);
       } else if (key.startsWith('action') ||
           key.startsWith('task') ||
           key.startsWith('todo') ||
           key.startsWith('to-do')) {
-        actions.add(rest);
+        addDraft('ACTION', rest);
       } else if (key.startsWith('issue') ||
           key.startsWith('risk') ||
           key.startsWith('blocker')) {
-        issues.add(rest);
+        addDraft('ISSUE', rest);
       } else {
-        followUps.add(rest);
+        addDraft('FOLLOW_UP', rest);
       }
     }
     _summaryCtrl.text = summaryLines.join('\n');
-    if (decisions.isNotEmpty) _decisionsCtrl.text = decisions.join('\n');
-    if (commitments.isNotEmpty) _commitmentsCtrl.text = commitments.join('\n');
-    if (actions.isNotEmpty) _actionsCtrl.text = actions.join('\n');
-    if (issues.isNotEmpty) _issuesCtrl.text = issues.join('\n');
-    if (followUps.isNotEmpty) _followUpsCtrl.text = followUps.join('\n');
-  }
-
-  List<String> _splitLines(String value) {
-    return value
-        .split(RegExp(r'\r?\n'))
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
   }
 
   void _copyLink(Meeting meeting) {
@@ -190,31 +260,114 @@ class _PostMeetingWorkspaceScreenState
   Future<void> _saveDraft() async {
     setState(() => _saving = true);
     final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(meetingsRepositoryProvider);
     try {
-      await ref
-          .read(meetingsRepositoryProvider)
-          .saveMeetingSummary(
-            widget.meetingId,
-            summaryText: _summaryCtrl.text.trim().isEmpty
-                ? null
-                : _summaryCtrl.text.trim(),
-            decisions: _splitLines(_decisionsCtrl.text),
-            commitments: _splitLines(_commitmentsCtrl.text),
-            actions: _splitLines(_actionsCtrl.text),
-            issues: _splitLines(_issuesCtrl.text),
-            followUps: _splitLines(_followUpsCtrl.text),
-          );
+      // Narrative first (no lists — outcome rows are the source of truth and
+      // the backend mirrors the summary lists from them).
+      await repo.saveMeetingSummary(
+        widget.meetingId,
+        summaryText:
+            _summaryCtrl.text.trim().isEmpty ? null : _summaryCtrl.text.trim(),
+      );
+
+      // Outcome row diff: removed rows → delete; new rows → create; edited
+      // rows → text update.
+      for (final id in _deletedOutcomeIds) {
+        await repo.deleteOutcome(id);
+      }
+      _deletedOutcomeIds.clear();
+      for (final entry in _drafts.entries) {
+        for (final draft in entry.value) {
+          final text = draft.ctrl.text.trim();
+          if (draft.id == null) {
+            if (text.isEmpty) continue;
+            final created = await repo.createOutcome(
+              widget.meetingId,
+              type: entry.key,
+              text: text,
+            );
+            draft.id = created.id;
+            draft.original = text;
+          } else if (text.isNotEmpty && text != draft.original) {
+            await repo.updateOutcome(draft.id!, text: text);
+            draft.original = text;
+          }
+        }
+        // Rows blanked out in place count as removals.
+        final blanked = entry.value
+            .where((d) => d.id != null && d.ctrl.text.trim().isEmpty)
+            .toList();
+        for (final d in blanked) {
+          await repo.deleteOutcome(d.id!);
+          entry.value.remove(d);
+          d.dispose();
+        }
+      }
+
       ref.invalidate(meetingSummaryProvider(widget.meetingId));
+      ref.invalidate(meetingOutcomesProvider(widget.meetingId));
       ref.invalidate(meetingProvider(widget.meetingId));
       messenger.showSnackBar(
-        const SnackBar(content: Text('Meeting summary saved')),
+        const SnackBar(content: Text('Summary and outcomes saved')),
       );
     } catch (e) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Unable to save summary. Try again.')),
+        const SnackBar(content: Text('Unable to save. Try again.')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  // Continuity distribution — the host sends the saved summary to everyone
+  // who attended. Idempotent; re-sharing after edits asks first.
+  Future<void> _shareSummary() async {
+    if (_sharing) return;
+    setState(() => _sharing = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(meetingsRepositoryProvider);
+    try {
+      var result = await repo.shareSummary(widget.meetingId);
+      if (result.alreadyShared && mounted) {
+        final resend = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Already shared'),
+            content: const Text(
+              'This summary was already sent to participants. Send it again with the latest edits?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Send again'),
+              ),
+            ],
+          ),
+        );
+        if (resend != true) return;
+        result = await repo.shareSummary(widget.meetingId, force: true);
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            result.recipients > 0
+                ? 'Summary shared with ${result.recipients} participant${result.recipients == 1 ? '' : 's'}'
+                : 'Summary shared',
+          ),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Save the summary first, then share it.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _sharing = false);
     }
   }
 
@@ -235,7 +388,24 @@ class _PostMeetingWorkspaceScreenState
       data: (meeting) {
         final summary = summaryAsync.valueOrNull ?? meeting.summary;
         _loadSummary(summary);
-        _seedFromLiveNotes(meeting, summary, summaryAsync.isLoading);
+        // Outcome rows are the editors' content; promoted provenance comes
+        // from the conversation transcript.
+        final outcomesAsync =
+            ref.watch(meetingOutcomesProvider(widget.meetingId));
+        final outcomeRows = outcomesAsync.valueOrNull;
+        if (outcomeRows != null) _loadOutcomes(outcomeRows);
+        final conversationRows = ref
+            .watch(meetingConversationProvider(widget.meetingId))
+            .valueOrNull;
+        if (conversationRows != null) {
+          _markPromoted({
+            for (final m in conversationRows)
+              if (m.isPromoted) m.promotedOutcomeId!,
+          });
+        }
+        if (outcomeRows != null && outcomeRows.isEmpty) {
+          _seedFromLiveNotes(meeting, summary, summaryAsync.isLoading);
+        }
         final room = meeting.room;
         final lifecycle = MeetingLifecyclePresenter.present(
           meeting,
@@ -314,7 +484,22 @@ class _PostMeetingWorkspaceScreenState
                             ),
                             child: _ConversationReference(
                               messages: conversation,
-                              onPromote: isHost ? _promoteMessage : null,
+                              onPromote: isHost
+                                  ? (messageId, type) {
+                                      String? body;
+                                      for (final m in conversation) {
+                                        if (m.id == messageId) {
+                                          body = m.body;
+                                          break;
+                                        }
+                                      }
+                                      return _promoteMessage(
+                                        messageId,
+                                        type,
+                                        body: body,
+                                      );
+                                    }
+                                  : null,
                             ),
                           );
                         },
@@ -331,41 +516,26 @@ class _PostMeetingWorkspaceScreenState
                                 'Write the meeting summary, key outcomes, and overall outcome.',
                             maxLines: 6,
                           ),
-                          _EditorPanel(
-                            title: 'Decisions',
-                            width: 510,
-                            controller: _decisionsCtrl,
-                            hint:
-                                'Capture the decision reached during the meeting.',
-                          ),
-                          _EditorPanel(
-                            title: 'Commitments',
-                            width: 510,
-                            controller: _commitmentsCtrl,
-                            hint:
-                                'Track what the host, guest, or institution committed to do next.',
-                          ),
-                          _EditorPanel(
-                            title: 'Actions',
-                            width: 510,
-                            controller: _actionsCtrl,
-                            hint:
-                                'List concrete follow-up tasks that should move forward after the call.',
-                          ),
-                          _EditorPanel(
-                            title: 'Issues',
-                            width: 510,
-                            controller: _issuesCtrl,
-                            hint:
-                                'Record any blockers, open questions, or unresolved concerns.',
-                          ),
-                          _EditorPanel(
-                            title: 'Follow-ups',
-                            width: 510,
-                            controller: _followUpsCtrl,
-                            hint:
-                                'Record the next check-in, reply, or milestone.',
-                          ),
+                          // One outcome representation: each section edits
+                          // MeetingOutcome rows directly. Rows promoted from
+                          // the conversation carry a provenance check.
+                          for (final (type, title, hint) in _outcomeTypes)
+                            _OutcomeSection(
+                              title: title,
+                              hint: hint,
+                              width: 510,
+                              drafts: _drafts[type]!,
+                              onAdd: () => setState(
+                                () => _drafts[type]!.add(_OutcomeDraft(text: '')),
+                              ),
+                              onRemove: (draft) => setState(() {
+                                if (draft.id != null) {
+                                  _deletedOutcomeIds.add(draft.id!);
+                                }
+                                _drafts[type]!.remove(draft);
+                                draft.dispose();
+                              }),
+                            ),
                         ],
                       ),
                       const SizedBox(height: AuraSpace.s16),
@@ -375,8 +545,17 @@ class _PostMeetingWorkspaceScreenState
                         children: [
                           FilledButton.icon(
                             icon: const Icon(Icons.save_rounded),
-                            label: const Text('Save outcomes'),
+                            label: Text(_saving ? 'Saving…' : 'Save outcomes'),
                             onPressed: _saving ? null : _saveDraft,
+                          ),
+                          // Continuity distribution — email the saved summary
+                          // to everyone who attended.
+                          FilledButton.tonalIcon(
+                            icon: const Icon(Icons.send_rounded),
+                            label: Text(
+                              _sharing ? 'Sharing…' : 'Share with participants',
+                            ),
+                            onPressed: _sharing ? null : _shareSummary,
                           ),
                           OutlinedButton.icon(
                             icon: const Icon(Icons.description_outlined),
@@ -700,6 +879,112 @@ class _WorkspaceHeader extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Structured outcome editor: one row per MeetingOutcome. This replaces the
+// line-delimited textareas so the workspace, summary screen, transcript
+// promotions, and institution feeds all read/write the SAME rows.
+class _OutcomeSection extends StatelessWidget {
+  final String title;
+  final String hint;
+  final double width;
+  final List<_OutcomeDraft> drafts;
+  final VoidCallback onAdd;
+  final void Function(_OutcomeDraft draft) onRemove;
+
+  const _OutcomeSection({
+    required this.title,
+    required this.hint,
+    required this.width,
+    required this.drafts,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: width,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          border: Border.all(color: const Color(0xFF243244)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AuraSpace.s18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              if (drafts.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+                  child: Text(
+                    hint,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: const Color(0xFF6B7280)),
+                  ),
+                ),
+              for (final draft in drafts)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (draft.promoted)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Tooltip(
+                            message: 'Promoted from the meeting conversation',
+                            child: Icon(
+                              Icons.task_alt_rounded,
+                              size: 16,
+                              color: Color(0xFF10B981),
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: TextField(
+                          controller: draft.ctrl,
+                          maxLines: null,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Remove',
+                        icon: const Icon(Icons.close_rounded,
+                            size: 18, color: Color(0xFF6B7280)),
+                        onPressed: () => onRemove(draft),
+                      ),
+                    ],
+                  ),
+                ),
+              TextButton.icon(
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text('Add ${title.toLowerCase().replaceAll(RegExp(r's$'), '')}'),
+                onPressed: onAdd,
+              ),
+            ],
+          ),
         ),
       ),
     );

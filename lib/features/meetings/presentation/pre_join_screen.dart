@@ -213,6 +213,13 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
                   color: const Color(0xFF6B7280),
                 ),
               ),
+              const SizedBox(height: AuraSpace.s16),
+              // No dead ends: offer manual code entry right here.
+              FilledButton.icon(
+                icon: const Icon(Icons.keyboard_rounded, size: 18),
+                label: const Text('Enter a meeting code'),
+                onPressed: () => context.go('/meetings/join'),
+              ),
             ],
           ),
         ),

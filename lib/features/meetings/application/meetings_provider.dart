@@ -93,6 +93,16 @@ final meetingConversationProvider =
       return repo.getMeetingConversation(meetingId);
     });
 
+// Personal follow-up continuity: open outcomes across ALL of my meetings
+// (hosted or attended) — the meetings home re-surfaces them so commitments
+// never vanish into past-meeting archives.
+final myOpenOutcomesProvider = FutureProvider<List<MeetingOutcome>>((
+  ref,
+) async {
+  final repo = ref.watch(meetingsRepositoryProvider);
+  return repo.getMyOpenOutcomes();
+});
+
 final institutionOpenOutcomesProvider =
     FutureProvider.family<List<MeetingOutcome>, String>((ref, institutionId) async {
       final repo = ref.watch(meetingsRepositoryProvider);

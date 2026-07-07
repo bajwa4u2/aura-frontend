@@ -171,6 +171,49 @@ class MeetingLifecyclePresenter {
       case MeetingRoomStatus.waiting:
       case MeetingRoomStatus.scheduled:
       case MeetingRoomStatus.unknown:
+        // Entry truthfulness: when the realtime room carries no signal (empty
+        // room, no session yet, public by-code fetch), the meeting RECORD is
+        // the ground truth. A started meeting is live even with nobody in the
+        // room yet, and an ended/cancelled meeting is terminal — neither may
+        // fall through to "Scheduled"/"Missed".
+        final recordState = meeting.state.toUpperCase();
+        if (recordState == 'ACTIVE') {
+          status = MeetingLifecycleStatus.inProgress;
+          label = 'Live now';
+          subtitle = 'The meeting is live.';
+          cue = (room?.activeParticipantCount ?? 0) > 0
+              ? '${room?.activeParticipantCount} participants in the room.'
+              : 'You can join now.';
+          primaryAction = isHost ? 'Enter room' : 'Join meeting';
+          canStart = false;
+          canEnter = true;
+          canRetryTransport = true;
+          break;
+        }
+        if (recordState == 'ENDED') {
+          status = MeetingLifecycleStatus.ended;
+          label = 'Ended';
+          subtitle = 'This meeting has ended.';
+          cue = 'You can still review the details and follow-up items.';
+          primaryAction = 'View summary';
+          canStart = false;
+          canEnter = false;
+          canRetryTransport = false;
+          isTerminal = true;
+          break;
+        }
+        if (recordState == 'CANCELLED') {
+          status = MeetingLifecycleStatus.cancelled;
+          label = 'Cancelled';
+          subtitle = 'This meeting was cancelled.';
+          cue = 'The meeting is no longer available.';
+          primaryAction = 'View summary';
+          canStart = false;
+          canEnter = false;
+          canRetryTransport = false;
+          isTerminal = true;
+          break;
+        }
         if (isPastScheduledEnd) {
           status = MeetingLifecycleStatus.missed;
           label = 'Missed';

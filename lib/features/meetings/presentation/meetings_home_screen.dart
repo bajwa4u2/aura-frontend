@@ -182,8 +182,9 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s32),
-                    if (institutionId != null)
-                      _OpenCommitmentsSection(institutionId: institutionId),
+                    // Continuity: open follow-ups surface for BOTH scopes —
+                    // institution meetings and the member's own meetings.
+                    _OpenCommitmentsSection(institutionId: institutionId),
                     const SizedBox(height: AuraSpace.s32),
                   ],
                 ),
@@ -1035,8 +1036,9 @@ String _scheduledLabel(BuildContext context, Meeting meeting) {
 }
 
 class _OpenCommitmentsSection extends ConsumerWidget {
-  final String institutionId;
-  const _OpenCommitmentsSection({required this.institutionId});
+  /// Institution scope when set; personal scope (my meetings) when null.
+  final String? institutionId;
+  const _OpenCommitmentsSection({this.institutionId});
 
   Future<void> _markComplete(WidgetRef ref, MeetingOutcome o) async {
     try {
@@ -1044,12 +1046,18 @@ class _OpenCommitmentsSection extends ConsumerWidget {
           .read(meetingsRepositoryProvider)
           .updateOutcome(o.id, status: 'COMPLETED');
     } catch (_) {}
-    ref.invalidate(institutionOpenOutcomesProvider(institutionId));
+    if (institutionId != null) {
+      ref.invalidate(institutionOpenOutcomesProvider(institutionId!));
+    } else {
+      ref.invalidate(myOpenOutcomesProvider);
+    }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final outcomesAsync = ref.watch(institutionOpenOutcomesProvider(institutionId));
+    final outcomesAsync = institutionId != null
+        ? ref.watch(institutionOpenOutcomesProvider(institutionId!))
+        : ref.watch(myOpenOutcomesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

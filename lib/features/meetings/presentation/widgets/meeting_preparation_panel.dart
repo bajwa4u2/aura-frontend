@@ -78,11 +78,17 @@ class MeetingPreparationPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
+                      // Identity dedupe: when there is no institution the card
+                      // title IS the host's name — repeating "Hosted by <same
+                      // name>" underneath reads broken. Show their role line
+                      // instead, or the hosting line only when it adds info.
                       host == null
                           ? 'Host details unavailable'
                           : (host.title?.trim().isNotEmpty == true
                               ? host.title!.trim()
-                              : 'Hosted by ${host.name}'),
+                              : (institution != null
+                                  ? 'Hosted by ${host.name}'
+                                  : 'Meeting host')),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: const Color(0xFFCBD5E1),
                       ),
@@ -162,28 +168,10 @@ class MeetingPreparationPanel extends StatelessWidget {
           ...participants.map((p) => _ParticipantRow(participant: p)),
         ],
 
-        // Materials (attachments) — placeholder until file sharing (Phase 5).
-        SizedBox(height: gap),
-        const _SectionLabel('Materials'),
-        const SizedBox(height: AuraSpace.s8),
-        _card(
-          context,
-          child: Row(
-            children: [
-              const Icon(Icons.attach_file_rounded,
-                  size: 18, color: Color(0xFF6B7280)),
-              const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: Text(
-                  'No materials attached yet.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF9CA3AF),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        // Materials (attachments) land with file sharing (Phase 5). Until a
+        // meeting can actually carry materials, showing an empty placeholder —
+        // especially to external guests — advertises an unbuilt feature, so
+        // the section stays hidden.
       ],
     );
   }
