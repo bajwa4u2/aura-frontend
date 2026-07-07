@@ -177,12 +177,19 @@ class MeetingPreparationPanel extends StatelessWidget {
   }
 
   String _scheduleLabel(BuildContext context) {
+    // Entry truthfulness: the schedule line must reflect the meeting's actual
+    // state — a live or finished meeting must never introduce itself as
+    // "time to be confirmed".
+    final state = meeting.state.toUpperCase();
+    if (state == 'ACTIVE') return 'Happening now';
+    if (state == 'ENDED') return 'This meeting has ended';
+    if (state == 'CANCELLED') return 'This meeting was cancelled';
     final scheduledAt = meeting.scheduledAt;
     if (scheduledAt == null) return 'Time will be confirmed by the host';
     final local = scheduledAt.toLocal();
     final loc = MaterialLocalizations.of(context);
     return '${loc.formatFullDate(local)} · '
-        '${loc.formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
+        '${loc.formatTimeOfDay(TimeOfDay.fromDateTime(local))} (your time)';
   }
 
   Widget _card(BuildContext context, {required Widget child}) {
