@@ -9,7 +9,11 @@ import '../../../core/utils/local_timezone.dart';
 import '../application/meetings_provider.dart';
 
 class CreateMeetingScreen extends ConsumerStatefulWidget {
-  const CreateMeetingScreen({super.key});
+  /// Ownership: when scheduling from an Institution Workspace, the created
+  /// meeting belongs to that institution end to end.
+  final String? institutionId;
+
+  const CreateMeetingScreen({super.key, this.institutionId});
 
   @override
   ConsumerState<CreateMeetingScreen> createState() =>
@@ -82,12 +86,23 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         timezone: resolveLocalTimezone(),
         waitingRoomEnabled: _waitingRoom,
         allowGuests: _allowGuests,
+        organizationId: widget.institutionId,
       );
 
-      ref.invalidate(upcomingMeetingsProvider);
+      if (widget.institutionId == null) {
+        ref.invalidate(upcomingMeetingsProvider);
+      } else {
+        ref.invalidate(
+          institutionUpcomingMeetingsProvider(widget.institutionId!),
+        );
+      }
 
       if (!mounted) return;
-      context.pushReplacement('/meetings/${meeting.id}');
+      context.pushReplacement(
+        widget.institutionId == null
+            ? '/meetings/${meeting.id}'
+            : '/institution/${widget.institutionId}/meetings/${meeting.id}',
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

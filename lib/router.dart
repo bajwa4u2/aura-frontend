@@ -954,6 +954,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/meetings/new',
             builder: (_, __) => const CreateMeetingScreen(),
           ),
+          // Institution-owned scheduling — created meetings carry the
+          // institution's ownership from birth.
+          GoRoute(
+            path: '/institution/:institutionId/meetings/new',
+            builder: (context, state) => CreateMeetingScreen(
+              institutionId: state.pathParameters['institutionId'],
+            ),
+          ),
           // Codeless recovery route — MUST precede `/meetings/join/:code` and
           // `/meetings/:id`. Older emails shipped a codeless `/meetings/join`
           // button; without this it fell through to `/meetings/:id` (id="join")

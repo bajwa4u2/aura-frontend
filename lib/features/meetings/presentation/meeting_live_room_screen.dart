@@ -594,13 +594,20 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     super.dispose();
   }
 
-  String get _summaryPath => widget.institutionId == null
-      ? '/meetings/${widget.meetingId}/summary'
-      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
+  // Ownership: exits from the room must land in the meeting's OWNING
+  // context. The route's institutionId wins; otherwise the meeting record
+  // itself says which institution owns it (hydrated in build).
+  String? _owningInstitutionId;
+  String? get _exitInstitutionId =>
+      widget.institutionId ?? _owningInstitutionId;
 
-  String get _workspacePath => widget.institutionId == null
+  String get _summaryPath => _exitInstitutionId == null
+      ? '/meetings/${widget.meetingId}/summary'
+      : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/summary';
+
+  String get _workspacePath => _exitInstitutionId == null
       ? '/meetings/${widget.meetingId}/post-meeting'
-      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/post-meeting';
+      : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/post-meeting';
 
   Future<void> _endMeeting() async {
     if (_endingMeeting) return;
@@ -732,6 +739,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         ? ref.watch(guestMeetingContextProvider(widget.meetingId))
         : null;
     final meeting = meetingAsync.valueOrNull ?? codeAsync?.valueOrNull ?? contextAsync?.valueOrNull;
+    _owningInstitutionId = meeting?.owningInstitutionId;
 
     // I3: local user ID for host participant controls.
     // /auth/me returns { user: { id: ... }, accountType, emailVerified } — read

@@ -78,6 +78,24 @@ class MeetingDetailScreen extends ConsumerWidget {
         ),
       ),
       data: (meeting) {
+        // OWNERSHIP DOCTRINE: institution meetings are owned by the
+        // Institution Workspace end to end. A record reached on a member
+        // path (deep link, Desk shortcut, old email link) canonicalizes to
+        // its institution URL, which flips the shell to InstitutionShell.
+        final owningInstitution = meeting.owningInstitutionId;
+        if (institutionId == null &&
+            owningInstitution != null &&
+            owningInstitution.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              context.go('/institution/$owningInstitution/meetings/$meetingId');
+            }
+          });
+          return AuraScaffold(
+            title: 'Meeting',
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
         final isHost =
             myId.isNotEmpty && myId == (meeting.host?.id ?? '');
         return _MeetingRecordBody(
@@ -118,7 +136,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
   Meeting get meeting => widget.meeting;
   bool get isHost => widget.isHost;
   String? get _resolvedInstitutionId =>
-      widget.institutionId ?? meeting.booking?.institution?.id;
+      widget.institutionId ?? meeting.owningInstitutionId;
   String get _liveBasePath => _resolvedInstitutionId == null
       ? '/meetings/${meeting.id}/live'
       : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/live';

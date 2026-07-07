@@ -20,6 +20,9 @@ class MeetingsRepository {
     bool? recordingEnabled,
     bool? allowGuests,
     bool? guestApprovalRequired,
+    // Ownership: a meeting created from an institution workspace belongs to
+    // that institution end to end.
+    String? organizationId,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/meetings',
@@ -36,14 +39,22 @@ class MeetingsRepository {
         if (allowGuests != null) 'allowGuests': allowGuests,
         if (guestApprovalRequired != null)
           'guestApprovalRequired': guestApprovalRequired,
+        if (organizationId != null && organizationId.isNotEmpty)
+          'organizationId': organizationId,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;
     return Meeting.fromJson(data);
   }
 
-  Future<Meeting> startInstantMeeting() async {
-    final res = await _dio.post<Map<String, dynamic>>('/meetings/instant');
+  Future<Meeting> startInstantMeeting({String? organizationId}) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/instant',
+      data: {
+        if (organizationId != null && organizationId.isNotEmpty)
+          'organizationId': organizationId,
+      },
+    );
     final data = res.data!['data'] as Map<String, dynamic>;
     return Meeting.fromJson(data);
   }

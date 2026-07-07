@@ -106,7 +106,7 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const _HostHeader(),
+                    _HostHeader(institutionId: institutionId),
                     const SizedBox(height: AuraSpace.s20),
                     upcomingAsync.when(
                       loading: () => const _LoadingPanel(
@@ -178,7 +178,11 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
 }
 
 class _HostHeader extends ConsumerWidget {
-  const _HostHeader();
+  /// Institution Desk context — when set, every action here creates and
+  /// operates INSTITUTION meetings (ownership doctrine).
+  final String? institutionId;
+
+  const _HostHeader({this.institutionId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -190,11 +194,15 @@ class _HostHeader extends ConsumerWidget {
         spacing: AuraSpace.s10,
         runSpacing: AuraSpace.s10,
         children: [
-          // Scheduling lives where meetings live.
+          // Scheduling lives where meetings live — and keeps its owner.
           OutlinedButton.icon(
             icon: const Icon(Icons.event_rounded),
             label: const Text('Schedule'),
-            onPressed: () => context.push('/meetings/new'),
+            onPressed: () => context.push(
+              institutionId == null
+                  ? '/meetings/new'
+                  : '/institution/$institutionId/meetings/new',
+            ),
           ),
           OutlinedButton.icon(
             icon: const Icon(Icons.login_rounded),
@@ -210,12 +218,18 @@ class _HostHeader extends ConsumerWidget {
               try {
                 final meeting = await ref
                     .read(meetingsRepositoryProvider)
-                    .startInstantMeeting();
+                    .startInstantMeeting(organizationId: institutionId);
                 debugPrint(
                   '[instant] meeting created id=${meeting.id}'
                   ' joinUrl=${meeting.joinUrl} sessionId=${meeting.sessionId}',
                 );
-                ref.invalidate(upcomingMeetingsProvider);
+                if (institutionId == null) {
+                  ref.invalidate(upcomingMeetingsProvider);
+                } else {
+                  ref.invalidate(
+                    institutionUpcomingMeetingsProvider(institutionId!),
+                  );
+                }
                 if (!context.mounted) return;
                 _showMeetingStarted(context, meeting);
               } catch (e, st) {
@@ -289,10 +303,12 @@ class _HostHeader extends ConsumerWidget {
               // instant meeting. isHost=true is correct here (this user just
               // created the instant meeting) and also fixes the "waiting for
               // the host" label + host-only controls.
+              final base = institutionId == null
+                  ? '/meetings/${meeting.id}'
+                  : '/institution/$institutionId/meetings/${meeting.id}';
               final route = meeting.sessionId != null
-                  ? '/meetings/${meeting.id}/live'
-                        '?sessionId=${meeting.sessionId}&isHost=true'
-                  : '/meetings/${meeting.id}';
+                  ? '$base/live?sessionId=${meeting.sessionId}&isHost=true'
+                  : base;
               debugPrint('[instant] before navigate route=$route');
               try {
                 Navigator.pop(dialogContext);
@@ -668,8 +684,11 @@ class _MeetingCard extends ConsumerWidget {
     return null;
   }
 
+  // Ownership: an institution meeting's row links into the Institution
+  // Workspace even from the personal Desk (shortcuts allowed; operations
+  // are institution-owned).
   String? get _resolvedInstitutionId =>
-      institutionId ?? meeting.booking?.institution?.id;
+      institutionId ?? meeting.owningInstitutionId;
 
   String get _detailPath => _resolvedInstitutionId == null
       ? '/meetings/${meeting.id}'

@@ -258,6 +258,12 @@ class Meeting {
   final bool allowGuests;
   final bool guestApprovalRequired;
   final String? sessionId;
+
+  /// Owning institution — set when this is an INSTITUTION meeting. Screen
+  /// ownership doctrine: institution meetings are owned by the Institution
+  /// Workspace end to end, so every host-side surface resolves its context
+  /// from this (falling back to the booking's institution for booked ones).
+  final String? organizationId;
   final MeetingRoom? room;
   final MeetingHost? host;
   final List<MeetingParticipant> participants;
@@ -287,6 +293,7 @@ class Meeting {
     required this.allowGuests,
     required this.guestApprovalRequired,
     this.sessionId,
+    this.organizationId,
     this.room,
     this.host,
     required this.participants,
@@ -319,6 +326,7 @@ class Meeting {
     allowGuests: j['allowGuests'] as bool? ?? false,
     guestApprovalRequired: j['guestApprovalRequired'] as bool? ?? true,
     sessionId: j['sessionId'] as String?,
+    organizationId: (j['organizationId'] ?? j['institutionId']) as String?,
     room: j['room'] is Map<String, dynamic>
         ? MeetingRoom.fromJson(j['room'] as Map<String, dynamic>)
         : null,
@@ -341,6 +349,10 @@ class Meeting {
     updatedAt:
         DateTime.tryParse(j['updatedAt'] as String? ?? '') ?? DateTime.now(),
   );
+
+  /// The institution that owns this meeting's workspace context, if any.
+  String? get owningInstitutionId =>
+      organizationId ?? booking?.institution?.id;
 
   bool get isActive => state == 'ACTIVE' && !isEnded;
   bool get isScheduled =>
