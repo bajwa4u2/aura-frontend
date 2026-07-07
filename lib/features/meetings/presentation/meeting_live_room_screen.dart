@@ -12,6 +12,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
+import 'widgets/active_meeting_return_layer.dart';
 import 'widgets/meeting_assets_section.dart';
 import 'widgets/meeting_conversation_panel.dart';
 import 'widgets/meeting_device_picker.dart';
@@ -697,6 +698,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     if (_endingMeeting) return;
     setState(() => _endingMeeting = true);
     _intentToLeave = true;
+    _clearReturnEntry();
     try {
       await ref
           .read(meetingsRepositoryProvider)
@@ -801,13 +803,48 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 
   Future<void> _leaveMeeting() async {
     _intentToLeave = true;
+    _clearReturnEntry();
     await ref.read(realtimeControllerProvider.notifier).leave();
     if (!mounted) return;
-    context.pop();
+    // Transition continuity: a member leaving lands back on the Meeting
+    // Record — same meeting, different state. Guests exit the way they came.
+    final isGuest = (widget.guestUserId ?? '').trim().isNotEmpty;
+    if (isGuest) {
+      context.pop();
+    } else {
+      context.go(
+        _exitInstitutionId == null
+            ? '/meetings/${widget.meetingId}'
+            : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}',
+      );
+    }
+  }
+
+  void _clearReturnEntry() {
+    ref.read(activeMeetingReturnProvider.notifier).state = null;
   }
 
   @override
   Widget build(BuildContext context) {
+    // Restoration guard: a live URL that lost its sessionId must never
+    // render a dead room — the Meeting Record is the doorway back in.
+    if (widget.sessionId.trim().isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        context.go(
+          widget.institutionId == null
+              ? '/meetings/${widget.meetingId}'
+              : '/institution/${widget.institutionId}/meetings/${widget.meetingId}',
+        );
+      });
+      return const Scaffold(
+        backgroundColor: Color(0xFF030712),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
+        ),
+      );
+    }
+
     final state = ref.watch(realtimeControllerProvider);
     // Provider priority for meeting metadata:
     // 1. meetingProvider   — member JWT; succeeds for host/member sessions.
@@ -824,6 +861,22 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         : null;
     final meeting = meetingAsync.valueOrNull ?? codeAsync?.valueOrNull ?? contextAsync?.valueOrNull;
     _owningInstitutionId = meeting?.owningInstitutionId;
+
+    // Persistent-session UX: publish where this live meeting lives so the
+    // shells can offer a "return to meeting" pill anywhere in the app.
+    // Members only — guests never navigate Aura mid-meeting.
+    if ((widget.guestUserId ?? '').trim().isEmpty && !_meetingEnded) {
+      final routeUri = GoRouterState.of(context).uri.toString();
+      final title = meeting?.title ?? '';
+      final current = ref.read(activeMeetingReturnProvider);
+      if (current?.path != routeUri || current?.title != title) {
+        Future.microtask(() {
+          if (!mounted) return;
+          ref.read(activeMeetingReturnProvider.notifier).state =
+              (path: routeUri, title: title);
+        });
+      }
+    }
 
     // I3: local user ID for host participant controls.
     // /auth/me returns { user: { id: ... }, accountType, emailVerified } — read
@@ -850,6 +903,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       (prev, next) {
         if (next == null || _intentToLeave || _endingMeeting || _meetingEnded) return;
         if (next == 'session:ended' || next == 'call:terminal') {
+          _clearReturnEntry();
           setState(() => _meetingEnded = true);
         } else if (next == 'socket:disconnected') {
           Future.microtask(() {
@@ -952,8 +1006,28 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             child: _MeetingLiveHeader(
               meeting: meeting,
               joinedAt: _joinedAt,
+              participantCount:
+                  state.participants.isEmpty ? 1 : state.participants.length,
+              recording: _recording,
             ),
           ),
+
+          // Ready state: a host alone should see "the meeting is ready",
+          // not an empty transport room. Dismisses itself when anyone joins.
+          if (state.isJoined && state.participants.length <= 1 && !_meetingEnded)
+            Positioned(
+              right: 16,
+              top: 88,
+              child: _RoomReadyPanel(
+                meeting: meeting,
+                isHost: widget.isHost,
+                onInvite: () => _showInviteSheet(meeting),
+                onAgenda: (meeting?.preparationNotes ?? '').trim().isNotEmpty
+                    ? () => setState(() => _showNotes = true)
+                    : null,
+                onFiles: () => _showFilesSheet(meeting),
+              ),
+            ),
 
           // Phase 3.2 — flying reaction overlay (never blocks pointer input).
           if (_reactions.isNotEmpty)
@@ -1047,6 +1121,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             Positioned.fill(
               child: _ConnectingOverlay(
                 state: state,
+                meeting: meeting,
                 onRetry: _ensureGuestAuthAndJoin,
               ),
             ),
@@ -1615,11 +1690,21 @@ class _MeetingLiveHeader extends StatelessWidget {
   final Meeting? meeting;
   final DateTime joinedAt;
 
-  const _MeetingLiveHeader({required this.meeting, required this.joinedAt});
+  /// Room awareness — quiet, glanceable, never a dashboard.
+  final int participantCount;
+  final bool recording;
+
+  const _MeetingLiveHeader({
+    required this.meeting,
+    required this.joinedAt,
+    required this.participantCount,
+    required this.recording,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final institution = meeting?.booking?.institution;
+    final institution = meeting?.owningInstitution;
+    final host = meeting?.host;
     final title = meeting?.title ?? '';
 
     return Container(
@@ -1634,6 +1719,8 @@ class _MeetingLiveHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Institutional presence: the room always says who owns the
+          // meeting — the institution when there is one, the host otherwise.
           if (institution != null) ...[
             CircleAvatar(
               radius: 18,
@@ -1650,23 +1737,44 @@ class _MeetingLiveHeader extends StatelessWidget {
                     ),
             ),
             const SizedBox(width: AuraSpace.s10),
+          ] else if (host != null) ...[
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF1E293B),
+              backgroundImage: host.avatarUrl?.trim().isNotEmpty == true
+                  ? NetworkImage(host.avatarUrl!)
+                  : null,
+              child: host.avatarUrl?.trim().isNotEmpty == true
+                  ? null
+                  : Text(
+                      host.name.trim().isEmpty
+                          ? 'H'
+                          : host.name.trim()[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFFE5E7EB),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: AuraSpace.s10),
           ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (institution != null)
-                  Text(
-                    institution.name,
-                    style: const TextStyle(
-                      color: Color(0xFFCBD5E1),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.1,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                Text(
+                  institution?.name ??
+                      (host != null ? 'Hosted by ${host.name}' : ''),
+                  style: const TextStyle(
+                    color: Color(0xFFCBD5E1),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.1,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 if (title.isNotEmpty)
                   Text(
                     title,
@@ -1683,7 +1791,191 @@ class _MeetingLiveHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AuraSpace.s8),
-          _ElapsedTimer(joinedAt: joinedAt),
+          if (recording) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDC2626).withValues(alpha: 0.18),
+                border: Border.all(
+                  color: const Color(0xFFDC2626).withValues(alpha: 0.5),
+                ),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.fiber_manual_record_rounded,
+                      size: 10, color: Color(0xFFF87171)),
+                  SizedBox(width: 4),
+                  Text(
+                    'REC',
+                    style: TextStyle(
+                      color: Color(0xFFF87171),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+          ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    margin: const EdgeInsets.only(right: 5),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  _ElapsedTimer(joinedAt: joinedAt),
+                ],
+              ),
+              Text(
+                participantCount == 1
+                    ? 'only you'
+                    : '$participantCount in the room',
+                style: const TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Ready state — the room communicates "meeting is ready", never "nobody here"
+// ---------------------------------------------------------------------------
+
+class _RoomReadyPanel extends ConsumerWidget {
+  final Meeting? meeting;
+  final bool isHost;
+  final VoidCallback onInvite;
+  final VoidCallback? onAgenda;
+  final VoidCallback onFiles;
+
+  const _RoomReadyPanel({
+    required this.meeting,
+    required this.isHost,
+    required this.onInvite,
+    required this.onAgenda,
+    required this.onFiles,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final invited = meeting?.participants
+            .where((p) => !p.isHost)
+            .length ??
+        0;
+    final materials = meeting == null
+        ? 0
+        : (ref.watch(meetingAssetsProvider(meeting!.id)).valueOrNull ??
+                const [])
+            .length;
+
+    Widget actionRow(IconData icon, String label, VoidCallback? onTap) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: const Color(0xFF8B85FF)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFFCBD5E1),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 16, color: Color(0xFF475569)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: 290,
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: const Color(0xF20F172A),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF243244)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.check_circle_rounded,
+                  size: 16, color: Color(0xFF10B981)),
+              SizedBox(width: 8),
+              Text(
+                'The meeting is ready',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            invited > 0
+                ? 'Waiting for $invited invited participant${invited == 1 ? '' : 's'} to join.'
+                : 'You are the first one here. Share the invite to bring people in.',
+            style: const TextStyle(
+              color: Color(0xFF8A94A6),
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.person_add_alt_rounded, size: 18),
+              label: const Text('Invite participants'),
+              onPressed: onInvite,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          const Divider(color: Color(0xFF1E293B), height: 1),
+          const SizedBox(height: AuraSpace.s6),
+          if (onAgenda != null)
+            actionRow(
+                Icons.notes_rounded, 'Review the agenda', onAgenda),
+          actionRow(
+            Icons.folder_shared_outlined,
+            materials > 0
+                ? 'Materials · $materials attached'
+                : 'Share files & materials',
+            onFiles,
+          ),
         ],
       ),
     );
@@ -1815,150 +2107,204 @@ class _MeetingControlBar extends StatelessWidget {
         ),
       ),
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
+      // Control maturity: three intentional clusters — voice & picture,
+      // participation, meeting management — instead of one flat feature row.
       child: Wrap(
         alignment: WrapAlignment.center,
-        spacing: AuraSpace.s10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AuraSpace.s14,
         runSpacing: AuraSpace.s10,
         children: [
-          // Mute / Unmute
-          _ControlButton(
-            icon: state.microphoneEnabled
-                ? Icons.mic_rounded
-                : Icons.mic_off_rounded,
-            label: state.microphoneEnabled ? 'Mute' : 'Unmute',
-            active: state.microphoneEnabled,
-            onTap: onToggleMic,
+          _ControlGroup(
+            children: [
+              _ControlButton(
+                icon: state.microphoneEnabled
+                    ? Icons.mic_rounded
+                    : Icons.mic_off_rounded,
+                label: state.microphoneEnabled ? 'Mute' : 'Unmute',
+                active: state.microphoneEnabled,
+                onTap: onToggleMic,
+              ),
+              _ControlButton(
+                icon: state.cameraEnabled
+                    ? Icons.videocam_rounded
+                    : Icons.videocam_off_rounded,
+                label: state.cameraEnabled ? 'Camera' : 'Camera',
+                active: state.cameraEnabled,
+                onTap: onToggleCamera,
+              ),
+              _ControlButton(
+                icon: state.isScreenSharing
+                    ? Icons.stop_screen_share_rounded
+                    : Icons.screen_share_rounded,
+                label: state.isScreenSharing ? 'Stop share' : 'Share',
+                active: state.isScreenSharing,
+                onTap: togglingScreenShare ? null : onShareScreen,
+              ),
+            ],
           ),
-
-          // Hide / Show camera
-          _ControlButton(
-            icon: state.cameraEnabled
-                ? Icons.videocam_rounded
-                : Icons.videocam_off_rounded,
-            label: state.cameraEnabled ? 'Hide camera' : 'Show camera',
-            active: state.cameraEnabled,
-            onTap: onToggleCamera,
+          _ControlGroup(
+            children: [
+              _ControlButton(
+                icon: Icons.add_reaction_outlined,
+                label: 'React',
+                active: false,
+                onTap: onReact,
+              ),
+              _ControlButton(
+                icon: handRaised
+                    ? Icons.back_hand_rounded
+                    : Icons.back_hand_outlined,
+                label: handRaised ? 'Lower' : 'Hand',
+                active: handRaised,
+                onTap: onToggleHand,
+              ),
+              _ControlButton(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: 'Chat',
+                active: showChat,
+                badge: unreadChat,
+                onTap: onToggleChat,
+              ),
+              _ControlButton(
+                icon: Icons.people_rounded,
+                label: 'People',
+                active: showParticipants,
+                onTap: onToggleParticipants,
+              ),
+            ],
           ),
-
-          // React — send an emoji reaction to the room.
-          _ControlButton(
-            icon: Icons.add_reaction_outlined,
-            label: 'React',
-            active: false,
-            onTap: onReact,
+          _ControlGroup(
+            children: [
+              if (recordingSupported)
+                _ControlButton(
+                  icon: recording
+                      ? Icons.stop_circle_outlined
+                      : Icons.fiber_manual_record_rounded,
+                  label: savingRecording
+                      ? 'Saving…'
+                      : (recording ? 'Stop rec' : 'Record'),
+                  active: recording,
+                  danger: recording,
+                  onTap: savingRecording ? null : onToggleRecording,
+                ),
+              // Secondary actions live in one place instead of widening the
+              // bar: notes & agenda, files, invite, devices, flip camera.
+              PopupMenuButton<String>(
+                tooltip: 'More',
+                color: const Color(0xFF0F172A),
+                offset: const Offset(0, -8),
+                position: PopupMenuPosition.over,
+                onSelected: (value) {
+                  switch (value) {
+                    case 'notes':
+                      onToggleNotes();
+                      break;
+                    case 'files':
+                      onFiles();
+                      break;
+                    case 'invite':
+                      onInvite();
+                      break;
+                    case 'devices':
+                      onDeviceSettings();
+                      break;
+                    case 'flip':
+                      onFlipCamera();
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  _moreItem('notes', Icons.notes_rounded, 'Notes & agenda',
+                      highlighted: showNotes),
+                  _moreItem(
+                      'files', Icons.folder_shared_outlined, 'Files & materials'),
+                  _moreItem(
+                      'invite', Icons.person_add_alt_rounded, 'Invite'),
+                  _moreItem('devices', Icons.tune_rounded, 'Devices'),
+                  if (state.isVideoMode && state.cameraEnabled)
+                    _moreItem(
+                        'flip', Icons.flip_camera_ios_rounded, 'Flip camera'),
+                ],
+                child: const _ControlButton(
+                  icon: Icons.more_horiz_rounded,
+                  label: 'More',
+                  active: false,
+                  menuChild: true,
+                ),
+              ),
+              if (isHost)
+                _ControlButton(
+                  icon: Icons.stop_rounded,
+                  label: endingMeeting ? 'Ending...' : 'End',
+                  active: false,
+                  danger: true,
+                  onTap: endingMeeting ? null : onEndMeeting,
+                )
+              else
+                _ControlButton(
+                  icon: Icons.logout_rounded,
+                  label: 'Leave',
+                  active: false,
+                  danger: true,
+                  onTap: onLeaveMeeting,
+                ),
+            ],
           ),
-
-          // Raise / lower hand.
-          _ControlButton(
-            icon: handRaised
-                ? Icons.back_hand_rounded
-                : Icons.back_hand_outlined,
-            label: handRaised ? 'Lower hand' : 'Raise hand',
-            active: handRaised,
-            onTap: onToggleHand,
-          ),
-
-          // Participants
-          _ControlButton(
-            icon: Icons.people_rounded,
-            label: 'Participants',
-            active: showParticipants,
-            onTap: onToggleParticipants,
-          ),
-
-          // Notes
-          _ControlButton(
-            icon: Icons.notes_rounded,
-            label: 'Notes',
-            active: showNotes,
-            onTap: onToggleNotes,
-          ),
-
-          // Phase 4 — meeting conversation stream.
-          _ControlButton(
-            icon: Icons.chat_bubble_outline_rounded,
-            label: 'Chat',
-            active: showChat,
-            badge: unreadChat,
-            onTap: onToggleChat,
-          ),
-
-          // In-call invite — share the join link/code without leaving.
-          _ControlButton(
-            icon: Icons.person_add_alt_rounded,
-            label: 'Invite',
-            active: false,
-            onTap: onInvite,
-          ),
-
-          // Meeting files & materials — shared items become permanent
-          // meeting assets, never temporary transfers.
-          _ControlButton(
-            icon: Icons.folder_shared_outlined,
-            label: 'Files',
-            active: false,
-            onTap: onFiles,
-          ),
-
-          // Recording (host, web) — captured view attaches to the record.
-          if (recordingSupported)
-            _ControlButton(
-              icon: recording
-                  ? Icons.stop_circle_outlined
-                  : Icons.fiber_manual_record_rounded,
-              label: savingRecording
-                  ? 'Saving…'
-                  : (recording ? 'Stop rec' : 'Record'),
-              active: recording,
-              danger: recording,
-              onTap: savingRecording ? null : onToggleRecording,
-            ),
-
-          // Devices — camera / microphone / speaker selection.
-          _ControlButton(
-            icon: Icons.tune_rounded,
-            label: 'Devices',
-            active: false,
-            onTap: onDeviceSettings,
-          ),
-
-          // I1: Share screen — active when broadcasting.
-          _ControlButton(
-            icon: state.isScreenSharing
-                ? Icons.stop_screen_share_rounded
-                : Icons.screen_share_rounded,
-            label: state.isScreenSharing ? 'Stop sharing' : 'Share screen',
-            active: state.isScreenSharing,
-            onTap: togglingScreenShare ? null : onShareScreen,
-          ),
-
-          // I4: Flip camera — visible when camera is enabled and in video mode.
-          if (state.isVideoMode && state.cameraEnabled)
-            _ControlButton(
-              icon: Icons.flip_camera_ios_rounded,
-              label: 'Flip camera',
-              active: false,
-              onTap: onFlipCamera,
-            ),
-
-          // End / Leave
-          if (isHost)
-            _ControlButton(
-              icon: Icons.stop_rounded,
-              label: endingMeeting ? 'Ending...' : 'End meeting',
-              active: false,
-              danger: true,
-              onTap: endingMeeting ? null : onEndMeeting,
-            )
-          else
-            _ControlButton(
-              icon: Icons.logout_rounded,
-              label: 'Leave meeting',
-              active: false,
-              danger: true,
-              onTap: onLeaveMeeting,
-            ),
         ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _moreItem(
+    String value,
+    IconData icon,
+    String label, {
+    bool highlighted = false,
+  }) {
+    return PopupMenuItem<String>(
+      value: value,
+      height: 40,
+      child: Row(
+        children: [
+          Icon(icon,
+              size: 18,
+              color: highlighted
+                  ? const Color(0xFF8B85FF)
+                  : const Color(0xFF9CA3AF)),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              color: highlighted ? const Color(0xFF8B85FF) : const Color(0xFFE5E7EB),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// A quiet cluster container — related controls read as one unit.
+class _ControlGroup extends StatelessWidget {
+  final List<Widget> children;
+
+  const _ControlGroup({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0x66101B2E),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x331E293B)),
+      ),
+      child: Wrap(
+        spacing: AuraSpace.s8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: children,
       ),
     );
   }
@@ -1973,6 +2319,11 @@ class _ControlButton extends StatelessWidget {
   final int badge;
   final VoidCallback? onTap;
 
+  /// True when this button is the CHILD of a PopupMenuButton: taps must pass
+  /// through to the menu (onTap stays null) but the button must not render
+  /// as disabled.
+  final bool menuChild;
+
   const _ControlButton({
     required this.icon,
     required this.label,
@@ -1980,6 +2331,7 @@ class _ControlButton extends StatelessWidget {
     this.danger = false,
     this.badge = 0,
     this.onTap,
+    this.menuChild = false,
   });
 
   @override
@@ -2003,7 +2355,9 @@ class _ControlButton extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: onTap == null ? bg.withValues(alpha: 0.5) : bg,
+                  color: (onTap == null && !menuChild)
+                      ? bg.withValues(alpha: 0.5)
+                      : bg,
                   borderRadius: BorderRadius.circular(12),
                   border: active && !danger
                       ? Border.all(
@@ -2500,14 +2854,21 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
 
 class _ConnectingOverlay extends StatelessWidget {
   final RealtimeState state;
+  final Meeting? meeting;
   final VoidCallback onRetry;
 
-  const _ConnectingOverlay({required this.state, required this.onRetry});
+  const _ConnectingOverlay({
+    required this.state,
+    required this.meeting,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
     final hasError = state.joinState == RealtimeJoinState.failed &&
         state.errorMessage != null;
+    final owner =
+        meeting?.owningInstitution?.name ?? meeting?.host?.name;
 
     return Container(
       color: const Color(0xEE030712),
@@ -2516,10 +2877,36 @@ class _ConnectingOverlay extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!hasError) ...[
+              // Transition continuity: entering carries the meeting's own
+              // identity — same meeting, different state, never a generic
+              // transport spinner.
+              if ((meeting?.title ?? '').isNotEmpty) ...[
+                if (owner != null)
+                  Text(
+                    owner,
+                    style: const TextStyle(
+                      color: Color(0xFF8A94A6),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                Text(
+                  meeting!.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s20),
+              ],
               const CircularProgressIndicator(color: Color(0xFF6C63FF)),
               const SizedBox(height: AuraSpace.s16),
               Text(
-                state.infoMessage ?? 'Connecting to meeting...',
+                state.infoMessage ?? 'Entering the meeting…',
                 style: const TextStyle(
                   color: Color(0xFF9CA3AF),
                   fontSize: 14,

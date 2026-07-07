@@ -18,6 +18,7 @@ import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/institutions/data/institution_pending_counts.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
+import '../../features/meetings/presentation/widgets/active_meeting_return_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
 import 'rail/rail_composition.dart';
@@ -190,22 +191,26 @@ class MemberShell extends StatelessWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: GlobalLiveBannerLayer(
-              child: AuraIncomingLiveLayer(
-                child: GlobalPlatformShell(
-                  contextBar: (!showLeftRail && _showMemberMobileBar(path))
-                      ? const _MemberMobileBar()
-                      : null,
-                  child: Row(
-                    children: [
-                      if (showLeftRail)
-                        _MemberSideNav(
-                          items: _items,
-                          selectedIndex: selectedIndex,
-                          currentPath: path,
-                        ),
-                      Expanded(child: child),
-                    ],
+            // Persistent-session UX: an active meeting follows the user
+            // around the app as a return pill — never an abandoned tab.
+            child: ActiveMeetingReturnLayer(
+              child: GlobalLiveBannerLayer(
+                child: AuraIncomingLiveLayer(
+                  child: GlobalPlatformShell(
+                    contextBar: (!showLeftRail && _showMemberMobileBar(path))
+                        ? const _MemberMobileBar()
+                        : null,
+                    child: Row(
+                      children: [
+                        if (showLeftRail)
+                          _MemberSideNav(
+                            items: _items,
+                            selectedIndex: selectedIndex,
+                            currentPath: path,
+                          ),
+                        Expanded(child: child),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -338,8 +343,10 @@ class InstitutionShell extends ConsumerWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: GlobalLiveBannerLayer(
-              child: AuraIncomingLiveLayer(child: body),
+            child: ActiveMeetingReturnLayer(
+              child: GlobalLiveBannerLayer(
+                child: AuraIncomingLiveLayer(child: body),
+              ),
             ),
           ),
         );

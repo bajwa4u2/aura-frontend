@@ -276,6 +276,10 @@ class Meeting {
   /// Guest-visible materials, attached by the public by-code endpoint so the
   /// briefing pack reaches the pre-join surface without authentication.
   final List<MeetingAsset>? assets;
+
+  /// Owning institution's identity (organization-owned meetings) — present
+  /// even without a booking so every surface can show WHO owns the meeting.
+  final MeetingInstitutionRef? institution;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -307,9 +311,15 @@ class Meeting {
     this.liveNotes,
     this.summary,
     this.assets,
+    this.institution,
     required this.createdAt,
     required this.updatedAt,
   });
+
+  /// The identity that owns this meeting's room: institution first (org or
+  /// booking), host otherwise.
+  MeetingInstitutionRef? get owningInstitution =>
+      institution ?? booking?.institution;
 
   factory Meeting.fromJson(Map<String, dynamic> j) => Meeting(
     id: j['id'] as String,
@@ -355,6 +365,10 @@ class Meeting {
             .whereType<Map<String, dynamic>>()
             .map(MeetingAsset.fromJson)
             .toList()
+        : null,
+    institution: j['institution'] is Map<String, dynamic>
+        ? MeetingInstitutionRef.fromJson(
+            j['institution'] as Map<String, dynamic>)
         : null,
     createdAt:
         DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
