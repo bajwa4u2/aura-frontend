@@ -274,12 +274,7 @@ class _PreJoinBody extends ConsumerWidget {
     final lifecycle = MeetingLifecyclePresenter.present(meeting);
     final isAuthed = ref.watch(isAuthedProvider);
 
-    final institution = meeting.booking?.institution;
-    final host = meeting.host;
-
     return GuestShell(
-      institutionName: institution?.name ?? host?.name,
-      institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
       showBackButton: true,
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s24),

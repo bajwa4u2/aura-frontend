@@ -128,12 +128,9 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
 
     identityAsync.whenData(_applyIdentity);
 
-    final profileInstitution = widget.profile.institution;
-    final profileHost = widget.profile.effectiveHost;
-
+    // One continuous journey: the institution was introduced on the landing
+    // page — booking steps keep the bare Aura bar and stay meeting-first.
     return GuestShell(
-      institutionName: profileInstitution?.name ?? profileHost?.name,
-      institutionLogoUrl: profileInstitution?.logoUrl ?? profileHost?.avatarUrl,
       showBackButton: true,
       body: Form(
         key: _formKey,
@@ -270,8 +267,6 @@ class _ConfirmationView extends ConsumerWidget {
         '${localizations.formatFullDate(localTime)} · ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(localTime))}';
 
     return GuestShell(
-      institutionName: institution?.name ?? host?.name,
-      institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s24),
         children: [

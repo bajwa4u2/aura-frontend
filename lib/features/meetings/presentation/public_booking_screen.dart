@@ -106,14 +106,15 @@ class _BookingPageBody extends StatelessWidget {
     final host = profile.effectiveHost;
     final isWide = MediaQuery.sizeOf(context).width >= 900;
 
+    // Meeting-first hierarchy: the page's own identity block (institution ✓
+    // → host → meeting) already establishes ownership — repeating the
+    // institution in the shell's top strip added nothing, so the shell stays
+    // bare Aura navigation here.
     return GuestShell(
-      institutionName: institution?.name ?? host?.name,
-      institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
       body: ListView(
         padding: EdgeInsets.symmetric(
           horizontal: isWide ? AuraSpace.s32 : AuraSpace.s16,
-          vertical: AuraSpace.s24,
-        ),
+        ).copyWith(top: AuraSpace.s32, bottom: AuraSpace.s24),
         children: [
           Align(
             alignment: Alignment.topCenter,

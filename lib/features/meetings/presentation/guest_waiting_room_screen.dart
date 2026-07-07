@@ -256,8 +256,6 @@ class _GuestWaitingRoomScreenState
             'Meeting';
 
         return GuestShell(
-          institutionName: meeting.booking?.institution?.name ?? meeting.host?.name,
-          institutionLogoUrl: meeting.booking?.institution?.logoUrl ?? meeting.host?.avatarUrl,
           showBackButton: true,
           body: ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),

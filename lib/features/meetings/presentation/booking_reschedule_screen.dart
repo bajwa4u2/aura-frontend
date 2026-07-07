@@ -83,13 +83,8 @@ class _BookingRescheduleScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final institution = profile.institution;
-    final host = profile.effectiveHost;
-
     if (_done) {
       return GuestShell(
-        institutionName: institution?.name ?? host?.name,
-        institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
         body: ListView(
           padding: const EdgeInsets.all(AuraSpace.s24),
           children: [
@@ -137,8 +132,6 @@ class _BookingRescheduleScreenState
     final localizations = MaterialLocalizations.of(context);
 
     return GuestShell(
-      institutionName: institution?.name ?? host?.name,
-      institutionLogoUrl: institution?.logoUrl ?? host?.avatarUrl,
       showBackButton: true,
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s16),
