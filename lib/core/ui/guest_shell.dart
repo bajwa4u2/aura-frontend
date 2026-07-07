@@ -27,15 +27,21 @@ class GuestShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The public shell above already brands the page with Aura navigation —
+    // this bar earns its place only when it carries something (institution
+    // identity or a back affordance). Otherwise it is duplicated chrome.
+    final hasInstitution = institutionName?.trim().isNotEmpty == true;
+    final showBar = hasInstitution || showBackButton;
     return Scaffold(
       backgroundColor: AuraSurface.page,
       body: Column(
         children: [
-          _GuestTopBar(
-            institutionName: institutionName,
-            institutionLogoUrl: institutionLogoUrl,
-            showBackButton: showBackButton,
-          ),
+          if (showBar)
+            _GuestTopBar(
+              institutionName: institutionName,
+              institutionLogoUrl: institutionLogoUrl,
+              showBackButton: showBackButton,
+            ),
           Expanded(child: body),
           const _GuestFooter(),
         ],
@@ -81,18 +87,13 @@ class _GuestTopBar extends StatelessWidget {
             ),
             const SizedBox(width: AuraSpace.s8),
           ],
-          if (institutionName != null && institutionName!.trim().isNotEmpty) ...[
+          // No Aura logo fallback here: the public shell's navigation above
+          // already brands the page — repeating the mark reads as clutter.
+          if (institutionName != null && institutionName!.trim().isNotEmpty)
             _InstitutionMark(
               name: institutionName!,
               logoUrl: institutionLogoUrl,
             ),
-          ] else ...[
-            SvgPicture.asset(
-              'assets/brand/AURA_logo_master.svg',
-              height: 22,
-              fit: BoxFit.contain,
-            ),
-          ],
         ],
       ),
     );
