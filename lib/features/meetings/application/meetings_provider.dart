@@ -5,6 +5,7 @@ import '../data/meetings_repository.dart';
 import '../data/availability_repository.dart';
 import '../domain/meeting.dart';
 import '../domain/availability_profile.dart';
+import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
 import '../domain/meeting_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
@@ -80,6 +81,14 @@ final meetingOutcomesProvider =
     FutureProvider.family<List<MeetingOutcome>, String>((ref, meetingId) async {
       final repo = ref.watch(meetingsRepositoryProvider);
       return repo.getMeetingOutcomes(meetingId);
+    });
+
+// Establishment Pass — meeting assets (materials, shared files, recordings).
+// Works for members AND guests (guest tokens see guest-visible READY assets).
+final meetingAssetsProvider =
+    FutureProvider.family<List<MeetingAsset>, String>((ref, meetingId) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      return repo.listAssets(meetingId);
     });
 
 // Phase 4 — Meeting Conversation Stream transcript (member/host post-meeting

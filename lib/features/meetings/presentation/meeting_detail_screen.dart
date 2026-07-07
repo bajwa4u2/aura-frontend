@@ -11,8 +11,10 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_asset.dart';
 import 'meeting_lifecycle_presenter.dart';
 import 'meeting_status_chip.dart';
+import 'widgets/meeting_assets_section.dart';
 import 'widgets/meeting_section.dart';
 import 'widgets/meeting_workroom.dart';
 
@@ -545,12 +547,52 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                     const SizedBox(height: AuraSpace.s16),
                   ],
 
+                  // Materials — the briefing pack. Part of the record for
+                  // the whole lifecycle; guests see guest-visible items on
+                  // pre-join and in the room.
+                  MeetingAssetsSection(
+                    meetingId: meeting.id,
+                    title: 'Materials',
+                    emptyText: ended
+                        ? 'No materials were attached to this meeting.'
+                        : 'Attach links or briefing documents participants should read before joining.',
+                    filter: (a) =>
+                        a.stage == 'PREPARATION' &&
+                        a.kind != MeetingAssetKind.recording,
+                    canManage: isHost && !ended,
+                    addStage: 'PREPARATION',
+                    hideWhenEmpty: ended,
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
+
                   // People — one roster model for members, guests, bookers.
                   _ParticipantsSection(meeting: meeting, ended: ended),
                   const SizedBox(height: AuraSpace.s16),
 
                   // The record itself — summary, outcomes, conversation.
                   if (ended) ...[
+                    MeetingAssetsSection(
+                      meetingId: meeting.id,
+                      title: 'Shared in meeting',
+                      emptyText: 'No files were shared during this meeting.',
+                      filter: (a) =>
+                          a.stage == 'MEETING' &&
+                          a.kind != MeetingAssetKind.recording,
+                      canManage: isHost,
+                      addStage: 'MEETING',
+                      hideWhenEmpty: true,
+                    ),
+                    const SizedBox(height: AuraSpace.s16),
+                    MeetingAssetsSection(
+                      meetingId: meeting.id,
+                      title: 'Recording',
+                      emptyText: 'This meeting was not recorded.',
+                      filter: (a) => a.kind == MeetingAssetKind.recording,
+                      canManage: isHost,
+                      allowAdd: false,
+                      hideWhenEmpty: true,
+                    ),
+                    const SizedBox(height: AuraSpace.s16),
                     MeetingWorkroom(meeting: meeting, editable: isHost),
                     const SizedBox(height: AuraSpace.s16),
                   ],

@@ -12,10 +12,13 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
+import 'widgets/meeting_assets_section.dart';
 import 'widgets/meeting_conversation_panel.dart';
 import 'widgets/meeting_device_picker.dart';
 import 'widgets/meeting_pending_guests_panel.dart';
+import '../data/recording_capture.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
 import '../../realtime/application/realtime_controller.dart';
 import '../../realtime/application/realtime_providers.dart';
@@ -125,6 +128,87 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   final List<MeetingConversationMessage> _conversation = [];
   int _unseenChat = 0;
   bool _chatHistoryRequested = false;
+
+  // Establishment Pass — meeting recording (host, web). Client capture:
+  // consumes the host's rendered view via getDisplayMedia; the frozen RTC
+  // stack is untouched. The result is uploaded as a RECORDING MeetingAsset.
+  final _recorder = MeetingRecordingCapture();
+  bool _recording = false;
+  bool _savingRecording = false;
+
+  Future<void> _toggleRecording(Meeting? meeting) async {
+    if (_savingRecording) return;
+    if (!_recording) {
+      final ok = await _recorder.start();
+      if (!mounted) return;
+      setState(() => _recording = ok);
+      _showArrivalToast(ok
+          ? 'Recording started — pick "This tab" to capture the meeting'
+          : 'Recording could not start');
+      return;
+    }
+    setState(() {
+      _recording = false;
+      _savingRecording = true;
+    });
+    _showArrivalToast('Saving recording…');
+    try {
+      final result = await _recorder.stop();
+      if (result == null) {
+        if (mounted) _showArrivalToast('No recording captured');
+        return;
+      }
+      final when = DateTime.now();
+      await ref.read(meetingsRepositoryProvider).uploadAsset(
+            widget.meetingId,
+            fileName:
+                'Meeting recording ${when.year}-${when.month.toString().padLeft(2, '0')}-${when.day.toString().padLeft(2, '0')}.webm',
+            mimeType: result.mimeType,
+            bytes: result.bytes,
+            stage: 'MEETING',
+            kind: 'RECORDING',
+            durationSeconds: result.durationSeconds,
+          );
+      ref.invalidate(meetingAssetsProvider(widget.meetingId));
+      if (mounted) {
+        _showArrivalToast('Recording attached to the meeting record');
+      }
+    } catch (_) {
+      if (mounted) _showArrivalToast('Recording upload failed');
+    } finally {
+      if (mounted) setState(() => _savingRecording = false);
+    }
+  }
+
+  void _showFilesSheet(Meeting? meeting) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.7,
+            ),
+            child: SingleChildScrollView(
+              child: MeetingAssetsSection(
+                meetingId: widget.meetingId,
+                title: 'Meeting files & materials',
+                emptyText: widget.isHost
+                    ? 'Share a file or link with everyone in the meeting.'
+                    : 'Nothing has been shared in this meeting yet.',
+                filter: (a) => a.kind != MeetingAssetKind.recording,
+                canManage: widget.isHost,
+                addStage: 'MEETING',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   void _onParticipationEvent(RealtimeParsedEvent e) {
     if (!mounted) return;
@@ -1048,6 +1132,11 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 if (_showChat) _unseenChat = 0;
               }),
               onInvite: () => _showInviteSheet(meeting),
+              onFiles: () => _showFilesSheet(meeting),
+              recordingSupported: widget.isHost && _recorder.isSupported,
+              recording: _recording,
+              savingRecording: _savingRecording,
+              onToggleRecording: () => _toggleRecording(meeting),
               onShareScreen: _toggleScreenShare,
               onFlipCamera: _flipCamera,
               onDeviceSettings: _showDeviceSettings,
@@ -1671,6 +1760,11 @@ class _MeetingControlBar extends StatelessWidget {
   final VoidCallback onToggleNotes;
   final VoidCallback onToggleChat;
   final VoidCallback onInvite;
+  final VoidCallback onFiles;
+  final bool recordingSupported;
+  final bool recording;
+  final bool savingRecording;
+  final VoidCallback onToggleRecording;
   final VoidCallback onShareScreen;
   final VoidCallback onFlipCamera;
   final VoidCallback onDeviceSettings;
@@ -1695,6 +1789,11 @@ class _MeetingControlBar extends StatelessWidget {
     required this.onToggleNotes,
     required this.onToggleChat,
     required this.onInvite,
+    required this.onFiles,
+    required this.recordingSupported,
+    required this.recording,
+    required this.savingRecording,
+    required this.onToggleRecording,
     required this.onShareScreen,
     required this.onFlipCamera,
     required this.onDeviceSettings,
@@ -1791,6 +1890,29 @@ class _MeetingControlBar extends StatelessWidget {
             active: false,
             onTap: onInvite,
           ),
+
+          // Meeting files & materials — shared items become permanent
+          // meeting assets, never temporary transfers.
+          _ControlButton(
+            icon: Icons.folder_shared_outlined,
+            label: 'Files',
+            active: false,
+            onTap: onFiles,
+          ),
+
+          // Recording (host, web) — captured view attaches to the record.
+          if (recordingSupported)
+            _ControlButton(
+              icon: recording
+                  ? Icons.stop_circle_outlined
+                  : Icons.fiber_manual_record_rounded,
+              label: savingRecording
+                  ? 'Saving…'
+                  : (recording ? 'Stop rec' : 'Record'),
+              active: recording,
+              danger: recording,
+              onTap: savingRecording ? null : onToggleRecording,
+            ),
 
           // Devices — camera / microphone / speaker selection.
           _ControlButton(

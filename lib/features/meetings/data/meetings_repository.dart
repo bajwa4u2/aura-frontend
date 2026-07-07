@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
 
 class MeetingsRepository {
@@ -120,6 +123,116 @@ class MeetingsRepository {
           .toList();
     }
     return const [];
+  }
+
+  // Establishment Pass — meeting assets (materials, shared files, recordings).
+  Future<List<MeetingAsset>> listAssets(String meetingId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets',
+    );
+    final data = res.data?['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(MeetingAsset.fromJson)
+          .toList();
+    }
+    return const [];
+  }
+
+  Future<MeetingAsset> addAssetLink(
+    String meetingId, {
+    required String url,
+    String? title,
+    String stage = 'PREPARATION',
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/link',
+      data: {'url': url, if (title != null) 'title': title, 'stage': stage},
+    );
+    return MeetingAsset.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  /// Presign → direct PUT to storage → confirm. Returns the READY asset.
+  Future<MeetingAsset> uploadAsset(
+    String meetingId, {
+    required String fileName,
+    required String mimeType,
+    required Uint8List bytes,
+    String stage = 'PREPARATION',
+    String kind = 'FILE',
+    int? durationSeconds,
+  }) async {
+    final presign = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/presign',
+      data: {
+        'fileName': fileName,
+        'mimeType': mimeType,
+        'bytes': bytes.length,
+        'stage': stage,
+        'kind': kind,
+      },
+    );
+    final data = presign.data!['data'] as Map<String, dynamic>;
+    final asset = data['asset'] as Map<String, dynamic>;
+    final uploadUrl = (data['uploadUrl'] ?? '').toString();
+    final headers = (data['uploadHeaders'] as Map?)?.map(
+          (k, v) => MapEntry(k.toString(), v.toString()),
+        ) ??
+        {'Content-Type': mimeType};
+
+    // Direct-to-storage PUT with a bare Dio: the presigned URL must not
+    // receive our API auth headers or base URL.
+    final raw = Dio();
+    await raw.put<void>(
+      uploadUrl,
+      data: Stream.fromIterable([bytes]),
+      options: Options(
+        headers: {...headers, 'Content-Length': bytes.length},
+        // Signed PUTs reject redirects and love exact lengths.
+        followRedirects: false,
+        validateStatus: (s) => s != null && s >= 200 && s < 300,
+      ),
+    );
+
+    final confirm = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/${asset['id']}/confirm',
+      data: {
+        if (durationSeconds != null) 'durationSeconds': durationSeconds,
+      },
+    );
+    return MeetingAsset.fromJson(confirm.data!['data'] as Map<String, dynamic>);
+  }
+
+  Future<MeetingAsset> updateAsset(
+    String meetingId,
+    String assetId, {
+    String? title,
+    bool? visibleToGuests,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/$assetId',
+      data: {
+        if (title != null) 'title': title,
+        if (visibleToGuests != null) 'visibleToGuests': visibleToGuests,
+      },
+    );
+    return MeetingAsset.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> deleteAsset(String meetingId, String assetId) async {
+    await _dio.delete<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/$assetId',
+    );
+  }
+
+  Future<String?> assetUrl(String meetingId, String assetId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/$assetId/url',
+    );
+    final data = res.data?['data'];
+    if (data is Map) return (data['url'] ?? '').toString();
+    return null;
   }
 
   // Phase 4.5 — promote a conversation message into a MeetingOutcome (host

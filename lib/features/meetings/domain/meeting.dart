@@ -1,4 +1,5 @@
 import 'meeting_identity.dart';
+import 'meeting_asset.dart';
 import 'meeting_room.dart';
 
 class MeetingHost {
@@ -271,6 +272,10 @@ class Meeting {
   final String? preparationNotes;
   final String? liveNotes;
   final MeetingSummary? summary;
+
+  /// Guest-visible materials, attached by the public by-code endpoint so the
+  /// briefing pack reaches the pre-join surface without authentication.
+  final List<MeetingAsset>? assets;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -301,6 +306,7 @@ class Meeting {
     this.preparationNotes,
     this.liveNotes,
     this.summary,
+    this.assets,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -343,6 +349,12 @@ class Meeting {
     liveNotes: j['liveNotes'] as String?,
     summary: j['summary'] is Map<String, dynamic>
         ? MeetingSummary.fromJson(j['summary'] as Map<String, dynamic>)
+        : null,
+    assets: j['assets'] is List
+        ? (j['assets'] as List)
+            .whereType<Map<String, dynamic>>()
+            .map(MeetingAsset.fromJson)
+            .toList()
         : null,
     createdAt:
         DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),

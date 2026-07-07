@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/ui/aura_space.dart';
 import '../../domain/meeting.dart';
+import '../../domain/meeting_asset.dart';
 
 /// First-class Meeting PREPARATION surface — the shared brief shown before
 /// joining, on BOTH the guest pre-join and the host lobby. One system, not two
@@ -168,10 +170,61 @@ class MeetingPreparationPanel extends StatelessWidget {
           ...participants.map((p) => _ParticipantRow(participant: p)),
         ],
 
-        // Materials (attachments) land with file sharing (Phase 5). Until a
-        // meeting can actually carry materials, showing an empty placeholder —
-        // especially to external guests — advertises an unbuilt feature, so
-        // the section stays hidden.
+        // Materials — the briefing pack travels to the pre-join surface.
+        // Only rendered when the host actually attached something.
+        if ((meeting.assets ?? const []).isNotEmpty) ...[
+          SizedBox(height: gap),
+          const _SectionLabel('Materials'),
+          const SizedBox(height: AuraSpace.s8),
+          _card(
+            context,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final asset in meeting.assets!)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: InkWell(
+                      onTap: (asset.url ?? '').isNotEmpty
+                          ? () => launchUrl(
+                                Uri.parse(asset.url!),
+                                mode: LaunchMode.externalApplication,
+                              )
+                          : null,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Row(
+                        children: [
+                          Icon(
+                            asset.kind == MeetingAssetKind.link
+                                ? Icons.link_rounded
+                                : Icons.description_outlined,
+                            size: 17,
+                            color: const Color(0xFF8B85FF),
+                          ),
+                          const SizedBox(width: AuraSpace.s10),
+                          Expanded(
+                            child: Text(
+                              asset.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                          if (asset.kind != MeetingAssetKind.link)
+                            Text(
+                              'available in the meeting',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF6B7280),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
