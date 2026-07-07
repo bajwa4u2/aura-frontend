@@ -192,6 +192,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   }
 
   bool _showFiles = false;
+  // Ready panel is transient: dismissible by hand, gone once anyone joins.
+  bool _readyPanelDismissed = false;
 
   // Materials belong to the same contextual-drawer family as chat, notes,
   // and participants — never a modal over the meeting. A guest with nothing
@@ -220,6 +222,14 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       _showNotes = false;
       _showParticipants = false;
     });
+  }
+
+  /// Width of the currently open contextual drawer — the control bar and
+  /// floating panels reserve this space so nothing overlaps drawer content.
+  double get _openDrawerWidth {
+    if (_showChat || _showFiles) return 320;
+    if (_showNotes || _showParticipants) return 300;
+    return 0;
   }
 
   void _onParticipationEvent(RealtimeParsedEvent e) {
@@ -1041,19 +1051,38 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           ),
 
           // Ready state: a host alone should see "the meeting is ready",
-          // not an empty transport room. Dismisses itself when anyone joins.
-          if (state.isJoined && state.participants.length <= 1 && !_meetingEnded)
+          // not an empty transport room. Transient by design: animates in,
+          // can be dismissed, yields to drawers, and leaves when anyone joins.
+          if (state.isJoined &&
+              state.participants.length <= 1 &&
+              !_meetingEnded &&
+              !_readyPanelDismissed &&
+              _openDrawerWidth == 0)
             Positioned(
               right: 16,
               top: 88,
-              child: _RoomReadyPanel(
-                meeting: meeting,
-                isHost: widget.isHost,
-                onInvite: () => _showInviteSheet(meeting),
-                onAgenda: (meeting?.preparationNotes ?? '').trim().isNotEmpty
-                    ? () => setState(() => _showNotes = true)
-                    : null,
-                onFiles: () => _openFilesSurface(meeting),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                builder: (context, t, child) => Opacity(
+                  opacity: t,
+                  child: Transform.translate(
+                    offset: Offset(24 * (1 - t), 0),
+                    child: child,
+                  ),
+                ),
+                child: _RoomReadyPanel(
+                  meeting: meeting,
+                  isHost: widget.isHost,
+                  onInvite: () => _showInviteSheet(meeting),
+                  onAgenda: (meeting?.preparationNotes ?? '').trim().isNotEmpty
+                      ? () => setState(() => _showNotes = true)
+                      : null,
+                  onFiles: () => _openFilesSurface(meeting),
+                  onDismiss: () =>
+                      setState(() => _readyPanelDismissed = true),
+                ),
               ),
             ),
 
@@ -1113,7 +1142,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           if (_showNotes)
             Positioned(
               top: 0,
-              right: _showParticipants ? 300 : 0,
+              right: 0,
               bottom: 0,
               child: _MeetingNotesDrawer(
                 meetingId: widget.meetingId,
@@ -1138,12 +1167,12 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               ),
             ),
 
-          // Phase 4 — Meeting Conversation Stream panel (right, shifts past
-          // the participant/notes panels when they are open).
+          // Phase 4 — Meeting Conversation Stream panel (right; drawers are
+          // exclusive, so it always sits flush at the edge).
           if (_showChat)
             Positioned(
               top: 0,
-              right: (_showParticipants ? 300 : 0) + (_showNotes ? 300 : 0),
+              right: 0,
               bottom: 0,
               child: MeetingConversationPanel(
                 messages: _conversation,
@@ -1217,10 +1246,14 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 
           // E4 — Control bar at bottom. All media ops route through _bridge.
           // L3c: auto-hides after 4s of inactivity; reappears on any interaction.
-          Positioned(
+          // Reserves the open drawer's width so controls never overlap
+          // contextual content; animates as drawers open/close.
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
             bottom: 0,
             left: 0,
-            right: 0,
+            right: _openDrawerWidth,
             child: AnimatedOpacity(
               opacity: _controlsVisible ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 250),
@@ -1239,13 +1272,23 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               onToggleCamera: state.cameraEnabled
                   ? _bridge.disableLocalCamera
                   : _bridge.enableLocalCamera,
+              // One contextual drawer at a time: the meeting stays primary
+              // and the control bar can reserve exactly one drawer's width.
               onToggleParticipants: () => setState(() {
                 _showParticipants = !_showParticipants;
-                if (_showParticipants) _showFiles = false;
+                if (_showParticipants) {
+                  _showFiles = false;
+                  _showNotes = false;
+                  _showChat = false;
+                }
               }),
               onToggleNotes: () => setState(() {
                 _showNotes = !_showNotes;
-                if (_showNotes) _showFiles = false;
+                if (_showNotes) {
+                  _showFiles = false;
+                  _showParticipants = false;
+                  _showChat = false;
+                }
               }),
               showChat: _showChat,
               unreadChat: _unseenChat,
@@ -1254,6 +1297,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 if (_showChat) {
                   _unseenChat = 0;
                   _showFiles = false;
+                  _showNotes = false;
+                  _showParticipants = false;
                 }
               }),
               onInvite: () => _showInviteSheet(meeting),
@@ -1608,7 +1653,7 @@ class _MeetingVideoGrid extends StatelessWidget {
 // One participant tile — local or remote, first-class in the grid. Renders the
 // video when a live video track exists, otherwise an avatar + "Camera off".
 // Always carries the identity label and a mic indicator.
-class _ParticipantTile extends StatelessWidget {
+class _ParticipantTile extends StatefulWidget {
   const _ParticipantTile({
     required this.renderer,
     required this.videoOn,
@@ -1628,15 +1673,70 @@ class _ParticipantTile extends StatelessWidget {
   final bool micOn;
 
   @override
+  State<_ParticipantTile> createState() => _ParticipantTileState();
+}
+
+/// Self-healing tile: remote receive-tracks start MUTED and unmute when the
+/// first RTP frame arrives, and srcObject can attach after build — neither
+/// transition triggers a Flutter rebuild on its own, which produced blank
+/// tiles for already-joined participants until an unrelated state change.
+/// The tile re-evaluates the real track state on a light steady tick and on
+/// the renderer's first decoded frame, rebuilding only when the answer flips.
+class _ParticipantTileState extends State<_ParticipantTile> {
+  Timer? _syncTimer;
+  bool _lastShowVideo = false;
+
+  bool get _showVideo {
+    final r = widget.renderer;
+    if (r == null) return false;
+    if (widget.isLocal) return widget.videoOn;
+    final tracks = r.srcObject?.getVideoTracks() ?? const <MediaStreamTrack>[];
+    if (tracks.isEmpty) return false;
+    return tracks.first.muted != true;
+  }
+
+  void _hookRenderer() {
+    widget.renderer?.onFirstFrameRendered = () {
+      if (mounted && _showVideo != _lastShowVideo) setState(() {});
+    };
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _lastShowVideo = _showVideo;
+    _hookRenderer();
+    _syncTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
+      final now = _showVideo;
+      if (now != _lastShowVideo) setState(() {});
+    });
+  }
+
+  @override
+  void didUpdateWidget(_ParticipantTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.renderer != widget.renderer) _hookRenderer();
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final showVideo = videoOn && renderer != null;
-    final trimmed = label.trim();
+    final showVideo = _showVideo;
+    _lastShowVideo = showVideo;
+    final renderer = widget.renderer;
+    final trimmed = widget.label.trim();
     final initial = trimmed.isNotEmpty ? trimmed[0].toUpperCase() : '?';
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF0B1120),
         borderRadius: BorderRadius.circular(12),
-        border: isLocal
+        border: widget.isLocal
             ? Border.all(color: const Color(0xFF6C63FF), width: 1.5)
             : null,
       ),
@@ -1645,10 +1745,10 @@ class _ParticipantTile extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (showVideo)
+            if (showVideo && renderer != null)
               RTCVideoView(
-                renderer!,
-                mirror: mirror,
+                renderer,
+                mirror: widget.mirror,
                 objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
               )
             else
@@ -1668,15 +1768,15 @@ class _ParticipantTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+                      widget.micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
                       size: 13,
-                      color: micOn
+                      color: widget.micOn
                           ? const Color(0xFFE5E7EB)
                           : const Color(0xFFF87171),
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      label,
+                      widget.label,
                       style: const TextStyle(
                         color: Color(0xFFE5E7EB),
                         fontSize: 12,
@@ -1694,6 +1794,7 @@ class _ParticipantTile extends StatelessWidget {
   }
 
   Widget _avatar(String initial) {
+    final avatarUrl = widget.avatarUrl;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1917,6 +2018,7 @@ class _RoomReadyPanel extends ConsumerWidget {
   final VoidCallback onInvite;
   final VoidCallback? onAgenda;
   final VoidCallback onFiles;
+  final VoidCallback onDismiss;
 
   const _RoomReadyPanel({
     required this.meeting,
@@ -1924,6 +2026,7 @@ class _RoomReadyPanel extends ConsumerWidget {
     required this.onInvite,
     required this.onAgenda,
     required this.onFiles,
+    required this.onDismiss,
   });
 
   @override
@@ -1978,17 +2081,28 @@ class _RoomReadyPanel extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.check_circle_rounded,
+              const Icon(Icons.check_circle_rounded,
                   size: 16, color: Color(0xFF10B981)),
-              SizedBox(width: 8),
-              Text(
-                'The meeting is ready',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'The meeting is ready',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: onDismiss,
+                borderRadius: BorderRadius.circular(999),
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.close_rounded,
+                      size: 16, color: Color(0xFF64748B)),
                 ),
               ),
             ],
