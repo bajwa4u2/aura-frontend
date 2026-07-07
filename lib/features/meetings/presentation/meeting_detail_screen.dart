@@ -9,6 +9,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_asset.dart';
@@ -100,10 +101,17 @@ class MeetingDetailScreen extends ConsumerWidget {
         }
         final isHost =
             myId.isNotEmpty && myId == (meeting.host?.id ?? '');
+        // Governance: institution admins may cancel the institution's
+        // meetings even when another member is the assigned host.
+        final identity = ref.watch(institutionIdentityProvider);
+        final canGovern = identity != null &&
+            identity.isAdmin &&
+            identity.id == meeting.owningInstitutionId;
         return _MeetingRecordBody(
           meeting: meeting,
           institutionId: institutionId,
           isHost: isHost,
+          canGovern: canGovern,
           lifecycle: MeetingLifecyclePresenter.present(
             meeting,
             room: meeting.room,
@@ -119,12 +127,17 @@ class _MeetingRecordBody extends ConsumerStatefulWidget {
   final Meeting meeting;
   final String? institutionId;
   final bool isHost;
+
+  /// Viewer is an admin of the owning institution: governance actions
+  /// (cancel) are available even when someone else hosts.
+  final bool canGovern;
   final MeetingLifecycleViewModel lifecycle;
 
   const _MeetingRecordBody({
     required this.meeting,
     this.institutionId,
     required this.isHost,
+    this.canGovern = false,
     required this.lifecycle,
   });
 
@@ -597,7 +610,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                     const SizedBox(height: AuraSpace.s16),
                   ],
 
-                  if (!ended && isHost)
+                  if (!ended && (isHost || widget.canGovern))
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/utils/local_timezone.dart';
@@ -120,26 +121,52 @@ class _ProfileCard extends ConsumerWidget {
                     style: theme.textTheme.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w600)),
               ),
-              if (profile.isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text('Active',
-                      style: TextStyle(
-                          color: Color(0xFF10B981),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (profile.isActive
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFF59E0B))
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: Text(profile.isActive ? 'Active' : 'Paused',
+                    style: TextStyle(
+                        color: profile.isActive
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFF59E0B),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
+              ),
             ],
           ),
           const SizedBox(height: AuraSpace.s4),
           Text(profile.meetingTitle,
               style: theme.textTheme.bodySmall?.copyWith(
                   color: const Color(0xFF6B7280))),
+
+          // Governance context: this profile is operated by the viewer but
+          // governed by the institution admin who created it.
+          if (_isAssignedNotOwner(ref)) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Row(
+              children: [
+                const Icon(Icons.verified_user_outlined,
+                    size: 13, color: Color(0xFF8B85FF)),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    'Assigned to you · governed by ${profile.owner?.name ?? 'your institution'}',
+                    style: const TextStyle(
+                        color: Color(0xFF8B85FF),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ],
 
           const SizedBox(height: AuraSpace.s10),
 
@@ -207,6 +234,31 @@ class _ProfileCard extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: AuraSpace.s8),
+              // Pause/resume — operational, so owner AND assigned host.
+              OutlinedButton.icon(
+                icon: Icon(
+                  profile.isActive
+                      ? Icons.pause_circle_outline_rounded
+                      : Icons.play_circle_outline_rounded,
+                  size: 16,
+                ),
+                label: Text(profile.isActive ? 'Pause' : 'Resume'),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    await ref
+                        .read(availabilityRepositoryProvider)
+                        .updateProfile(profile.id,
+                            isActive: !profile.isActive);
+                    ref.invalidate(myAvailabilityProfilesProvider);
+                  } catch (_) {
+                    messenger.showSnackBar(const SnackBar(
+                        content:
+                            Text('Could not update availability state.')));
+                  }
+                },
+              ),
             ],
           ),
           const SizedBox(height: AuraSpace.s10),
@@ -214,6 +266,21 @@ class _ProfileCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  bool _isAssignedNotOwner(WidgetRef ref) {
+    final ownerId = profile.owner?.id ?? '';
+    if (ownerId.isEmpty) return false;
+    final myId = ref.watch(authMeDataProvider).maybeWhen(
+          data: (me) {
+            final u = me['user'];
+            return (u is Map ? (u['id'] ?? '') : (me['id'] ?? ''))
+                .toString()
+                .trim();
+          },
+          orElse: () => '',
+        );
+    return myId.isNotEmpty && myId != ownerId;
   }
 
   String _dayLabel(String day) {
