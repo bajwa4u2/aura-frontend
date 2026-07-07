@@ -266,6 +266,8 @@ class RealtimeSocketService {
       // Phase 4 — Meeting Conversation Stream (persisted, meeting-owned).
       'session:conversation.message',
       'session:conversation.deleted',
+      // Materials sync — the room refetches assets when the host shares.
+      'session:assets.updated',
     ];
 
     for (final name in names) {

@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/auth/auth_providers.dart';
@@ -13,7 +15,6 @@ import '../../../core/ui/aura_space.dart';
 import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
 import 'widgets/active_meeting_return_layer.dart';
-import 'widgets/meeting_assets_section.dart';
 import 'widgets/meeting_conversation_panel.dart';
 import 'widgets/meeting_device_picker.dart';
 import 'widgets/meeting_pending_guests_panel.dart';
@@ -181,34 +182,35 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     }
   }
 
-  void _showFilesSheet(Meeting? meeting) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF0F172A),
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.7,
-            ),
-            child: SingleChildScrollView(
-              child: MeetingAssetsSection(
-                meetingId: widget.meetingId,
-                title: 'Meeting files & materials',
-                emptyText: widget.isHost
-                    ? 'Share a file or link with everyone in the meeting.'
-                    : 'Nothing has been shared in this meeting yet.',
-                filter: (a) => a.kind != MeetingAssetKind.recording,
-                canManage: widget.isHost,
-                addStage: 'MEETING',
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+  bool _showFiles = false;
+
+  // Materials belong to the same contextual-drawer family as chat, notes,
+  // and participants — never a modal over the meeting. A guest with nothing
+  // shared gets a quiet toast instead of an empty panel.
+  Future<void> _openFilesSurface(Meeting? meeting) async {
+    ref.invalidate(meetingAssetsProvider(widget.meetingId));
+    if (!widget.isHost) {
+      try {
+        final assets = await ref
+            .read(meetingsRepositoryProvider)
+            .listAssets(widget.meetingId);
+        if (!mounted) return;
+        if (assets.isEmpty) {
+          _showArrivalToast('No materials have been shared yet.');
+          return;
+        }
+      } catch (_) {
+        _showArrivalToast('No materials have been shared yet.');
+        return;
+      }
+    }
+    setState(() {
+      _showFiles = true;
+      // One contextual drawer at a time keeps the meeting primary.
+      _showChat = false;
+      _showNotes = false;
+      _showParticipants = false;
+    });
   }
 
   void _onParticipationEvent(RealtimeParsedEvent e) {
@@ -259,6 +261,12 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         final mid = (e.payload['messageId'] ?? '').toString().trim();
         if (mid.isEmpty) break;
         setState(() => _conversation.removeWhere((m) => m.id == mid));
+        break;
+      case 'session:assets.updated':
+        // Materials sync: refetch so a shared file appears for everyone
+        // within seconds — no reload, no reopening the panel.
+        ref.invalidate(meetingAssetsProvider(widget.meetingId));
+        if (!_showFiles) _showArrivalToast('New material shared — see Files');
         break;
     }
   }
@@ -1025,7 +1033,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 onAgenda: (meeting?.preparationNotes ?? '').trim().isNotEmpty
                     ? () => setState(() => _showNotes = true)
                     : null,
-                onFiles: () => _showFilesSheet(meeting),
+                onFiles: () => _openFilesSurface(meeting),
               ),
             ),
 
@@ -1092,6 +1100,21 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 initialNotes: meeting?.liveNotes,
                 agenda: meeting?.preparationNotes,
                 onClose: () => setState(() => _showNotes = false),
+              ),
+            ),
+
+          // Materials drawer — meeting context, not a file manager. Same
+          // contextual family as chat/notes/participants; exclusive so the
+          // meeting always stays primary.
+          if (_showFiles)
+            Positioned(
+              top: 0,
+              right: 0,
+              bottom: 0,
+              child: _MeetingFilesDrawer(
+                meetingId: widget.meetingId,
+                isHost: widget.isHost,
+                onClose: () => setState(() => _showFiles = false),
               ),
             ),
 
@@ -1196,18 +1219,25 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               onToggleCamera: state.cameraEnabled
                   ? _bridge.disableLocalCamera
                   : _bridge.enableLocalCamera,
-              onToggleParticipants: () =>
-                  setState(() => _showParticipants = !_showParticipants),
-              onToggleNotes: () =>
-                  setState(() => _showNotes = !_showNotes),
+              onToggleParticipants: () => setState(() {
+                _showParticipants = !_showParticipants;
+                if (_showParticipants) _showFiles = false;
+              }),
+              onToggleNotes: () => setState(() {
+                _showNotes = !_showNotes;
+                if (_showNotes) _showFiles = false;
+              }),
               showChat: _showChat,
               unreadChat: _unseenChat,
               onToggleChat: () => setState(() {
                 _showChat = !_showChat;
-                if (_showChat) _unseenChat = 0;
+                if (_showChat) {
+                  _unseenChat = 0;
+                  _showFiles = false;
+                }
               }),
               onInvite: () => _showInviteSheet(meeting),
-              onFiles: () => _showFilesSheet(meeting),
+              onFiles: () => _openFilesSurface(meeting),
               recordingSupported: widget.isHost && _recorder.isSupported,
               recording: _recording,
               savingRecording: _savingRecording,
@@ -2844,6 +2874,349 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Materials drawer — meeting context in the contextual-drawer family.
+// Hosts manage from the HEADER (add link / upload); the content area is the
+// meeting's materials, never a file-management surface. Guests are read-only.
+// ---------------------------------------------------------------------------
+
+class _MeetingFilesDrawer extends ConsumerStatefulWidget {
+  final String meetingId;
+  final bool isHost;
+  final VoidCallback onClose;
+
+  const _MeetingFilesDrawer({
+    required this.meetingId,
+    required this.isHost,
+    required this.onClose,
+  });
+
+  @override
+  ConsumerState<_MeetingFilesDrawer> createState() =>
+      _MeetingFilesDrawerState();
+}
+
+class _MeetingFilesDrawerState extends ConsumerState<_MeetingFilesDrawer> {
+  bool _busy = false;
+
+  Future<void> _addLink() async {
+    final urlCtrl = TextEditingController();
+    final titleCtrl = TextEditingController();
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        title: const Text('Share a link',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: urlCtrl,
+              autofocus: true,
+              keyboardType: TextInputType.url,
+              style: const TextStyle(color: Color(0xFFE5E7EB)),
+              decoration: const InputDecoration(
+                labelText: 'https://…',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            TextField(
+              controller: titleCtrl,
+              style: const TextStyle(color: Color(0xFFE5E7EB)),
+              decoration: const InputDecoration(
+                labelText: 'Title (optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Share link'),
+          ),
+        ],
+      ),
+    );
+    final url = urlCtrl.text.trim();
+    final title = titleCtrl.text.trim();
+    urlCtrl.dispose();
+    titleCtrl.dispose();
+    if (submitted != true || url.isEmpty || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(meetingsRepositoryProvider).addAssetLink(
+            widget.meetingId,
+            url: url,
+            title: title.isEmpty ? null : title,
+            stage: 'MEETING',
+          );
+      ref.invalidate(meetingAssetsProvider(widget.meetingId));
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _uploadFile() async {
+    final picked = await FilePicker.platform.pickFiles(withData: true);
+    final file = picked?.files.firstOrNull;
+    if (file == null || file.bytes == null || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(meetingsRepositoryProvider).uploadAsset(
+            widget.meetingId,
+            fileName: file.name,
+            mimeType: 'application/octet-stream',
+            bytes: file.bytes!,
+            stage: 'MEETING',
+          );
+      ref.invalidate(meetingAssetsProvider(widget.meetingId));
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 320,
+      color: const Color(0xFF0F172A),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 48, 8, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Materials',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                if (_busy)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF6C63FF),
+                    ),
+                  ),
+                if (widget.isHost) ...[
+                  IconButton(
+                    tooltip: 'Share a link',
+                    icon: const Icon(Icons.add_link_rounded,
+                        size: 19, color: Color(0xFF8B85FF)),
+                    onPressed: _busy ? null : _addLink,
+                  ),
+                  IconButton(
+                    tooltip: 'Upload a file',
+                    icon: const Icon(Icons.upload_file_rounded,
+                        size: 18, color: Color(0xFF8B85FF)),
+                    onPressed: _busy ? null : _uploadFile,
+                  ),
+                ],
+                IconButton(
+                  icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
+                  onPressed: widget.onClose,
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Color(0xFF1E293B), height: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(AuraSpace.s12),
+              children: [
+                _DrawerAssetGroup(
+                  meetingId: widget.meetingId,
+                  isHost: widget.isHost,
+                  title: 'Preparation materials',
+                  emptyText: widget.isHost
+                      ? 'No materials attached yet.'
+                      : 'No materials have been shared.',
+                  filter: (a) => a.stage == 'PREPARATION',
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                _DrawerAssetGroup(
+                  meetingId: widget.meetingId,
+                  isHost: widget.isHost,
+                  title: 'Shared during meeting',
+                  emptyText: widget.isHost
+                      ? 'Files you share land here — and stay on the record.'
+                      : 'Nothing shared during the meeting yet.',
+                  filter: (a) => a.stage == 'MEETING',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DrawerAssetGroup extends ConsumerWidget {
+  final String meetingId;
+  final bool isHost;
+  final String title;
+  final String emptyText;
+  final bool Function(MeetingAsset a) filter;
+
+  const _DrawerAssetGroup({
+    required this.meetingId,
+    required this.isHost,
+    required this.title,
+    required this.emptyText,
+    required this.filter,
+  });
+
+  Future<void> _open(
+      BuildContext context, WidgetRef ref, MeetingAsset asset) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final url = asset.kind == MeetingAssetKind.link
+          ? asset.url
+          : await ref
+              .read(meetingsRepositoryProvider)
+              .assetUrl(meetingId, asset.id);
+      if (url == null || url.isEmpty) throw Exception('no url');
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not open this item.')),
+      );
+    }
+  }
+
+  IconData _iconFor(MeetingAsset a) {
+    switch (a.kind) {
+      case MeetingAssetKind.link:
+        return Icons.link_rounded;
+      case MeetingAssetKind.recording:
+        return Icons.play_circle_outline_rounded;
+      case MeetingAssetKind.file:
+        return Icons.description_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final assets = (ref.watch(meetingAssetsProvider(meetingId)).valueOrNull ??
+            const <MeetingAsset>[])
+        .where(filter)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFF8A94A6),
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        if (assets.isEmpty)
+          Text(
+            emptyText,
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+          ),
+        for (final asset in assets)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: InkWell(
+              onTap: asset.isReady ? () => _open(context, ref, asset) : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  children: [
+                    Icon(_iconFor(asset),
+                        size: 17, color: const Color(0xFF8B85FF)),
+                    const SizedBox(width: AuraSpace.s10),
+                    Expanded(
+                      child: Text(
+                        asset.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFE5E7EB),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (isHost) ...[
+                      InkWell(
+                        onTap: () async {
+                          try {
+                            await ref
+                                .read(meetingsRepositoryProvider)
+                                .updateAsset(
+                                  meetingId,
+                                  asset.id,
+                                  visibleToGuests: !asset.visibleToGuests,
+                                );
+                            ref.invalidate(meetingAssetsProvider(meetingId));
+                          } catch (_) {}
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            asset.visibleToGuests
+                                ? Icons.public_rounded
+                                : Icons.lock_outline_rounded,
+                            size: 15,
+                            color: asset.visibleToGuests
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF8A94A6),
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () async {
+                          try {
+                            await ref
+                                .read(meetingsRepositoryProvider)
+                                .deleteAsset(meetingId, asset.id);
+                            ref.invalidate(meetingAssetsProvider(meetingId));
+                          } catch (_) {}
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(Icons.close_rounded,
+                              size: 15, color: Color(0xFF6B7280)),
+                        ),
+                      ),
+                    ] else
+                      const Icon(Icons.open_in_new_rounded,
+                          size: 14, color: Color(0xFF475569)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
