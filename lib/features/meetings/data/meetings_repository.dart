@@ -26,6 +26,10 @@ class MeetingsRepository {
     // Ownership: a meeting created from an institution workspace belongs to
     // that institution end to end.
     String? organizationId,
+    // GOVERNANCE V1 — explicit meeting audience (PUBLIC/GUEST/INSTITUTION/
+    // SELECTED/PRIVATE). When SELECTED, [audienceTargets] carries the cohort.
+    String? audience,
+    List<Map<String, dynamic>>? audienceTargets,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/meetings',
@@ -44,6 +48,9 @@ class MeetingsRepository {
           'guestApprovalRequired': guestApprovalRequired,
         if (organizationId != null && organizationId.isNotEmpty)
           'organizationId': organizationId,
+        if (audience != null) 'audience': audience,
+        if (audienceTargets != null && audienceTargets.isNotEmpty)
+          'audienceTargets': audienceTargets,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;

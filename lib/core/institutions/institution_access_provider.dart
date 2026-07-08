@@ -83,8 +83,37 @@ class InstitutionAccess {
       state == InstitutionAccessState.authorizedSpeaker;
 }
 
+/// GOVERNANCE V1 — the institutional capability tokens the backend exposes
+/// on `/institutions/me` (`membership.capabilities`). Mirror of the Prisma
+/// `InstitutionCapability` enum. The frontend renders authority truthfully
+/// from this set — never from role guesses.
+class InstitutionCapabilities {
+  static const manageMembers = 'MANAGE_MEMBERS';
+  static const manageInvitations = 'MANAGE_INVITATIONS';
+  static const manageJoinRequests = 'MANAGE_JOIN_REQUESTS';
+  static const manageMeetings = 'MANAGE_MEETINGS';
+  static const manageAvailability = 'MANAGE_AVAILABILITY';
+  static const manageBookings = 'MANAGE_BOOKINGS';
+  static const managePublicBooking = 'MANAGE_PUBLIC_BOOKING';
+  static const manageSpaces = 'MANAGE_SPACES';
+  static const manageAnnouncements = 'MANAGE_ANNOUNCEMENTS';
+  static const manageBranding = 'MANAGE_BRANDING';
+  static const manageDomains = 'MANAGE_DOMAINS';
+  static const manageBilling = 'MANAGE_BILLING';
+  static const manageVerification = 'MANAGE_VERIFICATION';
+  static const manageAnalytics = 'MANAGE_ANALYTICS';
+  static const manageMaterials = 'MANAGE_MATERIALS';
+  static const manageSummaries = 'MANAGE_SUMMARIES';
+  static const manageRecordings = 'MANAGE_RECORDINGS';
+  static const hostMeetings = 'HOST_MEETINGS';
+  static const officialRepresentation = 'OFFICIAL_REPRESENTATION';
+  static const publishOfficial = 'PUBLISH_OFFICIAL';
+  static const startLive = 'START_LIVE';
+  static const endLive = 'END_LIVE';
+}
+
 /// Derived, synchronous view of the current institution's identity and the
-/// acting member's admin status. Null until the institution access resolves
+/// acting member's authority. Null until the institution access resolves
 /// and the user has an institution with a known id.
 class InstitutionIdentity {
   const InstitutionIdentity({
@@ -92,8 +121,8 @@ class InstitutionIdentity {
     required this.name,
     required this.slug,
     this.logoUrl,
-    required this.isAdmin,
     required this.isAuthorizedSpeaker,
+    required this.capabilities,
     this.status,
     this.role,
     this.institutionClass,
@@ -105,48 +134,70 @@ class InstitutionIdentity {
   final String name;
   final String slug;
   final String? logoUrl;
-  final bool isAdmin;
   final bool isAuthorizedSpeaker;
+
+  /// Effective institutional capability set (role-implied ∪ delegated),
+  /// as reported by the backend. Source of truth for every visibility rule.
+  final Set<String> capabilities;
 
   /// Institution verification/lifecycle status, e.g. 'VERIFIED', 'PENDING'.
   final String? status;
 
-  /// Membership role in canonical wire format, e.g. 'OWNER', 'ADMIN',
-  /// 'EDITOR', 'MEMBER'. Null for institution-account tokens.
+  /// Membership role in canonical wire format: 'OWNER', 'ADMIN', 'MEMBER'.
+  /// Null for institution-account tokens.
   final String? role;
 
-  /// Global Institution Ontology — Level 1 class wire token (e.g.,
-  /// `GOVERNMENT`, `EDUCATIONAL`). Null until classified. Display
-  /// label is resolved via `institutionOntologyProvider`.
   final String? institutionClass;
-
-  /// Global Institution Ontology — Level 2 type wire token (e.g.,
-  /// `UNIVERSITY`). Null until classified.
   final String? institutionType;
-
-  /// Global Institution Ontology — Level 3 domain-tag wire tokens.
-  /// Empty when unclassified. Capped at 8 server-side.
   final List<String> domainTags;
 
   bool get isVerified => (status ?? '').toUpperCase() == 'VERIFIED';
 
+  // ── Governance authority (Phase 5: isOwner / isAdmin / canRepresent /
+  //    canHost split, plus per-capability evaluation) ──────────────────────
+
   bool get isOwner => (role ?? '').toUpperCase() == 'OWNER';
 
-  /// True when the acting member is at least EDITOR (EDITOR/ADMIN/OWNER).
-  bool get canCreatePosts {
+  /// Operational leadership — owner or admin. Governs the workspace's
+  /// operational surfaces. NOT a proxy for owner-only authority.
+  bool get isAdmin {
     final r = (role ?? '').toUpperCase();
-    return r == 'OWNER' ||
-        r == 'ADMIN' ||
-        r == 'EDITOR' ||
-        isAdmin ||
-        isAuthorizedSpeaker;
+    return r == 'OWNER' || r == 'ADMIN';
   }
 
-  /// True when the acting member can publish/approve posts directly.
-  bool get canPublishPosts {
-    final r = (role ?? '').toUpperCase();
-    return r == 'OWNER' || r == 'ADMIN' || isAdmin || isAuthorizedSpeaker;
-  }
+  bool can(String capability) => capabilities.contains(capability);
+
+  /// Official institutional voice (Representative or higher).
+  bool get canRepresent =>
+      can(InstitutionCapabilities.officialRepresentation) ||
+      isAuthorizedSpeaker;
+
+  /// Meeting operator (assigned Host or higher).
+  bool get canHost =>
+      can(InstitutionCapabilities.hostMeetings) ||
+      can(InstitutionCapabilities.manageMeetings);
+
+  bool get canManageMembers => can(InstitutionCapabilities.manageMembers);
+  bool get canManageInvitations =>
+      can(InstitutionCapabilities.manageInvitations);
+  bool get canManageJoinRequests =>
+      can(InstitutionCapabilities.manageJoinRequests);
+  bool get canManageBranding => can(InstitutionCapabilities.manageBranding);
+  bool get canManageDomains => can(InstitutionCapabilities.manageDomains);
+  bool get canManageBilling => can(InstitutionCapabilities.manageBilling);
+  bool get canManageSpaces => can(InstitutionCapabilities.manageSpaces);
+  bool get canManageAnnouncements =>
+      can(InstitutionCapabilities.manageAnnouncements);
+  bool get canManageAvailability =>
+      can(InstitutionCapabilities.manageAvailability);
+  bool get canStartLive => can(InstitutionCapabilities.startLive);
+
+  /// True when the acting member can author in the institution's voice.
+  bool get canCreatePosts =>
+      canRepresent || can(InstitutionCapabilities.publishOfficial);
+
+  /// True when the acting member can publish/approve official posts directly.
+  bool get canPublishPosts => can(InstitutionCapabilities.publishOfficial);
 }
 
 final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
@@ -176,11 +227,28 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
 
   final membership = access.membership;
   final role = (membership?['role'] ?? '').toString().trim().toUpperCase();
-  final canSpeak = membership?['canSpeakOfficially'] == true;
   final isAuthorizedSpeaker =
       access.state == InstitutionAccessState.authorizedSpeaker;
-  final isAdmin =
-      role == 'ADMIN' || role == 'OWNER' || canSpeak || isAuthorizedSpeaker;
+
+  // GOVERNANCE V1: capabilities come from the backend. An institution-account
+  // token (authorized speaker with no explicit membership role) governs the
+  // institution itself — grant the full operational set so its own workspace
+  // renders truthfully.
+  final rawCaps = membership?['capabilities'];
+  final capabilities = <String>{
+    if (rawCaps is List)
+      ...rawCaps.map((e) => e.toString().trim().toUpperCase()).where((s) => s.isNotEmpty),
+  };
+  if (isAuthorizedSpeaker && role.isEmpty) {
+    capabilities.addAll(const [
+      InstitutionCapabilities.officialRepresentation,
+      InstitutionCapabilities.publishOfficial,
+      InstitutionCapabilities.manageAnnouncements,
+      InstitutionCapabilities.manageMeetings,
+      InstitutionCapabilities.startLive,
+      InstitutionCapabilities.endLive,
+    ]);
+  }
   final status = readStr(inst, ['status', 'verificationStatus']);
 
   String? readOpt(Map<String, dynamic> m, List<String> keys) {
@@ -215,8 +283,8 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
     name: readStr(inst, ['name', 'displayName', 'title', 'organizationName']),
     slug: readStr(inst, ['slug', 'handle']),
     logoUrl: readOpt(inst, ['logoUrl', 'avatarUrl', 'logo']),
-    isAdmin: isAdmin,
     isAuthorizedSpeaker: isAuthorizedSpeaker,
+    capabilities: capabilities,
     status: finalStatus,
     role: role.isEmpty ? null : role,
     institutionClass: readOpt(inst, ['institutionClass']),

@@ -11,6 +11,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../ui/institution_ds.dart';
 import 'institution_domains_providers.dart';
 import 'institution_domains_repository.dart';
@@ -41,7 +42,12 @@ class _InstitutionDomainsScreenState
 
   String get institutionId => institution?['id']?.toString() ?? '';
 
-  bool get canManageDomains => institutionId.isNotEmpty;
+  /// GOVERNANCE V1: domains are owner-held (MANAGE_DOMAINS). The form is only
+  /// interactive for members who actually hold the capability — everyone else
+  /// sees a read-only view instead of controls that would 403 on submit.
+  bool get canManageDomains =>
+      institutionId.isNotEmpty &&
+      (ref.read(institutionIdentityProvider)?.canManageDomains ?? false);
 
   void _showSnack(String message) {
     if (!mounted) return;

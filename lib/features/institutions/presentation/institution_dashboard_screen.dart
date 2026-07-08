@@ -55,7 +55,22 @@ class _InstitutionDashboardScreenState
   bool get _canUseInstitutionTools =>
       _state == 'VERIFIED_MEMBER' || _state == 'AUTHORIZED_SPEAKER';
 
-  bool get _canManageDomains => _canUseInstitutionTools;
+  /// GOVERNANCE V1: effective capability set from /institutions/me.
+  Set<String> get _capabilities => <String>{
+        if (_membership?['capabilities'] is List)
+          ...(_membership!['capabilities'] as List)
+              .map((e) => e.toString().trim().toUpperCase()),
+      };
+
+  bool _can(String capability) => _capabilities.contains(capability);
+
+  // Domains are owner-held — the dashboard shortcut is only shown when the
+  // acting member actually holds MANAGE_DOMAINS.
+  bool get _canManageDomains =>
+      _canUseInstitutionTools && (_can('MANAGE_DOMAINS') || _isInstitutionAccount);
+
+  bool get _isInstitutionAccount => _state == 'AUTHORIZED_SPEAKER' &&
+      (_membership?['role']?.toString().trim().isEmpty ?? true);
 
   bool get _isAdmin {
     final r = _membership?['role']?.toString().trim().toUpperCase() ?? '';

@@ -50,8 +50,16 @@ class _InstitutionAnnouncementsScreenState
   /// Uses [ref.read] so the getter is safe from non-build call sites
   /// (initState, async handlers). The `build()` method explicitly subscribes
   /// to [institutionIdentityProvider] so rebuilds still happen on role change.
+  // GOVERNANCE V1: managing announcements (publish/unpublish/delete + draft
+  // list) requires MANAGE_ANNOUNCEMENTS; composing in the institution's voice
+  // requires official representation. Representatives can draft; admins manage.
   bool get _isAdmin =>
-      ref.read(institutionIdentityProvider)?.isAdmin ?? false;
+      ref.read(institutionIdentityProvider)?.canManageAnnouncements ?? false;
+
+  bool get _canCompose {
+    final idn = ref.read(institutionIdentityProvider);
+    return (idn?.canManageAnnouncements ?? false) || (idn?.canRepresent ?? false);
+  }
 
   @override
   void initState() {
@@ -445,7 +453,7 @@ class _InstitutionAnnouncementsScreenState
       title: 'Announcements',
       subtitle:
           'Publish official institutional notices and public statements.',
-      trailing: _isAdmin
+      trailing: _canCompose
           ? AuraPrimaryButton(
               label: 'New announcement',
               onPressed: () => context

@@ -30,6 +30,12 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
   bool _waitingRoom = false;
   bool _allowGuests = true;
   bool _saving = false;
+  // GOVERNANCE V1 — audience for an institution meeting. Defaults to the whole
+  // institution (internal), with private and guest options.
+  String _audience = 'INSTITUTION';
+
+  bool get _isInstitutionMeeting =>
+      widget.institutionId != null && widget.institutionId!.isNotEmpty;
 
   static const _durations = [15, 30, 45, 60, 90, 120];
 
@@ -85,8 +91,9 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         durationMinutes: _durationMinutes,
         timezone: resolveLocalTimezone(),
         waitingRoomEnabled: _waitingRoom,
-        allowGuests: _allowGuests,
+        allowGuests: _isInstitutionMeeting ? _audience == 'GUEST' : _allowGuests,
         organizationId: widget.institutionId,
+        audience: _isInstitutionMeeting ? _audience : null,
       );
 
       if (widget.institutionId == null) {
@@ -188,14 +195,43 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
             const Divider(),
             const SizedBox(height: AuraSpace.s8),
 
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Allow guests to join'),
-              subtitle: const Text(
-                  'People without an Aura account can join via link'),
-              value: _allowGuests,
-              onChanged: (v) => setState(() => _allowGuests = v),
-            ),
+            // GOVERNANCE V1 — audience for an institution meeting. Internal
+            // meetings have no public booking page and no guest join unless
+            // explicitly chosen.
+            if (_isInstitutionMeeting) ...[
+              const Text('Audience', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: AuraSpace.s6),
+              DropdownButton<String>(
+                value: _audience,
+                isExpanded: true,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'INSTITUTION',
+                    child: Text('Whole institution'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'PRIVATE',
+                    child: Text('Private (invited participants only)'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'GUEST',
+                    child: Text('Allow external guests'),
+                  ),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _audience = v);
+                },
+              ),
+              const SizedBox(height: AuraSpace.s8),
+            ] else
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Allow guests to join'),
+                subtitle: const Text(
+                    'People without an Aura account can join via link'),
+                value: _allowGuests,
+                onChanged: (v) => setState(() => _allowGuests = v),
+              ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Waiting room'),

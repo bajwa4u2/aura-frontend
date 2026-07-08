@@ -248,6 +248,49 @@ class InstitutionsRepository {
     return <String, dynamic>{};
   }
 
+  /// GOVERNANCE V1 — transfer institutional ownership (owner-exclusive).
+  Future<void> transferOwnership(
+    String institutionId,
+    String targetUserId,
+  ) async {
+    final id = institutionId.trim();
+    final uid = targetUserId.trim();
+    if (id.isEmpty || uid.isEmpty) {
+      throw Exception('Institution or user id is missing.');
+    }
+    await _dio.post(
+      '/institutions/$id/authority/transfer-ownership',
+      data: <String, dynamic>{'targetUserId': uid},
+    );
+  }
+
+  /// GOVERNANCE V1 — delegate an institutional capability to a member.
+  Future<void> grantCapability(
+    String institutionId,
+    String targetUserId,
+    String capability,
+  ) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    await _dio.post(
+      '/institutions/$id/authority/capabilities',
+      data: <String, dynamic>{'userId': targetUserId, 'capability': capability},
+    );
+  }
+
+  /// GOVERNANCE V1 — revoke a delegated capability from a member.
+  Future<void> revokeCapability(
+    String institutionId,
+    String targetUserId,
+    String capability,
+  ) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    await _dio.delete(
+      '/institutions/$id/authority/capabilities/$targetUserId/$capability',
+    );
+  }
+
   Future<void> revokeInvite(String institutionId, String inviteId) async {
     final id = institutionId.trim();
     final iid = inviteId.trim();

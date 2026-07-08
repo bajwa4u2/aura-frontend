@@ -181,6 +181,13 @@ class _InstitutionMembersScreenState
     final displayName = user['displayName']?.toString().trim() ?? '';
     final handle = user['handle']?.toString().trim() ?? '';
     final role = member['role']?.toString().trim() ?? 'MEMBER';
+    final caps = <String>{
+      if (member['capabilities'] is List)
+        ...(member['capabilities'] as List)
+            .map((e) => e.toString().trim().toUpperCase()),
+    };
+    final isRepresentative = caps.contains('OFFICIAL_REPRESENTATION');
+    final isHost = caps.contains('HOST_MEETINGS');
     final isRemoving = _removing == memberId;
     final isUpdating = _updating == memberId;
     final isBusy = isRemoving || isUpdating;
@@ -215,40 +222,27 @@ class _InstitutionMembersScreenState
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s8,
-              vertical: AuraSpace.s4,
-            ),
-            decoration: BoxDecoration(
-              color: _roleBg(role),
-              borderRadius: BorderRadius.circular(AuraRadius.pill),
-            ),
-            child: Text(
-              _roleBadge(role),
-              style: AuraText.micro.copyWith(
-                color: _roleColor(role),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          Wrap(
+            spacing: AuraSpace.s4,
+            children: [
+              _pill(_roleBadge(role), _roleColor(role), _roleBg(role)),
+              // Capabilities that read as institutional STANDING carry a
+              // visible badge — responsibility is visible to everyone.
+              if (isRepresentative)
+                _pill('Representative', AuraSurface.accentText,
+                    AuraSurface.accentSoft),
+                if (isHost)
+                _pill('Host', AuraSurface.coSun,
+                    AuraSurface.coSun.withValues(alpha: 0.16)),
+            ],
           ),
-          if (_isAdmin) ...[
+          if (_canManageThisMember(role)) ...[
             const SizedBox(width: AuraSpace.s4),
             if (isBusy)
               const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else if (role.toUpperCase() == 'OWNER')
-              // OWNER is the highest tier; cannot be demoted in UI.
-              const Tooltip(
-                message: 'Owners cannot be demoted from the workspace UI',
-                child: Icon(
-                  Icons.lock_outline_rounded,
-                  size: 16,
-                  color: AuraSurface.faint,
-                ),
               )
             else
               PopupMenuButton<String>(
@@ -264,62 +258,80 @@ class _InstitutionMembersScreenState
                   side: const BorderSide(color: AuraSurface.divider),
                 ),
                 itemBuilder: (_) => [
-                  if (_isOwner && role.toUpperCase() != 'OWNER')
-                    PopupMenuItem(
-                      value: 'MAKE_OWNER',
-                      child: Text(
-                        'Promote to Owner',
-                        style: AuraText.small
-                            .copyWith(color: AuraSurface.coVerdant),
-                      ),
-                    ),
-                  if (role.toUpperCase() != 'ADMIN' &&
-                      role.toUpperCase() != 'OWNER')
+                  // GOVERNANCE: appointing/removing admins and transferring
+                  // ownership are OWNER-exclusive; delegating Representative
+                  // and Host is available to admins.
+                  if (_isOwner && role.toUpperCase() == 'MEMBER')
                     PopupMenuItem(
                       value: 'PROMOTE',
-                      child: Text(
-                        'Promote to Admin',
-                        style: AuraText.small.copyWith(color: AuraSurface.accentText),
-                      ),
+                      child: Text('Promote to Admin',
+                          style: AuraText.small
+                              .copyWith(color: AuraSurface.accentText)),
                     ),
-                  if (role.toUpperCase() == 'ADMIN')
+                  if (_isOwner && role.toUpperCase() == 'ADMIN')
                     PopupMenuItem(
                       value: 'DEMOTE',
-                      child: Text(
-                        'Demote to Member',
-                        style: AuraText.small.copyWith(color: AuraSurface.coSun),
-                      ),
+                      child: Text('Demote to Member',
+                          style:
+                              AuraText.small.copyWith(color: AuraSurface.coSun)),
+                    ),
+                  if (_isOwner && role.toUpperCase() != 'OWNER')
+                    PopupMenuItem(
+                      value: 'TRANSFER',
+                      child: Text('Transfer ownership…',
+                          style: AuraText.small
+                              .copyWith(color: AuraSurface.coVerdant)),
                     ),
                   if (role.toUpperCase() == 'MEMBER')
-                    const PopupMenuItem(
-                      value: 'MAKE_EDITOR',
-                      child: Text('Make Editor', style: AuraText.small),
+                    PopupMenuItem(
+                      value: isRepresentative ? 'REVOKE_REP' : 'GRANT_REP',
+                      child: Text(
+                          isRepresentative
+                              ? 'Remove Representative'
+                              : 'Make Representative',
+                          style: AuraText.small),
                     ),
-                  if (role.toUpperCase() == 'EDITOR')
-                    const PopupMenuItem(
-                      value: 'MAKE_MEMBER',
-                      child: Text('Demote to Member', style: AuraText.small),
+                  if (role.toUpperCase() == 'MEMBER')
+                    PopupMenuItem(
+                      value: isHost ? 'REVOKE_HOST' : 'GRANT_HOST',
+                      child: Text(isHost ? 'Remove Host' : 'Make Host',
+                          style: AuraText.small),
                     ),
                   const PopupMenuDivider(),
                   PopupMenuItem(
                     value: 'REMOVE',
-                    child: Text(
-                      'Remove',
-                      style: AuraText.small.copyWith(color: AuraSurface.coRose),
-                    ),
+                    child: Text('Remove',
+                        style:
+                            AuraText.small.copyWith(color: AuraSurface.coRose)),
                   ),
                 ],
                 onSelected: (value) {
-                  if (value == 'REMOVE') {
-                    _confirmRemove(memberId, nameOrHandle);
-                  } else if (value == 'MAKE_OWNER') {
-                    _changeRole(memberId, 'OWNER');
-                  } else if (value == 'PROMOTE') {
-                    _changeRole(memberId, 'ADMIN');
-                  } else if (value == 'DEMOTE' || value == 'MAKE_MEMBER') {
-                    _changeRole(memberId, 'MEMBER');
-                  } else if (value == 'MAKE_EDITOR') {
-                    _changeRole(memberId, 'EDITOR');
+                  switch (value) {
+                    case 'REMOVE':
+                      _confirmRemove(memberId, nameOrHandle);
+                      break;
+                    case 'PROMOTE':
+                      _changeRole(memberId, 'ADMIN');
+                      break;
+                    case 'DEMOTE':
+                      _changeRole(memberId, 'MEMBER');
+                      break;
+                    case 'TRANSFER':
+                      _confirmTransfer(memberId, nameOrHandle);
+                      break;
+                    case 'GRANT_REP':
+                      _changeCapability(memberId, 'OFFICIAL_REPRESENTATION', true);
+                      break;
+                    case 'REVOKE_REP':
+                      _changeCapability(
+                          memberId, 'OFFICIAL_REPRESENTATION', false);
+                      break;
+                    case 'GRANT_HOST':
+                      _changeCapability(memberId, 'HOST_MEETINGS', true);
+                      break;
+                    case 'REVOKE_HOST':
+                      _changeCapability(memberId, 'HOST_MEETINGS', false);
+                      break;
                   }
                 },
               ),
@@ -327,6 +339,101 @@ class _InstitutionMembersScreenState
         ],
       ),
     );
+  }
+
+  /// Only owners may act on the admin tier; owners/admins may act on members.
+  bool _canManageThisMember(String role) {
+    final r = role.toUpperCase();
+    if (r == 'OWNER') return false;
+    if (r == 'ADMIN') return _isOwner;
+    return _isAdmin;
+  }
+
+  Widget _pill(String label, Color fg, Color bg) => Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s8,
+          vertical: AuraSpace.s4,
+        ),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+        ),
+        child: Text(
+          label,
+          style: AuraText.micro.copyWith(color: fg, fontWeight: FontWeight.w700),
+        ),
+      );
+
+  Future<void> _changeCapability(
+    String userId,
+    String capability,
+    bool grant,
+  ) async {
+    if (_updating != null) return;
+    setState(() {
+      _updating = userId;
+      _updateError = null;
+    });
+    try {
+      if (grant) {
+        await _repo.grantCapability(widget.institutionId, userId, capability);
+      } else {
+        await _repo.revokeCapability(widget.institutionId, userId, capability);
+      }
+      await _load();
+    } catch (e) {
+      setState(() {
+        _updateError = _message(e, 'Could not update capability.');
+        _updating = null;
+      });
+    }
+  }
+
+  Future<void> _confirmTransfer(String userId, String name) async {
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+        ),
+        title: const Text('Transfer ownership', style: AuraText.subtitle),
+        content: Text(
+          'Make $name the owner of this institution? You will become an admin. '
+          'This is irreversible without the new owner transferring it back.',
+          style: AuraText.body.copyWith(color: AuraSurface.muted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancel',
+                style: AuraText.small.copyWith(color: AuraSurface.muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Transfer',
+                style: AuraText.small.copyWith(
+                    color: AuraSurface.coVerdant,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() {
+      _updating = userId;
+      _updateError = null;
+    });
+    try {
+      await _repo.transferOwnership(widget.institutionId, userId);
+      await _load();
+    } catch (e) {
+      setState(() {
+        _updateError = _message(e, 'Could not transfer ownership.');
+        _updating = null;
+      });
+    }
   }
 
   Future<void> _confirmRemove(String userId, String name) async {

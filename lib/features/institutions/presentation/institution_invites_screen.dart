@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -41,9 +42,14 @@ class _InstitutionInvitesScreenState
   String? _revokeError;
   bool _showCreate = false;
 
-  // OWNER is shown at the top so owner-tier invites are surfaced first;
-  // backend enforces who may actually issue an OWNER invite.
-  static const _roles = ['OWNER', 'ADMIN', 'EDITOR', 'MEMBER'];
+  // GOVERNANCE V1: ownership is never granted by invite (only by transfer),
+  // and EDITOR was retired. Admins invite MEMBERs; only the OWNER may invite
+  // an ADMIN. Representative/Host are capabilities delegated after joining.
+  List<String> get _roles {
+    final isOwner =
+        ref.read(institutionIdentityProvider)?.isOwner ?? false;
+    return isOwner ? const ['MEMBER', 'ADMIN'] : const ['MEMBER'];
+  }
 
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 

@@ -1375,6 +1375,7 @@ class _InstEntry {
     this.pathBuilder,
     this.pathMatcher,
     this.adminOnly = false,
+    this.visibleWhen,
     this.badge = 0,
     // ignore: unused_element_parameter
     this.disabled = false,
@@ -1386,6 +1387,11 @@ class _InstEntry {
   final IconData icon;
   final IconData selectedIcon;
   final String? sectionLabel;
+
+  /// GOVERNANCE V1: capability-based visibility. When it returns false the
+  /// entry is HIDDEN (doctrine: hide what a user cannot use — never grey an
+  /// administrative control). Null means always visible.
+  final bool Function(InstitutionIdentity?)? visibleWhen;
 
   /// Pending-attention count rendered as a badge (0 = none).
   final int badge;
@@ -1403,6 +1409,20 @@ class _InstEntry {
   String? resolvedPath(InstitutionIdentity? identity) =>
       pathBuilder?.call(identity);
 
+  /// Returns a copy carrying [section] as its section label (used to reflow
+  /// section headers onto the first visible entry after capability filtering).
+  _InstEntry withSectionLabel(String section) => _InstEntry(
+        label: label,
+        icon: icon,
+        selectedIcon: selectedIcon,
+        sectionLabel: section,
+        pathBuilder: pathBuilder,
+        pathMatcher: pathMatcher,
+        adminOnly: adminOnly,
+        visibleWhen: visibleWhen,
+        badge: badge,
+      );
+
   bool isSelected(String currentPath, InstitutionIdentity? identity) {
     if (pathMatcher != null) return pathMatcher!(currentPath);
     final p = resolvedPath(identity);
@@ -1419,17 +1439,14 @@ List<_InstEntry> _buildInstEntries(
 }) {
   final id = identity?.id ?? '';
   final slug = identity?.slug ?? '';
-  final isAdmin = identity?.isAdmin ?? false;
 
   String? sectionPath(String section) =>
       id.isNotEmpty ? '/institution/$id/$section' : null;
 
-  // The left rail is now the single home for ALL institution navigation,
-  // grouped by intent:
-  //   WORKSPACE — communicate / participate
-  //   ADMIN     — manage access + trust
-  //   IDENTITY  — the institution's public face
-  return [
+  // The left rail is the single home for ALL institution navigation, grouped
+  // by intent (WORKSPACE / ADMIN / GOVERNANCE / IDENTITY). GOVERNANCE V1:
+  // entries a member lacks authority for are HIDDEN, not greyed.
+  final all = <_InstEntry>[
     // ── WORKSPACE ──────────────────────────────────────────────────────────
     _InstEntry(
       sectionLabel: 'WORKSPACE',
@@ -1517,10 +1534,10 @@ List<_InstEntry> _buildInstEntries(
       icon: Icons.person_add_outlined,
       selectedIcon: Icons.person_add_rounded,
       adminOnly: true,
+      visibleWhen: (idn) => idn?.canManageJoinRequests ?? false,
       badge: pendingJoinRequests,
-      pathBuilder: (_) => id.isNotEmpty && isAdmin
-          ? '/institution/$id/join-requests'
-          : null,
+      pathBuilder: (_) =>
+          id.isNotEmpty ? '/institution/$id/join-requests' : null,
       pathMatcher: (p) =>
           p.contains('/join-requests') && p.startsWith('/institution/'),
     ),
@@ -1529,30 +1546,43 @@ List<_InstEntry> _buildInstEntries(
       icon: Icons.mail_outline_rounded,
       selectedIcon: Icons.mail_rounded,
       adminOnly: true,
+      visibleWhen: (idn) => idn?.canManageInvitations ?? false,
       badge: pendingInvites,
-      pathBuilder: (_) =>
-          id.isNotEmpty && isAdmin ? '/institution/$id/invites' : null,
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/invites' : null,
       pathMatcher: (p) =>
           p.contains('/invite') && p.startsWith('/institution/'),
-    ),
-    _InstEntry(
-      label: 'Domains',
-      icon: Icons.language_rounded,
-      selectedIcon: Icons.language_rounded,
-      pathBuilder: (_) => id.isNotEmpty
-          ? institutionWorkspacePath(id, InstitutionSection.domains)
-          : null,
     ),
     _InstEntry(
       label: 'Booking pages',
       icon: Icons.calendar_today_outlined,
       selectedIcon: Icons.calendar_today_rounded,
       adminOnly: true,
-      pathBuilder: (_) => (id.isNotEmpty && isAdmin)
-          ? '/institution/$id/availability'
-          : null,
+      visibleWhen: (idn) => idn?.canManageAvailability ?? false,
+      pathBuilder: (_) =>
+          id.isNotEmpty ? '/institution/$id/availability' : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.endsWith('/availability'),
+    ),
+
+    // ── GOVERNANCE (owner-held; hidden from operators without the capability)
+    _InstEntry(
+      sectionLabel: 'GOVERNANCE',
+      label: 'Domains',
+      icon: Icons.language_rounded,
+      selectedIcon: Icons.language_rounded,
+      visibleWhen: (idn) => idn?.canManageDomains ?? false,
+      pathBuilder: (_) => id.isNotEmpty
+          ? institutionWorkspacePath(id, InstitutionSection.domains)
+          : null,
+    ),
+    _InstEntry(
+      label: 'Billing',
+      icon: Icons.account_balance_wallet_outlined,
+      selectedIcon: Icons.account_balance_wallet_rounded,
+      visibleWhen: (idn) => idn?.canManageBilling ?? false,
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/billing' : null,
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.endsWith('/billing'),
     ),
 
     // ── IDENTITY ───────────────────────────────────────────────────────────
@@ -1570,7 +1600,8 @@ List<_InstEntry> _buildInstEntries(
       icon: Icons.edit_outlined,
       selectedIcon: Icons.edit_rounded,
       adminOnly: true,
-      pathBuilder: (_) => (isAdmin && id.isNotEmpty)
+      visibleWhen: (idn) => idn?.canManageBranding ?? false,
+      pathBuilder: (_) => id.isNotEmpty
           ? institutionWorkspacePath(id, InstitutionSection.editProfile)
           : null,
     ),
@@ -1585,6 +1616,24 @@ List<_InstEntry> _buildInstEntries(
           p.startsWith('/institution/') && p.contains('/institutions/'),
     ),
   ];
+
+  // Filter to entries the acting member may use, then reflow section labels
+  // so a section whose anchor was hidden still labels its first visible entry
+  // (and a fully hidden section disappears entirely).
+  final visible = <_InstEntry>[];
+  String? pendingSection;
+  for (final e in all) {
+    if (e.sectionLabel != null) pendingSection = e.sectionLabel;
+    final allowed = e.visibleWhen?.call(identity) ?? true;
+    if (!allowed) continue;
+    if (pendingSection != null && pendingSection != e.sectionLabel) {
+      visible.add(e.withSectionLabel(pendingSection));
+    } else {
+      visible.add(e);
+    }
+    pendingSection = null;
+  }
+  return visible;
 }
 
 class _InstitutionSideNav extends StatelessWidget {
