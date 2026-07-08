@@ -641,11 +641,16 @@ class _MeetingCard extends ConsumerWidget {
                           value: _MeetingMenuAction.copyLink,
                           child: Text('Copy meeting link'),
                         ),
-                        const PopupMenuDivider(),
-                        const PopupMenuItem(
-                          value: _MeetingMenuAction.cancel,
-                          child: Text('Cancel meeting'),
-                        ),
+                        // Cancel only applies to a meeting that is still live
+                        // or ahead — an ended/cancelled/missed meeting is
+                        // terminal, so offering it would only ever 400.
+                        if (!meeting.isEnded) ...[
+                          const PopupMenuDivider(),
+                          const PopupMenuItem(
+                            value: _MeetingMenuAction.cancel,
+                            child: Text('Cancel meeting'),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -718,19 +723,25 @@ class _MeetingCard extends ConsumerWidget {
   }
 
   Future<void> _cancelMeeting(BuildContext context, WidgetRef ref) async {
+    // Capture the messenger BEFORE any await. Cancelling invalidates the list
+    // providers, which rebuilds and disposes THIS card while the method is
+    // still running — reading ScaffoldMessenger.of(context) after that point
+    // races a disposed element and blanks the canvas on web. The captured
+    // messenger is app-scoped and survives the card's disposal.
+    final messenger = ScaffoldMessenger.of(context);
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Cancel meeting?'),
         content: const Text('This will cancel the meeting for everyone.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Keep meeting'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Cancel meeting'),
           ),
         ],
@@ -748,15 +759,13 @@ class _MeetingCard extends ConsumerWidget {
         ref.invalidate(institutionUpcomingMeetingsProvider(institutionId!));
         ref.invalidate(institutionPastMeetingsProvider(institutionId!));
       }
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Meeting cancelled')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Meeting cancelled')),
+      );
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Unable to cancel meeting. Try again.')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Unable to cancel meeting. Try again.')),
+      );
     }
   }
 }
