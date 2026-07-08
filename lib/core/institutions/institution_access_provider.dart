@@ -177,6 +177,7 @@ class InstitutionIdentity {
       can(InstitutionCapabilities.hostMeetings) ||
       can(InstitutionCapabilities.manageMeetings);
 
+  bool get canManageMeetings => can(InstitutionCapabilities.manageMeetings);
   bool get canManageMembers => can(InstitutionCapabilities.manageMembers);
   bool get canManageInvitations =>
       can(InstitutionCapabilities.manageInvitations);

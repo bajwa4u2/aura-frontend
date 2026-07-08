@@ -214,15 +214,10 @@ class _HostHeader extends ConsumerWidget {
             label: const Text('Start meeting'),
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
-              debugPrint('[instant] tap start');
               try {
                 final meeting = await ref
                     .read(meetingsRepositoryProvider)
                     .startInstantMeeting(organizationId: institutionId);
-                debugPrint(
-                  '[instant] meeting created id=${meeting.id}'
-                  ' joinUrl=${meeting.joinUrl} sessionId=${meeting.sessionId}',
-                );
                 if (institutionId == null) {
                   ref.invalidate(upcomingMeetingsProvider);
                 } else {
@@ -232,8 +227,7 @@ class _HostHeader extends ConsumerWidget {
                 }
                 if (!context.mounted) return;
                 _showMeetingStarted(context, meeting);
-              } catch (e, st) {
-                debugPrint('[instant][fatal] start: $e\n$st');
+              } catch (e) {
                 messenger.showSnackBar(
                   SnackBar(content: Text('Start meeting failed: $e')),
                 );
@@ -267,13 +261,8 @@ class _HostHeader extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () {
-              debugPrint(
-                '[instant] copy link pressed joinUrl=${meeting.joinUrl}',
-              );
               try {
-                debugPrint('[instant] before clipboard');
                 Clipboard.setData(ClipboardData(text: meeting.joinUrl));
-                debugPrint('[instant] after clipboard');
                 // Do NOT pop the dialog here. Closing it forced the host to
                 // re-tap "Start meeting" to reach "Enter room", which minted a
                 // SECOND instant session — so the host joined a different
@@ -281,12 +270,10 @@ class _HostHeader extends ConsumerWidget {
                 // both sides waited forever. Keep the dialog open so the host
                 // copies the link AND enters the SAME session (meeting.id /
                 // meeting.sessionId).
-                debugPrint('[instant] before snackbar');
                 messenger.showSnackBar(
                   const SnackBar(content: Text('Meeting link copied')),
                 );
-              } catch (e, st) {
-                debugPrint('[instant][fatal] copy: $e\n$st');
+              } catch (e) {
                 messenger.showSnackBar(
                   SnackBar(content: Text('Copy link failed: $e')),
                 );
@@ -309,12 +296,10 @@ class _HostHeader extends ConsumerWidget {
               final route = meeting.sessionId != null
                   ? '$base/live?sessionId=${meeting.sessionId}&isHost=true'
                   : base;
-              debugPrint('[instant] before navigate route=$route');
               try {
                 Navigator.pop(dialogContext);
                 context.push(route);
-              } catch (e, st) {
-                debugPrint('[instant][fatal] enter room: $e\n$st');
+              } catch (e) {
                 messenger.showSnackBar(
                   SnackBar(content: Text('Enter room failed: $e')),
                 );
@@ -622,9 +607,6 @@ class _MeetingCard extends ConsumerWidget {
                             context.push(_summaryPath);
                             break;
                           case _MeetingMenuAction.copyLink:
-                            debugPrint(
-                              '[instant] card copy link joinUrl=${meeting.joinUrl}',
-                            );
                             final messenger = ScaffoldMessenger.of(context);
                             try {
                               Clipboard.setData(
@@ -635,8 +617,7 @@ class _MeetingCard extends ConsumerWidget {
                                   content: Text('Meeting link copied'),
                                 ),
                               );
-                            } catch (e, st) {
-                              debugPrint('[instant][fatal] card copy: $e\n$st');
+                            } catch (e) {
                               messenger.showSnackBar(
                                 SnackBar(content: Text('Copy link failed: $e')),
                               );

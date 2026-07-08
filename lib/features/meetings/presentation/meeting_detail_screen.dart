@@ -101,11 +101,13 @@ class MeetingDetailScreen extends ConsumerWidget {
         }
         final isHost =
             myId.isNotEmpty && myId == (meeting.host?.id ?? '');
-        // Governance: institution admins may cancel the institution's
-        // meetings even when another member is the assigned host.
+        // Governance: holders of MANAGE_MEETINGS on the owning institution
+        // may operate the institution's meetings (start/end/cancel) even when
+        // another member is the assigned host. Mirrors the backend capability
+        // check so the control never shows where the action would 403.
         final identity = ref.watch(institutionIdentityProvider);
         final canGovern = identity != null &&
-            identity.isAdmin &&
+            identity.canManageMeetings &&
             identity.id == meeting.owningInstitutionId;
         return _MeetingRecordBody(
           meeting: meeting,
