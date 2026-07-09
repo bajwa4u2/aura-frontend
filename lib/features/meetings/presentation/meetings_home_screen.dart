@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../institutions/ui/institution_ds.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -484,21 +485,56 @@ class _MeetingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final booking = meeting.booking;
+
+    // Participant continuity: one list, two perspectives. The viewer either
+    // OPERATES this meeting (its host, or acting inside the institution
+    // workspace that owns it) or PARTICIPATES in it (booked or attended).
+    // The card renders truthfully for each — participation never surfaces
+    // host controls, and hosting never loses them.
+    final myId = ref.watch(authMeDataProvider).maybeWhen(
+          data: (me) {
+            final u = me['user'];
+            return (u is Map ? (u['id'] ?? '') : (me['id'] ?? ''))
+                .toString()
+                .trim();
+          },
+          orElse: () => '',
+        );
+    final operates = institutionId != null ||
+        (myId.isNotEmpty && myId == (meeting.host?.id ?? ''));
+    final myParticipation = myId.isEmpty
+        ? null
+        : meeting.participants.where((p) => p.userId == myId).firstOrNull;
+    final awaitingMyConfirmation =
+        !operates && myParticipation?.rsvpStatus == 'PENDING';
+
     final bookerIdentity = booking?.bookerIdentity;
-    final guestName =
-        bookerIdentity?.displayName ??
-        booking?.bookerName ??
-        _guestParticipant?.displayName;
-    final guestEmail =
-        bookerIdentity?.email ??
-        booking?.bookerEmail ??
-        _guestParticipant?.guestEmail;
+    final guestName = operates
+        ? (bookerIdentity?.displayName ??
+            booking?.bookerName ??
+            _guestParticipant?.displayName)
+        : null;
+    final guestEmail = operates
+        ? (bookerIdentity?.email ??
+            booking?.bookerEmail ??
+            _guestParticipant?.guestEmail)
+        : null;
+    // The participant's anchor is who they are meeting WITH — the hosting
+    // institution (owner) or the host — not their own booking identity.
+    final hostAttribution = operates
+        ? null
+        : [
+            if (booking?.institution?.name.trim().isNotEmpty == true)
+              booking!.institution!.name.trim(),
+            if (meeting.host?.name.trim().isNotEmpty == true)
+              'Hosted by ${meeting.host!.name.trim()}',
+          ].join(' · ');
     final source = _sourceLabel(meeting);
     final scheduledLabel = _scheduledLabel(context, meeting);
     final lifecycle = MeetingLifecyclePresenter.present(
       meeting,
       room: meeting.room,
-      isHost: true,
+      isHost: operates,
     );
 
     return Padding(
@@ -558,6 +594,12 @@ class _MeetingCard extends ConsumerWidget {
                               fallbackName: guestName,
                               fallbackEmail: guestEmail,
                             ),
+                          if (hostAttribution != null &&
+                              hostAttribution.isNotEmpty)
+                            _Line(
+                              icon: Icons.apartment_rounded,
+                              text: hostAttribution,
+                            ),
                           if (source != null)
                             _Line(
                               icon: Icons.calendar_today_rounded,
@@ -584,6 +626,14 @@ class _MeetingCard extends ConsumerWidget {
                       ),
                     ),
                   ),
+                if (awaitingMyConfirmation) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  _PendingAttachmentBanner(
+                    meeting: meeting,
+                    onRespond: (accepted) =>
+                        _respondToMeeting(context, ref, accepted),
+                  ),
+                ],
                 const SizedBox(height: AuraSpace.s12),
                 Wrap(
                   spacing: AuraSpace.s8,
@@ -591,6 +641,7 @@ class _MeetingCard extends ConsumerWidget {
                   children: [
                     _PrimaryActionButton(
                       lifecycle: lifecycle,
+                      canOperate: operates,
                       onStart: () => _startMeeting(context, ref),
                       onEnter: () => _joinMeeting(context),
                       onOpenDetails: () => context.push(_detailPath),
@@ -623,6 +674,9 @@ class _MeetingCard extends ConsumerWidget {
                               );
                             }
                             break;
+                          case _MeetingMenuAction.leave:
+                            await _respondToMeeting(context, ref, false);
+                            break;
                           case _MeetingMenuAction.cancel:
                             await _cancelMeeting(context, ref);
                             break;
@@ -641,14 +695,23 @@ class _MeetingCard extends ConsumerWidget {
                           value: _MeetingMenuAction.copyLink,
                           child: Text('Copy meeting link'),
                         ),
-                        // Cancel only applies to a meeting that is still live
-                        // or ahead — an ended/cancelled/missed meeting is
-                        // terminal, so offering it would only ever 400.
-                        if (!meeting.isEnded) ...[
+                        // Lifecycle actions follow the viewer's role in THIS
+                        // meeting: hosts/institution operators cancel the
+                        // meeting itself; a participant only steps back from
+                        // their own attendance — ownership stays untouched.
+                        if (!meeting.isEnded && operates) ...[
                           const PopupMenuDivider(),
                           const PopupMenuItem(
                             value: _MeetingMenuAction.cancel,
                             child: Text('Cancel meeting'),
+                          ),
+                        ] else if (!meeting.isEnded &&
+                            myParticipation != null &&
+                            !awaitingMyConfirmation) ...[
+                          const PopupMenuDivider(),
+                          const PopupMenuItem(
+                            value: _MeetingMenuAction.leave,
+                            child: Text('Remove from my meetings'),
                           ),
                         ],
                       ],
@@ -670,21 +733,51 @@ class _MeetingCard extends ConsumerWidget {
     return null;
   }
 
-  // Ownership: an institution meeting's row links into the Institution
-  // Workspace even from the personal Desk (shortcuts allowed; operations
-  // are institution-owned).
-  String? get _resolvedInstitutionId =>
-      institutionId ?? meeting.owningInstitutionId;
-
-  String get _detailPath => _resolvedInstitutionId == null
+  // Ownership: inside the Institution Desk every row operates on institution
+  // paths. From the personal Desk the card links to the member path — the
+  // Meeting Record canonicalizes INSTITUTIONAL ACTORS to the Institution
+  // Workspace, while an external participant keeps their own view of the
+  // institution-owned meeting.
+  String get _detailPath => institutionId == null
       ? '/meetings/${meeting.id}'
-      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}';
-  String get _summaryPath => _resolvedInstitutionId == null
+      : '/institution/$institutionId/meetings/${meeting.id}';
+  String get _summaryPath => institutionId == null
       ? '/meetings/${meeting.id}/summary'
-      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/summary';
-  String get _liveBasePath => _resolvedInstitutionId == null
+      : '/institution/$institutionId/meetings/${meeting.id}/summary';
+  String get _liveBasePath => institutionId == null
       ? '/meetings/${meeting.id}/live'
-      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/live';
+      : '/institution/$institutionId/meetings/${meeting.id}/live';
+
+  // Participant continuity: confirm (accept) or step back from (decline) the
+  // viewer's OWN participation. Never a meeting-lifecycle action.
+  Future<void> _respondToMeeting(
+    BuildContext context,
+    WidgetRef ref,
+    bool accepted,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(meetingsRepositoryProvider)
+          .respondToMeeting(meeting.id, accepted ? 'ACCEPTED' : 'DECLINED');
+      ref.invalidate(meetingProvider(meeting.id));
+      ref.invalidate(upcomingMeetingsProvider);
+      ref.invalidate(pastMeetingsProvider);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            accepted
+                ? 'Meeting confirmed — it stays in your meetings.'
+                : 'Removed from your meetings.',
+          ),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not update. Try again.')),
+      );
+    }
+  }
 
   Future<void> _startMeeting(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -770,7 +863,76 @@ class _MeetingCard extends ConsumerWidget {
   }
 }
 
-enum _MeetingMenuAction { details, summary, copyLink, cancel }
+enum _MeetingMenuAction { details, summary, copyLink, leave, cancel }
+
+// Participant continuity: a booking made with the member's email attaches to
+// their account awaiting THEIR word — mirroring an invitation. Confirm keeps
+// it in their meetings; decline removes it. Never affects the meeting itself.
+class _PendingAttachmentBanner extends StatelessWidget {
+  final Meeting meeting;
+  final void Function(bool accepted) onRespond;
+
+  const _PendingAttachmentBanner({
+    required this.meeting,
+    required this.onRespond,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFF6C63FF);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.event_available_rounded,
+                    size: 18, color: color),
+                const SizedBox(width: AuraSpace.s8),
+                Expanded(
+                  child: Text(
+                    'This meeting was booked with your email. Keep it in your meetings?',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: const Color(0xFFE2ECF5)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AuraSpace.s10),
+            Wrap(
+              spacing: AuraSpace.s8,
+              children: [
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => onRespond(true),
+                  child: const Text('Keep meeting'),
+                ),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => onRespond(false),
+                  child: const Text('Not mine'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _MeetingIcon extends StatelessWidget {
   final Meeting meeting;
@@ -801,6 +963,11 @@ class _MeetingIcon extends StatelessWidget {
 
 class _PrimaryActionButton extends StatelessWidget {
   final MeetingLifecycleViewModel lifecycle;
+
+  /// Viewer operates this meeting (host / institution desk). A participant
+  /// never sees operator actions — their forward action is joining or
+  /// opening the record.
+  final bool canOperate;
   final VoidCallback onStart;
   final VoidCallback onEnter;
   final VoidCallback onOpenDetails;
@@ -808,6 +975,7 @@ class _PrimaryActionButton extends StatelessWidget {
 
   const _PrimaryActionButton({
     required this.lifecycle,
+    this.canOperate = true,
     required this.onStart,
     required this.onEnter,
     required this.onOpenDetails,
@@ -831,11 +999,20 @@ class _PrimaryActionButton extends StatelessWidget {
         onPressed: onEnter,
       );
     }
-    if (label == 'Enter room') {
+    if (label == 'Enter room' || label == 'Join meeting') {
       return FilledButton.icon(
         icon: const Icon(Icons.video_call_rounded, size: 18),
-        label: const Text('Enter room'),
+        label: Text(label),
         onPressed: onEnter,
+      );
+    }
+    if (!canOperate) {
+      // Participant view of a not-yet-live meeting: the record is the
+      // doorway — it shows schedule, agenda, and opens the room when live.
+      return OutlinedButton.icon(
+        icon: const Icon(Icons.event_note_rounded, size: 18),
+        label: const Text('Open meeting'),
+        onPressed: onOpenDetails,
       );
     }
     return FilledButton.icon(

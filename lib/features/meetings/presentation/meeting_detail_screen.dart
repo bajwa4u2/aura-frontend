@@ -85,10 +85,21 @@ class MeetingDetailScreen extends ConsumerWidget {
         // Institution Workspace end to end. A record reached on a member
         // path (deep link, Desk shortcut, old email link) canonicalizes to
         // its institution URL, which flips the shell to InstitutionShell.
+        //
+        // Participant continuity refinement: only INSTITUTIONAL ACTORS
+        // (members of the owning institution) canonicalize. An external
+        // participant — an Aura member who booked or attended — views the
+        // meeting from their own workspace; they have no seat in the
+        // institution's. Ownership is untouched: the record still renders
+        // the institution as the meeting's owner.
         final owningInstitution = meeting.owningInstitutionId;
-        if (institutionId == null &&
-            owningInstitution != null &&
-            owningInstitution.isNotEmpty) {
+        final belongsToOwningInstitution = owningInstitution != null &&
+            owningInstitution.isNotEmpty &&
+            (ref.watch(institutionIdentityProvider)?.id == owningInstitution ||
+                ref
+                    .watch(myAffiliationsProvider)
+                    .any((a) => a.id == owningInstitution));
+        if (institutionId == null && belongsToOwningInstitution) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
               context.go('/institution/$owningInstitution/meetings/$meetingId');

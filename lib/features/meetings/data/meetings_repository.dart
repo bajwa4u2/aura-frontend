@@ -453,6 +453,11 @@ class MeetingsRepository {
     String? guestName,
     String? guestEmail,
     String? bookerToken,
+    // Participant continuity: a signed-in MEMBER joins as themselves — the
+    // backend upserts their member participant row (and consumes a booker
+    // token as a claim), so the meeting lives in their own inventory.
+    // Guests and anonymous visitors keep the auth-less path unchanged.
+    bool asMember = false,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/public/meetings/join/$code',
@@ -462,7 +467,7 @@ class MeetingsRepository {
         if (bookerToken != null && bookerToken.isNotEmpty)
           'bookerToken': bookerToken,
       },
-      options: Options(extra: const {'__skip_auth': true}),
+      options: Options(extra: {'__skip_auth': !asMember}),
     );
     final data = res.data!['data'] as Map<String, dynamic>;
     return JoinMeetingResult.fromJson(data);
@@ -476,6 +481,27 @@ class MeetingsRepository {
     );
     final data = res.data!['data'] as Map<String, dynamic>;
     return GuestAuthResult.fromJson(data);
+  }
+
+  // Participant continuity: a signed-in member presents their booking
+  // reference (`bt`) and the booked meeting attaches to their account.
+  // Returns the attached meeting.
+  Future<Meeting> keepBookedMeeting(String bookerToken) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/claim',
+      data: {'bookerToken': bookerToken},
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return Meeting.fromJson(data['meeting'] as Map<String, dynamic>);
+  }
+
+  // Participant continuity: confirm or decline a meeting attached to this
+  // account (an email-matched booking arrives as a pending attachment).
+  Future<void> respondToMeeting(String meetingId, String status) async {
+    await _dio.post<void>(
+      '/meetings/$meetingId/rsvp',
+      data: {'status': status},
+    );
   }
 
   Future<void> inviteToMeeting(

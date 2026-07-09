@@ -313,6 +313,19 @@ class _Tile extends StatelessWidget {
         return spaceName.isNotEmpty
             ? '$actorName posted in $spaceName'
             : '$actorName posted in a space you follow';
+      // Participant continuity — meeting lifecycle. The actor is the
+      // meeting's owner (institution or host), so the row reads in their
+      // voice; the meeting title arrives in the payload.
+      case 'MEETING_BOOKED':
+        return notification.payload['pendingConfirmation'] == true
+            ? 'A meeting with $actorName was booked with your email'
+            : 'Your meeting with $actorName is scheduled';
+      case 'MEETING_REMINDER':
+        return 'Upcoming meeting with $actorName';
+      case 'MEETING_STARTING':
+        return 'Your meeting with $actorName is starting';
+      case 'MEETING_SUMMARY_SHARED':
+        return '$actorName shared the meeting summary';
       default:
         return '$actorName interacted with your content';
     }
@@ -332,7 +345,11 @@ class _Tile extends StatelessWidget {
                 'U')
             .substring(0, 1)
             .toUpperCase());
-    final snippet = notification.payload['snippet']?.toString() ?? '';
+    final snippet = notification.payload['snippet']?.toString() ??
+        // Meeting rows carry the meeting title as their supporting line.
+        (notification.type.toUpperCase().startsWith('MEETING_')
+            ? (notification.payload['meetingTitle']?.toString() ?? '')
+            : '');
 
     // For grouped tiles, the row is "unread" when any underlying entry
     // is unread — so the wash persists until the user opens the post.

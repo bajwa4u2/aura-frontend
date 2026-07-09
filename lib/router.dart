@@ -113,6 +113,7 @@ import 'features/meetings/presentation/booking_reschedule_screen.dart';
 import 'features/meetings/presentation/create_meeting_screen.dart';
 import 'features/meetings/presentation/guest_waiting_room_screen.dart';
 import 'features/meetings/presentation/institution_availability_screen.dart';
+import 'features/meetings/presentation/keep_meeting_screen.dart';
 import 'features/meetings/presentation/meeting_detail_screen.dart';
 import 'features/meetings/presentation/meeting_join_error_screen.dart';
 import 'features/meetings/presentation/meeting_join_fallback_screen.dart';
@@ -969,6 +970,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/meetings/join',
             builder: (context, state) => const MeetingJoinFallbackScreen(),
+          ),
+          // Participant continuity — after sign-in/registration the booking
+          // reference (`bt`) attaches the booked meeting to the member's
+          // account and lands on the meeting record. Static path: MUST
+          // precede `/meetings/:id`.
+          GoRoute(
+            path: '/meetings/keep',
+            builder: (context, state) => KeepMeetingScreen(
+              bookerToken: state.uri.queryParameters['bt'],
+              meetingCode: state.uri.queryParameters['code'],
+            ),
           ),
           // Guest-safe terminal fallback — a MEETING context that could not be
           // resolved must land here, never on the generic RealtimeRoomScreen.

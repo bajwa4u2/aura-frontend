@@ -91,6 +91,11 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
       }
       if (route.startsWith('/direct/')) return 'MESSAGE';
       if (route.startsWith('/spaces/')) return 'SPACE_ACTIVITY';
+      // Participant continuity — meeting lifecycle deeplinks land on the
+      // Meeting Record (personal or institution path).
+      if (route.startsWith('/meetings/') || route.contains('/meetings/')) {
+        return 'MEETING_REMINDER';
+      }
       if (route.startsWith('/posts/') || route.contains('/posts/')) {
         return 'REPLY';
       }

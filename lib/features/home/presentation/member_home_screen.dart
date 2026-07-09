@@ -19,6 +19,8 @@ import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/presentation/feed_filter_bar.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
+import '../../meetings/application/meetings_provider.dart';
+import '../../meetings/domain/meeting.dart';
 import '../../public/widgets/activation_overlay.dart';
 import '../../public/widgets/discourse_card.dart';
 import '../../public/widgets/public_composer.dart';
@@ -238,6 +240,11 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
                   // discourse-relevant notifications. Collapsible.
                   const SinceYouWereHereSection(),
                   const SizedBox(height: AuraSpace.s8),
+
+                  // ── Participant continuity: the member's next meeting —
+                  // booked, attended, or hosted — surfaces where they land.
+                  // Self-hides when nothing is ahead.
+                  const _NextMeetingSection(),
 
                   // ── Public composer (primary discourse entry)
                   const PublicComposer(),
@@ -689,3 +696,142 @@ class _HeldDraftHint extends StatelessWidget {
   }
 }
 
+
+/// Participant continuity — the member's next meeting, surfaced where they
+/// land. Shows the single nearest live-or-upcoming meeting (booked, attended,
+/// or hosted) with a truthful action: join when live, open the record
+/// otherwise. Self-hides while loading, on error, or when nothing is ahead —
+/// a quiet day costs no vertical space.
+class _NextMeetingSection extends ConsumerWidget {
+  const _NextMeetingSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final upcoming = ref.watch(upcomingMeetingsProvider);
+    return upcoming.maybeWhen(
+      data: (meetings) {
+        final now = DateTime.now();
+        final ahead = meetings.where((m) => !m.isEnded).toList()
+          ..sort((a, b) => (a.scheduledAt ?? now).compareTo(b.scheduledAt ?? now));
+        final live = ahead.where((m) => m.isActive).toList();
+        final next = live.isNotEmpty ? live.first : (ahead.isNotEmpty ? ahead.first : null);
+        if (next == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+          child: _NextMeetingCard(meeting: next, isLive: next.isActive),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _NextMeetingCard extends StatelessWidget {
+  const _NextMeetingCard({required this.meeting, required this.isLive});
+
+  final Meeting meeting;
+  final bool isLive;
+
+  String _timeLabel(BuildContext context) {
+    final at = meeting.scheduledAt?.toLocal();
+    if (at == null) return 'Time to be confirmed';
+    final now = DateTime.now();
+    final minutes = at.difference(now).inMinutes;
+    if (minutes <= 0) return 'Now';
+    if (minutes < 60) return 'In $minutes min';
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(at.year, at.month, at.day);
+    final time = MaterialLocalizations.of(context)
+        .formatTimeOfDay(TimeOfDay.fromDateTime(at));
+    if (day == today) return 'Today · $time';
+    if (day == today.add(const Duration(days: 1))) return 'Tomorrow · $time';
+    return '${MaterialLocalizations.of(context).formatShortDate(at)} · $time';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isLive ? const Color(0xFF10B981) : const Color(0xFF6C63FF);
+    final institutionName = meeting.booking?.institution?.name.trim();
+    final hostName = meeting.host?.name.trim();
+    final attribution = [
+      if (institutionName?.isNotEmpty == true) institutionName!,
+      if (hostName?.isNotEmpty == true) hostName!,
+    ].join(' · ');
+
+    return AuraCard(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        onTap: () => context.push('/meetings/${meeting.id}'),
+        child: Padding(
+          padding: const EdgeInsets.all(AuraSpace.s14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(AuraRadius.sm),
+                ),
+                child: Icon(
+                  isLive ? Icons.sensors_rounded : Icons.event_rounded,
+                  color: accent,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isLive
+                          ? 'Live now · ${_timeLabel(context)}'
+                          : 'Next meeting · ${_timeLabel(context)}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: accent,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      meeting.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    if (attribution.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        attribution,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AuraSurface.faint),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: isLive ? accent : null,
+                ),
+                onPressed: () => context.push('/meetings/${meeting.id}'),
+                child: Text(isLive ? 'Join' : 'Open'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

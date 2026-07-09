@@ -260,7 +260,6 @@ class _ConfirmationView extends ConsumerWidget {
     final host = confirmation.host ?? profile.effectiveHost;
     final bookerIdentity = confirmation.bookerIdentity;
     final joinPath = '/meetings/join/${confirmation.meetingCode}';
-    final loginPath = '/login?redirect=${Uri.encodeComponent(joinPath)}';
     final localTime = confirmation.scheduledAt.toLocal();
     final localizations = MaterialLocalizations.of(context);
     final timeLabel =
@@ -435,10 +434,35 @@ class _ConfirmationView extends ConsumerWidget {
                   ),
                   if (!isAuthed) ...[
                     const SizedBox(height: AuraSpace.s12),
+                    // Participant continuity: signing in (or creating an
+                    // account) attaches this booking to the member's own
+                    // meetings — reminders, the join entry, and the record
+                    // live in their account from here on.
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.bookmark_added_rounded),
+                      label: const Text('Keep this meeting in your account'),
+                      onPressed: () {
+                        final bt = confirmation.bookingReference;
+                        final target = bt == null
+                            ? joinPath
+                            : '/meetings/keep?bt=${Uri.encodeComponent(bt)}'
+                                '&code=${Uri.encodeComponent(confirmation.meetingCode)}';
+                        context.go(
+                          '/login?redirect=${Uri.encodeComponent(target)}',
+                        );
+                      },
+                    ),
+                  ] else ...[
+                    const SizedBox(height: AuraSpace.s12),
                     TextButton.icon(
-                      icon: const Icon(Icons.login_rounded),
-                      label: const Text('Sign in with Aura'),
-                      onPressed: () => context.go(loginPath),
+                      icon: const Icon(Icons.event_available_rounded),
+                      label: const Text('View in your meetings'),
+                      onPressed: () {
+                        // The booking just attached server-side — refresh the
+                        // cached inventory before landing on it.
+                        ref.invalidate(upcomingMeetingsProvider);
+                        context.go('/meetings');
+                      },
                     ),
                   ],
                   const SizedBox(height: AuraSpace.s12),

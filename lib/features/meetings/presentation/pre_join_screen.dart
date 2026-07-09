@@ -56,6 +56,10 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
 
     try {
       final repo = ref.read(meetingsRepositoryProvider);
+      // Participant continuity: a member joins as themselves — the backend
+      // attaches the meeting to their account (a booker link is consumed as
+      // a claim), so it appears in their own upcoming meetings.
+      final isMember = ref.read(tokenStoreProvider).isMemberSession;
       final result = await repo.joinMeeting(
         widget.meetingCode,
         guestName: name.isEmpty ? null : name,
@@ -63,6 +67,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
             ? null
             : _emailCtrl.text.trim(),
         bookerToken: widget.bookerToken,
+        asMember: isMember,
       );
 
       if (!mounted) return;
@@ -235,6 +240,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
         identity: identityAsync.valueOrNull,
         onJoin: () => _join(meeting),
         isBooker: (widget.bookerToken ?? '').trim().isNotEmpty,
+        bookerToken: widget.bookerToken,
         deviceCheck: MeetingDeviceCheck(
           controller: _deviceCheck,
           displayName: identityAsync.valueOrNull?.displayName ??
@@ -255,6 +261,7 @@ class _PreJoinBody extends ConsumerWidget {
   final VoidCallback onJoin;
   final Widget deviceCheck;
   final bool isBooker;
+  final String? bookerToken;
 
   const _PreJoinBody({
     required this.meeting,
@@ -266,6 +273,7 @@ class _PreJoinBody extends ConsumerWidget {
     required this.onJoin,
     required this.deviceCheck,
     required this.isBooker,
+    this.bookerToken,
   });
 
   @override
@@ -417,14 +425,30 @@ class _PreJoinBody extends ConsumerWidget {
                               },
                       ),
                     ),
-                    if (!isAuthed && !isBooker) ...[
+                    if (!isAuthed) ...[
                       const SizedBox(height: AuraSpace.s12),
+                      // Participant continuity: signing in keeps the booking
+                      // reference (`bt`) so the meeting attaches to the
+                      // member's account the moment they join — or, for a
+                      // booker who signs in without joining yet, the meeting
+                      // still lands in their upcoming meetings.
                       TextButton.icon(
                         icon: const Icon(Icons.login_rounded),
-                        label: const Text('Sign in with Aura'),
-                        onPressed: () => context.go(
-                          '/login?redirect=${Uri.encodeComponent('/meetings/join/${meeting.meetingCode}')}',
+                        label: Text(
+                          isBooker
+                              ? 'Sign in to keep this meeting in your account'
+                              : 'Sign in with Aura',
                         ),
+                        onPressed: () {
+                          final token = (bookerToken ?? '').trim();
+                          final target = token.isEmpty
+                              ? '/meetings/join/${meeting.meetingCode}'
+                              : '/meetings/keep?bt=${Uri.encodeComponent(token)}'
+                                  '&code=${Uri.encodeComponent(meeting.meetingCode)}';
+                          context.go(
+                            '/login?redirect=${Uri.encodeComponent(target)}',
+                          );
+                        },
                       ),
                     ],
                     const SizedBox(height: AuraSpace.s32),

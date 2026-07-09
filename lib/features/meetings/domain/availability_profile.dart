@@ -246,6 +246,14 @@ class BookingConfirmation {
   final MeetingIdentityRef? bookerIdentity;
   final String meetingTitle;
 
+  /// Booking reference carried by the identity-bound join link (`bt`).
+  /// Participant continuity: after sign-in or registration this reference
+  /// attaches the booked meeting to the member's account.
+  String? get bookingReference {
+    final token = Uri.tryParse(joinUrl)?.queryParameters['bt']?.trim();
+    return (token == null || token.isEmpty) ? null : token;
+  }
+
   const BookingConfirmation({
     required this.bookingId,
     required this.meetingId,
