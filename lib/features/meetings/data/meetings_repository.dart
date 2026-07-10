@@ -211,6 +211,84 @@ class MeetingsRepository {
     return MeetingAsset.fromJson(confirm.data!['data'] as Map<String, dynamic>);
   }
 
+  // ── Durable recording upload (multipart) ──────────────────────────────
+  // Parts stream to storage while the meeting runs; completion enumerates
+  // them server-side. A crashed recording browser loses at most the
+  // unflushed tail.
+
+  /// Opens a multipart recording upload. Returns the asset id and the
+  /// uploadId the part/complete calls carry.
+  Future<({String assetId, String uploadId})> beginRecordingUpload(
+    String meetingId, {
+    required String fileName,
+    required String mimeType,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/recording/begin',
+      data: {'fileName': fileName, 'mimeType': mimeType},
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    final asset = data['asset'] as Map<String, dynamic>;
+    return (
+      assetId: (asset['id'] ?? '').toString(),
+      uploadId: (data['uploadId'] ?? '').toString(),
+    );
+  }
+
+  /// Presign + PUT one recording part directly to storage.
+  Future<void> uploadRecordingPart(
+    String meetingId, {
+    required String assetId,
+    required String uploadId,
+    required int partNumber,
+    required Uint8List bytes,
+  }) async {
+    final presign = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/$assetId/recording/part',
+      data: {'uploadId': uploadId, 'partNumber': partNumber},
+    );
+    final data = presign.data!['data'] as Map<String, dynamic>;
+    final url = (data['url'] ?? '').toString();
+
+    final raw = Dio();
+    await raw.put<void>(
+      url,
+      data: Stream.fromIterable([bytes]),
+      options: Options(
+        headers: {'Content-Length': bytes.length},
+        followRedirects: false,
+        validateStatus: (s) => s != null && s >= 200 && s < 300,
+      ),
+    );
+  }
+
+  Future<MeetingAsset> completeRecordingUpload(
+    String meetingId, {
+    required String assetId,
+    required String uploadId,
+    int? durationSeconds,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/$assetId/recording/complete',
+      data: {
+        'uploadId': uploadId,
+        if (durationSeconds != null) 'durationSeconds': durationSeconds,
+      },
+    );
+    return MeetingAsset.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> abortRecordingUpload(
+    String meetingId, {
+    required String assetId,
+    required String uploadId,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/assets/$assetId/recording/abort',
+      data: {'uploadId': uploadId},
+    );
+  }
+
   Future<MeetingAsset> updateAsset(
     String meetingId,
     String assetId, {

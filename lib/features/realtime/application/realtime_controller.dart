@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
@@ -15,7 +15,8 @@ import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
 import '../domain/realtime_state.dart';
 
-class RealtimeController extends StateNotifier<RealtimeState> {
+class RealtimeController extends StateNotifier<RealtimeState>
+    with WidgetsBindingObserver {
   RealtimeController(
     this._repository,
     this._socketService,
@@ -25,6 +26,12 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   ) : super(RealtimeState.initial()) {
     _subscription = _socketService.events.listen(_handleSocketEvent);
     _mediaSubscription = _mediaService.snapshots.listen(_handleMediaSnapshot);
+    _peerHealthSubscription =
+        _mediaService.peerHealthEvents.listen(_handlePeerHealth);
+    // Browser/app lifecycle: on resume, verify the socket AND every peer
+    // transport — a laptop waking from sleep can hold a live socket over
+    // dead ICE, which previously looked "connected" with frozen tiles.
+    WidgetsBinding.instance.addObserver(this);
   }
 
   final RealtimeRepository _repository;
@@ -39,11 +46,36 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
   StreamSubscription<RealtimeParsedEvent>? _subscription;
   StreamSubscription<RealtimeMediaSnapshot>? _mediaSubscription;
+  StreamSubscription<RealtimePeerHealthEvent>? _peerHealthSubscription;
 
   String? _hydratingSessionId;
   String? _joiningSessionId;
   bool _terminating = false;
   bool _endingCall = false;
+
+  // ── Media-continuity grace windows ──────────────────────────────────────
+  // The media plane no longer dies with the signaling socket. A socket drop
+  // starts the signaling grace; the media plane is only torn down if the
+  // rejoin does not land inside it. A peer's involuntary departure starts a
+  // per-peer grace; their tile shows "Reconnecting…" and only leaves for real
+  // when the window expires.
+  Timer? _signalingGraceTimer;
+  static const Duration _signalingGrace = Duration(seconds: 45);
+  final Map<String, Timer> _peerGraceTimers = <String, Timer>{};
+  static const Duration _peerGrace = Duration(seconds: 45);
+  // userId → last known live socketId, so a rejoining peer's stale peer
+  // connection can be replaced precisely.
+  final Map<String, String> _peerSocketByUserId = <String, String>{};
+
+  // Quality evidence: sampled every 5s while joined, attached to heartbeats.
+  Timer? _statsTimer;
+  static const Duration _statsInterval = Duration(seconds: 5);
+  RealtimeQualitySample? _lastQualitySample;
+
+  // TURN credential rotation: refreshed at ~80% of the issued TTL so an ICE
+  // restart late in a long meeting never runs on expired relay credentials.
+  Timer? _turnRefreshTimer;
+  int _turnTtlSeconds = 3600;
 
   /// Client-side heartbeat ticker fires `session:heartbeat` while joined.
   /// 10s (was 20s): with the backend stale window widened to 60s, this gives
@@ -89,6 +121,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       joinState: joinState,
       clearSessionId: clearSessionContext,
       clearSession: clearSessionContext,
+      reconnectingUserIds: const <String>{},
       participants: clearSessionContext
           ? const <RealtimeParticipant>[]
           : state.participants,
@@ -192,7 +225,12 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         refreshTurnCredentials: refreshTurnCredentials,
       );
 
-      if (!state.isMediaReady) return;
+      // Proceed even when local media could not be acquired (permission
+      // denied, devices busy): a recvonly connection still lets this
+      // participant SEE and HEAR the room. Requiring isMediaReady stalled
+      // every queued offer forever for exactly the users who most needed
+      // the connection to succeed.
+      if (state.isMediaBusy) return;
 
       final queued = Map<String, String>.from(_pendingOfferTargets);
       for (final entry in queued.entries) {
@@ -706,6 +744,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         ' err=$e\n$st',
       );
     }
+
+    // Reliability services for the life of the room: quality sampling (feeds
+    // adaptation + heartbeat evidence), TURN credential rotation, and the
+    // mesh-aware bitrate cap.
+    _startStatsTimer();
+    _scheduleTurnRefresh();
+    unawaited(
+      _mediaService.applyParticipantScaling(state.participants.length),
+    );
   }
 
   Future<void> resume(String sessionId) async {
@@ -738,6 +785,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         infoMessage: 'Your live session was restored.',
       );
       _startHeartbeat();
+      _startStatsTimer();
+      _scheduleTurnRefresh();
       await _reconcileRtcPeers('resume', refreshTurnCredentials: true);
     } catch (error) {
       state = state.copyWith(
@@ -778,6 +827,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     _terminating = false;
     _resumeSessionId = null;
     _awaitingReconnectRejoin = false;
+    _stopStatsTimer();
+    _cancelTurnRefresh();
+    _cancelSignalingGrace();
+    for (final timer in _peerGraceTimers.values) {
+      timer.cancel();
+    }
+    _peerGraceTimers.clear();
+    _peerSocketByUserId.clear();
     _clearRtcConfiguration();
     _clearPendingOfferTargets();
     state = _copyWithDetachedMediaState(
@@ -880,12 +937,23 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       debugPrint('[join-seq] 6 first heartbeat sent sessionId=$sessionId');
     }
     // emitAck is best-effort — a transient network blip drops the beat
-    // but the next 20s tick recovers. The server ignores heartbeats from
-    // non-joined sockets, so the ticker is safe to keep running.
+    // but the next tick recovers. The server ignores heartbeats from
+    // non-joined sockets, so the ticker is safe to keep running. The latest
+    // quality sample rides along so the backend's meeting record holds real
+    // evidence (rtt / jitter / loss / bitrate), not nulls.
+    final quality = _lastQualitySample;
     unawaited(
       _socketService
           .emitAck('session:heartbeat', <String, dynamic>{
             'sessionId': sessionId,
+            if (quality != null && quality.hasAny) ...<String, dynamic>{
+              if (quality.packetLossPct != null)
+                'packetLoss': quality.packetLossPct,
+              if (quality.jitterMs != null) 'jitter': quality.jitterMs,
+              if (quality.bitrateKbps != null)
+                'bitrateKbps': quality.bitrateKbps,
+              if (quality.rttMs != null) 'rtt': quality.rttMs,
+            },
           })
           .then((ack) {
             if (isFirst) {
@@ -975,13 +1043,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     _patchMyTrack(videoOn: enabled);
   }
 
-  /// I1: Start broadcasting the local screen. Replaces the video track in each
-  /// peer connection with the display media track and signals the change.
+  /// I1: Start broadcasting the local screen. Replaces the video track on
+  /// peers that carry one; on audio-only peers the track is ADDED, which
+  /// requires renegotiation — handled here so screen share works in audio
+  /// meetings too.
   Future<void> startScreenShare() async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
 
-    await _mediaService.startScreenShare();
+    final needsRenegotiation = await _mediaService.startScreenShare();
 
     unawaited(
       _socketService
@@ -991,6 +1061,27 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           })
           .catchError((Object _) => <String, dynamic>{}),
     );
+
+    if (needsRenegotiation) {
+      await _renegotiateExistingPeers();
+    }
+  }
+
+  /// Renegotiate with every peer we already hold a connection to (track
+  /// added/removed). Fresh offers on EXISTING connections — perfect
+  /// negotiation resolves any collision.
+  Future<void> _renegotiateExistingPeers() async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty || !state.isJoined) return;
+    for (final participant in state.participants) {
+      final peerKey = (participant.runtimeDeviceId ?? '').trim();
+      if (peerKey.isEmpty || !_mediaService.hasPeer(peerKey)) continue;
+      try {
+        await _sendOfferToSocket(peerKey: peerKey, targetSocketId: peerKey);
+      } catch (error) {
+        debugPrint('[rtc] renegotiate failed peerKey=$peerKey err=$error');
+      }
+    }
   }
 
   /// I1: Stop broadcasting the local screen. Restores the camera track in each
@@ -1284,6 +1375,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     _resumeSessionId = null;
     _awaitingReconnectRejoin = false;
     _stopHeartbeat();
+    _stopStatsTimer();
+    _cancelTurnRefresh();
+    _cancelSignalingGrace();
+    for (final timer in _peerGraceTimers.values) {
+      timer.cancel();
+    }
+    _peerGraceTimers.clear();
+    _peerSocketByUserId.clear();
 
     final session = state.session;
     final sessionId = _managedSessionId;
@@ -1399,9 +1498,279 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       'sdpSemantics': 'unified-plan',
     };
 
+    final rawTtl = issued['ttlSeconds'];
+    final ttl = rawTtl is num ? rawTtl.toInt() : int.tryParse('$rawTtl') ?? 0;
+    if (ttl > 0) _turnTtlSeconds = ttl;
+
     _rtcConfiguration = configuration;
     _rtcConfigurationSessionId = sessionId;
     return configuration;
+  }
+
+  // ── TURN credential rotation ─────────────────────────────────────────────
+
+  void _scheduleTurnRefresh() {
+    _turnRefreshTimer?.cancel();
+    final seconds = (_turnTtlSeconds * 0.8).round().clamp(60, 24 * 3600);
+    _turnRefreshTimer = Timer(Duration(seconds: seconds), () {
+      unawaited(_refreshTurnCredentials());
+    });
+  }
+
+  Future<void> _refreshTurnCredentials() async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty || !state.isJoined) return;
+    try {
+      final configuration = await _resolveRtcConfiguration(
+        sessionId,
+        refreshTurnCredentials: true,
+      );
+      await _mediaService.updateIceConfiguration(configuration);
+    } catch (_) {
+      // Transient failure — retry on a short fuse rather than letting the
+      // credentials lapse silently.
+      _turnRefreshTimer?.cancel();
+      _turnRefreshTimer = Timer(const Duration(minutes: 2), () {
+        unawaited(_refreshTurnCredentials());
+      });
+      return;
+    }
+    _scheduleTurnRefresh();
+  }
+
+  void _cancelTurnRefresh() {
+    _turnRefreshTimer?.cancel();
+    _turnRefreshTimer = null;
+  }
+
+  // ── Quality evidence loop ────────────────────────────────────────────────
+
+  void _startStatsTimer() {
+    _statsTimer?.cancel();
+    _statsTimer = Timer.periodic(_statsInterval, (_) {
+      if (!state.isJoined) return;
+      unawaited(
+        _mediaService.collectQualitySample().then((sample) {
+          _lastQualitySample = sample;
+        }).catchError((Object _) {}),
+      );
+    });
+  }
+
+  void _stopStatsTimer() {
+    _statsTimer?.cancel();
+    _statsTimer = null;
+    _lastQualitySample = null;
+  }
+
+  // ── Peer transport recovery ──────────────────────────────────────────────
+
+  void _handlePeerHealth(RealtimePeerHealthEvent event) {
+    switch (event.health) {
+      case RealtimePeerHealth.recovered:
+        _clearReconnectingByPeerKey(event.peerKey);
+        return;
+      case RealtimePeerHealth.needsRestart:
+        unawaited(_performIceRestart(event.peerKey));
+        return;
+      case RealtimePeerHealth.dead:
+        unawaited(_onPeerTransportDead(event.peerKey));
+        return;
+    }
+  }
+
+  /// In-place transport recovery: fresh TURN credentials + an ICE-restart
+  /// offer on the EXISTING peer connection. Tracks, renderers, and the
+  /// participant's tile all survive; only the transport renegotiates.
+  Future<void> _performIceRestart(String peerKey) async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty || !state.isJoined || _terminating) return;
+    _markReconnectingByPeerKey(peerKey);
+    try {
+      final configuration = await _resolveRtcConfiguration(
+        sessionId,
+        refreshTurnCredentials: true,
+      );
+      final offer = await _mediaService.restartIce(
+        peerKey: peerKey,
+        configuration: configuration,
+      );
+      if (offer == null) return;
+      await _socketService.emitAck('session:offer', <String, dynamic>{
+        'sessionId': sessionId,
+        'targetSocketId': peerKey,
+        'sdp': <String, dynamic>{'sdp': offer.sdp, 'type': offer.type},
+      });
+    } catch (error) {
+      debugPrint('[rtc] ice-restart send failed peerKey=$peerKey err=$error');
+    }
+  }
+
+  /// The restart budget is spent — rebuild the connection from zero: drop the
+  /// dead peer and offer fresh to the same socket. The participant stays on
+  /// the roster ("Reconnecting…") throughout.
+  Future<void> _onPeerTransportDead(String peerKey) async {
+    if (!state.isJoined || _terminating) return;
+    _markReconnectingByPeerKey(peerKey);
+    await _mediaService.removePeer(peerKey);
+    final stillPresent = state.participants.any(
+      (p) => (p.runtimeDeviceId ?? '').trim() == peerKey,
+    );
+    if (stillPresent) {
+      _queueOfferTarget(peerKey: peerKey, targetSocketId: peerKey);
+      await _flushPendingOffers(refreshTurnCredentials: true);
+    }
+  }
+
+  // ── Roster reconnect grace ───────────────────────────────────────────────
+
+  String? _userIdForPeerKey(String peerKey) {
+    for (final participant in state.participants) {
+      if ((participant.runtimeDeviceId ?? '').trim() == peerKey) {
+        return participant.userId;
+      }
+    }
+    return null;
+  }
+
+  void _markReconnectingByPeerKey(String peerKey) {
+    final userId = _userIdForPeerKey(peerKey);
+    if (userId == null || userId.isEmpty) return;
+    if (state.reconnectingUserIds.contains(userId)) return;
+    state = state.copyWith(
+      reconnectingUserIds: <String>{...state.reconnectingUserIds, userId},
+    );
+  }
+
+  void _clearReconnectingByPeerKey(String peerKey) {
+    final userId = _userIdForPeerKey(peerKey);
+    if (userId == null) return;
+    _clearReconnectingUser(userId);
+  }
+
+  void _clearReconnectingUser(String userId) {
+    _peerGraceTimers.remove(userId)?.cancel();
+    if (!state.reconnectingUserIds.contains(userId)) return;
+    state = state.copyWith(
+      reconnectingUserIds: <String>{...state.reconnectingUserIds}..remove(userId),
+    );
+  }
+
+  void _startPeerGrace(String userId, String? peerKey) {
+    if (userId.isEmpty) return;
+    state = state.copyWith(
+      reconnectingUserIds: <String>{...state.reconnectingUserIds, userId},
+    );
+    _peerGraceTimers.remove(userId)?.cancel();
+    _peerGraceTimers[userId] = Timer(_peerGrace, () {
+      _peerGraceTimers.remove(userId);
+      _expirePeerGrace(userId, peerKey);
+    });
+  }
+
+  void _expirePeerGrace(String userId, String? peerKey) {
+    if (_terminating) return;
+    final updatedParticipants = state.participants
+        .where((participant) => participant.userId != userId)
+        .toList();
+    state = state.copyWith(
+      participants: updatedParticipants,
+      reconnectingUserIds: <String>{...state.reconnectingUserIds}
+        ..remove(userId),
+    );
+    final key = (peerKey ?? '').isNotEmpty
+        ? peerKey!
+        : (_peerSocketByUserId[userId] ?? '');
+    if (key.isNotEmpty) {
+      _removePendingOfferTarget(key);
+      unawaited(_mediaService.removePeer(key));
+    }
+    _peerSocketByUserId.remove(userId);
+
+    // The room-empties decision runs only AFTER the grace expired — a
+    // transient drop never ends the meeting for whoever stayed.
+    if (updatedParticipants.length <= 1 && state.isJoined) {
+      final isMeeting =
+          state.session?.surfaceType == RealtimeSurfaceType.meeting;
+      if (isMeeting) {
+        state = state.copyWith(
+          infoMessage: 'Waiting for the other participant to return…',
+          clearErrorMessage: true,
+        );
+      } else {
+        unawaited(
+          _terminateSession(
+            keepSocketConnected: true,
+            infoMessage: 'Call ended.',
+            alsoCallRepository: false,
+          ),
+        );
+      }
+    }
+  }
+
+  // ── Signaling grace (socket loss without media loss) ─────────────────────
+
+  void _startSignalingGrace() {
+    _signalingGraceTimer?.cancel();
+    _signalingGraceTimer = Timer(_signalingGrace, () {
+      _signalingGraceTimer = null;
+      if (_terminating || state.isConnected) return;
+      // The rejoin did not land inside the grace window — now, and only now,
+      // the media plane is released and the room returns to idle.
+      _clearPendingOfferTargets();
+      unawaited(_mediaService.resetSessionMedia());
+      state = _copyWithDetachedMediaState(
+        connectionStatus: RealtimeConnectionStatus.disconnected,
+        joinState: RealtimeJoinState.idle,
+        clearSessionContext: true,
+        infoMessage: 'The connection could not be restored.',
+      );
+    });
+  }
+
+  void _cancelSignalingGrace() {
+    _signalingGraceTimer?.cancel();
+    _signalingGraceTimer = null;
+  }
+
+  /// User-chosen device handover: continue the meeting on THIS device after
+  /// it was replaced by another one.
+  Future<void> useHereInstead() async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty) return;
+    state = state.copyWith(clearErrorMessage: true, clearInfoMessage: true);
+    await join(sessionId);
+  }
+
+  /// Re-attempt media acquisition after a permission denial or device
+  /// failure, without leaving the room.
+  Future<void> retryMedia() async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty || !state.isJoined) return;
+    state = state.copyWith(clearMediaError: true, clearErrorMessage: true);
+    await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
+    await _reconcileRtcPeers('track-change');
+  }
+
+  @override
+  // The base signature names this `state`, which would shadow the
+  // StateNotifier's own `state` used inside — the rename is deliberate.
+  // ignore: avoid_renaming_method_parameters
+  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
+    if (lifecycleState != AppLifecycleState.resumed) return;
+    if (!state.isJoined || _terminating) return;
+    // Wake-from-sleep / tab-foreground: the socket may have survived while
+    // every ICE transport died. Check both planes.
+    if (!_socketService.isConnected) {
+      final sid = _resumeSessionId?.trim() ?? '';
+      if (sid.isNotEmpty) {
+        _awaitingReconnectRejoin = false;
+        unawaited(_rejoinAfterReconnect(sid));
+      }
+    } else {
+      unawaited(_mediaService.checkPeersHealth());
+    }
   }
 
   void _clearRtcConfiguration() {
@@ -1458,6 +1827,34 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       'targetSocketId': targetSocketId,
       'sdp': <String, dynamic>{'sdp': offer.sdp, 'type': offer.type},
     });
+
+    // Negotiation watchdog: a lost ANSWER previously stalled the connection
+    // forever (the offer relay is fire-and-forget). One retry after 8s if
+    // the peer still hasn't answered; perfect negotiation absorbs any
+    // duplicate on the other side.
+    _armAnswerWatchdog(peerKey: peerKey, targetSocketId: targetSocketId);
+  }
+
+  final Set<String> _answerWatchdogRetried = <String>{};
+
+  void _armAnswerWatchdog({
+    required String peerKey,
+    required String targetSocketId,
+  }) {
+    Timer(const Duration(seconds: 8), () {
+      if (_terminating || !state.isJoined) return;
+      if (!_mediaService.isAwaitingAnswer(peerKey)) {
+        _answerWatchdogRetried.remove(peerKey);
+        return;
+      }
+      if (_answerWatchdogRetried.contains(peerKey)) return;
+      _answerWatchdogRetried.add(peerKey);
+      debugPrint('[rtc] answer watchdog RE-OFFER peerKey=$peerKey');
+      unawaited(
+        _sendOfferToSocket(peerKey: peerKey, targetSocketId: targetSocketId)
+            .catchError((Object _) {}),
+      );
+    });
   }
 
   void _patchMyTrack({bool? audioOn, bool? videoOn}) {
@@ -1480,6 +1877,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   void _handleSocketEvent(RealtimeParsedEvent event) {
     switch (event.name) {
       case 'socket:connected':
+        _cancelSignalingGrace();
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.connected,
           lastSocketEvent: event.name,
@@ -1501,20 +1899,20 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'socket:disconnected':
         _stopHeartbeat();
-        _clearPendingOfferTargets();
-        unawaited(_mediaService.resetSessionMedia());
         final canResume = (_resumeSessionId?.trim().isNotEmpty ?? false) &&
             state.isCallRoomVisible &&
-            !_terminating;
+            !_terminating &&
+            state.joinState != RealtimeJoinState.replaced;
         if (canResume) {
-          // Involuntary drop while still in the room (backgrounded tab, mobile
-          // resume, network blip). Keep the session context and show
-          // "Reconnecting…" instead of tearing down to idle (which bounced the
-          // user to the workspace). joinState stays `joined` so the room UI
-          // persists; dead peer media is detached and re-acquired by the
-          // rejoin on the next 'socket:connected'.
+          // MEDIA CONTINUITY: the signaling socket is not the media plane's
+          // life support. Peer connections and local media stay alive through
+          // the gap — WebRTC keeps flowing if the network itself is fine (the
+          // common case: proxy idle-close, engine.io ping timeout, server
+          // deploy). The rejoin on 'socket:connected' resyncs roster state;
+          // only the signaling-grace expiry releases media.
           _awaitingReconnectRejoin = true;
-          state = _copyWithDetachedMediaState(
+          _startSignalingGrace();
+          state = state.copyWith(
             joinState: RealtimeJoinState.joined,
             connectionStatus: RealtimeConnectionStatus.reconnecting,
             infoMessage: 'Reconnecting…',
@@ -1522,10 +1920,30 @@ class RealtimeController extends StateNotifier<RealtimeState> {
             lastSocketEvent: event.name,
           );
         } else {
+          _clearPendingOfferTargets();
+          unawaited(_mediaService.resetSessionMedia());
+          if (state.joinState == RealtimeJoinState.replaced) {
+            // Deliberate handover — keep the parked "continue here" surface.
+            state = state.copyWith(
+              connectionStatus: RealtimeConnectionStatus.disconnected,
+              lastSocketEvent: event.name,
+            );
+            return;
+          }
           state = _copyWithDetachedMediaState(
             connectionStatus: RealtimeConnectionStatus.disconnected,
             joinState: RealtimeJoinState.idle,
             clearSessionContext: true,
+            lastSocketEvent: event.name,
+          );
+        }
+        return;
+      case 'session:server.restarting':
+        // Heads-up from a deploying server: the disconnect that follows is a
+        // restart, not a failure. Pre-arm the grace so the room holds calm.
+        if (state.isJoined && !_terminating) {
+          state = state.copyWith(
+            infoMessage: 'Reconnecting…',
             lastSocketEvent: event.name,
           );
         }
@@ -1540,6 +1958,26 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'session:participant.joined':
       case 'session:participant.resumed':
+        final joinedUserId = _participantUserIdFromPayload(event.payload);
+        final joinedSocketId = _transportPeerKeyFromPayload(event.payload);
+
+        // A rejoin inside the grace window: the seat was held; release the
+        // "Reconnecting…" flag and retire the stale peer connection so the
+        // fresh negotiation binds to the new socket cleanly.
+        if (joinedUserId.isNotEmpty) {
+          _clearReconnectingUser(joinedUserId);
+          final previousSocketId = _peerSocketByUserId[joinedUserId];
+          if (previousSocketId != null &&
+              previousSocketId.isNotEmpty &&
+              previousSocketId != joinedSocketId) {
+            _removePendingOfferTarget(previousSocketId);
+            unawaited(_mediaService.removePeer(previousSocketId));
+          }
+          if (joinedSocketId.isNotEmpty) {
+            _peerSocketByUserId[joinedUserId] = joinedSocketId;
+          }
+        }
+
         final merged = RealtimeEventParser.mergeSnapshot(state, event.payload);
         final modeFromEvent =
             ((event.payload['videoState'] ?? '').toString().toUpperCase() ==
@@ -1551,6 +1989,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         state = merged.copyWith(
           callMode: modeFromEvent,
           lastSocketEvent: event.name,
+        );
+        unawaited(
+          _mediaService.applyParticipantScaling(state.participants.length),
         );
 
         // Lifecycle-based negotiation (replaces the socket-id initiator rule).
@@ -1572,14 +2013,39 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'session:participant.left':
         final leavingUserId = _participantUserIdFromPayload(event.payload);
         final leavingPeerKey = _transportPeerKeyFromPayload(event.payload);
+        final leftReason =
+            (event.payload['reason'] ?? '').toString().trim().toLowerCase();
+        final isMeeting =
+            state.session?.surfaceType == RealtimeSurfaceType.meeting;
+        final transientDrop =
+            leftReason == 'disconnect' || leftReason == 'heartbeat_timeout';
+
+        if (isMeeting && transientDrop && leavingUserId.isNotEmpty) {
+          // RECONNECT GRACE: an involuntary drop does not empty the seat. The
+          // participant stays on the roster ("Reconnecting…"), their peer
+          // connection stays alive — media often continues flowing while only
+          // the signaling socket blipped — and the seat is released only when
+          // the grace window expires without a rejoin.
+          state = state.copyWith(lastSocketEvent: event.name);
+          _startPeerGrace(
+            leavingUserId,
+            leavingPeerKey.isNotEmpty ? leavingPeerKey : null,
+          );
+          return;
+        }
+
         final updatedParticipants = state.participants
             .where((participant) => participant.userId != leavingUserId)
             .toList();
 
         state = state.copyWith(
           participants: updatedParticipants,
+          reconnectingUserIds: <String>{...state.reconnectingUserIds}
+            ..remove(leavingUserId),
           lastSocketEvent: event.name,
         );
+        _peerGraceTimers.remove(leavingUserId)?.cancel();
+        _peerSocketByUserId.remove(leavingUserId);
 
         if (leavingPeerKey.isNotEmpty) {
           _removePendingOfferTarget(leavingPeerKey);
@@ -1590,21 +2056,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
 
         if (updatedParticipants.length <= 1 && state.isJoined) {
-          final leftReason =
-              (event.payload['reason'] ?? '').toString().trim().toLowerCase();
-          final isMeeting =
-              state.session?.surfaceType == RealtimeSurfaceType.meeting;
-          final transientDrop =
-              leftReason == 'disconnect' || leftReason == 'heartbeat_timeout';
-          if (isMeeting && transientDrop) {
-            // HOST-GRACE (client-side): the other party dropped INVOLUNTARILY
-            // (tab switch / mobile resume / network). Don't end the meeting —
-            // hold the room and show a waiting state. They rejoin via their own
-            // reconnect path, the backend re-broadcasts participant.joined, and
-            // the lifecycle negotiation re-offers to them. Only an intentional
-            // leave/end (reason 'leave'/'ended') tears the room down.
+          if (isMeeting) {
             state = state.copyWith(
-              infoMessage: 'Waiting for the other participant to reconnect…',
+              infoMessage: 'Waiting for the other participant…',
               clearErrorMessage: true,
             );
           } else {
@@ -1737,9 +2191,19 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:replaced':
-        state = state.copyWith(
-          connectionStatus: RealtimeConnectionStatus.reconnecting,
-          infoMessage: 'This live session moved to a new connection.',
+        // Deliberate device handover — NOT a reconnect. Auto-rejoining here
+        // made two devices of the same user replace each other forever. This
+        // device parks calmly; the user can continue here explicitly.
+        _resumeSessionId = null;
+        _awaitingReconnectRejoin = false;
+        _cancelSignalingGrace();
+        _stopHeartbeat();
+        _stopStatsTimer();
+        _clearPendingOfferTargets();
+        unawaited(_mediaService.resetSessionMedia());
+        state = _copyWithDetachedMediaState(
+          joinState: RealtimeJoinState.replaced,
+          infoMessage: 'This meeting is now active on another device.',
           lastSocketEvent: event.name,
         );
         return;
@@ -1849,6 +2313,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           return;
         }
         _clearPendingOfferTargets();
+        _cancelSignalingGrace();
+        _stopStatsTimer();
+        _cancelTurnRefresh();
+        for (final timer in _peerGraceTimers.values) {
+          timer.cancel();
+        }
+        _peerGraceTimers.clear();
+        _peerSocketByUserId.clear();
+        _answerWatchdogRetried.clear();
         if (endedSessionId.isNotEmpty) {
           _repository.clearBundleCache(endedSessionId);
         }
@@ -2058,9 +2531,18 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _stopHeartbeat();
+    _stopStatsTimer();
+    _cancelTurnRefresh();
+    _cancelSignalingGrace();
+    for (final timer in _peerGraceTimers.values) {
+      timer.cancel();
+    }
+    _peerGraceTimers.clear();
     _subscription?.cancel();
     _mediaSubscription?.cancel();
+    _peerHealthSubscription?.cancel();
     _mediaService.dispose();
     _socketService.dispose();
     super.dispose();

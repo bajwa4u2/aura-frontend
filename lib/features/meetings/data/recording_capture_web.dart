@@ -38,6 +38,7 @@ class MeetingRecordingCapture {
   JSObject? _stream;
   _MediaRecorder? _recorder;
   final List<JSObject> _chunks = [];
+  int _bufferedBytes = 0;
   DateTime? _startedAt;
 
   /// Fired when the capture ends OUTSIDE the app's own Stop control (the
@@ -47,6 +48,75 @@ class MeetingRecordingCapture {
 
   bool get isSupported => true;
   bool get isRecording => _recorder != null;
+
+  /// Bytes captured but not yet drained by [takeBufferedBytes]. The room's
+  /// streaming uploader watches this to flush parts to storage WHILE the
+  /// meeting runs — durability doctrine: a crashed recording browser loses
+  /// at most the unflushed tail, never the meeting.
+  int get bufferedByteLength => _bufferedBytes;
+
+  /// Drains the buffered chunks into one byte block (concatenated
+  /// MediaRecorder output — byte-concatenation of sequential blocks is the
+  /// valid WebM stream). Returns null when nothing is buffered.
+  Future<Uint8List?> takeBufferedBytes() async {
+    if (_chunks.isEmpty) return null;
+    final chunks = _chunks.toList();
+    _chunks.clear();
+    _bufferedBytes = 0;
+
+    final blobParts = chunks.jsify() as JSObject;
+    final blobOptions = JSObject()
+      ..setProperty('type'.toJS, 'video/webm'.toJS);
+    final blobCtor = globalContext.getProperty<JSFunction>('Blob'.toJS);
+    final blob = blobCtor.callAsConstructor<JSObject>(blobParts, blobOptions);
+    final bufferPromise =
+        blob.callMethod<JSPromise<JSArrayBuffer>>('arrayBuffer'.toJS);
+    final buffer = (await bufferPromise.toDart).toDart;
+    final bytes = buffer.asUint8List();
+    return bytes.isEmpty ? null : bytes;
+  }
+
+  /// Stops the recorder and returns the capture duration in seconds. The
+  /// final chunks remain buffered — drain them with [takeBufferedBytes] and
+  /// upload as the last part.
+  Future<int> stopCapture() async {
+    final recorder = _recorder;
+    if (recorder == null) return 0;
+
+    final done = Completer<void>();
+    recorder.setProperty(
+      'onstop'.toJS,
+      (() {
+        if (!done.isCompleted) done.complete();
+      }).toJS,
+    );
+    if (recorder.state == 'recording' || recorder.state == 'paused') {
+      recorder.stop();
+    } else {
+      if (!done.isCompleted) done.complete();
+    }
+    await done.future.timeout(const Duration(seconds: 10), onTimeout: () {});
+
+    final durationSeconds = _startedAt == null
+        ? 0
+        : DateTime.now().difference(_startedAt!).inSeconds;
+
+    // Release the display stream; keep the buffered chunks for the caller.
+    final stream = _stream;
+    if (stream != null) {
+      try {
+        final tracks =
+            stream.callMethod<JSArray<JSObject>>('getTracks'.toJS).toDart;
+        for (final track in tracks) {
+          track.callMethod<JSAny?>('stop'.toJS);
+        }
+      } catch (_) {}
+    }
+    _stream = null;
+    _recorder = null;
+    _startedAt = null;
+    return durationSeconds;
+  }
 
   Future<bool> start() async {
     if (_recorder != null) return true;
@@ -66,7 +136,10 @@ class MeetingRecordingCapture {
         final data = event.getProperty<JSObject?>('data'.toJS);
         if (data != null) {
           final size = (data.getProperty<JSNumber?>('size'.toJS))?.toDartInt ?? 0;
-          if (size > 0) _chunks.add(data);
+          if (size > 0) {
+            _chunks.add(data);
+            _bufferedBytes += size;
+          }
         }
       }).toJS;
       recorder.setProperty('ondataavailable'.toJS, onData);
@@ -94,52 +167,6 @@ class MeetingRecordingCapture {
     }
   }
 
-  Future<RecordingResult?> stop() async {
-    final recorder = _recorder;
-    if (recorder == null) return null;
-
-    final done = Completer<void>();
-    recorder.setProperty(
-      'onstop'.toJS,
-      (() {
-        if (!done.isCompleted) done.complete();
-      }).toJS,
-    );
-    if (recorder.state == 'recording' || recorder.state == 'paused') {
-      recorder.stop();
-    } else {
-      if (!done.isCompleted) done.complete();
-    }
-    await done.future.timeout(const Duration(seconds: 10), onTimeout: () {});
-
-    final durationSeconds = _startedAt == null
-        ? 0
-        : DateTime.now().difference(_startedAt!).inSeconds;
-
-    final chunks = _chunks.toList();
-    _cleanup();
-    if (chunks.isEmpty) return null;
-
-    // Combine chunk Blobs into one and read its bytes.
-    final blobParts = chunks.jsify() as JSObject;
-    final blobOptions = JSObject()
-      ..setProperty('type'.toJS, 'video/webm'.toJS);
-    final blobCtor = globalContext.getProperty<JSFunction>('Blob'.toJS);
-    final blob = blobCtor.callAsConstructor<JSObject>(blobParts, blobOptions);
-
-    final bufferPromise =
-        blob.callMethod<JSPromise<JSArrayBuffer>>('arrayBuffer'.toJS);
-    final buffer = (await bufferPromise.toDart).toDart;
-    final bytes = buffer.asUint8List();
-    if (bytes.isEmpty) return null;
-
-    return RecordingResult(
-      bytes: bytes,
-      mimeType: 'video/webm',
-      durationSeconds: durationSeconds,
-    );
-  }
-
   void _cleanup() {
     final stream = _stream;
     if (stream != null) {
@@ -154,5 +181,7 @@ class MeetingRecordingCapture {
     _stream = null;
     _recorder = null;
     _startedAt = null;
+    _chunks.clear();
+    _bufferedBytes = 0;
   }
 }

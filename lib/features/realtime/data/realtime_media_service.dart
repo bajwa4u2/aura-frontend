@@ -38,11 +38,45 @@ class RealtimeMediaSnapshot {
   final bool remoteVideoRendererAttached; // a remote stream has a video track
 }
 
+/// Peer transport health, surfaced to the controller so recovery decisions
+/// (ICE restart, re-offer, removal) live in ONE place instead of inside the
+/// media layer's callbacks.
+enum RealtimePeerHealth { recovered, needsRestart, dead }
+
+class RealtimePeerHealthEvent {
+  const RealtimePeerHealthEvent({required this.peerKey, required this.health});
+  final String peerKey;
+  final RealtimePeerHealth health;
+}
+
+/// One aggregated quality sample across all peers — attached to the session
+/// heartbeat so the backend's quality record holds evidence, not nulls.
+class RealtimeQualitySample {
+  const RealtimeQualitySample({
+    this.rttMs,
+    this.jitterMs,
+    this.packetLossPct,
+    this.bitrateKbps,
+  });
+  final int? rttMs;
+  final int? jitterMs;
+  final double? packetLossPct;
+  final int? bitrateKbps;
+
+  bool get hasAny =>
+      rttMs != null ||
+      jitterMs != null ||
+      packetLossPct != null ||
+      bitrateKbps != null;
+}
+
 class RealtimeMediaService {
   RealtimeMediaService();
 
   final StreamController<RealtimeMediaSnapshot> _snapshots =
       StreamController<RealtimeMediaSnapshot>.broadcast();
+  final StreamController<RealtimePeerHealthEvent> _peerHealth =
+      StreamController<RealtimePeerHealthEvent>.broadcast();
 
   final Map<String, RTCPeerConnection> _peers = <String, RTCPeerConnection>{};
   final Map<String, RTCVideoRenderer> _remoteRenderers =
@@ -50,6 +84,28 @@ class RealtimeMediaService {
   final Map<String, MediaStream> _remoteStreams = <String, MediaStream>{};
   // Perfect-negotiation: peers for which we currently have an offer in flight.
   final Map<String, bool> _makingOffer = <String, bool>{};
+
+  // ── Transport resilience state ────────────────────────────────────────
+  // Trickle-ICE correctness: candidates that arrive before the peer exists
+  // or before its remote description is applied are BUFFERED, not dropped.
+  // The answerer spends seconds in getUserMedia while the offerer trickles
+  // immediately — without this buffer the earliest (usually best) candidates
+  // of every single connect were silently lost.
+  final Map<String, List<Map<String, dynamic>>> _pendingRemoteCandidates =
+      <String, List<Map<String, dynamic>>>{};
+  final Set<String> _remoteDescriptionSet = <String>{};
+  static const int _maxBufferedCandidatesPerPeer = 64;
+
+  // ICE recovery: per-peer disconnect grace timers and restart budgets. A
+  // network path change surfaces as disconnected→failed; instead of killing
+  // the peer we escalate to the controller, which performs an ICE restart
+  // through the normal perfect-negotiation path.
+  final Map<String, Timer> _iceGraceTimers = <String, Timer>{};
+  final Map<String, int> _iceRestartAttempts = <String, int>{};
+  static const int _maxIceRestartAttempts = 2;
+  static const Duration _iceDisconnectGrace = Duration(seconds: 5);
+
+  Stream<RealtimePeerHealthEvent> get peerHealthEvents => _peerHealth.stream;
 
   MediaStream? _localStream;
   RTCVideoRenderer? _localRenderer;
@@ -85,6 +141,16 @@ class RealtimeMediaService {
   /// renegotiation only re-offers to already-connected peers; NEW connections
   /// are initiated exclusively from the participant.joined path.
   bool hasPeer(String peerKey) => _peers.containsKey(peerKey);
+
+  /// True while our offer to [peerKey] is outstanding (no answer applied).
+  /// Drives the negotiation watchdog: a lost answer is re-offered instead of
+  /// waiting forever.
+  bool isAwaitingAnswer(String peerKey) {
+    final connection = _peers[peerKey];
+    if (connection == null) return false;
+    return connection.signalingState ==
+        RTCSignalingState.RTCSignalingStateHaveLocalOffer;
+  }
 
   RealtimeMediaSnapshot get currentSnapshot => RealtimeMediaSnapshot(
         ready: _ready,
@@ -281,6 +347,31 @@ class RealtimeMediaService {
 
     connection.onIceConnectionState = (RTCIceConnectionState state) {
       debugPrint('[rtc] iceConnectionState peerKey=$peerKey state=$state');
+      switch (state) {
+        case RTCIceConnectionState.RTCIceConnectionStateConnected:
+        case RTCIceConnectionState.RTCIceConnectionStateCompleted:
+          _iceGraceTimers.remove(peerKey)?.cancel();
+          _iceRestartAttempts.remove(peerKey);
+          _emitPeerHealth(peerKey, RealtimePeerHealth.recovered);
+          break;
+        case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
+          // Transient by definition — WebRTC often self-heals within
+          // seconds. Only escalate if it persists past the grace window.
+          _iceGraceTimers.remove(peerKey)?.cancel();
+          _iceGraceTimers[peerKey] = Timer(_iceDisconnectGrace, () {
+            _iceGraceTimers.remove(peerKey);
+            if (_peers.containsKey(peerKey)) {
+              _escalateIceFailure(peerKey);
+            }
+          });
+          break;
+        case RTCIceConnectionState.RTCIceConnectionStateFailed:
+          _iceGraceTimers.remove(peerKey)?.cancel();
+          _escalateIceFailure(peerKey);
+          break;
+        default:
+          break;
+      }
     };
 
     connection.onTrack = (RTCTrackEvent event) async {
@@ -329,9 +420,11 @@ class RealtimeMediaService {
 
     connection.onConnectionState = (RTCPeerConnectionState state) async {
       debugPrint('[rtc] connectionState peerKey=$peerKey state=$state');
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
-        debugPrint('[rtc] peer REMOVED (failed/closed) peerKey=$peerKey');
+      // Recovery doctrine: `failed` is no longer a death sentence — the ICE
+      // handler above escalates it through the restart budget first. Only a
+      // CLOSED connection (disposed underneath us) is removed here.
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
+        debugPrint('[rtc] peer REMOVED (closed) peerKey=$peerKey');
         await removePeer(peerKey);
       }
     };
@@ -443,6 +536,8 @@ class RealtimeMediaService {
         (sdp['type'] ?? 'offer').toString(),
       ),
     );
+    _remoteDescriptionSet.add(peerKey);
+    await _flushPendingCandidates(peerKey);
 
     // Attach local tracks AFTER setRemoteDescription (answerer path) so they
     // bind to the offered transceivers and actually reach the offerer. Only for
@@ -467,33 +562,157 @@ class RealtimeMediaService {
     final connection = _peers[peerKey];
     if (connection == null) return;
 
+    // A stale answer (e.g. from a negotiation the other side abandoned)
+    // arriving while we are already stable would throw InvalidStateError and
+    // desync nothing — drop it deliberately instead of via a swallowed throw.
+    final st = connection.signalingState;
+    if (st == RTCSignalingState.RTCSignalingStateStable) {
+      debugPrint('[rtc] stale answer IGNORED (stable) peerKey=$peerKey');
+      return;
+    }
+
     await connection.setRemoteDescription(
       RTCSessionDescription(
         (sdp['sdp'] ?? '').toString(),
         (sdp['type'] ?? 'answer').toString(),
       ),
     );
+    _remoteDescriptionSet.add(peerKey);
+    await _flushPendingCandidates(peerKey);
   }
 
   Future<void> addRemoteCandidate({
     required String peerKey,
     required Map<String, dynamic> candidate,
   }) async {
-    final connection = _peers[peerKey];
-    if (connection == null) return;
-
     final value = candidate['candidate'];
     if (value == null) return;
 
-    await connection.addCandidate(
-      RTCIceCandidate(
-        value.toString(),
-        candidate['sdpMid']?.toString(),
-        candidate['sdpMLineIndex'] is int
-            ? candidate['sdpMLineIndex'] as int
-            : int.tryParse(candidate['sdpMLineIndex']?.toString() ?? ''),
-      ),
-    );
+    final connection = _peers[peerKey];
+    // Buffer until the peer exists AND its remote description is applied —
+    // candidates added before either are rejected or lost by the engine.
+    if (connection == null || !_remoteDescriptionSet.contains(peerKey)) {
+      final buffer = _pendingRemoteCandidates.putIfAbsent(
+        peerKey,
+        () => <Map<String, dynamic>>[],
+      );
+      if (buffer.length < _maxBufferedCandidatesPerPeer) {
+        buffer.add(Map<String, dynamic>.from(candidate));
+      }
+      return;
+    }
+
+    await _applyRemoteCandidate(connection, peerKey, candidate);
+  }
+
+  Future<void> _applyRemoteCandidate(
+    RTCPeerConnection connection,
+    String peerKey,
+    Map<String, dynamic> candidate,
+  ) async {
+    final value = candidate['candidate'];
+    if (value == null) return;
+    try {
+      await connection.addCandidate(
+        RTCIceCandidate(
+          value.toString(),
+          candidate['sdpMid']?.toString(),
+          candidate['sdpMLineIndex'] is int
+              ? candidate['sdpMLineIndex'] as int
+              : int.tryParse(candidate['sdpMLineIndex']?.toString() ?? ''),
+        ),
+      );
+    } catch (error) {
+      debugPrint('[rtc] addCandidate failed peerKey=$peerKey err=$error');
+    }
+  }
+
+  Future<void> _flushPendingCandidates(String peerKey) async {
+    final connection = _peers[peerKey];
+    final buffered = _pendingRemoteCandidates.remove(peerKey);
+    if (connection == null || buffered == null || buffered.isEmpty) return;
+    for (final candidate in buffered) {
+      await _applyRemoteCandidate(connection, peerKey, candidate);
+    }
+  }
+
+  // ── ICE recovery ──────────────────────────────────────────────────────
+
+  void _emitPeerHealth(String peerKey, RealtimePeerHealth health) {
+    if (_peerHealth.isClosed) return;
+    _peerHealth.add(RealtimePeerHealthEvent(peerKey: peerKey, health: health));
+  }
+
+  void _escalateIceFailure(String peerKey) {
+    final attempts = _iceRestartAttempts[peerKey] ?? 0;
+    if (attempts >= _maxIceRestartAttempts) {
+      _emitPeerHealth(peerKey, RealtimePeerHealth.dead);
+      return;
+    }
+    _iceRestartAttempts[peerKey] = attempts + 1;
+    _emitPeerHealth(peerKey, RealtimePeerHealth.needsRestart);
+  }
+
+  /// ICE restart on an EXISTING peer: fresh credentials (via
+  /// [configuration], when provided), a restart offer, and the normal
+  /// perfect-negotiation path from there. The transport recovers in place —
+  /// tracks, renderers, and the visible tile all survive.
+  Future<RTCSessionDescription?> restartIce({
+    required String peerKey,
+    Map<String, dynamic>? configuration,
+  }) async {
+    final connection = _peers[peerKey];
+    if (connection == null) return null;
+
+    if (configuration != null) {
+      try {
+        await connection.setConfiguration(configuration);
+      } catch (error) {
+        debugPrint('[rtc] setConfiguration failed peerKey=$peerKey err=$error');
+      }
+    }
+
+    _makingOffer[peerKey] = true;
+    try {
+      final offer = await connection.createOffer(<String, dynamic>{
+        'iceRestart': true,
+        'offerToReceiveAudio': true,
+        'offerToReceiveVideo': true,
+      });
+      await connection.setLocalDescription(offer);
+      return offer;
+    } catch (error) {
+      debugPrint('[rtc] restartIce failed peerKey=$peerKey err=$error');
+      return null;
+    } finally {
+      _makingOffer[peerKey] = false;
+    }
+  }
+
+  /// Refresh ICE servers on every live peer (TURN credential rotation). New
+  /// credentials take effect on the next ICE restart or negotiation.
+  Future<void> updateIceConfiguration(Map<String, dynamic> configuration) async {
+    for (final entry in _peers.entries) {
+      try {
+        await entry.value.setConfiguration(configuration);
+      } catch (error) {
+        debugPrint(
+          '[rtc] updateIceConfiguration failed peerKey=${entry.key} err=$error',
+        );
+      }
+    }
+  }
+
+  /// App-resume health check: peers whose transport died while the device
+  /// slept are escalated through the same restart path as a live failure.
+  Future<void> checkPeersHealth() async {
+    for (final entry in Map<String, RTCPeerConnection>.from(_peers).entries) {
+      final ice = entry.value.iceConnectionState;
+      if (ice == RTCIceConnectionState.RTCIceConnectionStateFailed ||
+          ice == RTCIceConnectionState.RTCIceConnectionStateDisconnected) {
+        _escalateIceFailure(entry.key);
+      }
+    }
   }
 
   Future<void> setMicrophoneEnabled(bool enabled) async {
@@ -531,8 +750,14 @@ class RealtimeMediaService {
     }
   }
 
-  Future<void> startScreenShare() async {
-    if (_disposed || _isScreenSharing) return;
+  /// Start broadcasting the local screen. On peers that already carry a
+  /// video sender the screen track replaces it (no renegotiation). On peers
+  /// WITHOUT one — every audio-only meeting — the track is ADDED, which
+  /// requires renegotiation; returns true so the controller re-offers.
+  /// Before this, sharing a screen in an audio meeting silently reached
+  /// no one: replaceTrack found no video sender to replace.
+  Future<bool> startScreenShare() async {
+    if (_disposed || _isScreenSharing) return false;
 
     final stream = await navigator.mediaDevices.getDisplayMedia(<String, dynamic>{
       'video': <String, dynamic>{'cursor': 'always'},
@@ -540,22 +765,42 @@ class RealtimeMediaService {
     });
 
     _screenStream = stream;
+    var needsRenegotiation = false;
 
     final screenTracks = stream.getVideoTracks();
     if (screenTracks.isNotEmpty) {
       final screenTrack = screenTracks.first;
-      for (final peer in _peers.values) {
+      for (final entry in _peers.entries) {
+        final peer = entry.value;
         final senders = await peer.getSenders();
+        var replaced = false;
         for (final sender in senders) {
           if (sender.track?.kind == 'video') {
             await sender.replaceTrack(screenTrack);
+            replaced = true;
+          }
+        }
+        if (!replaced) {
+          try {
+            final sendStream =
+                _localStream ?? await createLocalMediaStream('screen-share');
+            await peer.addTrack(screenTrack, sendStream);
+            needsRenegotiation = true;
+          } catch (error) {
+            debugPrint(
+              '[rtc] screen addTrack failed peerKey=${entry.key} err=$error',
+            );
           }
         }
       }
+      try {
+        await _applyDegradationPreference(screenTrack, 'maintain-resolution');
+      } catch (_) {}
     }
 
     _isScreenSharing = true;
     _publish();
+    return needsRenegotiation;
   }
 
   Future<void> stopScreenShare() async {
@@ -564,15 +809,21 @@ class RealtimeMediaService {
     _isScreenSharing = false;
 
     final cameraTracks = _localStream?.getVideoTracks();
-    if (cameraTracks != null && cameraTracks.isNotEmpty) {
-      final cameraTrack = cameraTracks.first;
-      for (final peer in _peers.values) {
+    final cameraTrack = (cameraTracks != null && cameraTracks.isNotEmpty)
+        ? cameraTracks.first
+        : null;
+    for (final peer in _peers.values) {
+      try {
         final senders = await peer.getSenders();
         for (final sender in senders) {
           if (sender.track?.kind == 'video') {
+            // Audio-only meetings have no camera track to restore — clear the
+            // sender instead of leaving a dead screen track on the wire.
             await sender.replaceTrack(cameraTrack);
           }
         }
+      } catch (error) {
+        debugPrint('[rtc] stopScreenShare restore failed err=$error');
       }
     }
 
@@ -586,6 +837,195 @@ class RealtimeMediaService {
     final tracks = _localStream?.getVideoTracks();
     if (tracks == null || tracks.isEmpty) return;
     await Helper.switchCamera(tracks.first);
+  }
+
+  // ── Media quality: evidence + adaptation ──────────────────────────────
+  //
+  // Quality is measured (getStats every sampling tick), reported (the
+  // controller attaches the sample to the session heartbeat), and acted on
+  // (a deterministic bitrate ladder caps video senders before the network
+  // fails them). No lab telemetry — a small, predictable control loop.
+
+  final Map<String, int> _prevBytesSent = <String, int>{};
+  final Map<String, int> _prevBytesSentAtMs = <String, int>{};
+  int? _videoBitrateCapKbps;
+  int _baseVideoBitrateCapKbps = 1200;
+  int _consecutiveLossy = 0;
+  int _consecutiveClean = 0;
+  static const int _minVideoBitrateCapKbps = 250;
+
+  /// Participant-count scaling: a P2P mesh uploads one stream per peer, so
+  /// the per-peer cap must shrink as the room grows.
+  Future<void> applyParticipantScaling(int participantCount) async {
+    _baseVideoBitrateCapKbps = participantCount <= 2 ? 1200 : 600;
+    final cap = _videoBitrateCapKbps;
+    if (cap == null || cap > _baseVideoBitrateCapKbps) {
+      await _applyVideoBitrateCap(_baseVideoBitrateCapKbps);
+    }
+  }
+
+  Future<void> _applyVideoBitrateCap(int kbps) async {
+    _videoBitrateCapKbps = kbps;
+    for (final entry in _peers.entries) {
+      try {
+        final senders = await entry.value.getSenders();
+        for (final sender in senders) {
+          if (sender.track?.kind != 'video') continue;
+          final params = sender.parameters;
+          final encodings = params.encodings;
+          if (encodings == null || encodings.isEmpty) continue;
+          for (final encoding in encodings) {
+            encoding.maxBitrate = kbps * 1000;
+          }
+          await sender.setParameters(params);
+        }
+      } catch (error) {
+        debugPrint(
+          '[rtc] bitrate cap failed peerKey=${entry.key} err=$error',
+        );
+      }
+    }
+  }
+
+  Future<void> _applyDegradationPreference(
+    MediaStreamTrack track,
+    String preference,
+  ) async {
+    for (final peer in _peers.values) {
+      try {
+        final senders = await peer.getSenders();
+        for (final sender in senders) {
+          if (sender.track?.id != track.id) continue;
+          final params = sender.parameters;
+          params.degradationPreference = preference == 'maintain-resolution'
+              ? RTCDegradationPreference.MAINTAIN_RESOLUTION
+              : RTCDegradationPreference.MAINTAIN_FRAMERATE;
+          await sender.setParameters(params);
+        }
+      } catch (_) {
+        // Not supported on every platform build — the cap ladder still runs.
+      }
+    }
+  }
+
+  /// Aggregate one quality sample across all peers and feed the adaptation
+  /// ladder. Defensive throughout: stats shapes differ across platforms.
+  Future<RealtimeQualitySample> collectQualitySample() async {
+    double? worstLossPct;
+    int? worstRttMs;
+    int? worstJitterMs;
+    var totalBitrateKbps = 0;
+    var sawBitrate = false;
+
+    for (final entry in Map<String, RTCPeerConnection>.from(_peers).entries) {
+      List<StatsReport> reports;
+      try {
+        reports = await entry.value.getStats();
+      } catch (_) {
+        continue;
+      }
+      for (final report in reports) {
+        final type = report.type;
+        final values = report.values;
+        if (type == 'remote-inbound-rtp') {
+          final rtt = _statDouble(values['roundTripTime']);
+          if (rtt != null) {
+            final ms = (rtt * 1000).round();
+            if (worstRttMs == null || ms > worstRttMs) worstRttMs = ms;
+          }
+          final jitter = _statDouble(values['jitter']);
+          if (jitter != null) {
+            final ms = (jitter * 1000).round();
+            if (worstJitterMs == null || ms > worstJitterMs) worstJitterMs = ms;
+          }
+          final lost = _statDouble(values['packetsLost']);
+          final fraction = _statDouble(values['fractionLost']);
+          if (fraction != null) {
+            final pct = fraction * 100;
+            if (worstLossPct == null || pct > worstLossPct) worstLossPct = pct;
+          } else if (lost != null && lost > 0) {
+            // Cumulative only — keep as weak signal when fractionLost absent.
+            worstLossPct ??= 0;
+          }
+        }
+        if (type == 'outbound-rtp') {
+          final bytes = _statDouble(values['bytesSent'])?.round();
+          final statId = '${entry.key}:${report.id}';
+          if (bytes != null) {
+            final nowMs = DateTime.now().millisecondsSinceEpoch;
+            final prevBytes = _prevBytesSent[statId];
+            final prevAt = _prevBytesSentAtMs[statId];
+            if (prevBytes != null && prevAt != null && nowMs > prevAt) {
+              final kbps =
+                  (((bytes - prevBytes) * 8) / (nowMs - prevAt)).round();
+              if (kbps >= 0) {
+                totalBitrateKbps += kbps;
+                sawBitrate = true;
+              }
+            }
+            _prevBytesSent[statId] = bytes;
+            _prevBytesSentAtMs[statId] = nowMs;
+          }
+        }
+      }
+    }
+
+    final sample = RealtimeQualitySample(
+      rttMs: worstRttMs,
+      jitterMs: worstJitterMs,
+      packetLossPct: worstLossPct == null
+          ? null
+          : (worstLossPct * 100).round() / 100,
+      bitrateKbps: sawBitrate ? totalBitrateKbps : null,
+    );
+
+    await _adaptToSample(sample);
+    return sample;
+  }
+
+  Future<void> _adaptToSample(RealtimeQualitySample sample) async {
+    final loss = sample.packetLossPct;
+    if (loss == null) return;
+    if (loss > 8) {
+      _consecutiveClean = 0;
+      _consecutiveLossy += 1;
+      if (_consecutiveLossy >= 2) {
+        _consecutiveLossy = 0;
+        final current = _videoBitrateCapKbps ?? _baseVideoBitrateCapKbps;
+        final next = (current ~/ 2).clamp(
+          _minVideoBitrateCapKbps,
+          _baseVideoBitrateCapKbps,
+        );
+        if (next < current) {
+          debugPrint('[rtc] quality step-down cap=${next}kbps loss=$loss%');
+          await _applyVideoBitrateCap(next);
+        }
+      }
+    } else if (loss < 2) {
+      _consecutiveLossy = 0;
+      _consecutiveClean += 1;
+      if (_consecutiveClean >= 6) {
+        _consecutiveClean = 0;
+        final current = _videoBitrateCapKbps ?? _baseVideoBitrateCapKbps;
+        final next = ((current * 3) ~/ 2).clamp(
+          _minVideoBitrateCapKbps,
+          _baseVideoBitrateCapKbps,
+        );
+        if (next > current) {
+          debugPrint('[rtc] quality step-up cap=${next}kbps');
+          await _applyVideoBitrateCap(next);
+        }
+      }
+    } else {
+      _consecutiveLossy = 0;
+      _consecutiveClean = 0;
+    }
+  }
+
+  double? _statDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
   // ── Device selection (Phase 1 · Priority 2) ──────────────────────────────
@@ -755,6 +1195,11 @@ class RealtimeMediaService {
   }
 
   Future<void> removePeer(String peerKey) async {
+    _iceGraceTimers.remove(peerKey)?.cancel();
+    _iceRestartAttempts.remove(peerKey);
+    _pendingRemoteCandidates.remove(peerKey);
+    _remoteDescriptionSet.remove(peerKey);
+    _makingOffer.remove(peerKey);
     await _disposePeerConnection(_peers.remove(peerKey));
     await _disposeRenderer(_remoteRenderers.remove(peerKey));
     await _disposeStream(_remoteStreams.remove(peerKey));
@@ -775,6 +1220,18 @@ class RealtimeMediaService {
       await _disposeStream(_screenStream);
       _screenStream = null;
     }
+    for (final timer in _iceGraceTimers.values) {
+      timer.cancel();
+    }
+    _iceGraceTimers.clear();
+    _iceRestartAttempts.clear();
+    _pendingRemoteCandidates.clear();
+    _remoteDescriptionSet.clear();
+    _prevBytesSent.clear();
+    _prevBytesSentAtMs.clear();
+    _videoBitrateCapKbps = null;
+    _consecutiveLossy = 0;
+    _consecutiveClean = 0;
     _ready = false;
     _micEnabled = false;
     _cameraEnabled = false;
@@ -853,6 +1310,9 @@ class RealtimeMediaService {
     await resetSessionMedia();
     if (!_snapshots.isClosed) {
       await _snapshots.close();
+    }
+    if (!_peerHealth.isClosed) {
+      await _peerHealth.close();
     }
   }
 

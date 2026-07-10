@@ -16,6 +16,12 @@ enum RealtimeJoinState {
   banned,
   locked,
   failed,
+
+  /// The session moved to another of the user's devices. Deliberate handover:
+  /// this device stays quietly parked (no auto-rejoin — that produced two
+  /// devices endlessly replacing each other) until the user chooses to
+  /// continue here.
+  replaced,
 }
 
 enum RealtimeConsentStatus {

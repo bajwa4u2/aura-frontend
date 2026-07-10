@@ -255,6 +255,9 @@ class RealtimeSocketService {
       // the same controller transitions, eliminating split-state risk.
       'session:ended',
       'session:stale',
+      // Deployment resilience: the server announces a restart so clients hold
+      // their media plane through the signaling gap instead of tearing down.
+      'session:server.restarting',
       'call:declined',
       'call:terminal',
       'call:incoming',

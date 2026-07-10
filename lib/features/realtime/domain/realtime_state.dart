@@ -31,6 +31,7 @@ class RealtimeState {
     this.isScreenSharing = false,
     this.isCallRoomVisible = false,
     this.isEndingCall = false,
+    this.reconnectingUserIds = const <String>{},
   });
 
   final RealtimeConnectionStatus connectionStatus;
@@ -71,6 +72,12 @@ class RealtimeState {
   /// own end-tap guard. Single source of truth — one tap, one end.
   final bool isEndingCall;
 
+  /// Participants whose connection dropped involuntarily and are inside the
+  /// reconnect grace window. They stay on the roster (tile shows
+  /// "Reconnecting…") instead of vanishing; if the grace expires they leave
+  /// for real.
+  final Set<String> reconnectingUserIds;
+
   factory RealtimeState.initial() {
     return const RealtimeState(
       connectionStatus: RealtimeConnectionStatus.disconnected,
@@ -99,6 +106,7 @@ class RealtimeState {
       isScreenSharing: false,
       isCallRoomVisible: false,
       isEndingCall: false,
+      reconnectingUserIds: <String>{},
     );
   }
 
@@ -140,6 +148,7 @@ class RealtimeState {
     bool? isScreenSharing,
     bool? isCallRoomVisible,
     bool? isEndingCall,
+    Set<String>? reconnectingUserIds,
   }) {
     return RealtimeState(
       connectionStatus: connectionStatus ?? this.connectionStatus,
@@ -170,6 +179,7 @@ class RealtimeState {
       isScreenSharing: isScreenSharing ?? this.isScreenSharing,
       isCallRoomVisible: isCallRoomVisible ?? this.isCallRoomVisible,
       isEndingCall: isEndingCall ?? this.isEndingCall,
+      reconnectingUserIds: reconnectingUserIds ?? this.reconnectingUserIds,
     );
   }
 

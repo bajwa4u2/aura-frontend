@@ -1061,6 +1061,16 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           false,
           policy?.waitingRoomEnabled == true,
         );
+      case RealtimeJoinState.replaced:
+        return (
+          Icons.devices_rounded,
+          'Active on another device',
+          isMeeting
+              ? 'This meeting is now active on another of your devices. You can continue it here at any time.'
+              : 'This call is now active on another of your devices. You can continue it here at any time.',
+          true,
+          false,
+        );
       case RealtimeJoinState.failed:
         final errLower = (state.errorMessage ?? '').toLowerCase();
         final isTerminal =

@@ -22,7 +22,12 @@ class MeetingRecordingCapture {
   bool get isSupported => false;
   bool get isRecording => false;
 
+  /// Bytes captured but not yet drained — always zero off web.
+  int get bufferedByteLength => 0;
+
   Future<bool> start() async => false;
 
-  Future<RecordingResult?> stop() async => null;
+  Future<Uint8List?> takeBufferedBytes() async => null;
+
+  Future<int> stopCapture() async => 0;
 }

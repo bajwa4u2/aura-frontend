@@ -131,62 +131,173 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   int _unseenChat = 0;
   bool _chatHistoryRequested = false;
 
-  // Establishment Pass — meeting recording (host, web). Client capture:
-  // consumes the host's rendered view via getDisplayMedia; the frozen RTC
-  // stack is untouched. The result is uploaded as a RECORDING MeetingAsset.
+  // Meeting recording (host, web). Client capture via getDisplayMedia +
+  // MediaRecorder — and DURABLE by design: parts stream to storage while the
+  // meeting runs (multipart upload), so a crashed or refreshed recording
+  // browser loses at most the unflushed tail, never the meeting.
   final _recorder = MeetingRecordingCapture();
   bool _recording = false;
   bool _savingRecording = false;
+  String? _recordingAssetId;
+  String? _recordingUploadId;
+  int _recordingNextPart = 1;
+  Uint8List? _recordingPendingPart;
+  bool _recordingUploadBusy = false;
+  Timer? _recordingFlushTimer;
+  // S3 multipart minimum is 5 MiB for every part except the last.
+  static const int _recordingMinPartBytes = 5 * 1024 * 1024 + 64 * 1024;
 
   Future<void> _toggleRecording(Meeting? meeting) async {
     if (_savingRecording) return;
     if (!_recording) {
       final ok = await _recorder.start();
       if (!mounted) return;
-      setState(() => _recording = ok);
-      _showArrivalToast(ok
-          ? 'Recording started — pick "This tab" to capture the meeting'
-          : 'Recording could not start');
+      if (!ok) {
+        _showArrivalToast('Recording could not start');
+        return;
+      }
+      try {
+        final when = DateTime.now();
+        final begun = await ref
+            .read(meetingsRepositoryProvider)
+            .beginRecordingUpload(
+              widget.meetingId,
+              fileName:
+                  'Meeting recording ${when.year}-${when.month.toString().padLeft(2, '0')}-${when.day.toString().padLeft(2, '0')}.webm',
+              mimeType: 'video/webm',
+            );
+        _recordingAssetId = begun.assetId;
+        _recordingUploadId = begun.uploadId;
+        _recordingNextPart = 1;
+        _recordingPendingPart = null;
+      } catch (_) {
+        await _recorder.stopCapture();
+        if (mounted) _showArrivalToast('Recording could not start');
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _recording = true);
+      _showArrivalToast(
+        'Recording started — pick "This tab" to capture the meeting',
+      );
+      _recordingFlushTimer?.cancel();
+      _recordingFlushTimer = Timer.periodic(
+        const Duration(seconds: 10),
+        (_) => unawaited(_flushRecordingPart(force: false)),
+      );
       return;
     }
     await _stopAndSaveRecording();
   }
 
-  /// The ONLY exit path for a recording: stop capture, upload, attach to the
-  /// Meeting Record. Called by the Stop control, by the browser's own
-  /// "Stop sharing" (external stop), and before End/Leave — a captured
-  /// recording is never silently discarded.
+  Uint8List _combineParts(Uint8List? a, Uint8List? b) {
+    if (a == null || a.isEmpty) return b ?? Uint8List(0);
+    if (b == null || b.isEmpty) return a;
+    final combined = Uint8List(a.length + b.length);
+    combined.setRange(0, a.length, a);
+    combined.setRange(a.length, combined.length, b);
+    return combined;
+  }
+
+  /// Streams one part to storage. Sequential by construction (single
+  /// uploader, monotonically increasing part numbers); a failed part is
+  /// retained and retried with the SAME part number, so ordering holds.
+  Future<void> _flushRecordingPart({required bool force}) async {
+    if (_recordingUploadBusy) return;
+    final assetId = _recordingAssetId;
+    final uploadId = _recordingUploadId;
+    if (assetId == null || uploadId == null) return;
+
+    Uint8List? bytes;
+    if (force) {
+      final fresh = await _recorder.takeBufferedBytes();
+      final combined = _combineParts(_recordingPendingPart, fresh);
+      _recordingPendingPart = null;
+      bytes = combined.isEmpty ? null : combined;
+    } else if (_recordingPendingPart != null) {
+      bytes = _recordingPendingPart;
+      _recordingPendingPart = null;
+    } else if (_recorder.bufferedByteLength >= _recordingMinPartBytes) {
+      bytes = await _recorder.takeBufferedBytes();
+    }
+    if (bytes == null || bytes.isEmpty) return;
+
+    _recordingUploadBusy = true;
+    try {
+      await ref.read(meetingsRepositoryProvider).uploadRecordingPart(
+            widget.meetingId,
+            assetId: assetId,
+            uploadId: uploadId,
+            partNumber: _recordingNextPart,
+            bytes: bytes,
+          );
+      _recordingNextPart += 1;
+    } catch (_) {
+      // Keep the bytes; the next tick (or the final flush) retries with the
+      // same part number.
+      _recordingPendingPart = _combineParts(bytes, _recordingPendingPart);
+    } finally {
+      _recordingUploadBusy = false;
+    }
+  }
+
+  /// The ONLY exit path for a recording: stop capture, flush the tail,
+  /// complete the multipart upload, attach to the Meeting Record. Called by
+  /// the Stop control, by the browser's own "Stop sharing" (external stop),
+  /// and before End/Leave — a captured recording is never silently discarded.
   Future<void> _stopAndSaveRecording() async {
     if (_savingRecording) return;
     setState(() {
       _recording = false;
       _savingRecording = true;
     });
+    _recordingFlushTimer?.cancel();
+    _recordingFlushTimer = null;
     _showArrivalToast('Saving recording…');
+    final assetId = _recordingAssetId;
+    final uploadId = _recordingUploadId;
     try {
-      final result = await _recorder.stop();
-      if (result == null) {
-        if (mounted) _showArrivalToast('No recording captured');
-        return;
+      final durationSeconds = await _recorder.stopCapture();
+
+      // Final flush — retry a stubborn tail a few times before giving up.
+      for (var attempt = 0; attempt < 3; attempt++) {
+        await _flushRecordingPart(force: true);
+        if (_recordingPendingPart == null &&
+            _recorder.bufferedByteLength == 0) {
+          break;
+        }
       }
-      final when = DateTime.now();
-      await ref.read(meetingsRepositoryProvider).uploadAsset(
-            widget.meetingId,
-            fileName:
-                'Meeting recording ${when.year}-${when.month.toString().padLeft(2, '0')}-${when.day.toString().padLeft(2, '0')}.webm',
-            mimeType: result.mimeType,
-            bytes: result.bytes,
-            stage: 'MEETING',
-            kind: 'RECORDING',
-            durationSeconds: result.durationSeconds,
+
+      if (assetId != null && uploadId != null && _recordingNextPart > 1) {
+        await ref.read(meetingsRepositoryProvider).completeRecordingUpload(
+              widget.meetingId,
+              assetId: assetId,
+              uploadId: uploadId,
+              durationSeconds: durationSeconds,
+            );
+        ref.invalidate(meetingAssetsProvider(widget.meetingId));
+        if (mounted) {
+          _showArrivalToast('Recording attached to the meeting record');
+        }
+      } else {
+        if (assetId != null && uploadId != null) {
+          unawaited(
+            ref.read(meetingsRepositoryProvider).abortRecordingUpload(
+                  widget.meetingId,
+                  assetId: assetId,
+                  uploadId: uploadId,
+                ),
           );
-      ref.invalidate(meetingAssetsProvider(widget.meetingId));
-      if (mounted) {
-        _showArrivalToast('Recording attached to the meeting record');
+        }
+        if (mounted) _showArrivalToast('No recording captured');
       }
     } catch (_) {
       if (mounted) _showArrivalToast('Recording upload failed');
     } finally {
+      _recordingAssetId = null;
+      _recordingUploadId = null;
+      _recordingNextPart = 1;
+      _recordingPendingPart = null;
       if (mounted) setState(() => _savingRecording = false);
     }
   }
@@ -230,6 +341,26 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     if (_showChat || _showFiles) return 320;
     if (_showNotes || _showParticipants) return 300;
     return 0;
+  }
+
+  /// Names the participant(s) currently inside the reconnect grace window
+  /// for the connection banner. Falls back to a generic label when the
+  /// roster has no display name for them.
+  String _reconnectingLabel(RealtimeState state) {
+    final names = <String>[];
+    for (final userId in state.reconnectingUserIds) {
+      for (final p in state.participants) {
+        if (p.userId != userId) continue;
+        final name = (p.displayName ?? '').trim();
+        names.add(name.isNotEmpty ? name : 'A participant');
+        break;
+      }
+    }
+    if (names.isEmpty) return 'Waiting for a participant to reconnect…';
+    if (names.length == 1) {
+      return 'Waiting for ${names.first} to reconnect…';
+    }
+    return 'Waiting for participants to reconnect…';
   }
 
   void _onParticipationEvent(RealtimeParsedEvent e) {
@@ -702,6 +833,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     _participationSub?.cancel();
     _controlBarTimer?.cancel();
     _arrivalTimer?.cancel();
+    _recordingFlushTimer?.cancel();
     ref
         .read(realtimeControllerProvider.notifier)
         .setCallRoomVisible(false);
@@ -1185,6 +1317,59 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                     widget.isHost ? _deleteConversationMessage : null,
                 onPromote:
                     widget.isHost ? _promoteConversationMessage : null,
+              ),
+            ),
+
+          // Connection-state banner. The room persists through a signaling
+          // gap (media continuity) — this quiet pill is how the participant
+          // knows the system is holding the meeting, not frozen.
+          if (state.isJoined &&
+              (state.connectionStatus ==
+                      RealtimeConnectionStatus.reconnecting ||
+                  state.reconnectingUserIds.isNotEmpty))
+            Positioned(
+              top: 80,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xCC0F172A),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.10),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        state.connectionStatus ==
+                                RealtimeConnectionStatus.reconnecting
+                            ? 'Reconnecting…'
+                            : _reconnectingLabel(state),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
 
@@ -3376,6 +3561,45 @@ class _ConnectingOverlay extends StatelessWidget {
         state.errorMessage != null;
     final owner =
         meeting?.owningInstitution?.name ?? meeting?.host?.name;
+
+    // Deliberate device handover — calm, actionable, never a spinner.
+    if (state.joinState == RealtimeJoinState.replaced) {
+      return Container(
+        color: const Color(0xEE030712),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.devices_rounded,
+                color: Color(0xFF8A94A6),
+                size: 40,
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              const Text(
+                'Active on another device',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s8),
+              const Text(
+                'This meeting is now active on another of your devices.\nYou can continue it here at any time.',
+                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AuraSpace.s16),
+              FilledButton(
+                onPressed: onRetry,
+                child: const Text('Continue here'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Container(
       color: const Color(0xEE030712),
