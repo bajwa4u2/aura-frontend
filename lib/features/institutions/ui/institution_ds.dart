@@ -233,12 +233,7 @@ class InsSection extends StatelessWidget {
 
 /// Plain institution card surface — same border / radius / padding everywhere.
 class InsCard extends StatelessWidget {
-  const InsCard({
-    super.key,
-    required this.child,
-    this.padding,
-    this.tone,
-  });
+  const InsCard({super.key, required this.child, this.padding, this.tone});
 
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -445,8 +440,9 @@ class InsActionCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style:
-                            AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -709,9 +705,7 @@ class InsIdentityHeader extends StatelessWidget {
                 Wrap(
                   spacing: AuraSpace.s14,
                   runSpacing: AuraSpace.s8,
-                  children: [
-                    for (final f in facts) InsFactRow(fact: f),
-                  ],
+                  children: [for (final f in facts) InsFactRow(fact: f)],
                 ),
               ],
             ],
@@ -767,9 +761,7 @@ class InsCoverHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: InsSpacing.contentMaxWidth,
-        ),
+        constraints: const BoxConstraints(maxWidth: InsSpacing.contentMaxWidth),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -829,9 +821,7 @@ class InsCoverHeader extends StatelessWidget {
                     Wrap(
                       spacing: AuraSpace.s14,
                       runSpacing: AuraSpace.s8,
-                      children: [
-                        for (final f in facts) InsFactRow(fact: f),
-                      ],
+                      children: [for (final f in facts) InsFactRow(fact: f)],
                     ),
                   ],
                 ],
@@ -875,10 +865,7 @@ class _CoverWithAvatar extends StatelessWidget {
             height: coverHeight,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AuraRadius.lg),
-              child: _CoverSurface(
-                coverUrl: coverUrl,
-                fallbackLogo: logoUrl,
-              ),
+              child: _CoverSurface(coverUrl: coverUrl, fallbackLogo: logoUrl),
             ),
           ),
           Positioned(
@@ -925,9 +912,10 @@ class _CoverSurface extends StatelessWidget {
       return Stack(
         fit: StackFit.expand,
         children: [
+          const _CoverFallback(),
           Image.network(
             url,
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => const _CoverFallback(),
           ),
           // Soft bottom darkening so badges/text in the row below have
@@ -1070,11 +1058,7 @@ class InsResponsiveGrid extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class InsActionGroup extends StatelessWidget {
-  const InsActionGroup({
-    super.key,
-    this.primary,
-    this.secondary = const [],
-  });
+  const InsActionGroup({super.key, this.primary, this.secondary = const []});
 
   final Widget? primary;
   final List<Widget> secondary;
@@ -1085,10 +1069,7 @@ class InsActionGroup extends StatelessWidget {
       spacing: AuraSpace.s8,
       runSpacing: AuraSpace.s8,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        if (primary != null) primary!,
-        ...secondary,
-      ],
+      children: [if (primary != null) primary!, ...secondary],
     );
   }
 }
@@ -1158,10 +1139,7 @@ class InsModeHeader extends StatelessWidget {
             ),
           ),
         ],
-        if (tabs != null) ...[
-          const SizedBox(height: AuraSpace.s10),
-          tabs!,
-        ],
+        if (tabs != null) ...[const SizedBox(height: AuraSpace.s10), tabs!],
       ],
     );
   }
@@ -1231,10 +1209,7 @@ class InsEmptyState extends StatelessWidget {
             child: Icon(icon, size: 18, color: t.fg),
           ),
           const SizedBox(height: AuraSpace.s12),
-          Text(
-            title,
-            style: AuraText.subtitle,
-          ),
+          Text(title, style: AuraText.subtitle),
           if (description != null && description!.trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
             Text(

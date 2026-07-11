@@ -130,8 +130,7 @@ class _InstitutionEditProfileScreenState
   /// live preview is collapsed by default so the operator reaches the fields
   /// immediately, and expands it on demand.
   bool _previewExpanded = false;
-  void togglePreview() =>
-      setState(() => _previewExpanded = !_previewExpanded);
+  void togglePreview() => setState(() => _previewExpanded = !_previewExpanded);
 
   /// Real unsaved-changes state. Was previously hardcoded `true` in the save
   /// bar, so it always read "You have unsaved changes" even right after a save.
@@ -181,12 +180,28 @@ class _InstitutionEditProfileScreenState
   }
 
   List<TextEditingController> get _allControllers => [
-        _nameCtrl, _taglineCtrl, _descCtrl, _categoryCtrl, _locationCtrl,
-        _websiteCtrl, _publicEmailCtrl, _phoneCtrl, _addressCtrl,
-        _cityCtrl, _regionCtrl, _countryCtrl,
-        _linkedinCtrl, _xCtrl, _facebookCtrl, _instagramCtrl, _youtubeCtrl,
-        _missionCtrl, _servicesCtrl, _audienceCtrl, _foundedYearCtrl,
-      ];
+    _nameCtrl,
+    _taglineCtrl,
+    _descCtrl,
+    _categoryCtrl,
+    _locationCtrl,
+    _websiteCtrl,
+    _publicEmailCtrl,
+    _phoneCtrl,
+    _addressCtrl,
+    _cityCtrl,
+    _regionCtrl,
+    _countryCtrl,
+    _linkedinCtrl,
+    _xCtrl,
+    _facebookCtrl,
+    _instagramCtrl,
+    _youtubeCtrl,
+    _missionCtrl,
+    _servicesCtrl,
+    _audienceCtrl,
+    _foundedYearCtrl,
+  ];
 
   void _populate(Map<String, dynamic> inst) {
     if (_loaded) return;
@@ -208,13 +223,13 @@ class _InstitutionEditProfileScreenState
     _logoUrl = inst['logoUrl']?.toString().trim().isNotEmpty == true
         ? inst['logoUrl'].toString().trim()
         : (inst['avatarUrl']?.toString().trim().isNotEmpty == true
-            ? inst['avatarUrl'].toString().trim()
-            : null);
+              ? inst['avatarUrl'].toString().trim()
+              : null);
     _coverUrl = inst['coverUrl']?.toString().trim().isNotEmpty == true
         ? inst['coverUrl'].toString().trim()
         : (inst['bannerUrl']?.toString().trim().isNotEmpty == true
-            ? inst['bannerUrl'].toString().trim()
-            : null);
+              ? inst['bannerUrl'].toString().trim()
+              : null);
     _websiteCtrl.text = s(['website', 'websiteUrl']);
     _publicEmailCtrl.text = s(['publicEmail', 'contactEmail']);
     _phoneCtrl.text = s(['phone', 'phoneNumber']);
@@ -243,9 +258,11 @@ class _InstitutionEditProfileScreenState
     if (rawTags is List) {
       _domainTags
         ..clear()
-        ..addAll(rawTags
-            .map((e) => e?.toString().trim() ?? '')
-            .where((s) => s.isNotEmpty));
+        ..addAll(
+          rawTags
+              .map((e) => e?.toString().trim() ?? '')
+              .where((s) => s.isNotEmpty),
+        );
     }
 
     // Hydrating controllers fires their listeners; loading is not an edit.
@@ -361,9 +378,11 @@ class _InstitutionEditProfileScreenState
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _error = e is DioException
-            ? _readDioError(e, 'Could not save image.')
-            : 'Could not save image.');
+        setState(
+          () => _error = e is DioException
+              ? _readDioError(e, 'Could not save image.')
+              : 'Could not save image.',
+        );
       }
     }
   }
@@ -438,7 +457,9 @@ class _InstitutionEditProfileScreenState
           _coverUrl = newUrl;
         }
       });
-      await _persistBranding(isLogo ? {'logoUrl': newUrl} : {'coverUrl': newUrl});
+      await _persistBranding(
+        isLogo ? {'logoUrl': newUrl} : {'coverUrl': newUrl},
+      );
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() => _error = _readDioError(e, 'Could not upload image.'));
@@ -474,8 +495,9 @@ class _InstitutionEditProfileScreenState
     }
     if (!_kImageMimeWhitelist.contains(mimeType.toLowerCase())) {
       if (mounted) {
-        setState(() =>
-            _error = 'Unsupported image type. Use JPEG, PNG, or WebP.');
+        setState(
+          () => _error = 'Unsupported image type. Use JPEG, PNG, or WebP.',
+        );
       }
       return;
     }
@@ -483,9 +505,11 @@ class _InstitutionEditProfileScreenState
     if (pickedBytes.length > maxBytes) {
       final mb = (maxBytes / (1024 * 1024)).toStringAsFixed(0);
       if (mounted) {
-        setState(() => _error = isLogo
-            ? 'Logo must be $mb MB or smaller.'
-            : 'Cover must be $mb MB or smaller.');
+        setState(
+          () => _error = isLogo
+              ? 'Logo must be $mb MB or smaller.'
+              : 'Cover must be $mb MB or smaller.',
+        );
       }
       return;
     }
@@ -613,7 +637,9 @@ class _InstitutionEditProfileScreenState
                   onPressed: () => context.go(
                     (identity?.id.isNotEmpty ?? false)
                         ? institutionWorkspacePath(
-                            identity!.id, InstitutionSection.profile)
+                            identity!.id,
+                            InstitutionSection.profile,
+                          )
                         : '/institution/dashboard',
                   ),
                 ),
@@ -621,7 +647,8 @@ class _InstitutionEditProfileScreenState
             );
           }
 
-          final inst = access.institution ??
+          final inst =
+              access.institution ??
               (access.membership?['institution'] is Map
                   ? Map<String, dynamic>.from(
                       access.membership!['institution'] as Map,
@@ -663,7 +690,9 @@ class _StudioBody extends StatelessWidget {
                   onPressed: () => context.go(
                     institutionId.isNotEmpty
                         ? institutionWorkspacePath(
-                            institutionId, InstitutionSection.profile)
+                            institutionId,
+                            InstitutionSection.profile,
+                          )
                         : '/institution/dashboard',
                   ),
                 ),
@@ -691,17 +720,11 @@ class _StudioBody extends StatelessWidget {
 
               // ── Banners ───────────────────────────────────────────────
               if (state._error != null) ...[
-                _ToneBanner(
-                  tone: InsTone.danger,
-                  message: state._error!,
-                ),
+                _ToneBanner(tone: InsTone.danger, message: state._error!),
                 const SizedBox(height: AuraSpace.s14),
               ],
               if (state._successMessage != null) ...[
-                _ToneBanner(
-                  tone: InsTone.ok,
-                  message: state._successMessage!,
-                ),
+                _ToneBanner(tone: InsTone.ok, message: state._successMessage!),
                 const SizedBox(height: AuraSpace.s14),
               ],
 
@@ -730,8 +753,7 @@ class _StudioBody extends StatelessWidget {
                               return 'Name is required.';
                             }
                             if (v.trim().length >
-                                _InstitutionEditProfileScreenState
-                                    ._kNameMax) {
+                                _InstitutionEditProfileScreenState._kNameMax) {
                               return 'Max ${_InstitutionEditProfileScreenState._kNameMax} characters.';
                             }
                             return null;
@@ -748,8 +770,8 @@ class _StudioBody extends StatelessWidget {
                         child: _StudioTextField(
                           controller: state._taglineCtrl,
                           hint: 'Short tagline or motto…',
-                          maxLength: _InstitutionEditProfileScreenState
-                              ._kTaglineMax,
+                          maxLength:
+                              _InstitutionEditProfileScreenState._kTaglineMax,
                           validator: (v) {
                             if (v == null) return null;
                             if (v.trim().length >
@@ -812,8 +834,7 @@ class _StudioBody extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s14),
                       _MediaSlot(
                         label: 'Cover banner',
-                        helper:
-                            'Wide image · 4:1 ratio · 1600×400 recommended',
+                        helper: 'Wide image · 4:1 ratio · 1600×400 recommended',
                         child: _MediaUploadControl(
                           imageUrl: state._coverUrl,
                           uploading: state._uploadingCover,
@@ -845,8 +866,7 @@ class _StudioBody extends StatelessWidget {
                       controller: state._descCtrl,
                       hint:
                           'What is this institution, who does it serve, and what does it stand for?',
-                      maxLength:
-                          _InstitutionEditProfileScreenState._kDescMax,
+                      maxLength: _InstitutionEditProfileScreenState._kDescMax,
                       minLines: 4,
                       maxLines: 10,
                       validator: (v) {
@@ -1086,7 +1106,9 @@ class _StudioBody extends StatelessWidget {
             onCancel: () => context.go(
               institutionId.isNotEmpty
                   ? institutionWorkspacePath(
-                      institutionId, InstitutionSection.profile)
+                      institutionId,
+                      InstitutionSection.profile,
+                    )
                   : '/institution/dashboard',
             ),
             onPreview: () => context.go(
@@ -1143,8 +1165,11 @@ class _PreviewDisclosure extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.visibility_outlined,
-                      size: 15, color: AuraSurface.muted),
+                  const Icon(
+                    Icons.visibility_outlined,
+                    size: 15,
+                    color: AuraSurface.muted,
+                  ),
                   const SizedBox(width: AuraSpace.s8),
                   Text(
                     'Public preview',
@@ -1166,10 +1191,7 @@ class _PreviewDisclosure extends StatelessWidget {
             ),
           ),
         ),
-        if (expanded) ...[
-          const SizedBox(height: AuraSpace.s8),
-          preview,
-        ],
+        if (expanded) ...[const SizedBox(height: AuraSpace.s8), preview],
       ],
     );
   }
@@ -1200,7 +1222,9 @@ class _LivePreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final facts = <InsFact>[];
     if (category.trim().isNotEmpty) {
-      facts.add(InsFact(icon: Icons.workspaces_outlined, text: category.trim()));
+      facts.add(
+        InsFact(icon: Icons.workspaces_outlined, text: category.trim()),
+      );
     }
     if (location.trim().isNotEmpty) {
       facts.add(InsFact(icon: Icons.place_outlined, text: location.trim()));
@@ -1259,12 +1283,17 @@ class _LivePreviewCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AuraRadius.md),
                 child: AspectRatio(
                   aspectRatio: 4,
-                  child: Image.network(
-                    coverUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AuraSurface.subtle,
-                    ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const ColoredBox(color: AuraSurface.subtle),
+                      Image.network(
+                        coverUrl!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: AuraSurface.subtle),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1310,9 +1339,7 @@ class _SaveBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AuraSurface.page.withValues(alpha: 0.96),
-        border: const Border(
-          top: BorderSide(color: AuraSurface.divider),
-        ),
+        border: const Border(top: BorderSide(color: AuraSurface.divider)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x44000000),
@@ -1383,8 +1410,8 @@ class _SaveBar extends StatelessWidget {
                                 saving
                                     ? 'Saving changes…'
                                     : (dirty
-                                        ? 'You have unsaved changes'
-                                        : 'All changes saved'),
+                                          ? 'You have unsaved changes'
+                                          : 'All changes saved'),
                                 style: AuraText.small.copyWith(
                                   color: AuraSurface.muted,
                                   fontWeight: FontWeight.w600,
@@ -1503,8 +1530,9 @@ class _StudioCountedField extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '*',
-                        style: AuraText.small
-                            .copyWith(color: AuraSurface.coRose),
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.coRose,
+                        ),
                       ),
                     ],
                   ],
@@ -1584,13 +1612,11 @@ class _StudioTextField extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide:
-              const BorderSide(color: AuraSurface.coRose, width: 1.5),
+          borderSide: const BorderSide(color: AuraSurface.coRose, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide:
-              const BorderSide(color: AuraSurface.coRose, width: 1.5),
+          borderSide: const BorderSide(color: AuraSurface.coRose, width: 1.5),
         ),
       ),
       keyboardType: keyboardType,
@@ -1608,8 +1634,7 @@ Widget? _emptyCounter(
   required int currentLength,
   required int? maxLength,
   required bool isFocused,
-}) =>
-    const SizedBox.shrink();
+}) => const SizedBox.shrink();
 
 class _SocialField extends StatelessWidget {
   const _SocialField({
@@ -1672,8 +1697,7 @@ class _StudioTwoCol extends StatelessWidget {
 }
 
 class _StudioThreeCol extends StatelessWidget {
-  const _StudioThreeCol(
-      {required this.a, required this.b, required this.c});
+  const _StudioThreeCol({required this.a, required this.b, required this.c});
 
   final Widget a;
   final Widget b;
@@ -1729,10 +1753,7 @@ class _MediaSlot extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 2),
-        Text(
-          helper,
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
+        Text(helper, style: AuraText.small.copyWith(color: AuraSurface.muted)),
         const SizedBox(height: AuraSpace.s10),
         child,
       ],
@@ -1782,11 +1803,7 @@ class _ManagedFieldsNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline_rounded,
-            size: 14,
-            color: AuraSurface.muted,
-          ),
+          Icon(Icons.info_outline_rounded, size: 14, color: AuraSurface.muted),
           SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
@@ -1871,18 +1888,24 @@ class _MediaUploadControl extends StatelessWidget {
       children: [
         if (hasImage) ...[
           _previewBox(
-            child: Image.network(
-              imageUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AuraSurface.elevated,
-                child: const Center(
-                  child: Icon(
-                    Icons.broken_image_outlined,
-                    color: AuraSurface.faint,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const ColoredBox(color: AuraSurface.elevated),
+                Image.network(
+                  imageUrl!,
+                  fit: _isLogo ? BoxFit.cover : BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: AuraSurface.elevated,
+                    child: const Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: AuraSurface.faint,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
           const SizedBox(height: AuraSpace.s10),
@@ -1930,18 +1953,19 @@ class _MediaUploadControl extends StatelessWidget {
                 hasImage ? Icons.swap_horiz_rounded : Icons.upload_rounded,
                 size: 16,
               ),
-              label: Text(uploading
-                  ? 'Uploading…'
-                  : hasImage
-                      ? 'Replace'
-                      : 'Upload'),
+              label: Text(
+                uploading
+                    ? 'Uploading…'
+                    : hasImage
+                    ? 'Replace'
+                    : 'Upload',
+              ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 8,
                 ),
-                textStyle:
-                    AuraText.small.copyWith(fontWeight: FontWeight.w600),
+                textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             if (hasImage)
@@ -1954,8 +1978,9 @@ class _MediaUploadControl extends StatelessWidget {
                     horizontal: 14,
                     vertical: 8,
                   ),
-                  textStyle:
-                      AuraText.small.copyWith(fontWeight: FontWeight.w600),
+                  textStyle: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             if (hasImage)
@@ -2008,8 +2033,8 @@ class _OntologyEditSection extends ConsumerWidget {
     final types = ontology == null
         ? const []
         : (institutionClass == null
-            ? const <InstitutionTypeDef>[]
-            : ontology.typesForClass(institutionClass!));
+              ? const <InstitutionTypeDef>[]
+              : ontology.typesForClass(institutionClass!));
     final domainTagDefs = ontology?.domainTags ?? const [];
 
     return Column(
@@ -2030,10 +2055,7 @@ class _OntologyEditSection extends ConsumerWidget {
                   child: Text('— Not classified —'),
                 ),
                 for (final c in classes)
-                  DropdownMenuItem<String?>(
-                    value: c.id,
-                    child: Text(c.label),
-                  ),
+                  DropdownMenuItem<String?>(value: c.id, child: Text(c.label)),
               ],
               onChanged: onClassChanged,
             ),
@@ -2054,10 +2076,7 @@ class _OntologyEditSection extends ConsumerWidget {
                   child: Text('— None —'),
                 ),
                 for (final t in types)
-                  DropdownMenuItem<String?>(
-                    value: t.id,
-                    child: Text(t.label),
-                  ),
+                  DropdownMenuItem<String?>(value: t.id, child: Text(t.label)),
               ],
               onChanged: institutionClass == null ? null : onTypeChanged,
             ),
@@ -2076,7 +2095,8 @@ class _OntologyEditSection extends ConsumerWidget {
                   label: tag.label,
                   selected: domainTags.contains(tag.id),
                   onTap: () {
-                    final atCap = domainTags.length >=
+                    final atCap =
+                        domainTags.length >=
                         (ontology?.maxDomainTagsPerInstitution ?? 8);
                     if (atCap && !domainTags.contains(tag.id)) return;
                     onTagToggled(tag.id);

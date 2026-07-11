@@ -292,7 +292,7 @@ class _PresenceCover extends StatelessWidget {
           if (hasCover)
             Image.network(
               resolvedUrl,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => _emptySurface(),
               loadingBuilder: (context, child, progress) {
                 if (progress == null) return child;

@@ -80,8 +80,9 @@ class _InstitutionDetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final postsAsync =
-        ref.watch(institutionProfileFeedPagedProvider(institution.id));
+    final postsAsync = ref.watch(
+      institutionProfileFeedPagedProvider(institution.id),
+    );
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -237,13 +238,9 @@ class _InstitutionDetailBody extends ConsumerWidget {
                       // so a quiet institution shows nothing extra —
                       // never an empty metric box.
                       const SizedBox(height: AuraSpace.s14),
-                      DiscourseContinuityPanel(
-                        institutionId: institution.id,
-                      ),
+                      DiscourseContinuityPanel(institutionId: institution.id),
                       const SizedBox(height: AuraSpace.s14),
-                      ContinuationChainRail(
-                        institutionId: institution.id,
-                      ),
+                      ContinuationChainRail(institutionId: institution.id),
                       const SizedBox(height: AuraSpace.s14),
                       _RelatedInstitutionsSection(
                         institutionId: institution.id,
@@ -263,10 +260,7 @@ class _InstitutionDetailBody extends ConsumerWidget {
 // ── Units section ──────────────────────────────────────────────────────────
 
 class _UnitsSection extends StatelessWidget {
-  const _UnitsSection({
-    required this.institutionName,
-    required this.units,
-  });
+  const _UnitsSection({required this.institutionName, required this.units});
 
   final String institutionName;
   final List<InstitutionUnit> units;
@@ -420,9 +414,7 @@ class _RelatedInstitutionsSection extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AuraSurface.subtle,
         borderRadius: BorderRadius.circular(AuraRadius.r14),
-        border: Border.all(
-          color: AuraSurface.divider.withValues(alpha: 0.6),
-        ),
+        border: Border.all(color: AuraSurface.divider.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,18 +527,19 @@ class _PublicPostsSection extends ConsumerWidget {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: AuraSecondaryButton(
-                        label:
-                            page.loadingMore ? 'Loading…' : 'Load more',
+                        label: page.loadingMore ? 'Loading…' : 'Load more',
                         icon: page.loadingMore
                             ? Icons.hourglass_empty_rounded
                             : Icons.expand_more_rounded,
                         onPressed: page.loadingMore
                             ? null
                             : () => ref
-                                .read(institutionProfileFeedPagedProvider(
-                                        institutionId)
-                                    .notifier)
-                                .loadMore(),
+                                  .read(
+                                    institutionProfileFeedPagedProvider(
+                                      institutionId,
+                                    ).notifier,
+                                  )
+                                  .loadMore(),
                       ),
                     ),
                   ],
@@ -609,7 +602,7 @@ class _PublicHero extends StatelessWidget {
                       children: [
                         Image.network(
                           coverUrl,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => Container(
                             color: AuraSurface.accentSoft,
                             child: const Center(
@@ -789,34 +782,49 @@ class _PublicStatChips extends StatelessWidget {
     }
 
     final chips = <Widget>[];
-    add(chips, _PublicStatChip(
-      icon: Icons.verified_rounded,
-      label: institution.isVerified ? 'Verified' : 'Unverified',
-      good: institution.isVerified,
-    ));
+    add(
+      chips,
+      _PublicStatChip(
+        icon: Icons.verified_rounded,
+        label: institution.isVerified ? 'Verified' : 'Unverified',
+        good: institution.isVerified,
+      ),
+    );
     if (institution.domain.trim().isNotEmpty) {
-      add(chips, _PublicStatChip(
-        icon: Icons.dns_rounded,
-        label: institution.domain.trim(),
-      ));
+      add(
+        chips,
+        _PublicStatChip(
+          icon: Icons.dns_rounded,
+          label: institution.domain.trim(),
+        ),
+      );
     }
     if (institution.jurisdiction.trim().isNotEmpty) {
-      add(chips, _PublicStatChip(
-        icon: Icons.public_rounded,
-        label: institution.jurisdiction.trim(),
-      ));
+      add(
+        chips,
+        _PublicStatChip(
+          icon: Icons.public_rounded,
+          label: institution.jurisdiction.trim(),
+        ),
+      );
     }
     if ((institution.category ?? '').trim().isNotEmpty) {
-      add(chips, _PublicStatChip(
-        icon: Icons.category_rounded,
-        label: (institution.category ?? '').trim(),
-      ));
+      add(
+        chips,
+        _PublicStatChip(
+          icon: Icons.category_rounded,
+          label: (institution.category ?? '').trim(),
+        ),
+      );
     }
     if ((institution.location ?? '').trim().isNotEmpty) {
-      add(chips, _PublicStatChip(
-        icon: Icons.place_rounded,
-        label: (institution.location ?? '').trim(),
-      ));
+      add(
+        chips,
+        _PublicStatChip(
+          icon: Icons.place_rounded,
+          label: (institution.location ?? '').trim(),
+        ),
+      );
     }
     if (chips.isEmpty) return const SizedBox.shrink();
     return Wrap(
@@ -841,7 +849,9 @@ class _PublicStatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = good ? AuraSurface.coVerdant : AuraSurface.muted;
-    final bg = good ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.subtle;
+    final bg = good
+        ? AuraSurface.coVerdant.withValues(alpha: 0.16)
+        : AuraSurface.subtle;
     final border = good
         ? AuraSurface.coVerdant.withValues(alpha: 0.3)
         : AuraSurface.divider;
@@ -917,9 +927,7 @@ class _PublicInstitutionAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.accentSoft,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: AuraSurface.accent.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.3)),
       ),
       clipBehavior: Clip.antiAlias,
       child: logoUrl.isNotEmpty
@@ -991,23 +999,31 @@ class _InstitutionProfileCtaRowState
     });
     try {
       final repo = ref.read(followsRepositoryProvider);
-      RuntimeTrace.emit('follow.api', 'request', data: {
-        'op': current.following ? 'unfollow' : 'follow',
-        'actor': actorRef.toString(),
-        'target': _targetRef().toString(),
-      });
+      RuntimeTrace.emit(
+        'follow.api',
+        'request',
+        data: {
+          'op': current.following ? 'unfollow' : 'follow',
+          'actor': actorRef.toString(),
+          'target': _targetRef().toString(),
+        },
+      );
       final FollowState result;
       if (current.following) {
         result = await repo.unfollow(actor: actorRef, target: _targetRef());
       } else {
         result = await repo.follow(actor: actorRef, target: _targetRef());
       }
-      RuntimeTrace.emit('follow.api', 'response', data: {
-        'op': current.following ? 'unfollow' : 'follow',
-        'following': result.following,
-        'status': result.status,
-        'canMessage': result.canMessage,
-      });
+      RuntimeTrace.emit(
+        'follow.api',
+        'response',
+        data: {
+          'op': current.following ? 'unfollow' : 'follow',
+          'following': result.following,
+          'status': result.status,
+          'canMessage': result.canMessage,
+        },
+      );
       // Institution follow affects which institution posts appear in the
       // home feed and the institution-explore band. Invalidating through
       // the centralised helper keeps follow-graph-driven surfaces in sync
@@ -1024,12 +1040,16 @@ class _InstitutionProfileCtaRowState
         status = e.response?.statusCode?.toString();
         body = e.response?.data?.toString();
       }
-      RuntimeTrace.emit('follow.api', 'threw', data: {
-        'op': current.following ? 'unfollow' : 'follow',
-        'status': status,
-        'body': body,
-        'err': '$e',
-      });
+      RuntimeTrace.emit(
+        'follow.api',
+        'threw',
+        data: {
+          'op': current.following ? 'unfollow' : 'follow',
+          'status': status,
+          'body': body,
+          'err': '$e',
+        },
+      );
       if (!mounted) return;
       // Rollback: drop optimistic override so the button reverts to the
       // provider's truth (which never changed locally).
@@ -1056,11 +1076,9 @@ class _InstitutionProfileCtaRowState
       _error = null;
     });
     try {
-      await ref.read(interactionServiceProvider).openDirectThread(
-            context: context,
-            ref: ref,
-            target: _targetRef(),
-          );
+      await ref
+          .read(interactionServiceProvider)
+          .openDirectThread(context: context, ref: ref, target: _targetRef());
     } on InteractionError catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -1132,7 +1150,9 @@ class _InstitutionProfileCtaRowState
             onPressed: () => context.push(
               widget.institutionId.isNotEmpty
                   ? institutionWorkspacePath(
-                      widget.institutionId, InstitutionSection.editProfile)
+                      widget.institutionId,
+                      InstitutionSection.editProfile,
+                    )
                   : '/institution/dashboard',
             ),
           ),
@@ -1167,12 +1187,10 @@ class _InstitutionProfileCtaRowState
           ),
           error: (e, _) => Text(
             'Could not load follow state.',
-            style:
-                AuraText.small.copyWith(color: AuraSurface.coRose),
+            style: AuraText.small.copyWith(color: AuraSurface.coRose),
           ),
           data: (state) {
-            final effectiveFollowing =
-                _optimisticFollowing ?? state.following;
+            final effectiveFollowing = _optimisticFollowing ?? state.following;
             return Wrap(
               spacing: AuraSpace.s10,
               runSpacing: AuraSpace.s10,
@@ -1191,9 +1209,7 @@ class _InstitutionProfileCtaRowState
                 AuraSecondaryButton(
                   label: state.canMessage
                       ? (_busy ? 'Opening…' : 'Message')
-                      : (actor.isUser
-                          ? 'Follow to message'
-                          : 'Cannot message'),
+                      : (actor.isUser ? 'Follow to message' : 'Cannot message'),
                   icon: Icons.mail_outline_rounded,
                   onPressed: state.canMessage && !_busy
                       ? () => _openMessage(actor)
@@ -1207,8 +1223,7 @@ class _InstitutionProfileCtaRowState
           const SizedBox(height: AuraSpace.s8),
           Text(
             _error!,
-            style: AuraText.small
-                .copyWith(color: AuraSurface.coRose),
+            style: AuraText.small.copyWith(color: AuraSurface.coRose),
           ),
         ],
       ],

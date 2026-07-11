@@ -17,7 +17,14 @@ import '../../../core/ui/aura_text_block.dart';
 import '../../../shared/media/profile_media_editor.dart';
 import 'edit_profile/edit_profile_widgets.dart';
 
-enum _EditSection { identity, coverAndAvatar, presence, publications, links, account }
+enum _EditSection {
+  identity,
+  coverAndAvatar,
+  presence,
+  publications,
+  links,
+  account,
+}
 
 class _SectionItem {
   const _SectionItem(this.section, this.label, this.icon);
@@ -28,9 +35,17 @@ class _SectionItem {
 
 const _kSections = <_SectionItem>[
   _SectionItem(_EditSection.identity, 'Identity', Icons.person_outline_rounded),
-  _SectionItem(_EditSection.coverAndAvatar, 'Cover & Avatar', Icons.photo_outlined),
+  _SectionItem(
+    _EditSection.coverAndAvatar,
+    'Cover & Avatar',
+    Icons.photo_outlined,
+  ),
   _SectionItem(_EditSection.presence, 'Presence', Icons.location_on_outlined),
-  _SectionItem(_EditSection.publications, 'Publications', Icons.auto_stories_outlined),
+  _SectionItem(
+    _EditSection.publications,
+    'Publications',
+    Icons.auto_stories_outlined,
+  ),
   _SectionItem(_EditSection.links, 'Links', Icons.link_rounded),
   _SectionItem(_EditSection.account, 'Account', Icons.lock_outline_rounded),
 ];
@@ -642,7 +657,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_loading) {
       return AuraScaffold(
         title: 'Edit profile',
-        body: const Center(child: AuraLoadingState(message: 'Loading profile…')),
+        body: const Center(
+          child: AuraLoadingState(message: 'Loading profile…'),
+        ),
       );
     }
 
@@ -677,7 +694,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         fit: StackFit.expand,
         children: [
           if (coverProvider != null)
-            Image(image: coverProvider, fit: BoxFit.cover)
+            Image(image: coverProvider, fit: BoxFit.contain)
           else
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -908,7 +925,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             runSpacing: AuraSpace.s8,
             alignment: WrapAlignment.center,
             children: [
-              if (_location.isNotEmpty) EditProfilePreviewChip(label: _location),
+              if (_location.isNotEmpty)
+                EditProfilePreviewChip(label: _location),
               if (_website.isNotEmpty) EditProfilePreviewChip(label: _website),
             ],
           ),
@@ -1123,14 +1141,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           _divider(),
           EditProfileRecordRow('Email', _email.isEmpty ? '—' : _email),
           _divider(),
-          EditProfileRecordRow('First name', _firstName.isEmpty ? '—' : _firstName),
+          EditProfileRecordRow(
+            'First name',
+            _firstName.isEmpty ? '—' : _firstName,
+          ),
           _divider(),
-          EditProfileRecordRow('Last name', _lastName.isEmpty ? '—' : _lastName),
+          EditProfileRecordRow(
+            'Last name',
+            _lastName.isEmpty ? '—' : _lastName,
+          ),
         ],
       ),
     );
   }
-
 
   Widget _buildErrorBanner() {
     return Container(
@@ -1138,9 +1161,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       decoration: BoxDecoration(
         color: AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AuraSurface.coRose.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.35)),
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s16,
@@ -1381,9 +1402,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             vertical: AuraSpace.s12,
           ),
           decoration: BoxDecoration(
-            color: isActive
-                ? AuraSurface.accentSoft
-                : Colors.transparent,
+            color: isActive ? AuraSurface.accentSoft : Colors.transparent,
             borderRadius: BorderRadius.circular(AuraRadius.md),
           ),
           child: Row(
@@ -1399,8 +1418,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   item.label,
                   style: AuraText.body.copyWith(
                     color: isActive ? AuraSurface.accentText : AuraSurface.ink,
-                    fontWeight:
-                        isActive ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
@@ -1446,36 +1464,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       border: Border.all(
                         color: isActive
                             ? AuraSurface.accentText.withValues(alpha: 0.45)
-                              : AuraSurface.divider,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            item.icon,
-                            size: 14,
-                            color: isActive
-                                ? AuraSurface.accentText
-                                : AuraSurface.muted,
-                          ),
-                          const SizedBox(width: AuraSpace.s6),
-                          Text(
-                            item.label,
-                            style: AuraText.small.copyWith(
-                              color: isActive
-                                  ? AuraSurface.accentText
-                                  : AuraSurface.ink,
-                              fontWeight: isActive
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
-                          ),
-                        ],
+                            : AuraSurface.divider,
                       ),
                     ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          item.icon,
+                          size: 14,
+                          color: isActive
+                              ? AuraSurface.accentText
+                              : AuraSurface.muted,
+                        ),
+                        const SizedBox(width: AuraSpace.s6),
+                        Text(
+                          item.label,
+                          style: AuraText.small.copyWith(
+                            color: isActive
+                                ? AuraSurface.accentText
+                                : AuraSurface.ink,
+                            fontWeight: isActive
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
+                ),
+              );
             }),
             MouseRegion(
               cursor: SystemMouseCursors.click,
@@ -1584,7 +1602,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 height: 80,
                 width: double.infinity,
                 child: coverProvider != null
-                    ? Image(image: coverProvider, fit: BoxFit.cover)
+                    ? Image(image: coverProvider, fit: BoxFit.contain)
                     : const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -1695,7 +1713,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
     );
   }
-
 
   Widget _divider() {
     return Container(
