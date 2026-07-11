@@ -58,7 +58,8 @@ class _InstitutionAnnouncementsScreenState
 
   bool get _canCompose {
     final idn = ref.read(institutionIdentityProvider);
-    return (idn?.canManageAnnouncements ?? false) || (idn?.canRepresent ?? false);
+    return (idn?.canManageAnnouncements ?? false) ||
+        (idn?.canRepresent ?? false);
   }
 
   @override
@@ -82,7 +83,9 @@ class _InstitutionAnnouncementsScreenState
       _error = null;
     });
     try {
-      final published = await _repo.listInstitutionAnnouncements(widget.institutionId);
+      final published = await _repo.listInstitutionAnnouncements(
+        widget.institutionId,
+      );
       final drafts = _isAdmin
           ? await _repo.listInstitutionDrafts(widget.institutionId)
           : <Map<String, dynamic>>[];
@@ -101,23 +104,35 @@ class _InstitutionAnnouncementsScreenState
 
   Future<void> _publish(String id) async {
     if (_actingOn != null) return;
-    setState(() { _actingOn = id; _actionError = null; });
+    setState(() {
+      _actingOn = id;
+      _actionError = null;
+    });
     try {
       await _repo.publishInstitutionAnnouncement(widget.institutionId, id);
       await _load();
     } catch (e) {
-      setState(() { _actionError = _message(e, 'Could not publish.'); _actingOn = null; });
+      setState(() {
+        _actionError = _message(e, 'Could not publish.');
+        _actingOn = null;
+      });
     }
   }
 
   Future<void> _unpublish(String id) async {
     if (_actingOn != null) return;
-    setState(() { _actingOn = id; _actionError = null; });
+    setState(() {
+      _actingOn = id;
+      _actionError = null;
+    });
     try {
       await _repo.unpublishInstitutionAnnouncement(widget.institutionId, id);
       await _load();
     } catch (e) {
-      setState(() { _actionError = _message(e, 'Could not unpublish.'); _actingOn = null; });
+      setState(() {
+        _actionError = _message(e, 'Could not unpublish.');
+        _actingOn = null;
+      });
     }
   }
 
@@ -127,7 +142,9 @@ class _InstitutionAnnouncementsScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AuraSurface.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AuraRadius.card)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+        ),
         title: const Text('Delete announcement', style: AuraText.subtitle),
         content: Text(
           'This announcement will be deleted and cannot be recovered.',
@@ -136,22 +153,37 @@ class _InstitutionAnnouncementsScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Cancel', style: AuraText.small.copyWith(color: AuraSurface.muted)),
+            child: Text(
+              'Cancel',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Delete', style: AuraText.small.copyWith(color: AuraSurface.coRose, fontWeight: FontWeight.w700)),
+            child: Text(
+              'Delete',
+              style: AuraText.small.copyWith(
+                color: AuraSurface.coRose,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
     );
     if (confirmed != true) return;
-    setState(() { _actingOn = id; _actionError = null; });
+    setState(() {
+      _actingOn = id;
+      _actionError = null;
+    });
     try {
       await _repo.deleteInstitutionAnnouncement(widget.institutionId, id);
       await _load();
     } catch (e) {
-      setState(() { _actionError = _message(e, 'Could not delete.'); _actingOn = null; });
+      setState(() {
+        _actionError = _message(e, 'Could not delete.');
+        _actingOn = null;
+      });
     }
   }
 
@@ -168,26 +200,36 @@ class _InstitutionAnnouncementsScreenState
 
   String _audienceLabel(String audience) {
     switch (audience.toUpperCase()) {
-      case 'PUBLIC': return 'Public';
-      case 'MEMBERS': return 'Members only';
-      case 'INTERNAL': return 'Internal';
-      default: return audience;
+      case 'PUBLIC':
+        return 'Public';
+      case 'MEMBERS':
+        return 'Members only';
+      case 'INTERNAL':
+        return 'Internal';
+      default:
+        return audience;
     }
   }
 
   Color _audienceColor(String audience) {
     switch (audience.toUpperCase()) {
-      case 'PUBLIC': return AuraSurface.coVerdant;
-      case 'MEMBERS': return AuraSurface.accentText;
-      default: return AuraSurface.muted;
+      case 'PUBLIC':
+        return AuraSurface.coVerdant;
+      case 'MEMBERS':
+        return AuraSurface.accentText;
+      default:
+        return AuraSurface.muted;
     }
   }
 
   Color _audienceBg(String audience) {
     switch (audience.toUpperCase()) {
-      case 'PUBLIC': return AuraSurface.coVerdant.withValues(alpha: 0.16);
-      case 'MEMBERS': return AuraSurface.accentSoft;
-      default: return AuraSurface.subtle;
+      case 'PUBLIC':
+        return AuraSurface.coVerdant.withValues(alpha: 0.16);
+      case 'MEMBERS':
+        return AuraSurface.accentSoft;
+      default:
+        return AuraSurface.subtle;
     }
   }
 
@@ -198,7 +240,10 @@ class _InstitutionAnnouncementsScreenState
     return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildAnnouncementTile(Map<String, dynamic> ann, {bool isDraft = false}) {
+  Widget _buildAnnouncementTile(
+    Map<String, dynamic> ann, {
+    bool isDraft = false,
+  }) {
     final id = ann['id']?.toString() ?? '';
     final title = ann['title']?.toString().trim() ?? '';
     final summary = ann['summary']?.toString().trim() ?? '';
@@ -210,6 +255,7 @@ class _InstitutionAnnouncementsScreenState
     final isActing = _actingOn == id;
     final mediaList = FeedMedia.listFromJson(ann['media']);
     final firstMedia = mediaList.isEmpty ? null : mediaList.first;
+    final canOpenDetail = !isDraft && slug.trim().isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AuraSpace.s10),
@@ -240,14 +286,20 @@ class _InstitutionAnnouncementsScreenState
               ),
               const SizedBox(width: AuraSpace.s8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: AuraSpace.s4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s8,
+                  vertical: AuraSpace.s4,
+                ),
                 decoration: BoxDecoration(
                   color: _audienceBg(audience),
                   borderRadius: BorderRadius.circular(AuraRadius.pill),
                 ),
                 child: Text(
                   _audienceLabel(audience),
-                  style: AuraText.micro.copyWith(color: _audienceColor(audience), fontWeight: FontWeight.w700),
+                  style: AuraText.micro.copyWith(
+                    color: _audienceColor(audience),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -256,7 +308,10 @@ class _InstitutionAnnouncementsScreenState
             const SizedBox(height: AuraSpace.s6),
             Text(
               summary,
-              style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.45),
+              style: AuraText.small.copyWith(
+                color: AuraSurface.muted,
+                height: 1.45,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -269,14 +324,45 @@ class _InstitutionAnnouncementsScreenState
                 style: AuraText.micro.copyWith(color: AuraSurface.faint),
               ),
               if (!isDraft && publishedAt.isNotEmpty) ...[
-                Text(' · ', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
-                Text(publishedAt, style: AuraText.micro.copyWith(color: AuraSurface.faint)),
+                Text(
+                  ' · ',
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                ),
+                Text(
+                  publishedAt,
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                ),
               ] else if (isDraft && createdAt.isNotEmpty) ...[
-                Text(' · ', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
-                Text('Draft · $createdAt', style: AuraText.micro.copyWith(color: AuraSurface.coSun)),
+                Text(
+                  ' · ',
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                ),
+                Text(
+                  'Draft · $createdAt',
+                  style: AuraText.micro.copyWith(color: AuraSurface.coSun),
+                ),
               ],
             ],
           ),
+          if (mediaList.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(
+              '${mediaList.length} attachment${mediaList.length == 1 ? '' : 's'}',
+              style: AuraText.micro.copyWith(color: AuraSurface.faint),
+            ),
+          ],
+          if (canOpenDetail) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _ActionBtn(
+                label: 'Read more',
+                icon: Icons.article_outlined,
+                color: AuraSurface.accentText,
+                onTap: () => context.go('/announcements/$slug'),
+              ),
+            ),
+          ],
           if (!isDraft && audience == 'PUBLIC' && slug.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s12),
             Align(
@@ -299,7 +385,11 @@ class _InstitutionAnnouncementsScreenState
           if (_isAdmin) ...[
             const SizedBox(height: AuraSpace.s12),
             if (isActing)
-              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
             else
               Row(
                 children: [
@@ -356,7 +446,9 @@ class _InstitutionAnnouncementsScreenState
   }
 
   Widget _buildDraftsList() {
-    final unpublished = _drafts.where((a) => a['status']?.toString() == 'DRAFT').toList();
+    final unpublished = _drafts
+        .where((a) => a['status']?.toString() == 'DRAFT')
+        .toList();
     if (unpublished.isEmpty) {
       return const InsEmptyState(
         icon: Icons.drafts_outlined,
@@ -366,7 +458,9 @@ class _InstitutionAnnouncementsScreenState
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: unpublished.map((a) => _buildAnnouncementTile(a, isDraft: true)).toList(),
+      children: unpublished
+          .map((a) => _buildAnnouncementTile(a, isDraft: true))
+          .toList(),
     );
   }
 
@@ -384,7 +478,12 @@ class _InstitutionAnnouncementsScreenState
         children: [
           const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
           const SizedBox(width: AuraSpace.s8),
-          Expanded(child: Text(_actionError!, style: AuraText.small.copyWith(color: AuraSurface.coRose))),
+          Expanded(
+            child: Text(
+              _actionError!,
+              style: AuraText.small.copyWith(color: AuraSurface.coRose),
+            ),
+          ),
           GestureDetector(
             onTap: () => setState(() => _actionError = null),
             child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
@@ -395,22 +494,25 @@ class _InstitutionAnnouncementsScreenState
   }
 
   Widget _buildBody() {
-    if (_loading) return const AuraLoadingState(message: 'Loading announcements…');
+    if (_loading) {
+      return const AuraLoadingState(message: 'Loading announcements…');
+    }
     if (_error != null) {
       return AuraErrorState(
         title: 'Could not load announcements',
         body: _error!,
-        action: AuraSecondaryButton(label: 'Try again', onPressed: _load, icon: Icons.refresh_rounded),
+        action: AuraSecondaryButton(
+          label: 'Try again',
+          onPressed: _load,
+          icon: Icons.refresh_rounded,
+        ),
       );
     }
 
     if (!_isAdmin) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildErrorBanner(),
-          _buildPublishedList(),
-        ],
+        children: [_buildErrorBanner(), _buildPublishedList()],
       );
     }
 
@@ -425,17 +527,17 @@ class _InstitutionAnnouncementsScreenState
           labelColor: AuraSurface.accentText,
           unselectedLabelColor: AuraSurface.muted,
           indicatorColor: AuraSurface.accentText,
-          tabs: const [Tab(text: 'Published'), Tab(text: 'Drafts')],
+          tabs: const [
+            Tab(text: 'Published'),
+            Tab(text: 'Drafts'),
+          ],
         ),
         const SizedBox(height: AuraSpace.s16),
         SizedBox(
           height: 800,
           child: TabBarView(
             controller: _tabs,
-            children: [
-              _buildPublishedList(),
-              _buildDraftsList(),
-            ],
+            children: [_buildPublishedList(), _buildDraftsList()],
           ),
         ),
       ],
@@ -451,8 +553,7 @@ class _InstitutionAnnouncementsScreenState
 
     return InstitutionPage(
       title: 'Announcements',
-      subtitle:
-          'Publish official institutional notices and public statements.',
+      subtitle: 'Publish official institutional notices and public statements.',
       trailing: _canCompose
           ? AuraPrimaryButton(
               label: 'New announcement',
@@ -491,7 +592,13 @@ class _ActionBtn extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: AuraSpace.s4),
-          Text(label, style: AuraText.micro.copyWith(color: color, fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
