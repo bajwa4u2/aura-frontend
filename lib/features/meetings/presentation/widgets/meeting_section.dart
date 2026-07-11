@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_space.dart';
+import '../../../../core/ui/aura_surface.dart';
 
 /// The ONE section grammar for every meeting surface (Desk, Meeting Record,
 /// workroom panels). Built on [AuraCard] so meetings share the exact material
@@ -38,7 +39,7 @@ class MeetingSection extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF8A94A6),
+              color: AuraSurface.muted,
             ),
       ),
     );

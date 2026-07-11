@@ -11,6 +11,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../share/aura_share_sheet.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
@@ -246,9 +247,8 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                       child: pastAsync.when(
                         loading: () => const _SectionLoading(),
                         error: (e, _) => _SectionError(message: '$e'),
-                        data: (meetings) => _MeetingListSection(
+                        data: (meetings) => _PastMeetingsSection(
                           meetings: meetings,
-                          emptyMessage: 'No past meetings.',
                           meId: meId,
                           institutionId: institutionId,
                         ),
@@ -335,7 +335,7 @@ class _Header extends StatelessWidget {
         Text(
           'Host, attend, and manage your meetings.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF9CA3AF),
+                color: AuraSurface.muted,
               ),
         ),
         const SizedBox(height: AuraSpace.s14),
@@ -387,7 +387,7 @@ class _InstitutionRequiredCard extends StatelessWidget {
           Text(
             'Open an institution to create, host, or review meetings.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF9CA3AF),
+                  color: AuraSurface.muted,
                 ),
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -561,7 +561,7 @@ class _SectionError extends StatelessWidget {
     return Text(
       'Unable to load. $message',
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF9CA3AF),
+            color: AuraSurface.muted,
           ),
     );
   }
@@ -579,9 +579,165 @@ class _SectionEmpty extends StatelessWidget {
       child: Text(
         message,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF9CA3AF),
+              color: AuraSurface.muted,
             ),
       ),
+    );
+  }
+}
+
+/// Managed past-meetings archive: search + relationship filter + progressive
+/// reveal instead of an unbounded scroll of every past meeting.
+class _PastMeetingsSection extends StatefulWidget {
+  final List<Meeting> meetings;
+  final String meId;
+  final String? institutionId;
+
+  const _PastMeetingsSection({
+    required this.meetings,
+    required this.meId,
+    required this.institutionId,
+  });
+
+  @override
+  State<_PastMeetingsSection> createState() => _PastMeetingsSectionState();
+}
+
+class _PastMeetingsSectionState extends State<_PastMeetingsSection> {
+  static const int _pageSize = 8;
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+  String _filter = 'All';
+  int _visible = _pageSize;
+
+  static const _filters = ['All', 'Hosted', 'Attended', 'Booked', 'Cancelled'];
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _matchesFilter(Meeting meeting) {
+    switch (_filter) {
+      case 'Hosted':
+        return (meeting.host?.id ?? '') == widget.meId;
+      case 'Attended':
+        return meeting.participants.any(
+          (p) => (p.userId ?? '').trim() == widget.meId && p.attended,
+        );
+      case 'Booked':
+        final identity = meeting.booking?.bookerIdentity;
+        return identity != null &&
+            (identity.auraUserId == widget.meId ||
+                identity.memberId == widget.meId);
+      case 'Cancelled':
+        return meeting.state == 'CANCELLED';
+      default:
+        return true;
+    }
+  }
+
+  bool _matchesQuery(Meeting meeting) {
+    if (_query.isEmpty) return true;
+    final q = _query.toLowerCase();
+    return meeting.title.toLowerCase().contains(q) ||
+        (meeting.host?.name ?? '').toLowerCase().contains(q) ||
+        (meeting.owningInstitution?.name ?? '').toLowerCase().contains(q);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.meetings.isEmpty) {
+      return const _SectionEmpty(message: 'No past meetings.');
+    }
+
+    final filtered = widget.meetings
+        .where(_matchesFilter)
+        .where(_matchesQuery)
+        .toList(growable: false);
+    final shown = filtered.take(_visible).toList(growable: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _searchCtrl,
+          decoration: InputDecoration(
+            hintText: 'Search past meetings',
+            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+            border: const OutlineInputBorder(),
+            isDense: true,
+            suffixIcon: _query.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.clear_rounded, size: 18),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      setState(() {
+                        _query = '';
+                        _visible = _pageSize;
+                      });
+                    },
+                  ),
+          ),
+          onChanged: (value) => setState(() {
+            _query = value.trim();
+            _visible = _pageSize;
+          }),
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          children: [
+            for (final filter in _filters)
+              ChoiceChip(
+                label: Text(filter),
+                selected: _filter == filter,
+                onSelected: (_) => setState(() {
+                  _filter = filter;
+                  _visible = _pageSize;
+                }),
+              ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        if (filtered.isEmpty)
+          const _SectionEmpty(message: 'No past meetings match.')
+        else ...[
+          for (final meeting in shown)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+              child: _MeetingCard(
+                meeting: meeting,
+                meId: widget.meId,
+                institutionId: widget.institutionId,
+              ),
+            ),
+          if (filtered.length > shown.length)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.expand_more_rounded, size: 18),
+                label: Text(
+                  'Show more (${filtered.length - shown.length} remaining)',
+                ),
+                onPressed: () => setState(() => _visible += _pageSize),
+              ),
+            )
+          else if (filtered.length > _pageSize)
+            Padding(
+              padding: const EdgeInsets.only(top: AuraSpace.s4),
+              child: Text(
+                'Showing all ${filtered.length} meetings',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AuraSurface.faint,
+                    ),
+              ),
+            ),
+        ],
+      ],
     );
   }
 }
@@ -681,14 +837,14 @@ class _MeetingCard extends StatelessWidget {
           Text(
             '$timeLabel · $hostName',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF9CA3AF),
+                  color: AuraSurface.muted,
                 ),
           ),
           const SizedBox(height: AuraSpace.s10),
           Text(
             _meetingActionLabel(meeting),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF6B7280),
+                  color: AuraSurface.faint,
                 ),
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -768,7 +924,7 @@ class _OutcomeCard extends ConsumerWidget {
               Text(
                 scheduled,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF9CA3AF),
+                      color: AuraSurface.muted,
                     ),
               ),
               const SizedBox(height: AuraSpace.s10),
@@ -814,7 +970,7 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withValues(alpha: 0.10),
+        color: AuraSurface.accent.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Padding(
@@ -823,7 +979,7 @@ class _Pill extends StatelessWidget {
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF8B85FF),
+                color: AuraSurface.accentText,
               ),
         ),
       ),

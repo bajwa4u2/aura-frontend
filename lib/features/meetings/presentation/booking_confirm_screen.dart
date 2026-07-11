@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../config.dart';
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/guest_shell.dart';
@@ -38,7 +39,6 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
 
   bool _booking = false;
   BookingConfirmation? _confirmation;
-  bool _identityPrefilled = false;
 
   @override
   void dispose() {
@@ -48,7 +48,11 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     super.dispose();
   }
 
-  Future<void> _confirm() async {
+  // Authenticated Booking Doctrine: a signed-in Aura member always books as
+  // their authenticated identity — the server derives name/email from the
+  // account and ignores submitted values, so members send none. Anonymous
+  // visitors establish their booking identity from the form, unchanged.
+  Future<void> _confirm({required bool asMember}) async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _booking = true);
 
@@ -56,14 +60,16 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       final repo = ref.read(availabilityRepositoryProvider);
       final BookingConfirmation conf;
       final profile = widget.profile;
+      final bookerName = asMember ? null : _nameCtrl.text.trim();
+      final bookerEmail = asMember ? null : _emailCtrl.text.trim();
 
       // Institution-owned profiles book via institution endpoint
       if (profile.isInstitutionOwned && profile.institution != null) {
         conf = await repo.createInstitutionBooking(
           profile.institution!.slug,
           profile.slug,
-          bookerName: _nameCtrl.text.trim(),
-          bookerEmail: _emailCtrl.text.trim(),
+          bookerName: bookerName,
+          bookerEmail: bookerEmail,
           bookerNotes: _notesCtrl.text.trim().isEmpty
               ? null
               : _notesCtrl.text.trim(),
@@ -74,8 +80,8 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       } else {
         conf = await repo.createBooking(
           profile.slug,
-          bookerName: _nameCtrl.text.trim(),
-          bookerEmail: _emailCtrl.text.trim(),
+          bookerName: bookerName,
+          bookerEmail: bookerEmail,
           bookerNotes: _notesCtrl.text.trim().isEmpty
               ? null
               : _notesCtrl.text.trim(),
@@ -95,21 +101,6 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     }
   }
 
-  void _applyIdentity(MeetingIdentityRef? identity) {
-    if (_identityPrefilled || identity == null) return;
-    _identityPrefilled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_nameCtrl.text.trim().isEmpty &&
-          identity.displayName.trim().isNotEmpty) {
-        _nameCtrl.text = identity.displayName.trim();
-      }
-      if (_emailCtrl.text.trim().isEmpty && identity.email.trim().isNotEmpty) {
-        _emailCtrl.text = identity.email.trim();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_confirmation != null) {
@@ -121,12 +112,28 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
 
     final theme = Theme.of(context);
     final identityAsync = ref.watch(currentBookingIdentityProvider);
+    final isMemberSession = ref.watch(tokenStoreProvider).isMemberSession;
     final localTime = widget.slot.startAt.toLocal();
     final localizations = MaterialLocalizations.of(context);
     final timeLabel =
         '${localizations.formatFullDate(localTime)} · ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(localTime))}';
 
-    identityAsync.whenData(_applyIdentity);
+    // Authenticated Booking Doctrine: identity comes from authentication,
+    // never from the form. A signed-in member books AS their Aura identity —
+    // no editable identity fields, no second identity. While the member's
+    // identity resolves, hold the form back so the anonymous variant never
+    // flashes and invites identity entry it would ignore.
+    final memberIdentity =
+        identityAsync.valueOrNull?.auraUserId != null
+            ? identityAsync.valueOrNull
+            : null;
+    final asMember = memberIdentity != null;
+    if (isMemberSession && identityAsync.isLoading) {
+      return const GuestShell(
+        showBackButton: true,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     // One continuous journey: the institution was introduced on the landing
     // page — booking steps keep the bare Aura bar and stay meeting-first.
@@ -152,54 +159,65 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               icon: Icons.timer_outlined,
               text: _durationLabel(widget.durationMinutes),
             ),
-            if (identityAsync.valueOrNull != null) ...[
-              const SizedBox(height: AuraSpace.s12),
-              _BookingIdentityCard(identity: identityAsync.valueOrNull!),
-            ],
 
             const SizedBox(height: AuraSpace.s20),
             const Divider(),
             const SizedBox(height: AuraSpace.s16),
 
-            // Booker info
-            Text(
-              'Your information',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+            if (asMember) ...[
+              // Member path: identity is settled — show who is booking and
+              // leave only booking-specific information editable.
+              Text(
+                'Booking as',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: AuraSpace.s12),
+              const SizedBox(height: AuraSpace.s12),
+              _BookingAsCard(identity: memberIdentity),
+              const SizedBox(height: AuraSpace.s12),
+            ] else ...[
+              // Anonymous path (unchanged): the visitor establishes their
+              // booking identity here.
+              Text(
+                'Your information',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s12),
 
-            TextFormField(
-              controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person_outline_rounded),
+              TextFormField(
+                controller: _nameCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline_rounded),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Name is required' : null,
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
-            ),
-            const SizedBox(height: AuraSpace.s12),
+              const SizedBox(height: AuraSpace.s12),
 
-            TextFormField(
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.mail_outline_rounded),
+              TextFormField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.mail_outline_rounded),
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Email is required';
+                  }
+                  if (!v.contains('@')) return 'Enter a valid email';
+                  return null;
+                },
               ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return 'Email is required';
-                }
-                if (!v.contains('@')) return 'Enter a valid email';
-                return null;
-              },
-            ),
-            const SizedBox(height: AuraSpace.s12),
+              const SizedBox(height: AuraSpace.s12),
+            ],
 
             TextFormField(
               controller: _notesCtrl,
@@ -217,7 +235,8 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
             SizedBox(
               height: 50,
               child: FilledButton(
-                onPressed: _booking ? null : _confirm,
+                onPressed:
+                    _booking ? null : () => _confirm(asMember: asMember),
                 child: _booking
                     ? const SizedBox(
                         width: 20,
@@ -602,6 +621,93 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+/// Member booking identity — read-only. The booking form never edits
+/// identity: this card states WHO is booking (the authenticated, verified
+/// Aura identity) and nothing on the screen can change it.
+class _BookingAsCard extends StatelessWidget {
+  final MeetingIdentityRef identity;
+
+  const _BookingAsCard({required this.identity});
+
+  @override
+  Widget build(BuildContext context) {
+    final email = identity.email.trim();
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        border: Border.all(color: const Color(0xFF243244)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s14),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+              backgroundImage:
+                  identity.avatarUrl != null &&
+                      identity.avatarUrl!.trim().isNotEmpty
+                  ? NetworkImage(identity.avatarUrl!)
+                  : null,
+              child:
+                  identity.avatarUrl == null ||
+                      identity.avatarUrl!.trim().isEmpty
+                  ? Text(
+                      identity.displayName.trim().isEmpty
+                          ? 'A'
+                          : identity.displayName.trim()[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    identity.displayName,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (email.isNotEmpty)
+                    Text(
+                      email,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  const SizedBox(height: AuraSpace.s8),
+                  Wrap(
+                    spacing: AuraSpace.s6,
+                    runSpacing: AuraSpace.s6,
+                    children: [
+                      const _PillChip(
+                        icon: Icons.verified_user_rounded,
+                        label: 'Verified Aura Member',
+                      ),
+                      if (identity.verifiedEmail)
+                        const _PillChip(
+                          icon: Icons.mark_email_read_rounded,
+                          label: 'Verified email',
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BookingIdentityCard extends StatelessWidget {
   final MeetingIdentityRef identity;
 
@@ -662,7 +768,12 @@ class _BookingIdentityCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (identity.identityType != 'GUEST')
+            if (identity.identityType == 'AURA_USER')
+              const _PillChip(
+                icon: Icons.verified_user_rounded,
+                label: 'Aura Member',
+              )
+            else if (identity.identityType != 'GUEST')
               const _PillChip(
                 icon: Icons.verified_rounded,
                 label: 'Resolved identity',

@@ -10,7 +10,12 @@ enum MeetingEntryOutcome {
   bookerDirect,
   invitedDirect,
   institutionMemberDirect,
+  /// Retired by the identity-integrity doctrine — a current backend never
+  /// produces it. Parsed for compatibility and rendered as a closed door.
   guestIdentityRequired,
+
+  /// External invitee must verify the invited email (invitation-bound OTP).
+  invitationVerificationRequired,
   guestDirect,
   waitingForAdmission,
   requestAccess,
@@ -33,6 +38,8 @@ enum MeetingEntryOutcome {
         return MeetingEntryOutcome.institutionMemberDirect;
       case 'GUEST_IDENTITY_REQUIRED':
         return MeetingEntryOutcome.guestIdentityRequired;
+      case 'INVITATION_VERIFICATION_REQUIRED':
+        return MeetingEntryOutcome.invitationVerificationRequired;
       case 'GUEST_DIRECT':
         return MeetingEntryOutcome.guestDirect;
       case 'WAITING_FOR_ADMISSION':
@@ -73,6 +80,7 @@ enum MeetingEntryOutcome {
 enum MeetingEntryAction {
   join,
   submitGuestIdentity,
+  verifyInvitation,
   login,
   wait,
   requestAccess,
@@ -84,6 +92,8 @@ enum MeetingEntryAction {
         return MeetingEntryAction.join;
       case 'SUBMIT_GUEST_IDENTITY':
         return MeetingEntryAction.submitGuestIdentity;
+      case 'VERIFY_INVITATION':
+        return MeetingEntryAction.verifyInvitation;
       case 'LOGIN':
         return MeetingEntryAction.login;
       case 'WAIT':
@@ -186,6 +196,7 @@ class MeetingEntryResolution {
   final String? identityEmail;
 
   final bool guestIdentityRequired;
+  final bool emailVerificationRequired;
   final bool loginRequired;
   final bool approvalRequired;
 
@@ -212,6 +223,7 @@ class MeetingEntryResolution {
     this.identityName,
     this.identityEmail,
     required this.guestIdentityRequired,
+    this.emailVerificationRequired = false,
     required this.loginRequired,
     required this.approvalRequired,
     this.participationRole,
@@ -243,6 +255,8 @@ class MeetingEntryResolution {
       identityEmail: identity['email'] as String?,
       guestIdentityRequired:
           requirements['guestIdentityRequired'] as bool? ?? false,
+      emailVerificationRequired:
+          requirements['emailVerificationRequired'] as bool? ?? false,
       loginRequired: requirements['loginRequired'] as bool? ?? false,
       approvalRequired: requirements['approvalRequired'] as bool? ?? false,
       participationRole: participation['role'] as String?,

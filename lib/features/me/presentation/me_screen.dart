@@ -21,6 +21,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/compact_profile_hero.dart';
 import '../../../core/ui/profile_header.dart' show PresenceHeaderAction;
+import 'me/me_participation_continuity.dart';
 import 'me/me_widgets.dart';
 import 'widgets/me_connected_accounts_panel.dart';
 
@@ -1102,8 +1103,18 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
   Widget _participationTab(bool wide) {
     final publications = _publicationsFromUser(_resolvedUser);
-    final left = <Widget>[_buildPersonalRecordSection()];
+    // Participation continuity home — a projection of the member's
+    // institutional meeting participation. Items resolve back into the
+    // owning institution's meeting record; nothing here is user-owned.
+    final left = <Widget>[
+      MeParticipationContinuity(
+        meId: _value(_resolvedUser['id']),
+        meEmail: _value(_resolvedUser['email']),
+      ),
+    ];
     final right = <Widget>[
+      _buildPersonalRecordSection(),
+      const SizedBox(height: AuraSpace.lg),
       if (publications.isNotEmpty)
         MeSection(
           title: 'Public record',

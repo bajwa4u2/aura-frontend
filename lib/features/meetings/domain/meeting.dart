@@ -200,6 +200,10 @@ class MeetingSummary {
   final List<String> followUps;
   final String? createdByUserId;
   final String? updatedByUserId;
+
+  /// When the host distributed this summary to participants — a shared
+  /// summary is part of every participant's continuity.
+  final DateTime? sharedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -216,6 +220,7 @@ class MeetingSummary {
     required this.followUps,
     this.createdByUserId,
     this.updatedByUserId,
+    this.sharedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -233,6 +238,9 @@ class MeetingSummary {
     followUps: _asStringList(j['followUps']),
     createdByUserId: j['createdByUserId'] as String?,
     updatedByUserId: j['updatedByUserId'] as String?,
+    sharedAt: j['sharedAt'] != null
+        ? DateTime.tryParse(j['sharedAt'] as String)
+        : null,
     createdAt:
         DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
     updatedAt:
@@ -280,6 +288,10 @@ class Meeting {
   /// Owning institution's identity (organization-owned meetings) — present
   /// even without a booking so every surface can show WHO owns the meeting.
   final MeetingInstitutionRef? institution;
+
+  /// READY recordings attached to this meeting (inventory projection only —
+  /// the recordings themselves stay meeting-owned and load with the record).
+  final int recordingCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -312,6 +324,7 @@ class Meeting {
     this.summary,
     this.assets,
     this.institution,
+    this.recordingCount = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -370,6 +383,7 @@ class Meeting {
         ? MeetingInstitutionRef.fromJson(
             j['institution'] as Map<String, dynamic>)
         : null,
+    recordingCount: (j['recordingCount'] as num?)?.toInt() ?? 0,
     createdAt:
         DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
     updatedAt:
@@ -486,6 +500,12 @@ class MeetingOutcome {
   final String? ownerId;
   final String? ownerName;
   final DateTime? dueDate;
+
+  /// Canonical meeting reference (projection only): continuity surfaces route
+  /// each outcome back into its owning institution's meeting record.
+  final String? meetingTitle;
+  final String? meetingInstitutionId;
+  final DateTime? meetingScheduledAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -498,6 +518,9 @@ class MeetingOutcome {
     this.ownerId,
     this.ownerName,
     this.dueDate,
+    this.meetingTitle,
+    this.meetingInstitutionId,
+    this.meetingScheduledAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -505,6 +528,9 @@ class MeetingOutcome {
   factory MeetingOutcome.fromJson(Map<String, dynamic> j) {
     final owner = j['owner'];
     final ownerMap = owner is Map ? Map<String, dynamic>.from(owner) : null;
+    final meeting = j['meeting'];
+    final meetingMap =
+        meeting is Map ? Map<String, dynamic>.from(meeting) : null;
     return MeetingOutcome(
       id: j['id'] as String,
       meetingId: j['meetingId'] as String,
@@ -515,6 +541,11 @@ class MeetingOutcome {
       ownerName: ownerMap?['displayName'] as String?,
       dueDate: j['dueDate'] != null
           ? DateTime.tryParse(j['dueDate'] as String)
+          : null,
+      meetingTitle: meetingMap?['title'] as String?,
+      meetingInstitutionId: meetingMap?['organizationId'] as String?,
+      meetingScheduledAt: meetingMap?['scheduledAt'] != null
+          ? DateTime.tryParse(meetingMap!['scheduledAt'] as String)
           : null,
       createdAt: DateTime.parse(j['createdAt'] as String),
       updatedAt: DateTime.parse(j['updatedAt'] as String),

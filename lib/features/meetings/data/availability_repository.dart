@@ -80,10 +80,13 @@ class AvailabilityRepository {
         .toList();
   }
 
+  // Identity fields are ANONYMOUS-only: an authenticated member's booking
+  // identity is derived server-side from their Aura account, so members omit
+  // name/email entirely (submitted values would be ignored anyway).
   Future<BookingConfirmation> createBooking(
     String slug, {
-    required String bookerName,
-    required String bookerEmail,
+    String? bookerName,
+    String? bookerEmail,
     String? bookerNotes,
     required DateTime scheduledAt,
     required int durationMinutes,
@@ -92,8 +95,8 @@ class AvailabilityRepository {
     final res = await _dio.post<Map<String, dynamic>>(
       '/book/$slug',
       data: {
-        'bookerName': bookerName,
-        'bookerEmail': bookerEmail,
+        if (bookerName != null) 'bookerName': bookerName,
+        if (bookerEmail != null) 'bookerEmail': bookerEmail,
         if (bookerNotes != null) 'bookerNotes': bookerNotes,
         'scheduledAt': scheduledAt.toUtc().toIso8601String(),
         'durationMinutes': durationMinutes,
@@ -362,11 +365,12 @@ class AvailabilityRepository {
         .toList();
   }
 
+  // Same doctrine as [createBooking]: identity fields are anonymous-only.
   Future<BookingConfirmation> createInstitutionBooking(
     String institutionSlug,
     String slug, {
-    required String bookerName,
-    required String bookerEmail,
+    String? bookerName,
+    String? bookerEmail,
     String? bookerNotes,
     required DateTime scheduledAt,
     required int durationMinutes,
@@ -375,8 +379,8 @@ class AvailabilityRepository {
     final res = await _dio.post<Map<String, dynamic>>(
       '/i/$institutionSlug/meet/$slug',
       data: {
-        'bookerName': bookerName,
-        'bookerEmail': bookerEmail,
+        if (bookerName != null) 'bookerName': bookerName,
+        if (bookerEmail != null) 'bookerEmail': bookerEmail,
         if (bookerNotes != null) 'bookerNotes': bookerNotes,
         'scheduledAt': scheduledAt.toUtc().toIso8601String(),
         'durationMinutes': durationMinutes,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/ui/aura_space.dart';
+import '../../../../core/ui/aura_surface.dart';
 import '../../application/meetings_provider.dart';
 import '../../domain/meeting.dart';
 import '../../domain/meeting_conversation_message.dart';
@@ -56,18 +57,18 @@ const _outcomeTypes = <(String, String, String)>[
 Color _typeColor(MeetingMessageType type) {
   switch (type) {
     case MeetingMessageType.decision:
-      return const Color(0xFF10B981);
+      return AuraSurface.goodInk;
     case MeetingMessageType.commitment:
-      return const Color(0xFFF59E0B);
+      return AuraSurface.warnInk;
     case MeetingMessageType.action:
-      return const Color(0xFF38BDF8);
+      return AuraSurface.infoInk;
     case MeetingMessageType.issue:
-      return const Color(0xFFF43F5E);
+      return AuraSurface.coRose;
     case MeetingMessageType.followUp:
-      return const Color(0xFF8B5CF6);
+      return AuraSurface.accentText;
     case MeetingMessageType.chat:
     case MeetingMessageType.system:
-      return const Color(0xFF9CA3AF);
+      return AuraSurface.muted;
   }
 }
 
@@ -373,7 +374,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
             trailing: Text(
               'captured during the meeting',
               style: theme.textTheme.bodySmall
-                  ?.copyWith(color: const Color(0xFF8A94A6)),
+                  ?.copyWith(color: AuraSurface.muted),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +407,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
                               ],
                             ),
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFFCBD5E1),
+                              color: AuraSurface.ink,
                               height: 1.4,
                             ),
                           ),
@@ -419,7 +420,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
                               child: Icon(
                                 Icons.task_alt_rounded,
                                 size: 16,
-                                color: Color(0xFF10B981),
+                                color: AuraSurface.goodInk,
                               ),
                             ),
                           )
@@ -431,7 +432,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
                             icon: const Icon(
                               Icons.arrow_circle_up_rounded,
                               size: 16,
-                              color: Color(0xFF6C63FF),
+                              color: AuraSurface.accent,
                             ),
                             onSelected: (t) => _promote(msg.id, t, msg.body),
                             itemBuilder: (context) => [
@@ -463,7 +464,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
               ? Text(
                   'pre-filled from live notes',
                   style: theme.textTheme.bodySmall
-                      ?.copyWith(color: const Color(0xFF10B981)),
+                      ?.copyWith(color: AuraSurface.goodInk),
                 )
               : null,
           child: widget.editable
@@ -531,7 +532,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
                               child: Icon(
                                 Icons.task_alt_rounded,
                                 size: 16,
-                                color: Color(0xFF10B981),
+                                color: AuraSurface.goodInk,
                               ),
                             ),
                           ),
@@ -560,7 +561,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
                           IconButton(
                             tooltip: 'Remove',
                             icon: const Icon(Icons.close_rounded,
-                                size: 18, color: Color(0xFF6B7280)),
+                                size: 18, color: AuraSurface.faint),
                             onPressed: () => setState(() {
                               if (draft.id != null) {
                                 _deletedOutcomeIds.add(draft.id!);

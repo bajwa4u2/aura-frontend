@@ -9,6 +9,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
@@ -65,7 +66,7 @@ class MeetingDetailScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.lock_outline_rounded,
-                  size: 40, color: Color(0xFF6B7280)),
+                  size: 40, color: AuraSurface.faint),
               const SizedBox(height: AuraSpace.s12),
               const Text('This meeting is available to its members.'),
               const SizedBox(height: AuraSpace.s16),
@@ -552,7 +553,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                                   const Text(
                                     '·  ',
                                     style: TextStyle(
-                                      color: Color(0xFF6C63FF),
+                                      color: AuraSurface.accent,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -731,7 +732,7 @@ class _RecordHeader extends StatelessWidget {
               '${meeting.durationMinutes} min',
             ].join('  ·  '),
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF9CA3AF),
+              color: AuraSurface.muted,
             ),
           ),
           if (meeting.description?.trim().isNotEmpty == true) ...[
@@ -739,7 +740,7 @@ class _RecordHeader extends StatelessWidget {
             Text(
               meeting.description!.trim(),
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF9CA3AF),
+                color: AuraSurface.muted,
                 height: 1.4,
               ),
             ),
@@ -802,7 +803,7 @@ class _LiveBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraCard(
-      borderColor: const Color(0xFF10B981).withValues(alpha: 0.45),
+      borderColor: AuraSurface.goodInk.withValues(alpha: 0.45),
       padding: const EdgeInsets.all(AuraSpace.s16),
       child: Row(
         children: [
@@ -810,7 +811,7 @@ class _LiveBanner extends StatelessWidget {
             width: 10,
             height: 10,
             decoration: const BoxDecoration(
-              color: Color(0xFF10B981),
+              color: AuraSurface.goodInk,
               shape: BoxShape.circle,
             ),
           ),
@@ -860,7 +861,7 @@ class _ParticipantsSection extends StatelessWidget {
           : Text(
               '${participants.length}',
               style: theme.textTheme.bodySmall
-                  ?.copyWith(color: const Color(0xFF8A94A6)),
+                  ?.copyWith(color: AuraSurface.muted),
             ),
       child: participants.isEmpty
           ? MeetingSection.emptyLine(
@@ -877,7 +878,7 @@ class _ParticipantsSection extends StatelessWidget {
                         CircleAvatar(
                           radius: 12,
                           backgroundColor:
-                              const Color(0xFF6C63FF).withValues(alpha: 0.18),
+                              AuraSurface.accent.withValues(alpha: 0.18),
                           child: Text(
                             p.displayName.trim()[0].toUpperCase(),
                             style: const TextStyle(
@@ -908,8 +909,8 @@ class _ParticipantsSection extends StatelessWidget {
                           _attendanceLabel(p),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: p.attended
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFF8A94A6),
+                                ? AuraSurface.goodInk
+                                : AuraSurface.muted,
                           ),
                         ),
                       ],
@@ -940,21 +941,21 @@ class _SmallChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withValues(alpha: 0.10),
+        color: AuraSurface.accent.withValues(alpha: 0.10),
         border: Border.all(
-          color: const Color(0xFF6C63FF).withValues(alpha: 0.30),
+          color: AuraSurface.accent.withValues(alpha: 0.30),
         ),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF8B85FF)),
+          Icon(icon, size: 14, color: AuraSurface.accentText),
           const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFD9D7FF),
+              color: AuraSurface.ink,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),

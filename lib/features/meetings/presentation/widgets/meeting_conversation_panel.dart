@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/ui/aura_surface.dart';
 import '../../domain/meeting_conversation_message.dart';
 
 /// Phase 4 — Meeting Conversation Stream panel (live room, right side).
@@ -79,7 +80,7 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
   Widget build(BuildContext context) {
     return Container(
       width: 320,
-      color: const Color(0xFF0F172A),
+      color: AuraSurface.subtle,
       child: Column(
         children: [
           Padding(
@@ -97,20 +98,20 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
+                  icon: const Icon(Icons.close, color: AuraSurface.muted),
                   onPressed: widget.onClose,
                 ),
               ],
             ),
           ),
-          const Divider(color: Color(0xFF1E293B), height: 1),
+          const Divider(color: AuraSurface.elevated, height: 1),
           Expanded(
             child: widget.messages.isEmpty
                 ? const Center(
                     child: Text(
                       'No messages yet.\nDecisions and commitments you tag\nhere feed the meeting summary.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF4B5563), fontSize: 12),
+                      style: TextStyle(color: AuraSurface.faint, fontSize: 12),
                     ),
                   )
                 : ListView.builder(
@@ -139,13 +140,13 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                     },
                   ),
           ),
-          const Divider(color: Color(0xFF1E293B), height: 1),
+          const Divider(color: AuraSurface.elevated, height: 1),
           if (!widget.chatEnabled)
             const Padding(
               padding: EdgeInsets.all(14),
               child: Text(
                 'Chat is disabled for this meeting.',
-                style: TextStyle(color: Color(0xFF4B5563), fontSize: 12),
+                style: TextStyle(color: AuraSurface.faint, fontSize: 12),
               ),
             )
           else
@@ -174,12 +175,12 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                         // decision / commitment / action / issue / follow-up.
                         PopupMenuButton<MeetingMessageType>(
                           tooltip: 'Tag message',
-                          color: const Color(0xFF1E293B),
+                          color: AuraSurface.elevated,
                           icon: Icon(
                             Icons.label_outline_rounded,
                             size: 20,
                             color: _type == MeetingMessageType.chat
-                                ? const Color(0xFF9CA3AF)
+                                ? AuraSurface.muted
                                 : _typeColor(_type),
                           ),
                           onSelected: (t) => setState(() => _type = t),
@@ -201,7 +202,7 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                                       height: 8,
                                       decoration: BoxDecoration(
                                         color: t == MeetingMessageType.chat
-                                            ? const Color(0xFF9CA3AF)
+                                            ? AuraSurface.muted
                                             : _typeColor(t),
                                         shape: BoxShape.circle,
                                       ),
@@ -210,7 +211,7 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                                     Text(
                                       t.label,
                                       style: const TextStyle(
-                                        color: Color(0xFFE5E7EB),
+                                        color: AuraSurface.ink,
                                         fontSize: 13,
                                       ),
                                     ),
@@ -227,12 +228,12 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                             maxLength: 2000,
                             textCapitalization: TextCapitalization.sentences,
                             style: const TextStyle(
-                              color: Color(0xFFE5E7EB),
+                              color: AuraSurface.ink,
                               fontSize: 13,
                             ),
                             decoration: const InputDecoration(
                               hintText: 'Message the meeting…',
-                              hintStyle: TextStyle(color: Color(0xFF4B5563)),
+                              hintStyle: TextStyle(color: AuraSurface.faint),
                               border: InputBorder.none,
                               counterText: '',
                               isDense: true,
@@ -248,13 +249,13 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Color(0xFF6C63FF),
+                                    color: AuraSurface.accent,
                                   ),
                                 )
                               : const Icon(
                                   Icons.send_rounded,
                                   size: 20,
-                                  color: Color(0xFF6C63FF),
+                                  color: AuraSurface.accent,
                                 ),
                         ),
                       ],
@@ -272,18 +273,18 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
 Color _typeColor(MeetingMessageType type) {
   switch (type) {
     case MeetingMessageType.decision:
-      return const Color(0xFF10B981);
+      return AuraSurface.goodInk;
     case MeetingMessageType.commitment:
-      return const Color(0xFFF59E0B);
+      return AuraSurface.warnInk;
     case MeetingMessageType.action:
-      return const Color(0xFF38BDF8);
+      return AuraSurface.infoInk;
     case MeetingMessageType.issue:
-      return const Color(0xFFF43F5E);
+      return AuraSurface.coRose;
     case MeetingMessageType.followUp:
-      return const Color(0xFF8B5CF6);
+      return AuraSurface.accentText;
     case MeetingMessageType.chat:
     case MeetingMessageType.system:
-      return const Color(0xFF9CA3AF);
+      return AuraSurface.muted;
   }
 }
 
@@ -358,8 +359,8 @@ class _ConversationTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isOwn
-                        ? const Color(0xFF6C63FF)
-                        : const Color(0xFFE5E7EB),
+                        ? AuraSurface.accent
+                        : AuraSurface.ink,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -369,13 +370,13 @@ class _ConversationTile extends StatelessWidget {
                 const SizedBox(width: 5),
                 const Text(
                   'Guest',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 10),
+                  style: TextStyle(color: AuraSurface.muted, fontSize: 10),
                 ),
               ],
               const SizedBox(width: 8),
               Text(
                 time,
-                style: const TextStyle(color: Color(0xFF4B5563), fontSize: 10),
+                style: const TextStyle(color: AuraSurface.faint, fontSize: 10),
               ),
               const Spacer(),
               if (message.isPromoted)
@@ -387,7 +388,7 @@ class _ConversationTile extends StatelessWidget {
                     // Typed messages keep their type colour; a promoted plain
                     // chat message gets the outcome emerald, not neutral grey.
                     color: message.messageType == MeetingMessageType.chat
-                        ? const Color(0xFF10B981)
+                        ? AuraSurface.goodInk
                         : _typeColor(message.messageType),
                   ),
                 )
@@ -397,20 +398,20 @@ class _ConversationTile extends StatelessWidget {
                   height: 12,
                   child: CircularProgressIndicator(
                     strokeWidth: 1.5,
-                    color: Color(0xFF6C63FF),
+                    color: AuraSurface.accent,
                   ),
                 )
               else if (onPromote != null)
                 // Host-only: promote this message into a meeting outcome.
                 PopupMenuButton<MeetingMessageType>(
                   tooltip: 'Promote to outcome',
-                  color: const Color(0xFF1E293B),
+                  color: AuraSurface.elevated,
                   padding: EdgeInsets.zero,
                   iconSize: 14,
                   icon: const Icon(
                     Icons.arrow_circle_up_rounded,
                     size: 14,
-                    color: Color(0xFF6C63FF),
+                    color: AuraSurface.accent,
                   ),
                   onSelected: (t) => onPromote!(t),
                   itemBuilder: (context) => [
@@ -440,7 +441,7 @@ class _ConversationTile extends StatelessWidget {
                               style: TextStyle(
                                 color: t == message.messageType
                                     ? _typeColor(t)
-                                    : const Color(0xFFE5E7EB),
+                                    : AuraSurface.ink,
                                 fontSize: 13,
                               ),
                             ),
@@ -456,7 +457,7 @@ class _ConversationTile extends StatelessWidget {
                   child: const Icon(
                     Icons.delete_outline_rounded,
                     size: 14,
-                    color: Color(0xFF4B5563),
+                    color: AuraSurface.faint,
                   ),
                 ),
               ],
@@ -470,7 +471,7 @@ class _ConversationTile extends StatelessWidget {
             ),
           Text(
             message.body,
-            style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
+            style: const TextStyle(color: AuraSurface.ink, fontSize: 13),
           ),
         ],
       ),

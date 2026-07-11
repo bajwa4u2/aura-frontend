@@ -594,6 +594,42 @@ class MeetingsRepository {
     return JoinMeetingResult.fromJson(data);
   }
 
+  // Invitation email verification — external invitees prove control of the
+  // INVITED email before admission. The code always goes to the invitation's
+  // own email; the response only carries a masked destination.
+  Future<({String? sentTo, int resendCooldownSeconds})> sendInvitationOtp(
+    String code,
+    String invitationToken,
+  ) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/public/meetings/join/$code/verify-invitation/send',
+      data: {'invitationToken': invitationToken},
+      options: Options(extra: const {'__skip_auth': true}),
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return (
+      sentTo: data['sentTo'] as String?,
+      resendCooldownSeconds:
+          (data['resendCooldownSeconds'] as num?)?.toInt() ?? 60,
+    );
+  }
+
+  // Verify the code; on success the backend runs the canonical Admission
+  // pipeline with the INVITATION identity and returns the join result.
+  Future<JoinMeetingResult> verifyInvitationOtp(
+    String code,
+    String invitationToken,
+    String otp,
+  ) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/public/meetings/join/$code/verify-invitation',
+      data: {'invitationToken': invitationToken, 'otp': otp},
+      options: Options(extra: const {'__skip_auth': true}),
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return JoinMeetingResult.fromJson(data);
+  }
+
   Future<GuestAuthResult> exchangeGuestAuth(String guestSessionId) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/public/meetings/guest-auth',

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/ui/aura_space.dart';
+import '../../../../core/ui/aura_surface.dart';
 import '../../application/meetings_provider.dart';
 import '../../domain/meeting_asset.dart';
 import 'meeting_section.dart';
@@ -273,7 +274,7 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
               child: Row(
                 children: [
                   Icon(_iconFor(asset),
-                      size: 18, color: const Color(0xFF8B85FF)),
+                      size: 18, color: AuraSurface.accentText),
                   const SizedBox(width: AuraSpace.s10),
                   Expanded(
                     child: InkWell(
@@ -293,7 +294,7 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
                           Text(
                             _subtitle(asset),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF8A94A6),
+                              color: AuraSurface.muted,
                             ),
                           ),
                         ],
@@ -311,15 +312,15 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
                             : Icons.lock_outline_rounded,
                         size: 17,
                         color: asset.visibleToGuests
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFF8A94A6),
+                            ? AuraSurface.goodInk
+                            : AuraSurface.muted,
                       ),
                       onPressed: () => _toggleGuests(asset),
                     ),
                     IconButton(
                       tooltip: 'Remove',
                       icon: const Icon(Icons.close_rounded,
-                          size: 17, color: Color(0xFF6B7280)),
+                          size: 17, color: AuraSurface.faint),
                       onPressed: () => _remove(asset),
                     ),
                   ],

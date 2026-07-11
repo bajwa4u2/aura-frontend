@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/ui/aura_surface.dart';
 import '../../application/meetings_provider.dart';
 
 /// Phase 3.1 — host-only "Waiting to join" panel. Polls the meeting's pending
@@ -84,8 +85,8 @@ class _MeetingPendingGuestsPanelState
       constraints: const BoxConstraints(maxWidth: 320),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFF0F172A),
-          border: Border.all(color: const Color(0xFF243244)),
+          color: AuraSurface.subtle,
+          border: Border.all(color: AuraSurface.divider),
           borderRadius: BorderRadius.circular(10),
           boxShadow: const [
             BoxShadow(color: Color(0x55000000), blurRadius: 16, offset: Offset(0, 6)),
@@ -100,7 +101,7 @@ class _MeetingPendingGuestsPanelState
               Row(
                 children: [
                   const Icon(Icons.pan_tool_alt_rounded,
-                      size: 16, color: Color(0xFFF59E0B)),
+                      size: 16, color: AuraSurface.warnInk),
                   const SizedBox(width: 8),
                   Text(
                     'Waiting to join (${_pending.length})',
@@ -138,7 +139,7 @@ class _MeetingPendingGuestsPanelState
                   name,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFFE5E7EB),
+                    color: AuraSurface.ink,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -148,7 +149,7 @@ class _MeetingPendingGuestsPanelState
                     email,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF9CA3AF),
+                      color: AuraSurface.muted,
                       fontSize: 11,
                     ),
                   ),
@@ -165,14 +166,14 @@ class _MeetingPendingGuestsPanelState
           else ...[
             _IconAction(
               icon: Icons.close_rounded,
-              color: const Color(0xFFEF4444),
+              color: AuraSurface.dangerInk,
               tooltip: 'Deny',
               onTap: () => _decide(id, false),
             ),
             const SizedBox(width: 6),
             _IconAction(
               icon: Icons.check_rounded,
-              color: const Color(0xFF10B981),
+              color: AuraSurface.goodInk,
               tooltip: 'Admit',
               onTap: () => _decide(id, true),
             ),

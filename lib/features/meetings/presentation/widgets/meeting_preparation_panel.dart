@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/ui/aura_space.dart';
+import '../../../../core/ui/aura_surface.dart';
 import '../../domain/meeting.dart';
 import '../../domain/meeting_asset.dart';
 
@@ -92,7 +93,7 @@ class MeetingPreparationPanel extends StatelessWidget {
                                   ? 'Hosted by ${host.name}'
                                   : 'Meeting host')),
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFCBD5E1),
+                        color: AuraSurface.ink,
                       ),
                     ),
                   ],
@@ -129,7 +130,7 @@ class MeetingPreparationPanel extends StatelessWidget {
           Text(
             meeting.description!.trim(),
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFFCBD5E1),
+              color: AuraSurface.ink,
               height: 1.45,
             ),
           ),
@@ -146,12 +147,12 @@ class MeetingPreparationPanel extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('· ', style: TextStyle(color: Color(0xFF6C63FF))),
+                  const Text('· ', style: TextStyle(color: AuraSurface.accent)),
                   Expanded(
                     child: Text(
                       line,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFCBD5E1),
+                        color: AuraSurface.ink,
                         height: 1.4,
                       ),
                     ),
@@ -199,7 +200,7 @@ class MeetingPreparationPanel extends StatelessWidget {
                                 ? Icons.link_rounded
                                 : Icons.description_outlined,
                             size: 17,
-                            color: const Color(0xFF8B85FF),
+                            color: AuraSurface.accentText,
                           ),
                           const SizedBox(width: AuraSpace.s10),
                           Expanded(
@@ -214,7 +215,7 @@ class MeetingPreparationPanel extends StatelessWidget {
                             Text(
                               'available in the meeting',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF6B7280),
+                                color: AuraSurface.faint,
                               ),
                             ),
                         ],
@@ -249,7 +250,7 @@ class MeetingPreparationPanel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: const Color(0xFF243244)),
+        border: Border.all(color: AuraSurface.divider),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -269,7 +270,7 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: const Color(0xFF9CA3AF),
+            color: AuraSurface.muted,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
           ),
@@ -288,7 +289,7 @@ class _MetaRow extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF6B7280)),
+          Icon(icon, size: 18, color: AuraSurface.faint),
           const SizedBox(width: AuraSpace.s10),
           Expanded(child: Text(text)),
         ],
@@ -318,7 +319,7 @@ class _ParticipantRow extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 15,
-            backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+            backgroundColor: AuraSurface.accent.withValues(alpha: 0.18),
             backgroundImage: (avatar != null && avatar.trim().isNotEmpty)
                 ? NetworkImage(avatar)
                 : null,
@@ -347,8 +348,8 @@ class _ParticipantRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: participant.isHost
-                  ? const Color(0xFF6C63FF).withValues(alpha: 0.18)
-                  : const Color(0xFF1E293B),
+                  ? AuraSurface.accent.withValues(alpha: 0.18)
+                  : AuraSurface.elevated,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -357,8 +358,8 @@ class _ParticipantRow extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: participant.isHost
-                    ? const Color(0xFFA5B4FC)
-                    : const Color(0xFF94A3B8),
+                    ? AuraSurface.accentText
+                    : AuraSurface.muted,
               ),
             ),
           ),
@@ -379,11 +380,11 @@ class _Avatar extends StatelessWidget {
     final hasLogo = logoUrl != null && logoUrl!.trim().isNotEmpty;
     return CircleAvatar(
       radius: 22,
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: AuraSurface.subtle,
       backgroundImage: hasLogo ? NetworkImage(logoUrl!) : null,
       child: hasLogo
           ? null
-          : Icon(icon, color: const Color(0xFFE5E7EB), size: 18),
+          : Icon(icon, color: AuraSurface.ink, size: 18),
     );
   }
 }

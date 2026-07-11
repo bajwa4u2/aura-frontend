@@ -206,20 +206,23 @@ final publicProfileProvider =
       return repo.getPublicProfile(slug);
     });
 
+// Authenticated Booking Doctrine — the booking identity is the AUTHENTICATED
+// Aura identity, sourced from /auth/me (the only self-endpoint that carries
+// the account email + verification state; /users/me is the public projection
+// and deliberately omits email). Guests and anonymous visitors resolve to
+// null and keep the form-based identity flow.
 final currentBookingIdentityProvider = FutureProvider<MeetingIdentityRef?>((
   ref,
 ) async {
   if (!ref.watch(isAuthedProvider)) return null;
 
-  final dio = ref.watch(dioProvider);
   try {
-    final res = await dio.get('/users/me');
-    final data = res.data;
-    if (data is Map<String, dynamic>) {
-      return MeetingIdentityRef.fromUserJson(data);
-    }
-    if (data is Map) {
-      return MeetingIdentityRef.fromUserJson(Map<String, dynamic>.from(data));
+    final me = await ref.watch(authMeDataProvider.future);
+    final user = me['user'];
+    if (user is Map) {
+      final map = Map<String, dynamic>.from(user);
+      if ((map['id'] ?? '').toString().trim().isEmpty) return null;
+      return MeetingIdentityRef.fromUserJson(map);
     }
   } catch (_) {
     return null;
