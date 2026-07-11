@@ -1096,8 +1096,9 @@ class _BookingSummary extends StatelessWidget {
               icon: const Icon(Icons.copy_rounded),
               label: const Text('Copy link'),
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 await Clipboard.setData(ClipboardData(text: publicUrl));
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(content: Text('Booking link copied')),
                 );
               },
@@ -1114,8 +1115,9 @@ class _BookingSummary extends StatelessWidget {
               icon: const Icon(Icons.share_rounded),
               label: const Text('Share'),
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 await Clipboard.setData(ClipboardData(text: publicUrl));
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(content: Text('Booking link copied for sharing')),
                 );
               },

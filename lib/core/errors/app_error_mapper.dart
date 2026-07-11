@@ -70,7 +70,7 @@ class AppErrorMapper {
       );
     }
 
-    if (status == 422) {
+    if (status == 400 || status == 422) {
       return AppError(
         type: AppErrorType.validation,
         message: backendMessage?.trim().isNotEmpty == true

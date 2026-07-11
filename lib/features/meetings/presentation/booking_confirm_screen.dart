@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/guest_shell.dart';
 import '../../../core/utils/local_timezone.dart';
@@ -93,8 +94,9 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       setState(() => _confirmation = conf);
     } catch (e) {
       if (!mounted) return;
+      final message = AppErrorMapper.from(e).message;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to confirm booking. Try again.')),
+        SnackBar(content: Text(message)),
       );
     } finally {
       if (mounted) setState(() => _booking = false);
