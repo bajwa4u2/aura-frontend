@@ -851,50 +851,58 @@ class _CoverWithAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      // Container needs to absorb both the cover and the lower half of the
-      // overlapping avatar so the row below can sit naturally underneath.
-      height: coverHeight + avatarSize / 2,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            height: coverHeight,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AuraRadius.lg),
-              child: _CoverSurface(coverUrl: coverUrl, fallbackLogo: logoUrl),
-            ),
-          ),
-          Positioned(
-            left: InsSpacing.screenHPad,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: AuraSurface.page,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.30),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final resolvedCoverHeight = constraints.maxWidth.isFinite
+            ? constraints.maxWidth / 4
+            : coverHeight;
+        return SizedBox(
+          height: resolvedCoverHeight + avatarSize / 2,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                height: resolvedCoverHeight,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AuraRadius.lg),
+                  child: _CoverSurface(
+                    coverUrl: coverUrl,
+                    fallbackLogo: logoUrl,
                   ),
-                ],
-              ),
-              child: ClipOval(
-                child: _AvatarSurface(
-                  size: avatarSize,
-                  name: name,
-                  logoUrl: logoUrl,
                 ),
               ),
-            ),
+              Positioned(
+                left: InsSpacing.screenHPad,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.page,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.30),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: _AvatarSurface(
+                      size: avatarSize,
+                      name: name,
+                      logoUrl: logoUrl,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -915,7 +923,7 @@ class _CoverSurface extends StatelessWidget {
           const _CoverFallback(),
           Image.network(
             url,
-            fit: BoxFit.contain,
+            fit: BoxFit.fill,
             errorBuilder: (_, __, ___) => const _CoverFallback(),
           ),
           // Soft bottom darkening so badges/text in the row below have

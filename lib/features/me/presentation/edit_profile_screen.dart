@@ -694,7 +694,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         fit: StackFit.expand,
         children: [
           if (coverProvider != null)
-            Image(image: coverProvider, fit: BoxFit.contain)
+            Image(image: coverProvider, fit: BoxFit.fill)
           else
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -1602,7 +1602,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 height: 80,
                 width: double.infinity,
                 child: coverProvider != null
-                    ? Image(image: coverProvider, fit: BoxFit.contain)
+                    ? Image(image: coverProvider, fit: BoxFit.fill)
                     : const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(

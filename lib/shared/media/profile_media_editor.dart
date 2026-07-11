@@ -43,6 +43,8 @@ class ProfileMediaEditorConfig {
   final String subtitle;
   final bool fitInsideFrame;
 
+  String get outputLabel => '$outputWidth x $outputHeight';
+
   static const memberAvatar = ProfileMediaEditorConfig(
     aspectRatio: 1.0,
     shape: ProfileMediaEditorShape.circle,
@@ -58,7 +60,7 @@ class ProfileMediaEditorConfig {
     outputWidth: 1500,
     outputHeight: 500,
     title: 'Edit cover',
-    subtitle: 'Pinch to zoom · drag to reposition',
+    subtitle: 'Artwork fits the final cover frame',
     fitInsideFrame: true,
   );
 
@@ -77,9 +79,35 @@ class ProfileMediaEditorConfig {
     outputWidth: 1600,
     outputHeight: 400,
     title: 'Edit institution banner',
-    subtitle: 'Pinch to zoom · drag to reposition',
+    subtitle: 'Artwork fits the final banner frame',
     fitInsideFrame: true,
   );
+}
+
+class ProfileMediaCoverTransform {
+  const ProfileMediaCoverTransform._();
+
+  static const Color paddingColor = Color(0xFF101018);
+
+  static Rect fittedRect({required Size sourceSize, required Size targetSize}) {
+    if (sourceSize.width <= 0 ||
+        sourceSize.height <= 0 ||
+        targetSize.width <= 0 ||
+        targetSize.height <= 0) {
+      return Rect.zero;
+    }
+    final scaleW = targetSize.width / sourceSize.width;
+    final scaleH = targetSize.height / sourceSize.height;
+    final scale = scaleW < scaleH ? scaleW : scaleH;
+    final fittedW = sourceSize.width * scale;
+    final fittedH = sourceSize.height * scale;
+    return Rect.fromLTWH(
+      (targetSize.width - fittedW) / 2,
+      (targetSize.height - fittedH) / 2,
+      fittedW,
+      fittedH,
+    );
+  }
 }
 
 /// Full-screen modal editor for profile media (avatars, logos, covers).
@@ -302,18 +330,15 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
   /// each axis on its own so a wide image in a square frame can pan
   /// horizontally even when the height fits exactly.
   Offset _maxOffsetFor(Size frame) {
+    if (widget.config.fitInsideFrame) return Offset.zero;
     final image = _image!;
     final s = _baseFitScale(frame) * _scale;
     final imageScreenW = image.width * s;
     final imageScreenH = image.height * s;
-    final deltaX = widget.config.fitInsideFrame
-        ? frame.width - imageScreenW
-        : imageScreenW - frame.width;
-    final deltaY = widget.config.fitInsideFrame
-        ? frame.height - imageScreenH
-        : imageScreenH - frame.height;
-    final maxX = deltaX > 0 ? deltaX / 2 : 0.0;
-    final maxY = deltaY > 0 ? deltaY / 2 : 0.0;
+    final overflowX = imageScreenW - frame.width;
+    final overflowY = imageScreenH - frame.height;
+    final maxX = overflowX > 0 ? overflowX / 2 : 0.0;
+    final maxY = overflowY > 0 ? overflowY / 2 : 0.0;
     return Offset(maxX, maxY);
   }
 
@@ -335,15 +360,17 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
   void _onScaleUpdate(ScaleUpdateDetails details) {
     final frame = _frameSize;
     if (frame == null || _image == null) return;
+    if (widget.config.fitInsideFrame) return;
 
     // `details.scale` is cumulative since gesture start (1.0 = unchanged).
     // `details.focalPointDelta` is per-update — already in local coords —
     // so we add it directly to the live offset for pan. This is more
     // robust than tracking start positions because each frame moves by
     // exactly the pointer's delta this frame.
-    final newScale = widget.config.fitInsideFrame
-        ? 1.0
-        : (_gestureStartScale * details.scale).clamp(_minScale, _maxScale);
+    final newScale = (_gestureStartScale * details.scale).clamp(
+      _minScale,
+      _maxScale,
+    );
     final newOffset = _clamp(_offset + details.focalPointDelta, frame);
     if (newScale == _scale && newOffset == _offset) return;
     setState(() {
@@ -381,6 +408,7 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
   void _nudge(double dx, double dy) {
     final frame = _frameSize;
     if (frame == null || _image == null) return;
+    if (widget.config.fitInsideFrame) return;
     final next = _clamp(_offset + Offset(dx, dy), frame);
     if (next == _offset) return;
     setState(() => _offset = next);
@@ -436,14 +464,7 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
     final imageScreenTop = (frame.height - imageScreenH) / 2 + _offset.dy;
 
     if (widget.config.fitInsideFrame) {
-      return _renderFitTransform(
-        image: image,
-        frame: frame,
-        imageScreenLeft: imageScreenLeft,
-        imageScreenTop: imageScreenTop,
-        imageScreenW: imageScreenW,
-        imageScreenH: imageScreenH,
-      );
+      return _renderFitTransform(image: image);
     }
 
     final srcLeft = (-imageScreenLeft) / s;
@@ -492,29 +513,18 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  Future<Uint8List> _renderFitTransform({
-    required ui.Image image,
-    required Size frame,
-    required double imageScreenLeft,
-    required double imageScreenTop,
-    required double imageScreenW,
-    required double imageScreenH,
-  }) async {
+  Future<Uint8List> _renderFitTransform({required ui.Image image}) async {
     final outW = widget.config.outputWidth.toDouble();
     final outH = widget.config.outputHeight.toDouble();
-    final scaleX = outW / frame.width;
-    final scaleY = outH / frame.height;
     final src = Rect.fromLTWH(
       0,
       0,
       image.width.toDouble(),
       image.height.toDouble(),
     );
-    final dst = Rect.fromLTWH(
-      imageScreenLeft * scaleX,
-      imageScreenTop * scaleY,
-      imageScreenW * scaleX,
-      imageScreenH * scaleY,
+    final dst = ProfileMediaCoverTransform.fittedRect(
+      sourceSize: Size(image.width.toDouble(), image.height.toDouble()),
+      targetSize: Size(outW, outH),
     );
 
     final recorder = ui.PictureRecorder();
@@ -522,6 +532,10 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
     final paint = Paint()
       ..filterQuality = FilterQuality.high
       ..isAntiAlias = true;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, outW, outH),
+      Paint()..color = ProfileMediaCoverTransform.paddingColor,
+    );
     canvas.drawImageRect(image, src, dst, paint);
     final picture = recorder.endRecording();
     try {
@@ -624,6 +638,9 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
               child: _ClippedFrame(
                 size: frame,
                 shape: widget.config.shape,
+                dimensionLabel: widget.config.fitInsideFrame
+                    ? widget.config.outputLabel
+                    : null,
                 child: SizedBox(
                   width: frame.width,
                   height: frame.height,
@@ -715,31 +732,31 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
               _IconChipBtn(
                 icon: Icons.chevron_left_rounded,
                 tooltip: 'Move left',
-                onPressed: disabled ? null : () => _nudge(_panStep, 0),
+                onPressed: canZoom ? () => _nudge(_panStep, 0) : null,
               ),
               const SizedBox(width: AuraSpace.s6),
               _IconChipBtn(
                 icon: Icons.expand_less_rounded,
                 tooltip: 'Move up',
-                onPressed: disabled ? null : () => _nudge(0, _panStep),
+                onPressed: canZoom ? () => _nudge(0, _panStep) : null,
               ),
               const SizedBox(width: AuraSpace.s6),
               _IconChipBtn(
                 icon: Icons.expand_more_rounded,
                 tooltip: 'Move down',
-                onPressed: disabled ? null : () => _nudge(0, -_panStep),
+                onPressed: canZoom ? () => _nudge(0, -_panStep) : null,
               ),
               const SizedBox(width: AuraSpace.s6),
               _IconChipBtn(
                 icon: Icons.chevron_right_rounded,
                 tooltip: 'Move right',
-                onPressed: disabled ? null : () => _nudge(-_panStep, 0),
+                onPressed: canZoom ? () => _nudge(-_panStep, 0) : null,
               ),
               const SizedBox(width: AuraSpace.s10),
               _IconChipBtn(
                 icon: Icons.center_focus_strong_rounded,
                 tooltip: 'Center',
-                onPressed: disabled
+                onPressed: !canZoom
                     ? null
                     : () => setState(() => _offset = Offset.zero),
               ),
@@ -784,11 +801,13 @@ class _ClippedFrame extends StatelessWidget {
     required this.size,
     required this.shape,
     required this.child,
+    this.dimensionLabel,
   });
 
   final Size size;
   final ProfileMediaEditorShape shape;
   final Widget child;
+  final String? dimensionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -827,6 +846,33 @@ class _ClippedFrame extends StatelessWidget {
                     ),
                   ),
           ),
+          if (dimensionLabel != null)
+            Positioned(
+              right: AuraSpace.s12,
+              bottom: AuraSpace.s12,
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.54),
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.16),
+                    ),
+                  ),
+                  child: Text(
+                    dimensionLabel!,
+                    style: AuraText.micro.copyWith(
+                      color: Colors.white.withValues(alpha: 0.86),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -881,11 +927,31 @@ class _ImagePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Cover-fit base × user scale.
+    if (fitInsideFrame) {
+      final src = Rect.fromLTWH(
+        0,
+        0,
+        image.width.toDouble(),
+        image.height.toDouble(),
+      );
+      final dst = ProfileMediaCoverTransform.fittedRect(
+        sourceSize: Size(image.width.toDouble(), image.height.toDouble()),
+        targetSize: size,
+      );
+      canvas.drawRect(
+        Offset.zero & size,
+        Paint()..color = ProfileMediaCoverTransform.paddingColor,
+      );
+      final paint = Paint()
+        ..filterQuality = FilterQuality.medium
+        ..isAntiAlias = true;
+      canvas.drawImageRect(image, src, dst, paint);
+      return;
+    }
+
     final baseScaleW = size.width / image.width;
     final baseScaleH = size.height / image.height;
-    final base = fitInsideFrame
-        ? (baseScaleW < baseScaleH ? baseScaleW : baseScaleH)
-        : (baseScaleW > baseScaleH ? baseScaleW : baseScaleH);
+    final base = baseScaleW > baseScaleH ? baseScaleW : baseScaleH;
     final s = base * scale;
     final imageW = image.width * s;
     final imageH = image.height * s;

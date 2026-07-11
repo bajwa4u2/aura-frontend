@@ -1289,7 +1289,7 @@ class _LivePreviewCard extends StatelessWidget {
                       const ColoredBox(color: AuraSurface.subtle),
                       Image.network(
                         coverUrl!,
-                        fit: BoxFit.contain,
+                        fit: BoxFit.fill,
                         errorBuilder: (_, __, ___) =>
                             Container(color: AuraSurface.subtle),
                       ),
@@ -1894,7 +1894,7 @@ class _MediaUploadControl extends StatelessWidget {
                 const ColoredBox(color: AuraSurface.elevated),
                 Image.network(
                   imageUrl!,
-                  fit: _isLogo ? BoxFit.cover : BoxFit.contain,
+                  fit: _isLogo ? BoxFit.cover : BoxFit.fill,
                   errorBuilder: (_, __, ___) => Container(
                     color: AuraSurface.elevated,
                     child: const Center(

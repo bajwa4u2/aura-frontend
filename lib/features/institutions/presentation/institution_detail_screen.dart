@@ -562,7 +562,6 @@ class _PublicHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double coverHeight = 220;
     const double avatarSize = 96;
     final coverUrl = institution.coverUrl?.trim() ?? '';
     final logoUrl = institution.logoUrl?.trim() ?? '';
@@ -570,91 +569,98 @@ class _PublicHero extends StatelessWidget {
         ? institution.name.trim()
         : 'Institution';
 
-    return SizedBox(
-      height: coverHeight + avatarSize / 2,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            bottom: avatarSize / 2,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AuraSurface.accent.withValues(alpha: 0.30),
-                    AuraSurface.accent.withValues(alpha: 0.08),
-                    AuraSurface.subtle,
-                  ],
-                ),
-              ),
-              child: coverUrl.isEmpty
-                  ? const Center(
-                      child: Icon(
-                        Icons.apartment_rounded,
-                        size: 56,
-                        color: AuraSurface.accentText,
-                      ),
-                    )
-                  : Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          coverUrl,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: AuraSurface.accentSoft,
-                            child: const Center(
-                              child: Icon(
-                                Icons.image_outlined,
-                                color: AuraSurface.accentText,
-                                size: 48,
-                              ),
-                            ),
-                          ),
-                        ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.35),
-                              ],
-                            ),
-                          ),
-                        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final coverHeight = constraints.maxWidth.isFinite
+            ? constraints.maxWidth / 4
+            : 220.0;
+        return SizedBox(
+          height: coverHeight + avatarSize / 2,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                bottom: avatarSize / 2,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AuraSurface.accent.withValues(alpha: 0.30),
+                        AuraSurface.accent.withValues(alpha: 0.08),
+                        AuraSurface.subtle,
                       ],
                     ),
-            ),
-          ),
-          Positioned(
-            left: AuraSpace.s16,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: AuraSurface.page,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
                   ),
-                ],
+                  child: coverUrl.isEmpty
+                      ? const Center(
+                          child: Icon(
+                            Icons.apartment_rounded,
+                            size: 56,
+                            color: AuraSurface.accentText,
+                          ),
+                        )
+                      : Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              coverUrl,
+                              fit: BoxFit.fill,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: AuraSurface.accentSoft,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.image_outlined,
+                                    color: AuraSurface.accentText,
+                                    size: 48,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.35),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
               ),
-              child: _PublicInstitutionAvatar(
-                size: avatarSize,
-                name: name,
-                logoUrl: logoUrl,
+              Positioned(
+                left: AuraSpace.s16,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.page,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: _PublicInstitutionAvatar(
+                    size: avatarSize,
+                    name: name,
+                    logoUrl: logoUrl,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

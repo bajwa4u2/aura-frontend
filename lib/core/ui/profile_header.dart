@@ -53,7 +53,7 @@ class PresenceHeader extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isNarrow = constraints.maxWidth < 720;
-          const coverHeight = 200.0;
+          final coverHeight = constraints.maxWidth / 3;
           const avatarSize = 104.0;
           const overlap = 34.0;
 
@@ -292,7 +292,7 @@ class _PresenceCover extends StatelessWidget {
           if (hasCover)
             Image.network(
               resolvedUrl,
-              fit: BoxFit.contain,
+              fit: BoxFit.fill,
               errorBuilder: (_, __, ___) => _emptySurface(),
               loadingBuilder: (context, child, progress) {
                 if (progress == null) return child;
