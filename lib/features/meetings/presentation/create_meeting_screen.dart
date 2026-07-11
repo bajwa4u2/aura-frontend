@@ -704,7 +704,7 @@ class _CreationForm extends StatelessWidget {
     }).toList(growable: false);
     final currentBookingProfile = _pickBookingProfile(
       bookingProfiles,
-      bookingIdentity?.id,
+      bookingIdentity?.auraUserId,
     );
 
     return Column(
