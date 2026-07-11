@@ -18,8 +18,8 @@ void main() {
           MeetingEntryOutcome.invitedDirect);
       expect(MeetingEntryOutcome.parse('INSTITUTION_MEMBER_DIRECT'),
           MeetingEntryOutcome.institutionMemberDirect);
-      expect(MeetingEntryOutcome.parse('GUEST_IDENTITY_REQUIRED'),
-          MeetingEntryOutcome.guestIdentityRequired);
+      expect(MeetingEntryOutcome.parse('INVITATION_VERIFICATION_REQUIRED'),
+          MeetingEntryOutcome.invitationVerificationRequired);
       expect(MeetingEntryOutcome.parse('GUEST_DIRECT'),
           MeetingEntryOutcome.guestDirect);
       expect(MeetingEntryOutcome.parse('WAITING_FOR_ADMISSION'),
@@ -81,7 +81,6 @@ void main() {
           'email': null,
         },
         'requirements': {
-          'guestIdentityRequired': false,
           'loginRequired': false,
           'approvalRequired': false,
         },
@@ -114,22 +113,20 @@ void main() {
       expect(resolution.outcome, MeetingEntryOutcome.bookerDirect);
       expect(resolution.action, MeetingEntryAction.join);
       expect(resolution.meetingLive, true);
-      expect(resolution.guestIdentityRequired, false);
       expect(resolution.bookingId, 'booking-1');
       expect(resolution.prefillName, 'Booker');
       expect(resolution.presentation?.title, 'Advisory Session');
       expect(resolution.presentation?.host?.displayName, 'Host');
     });
 
-    test('missing sections default to safe values', () {
+    test('missing sections default to safe values — unknown outcomes fail CLOSED', () {
       final resolution = MeetingEntryResolution.fromJson(const {
-        'outcome': 'GUEST_IDENTITY_REQUIRED',
-        'action': 'SUBMIT_GUEST_IDENTITY',
+        'outcome': 'SOME_FUTURE_OUTCOME',
+        'action': 'SOME_FUTURE_ACTION',
       });
-      expect(resolution.outcome, MeetingEntryOutcome.guestIdentityRequired);
-      expect(resolution.action, MeetingEntryAction.submitGuestIdentity);
+      expect(resolution.outcome, MeetingEntryOutcome.meetingUnavailable);
+      expect(resolution.action, MeetingEntryAction.none);
       expect(resolution.identityKind, 'ANONYMOUS');
-      expect(resolution.guestIdentityRequired, false);
       expect(resolution.approvalRequired, false);
       expect(resolution.meetingLive, false);
       expect(resolution.presentation, isNull);

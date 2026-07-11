@@ -506,13 +506,9 @@ class _BookingLinkCard extends ConsumerWidget {
     return profiles.first;
   }
 
-  String _manageBookingPath() {
-    final institutionId = this.institutionId;
-    if (institutionId == null || institutionId.isEmpty) {
-      return '/availability';
-    }
-    return '/institution/$institutionId/availability';
-  }
+  // Booking pages are institution-governed; this card only renders inside
+  // an institution workspace, so the institution route is the only path.
+  String _manageBookingPath() => '/institution/$institutionId/availability';
 }
 
 class _SectionShell extends StatelessWidget {

@@ -68,18 +68,6 @@ class MeetingsRepository {
     return Meeting.fromJson(data);
   }
 
-  Future<Meeting> startInstantMeeting({String? organizationId}) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/meetings/instant',
-      data: {
-        if (organizationId != null && organizationId.isNotEmpty)
-          'organizationId': organizationId,
-      },
-    );
-    final data = res.data!['data'] as Map<String, dynamic>;
-    return Meeting.fromJson(data);
-  }
-
   Future<List<Meeting>> listMeetings({
     String? filter,
     String? institutionId,
@@ -563,10 +551,10 @@ class MeetingsRepository {
     return MeetingEntryResolution.fromJson(data);
   }
 
+  // Identity is never submitted at a meeting door — admission evidence only
+  // (booking token, invitation token, returning guest session).
   Future<JoinMeetingResult> joinMeeting(
     String code, {
-    String? guestName,
-    String? guestEmail,
     String? bookerToken,
     String? invitationToken,
     String? guestSessionId,
@@ -579,8 +567,6 @@ class MeetingsRepository {
     final res = await _dio.post<Map<String, dynamic>>(
       '/public/meetings/join/$code',
       data: {
-        if (guestName != null) 'guestName': guestName,
-        if (guestEmail != null) 'guestEmail': guestEmail,
         if (bookerToken != null && bookerToken.isNotEmpty)
           'bookerToken': bookerToken,
         if (invitationToken != null && invitationToken.isNotEmpty)
@@ -650,31 +636,6 @@ class MeetingsRepository {
     );
     final data = res.data!['data'] as Map<String, dynamic>;
     return Meeting.fromJson(data['meeting'] as Map<String, dynamic>);
-  }
-
-  // Participant continuity: confirm or decline a meeting attached to this
-  // account (an email-matched booking arrives as a pending attachment).
-  Future<void> respondToMeeting(String meetingId, String status) async {
-    await _dio.post<void>(
-      '/meetings/$meetingId/rsvp',
-      data: {'status': status},
-    );
-  }
-
-  Future<void> inviteToMeeting(
-    String meetingId, {
-    String? userId,
-    String? email,
-    String? name,
-  }) async {
-    await _dio.post<void>(
-      '/meetings/$meetingId/invite',
-      data: {
-        if (userId != null) 'userId': userId,
-        if (email != null) 'email': email,
-        if (name != null) 'name': name,
-      },
-    );
   }
 
   // Waiting-room polling for a MEMBER pending host approval (the member

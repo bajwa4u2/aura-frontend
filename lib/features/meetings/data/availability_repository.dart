@@ -7,44 +7,10 @@ class AvailabilityRepository {
 
   // All backend responses are wrapped: { ok: true, data: <payload> }
   // Extract the inner data field from every response before parsing.
-
-  Future<AvailabilityProfile> createProfile({
-    required String name,
-    required String slug,
-    required String meetingTitle,
-    String? meetingDescription,
-    required List<int> durationOptions,
-    required int defaultDuration,
-    required String timezone,
-    int bufferBefore = 0,
-    int bufferAfter = 15,
-    int minimumNotice = 60,
-    int maximumAdvance = 43200,
-    bool allowGuests = true,
-    bool requireApproval = false,
-  }) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/availability',
-      data: {
-        'name': name,
-        'slug': slug,
-        'meetingTitle': meetingTitle,
-        if (meetingDescription != null)
-          'meetingDescription': meetingDescription,
-        'durationOptions': durationOptions,
-        'defaultDuration': defaultDuration,
-        'timezone': timezone,
-        'bufferBefore': bufferBefore,
-        'bufferAfter': bufferAfter,
-        'minimumNotice': minimumNotice,
-        'maximumAdvance': maximumAdvance,
-        'allowGuests': allowGuests,
-        'requireApproval': requireApproval,
-      },
-    );
-    final data = res.data!['data'] as Map<String, dynamic>;
-    return AvailabilityProfile.fromJson(data);
-  }
+  //
+  // Booking pages are institution-governed: creation and management use the
+  // institution endpoints below. The legacy personal profile CRUD was
+  // removed with the personal booking-page product.
 
   Future<List<AvailabilityProfile>> listMyProfiles() async {
     final res = await _dio.get<Map<String, dynamic>>('/availability');
@@ -125,84 +91,6 @@ class AvailabilityRepository {
     );
     final data = res.data!['data'] as Map<String, dynamic>;
     return data;
-  }
-
-  Future<AvailabilityProfile> updateProfile(
-    String profileId, {
-    String? name,
-    String? meetingTitle,
-    String? meetingDescription,
-    int? bufferBefore,
-    int? bufferAfter,
-    int? minimumNotice,
-    int? maximumAdvance,
-    int? maxBookingsPerDay,
-    String? timezone,
-    bool? isActive,
-    bool? allowGuests,
-    bool? waitingRoomEnabled,
-    bool? requireApproval,
-  }) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '/availability/$profileId',
-      data: {
-        if (name != null) 'name': name,
-        if (meetingTitle != null) 'meetingTitle': meetingTitle,
-        if (meetingDescription != null) 'meetingDescription': meetingDescription,
-        if (bufferBefore != null) 'bufferBefore': bufferBefore,
-        if (bufferAfter != null) 'bufferAfter': bufferAfter,
-        if (minimumNotice != null) 'minimumNotice': minimumNotice,
-        if (maximumAdvance != null) 'maximumAdvance': maximumAdvance,
-        if (maxBookingsPerDay != null) 'maxBookingsPerDay': maxBookingsPerDay,
-        if (timezone != null) 'timezone': timezone,
-        if (isActive != null) 'isActive': isActive,
-        if (allowGuests != null) 'allowGuests': allowGuests,
-        if (waitingRoomEnabled != null) 'waitingRoomEnabled': waitingRoomEnabled,
-        if (requireApproval != null) 'requireApproval': requireApproval,
-      },
-    );
-    final data = res.data!['data'] as Map<String, dynamic>;
-    return AvailabilityProfile.fromJson(data);
-  }
-
-  Future<void> addWindow(
-    String profileId, {
-    required String dayOfWeek,
-    required String startTime,
-    required String endTime,
-  }) async {
-    await _dio.post<void>(
-      '/availability/$profileId/windows',
-      data: {
-        'dayOfWeek': dayOfWeek,
-        'startTime': startTime,
-        'endTime': endTime,
-      },
-    );
-  }
-
-  Future<void> removeWindow(String profileId, String windowId) async {
-    await _dio.delete<void>('/availability/$profileId/windows/$windowId');
-  }
-
-  Future<void> addOverride(
-    String profileId, {
-    required String date,
-    required bool isBlocked,
-    String? startTime,
-    String? endTime,
-    String? reason,
-  }) async {
-    await _dio.post<void>(
-      '/availability/$profileId/overrides',
-      data: {
-        'date': date,
-        'isBlocked': isBlocked,
-        if (startTime != null) 'startTime': startTime,
-        if (endTime != null) 'endTime': endTime,
-        if (reason != null) 'reason': reason,
-      },
-    );
   }
 
   // ── Institution-owned booking profiles ──────────────────────────────

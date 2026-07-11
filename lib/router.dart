@@ -122,7 +122,6 @@ import 'features/meetings/presentation/pre_join_screen.dart';
 import 'features/meetings/presentation/public_booking_screen.dart';
 import 'features/meetings/presentation/slot_picker_screen.dart';
 import 'features/meetings/presentation/meetings_home_screen.dart';
-import 'features/meetings/presentation/availability_setup_screen.dart';
 import 'features/meetings/domain/availability_profile.dart';
 
 // Static screens
@@ -938,24 +937,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
 
           // ── Meetings ─────────────────────────────────────────────────
-          // IMPORTANT: static paths (/meetings/new, /meetings/join/:code)
+          // Institution Context Doctrine: meetings live in institution
+          // workspaces — there is no personal meetings home or personal
+          // creation route. IMPORTANT: static paths (/meetings/join/:code)
           // must appear BEFORE the dynamic /meetings/:id route so
           // GoRouter's first-match-wins order resolves them correctly.
-          GoRoute(
-            path: '/meetings',
-            builder: (_, __) => const MeetingsHomeScreen(),
-          ),
           GoRoute(
             path: '/institution/:institutionId/meetings',
             builder: (context, state) => MeetingsHomeScreen(
               institutionId: state.pathParameters['institutionId'],
-            ),
-          ),
-          GoRoute(
-            path: '/meetings/new',
-            builder: (context, state) => CreateMeetingScreen(
-              startNow: state.uri.queryParameters['instant'] == '1' ||
-                  state.uri.queryParameters['instant'] == 'true',
             ),
           ),
           // Institution-owned scheduling — created meetings carry the
@@ -1120,10 +1110,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               meetingId: state.pathParameters['meetingId'] ?? '',
               institutionId: state.pathParameters['institutionId'],
             ),
-          ),
-          GoRoute(
-            path: '/availability',
-            builder: (_, __) => const AvailabilitySetupScreen(),
           ),
           // Institution admin booking pages — gated by InstitutionRoleGuard (ADMIN) on backend
           GoRoute(

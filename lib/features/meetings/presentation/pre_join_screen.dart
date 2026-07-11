@@ -330,19 +330,6 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           ),
         );
 
-      case MeetingEntryOutcome.guestIdentityRequired:
-        // Retired outcome — identity is never created at a meeting door.
-        // A backend that still returns it gets a closed door, not a form.
-        return const GuestShell(
-          showBackButton: true,
-          body: _TerminalMessage(
-            icon: Icons.mail_outline_rounded,
-            title: 'This meeting requires an invitation',
-            detail: 'Ask the meeting host to invite you, or open the link '
-                'from your invitation or booking email.',
-          ),
-        );
-
       case MeetingEntryOutcome.invitationVerificationRequired:
         return _InvitationVerificationBody(
           resolution: resolution,

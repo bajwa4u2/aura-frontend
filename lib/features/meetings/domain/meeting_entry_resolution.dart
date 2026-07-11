@@ -10,9 +10,6 @@ enum MeetingEntryOutcome {
   bookerDirect,
   invitedDirect,
   institutionMemberDirect,
-  /// Retired by the identity-integrity doctrine — a current backend never
-  /// produces it. Parsed for compatibility and rendered as a closed door.
-  guestIdentityRequired,
 
   /// External invitee must verify the invited email (invitation-bound OTP).
   invitationVerificationRequired,
@@ -36,8 +33,6 @@ enum MeetingEntryOutcome {
         return MeetingEntryOutcome.invitedDirect;
       case 'INSTITUTION_MEMBER_DIRECT':
         return MeetingEntryOutcome.institutionMemberDirect;
-      case 'GUEST_IDENTITY_REQUIRED':
-        return MeetingEntryOutcome.guestIdentityRequired;
       case 'INVITATION_VERIFICATION_REQUIRED':
         return MeetingEntryOutcome.invitationVerificationRequired;
       case 'GUEST_DIRECT':
@@ -79,7 +74,6 @@ enum MeetingEntryOutcome {
 /// The single next action the backend permits.
 enum MeetingEntryAction {
   join,
-  submitGuestIdentity,
   verifyInvitation,
   login,
   wait,
@@ -90,8 +84,6 @@ enum MeetingEntryAction {
     switch (raw) {
       case 'JOIN':
         return MeetingEntryAction.join;
-      case 'SUBMIT_GUEST_IDENTITY':
-        return MeetingEntryAction.submitGuestIdentity;
       case 'VERIFY_INVITATION':
         return MeetingEntryAction.verifyInvitation;
       case 'LOGIN':
@@ -195,7 +187,6 @@ class MeetingEntryResolution {
   final String? identityName;
   final String? identityEmail;
 
-  final bool guestIdentityRequired;
   final bool emailVerificationRequired;
   final bool loginRequired;
   final bool approvalRequired;
@@ -222,7 +213,6 @@ class MeetingEntryResolution {
     required this.identityKind,
     this.identityName,
     this.identityEmail,
-    required this.guestIdentityRequired,
     this.emailVerificationRequired = false,
     required this.loginRequired,
     required this.approvalRequired,
@@ -253,8 +243,6 @@ class MeetingEntryResolution {
       identityKind: identity['kind'] as String? ?? 'ANONYMOUS',
       identityName: identity['displayName'] as String?,
       identityEmail: identity['email'] as String?,
-      guestIdentityRequired:
-          requirements['guestIdentityRequired'] as bool? ?? false,
       emailVerificationRequired:
           requirements['emailVerificationRequired'] as bool? ?? false,
       loginRequired: requirements['loginRequired'] as bool? ?? false,

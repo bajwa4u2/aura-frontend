@@ -1513,8 +1513,6 @@ List<_InstEntry> _buildInstEntries(
       selectedIcon: Icons.videocam_rounded,
       pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/meetings' : null,
       pathMatcher: (p) =>
-          p == '/meetings' ||
-          p == '/meetings/new' ||
           p.startsWith('/meetings/') ||
           (p.startsWith('/institution/') && p.contains('/meetings')),
     ),

@@ -51,7 +51,6 @@ bool isMemberShellPath(String path) {
       // login / verify-email. Real meeting detail ids still gate normally.
       (RegExp(r'^/meetings/[^/]+$').hasMatch(path) &&
           path != '/meetings/join') ||
-      path == '/availability' ||
       // Institution onboarding/entry points — these require personal auth
       // before institution auth. NOTE: `/institutions` itself is *public*
       // discovery (the directory), so it must NOT be classified as a
