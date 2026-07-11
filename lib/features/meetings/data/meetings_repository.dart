@@ -5,6 +5,7 @@ import '../domain/meeting.dart';
 import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
 import '../domain/meeting_entry_resolution.dart';
+import '../domain/meeting_workspace.dart';
 
 class MeetingsRepository {
   MeetingsRepository(this._dio);
@@ -24,6 +25,7 @@ class MeetingsRepository {
     bool? recordingEnabled,
     bool? allowGuests,
     bool? guestApprovalRequired,
+    String? intent,
     // Ownership: a meeting created from an institution workspace belongs to
     // that institution end to end.
     String? organizationId,
@@ -37,6 +39,7 @@ class MeetingsRepository {
       data: {
         'title': title,
         if (description != null) 'description': description,
+        if (intent != null) 'intent': intent,
         'type': type,
         if (scheduledAt != null) 'scheduledAt': scheduledAt,
         if (durationMinutes != null) 'durationMinutes': durationMinutes,
@@ -87,6 +90,18 @@ class MeetingsRepository {
         .toList();
   }
 
+  Future<MeetingWorkspace> getWorkspace({String? institutionId}) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/workspace',
+      queryParameters: {
+        if (institutionId != null && institutionId.isNotEmpty)
+          'institutionId': institutionId,
+      },
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return MeetingWorkspace.fromJson(data);
+  }
+
   Future<Meeting> getMeeting(String id) async {
     final res = await _dio.get<Map<String, dynamic>>('/meetings/$id');
     final data = res.data!['data'] as Map<String, dynamic>;
@@ -104,7 +119,9 @@ class MeetingsRepository {
   }
 
   Future<List<MeetingOutcome>> getMeetingOutcomes(String meetingId) async {
-    final res = await _dio.get<Map<String, dynamic>>('/meetings/$meetingId/outcomes');
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/$meetingId/outcomes',
+    );
     final data = res.data?['data'];
     if (data is List) {
       return data
@@ -184,7 +201,8 @@ class MeetingsRepository {
     final data = presign.data!['data'] as Map<String, dynamic>;
     final asset = data['asset'] as Map<String, dynamic>;
     final uploadUrl = (data['uploadUrl'] ?? '').toString();
-    final headers = (data['uploadHeaders'] as Map?)?.map(
+    final headers =
+        (data['uploadHeaders'] as Map?)?.map(
           (k, v) => MapEntry(k.toString(), v.toString()),
         ) ??
         {'Content-Type': mimeType};
@@ -205,9 +223,7 @@ class MeetingsRepository {
 
     final confirm = await _dio.post<Map<String, dynamic>>(
       '/meetings/$meetingId/assets/${asset['id']}/confirm',
-      data: {
-        if (durationSeconds != null) 'durationSeconds': durationSeconds,
-      },
+      data: {if (durationSeconds != null) 'durationSeconds': durationSeconds},
     );
     return MeetingAsset.fromJson(confirm.data!['data'] as Map<String, dynamic>);
   }

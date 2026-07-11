@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../config.dart';
 import '../../institutions/ui/institution_ds.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
@@ -14,6 +15,7 @@ import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_identity.dart';
 import '../domain/meeting_room.dart';
+import '../domain/meeting_workspace.dart';
 import 'meeting_lifecycle_presenter.dart';
 import 'meeting_status_chip.dart';
 
@@ -49,11 +51,7 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
     final institutionId = widget.institutionId;
     // Always invalidate upcoming list when near-start window polling fires;
     // the check for ±30 min meetings happens implicitly after the refresh.
-    if (institutionId == null) {
-      ref.invalidate(upcomingMeetingsProvider);
-    } else {
-      ref.invalidate(institutionUpcomingMeetingsProvider(institutionId));
-    }
+    ref.invalidate(meetingWorkspaceProvider(institutionId));
   }
 
   @override
@@ -64,20 +62,11 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
     ref.listen(meetingStateChangedEventProvider, (_, next) {
       next.whenData((event) {
         ref.invalidate(meetingProvider(event.meetingId));
-        if (institutionId == null) {
-          ref.invalidate(upcomingMeetingsProvider);
-        } else {
-          ref.invalidate(institutionUpcomingMeetingsProvider(institutionId));
-        }
+        ref.invalidate(meetingWorkspaceProvider(institutionId));
       });
     });
 
-    final upcomingAsync = institutionId == null
-        ? ref.watch(upcomingMeetingsProvider)
-        : ref.watch(institutionUpcomingMeetingsProvider(institutionId));
-    final pastAsync = institutionId == null
-        ? ref.watch(pastMeetingsProvider)
-        : ref.watch(institutionPastMeetingsProvider(institutionId));
+    final workspaceAsync = ref.watch(meetingWorkspaceProvider(institutionId));
 
     return AuraScaffold(
       title: institutionId == null ? 'Meetings' : 'Institution meetings',
@@ -85,18 +74,16 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
         IconButton(
           icon: const Icon(Icons.add_rounded),
           tooltip: 'New meeting',
-          onPressed: () => context.push('/meetings/new'),
+          onPressed: () => context.push(
+            institutionId == null
+                ? '/meetings/new'
+                : '/institution/$institutionId/meetings/new',
+          ),
         ),
       ],
       body: RefreshIndicator(
         onRefresh: () async {
-          if (institutionId == null) {
-            ref.invalidate(upcomingMeetingsProvider);
-            ref.invalidate(pastMeetingsProvider);
-          } else {
-            ref.invalidate(institutionUpcomingMeetingsProvider(institutionId));
-            ref.invalidate(institutionPastMeetingsProvider(institutionId));
-          }
+          ref.invalidate(meetingWorkspaceProvider(institutionId));
         },
         child: ListView(
           padding: const EdgeInsets.all(AuraSpace.s16),
@@ -109,63 +96,19 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                   children: [
                     _HostHeader(institutionId: institutionId),
                     const SizedBox(height: AuraSpace.s20),
-                    upcomingAsync.when(
+                    workspaceAsync.when(
                       loading: () => const _LoadingPanel(
-                        message: 'Loading scheduled meetings...',
+                        message: 'Loading meeting workspace...',
                       ),
                       error: (e, _) => _ErrorPanel(
-                        message: 'Could not load scheduled meetings.',
+                        message: 'Could not load meeting workspace.',
                         detail: '$e',
                       ),
-                      data: (meetings) {
-                        final now = DateTime.now();
-                        // One list, one grammar: everything that is live or
-                        // ahead of you, today first. Booking-sourced meetings
-                        // are rows in the same list (their cards carry the
-                        // guest context), not a separate section.
-                        final active = meetings
-                            .where((m) => !m.isEnded)
-                            .toList(growable: false)
-                          ..sort((a, b) {
-                            final aToday = _isToday(a.scheduledAt, now) ? 0 : 1;
-                            final bToday = _isToday(b.scheduledAt, now) ? 0 : 1;
-                            if (aToday != bToday) return aToday - bToday;
-                            final aAt = a.scheduledAt ?? now;
-                            final bAt = b.scheduledAt ?? now;
-                            return aAt.compareTo(bAt);
-                          });
-
-                        return _MeetingSection(
-                          title: 'Happening & next',
-                          emptyTitle: 'Nothing scheduled',
-                          emptyBody:
-                              'Schedule a meeting, start one now, or share your booking page — everything ahead of you appears here.',
-                          meetings: active,
-                          institutionId: institutionId,
-                          highlightToday: true,
-                          compact: true,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: AuraSpace.s20),
-                    pastAsync.when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                      data: (meetings) => _CollapsibleMeetingSection(
-                        title: 'Archive',
-                        emptyTitle: 'No past meetings yet',
-                        emptyBody:
-                            'Completed and cancelled meetings appear here.',
-                        meetings: meetings.take(8).toList(growable: false),
+                      data: (workspace) => _WorkspaceBody(
+                        workspace: workspace,
                         institutionId: institutionId,
-                        compact: true,
-                        initiallyExpanded: false,
                       ),
                     ),
-                    const SizedBox(height: AuraSpace.s32),
-                    // Continuity: open follow-ups surface for BOTH scopes —
-                    // institution meetings and the member's own meetings.
-                    _OpenCommitmentsSection(institutionId: institutionId),
                     const SizedBox(height: AuraSpace.s32),
                   ],
                 ),
@@ -190,15 +133,14 @@ class _HostHeader extends ConsumerWidget {
     return InsModeHeader(
       title: 'Meetings',
       description:
-          'Your meetings — scheduled, live, and on the record.',
+          'Create, host, attend, and continue your institution\'s meetings.',
       primaryAction: Wrap(
         spacing: AuraSpace.s10,
         runSpacing: AuraSpace.s10,
         children: [
-          // Scheduling lives where meetings live — and keeps its owner.
-          OutlinedButton.icon(
-            icon: const Icon(Icons.event_rounded),
-            label: const Text('Schedule'),
+          FilledButton.icon(
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Create meeting'),
             onPressed: () => context.push(
               institutionId == null
                   ? '/meetings/new'
@@ -206,107 +148,18 @@ class _HostHeader extends ConsumerWidget {
             ),
           ),
           OutlinedButton.icon(
-            icon: const Icon(Icons.login_rounded),
-            label: const Text('Join by code'),
+            icon: const Icon(Icons.public_rounded),
+            label: const Text('Booking page'),
+            onPressed: () => context.push(
+              institutionId == null
+                  ? '/availability'
+                  : '/institution/$institutionId/availability',
+            ),
+          ),
+          IconButton.outlined(
+            icon: const Icon(Icons.tag_rounded),
+            tooltip: 'Join with code',
             onPressed: () => _showJoinDialog(context),
-          ),
-          FilledButton.icon(
-            icon: const Icon(Icons.video_call_rounded),
-            label: const Text('Start meeting'),
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              try {
-                final meeting = await ref
-                    .read(meetingsRepositoryProvider)
-                    .startInstantMeeting(organizationId: institutionId);
-                if (institutionId == null) {
-                  ref.invalidate(upcomingMeetingsProvider);
-                } else {
-                  ref.invalidate(
-                    institutionUpcomingMeetingsProvider(institutionId!),
-                  );
-                }
-                if (!context.mounted) return;
-                _showMeetingStarted(context, meeting);
-              } catch (e) {
-                messenger.showSnackBar(
-                  SnackBar(content: Text('Start meeting failed: $e')),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showMeetingStarted(BuildContext context, Meeting meeting) {
-    // Capture the messenger from the SCREEN context up front so the action
-    // handlers never call ScaffoldMessenger.of() on the dialog context after
-    // it has been popped (a dead-context lookup there throws and, mid-gesture,
-    // blanks the surface). Pops target the dialog's own context.
-    final messenger = ScaffoldMessenger.of(context);
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Meeting started'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('Share this meeting link with guests.'),
-            const SizedBox(height: AuraSpace.s12),
-            SelectableText(meeting.joinUrl),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              try {
-                Clipboard.setData(ClipboardData(text: meeting.joinUrl));
-                // Do NOT pop the dialog here. Closing it forced the host to
-                // re-tap "Start meeting" to reach "Enter room", which minted a
-                // SECOND instant session — so the host joined a different
-                // realtime session than the link the guest already had, and
-                // both sides waited forever. Keep the dialog open so the host
-                // copies the link AND enters the SAME session (meeting.id /
-                // meeting.sessionId).
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Meeting link copied')),
-                );
-              } catch (e) {
-                messenger.showSnackBar(
-                  SnackBar(content: Text('Copy link failed: $e')),
-                );
-              }
-            },
-            child: const Text('Copy meeting link'),
-          ),
-          FilledButton(
-            onPressed: () {
-              // Go STRAIGHT to the live room (deep-linkable with sessionId) —
-              // not the /room lobby. This makes the host's URL reloadable: a
-              // page refresh re-mounts the live room and rejoins the SAME
-              // session instead of bouncing to the workspace / forcing a new
-              // instant meeting. isHost=true is correct here (this user just
-              // created the instant meeting) and also fixes the "waiting for
-              // the host" label + host-only controls.
-              final base = institutionId == null
-                  ? '/meetings/${meeting.id}'
-                  : '/institution/$institutionId/meetings/${meeting.id}';
-              final route = meeting.sessionId != null
-                  ? '$base/live?sessionId=${meeting.sessionId}&isHost=true'
-                  : base;
-              try {
-                Navigator.pop(dialogContext);
-                context.push(route);
-              } catch (e) {
-                messenger.showSnackBar(
-                  SnackBar(content: Text('Enter room failed: $e')),
-                );
-              }
-            },
-            child: const Text('Enter room'),
           ),
         ],
       ),
@@ -355,114 +208,459 @@ class _HostHeader extends ConsumerWidget {
   }
 }
 
-class _MeetingSection extends StatelessWidget {
-  final String title;
-  final String emptyTitle;
-  final String emptyBody;
-  final List<Meeting> meetings;
+class _WorkspaceBody extends StatelessWidget {
+  final MeetingWorkspace workspace;
   final String? institutionId;
-  final bool compact;
-  final bool highlightToday;
 
-  const _MeetingSection({
+  const _WorkspaceBody({required this.workspace, this.institutionId});
+
+  @override
+  Widget build(BuildContext context) {
+    if (workspace.isEmpty) {
+      return _WorkspaceEmptyState(institutionId: institutionId);
+    }
+
+    final sections = <Widget>[
+      if (workspace.needsAttention.isNotEmpty)
+        _WorkspaceMeetingSection(
+          title: 'Needs attention',
+          items: workspace.needsAttention,
+          institutionId: institutionId,
+          highlight: true,
+        ),
+      if (workspace.todayAndNext.isNotEmpty)
+        _WorkspaceMeetingSection(
+          title: 'Today and next',
+          items: workspace.todayAndNext,
+          institutionId: institutionId,
+        ),
+      if (workspace.invitations.isNotEmpty)
+        _WorkspaceMeetingSection(
+          title: 'Invitations and requests',
+          items: workspace.invitations,
+          institutionId: institutionId,
+        ),
+      _BookingWorkspaceSection(
+        booking: workspace.booking,
+        institutionId: institutionId,
+      ),
+      if (workspace.followUp.isNotEmpty)
+        _FollowUpWorkspaceSection(
+          outcomes: workspace.followUp,
+          institutionId: institutionId,
+        ),
+      if (workspace.past.isNotEmpty)
+        _PastWorkspaceSection(
+          items: workspace.past,
+          institutionId: institutionId,
+        ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < sections.length; i++) ...[
+          sections[i],
+          if (i != sections.length - 1) const SizedBox(height: AuraSpace.s20),
+        ],
+      ],
+    );
+  }
+}
+
+class _WorkspaceEmptyState extends StatelessWidget {
+  final String? institutionId;
+
+  const _WorkspaceEmptyState({this.institutionId});
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'No meeting operations yet',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'Create a meeting, publish a booking page, or accept an invitation.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF)),
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              FilledButton.icon(
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Create meeting'),
+                onPressed: () => context.push(
+                  institutionId == null
+                      ? '/meetings/new'
+                      : '/institution/$institutionId/meetings/new',
+                ),
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.public_rounded),
+                label: const Text('Booking page'),
+                onPressed: () => context.push(
+                  institutionId == null
+                      ? '/availability'
+                      : '/institution/$institutionId/availability',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkspaceMeetingSection extends StatelessWidget {
+  final String title;
+  final List<MeetingWorkspaceItem> items;
+  final String? institutionId;
+  final bool highlight;
+
+  const _WorkspaceMeetingSection({
     required this.title,
-    required this.emptyTitle,
-    required this.emptyBody,
-    required this.meetings,
+    required this.items,
     this.institutionId,
-    this.compact = false,
-    this.highlightToday = false,
+    this.highlight = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return InsSection(
       title: title,
-      child: meetings.isEmpty
-          ? _EmptyState(title: emptyTitle, body: emptyBody)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < meetings.length; i++) ...[
-                  _MeetingCard(
-                    meeting: meetings[i],
-                    institutionId: institutionId,
-                    compact: compact,
-                    highlight: highlightToday,
-                  ),
-                  if (i != meetings.length - 1)
-                    const SizedBox(height: InsSpacing.cardGap),
-                ],
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            _WorkspaceMeetingCard(
+              item: items[i],
+              institutionId: institutionId,
+              highlight: highlight || items[i].startsSoon,
             ),
+            if (i != items.length - 1)
+              const SizedBox(height: InsSpacing.cardGap),
+          ],
+        ],
+      ),
     );
   }
 }
 
-class _CollapsibleMeetingSection extends StatelessWidget {
-  final String title;
-  final String emptyTitle;
-  final String emptyBody;
-  final List<Meeting> meetings;
+class _WorkspaceMeetingCard extends StatelessWidget {
+  final MeetingWorkspaceItem item;
   final String? institutionId;
-  final bool compact;
-  final bool initiallyExpanded;
+  final bool highlight;
 
-  const _CollapsibleMeetingSection({
-    required this.title,
-    required this.emptyTitle,
-    required this.emptyBody,
-    required this.meetings,
+  const _WorkspaceMeetingCard({
+    required this.item,
     this.institutionId,
-    this.compact = false,
-    this.initiallyExpanded = false,
+    this.highlight = false,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s6,
+          children: [
+            _StatePill(
+              label: item.relationship.label,
+              color: const Color(0xFF6C63FF),
+            ),
+            if (item.pendingGuestCount > 0)
+              _StatePill(
+                label: '${item.pendingGuestCount} guest waiting',
+                color: const Color(0xFFF59E0B),
+              ),
+            if (item.startsSoon)
+              const _StatePill(
+                label: 'Starting soon',
+                color: Color(0xFF10B981),
+              ),
+            if (item.needsFollowUp)
+              const _StatePill(
+                label: 'Follow-up needed',
+                color: Color(0xFF38BDF8),
+              ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        _MeetingCard(
+          meeting: item.meeting,
+          institutionId: institutionId,
+          compact: true,
+          highlight: highlight,
+        ),
+      ],
+    );
+  }
+}
+
+class _BookingWorkspaceSection extends StatelessWidget {
+  final MeetingWorkspaceBooking booking;
+  final String? institutionId;
+
+  const _BookingWorkspaceSection({required this.booking, this.institutionId});
+
+  @override
+  Widget build(BuildContext context) {
+    final managePath = institutionId == null
+        ? '/availability'
+        : '/institution/$institutionId/availability';
+
+    return InsSection(
+      title: 'Booking',
+      child: AuraCard(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.public_rounded, size: 20),
+                const SizedBox(width: AuraSpace.s8),
+                Expanded(
+                  child: Text(
+                    booking.profiles.isEmpty
+                        ? 'Booking not configured'
+                        : '${booking.activeCount} active booking page${booking.activeCount == 1 ? '' : 's'}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.tune_rounded, size: 18),
+                  label: const Text('Manage'),
+                  onPressed: () => context.push(managePath),
+                ),
+              ],
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            Text(
+              booking.profiles.isEmpty
+                  ? 'Set availability and publish a meeting offering to receive bookings.'
+                  : booking.incompleteCount > 0
+                  ? '${booking.incompleteCount} page${booking.incompleteCount == 1 ? '' : 's'} need availability or offerings before public use.'
+                  : 'Public booking pages are ready to create governed meeting participation.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF)),
+            ),
+            if (booking.profiles.isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s14),
+              for (final profile in booking.profiles.take(3)) ...[
+                _BookingProfileRow(profile: profile),
+                if (profile != booking.profiles.take(3).last)
+                  const Divider(height: AuraSpace.s18),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingProfileRow extends StatelessWidget {
+  final MeetingWorkspaceBookingProfile profile;
+
+  const _BookingProfileRow({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final publicUrl = '${AppConfig.publicWebUrl}${profile.publicUrl}';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: AuraSpace.s8,
+                runSpacing: AuraSpace.s6,
+                children: [
+                  Text(
+                    profile.name,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  _StatePill(
+                    label: profile.statusLabel,
+                    color: profile.status == 'ACTIVE'
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFF59E0B),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s4),
+              Text(
+                [
+                  if (profile.assignedHost?.displayName.isNotEmpty == true)
+                    'Host: ${profile.assignedHost!.displayName}',
+                  '${profile.defaultDuration} min',
+                  '${profile.windowsCount} availability window${profile.windowsCount == 1 ? '' : 's'}',
+                ].join(' · '),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: const Color(0xFF9CA3AF),
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Copy public booking link',
+          icon: const Icon(Icons.copy_rounded, size: 18),
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: publicUrl));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Booking link copied')),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _FollowUpWorkspaceSection extends StatelessWidget {
+  final List<MeetingOutcome> outcomes;
+  final String? institutionId;
+
+  const _FollowUpWorkspaceSection({required this.outcomes, this.institutionId});
+
+  @override
+  Widget build(BuildContext context) {
+    return InsSection(
+      title: 'Follow-up',
+      child: AuraCard(
+        padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+        child: Column(
+          children: [
+            for (final outcome in outcomes.take(6))
+              _FollowUpRow(outcome: outcome, institutionId: institutionId),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FollowUpRow extends ConsumerWidget {
+  final MeetingOutcome outcome;
+  final String? institutionId;
+
+  const _FollowUpRow({required this.outcome, this.institutionId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s14,
+        vertical: AuraSpace.s10,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.task_alt_rounded,
+            size: 18,
+            color: Color(0xFF86EFAC),
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(
+              outcome.text,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFFE5E7EB)),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Mark complete',
+            icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+            onPressed: () async {
+              await ref
+                  .read(meetingsRepositoryProvider)
+                  .updateOutcome(outcome.id, status: 'COMPLETED');
+              ref.invalidate(meetingWorkspaceProvider(institutionId));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PastWorkspaceSection extends StatelessWidget {
+  final List<MeetingWorkspaceItem> items;
+  final String? institutionId;
+
+  const _PastWorkspaceSection({required this.items, this.institutionId});
 
   @override
   Widget build(BuildContext context) {
     return AuraCard(
       padding: EdgeInsets.zero,
       child: ExpansionTile(
-        initiallyExpanded: initiallyExpanded,
+        initiallyExpanded: false,
         shape: const Border(),
         collapsedShape: const Border(),
-        tilePadding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s18,
-          vertical: AuraSpace.s4,
-        ),
-        childrenPadding: const EdgeInsets.only(
-          left: AuraSpace.s18,
-          right: AuraSpace.s18,
-          bottom: AuraSpace.s18,
-          top: InsSpacing.cardGap,
-        ),
-        collapsedIconColor: const Color(0xFF9CA3AF),
-        iconColor: const Color(0xFF9CA3AF),
-        title: Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-        ),
+        title: const Text('Past'),
+        childrenPadding: const EdgeInsets.all(AuraSpace.s16),
         children: [
-          meetings.isEmpty
-              ? _EmptyState(title: emptyTitle, body: emptyBody)
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var i = 0; i < meetings.length; i++) ...[
-                      _MeetingCard(
-                        meeting: meetings[i],
-                        institutionId: institutionId,
-                        compact: compact,
-                        highlight: false,
-                      ),
-                      if (i != meetings.length - 1)
-                        const SizedBox(height: InsSpacing.cardGap),
-                    ],
-                  ],
-                ),
+          for (var i = 0; i < items.length; i++) ...[
+            _WorkspaceMeetingCard(item: items[i], institutionId: institutionId),
+            if (i != items.length - 1)
+              const SizedBox(height: InsSpacing.cardGap),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _StatePill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatePill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.42)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }
@@ -491,7 +689,9 @@ class _MeetingCard extends ConsumerWidget {
     // workspace that owns it) or PARTICIPATES in it (booked or attended).
     // The card renders truthfully for each — participation never surfaces
     // host controls, and hosting never loses them.
-    final myId = ref.watch(authMeDataProvider).maybeWhen(
+    final myId = ref
+        .watch(authMeDataProvider)
+        .maybeWhen(
           data: (me) {
             final u = me['user'];
             return (u is Map ? (u['id'] ?? '') : (me['id'] ?? ''))
@@ -500,7 +700,8 @@ class _MeetingCard extends ConsumerWidget {
           },
           orElse: () => '',
         );
-    final operates = institutionId != null ||
+    final operates =
+        institutionId != null ||
         (myId.isNotEmpty && myId == (meeting.host?.id ?? ''));
     final myParticipation = myId.isEmpty
         ? null
@@ -511,13 +712,13 @@ class _MeetingCard extends ConsumerWidget {
     final bookerIdentity = booking?.bookerIdentity;
     final guestName = operates
         ? (bookerIdentity?.displayName ??
-            booking?.bookerName ??
-            _guestParticipant?.displayName)
+              booking?.bookerName ??
+              _guestParticipant?.displayName)
         : null;
     final guestEmail = operates
         ? (bookerIdentity?.email ??
-            booking?.bookerEmail ??
-            _guestParticipant?.guestEmail)
+              booking?.bookerEmail ??
+              _guestParticipant?.guestEmail)
         : null;
     // The participant's anchor is who they are meeting WITH — the hosting
     // institution (owner) or the host — not their own booking identity.
@@ -761,6 +962,7 @@ class _MeetingCard extends ConsumerWidget {
           .read(meetingsRepositoryProvider)
           .respondToMeeting(meeting.id, accepted ? 'ACCEPTED' : 'DECLINED');
       ref.invalidate(meetingProvider(meeting.id));
+      ref.invalidate(meetingWorkspaceProvider(institutionId));
       ref.invalidate(upcomingMeetingsProvider);
       ref.invalidate(pastMeetingsProvider);
       messenger.showSnackBar(
@@ -786,6 +988,7 @@ class _MeetingCard extends ConsumerWidget {
           .read(meetingsRepositoryProvider)
           .startMeeting(meeting.id);
       ref.invalidate(meetingProvider(meeting.id));
+      ref.invalidate(meetingWorkspaceProvider(institutionId));
       if (institutionId == null) {
         ref.invalidate(upcomingMeetingsProvider);
       } else {
@@ -845,6 +1048,7 @@ class _MeetingCard extends ConsumerWidget {
     try {
       await ref.read(meetingsRepositoryProvider).cancelMeeting(meeting.id);
       ref.invalidate(meetingProvider(meeting.id));
+      ref.invalidate(meetingWorkspaceProvider(institutionId));
       if (institutionId == null) {
         ref.invalidate(upcomingMeetingsProvider);
         ref.invalidate(pastMeetingsProvider);
@@ -893,16 +1097,18 @@ class _PendingAttachmentBanner extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.event_available_rounded,
-                    size: 18, color: color),
+                const Icon(
+                  Icons.event_available_rounded,
+                  size: 18,
+                  color: color,
+                ),
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
                   child: Text(
                     'This meeting was booked with your email. Keep it in your meetings?',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: const Color(0xFFE2ECF5)),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFFE2ECF5),
+                    ),
                   ),
                 ),
               ],
@@ -1183,14 +1389,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-bool _isToday(DateTime? date, DateTime now) {
-  if (date == null) return false;
-  final local = date.toLocal();
-  return local.year == now.year &&
-      local.month == now.month &&
-      local.day == now.day;
-}
-
 String _scheduledLabel(BuildContext context, Meeting meeting) {
   final scheduled = meeting.scheduledAt;
   if (scheduled == null) return 'Instant meeting';
@@ -1199,152 +1397,6 @@ String _scheduledLabel(BuildContext context, Meeting meeting) {
   final date = localizations.formatMediumDate(local);
   final time = TimeOfDay.fromDateTime(local).format(context);
   return '$date at $time';
-}
-
-class _OpenCommitmentsSection extends ConsumerWidget {
-  /// Institution scope when set; personal scope (my meetings) when null.
-  final String? institutionId;
-  const _OpenCommitmentsSection({this.institutionId});
-
-  Future<void> _markComplete(WidgetRef ref, MeetingOutcome o) async {
-    try {
-      await ref
-          .read(meetingsRepositoryProvider)
-          .updateOutcome(o.id, status: 'COMPLETED');
-    } catch (_) {}
-    if (institutionId != null) {
-      ref.invalidate(institutionOpenOutcomesProvider(institutionId!));
-    } else {
-      ref.invalidate(myOpenOutcomesProvider);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final outcomesAsync = institutionId != null
-        ? ref.watch(institutionOpenOutcomesProvider(institutionId!))
-        : ref.watch(myOpenOutcomesProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Open commitments',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFFE5E7EB),
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        outcomesAsync.when(
-          loading: () => const SizedBox(
-            height: 40,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (outcomes) {
-            if (outcomes.isEmpty) {
-              return AuraCard(
-                padding: const EdgeInsets.all(AuraSpace.s16),
-                child: Text(
-                  'No open commitments across meetings.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF9CA3AF),
-                  ),
-                ),
-              );
-            }
-            return AuraCard(
-              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
-              child: Column(
-                children: outcomes.map((o) {
-                  final typeLabel = switch (o.type.toUpperCase()) {
-                    'COMMITMENT' => 'Commitment',
-                    'ACTION'     => 'Action',
-                    'DECISION'   => 'Decision',
-                    'ISSUE'      => 'Issue',
-                    'FOLLOW_UP'  => 'Follow-up',
-                    _            => o.type,
-                  };
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s10,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          margin: const EdgeInsets.only(right: 8, top: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1C2B1F),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            typeLabel,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: const Color(0xFF86EFAC),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                o.text,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: const Color(0xFFE5E7EB),
-                                ),
-                              ),
-                              if (o.ownerName != null || o.dueDate != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text(
-                                    [
-                                      if (o.ownerName != null) o.ownerName!,
-                                      if (o.dueDate != null)
-                                        'Due ${o.dueDate!.toLocal().toString().split(' ').first}',
-                                    ].join(' · '),
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: const Color(0xFF6B7280),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _markComplete(ref, o),
-                          child: const Padding(
-                            padding: EdgeInsets.only(left: 8, top: 1),
-                            child: Tooltip(
-                              message: 'Mark complete',
-                              child: Icon(
-                                Icons.check_circle_outline_rounded,
-                                size: 18,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
 }
 
 String? _sourceLabel(Meeting meeting) {

@@ -10,12 +10,16 @@ import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
 import '../domain/meeting_entry_resolution.dart';
 import '../domain/meeting_identity.dart';
+import '../domain/meeting_workspace.dart';
 import '../../realtime/application/realtime_providers.dart';
 
 class MeetingStateChangedEvent {
   final String meetingId;
   final String state;
-  const MeetingStateChangedEvent({required this.meetingId, required this.state});
+  const MeetingStateChangedEvent({
+    required this.meetingId,
+    required this.state,
+  });
 }
 
 final meetingStateChangedEventProvider =
@@ -23,10 +27,12 @@ final meetingStateChangedEventProvider =
       final socket = ref.watch(realtimeSocketServiceProvider);
       return socket.events
           .where((e) => e.name == 'meeting.state_changed')
-          .map((e) => MeetingStateChangedEvent(
-                meetingId: e.payload['meetingId'] as String? ?? '',
-                state: e.payload['state'] as String? ?? '',
-              ))
+          .map(
+            (e) => MeetingStateChangedEvent(
+              meetingId: e.payload['meetingId'] as String? ?? '',
+              state: e.payload['state'] as String? ?? '',
+            ),
+          )
           .where((e) => e.meetingId.isNotEmpty);
     });
 
@@ -37,6 +43,15 @@ final meetingsRepositoryProvider = Provider<MeetingsRepository>((ref) {
 final availabilityRepositoryProvider = Provider<AvailabilityRepository>((ref) {
   return AvailabilityRepository(ref.watch(dioProvider));
 });
+
+final meetingWorkspaceProvider =
+    FutureProvider.family<MeetingWorkspace, String?>((
+      ref,
+      institutionId,
+    ) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      return repo.getWorkspace(institutionId: institutionId);
+    });
 
 // Upcoming meetings for the home screen
 final upcomingMeetingsProvider = FutureProvider<List<Meeting>>((ref) async {
@@ -87,11 +102,12 @@ final meetingOutcomesProvider =
 
 // Establishment Pass — meeting assets (materials, shared files, recordings).
 // Works for members AND guests (guest tokens see guest-visible READY assets).
-final meetingAssetsProvider =
-    FutureProvider.family<List<MeetingAsset>, String>((ref, meetingId) async {
-      final repo = ref.watch(meetingsRepositoryProvider);
-      return repo.listAssets(meetingId);
-    });
+final meetingAssetsProvider = FutureProvider.family<List<MeetingAsset>, String>(
+  (ref, meetingId) async {
+    final repo = ref.watch(meetingsRepositoryProvider);
+    return repo.listAssets(meetingId);
+  },
+);
 
 // Phase 4 — Meeting Conversation Stream transcript (member/host post-meeting
 // read; guests receive the live stream over the realtime socket instead).
@@ -115,7 +131,10 @@ final myOpenOutcomesProvider = FutureProvider<List<MeetingOutcome>>((
 });
 
 final institutionOpenOutcomesProvider =
-    FutureProvider.family<List<MeetingOutcome>, String>((ref, institutionId) async {
+    FutureProvider.family<List<MeetingOutcome>, String>((
+      ref,
+      institutionId,
+    ) async {
       final repo = ref.watch(meetingsRepositoryProvider);
       return repo.getInstitutionOutcomes(institutionId, status: 'OPEN');
     });
@@ -158,19 +177,19 @@ class MeetingEntryKey {
 
 final meetingEntryResolutionProvider =
     FutureProvider.family<MeetingEntryResolution, MeetingEntryKey>((
-  ref,
-  key,
-) async {
-  final repo = ref.watch(meetingsRepositoryProvider);
-  final isMember = ref.watch(tokenStoreProvider).isMemberSession;
-  return repo.resolveMeetingEntry(
-    key.code,
-    bookerToken: key.bookerToken,
-    invitationToken: key.invitationToken,
-    guestSessionId: key.guestSessionId,
-    asMember: isMember,
-  );
-});
+      ref,
+      key,
+    ) async {
+      final repo = ref.watch(meetingsRepositoryProvider);
+      final isMember = ref.watch(tokenStoreProvider).isMemberSession;
+      return repo.resolveMeetingEntry(
+        key.code,
+        bookerToken: key.bookerToken,
+        invitationToken: key.invitationToken,
+        guestSessionId: key.guestSessionId,
+        asMember: isMember,
+      );
+    });
 
 // Meeting context for guest deep-links that arrive without a ?code= param.
 // Requires a valid guest JWT in the token store; the backend validates the
@@ -317,11 +336,14 @@ class InstitutionProfileBookingsKey {
   int get hashCode => Object.hash(institutionId, profileId);
 }
 
-final institutionProfileBookingsProvider = FutureProvider.family<
-    List<Map<String, dynamic>>, InstitutionProfileBookingsKey>((
-  ref,
-  key,
-) async {
-  final repo = ref.watch(availabilityRepositoryProvider);
-  return repo.listInstitutionProfileBookings(key.institutionId, key.profileId);
-});
+final institutionProfileBookingsProvider =
+    FutureProvider.family<
+      List<Map<String, dynamic>>,
+      InstitutionProfileBookingsKey
+    >((ref, key) async {
+      final repo = ref.watch(availabilityRepositoryProvider);
+      return repo.listInstitutionProfileBookings(
+        key.institutionId,
+        key.profileId,
+      );
+    });
