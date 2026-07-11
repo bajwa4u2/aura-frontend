@@ -10,7 +10,7 @@ publish_to: "none"
 # X.Y.Z parts of `version` and zero out the build component to satisfy
 # the store rule. A pre-build script could enforce this automatically;
 # for now it's a manual sync.
-version: 1.2.1+21
+version: 1.2.2+22
 
 environment:
   sdk: ^3.10.8
@@ -167,7 +167,7 @@ msix_config:
   # 2026-06-24 bump (1.2.1.0): fix handle validation mismatch — frontend
   # now enforces lowercase-only [a-z0-9_] max 24 chars matching backend DTO,
   # eliminating the "Registration failed" error on valid handles.
-  msix_version: 1.2.1.0
+  msix_version: 1.2.2.0
   description: "Aura — institution operating infrastructure: the system an institution runs its public and member-facing life on."
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png

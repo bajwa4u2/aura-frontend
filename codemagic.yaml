@@ -81,7 +81,7 @@ workflows:
         # /Users/builder/export_options.plist for `flutter build ipa`.
         script: xcode-project use-profiles
       - name: Build signed IPA
-        # Build name / number come from pubspec.yaml `version:` (currently 1.2.1+21).
+        # Build name / number come from pubspec.yaml `version:` (currently 1.2.2+22).
         # For repeat uploads either bump pubspec.yaml or switch to
         # auto-increment, e.g.:
         #   --build-number=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID")
