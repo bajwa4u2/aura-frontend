@@ -55,7 +55,7 @@ class CompactProfileHero extends StatelessWidget {
   /// actions render filled; the rest render outlined.
   final List<PresenceHeaderAction> actions;
 
-  static const double _coverHeight = 116;
+  static const double _coverAspectRatio = 3;
   static const double _avatarSize = 84;
 
   @override
@@ -80,7 +80,7 @@ class CompactProfileHero extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  _cover(),
+                  _cover(width: constraints.maxWidth),
                   Positioned(
                     left: isNarrow ? AuraSpace.s18 : AuraSpace.s24,
                     bottom: -(_avatarSize / 2),
@@ -178,10 +178,11 @@ class CompactProfileHero extends StatelessWidget {
     );
   }
 
-  Widget _cover() {
+  Widget _cover({required double width}) {
     final url = coverUrl.trim();
+    final coverHeight = width / _coverAspectRatio;
     return SizedBox(
-      height: _coverHeight,
+      height: coverHeight,
       width: double.infinity,
       child: url.isEmpty
           ? const DecoratedBox(
@@ -295,7 +296,10 @@ class CompactProfileHero extends StatelessWidget {
     }
 
     return expand
-        ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widgets)
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: widgets,
+          )
         : Row(mainAxisSize: MainAxisSize.min, children: widgets);
   }
 
@@ -313,8 +317,9 @@ class CompactProfileHero extends StatelessWidget {
             horizontal: AuraSpace.s16,
             vertical: AuraSpace.s12,
           ),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
         ),
       );
     }
