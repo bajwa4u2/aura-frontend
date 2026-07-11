@@ -5,7 +5,6 @@ import '../domain/meeting.dart';
 import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
 import '../domain/meeting_entry_resolution.dart';
-import '../domain/meeting_workspace.dart';
 
 class MeetingsRepository {
   MeetingsRepository(this._dio);
@@ -29,10 +28,12 @@ class MeetingsRepository {
     // Ownership: a meeting created from an institution workspace belongs to
     // that institution end to end.
     String? organizationId,
-    // GOVERNANCE V1 — explicit meeting audience (PUBLIC/GUEST/INSTITUTION/
-    // SELECTED/PRIVATE). When SELECTED, [audienceTargets] carries the cohort.
     String? audience,
     List<Map<String, dynamic>>? audienceTargets,
+    List<String>? participantUserIds,
+    bool? includeAllMembers,
+    bool? hostOnly,
+    List<Map<String, dynamic>>? externalInvitees,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/meetings',
@@ -55,6 +56,12 @@ class MeetingsRepository {
         if (audience != null) 'audience': audience,
         if (audienceTargets != null && audienceTargets.isNotEmpty)
           'audienceTargets': audienceTargets,
+        if (participantUserIds != null && participantUserIds.isNotEmpty)
+          'participantUserIds': participantUserIds,
+        if (includeAllMembers != null) 'includeAllMembers': includeAllMembers,
+        if (hostOnly != null) 'hostOnly': hostOnly,
+        if (externalInvitees != null && externalInvitees.isNotEmpty)
+          'externalInvitees': externalInvitees,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;
@@ -88,18 +95,6 @@ class MeetingsRepository {
     return list
         .map((m) => Meeting.fromJson(m as Map<String, dynamic>))
         .toList();
-  }
-
-  Future<MeetingWorkspace> getWorkspace({String? institutionId}) async {
-    final res = await _dio.get<Map<String, dynamic>>(
-      '/meetings/workspace',
-      queryParameters: {
-        if (institutionId != null && institutionId.isNotEmpty)
-          'institutionId': institutionId,
-      },
-    );
-    final data = res.data!['data'] as Map<String, dynamic>;
-    return MeetingWorkspace.fromJson(data);
   }
 
   Future<Meeting> getMeeting(String id) async {

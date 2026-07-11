@@ -851,11 +851,11 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       widget.institutionId ?? _owningInstitutionId;
 
   String get _summaryPath => _exitInstitutionId == null
-      ? '/meetings/${widget.meetingId}/summary'
+      ? '/home'
       : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/summary';
 
   String get _workspacePath => _exitInstitutionId == null
-      ? '/meetings/${widget.meetingId}/post-meeting'
+      ? '/home'
       : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/post-meeting';
 
   Future<void> _endMeeting() async {
@@ -983,8 +983,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       context.pop();
     } else {
       context.go(
-        _exitInstitutionId == null
-            ? '/meetings/${widget.meetingId}'
+          _exitInstitutionId == null
+            ? '/home'
             : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}',
       );
     }
@@ -1003,7 +1003,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         if (!context.mounted) return;
         context.go(
           widget.institutionId == null
-              ? '/meetings/${widget.meetingId}'
+              ? '/home'
               : '/institution/${widget.institutionId}/meetings/${widget.meetingId}',
         );
       });

@@ -80,16 +80,6 @@ class MemberShell extends StatelessWidget {
       selectedIcon: Icons.mail_rounded,
       path: '/messages',
     ),
-    // Participant continuity: every member has a personal meeting inventory
-    // (booked, attended, hosted) — the entry point back into each meeting
-    // relationship. Institution-owned meetings stay owned by the institution;
-    // this is the participant's own view of them.
-    _NavItem(
-      label: 'Meetings',
-      icon: Icons.videocam_outlined,
-      selectedIcon: Icons.videocam_rounded,
-      path: '/meetings',
-    ),
     _NavItem(
       label: 'Create',
       icon: Icons.add_rounded,
@@ -131,16 +121,13 @@ class MemberShell extends StatelessWidget {
         path == '/conversations') {
       return 1;
     }
-    // Personal meeting surfaces only — institution meeting paths live in the
-    // Institution Workspace shell, never highlighted here.
-    if (path == '/meetings' || path.startsWith('/meetings/')) return 2;
     if (path == '/create' ||
         path == '/compose' ||
         path == '/announcements/create') {
-      return 3;
+      return 2;
     }
-    if (path == '/institutions' || path.startsWith('/institutions/')) return 4;
-    if (path.startsWith('/support')) return 5;
+    if (path == '/institutions' || path.startsWith('/institutions/')) return 3;
+    if (path.startsWith('/support')) return 4;
     return -1;
   }
 

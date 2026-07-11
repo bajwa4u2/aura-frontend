@@ -10,7 +10,6 @@ import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
 import '../domain/meeting_entry_resolution.dart';
 import '../domain/meeting_identity.dart';
-import '../domain/meeting_workspace.dart';
 import '../../realtime/application/realtime_providers.dart';
 
 class MeetingStateChangedEvent {
@@ -43,15 +42,6 @@ final meetingsRepositoryProvider = Provider<MeetingsRepository>((ref) {
 final availabilityRepositoryProvider = Provider<AvailabilityRepository>((ref) {
   return AvailabilityRepository(ref.watch(dioProvider));
 });
-
-final meetingWorkspaceProvider =
-    FutureProvider.family<MeetingWorkspace, String?>((
-      ref,
-      institutionId,
-    ) async {
-      final repo = ref.watch(meetingsRepositoryProvider);
-      return repo.getWorkspace(institutionId: institutionId);
-    });
 
 // Upcoming meetings for the home screen
 final upcomingMeetingsProvider = FutureProvider<List<Meeting>>((ref) async {

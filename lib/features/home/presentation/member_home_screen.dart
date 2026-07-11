@@ -697,11 +697,11 @@ class _HeldDraftHint extends StatelessWidget {
 }
 
 
-/// Participant continuity — the member's next meeting, surfaced where they
-/// land. Shows the single nearest live-or-upcoming meeting (booked, attended,
-/// or hosted) with a truthful action: join when live, open the record
-/// otherwise. Self-hides while loading, on error, or when nothing is ahead —
-/// a quiet day costs no vertical space.
+/// Participant continuity — the member's next participation item, surfaced
+/// where they land. Shows the single nearest live-or-upcoming meeting
+/// (booked, attended, or hosted) with a truthful action: join when live,
+/// open the record otherwise. Self-hides while loading, on error, or when
+/// nothing is ahead — a quiet day costs no vertical space.
 class _NextMeetingSection extends ConsumerWidget {
   const _NextMeetingSection();
 
@@ -761,7 +761,7 @@ class _NextMeetingCard extends StatelessWidget {
     return AuraCard(
       child: InkWell(
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        onTap: () => context.push('/meetings/${meeting.id}'),
+        onTap: () => context.push(_meetingPath),
         child: Padding(
           padding: const EdgeInsets.all(AuraSpace.s14),
           child: Row(
@@ -787,7 +787,7 @@ class _NextMeetingCard extends StatelessWidget {
                     Text(
                       isLive
                           ? 'Live now · ${_timeLabel(context)}'
-                          : 'Next meeting · ${_timeLabel(context)}',
+                          : 'Upcoming participation · ${_timeLabel(context)}',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: accent,
                             fontWeight: FontWeight.w800,
@@ -825,7 +825,7 @@ class _NextMeetingCard extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   backgroundColor: isLive ? accent : null,
                 ),
-                onPressed: () => context.push('/meetings/${meeting.id}'),
+                onPressed: () => context.push(_meetingPath),
                 child: Text(isLive ? 'Join' : 'Open'),
               ),
             ],
@@ -833,5 +833,13 @@ class _NextMeetingCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String get _meetingPath {
+    final institutionId = meeting.owningInstitutionId?.trim() ?? '';
+    if (institutionId.isNotEmpty) {
+      return '/institution/$institutionId/meetings/${meeting.id}';
+    }
+    return '/home';
   }
 }

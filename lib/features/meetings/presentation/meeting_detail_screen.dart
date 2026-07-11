@@ -166,7 +166,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
   String? get _resolvedInstitutionId =>
       widget.institutionId ?? meeting.owningInstitutionId;
   String get _liveBasePath => _resolvedInstitutionId == null
-      ? '/meetings/${meeting.id}/live'
+      ? '/home'
       : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/live';
 
   void _enterRoom({String? sessionId}) {
@@ -423,7 +423,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
       _invalidateLists();
       if (!mounted) return;
       final listPath = _resolvedInstitutionId == null
-          ? '/meetings'
+          ? '/home'
           : '/institution/$_resolvedInstitutionId/meetings';
       router.go(listPath);
     } catch (e) {
@@ -486,7 +486,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
             ? context.pop()
             : context.go(
                 _resolvedInstitutionId == null
-                    ? '/meetings'
+                    ? '/home'
                     : '/institution/$_resolvedInstitutionId/meetings',
               ),
       ),

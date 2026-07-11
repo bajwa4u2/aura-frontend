@@ -44,7 +44,7 @@ class _KeepMeetingScreenState extends ConsumerState<KeepMeetingScreen> {
   Future<void> _attach() async {
     final token = (widget.bookerToken ?? '').trim();
     if (token.isEmpty) {
-      if (mounted) context.go('/meetings');
+      if (mounted) context.go('/home');
       return;
     }
 
@@ -67,7 +67,11 @@ class _KeepMeetingScreenState extends ConsumerState<KeepMeetingScreen> {
       ref.invalidate(upcomingMeetingsProvider);
       ref.invalidate(pastMeetingsProvider);
       if (!mounted) return;
-      context.go('/meetings/${meeting.id}');
+      final institutionId = meeting.owningInstitutionId?.trim() ?? '';
+      final target = institutionId.isNotEmpty
+          ? '/institution/$institutionId/meetings/${meeting.id}'
+          : '/home';
+      context.go(target);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -122,8 +126,8 @@ class _KeepMeetingScreenState extends ConsumerState<KeepMeetingScreen> {
                             onPressed: () => context.go(_joinPath),
                           ),
                           OutlinedButton(
-                            onPressed: () => context.go('/meetings'),
-                            child: const Text('Your meetings'),
+                            onPressed: () => context.go('/home'),
+                            child: const Text('Go home'),
                           ),
                         ],
                       ),

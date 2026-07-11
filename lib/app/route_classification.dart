@@ -46,9 +46,6 @@ bool isMemberShellPath(String path) {
       path == '/me/correspondence/create/conversation' ||
       path == '/me/correspondence/create/space' ||
       path.startsWith('/me/correspondence/') ||
-      // Meetings platform
-      path == '/meetings' ||
-      path == '/meetings/new' ||
       // `/meetings/join` (codeless legacy links) is a PUBLIC guest recovery
       // route — exclude it from member gating so guests are never bounced to
       // login / verify-email. Real meeting detail ids still gate normally.

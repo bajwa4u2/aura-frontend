@@ -456,12 +456,16 @@ class _ConfirmationView extends ConsumerWidget {
                     const SizedBox(height: AuraSpace.s12),
                     TextButton.icon(
                       icon: const Icon(Icons.event_available_rounded),
-                      label: const Text('View in your meetings'),
+                      label: const Text('View meeting'),
                       onPressed: () {
                         // The booking just attached server-side — refresh the
                         // cached inventory before landing on it.
                         ref.invalidate(upcomingMeetingsProvider);
-                        context.go('/meetings');
+                        final institutionId = institution?.id.trim() ?? '';
+                        final target = institutionId.isNotEmpty
+                            ? '/institution/$institutionId/meetings/${confirmation.meetingId}'
+                            : '/home';
+                        context.go(target);
                       },
                     ),
                   ],

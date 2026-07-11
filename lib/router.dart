@@ -953,7 +953,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/meetings/new',
-            builder: (_, __) => const CreateMeetingScreen(),
+            builder: (context, state) => CreateMeetingScreen(
+              startNow: state.uri.queryParameters['instant'] == '1' ||
+                  state.uri.queryParameters['instant'] == 'true',
+            ),
           ),
           // Institution-owned scheduling — created meetings carry the
           // institution's ownership from birth.
@@ -961,6 +964,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/meetings/new',
             builder: (context, state) => CreateMeetingScreen(
               institutionId: state.pathParameters['institutionId'],
+              startNow: state.uri.queryParameters['instant'] == '1' ||
+                  state.uri.queryParameters['instant'] == 'true',
             ),
           ),
           // Codeless recovery route — MUST precede `/meetings/join/:code` and
