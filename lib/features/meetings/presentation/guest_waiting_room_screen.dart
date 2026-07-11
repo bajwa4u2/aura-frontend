@@ -133,20 +133,24 @@ class _GuestWaitingRoomScreenState
     context.push(target);
   }
 
-  /// Poll THIS guest's admission by its guestSessionId (the guest holds no
-  /// realtime token while pending, so this is the token-less signal). Marks the
-  /// first poll done even on failure, so an unreachable endpoint (e.g. backend
-  /// not yet deployed) never strands the guest on the waiting screen.
+  /// Poll THIS entrant's admission. Guests poll by guestSessionId (they hold
+  /// no realtime token while pending); a signed-in MEMBER pending approval
+  /// polls the authenticated member endpoint. Marks the first poll done even
+  /// on failure, so an unreachable endpoint (e.g. backend not yet deployed)
+  /// never strands anyone on the waiting screen.
   Future<void> _pollAdmission() async {
     final guestId = (widget.guestId ?? '').trim();
-    if (guestId.isEmpty) {
-      _firstPollDone = true;
-      return;
-    }
+    final repo = ref.read(meetingsRepositoryProvider);
     try {
-      final state = await ref
-          .read(meetingsRepositoryProvider)
-          .guestAdmissionStatus(widget.meetingId, guestId);
+      String? state;
+      if (guestId.isNotEmpty) {
+        state = await repo.guestAdmissionStatus(widget.meetingId, guestId);
+      } else if (ref.read(tokenStoreProvider).isMemberSession) {
+        state = await repo.memberAdmissionStatus(widget.meetingId);
+      } else {
+        _firstPollDone = true;
+        return;
+      }
       if (!mounted) return;
       if (state != _admissionState) setState(() => _admissionState = state);
     } catch (_) {
@@ -156,17 +160,18 @@ class _GuestWaitingRoomScreenState
     }
   }
 
-  /// Whether THIS guest is still pending host approval — the seam the waiting
-  /// room gates entry on. Backed by the per-guest admission poll:
+  /// Whether THIS entrant is still pending host approval — the seam the
+  /// waiting room gates entry on. Backed by the admission poll:
   ///   * ADMITTED           → release (enter).
   ///   * PENDING / DENIED    → hold.
-  ///   * unknown (pre-poll)  → hold only until the first poll resolves, and only
-  ///     when the meeting actually gates guests, so an unreachable endpoint
-  ///     never strands the guest.
+  ///   * unknown (pre-poll)  → for guests, hold only until the first poll
+  ///     resolves and only when the meeting gates guests; members without a
+  ///     resolved PENDING state pass (their admission was decided server-side
+  ///     at join).
   bool _guestApprovalPending(Meeting meeting) {
-    if ((widget.guestId ?? '').trim().isEmpty) return false;
     if (_admissionState == 'ADMITTED') return false;
     if (_admissionState == 'PENDING' || _admissionState == 'DENIED') return true;
+    if ((widget.guestId ?? '').trim().isEmpty) return false;
     return !_firstPollDone &&
         meeting.guestApprovalRequired == true &&
         meeting.waitingRoomEnabled == true;

@@ -3,32 +3,39 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_providers.dart';
-import '../../../core/auth/session_providers.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
-import '../domain/meeting_identity.dart';
-import 'meeting_lifecycle_presenter.dart';
+import '../domain/meeting_entry_resolution.dart';
 import 'widgets/meeting_device_check.dart';
 import 'widgets/meeting_preparation_panel.dart';
 
-// Pre-join: shows meeting context (host, org, purpose) before entering.
-// Applies the "organization first, Aura second" principle — the guest
-// sees WHO is hosting before they encounter any platform branding.
+// Pre-join — RESOLVER-DRIVEN (Participation Architecture).
+//
+// The backend's canonical Participation Resolver decides who this entrant is
+// and what they may do next; this screen renders EXACTLY that outcome. It
+// never infers policy from local conditions (auth state, token presence):
+//   * guest identity fields appear ONLY on GUEST_IDENTITY_REQUIRED
+//   * members/bookers/invitees see their recognized identity, never a prompt
+//   * LOGIN_REQUIRED preserves every entry token through the auth return
+//   * FORBIDDEN / IDENTITY_CONFLICT / MEETING_UNAVAILABLE are terminal
 class PreJoinScreen extends ConsumerStatefulWidget {
   final String meetingCode;
 
-  /// Booking confirmation token (the `bt` link param). Present when the BOOKER
-  /// of a scheduled meeting opens their identity-bound link — we then resolve
-  /// their identity from the booking and skip the name/email prompt.
+  /// Booking confirmation token (the `bt` link param).
   final String? bookerToken;
+
+  /// Invitation token (the `in` link param) — participation proof for an
+  /// invited entrant.
+  final String? invitationToken;
 
   const PreJoinScreen({
     super.key,
     required this.meetingCode,
     this.bookerToken,
+    this.invitationToken,
   });
 
   @override
@@ -41,7 +48,17 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
   final _formKey = GlobalKey<FormState>();
   final _deviceCheck = MeetingDeviceCheckController();
   bool _joining = false;
-  bool _identityPrefilled = false;
+
+  MeetingEntryKey get _entryKey => MeetingEntryKey(
+        widget.meetingCode,
+        bookerToken: _clean(widget.bookerToken),
+        invitationToken: _clean(widget.invitationToken),
+      );
+
+  static String? _clean(String? v) {
+    final t = (v ?? '').trim();
+    return t.isEmpty ? null : t;
+  }
 
   @override
   void dispose() {
@@ -50,39 +67,28 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     super.dispose();
   }
 
-  Future<void> _join(Meeting meeting) async {
-    final name = _nameCtrl.text.trim();
+  Future<void> _join(MeetingEntryResolution resolution) async {
     setState(() => _joining = true);
-
     try {
       final repo = ref.read(meetingsRepositoryProvider);
-      // Participant continuity: a member joins as themselves — the backend
-      // attaches the meeting to their account (a booker link is consumed as
-      // a claim), so it appears in their own upcoming meetings.
       final isMember = ref.read(tokenStoreProvider).isMemberSession;
+      final needsIdentity = resolution.guestIdentityRequired;
       final result = await repo.joinMeeting(
         widget.meetingCode,
-        guestName: name.isEmpty ? null : name,
-        guestEmail: _emailCtrl.text.trim().isEmpty
-            ? null
-            : _emailCtrl.text.trim(),
-        bookerToken: widget.bookerToken,
+        guestName: needsIdentity ? _nameCtrl.text.trim() : null,
+        guestEmail: needsIdentity ? _emailCtrl.text.trim() : null,
+        bookerToken: _clean(widget.bookerToken),
+        invitationToken: _clean(widget.invitationToken),
         asMember: isMember,
       );
 
       if (!mounted) return;
 
-      // Never downgrade a logged-in MEMBER to a guest token. If the host (or any
-      // member) opens a join/booker link in their signed-in browser, keep their
-      // member session — the realtime socket authenticates them as themselves,
-      // and their host-only actions (cancel, etc.) keep working. Only a true
-      // guest (unauthed, or already a guest token) exchanges the guest session.
-      // The room's own _ensureGuestAuth is already isAuthed-guarded, so it won't
-      // re-clobber either.
+      // Never downgrade a logged-in MEMBER to a guest token. Only a true
+      // guest (unauthed) exchanges the guest session for a guest JWT.
       final tokenStore = ref.read(tokenStoreProvider);
       if (!tokenStore.isMemberSession &&
-          result.guestSessionId != null &&
-          result.guestSessionId!.trim().isNotEmpty) {
+          (result.guestSessionId ?? '').trim().isNotEmpty) {
         final guestAuth = await repo.exchangeGuestAuth(
           result.guestSessionId!.trim(),
         );
@@ -94,25 +100,17 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
         if (!mounted) return;
       }
 
-      final guestIdSuffix = (result.guestSessionId ?? '').trim().isNotEmpty
-          ? '&guestId=${Uri.encodeComponent(result.guestSessionId!.trim())}'
-          : '';
-
       final guestId = (result.guestSessionId ?? '').trim();
+      final guestIdSuffix = guestId.isNotEmpty
+          ? '&guestId=${Uri.encodeComponent(guestId)}'
+          : '';
 
       if (result.shouldWait) {
         final target = '/meetings/${result.meetingId}/waiting'
             '?sessionId=${result.sessionId ?? ''}'
             '&code=${Uri.encodeComponent(widget.meetingCode)}'
             '$guestIdSuffix';
-        _logGuestJoin(
-          context,
-          target: target,
-          meetingId: result.meetingId,
-          sessionId: result.sessionId,
-          guestId: guestId,
-        );
-        // Free the preview camera before entering so the room can acquire it.
+        _logEntry(target, result);
         await _deviceCheck.release();
         if (!mounted) return;
         context.push(target);
@@ -120,19 +118,11 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       }
 
       if (result.sessionId != null) {
-        // Lobby retired: pre-join already covers identity + device readiness,
-        // so a live meeting is entered directly — no intermediate room screen.
         final target = '/meetings/${result.meetingId}/live'
             '?sessionId=${result.sessionId}'
             '&code=${Uri.encodeComponent(widget.meetingCode)}'
             '$guestIdSuffix';
-        _logGuestJoin(
-          context,
-          target: target,
-          meetingId: result.meetingId,
-          sessionId: result.sessionId,
-          guestId: guestId,
-        );
+        _logEntry(target, result);
         await _deviceCheck.release();
         if (!mounted) return;
         context.push(target);
@@ -145,6 +135,9 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      // The server re-ran resolution at admission; its verdict may have
+      // changed since ours. Re-resolve so the screen shows the current truth.
+      ref.invalidate(meetingEntryResolutionProvider(_entryKey));
       final message = AppErrorMapper.from(e).message;
       ScaffoldMessenger.of(
         context,
@@ -154,133 +147,192 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     }
   }
 
-  // P0 guest-join telemetry — proves guest links resolve to meeting routes,
-  // never the generic `/realtime/` transport screen. Kept deliberately loud
-  // so a regression is visible in the trace without a repro.
-  void _logGuestJoin(
-    BuildContext context, {
-    required String target,
-    required String? meetingId,
-    required String? sessionId,
-    required String guestId,
-  }) {
-    // Production-visible (not kDebugMode-gated): proves the guest routes to a
-    // meeting surface, never the generic `/realtime/` transport screen.
+  // P0 entry telemetry — proves entry resolves to meeting routes, never the
+  // generic `/realtime/` transport screen.
+  void _logEntry(String target, JoinMeetingResult result) {
     debugPrint(
       '[guest-join-click] PreJoinScreen'
       ' currentUrl=${GoRouterState.of(context).uri} targetUrl=$target'
-      ' meetingId=${meetingId ?? ''} sessionId=${sessionId ?? ''}'
-      ' code=${widget.meetingCode} guestId=$guestId',
+      ' meetingId=${result.meetingId} sessionId=${result.sessionId ?? ''}'
+      ' code=${widget.meetingCode}'
+      ' outcome=${result.outcome ?? ''} reason=${result.reasonCode ?? ''}',
     );
   }
 
-  void _applyIdentity(MeetingIdentityRef? identity) {
-    if (_identityPrefilled || identity == null) return;
-    _identityPrefilled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_nameCtrl.text.trim().isEmpty &&
-          identity.displayName.trim().isNotEmpty) {
-        _nameCtrl.text = identity.displayName.trim();
-      }
-      if (_emailCtrl.text.trim().isEmpty && identity.email.trim().isNotEmpty) {
-        _emailCtrl.text = identity.email.trim();
-      }
-    });
+  void _goToLogin() {
+    final params = <String>[
+      if (_clean(widget.bookerToken) != null)
+        'bt=${Uri.encodeComponent(widget.bookerToken!.trim())}',
+      if (_clean(widget.invitationToken) != null)
+        'in=${Uri.encodeComponent(widget.invitationToken!.trim())}',
+    ].join('&');
+    final target =
+        '/meetings/join/${widget.meetingCode}${params.isEmpty ? '' : '?$params'}';
+    context.go('/login?redirect=${Uri.encodeComponent(target)}');
   }
 
   @override
   Widget build(BuildContext context) {
-    final meetingAsync = ref.watch(meetingByCodeProvider(widget.meetingCode));
-    final identityAsync = ref.watch(currentBookingIdentityProvider);
+    final resolutionAsync = ref.watch(meetingEntryResolutionProvider(_entryKey));
     final theme = Theme.of(context);
-    identityAsync.whenData(_applyIdentity);
 
-    return meetingAsync.when(
+    return resolutionAsync.when(
       loading: () => const GuestShell(
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => GuestShell(
         showBackButton: true,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Color(0xFF9CA3AF),
-              ),
-              const SizedBox(height: AuraSpace.s16),
-              Text('Meeting not found', style: theme.textTheme.titleMedium),
-              const SizedBox(height: AuraSpace.s8),
-              Text(
-                'Check the meeting code and try again.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s16),
-              // No dead ends: offer manual code entry right here.
-              FilledButton.icon(
-                icon: const Icon(Icons.keyboard_rounded, size: 18),
-                label: const Text('Enter a meeting code'),
-                onPressed: () => context.go('/meetings/join'),
-              ),
-            ],
+        body: _TerminalMessage(
+          icon: Icons.error_outline_rounded,
+          title: 'Meeting not found',
+          detail: 'Check the meeting code and try again.',
+          action: FilledButton.icon(
+            icon: const Icon(Icons.keyboard_rounded, size: 18),
+            label: const Text('Enter a meeting code'),
+            onPressed: () => context.go('/meetings/join'),
           ),
         ),
       ),
-      data: (meeting) => _PreJoinBody(
-        meeting: meeting,
-        nameCtrl: _nameCtrl,
-        emailCtrl: _emailCtrl,
-        formKey: _formKey,
-        joining: _joining,
-        identity: identityAsync.valueOrNull,
-        onJoin: () => _join(meeting),
-        isBooker: (widget.bookerToken ?? '').trim().isNotEmpty,
-        bookerToken: widget.bookerToken,
-        deviceCheck: MeetingDeviceCheck(
-          controller: _deviceCheck,
-          displayName: identityAsync.valueOrNull?.displayName ??
-              meeting.booking?.bookerName,
-        ),
-      ),
+      data: (resolution) => _buildForResolution(context, theme, resolution),
     );
+  }
+
+  Widget _buildForResolution(
+    BuildContext context,
+    ThemeData theme,
+    MeetingEntryResolution resolution,
+  ) {
+    switch (resolution.outcome) {
+      case MeetingEntryOutcome.meetingUnavailable:
+        return GuestShell(
+          showBackButton: true,
+          body: _TerminalMessage(
+            icon: Icons.event_busy_rounded,
+            title: switch (resolution.reasonCode) {
+              'MEETING_CANCELLED' => 'This meeting was cancelled',
+              'MEETING_ENDED' => 'This meeting has ended',
+              'MEETING_DRAFT' => 'This meeting is not open yet',
+              _ => 'Meeting not available',
+            },
+            detail: 'Contact the meeting host if you believe this is a mistake.',
+            action: FilledButton.icon(
+              icon: const Icon(Icons.keyboard_rounded, size: 18),
+              label: const Text('Enter a meeting code'),
+              onPressed: () => context.go('/meetings/join'),
+            ),
+          ),
+        );
+
+      case MeetingEntryOutcome.forbidden:
+        return GuestShell(
+          showBackButton: true,
+          body: _TerminalMessage(
+            icon: Icons.lock_outline_rounded,
+            title: switch (resolution.reasonCode) {
+              'PARTICIPANT_DENIED' => 'The host did not admit you',
+              'INVITATION_REVOKED' => 'Your invitation was withdrawn',
+              'INVITATION_EXPIRED' => 'Your invitation has expired',
+              'BOOKING_CANCELLED' => 'This booking was cancelled',
+              'NOT_INSTITUTION_MEMBER' =>
+                'This meeting is for institution members',
+              _ => 'You don\'t have access to this meeting',
+            },
+            detail:
+                'Ask the meeting host for an invitation if you should be here.',
+          ),
+        );
+
+      case MeetingEntryOutcome.identityConflict:
+        return const GuestShell(
+          showBackButton: true,
+          body: _TerminalMessage(
+            icon: Icons.person_off_rounded,
+            title: 'This link belongs to someone else',
+            detail:
+                'The invitation or booking you opened was issued for a different '
+                'person. Open the link from your own email, or ask the host to '
+                'invite this account.',
+          ),
+        );
+
+      case MeetingEntryOutcome.loginRequired:
+        return GuestShell(
+          showBackButton: true,
+          body: _TerminalMessage(
+            icon: Icons.login_rounded,
+            title: 'Sign in to join this meeting',
+            detail: resolution.presentation?.title.trim().isNotEmpty == true
+                ? '"${resolution.presentation!.title.trim()}" is for signed-in '
+                    'participants.'
+                : 'This meeting is for signed-in participants.',
+            action: FilledButton.icon(
+              icon: const Icon(Icons.login_rounded, size: 18),
+              label: const Text('Sign in with Aura'),
+              onPressed: _goToLogin,
+            ),
+          ),
+        );
+
+      case MeetingEntryOutcome.requestAccess:
+      case MeetingEntryOutcome.waitingForAdmission:
+      case MeetingEntryOutcome.guestIdentityRequired:
+      case MeetingEntryOutcome.hostDirect:
+      case MeetingEntryOutcome.participantDirect:
+      case MeetingEntryOutcome.bookerDirect:
+      case MeetingEntryOutcome.invitedDirect:
+      case MeetingEntryOutcome.institutionMemberDirect:
+      case MeetingEntryOutcome.guestDirect:
+        return _PreJoinBody(
+          resolution: resolution,
+          meetingCode: widget.meetingCode,
+          nameCtrl: _nameCtrl,
+          emailCtrl: _emailCtrl,
+          formKey: _formKey,
+          joining: _joining,
+          onJoin: () => _join(resolution),
+          onLogin: _goToLogin,
+          deviceCheck: MeetingDeviceCheck(
+            controller: _deviceCheck,
+            displayName:
+                resolution.identityName ?? resolution.prefillName,
+          ),
+        );
+    }
   }
 }
 
 class _PreJoinBody extends ConsumerWidget {
-  final Meeting meeting;
+  final MeetingEntryResolution resolution;
+  final String meetingCode;
   final TextEditingController nameCtrl;
   final TextEditingController emailCtrl;
   final GlobalKey<FormState> formKey;
   final bool joining;
-  final MeetingIdentityRef? identity;
   final VoidCallback onJoin;
+  final VoidCallback onLogin;
   final Widget deviceCheck;
-  final bool isBooker;
-  final String? bookerToken;
 
   const _PreJoinBody({
-    required this.meeting,
+    required this.resolution,
+    required this.meetingCode,
     required this.nameCtrl,
     required this.emailCtrl,
     required this.formKey,
     required this.joining,
-    required this.identity,
     required this.onJoin,
+    required this.onLogin,
     required this.deviceCheck,
-    required this.isBooker,
-    this.bookerToken,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final lifecycle = MeetingLifecyclePresenter.present(meeting);
-    final isAuthed = ref.watch(isAuthedProvider);
+    // Preparation materials still travel to the pre-join surface (public,
+    // guest-visible assets) — presentation only, no policy.
+    final meetingAsync = ref.watch(meetingByCodeProvider(meetingCode));
+    final needsGuestIdentity = resolution.guestIdentityRequired;
+    final waiting =
+        resolution.outcome == MeetingEntryOutcome.waitingForAdmission;
 
     return GuestShell(
       showBackButton: true,
@@ -296,14 +348,13 @@ class _PreJoinBody extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // First-class preparation brief (shared with the host lobby).
-                    MeetingPreparationPanel(meeting: meeting),
+                    // First-class preparation brief (shared with host lobby).
+                    if (meetingAsync.valueOrNull != null)
+                      MeetingPreparationPanel(
+                        meeting: meetingAsync.valueOrNull as Meeting,
+                      ),
                     const SizedBox(height: AuraSpace.s12),
-                    _StatusPill(lifecycle: lifecycle),
-                    if (identity != null) ...[
-                      const SizedBox(height: AuraSpace.s12),
-                      _BookingIdentityCard(identity: identity!),
-                    ],
+                    _EntryStatusPill(resolution: resolution),
                     const SizedBox(height: AuraSpace.s24),
                     Text(
                       'Camera & microphone',
@@ -316,108 +367,41 @@ class _PreJoinBody extends ConsumerWidget {
                     const SizedBox(height: AuraSpace.s10),
                     deviceCheck,
                     const SizedBox(height: AuraSpace.s24),
-                    if (isBooker) ...[
-                      // Booker joins with the identity from their booking — no
-                      // name/email prompt, one stable participant across every
-                      // re-join. The identity is DISPLAYED, never re-asked.
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.verified_user_rounded,
-                              size: 18, color: Color(0xFF10B981)),
-                          const SizedBox(width: AuraSpace.s10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  meeting.booking?.bookerName
-                                              .trim()
-                                              .isNotEmpty ==
-                                          true
-                                      ? 'Joining as ${meeting.booking!.bookerName.trim()}'
-                                      : 'Joining with your booking',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if ((meeting.booking?.bookerEmail ?? '')
-                                    .trim()
-                                    .isNotEmpty)
-                                  Text(
-                                    meeting.booking!.bookerEmail.trim(),
-                                    style:
-                                        theme.textTheme.bodySmall?.copyWith(
-                                      color: const Color(0xFF9CA3AF),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AuraSpace.s16),
-                    ] else ...[
+                    if (needsGuestIdentity)
+                      ..._guestIdentityFields(theme)
+                    else
+                      _RecognizedIdentity(resolution: resolution),
+                    const SizedBox(height: AuraSpace.s16),
+                    if (resolution.approvalRequired && !waiting) ...[
                       Text(
-                        isAuthed
-                            ? 'Join with your Aura account'
-                            : 'Join as a guest',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        'The host reviews who joins — you may wait briefly '
+                        'after asking to join.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF9CA3AF),
                         ),
                       ),
-                      const SizedBox(height: AuraSpace.s6),
-                      TextFormField(
-                        controller: nameCtrl,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter your name',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person_outline_rounded),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Enter your name to join';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AuraSpace.s12),
-                      TextFormField(
-                        controller: emailCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          hintText: 'your@email.com',
-                          helperText:
-                              'The meeting summary and follow-ups arrive here.',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.mail_outline_rounded),
-                        ),
-                        validator: (value) {
-                          // Identity continuity: a guest without an email
-                          // cannot receive summaries or follow-ups — email
-                          // is required, exactly like a booking.
-                          final text = value?.trim() ?? '';
-                          if (text.isEmpty) {
-                            return 'Email is required to join';
-                          }
-                          if (!text.contains('@')) {
-                            return 'Enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AuraSpace.s24),
+                      const SizedBox(height: AuraSpace.s10),
                     ],
                     SizedBox(
                       height: 50,
                       child: FilledButton.icon(
-                        icon: const Icon(Icons.video_call_rounded),
-                        label: Text(_buttonLabel(lifecycle)),
-                        onPressed: joining || lifecycle.isTerminal
+                        icon: Icon(
+                          waiting
+                              ? Icons.hourglass_top_rounded
+                              : Icons.video_call_rounded,
+                          size: 20,
+                        ),
+                        label: Text(
+                          waiting
+                              ? 'Return to waiting room'
+                              : resolution.approvalRequired
+                                  ? 'Ask to join'
+                                  : 'Join meeting',
+                        ),
+                        onPressed: joining
                             ? null
                             : () {
-                                if (!isBooker &&
+                                if (needsGuestIdentity &&
                                     !formKey.currentState!.validate()) {
                                   return;
                                 }
@@ -425,30 +409,15 @@ class _PreJoinBody extends ConsumerWidget {
                               },
                       ),
                     ),
-                    if (!isAuthed) ...[
+                    if (resolution.identityKind == 'ANONYMOUS') ...[
                       const SizedBox(height: AuraSpace.s12),
-                      // Participant continuity: signing in keeps the booking
-                      // reference (`bt`) so the meeting attaches to the
-                      // member's account the moment they join — or, for a
-                      // booker who signs in without joining yet, the meeting
-                      // still lands in their upcoming meetings.
+                      // Participant continuity: signing in preserves the
+                      // entry tokens so the meeting attaches to the member's
+                      // account the moment they join.
                       TextButton.icon(
                         icon: const Icon(Icons.login_rounded),
-                        label: Text(
-                          isBooker
-                              ? 'Sign in to keep this meeting in your account'
-                              : 'Sign in with Aura',
-                        ),
-                        onPressed: () {
-                          final token = (bookerToken ?? '').trim();
-                          final target = token.isEmpty
-                              ? '/meetings/join/${meeting.meetingCode}'
-                              : '/meetings/keep?bt=${Uri.encodeComponent(token)}'
-                                  '&code=${Uri.encodeComponent(meeting.meetingCode)}';
-                          context.go(
-                            '/login?redirect=${Uri.encodeComponent(target)}',
-                          );
-                        },
+                        label: const Text('Sign in with Aura'),
+                        onPressed: onLogin,
                       ),
                     ],
                     const SizedBox(height: AuraSpace.s32),
@@ -461,121 +430,126 @@ class _PreJoinBody extends ConsumerWidget {
       ),
     );
   }
+
+  List<Widget> _guestIdentityFields(ThemeData theme) {
+    return [
+      Text(
+        'Join as a guest',
+        style: theme.textTheme.labelMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: AuraSpace.s6),
+      TextFormField(
+        controller: nameCtrl,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(
+          hintText: 'Enter your name',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.person_outline_rounded),
+        ),
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Enter your name to join';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: AuraSpace.s12),
+      TextFormField(
+        controller: emailCtrl,
+        keyboardType: TextInputType.emailAddress,
+        decoration: const InputDecoration(
+          hintText: 'your@email.com',
+          helperText: 'The meeting summary and follow-ups arrive here.',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.mail_outline_rounded),
+        ),
+        validator: (value) {
+          // Identity continuity: a guest without an email cannot receive
+          // summaries or follow-ups — email is required, like a booking.
+          final text = value?.trim() ?? '';
+          if (text.isEmpty) return 'Email is required to join';
+          if (!text.contains('@')) return 'Enter a valid email';
+          return null;
+        },
+      ),
+    ];
+  }
 }
 
-class _BookingIdentityCard extends StatelessWidget {
-  final MeetingIdentityRef identity;
-
-  const _BookingIdentityCard({required this.identity});
+/// The backend-recognized identity — DISPLAYED, never re-asked.
+class _RecognizedIdentity extends StatelessWidget {
+  final MeetingEntryResolution resolution;
+  const _RecognizedIdentity({required this.resolution});
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: const Color(0xFF243244)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s12),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
-              backgroundImage:
-                  identity.avatarUrl != null &&
-                      identity.avatarUrl!.trim().isNotEmpty
-                  ? NetworkImage(identity.avatarUrl!)
-                  : null,
-              child:
-                  identity.avatarUrl == null ||
-                      identity.avatarUrl!.trim().isEmpty
-                  ? Text(
-                      identity.displayName.trim().isEmpty
-                          ? 'G'
-                          : identity.displayName.trim()[0].toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: AuraSpace.s10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    identity.displayName,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (identity.email.trim().isNotEmpty)
-                    Text(
-                      identity.email.trim(),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF9CA3AF),
-                      ),
-                    ),
-                ],
+    final theme = Theme.of(context);
+    final name =
+        (resolution.identityName ?? resolution.prefillName ?? '').trim();
+    final email =
+        (resolution.identityEmail ?? resolution.prefillEmail ?? '').trim();
+    final label = switch (resolution.outcome) {
+      MeetingEntryOutcome.hostDirect => 'Hosting this meeting',
+      MeetingEntryOutcome.bookerDirect =>
+        name.isNotEmpty ? 'Joining as $name' : 'Joining with your booking',
+      MeetingEntryOutcome.invitedDirect =>
+        name.isNotEmpty ? 'Invited: $name' : 'Joining with your invitation',
+      MeetingEntryOutcome.institutionMemberDirect =>
+        name.isNotEmpty ? 'Joining as $name' : 'Joining as an institution member',
+      _ => name.isNotEmpty ? 'Joining as $name' : 'Joining with your account',
+    };
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.verified_user_rounded,
+            size: 18, color: Color(0xFF10B981)),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+              if (email.isNotEmpty)
+                Text(
+                  email,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF9CA3AF),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
 
-class _StatusPill extends StatelessWidget {
-  final MeetingLifecycleViewModel lifecycle;
-  const _StatusPill({required this.lifecycle});
+class _EntryStatusPill extends StatelessWidget {
+  final MeetingEntryResolution resolution;
+  const _EntryStatusPill({required this.resolution});
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (lifecycle.status) {
-      MeetingLifecycleStatus.scheduled => (
-        'Scheduled',
-        const Color(0xFF6C63FF),
-      ),
-      MeetingLifecycleStatus.startingSoon => (
-        'Starting soon',
-        const Color(0xFF8B85FF),
-      ),
-      MeetingLifecycleStatus.guestWaiting => (
-        'Waiting for host',
+    final (label, color) = switch (resolution.outcome) {
+      MeetingEntryOutcome.waitingForAdmission => (
+        'Waiting for the host to admit you',
         const Color(0xFFF59E0B),
       ),
-      MeetingLifecycleStatus.hostWaiting => (
-        'Host waiting',
-        const Color(0xFFF59E0B),
-      ),
-      MeetingLifecycleStatus.inProgress => (
-        'Live now',
-        const Color(0xFF10B981),
-      ),
-      MeetingLifecycleStatus.ended => (
-        'Meeting ended',
-        const Color(0xFF9CA3AF),
-      ),
-      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
-      MeetingLifecycleStatus.cancelled => (
-        'Cancelled',
-        const Color(0xFFEF4444),
-      ),
-      MeetingLifecycleStatus.connectionIssue => (
-        'Connection issue',
-        const Color(0xFFF97316),
-      ),
-      MeetingLifecycleStatus.unknown => ('Pending', const Color(0xFF9CA3AF)),
+      _ when resolution.meetingLive => ('Live now', const Color(0xFF10B981)),
+      _ => ('Scheduled', const Color(0xFF6C63FF)),
     };
 
     return Row(
       children: [
-        if (lifecycle.status == MeetingLifecycleStatus.inProgress)
+        if (resolution.meetingLive)
           Container(
             width: 8,
             height: 8,
@@ -595,18 +569,46 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-String _buttonLabel(MeetingLifecycleViewModel lifecycle) {
-  return switch (lifecycle.status) {
-    MeetingLifecycleStatus.ended => 'Meeting ended',
-    MeetingLifecycleStatus.cancelled => 'Meeting cancelled',
-    MeetingLifecycleStatus.missed => 'Meeting missed',
-    MeetingLifecycleStatus.connectionIssue => 'Retry connection',
-    MeetingLifecycleStatus.guestWaiting => 'Wait for host',
-    MeetingLifecycleStatus.hostWaiting => 'Join meeting',
-    MeetingLifecycleStatus.inProgress => 'Join meeting',
-    MeetingLifecycleStatus.startingSoon => 'Join meeting',
-    MeetingLifecycleStatus.scheduled => 'Join meeting',
-    MeetingLifecycleStatus.unknown => 'Join meeting',
-  };
-}
+class _TerminalMessage extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String detail;
+  final Widget? action;
 
+  const _TerminalMessage({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: const Color(0xFF9CA3AF)),
+            const SizedBox(height: AuraSpace.s16),
+            Text(title, style: theme.textTheme.titleMedium),
+            const SizedBox(height: AuraSpace.s8),
+            Text(
+              detail,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF6B7280),
+              ),
+            ),
+            if (action != null) ...[
+              const SizedBox(height: AuraSpace.s16),
+              action!,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

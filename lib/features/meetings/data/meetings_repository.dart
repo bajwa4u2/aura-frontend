@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
+import '../domain/meeting_entry_resolution.dart';
 
 class MeetingsRepository {
   MeetingsRepository(this._dio);
@@ -526,14 +527,41 @@ class MeetingsRepository {
     return Meeting.fromJson(data);
   }
 
+  /// ONE DOOR — the canonical READ-ONLY entry resolution. Called before
+  /// rendering ANY entry experience; the backend decides participation,
+  /// eligibility, and admission, and this client renders the outcome.
+  Future<MeetingEntryResolution> resolveMeetingEntry(
+    String code, {
+    String? bookerToken,
+    String? invitationToken,
+    String? guestSessionId,
+    bool asMember = false,
+  }) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/public/meetings/entry/$code',
+      queryParameters: {
+        if (bookerToken != null && bookerToken.isNotEmpty) 'bt': bookerToken,
+        if (invitationToken != null && invitationToken.isNotEmpty)
+          'in': invitationToken,
+        if (guestSessionId != null && guestSessionId.isNotEmpty)
+          'guestId': guestSessionId,
+      },
+      options: Options(extra: {'__skip_auth': !asMember}),
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return MeetingEntryResolution.fromJson(data);
+  }
+
   Future<JoinMeetingResult> joinMeeting(
     String code, {
     String? guestName,
     String? guestEmail,
     String? bookerToken,
+    String? invitationToken,
+    String? guestSessionId,
     // Participant continuity: a signed-in MEMBER joins as themselves — the
-    // backend upserts their member participant row (and consumes a booker
-    // token as a claim), so the meeting lives in their own inventory.
+    // backend attaches their member participant row through the Admission
+    // pipeline, so the meeting lives in their own inventory.
     // Guests and anonymous visitors keep the auth-less path unchanged.
     bool asMember = false,
   }) async {
@@ -544,6 +572,10 @@ class MeetingsRepository {
         if (guestEmail != null) 'guestEmail': guestEmail,
         if (bookerToken != null && bookerToken.isNotEmpty)
           'bookerToken': bookerToken,
+        if (invitationToken != null && invitationToken.isNotEmpty)
+          'invitationToken': invitationToken,
+        if (guestSessionId != null && guestSessionId.isNotEmpty)
+          'guestSessionId': guestSessionId,
       },
       options: Options(extra: {'__skip_auth': !asMember}),
     );
@@ -596,6 +628,16 @@ class MeetingsRepository {
         if (name != null) 'name': name,
       },
     );
+  }
+
+  // Waiting-room polling for a MEMBER pending host approval (the member
+  // analogue of guestAdmissionStatus). Authenticated.
+  Future<String?> memberAdmissionStatus(String meetingId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/$meetingId/my-admission',
+    );
+    final data = res.data!['data'] as Map<String, dynamic>;
+    return data['admissionState'] as String?;
   }
 
   // Guest-approval — waiting guest polls its admission by guestSessionId (no

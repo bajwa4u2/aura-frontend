@@ -999,6 +999,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => PreJoinScreen(
               meetingCode: state.pathParameters['code'] ?? '',
               bookerToken: state.uri.queryParameters['bt'],
+              // Invitation proof (`in`) — participation evidence carried by
+              // emailed invitation links; preserved through login returns.
+              invitationToken: state.uri.queryParameters['in'],
             ),
           ),
           GoRoute(

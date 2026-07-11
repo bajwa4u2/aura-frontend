@@ -409,6 +409,11 @@ class JoinMeetingResult {
   final String meetingCode;
   final String title;
 
+  /// Participation Architecture context (additive; absent on old servers).
+  final String? outcome;
+  final String? reasonCode;
+  final String? admissionState;
+
   const JoinMeetingResult({
     required this.meetingId,
     this.sessionId,
@@ -416,6 +421,9 @@ class JoinMeetingResult {
     this.guestSessionId,
     required this.meetingCode,
     required this.title,
+    this.outcome,
+    this.reasonCode,
+    this.admissionState,
   });
 
   factory JoinMeetingResult.fromJson(Map<String, dynamic> j) =>
@@ -426,10 +434,16 @@ class JoinMeetingResult {
         guestSessionId: j['guestSessionId'] as String?,
         meetingCode: j['meetingCode'] as String? ?? '',
         title: j['title'] as String? ?? '',
+        outcome: j['outcome'] as String?,
+        reasonCode: j['reasonCode'] as String?,
+        admissionState: j['admissionState'] as String?,
       );
 
   bool get shouldJoinDirectly => action == 'join';
   bool get shouldWait => action == 'wait';
+
+  /// The entrant is parked in the waiting room pending host approval.
+  bool get isPendingApproval => admissionState == 'PENDING';
 }
 
 Map<String, dynamic> _asMap(dynamic value) {

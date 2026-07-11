@@ -1191,9 +1191,9 @@ class _BookingInboxDialog extends ConsumerWidget {
               padding: EdgeInsets.all(32),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.all(24),
-              child: const Text('Unable to load bookings.'),
+            error: (e, _) => const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Unable to load bookings.'),
             ),
             data: (bookings) {
               if (bookings.isEmpty) {

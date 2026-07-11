@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../data/meetings_repository.dart';
 import '../data/availability_repository.dart';
@@ -7,6 +8,7 @@ import '../domain/meeting.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
+import '../domain/meeting_entry_resolution.dart';
 import '../domain/meeting_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
 
@@ -125,6 +127,49 @@ final meetingByCodeProvider = FutureProvider.family<Meeting, String>((
 ) async {
   final repo = ref.watch(meetingsRepositoryProvider);
   return repo.getMeetingByCode(code);
+});
+
+// Participation Architecture — the canonical backend entry resolution.
+// The pre-join surface renders EXACTLY this outcome; no policy in Flutter.
+class MeetingEntryKey {
+  final String code;
+  final String? bookerToken;
+  final String? invitationToken;
+  final String? guestSessionId;
+  const MeetingEntryKey(
+    this.code, {
+    this.bookerToken,
+    this.invitationToken,
+    this.guestSessionId,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is MeetingEntryKey &&
+      other.code == code &&
+      other.bookerToken == bookerToken &&
+      other.invitationToken == invitationToken &&
+      other.guestSessionId == guestSessionId;
+
+  @override
+  int get hashCode =>
+      Object.hash(code, bookerToken, invitationToken, guestSessionId);
+}
+
+final meetingEntryResolutionProvider =
+    FutureProvider.family<MeetingEntryResolution, MeetingEntryKey>((
+  ref,
+  key,
+) async {
+  final repo = ref.watch(meetingsRepositoryProvider);
+  final isMember = ref.watch(tokenStoreProvider).isMemberSession;
+  return repo.resolveMeetingEntry(
+    key.code,
+    bookerToken: key.bookerToken,
+    invitationToken: key.invitationToken,
+    guestSessionId: key.guestSessionId,
+    asMember: isMember,
+  );
 });
 
 // Meeting context for guest deep-links that arrive without a ?code= param.
