@@ -53,7 +53,7 @@ class FounderMessageScreen extends StatelessWidget {
           'attached to outcomes.',
         ),
         PubText.p(
-          'Bajwa Writes™ — long-form work on conscience, institutional '
+          'Bajwa Writes — long-form work on conscience, institutional '
           'responsibility, and moral structure — informs the platform\'s '
           'editorial posture. Aura Platform is the engineering side of '
           'the same instinct: systems where identity, action, and '

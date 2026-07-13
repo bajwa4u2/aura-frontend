@@ -367,7 +367,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 child: _AuthHero(
                                   title: 'Welcome back',
                                   body:
-                                      'Sign in to continue your work, conversations, institutions, and publishing history.',
+                                      'Sign in to continue your work, conversations, institutions, and meetings.',
                                   accent:
                                       'Aura is institution operating infrastructure — one verified identity, one accountable record.',
                                 ),
@@ -381,7 +381,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               const _AuthHero(
                                 title: 'Welcome back',
                                 body:
-                                    'Sign in to continue your work, conversations, institutions, and publishing history.',
+                                    'Sign in to continue your work, conversations, institutions, and meetings.',
                                 accent:
                                     'Aura is institution operating infrastructure — one verified identity, one accountable record.',
                               ),
@@ -727,7 +727,7 @@ class _AuthHero extends StatelessWidget {
           const SizedBox(height: AuraSpace.s20),
           const _AuthFeatureRow(
             icon: Icons.edit_note_rounded,
-            label: 'Your publishing record and work history',
+            label: 'Your public posts and participation history',
           ),
           const SizedBox(height: AuraSpace.s10),
           const _AuthFeatureRow(

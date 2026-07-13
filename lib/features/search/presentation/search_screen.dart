@@ -196,8 +196,8 @@ class _SearchEmptyPrompt extends StatelessWidget {
         const SizedBox(height: AuraSpace.s8),
         const _SearchHintRow(
           icon: Icons.article_outlined,
-          title: 'Public work',
-          body: 'Writing and creations matching your terms.',
+          title: 'Posts',
+          body: 'Public discussion posts matching your terms.',
         ),
         if (!isAuthed) ...[
           const SizedBox(height: AuraSpace.s20),
@@ -326,7 +326,7 @@ class _SearchResults extends ConsumerWidget {
               const SizedBox(height: AuraSpace.s20),
             ],
             if (r.posts.isNotEmpty) ...[
-              const _SearchSectionLabel(label: 'Public work'),
+              const _SearchSectionLabel(label: 'Posts'),
               const SizedBox(height: AuraSpace.s10),
               ...r.posts.take(12).map((p) => _PostTile(p: p)),
             ],

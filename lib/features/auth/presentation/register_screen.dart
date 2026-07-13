@@ -391,7 +391,7 @@ class _RegisterHero extends StatelessWidget {
             _HeroFeatureRow(icon: Icons.lock_outline_rounded, label: 'Private by default — only handle and name are public'),
           ]
         : const [
-            _HeroFeatureRow(icon: Icons.edit_note_rounded, label: 'Publish writing, media, and long-form works'),
+            _HeroFeatureRow(icon: Icons.edit_note_rounded, label: 'Post publicly and join institutional discussions'),
             _HeroFeatureRow(icon: Icons.apartment_rounded, label: 'Connect with institutions and build credentials'),
             _HeroFeatureRow(icon: Icons.mail_outline_rounded, label: 'Structured correspondence with the people that matter'),
           ];
@@ -416,7 +416,7 @@ class _RegisterHero extends StatelessWidget {
           Text(
             isInstitution
                 ? 'You need an Aura account to join an institution. Your account stays private; only your handle and display name are public.'
-                : 'Aura is a place for serious work — writing, correspondence, institutions, and publishing history.',
+                : 'Aura is institution operating infrastructure — verified identity, structured correspondence, and an accountable public record.',
             style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
           ),
           const SizedBox(height: AuraSpace.s20),
@@ -425,7 +425,7 @@ class _RegisterHero extends StatelessWidget {
           Text(
             isInstitution
                 ? 'After creating your account, you will be guided through the institutional verification flow.'
-                : 'Your identity, publication record, and conversations stay with you.',
+                : 'Your identity, participation record, and conversations stay with you.',
             style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.5),
           ),
         ],
