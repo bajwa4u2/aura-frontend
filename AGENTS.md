@@ -152,3 +152,19 @@ A change is complete when:
 - "Messages" / "Correspondence" / "Conversations" terminology collision is a known launch blocker — see `../marketing/terminology-system.md` Conflict #1.
 
 These are tracked. Do not "fix" them in passing without scope.
+
+## Repository Continuity Doctrine (workspace-wide, 2026-07-21)
+
+Repository documentation is authoritative. Conversation history is temporary.
+
+This repository maintains its canonical continuity records in `audit/working-directory/` (`CURRENT_STATE.md`, `NEXT_WORK.md`, `HANDOFF.md`, `DECISIONS.md`, `OPERATIONAL_BASELINE.md`). Read `HANDOFF.md` first when taking over work.
+
+- No implementation milestone is complete until the continuity documents are synchronized.
+- Every milestone must record: completed implementation; founder-approved architectural decisions; production baseline; current implementation status; the next implementation starting point; and outstanding founder approvals.
+- Future agents resume from repository continuity documentation, never from assumptions or prior conversations.
+
+Engineering lifecycle -- no step may be bypassed:
+
+```text
+Implement -> Founder Approval -> Commit -> Continuity Synchronization -> Next Milestone
+```
