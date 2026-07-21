@@ -102,6 +102,7 @@ class _InstitutionPostComposerScreenState
   bool _uploading = false;
 
   bool _busy = false;
+  bool _loadingExisting = false;
   String? _error;
 
   // ── Local draft persistence state ─────────────────────────────────────────
@@ -131,18 +132,7 @@ class _InstitutionPostComposerScreenState
     super.initState();
     final initial = widget.initial;
     if (initial != null) {
-      // Edit mode: peel the [OFFICIAL:TYPE] marker off the stored title so
-      // the user sees + edits the clean title, while the type chip group
-      // reflects the existing post's type. Legacy posts (no marker) decode
-      // to type=Update and the original title is preserved verbatim.
-      final decoded = InsCommunicationDecoded.parse(initial.title);
-      _titleCtrl.text =
-          decoded.hadMarker ? decoded.cleanTitle : initial.title;
-      _communicationType = decoded.type;
-      _bodyCtrl.text = initial.body;
-      _mediaUrl = initial.mediaUrl;
-      _visibility = initial.visibility;
-      _distribution = initial.distribution;
+      _applyInitialPost(initial);
     } else {
       _visibility = _scopeToVisibility(widget.defaultScope);
       // Public institution posts broadcast to the global/member Works feed
@@ -155,6 +145,51 @@ class _InstitutionPostComposerScreenState
     }
     _titleCtrl.addListener(_onFieldChanged);
     _bodyCtrl.addListener(_onFieldChanged);
+    if (widget.isEditing && initial == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadExistingPost();
+      });
+    }
+  }
+
+  void _applyInitialPost(InstitutionPost initial) {
+    final decoded = InsCommunicationDecoded.parse(initial.title);
+    _titleCtrl.text = decoded.hadMarker ? decoded.cleanTitle : initial.title;
+    _communicationType = decoded.type;
+    _bodyCtrl.text = initial.body;
+    _mediaUrl = initial.mediaUrl;
+    _visibility = initial.visibility;
+    _distribution = initial.distribution;
+    _primaryTopic = AuraTopic.fromWire(initial.primaryTopic ?? '');
+    _secondaryTopics = AuraTopic.listFromWire(initial.secondaryTopics);
+  }
+
+  Future<void> _loadExistingPost() async {
+    if (!widget.isEditing || (widget.postId ?? '').trim().isEmpty) return;
+    setState(() {
+      _loadingExisting = true;
+      _error = null;
+    });
+    try {
+      final repo = ref.read(institutionsRepositoryProvider);
+      final post = await repo.getInstitutionPost(
+        institutionId: widget.institutionId,
+        postId: widget.postId!,
+      );
+      if (!mounted) return;
+      _suppressDraftSave = true;
+      setState(() {
+        _applyInitialPost(post);
+        _loadingExisting = false;
+      });
+      _suppressDraftSave = false;
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingExisting = false;
+        _error = _readError(e, 'Could not load post for editing.');
+      });
+    }
   }
 
   static InstitutionPostVisibility _scopeToVisibility(String? scope) {
@@ -233,8 +268,7 @@ class _InstitutionPostComposerScreenState
       _mediaUrl = draft.mediaUrl;
       _mediaThumbUrl = draft.mediaThumbUrl;
       _mediaMimeType = draft.mediaMimeType;
-      _distribution =
-          InstitutionPostDistributionX.fromWire(draft.distribution);
+      _distribution = InstitutionPostDistributionX.fromWire(draft.distribution);
       _draftStatus = _DraftStatus.saved;
       _draftSavedAt = draft.updatedAt;
       _draftCleared = false;
@@ -427,8 +461,7 @@ class _InstitutionPostComposerScreenState
       _mediaUrl = draft.mediaUrl;
       _mediaThumbUrl = draft.mediaThumbUrl;
       _mediaMimeType = draft.mediaMimeType;
-      _distribution =
-          InstitutionPostDistributionX.fromWire(draft.distribution);
+      _distribution = InstitutionPostDistributionX.fromWire(draft.distribution);
       _draftStatus = _DraftStatus.saved;
       _draftSavedAt = draft.updatedAt;
     });
@@ -446,12 +479,14 @@ class _InstitutionPostComposerScreenState
     if (t.isNotEmpty) return t;
     final body = _bodyCtrl.text.trim();
     if (body.isEmpty) return '';
-    final firstLine = body.split('\n').firstWhere(
-          (l) => l.trim().isNotEmpty,
-          orElse: () => '',
-        ).trim();
+    final firstLine = body
+        .split('\n')
+        .firstWhere((l) => l.trim().isNotEmpty, orElse: () => '')
+        .trim();
     if (firstLine.isEmpty) return '';
-    return firstLine.length > 80 ? firstLine.substring(0, 80).trim() : firstLine;
+    return firstLine.length > 80
+        ? firstLine.substring(0, 80).trim()
+        : firstLine;
   }
 
   String _encodedTitle() {
@@ -482,10 +517,7 @@ class _InstitutionPostComposerScreenState
     if (body.length > InstitutionPost.maxBodyChars) {
       return 'Body is too long (max ${InstitutionPost.maxBodyChars} chars).';
     }
-    // Content Topics doctrine: a human-selected Primary Topic is required
-    // before a NEW post can be saved, submitted, or published. (Edit mode
-    // preserves the post's stored topics and does not re-require selection.)
-    if (!widget.isEditing && _primaryTopic == null) {
+    if (_primaryTopic == null) {
       return 'Select a primary topic.';
     }
     return InstitutionPost.validate(_visibility, _distribution);
@@ -508,13 +540,8 @@ class _InstitutionPostComposerScreenState
       if (_mediaUrl != null && _mediaUrl!.isNotEmpty) 'mediaUrl': _mediaUrl,
       'visibility': _visibility.wire,
       'distribution': _distribution.wire,
-      // Topics are authored on NEW posts. On edit we omit them so the
-      // backend preserves the stored values (editing topics in place is a
-      // follow-up that needs the post model to carry them for pre-fill).
-      if (!widget.isEditing && _primaryTopic != null)
-        'primaryTopic': _primaryTopic!.wire,
-      if (!widget.isEditing)
-        'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
+      'primaryTopic': _primaryTopic!.wire,
+      'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
     };
   }
 
@@ -540,7 +567,8 @@ class _InstitutionPostComposerScreenState
 
     try {
       final bytes = await file.readAsBytes();
-      final mimeType = file.mimeType ??
+      final mimeType =
+          file.mimeType ??
           inferMimeFromFileName(file.name) ??
           (video ? 'video/mp4' : 'image/jpeg');
 
@@ -551,20 +579,24 @@ class _InstitutionPostComposerScreenState
       if (video) {
         if (!isMimeAllowedFor(AttachmentKind.video, mimeType)) {
           throw const _MediaValidationException(
-              'Unsupported video format. Use MP4, MOV, or WebM.');
+            'Unsupported video format. Use MP4, MOV, or WebM.',
+          );
         }
         if (bytes.length > _kVideoMaxBytes) {
           throw const _MediaValidationException(
-              'Video must be ${_kVideoMaxBytes ~/ (1024 * 1024)} MB or smaller.');
+            'Video must be ${_kVideoMaxBytes ~/ (1024 * 1024)} MB or smaller.',
+          );
         }
       } else {
         if (!isMimeAllowedFor(AttachmentKind.image, mimeType)) {
           throw const _MediaValidationException(
-              'Unsupported image format. Use JPEG, PNG, WebP, or GIF.');
+            'Unsupported image format. Use JPEG, PNG, WebP, or GIF.',
+          );
         }
         if (bytes.length > _kImageMaxBytes) {
           throw const _MediaValidationException(
-              'Image must be ${_kImageMaxBytes ~/ (1024 * 1024)} MB or smaller.');
+            'Image must be ${_kImageMaxBytes ~/ (1024 * 1024)} MB or smaller.',
+          );
         }
       }
 
@@ -852,8 +884,8 @@ class _InstitutionPostComposerScreenState
     final headline = !published
         ? 'Draft saved'
         : type == InsCommunicationType.announcement
-            ? 'Announcement published'
-            : 'Statement published';
+        ? 'Announcement published'
+        : 'Statement published';
 
     messenger.showSnackBar(
       SnackBar(
@@ -874,9 +906,11 @@ class _InstitutionPostComposerScreenState
     invalidateUnifiedFeedSurfaces(ref);
     // Activity surface is institution-scoped and not part of the
     // unified-feed helper, so it still needs its own invalidate.
-    ref.invalidate(institutionActivityFirstPageProvider(
-      InstitutionActivityArgs(institutionId: widget.institutionId),
-    ));
+    ref.invalidate(
+      institutionActivityFirstPageProvider(
+        InstitutionActivityArgs(institutionId: widget.institutionId),
+      ),
+    );
 
     // Fire-and-forget the refetches. Errors are swallowed here — the
     // watcher screens still render their own error states from the same
@@ -887,18 +921,22 @@ class _InstitutionPostComposerScreenState
     ref.read(globalPublicFeedProvider.future).ignore();
     ref.read(memberHomeFeedProvider.future).ignore();
     ref
-        .read(institutionActivityFirstPageProvider(
-          InstitutionActivityArgs(institutionId: widget.institutionId),
-        ).future)
+        .read(
+          institutionActivityFirstPageProvider(
+            InstitutionActivityArgs(institutionId: widget.institutionId),
+          ).future,
+        )
         .ignore();
     for (final scope in const ['public', 'member', 'internal']) {
       ref
-          .read(institutionExploreFeedProvider(
-            InstitutionExploreFeedArgs(
-              institutionId: widget.institutionId,
-              scope: scope,
-            ),
-          ).future)
+          .read(
+            institutionExploreFeedProvider(
+              InstitutionExploreFeedArgs(
+                institutionId: widget.institutionId,
+                scope: scope,
+              ),
+            ).future,
+          )
           .ignore();
     }
   }
@@ -980,6 +1018,13 @@ class _InstitutionPostComposerScreenState
       );
     }
 
+    if (_loadingExisting) {
+      return AuraScaffold(
+        showHeader: false,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return AuraScaffold(
       showHeader: false,
       body: ListView(
@@ -1050,13 +1095,13 @@ class _InstitutionPostComposerScreenState
                     label: 'Communication type',
                     child: _CommunicationTypePicker(
                       selected: _communicationType,
-                      onChanged: (t) =>
-                          setState(() => _communicationType = t),
+                      onChanged: (t) => setState(() => _communicationType = t),
                     ),
                   ),
                   _LabeledField(
                     label: 'Title (optional — derived from body if empty)',
-                    counter: '${_titleCtrl.text.length} / '
+                    counter:
+                        '${_titleCtrl.text.length} / '
                         '${InstitutionPost.maxTitleChars}',
                     counterColor: _counterColor(
                       _titleCtrl.text.length,
@@ -1072,7 +1117,8 @@ class _InstitutionPostComposerScreenState
                   ),
                   _LabeledField(
                     label: 'Body',
-                    counter: '${_bodyCtrl.text.length} / '
+                    counter:
+                        '${_bodyCtrl.text.length} / '
                         '${InstitutionPost.maxBodyChars}',
                     counterColor: _counterColor(
                       _bodyCtrl.text.length,
@@ -1120,18 +1166,15 @@ class _InstitutionPostComposerScreenState
                       _scheduleDraftSave();
                     },
                   ),
-                  if (!widget.isEditing) ...[
-                    const SizedBox(height: AuraSpace.s16),
-                    AuraTopicSelector(
-                      primary: _primaryTopic,
-                      secondaries: _secondaryTopics,
-                      contentText: '${_titleCtrl.text} ${_bodyCtrl.text}',
-                      onPrimaryChanged: (t) =>
-                          setState(() => _primaryTopic = t),
-                      onSecondariesChanged: (list) =>
-                          setState(() => _secondaryTopics = list),
-                    ),
-                  ],
+                  const SizedBox(height: AuraSpace.s16),
+                  AuraTopicSelector(
+                    primary: _primaryTopic,
+                    secondaries: _secondaryTopics,
+                    contentText: '${_titleCtrl.text} ${_bodyCtrl.text}',
+                    onPrimaryChanged: (t) => setState(() => _primaryTopic = t),
+                    onSecondariesChanged: (list) =>
+                        setState(() => _secondaryTopics = list),
+                  ),
                   const SizedBox(height: AuraSpace.s16),
                   if (!widget.isEditing)
                     _DraftStatusRow(
@@ -1169,32 +1212,30 @@ class _InstitutionPostComposerScreenState
     required int currentLength,
     required int? maxLength,
     required bool isFocused,
-  }) =>
-      const SizedBox.shrink();
+  }) => const SizedBox.shrink();
 
   InputDecoration _decoration(String hint) => InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: AuraSurface.subtle,
-        hintStyle: AuraText.body.copyWith(color: AuraSurface.faint),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide: const BorderSide(color: AuraSurface.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide: const BorderSide(color: AuraSurface.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide:
-              const BorderSide(color: Color(0xFF0D9488), width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s14,
-          vertical: AuraSpace.s12,
-        ),
-      );
+    hintText: hint,
+    filled: true,
+    fillColor: AuraSurface.subtle,
+    hintStyle: AuraText.body.copyWith(color: AuraSurface.faint),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AuraRadius.md),
+      borderSide: const BorderSide(color: AuraSurface.divider),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AuraRadius.md),
+      borderSide: const BorderSide(color: AuraSurface.divider),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AuraRadius.md),
+      borderSide: const BorderSide(color: Color(0xFF0D9488), width: 1.5),
+    ),
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AuraSpace.s14,
+      vertical: AuraSpace.s12,
+    ),
+  );
 }
 
 // ── Actor banner — "Posting as: <Institution Name>" ─────────────────────────
@@ -1212,7 +1253,6 @@ class _ActorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = identity?.name ?? '';
     final logoUrl = identity?.logoUrl ?? '';
-    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'I';
 
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s12),
@@ -1223,38 +1263,10 @@ class _ActorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: _accentSoft,
-              shape: BoxShape.circle,
-              border: Border.all(color: _accent.withValues(alpha: 0.4)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: logoUrl.isNotEmpty
-                ? Image.network(
-                    logoUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Center(
-                      child: Text(
-                        initial,
-                        style: AuraText.small.copyWith(
-                          color: _accentText,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  )
-                : Center(
-                    child: Text(
-                      initial,
-                      style: AuraText.small.copyWith(
-                        color: _accentText,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
+          AuraAvatar(
+            name: name.isNotEmpty ? name : 'Institution',
+            imageUrl: logoUrl.isEmpty ? null : logoUrl,
+            size: 36,
           ),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
@@ -1372,12 +1384,14 @@ class _MediaUploadSlot extends StatelessWidget {
                 uploading
                     ? 'Uploading…'
                     : _hasMedia && !_isVideo
-                        ? 'Replace image'
-                        : 'Add image',
+                    ? 'Replace image'
+                    : 'Add image',
               ),
               style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
@@ -1394,12 +1408,14 @@ class _MediaUploadSlot extends StatelessWidget {
                 uploading
                     ? 'Uploading…'
                     : _hasMedia && _isVideo
-                        ? 'Replace video'
-                        : 'Add video',
+                    ? 'Replace video'
+                    : 'Add video',
               ),
               style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
@@ -1451,8 +1467,10 @@ class _MediaUploadSlot extends StatelessWidget {
             errorBuilder: (_, __, ___) => Container(
               color: AuraSurface.subtle,
               child: const Center(
-                child: Icon(Icons.broken_image_outlined,
-                    color: AuraSurface.faint),
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  color: AuraSurface.faint,
+                ),
               ),
             ),
           ),
@@ -1550,10 +1568,7 @@ class _LabeledField extends StatelessWidget {
 }
 
 class _VisibilitySection extends StatelessWidget {
-  const _VisibilitySection({
-    required this.visibility,
-    required this.onChange,
-  });
+  const _VisibilitySection({required this.visibility, required this.onChange});
 
   final InstitutionPostVisibility visibility;
   final ValueChanged<InstitutionPostVisibility> onChange;
@@ -1656,10 +1671,10 @@ class _DistributionSection extends StatelessWidget {
                 activeThumbColor: const Color(0xFF0D9488),
                 onChanged: globalEnabled
                     ? (v) => onChange(
-                          v
-                              ? InstitutionPostDistribution.globalEligible
-                              : InstitutionPostDistribution.institutionOnly,
-                        )
+                        v
+                            ? InstitutionPostDistribution.globalEligible
+                            : InstitutionPostDistribution.institutionOnly,
+                      )
                     : null,
               ),
             ],
@@ -1814,8 +1829,7 @@ class _DraftStatusRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               minimumSize: const Size(0, 28),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              textStyle:
-                  AuraText.micro.copyWith(fontWeight: FontWeight.w700),
+              textStyle: AuraText.micro.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
       ],
@@ -1835,14 +1849,11 @@ class _ErrorBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(
-          color: AuraSurface.coRose.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline,
-              size: 16, color: AuraSurface.coRose),
+          const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(

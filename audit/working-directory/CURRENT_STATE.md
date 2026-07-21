@@ -49,3 +49,22 @@ No founder-defined next milestone is recorded beyond AXR-1, which is now closed.
 ## Outstanding founder approvals
 
 **None.** AXR-1 is fully implemented, verified, pushed (`a19547f` on `origin/main`, alongside `../aura-backend`'s `37cb22f` on its own `origin/main`), and certified closed. Per this repo's own release doctrine (`OPERATIONAL_BASELINE.md`), pushing `main` is push-to-deploy for the web target on Railway — unlike aura-studio's Cloudflare flow, deploy is not a separate authorized step here. Live cache-busted verification on `auraplatform.org` (the doctrine's own last release-order step) was not performed in this session and is worth a quick confirmation, but is operational follow-through, not a pending decision.
+## 2026-07-21: Aura Post Integrity & Editing Remediation
+
+Implemented in the working tree, pending commit/push/deploy verification:
+
+- Member composer discard now calls `DELETE /posts/draft`, clears local composer state, and returns Home through the existing provider invalidation path. Backend stale-token filtering covers refresh/logout/login/restart cases.
+- Public composer identity now passes authenticated profile `avatarUrl` into canonical `AuraAvatar`; institution composer actor banner also delegates to `AuraAvatar`.
+- Member compose publish/save now requires a canonical selected `AuraTopic` for top-level posts. Raw `#` text does not satisfy this because `_primaryTopic` is only set by `AuraTopicSelector`.
+- Member editing restored through `/posts/:postId/edit`, reusing `ComposeScreen` in deterministic edit mode and saving through `PUT /posts/:id`.
+- Institution edit now hydrates the existing post through `GET /institutions/:institutionId/posts/:postId`, preserves title/body/topic/visibility/distribution/media state, and saves through `PATCH` instead of create.
+
+Validation recorded this session:
+
+- `flutter analyze` passed with no issues.
+- `flutter test` could not be completed: the Flutter test runner hung before output even for pre-existing `test/governed_tagging_test.dart` and `--list-tests`; treat as environment/tooling blocker, not a test assertion failure.
+
+Out-of-scope issues recorded:
+
+- Existing `institutions_repository.dart` had multiple single-line `if` lint issues; fixed because this remediation touched the file.
+- Production verification still required after push/deploy.

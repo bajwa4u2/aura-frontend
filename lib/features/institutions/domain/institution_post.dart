@@ -156,6 +156,8 @@ class InstitutionPost {
     this.replyToInstitutionPostId,
     this.resolvesInstitutionPostId,
     this.continuesInstitutionPostId,
+    this.primaryTopic,
+    this.secondaryTopics = const <String>[],
   });
 
   final String id;
@@ -206,6 +208,8 @@ class InstitutionPost {
   /// continuations. When set, this post continues an earlier
   /// discussion identified by the referenced post id.
   final String? continuesInstitutionPostId;
+  final String? primaryTopic;
+  final List<String> secondaryTopics;
 
   bool get isReply =>
       replyToInstitutionPostId != null &&
@@ -293,6 +297,13 @@ class InstitutionPost {
       replyToInstitutionPostId: opt(['replyToInstitutionPostId']),
       resolvesInstitutionPostId: opt(['resolvesInstitutionPostId']),
       continuesInstitutionPostId: opt(['continuesInstitutionPostId']),
+      primaryTopic: opt(['primaryTopic']),
+      secondaryTopics: (json['secondaryTopics'] is List)
+          ? (json['secondaryTopics'] as List)
+                .map((e) => e.toString().trim())
+                .where((e) => e.isNotEmpty)
+                .toList()
+          : const <String>[],
     );
   }
 
@@ -311,6 +322,8 @@ class InstitutionPost {
       if (archivedAt != null) 'archivedAt': archivedAt!.toIso8601String(),
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+      if (primaryTopic != null) 'primaryTopic': primaryTopic,
+      if (secondaryTopics.isNotEmpty) 'secondaryTopics': secondaryTopics,
     };
   }
 }

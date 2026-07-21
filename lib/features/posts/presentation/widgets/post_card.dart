@@ -142,7 +142,6 @@ IconData _visibilityIcon(String? raw) {
   }
 }
 
-
 class _ViewerIdentity {
   const _ViewerIdentity({required this.id, required this.handle});
 
@@ -782,16 +781,18 @@ class _PostCardState extends ConsumerState<PostCard> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Post-content editing isn't shipped yet — we hide the
-                // affordance rather than showing it and snack-barring a
-                // "not wired yet" message. Re-enable here when the
-                // PATCH /v1/posts/:id surface ships.
-                if (isOwnPost)
+                if (isOwnPost) ...[
+                  PostCardMenuActionTile(
+                    icon: Icons.edit_outlined,
+                    label: 'Edit work',
+                    onTap: () => Navigator.of(ctx).pop('edit_post'),
+                  ),
                   PostCardMenuActionTile(
                     icon: Icons.delete_outline,
                     label: 'Delete work',
                     onTap: () => Navigator.of(ctx).pop('delete_post'),
                   ),
+                ],
                 PostCardMenuActionTile(
                   icon: Icons.article_outlined,
                   label: 'Open work',
@@ -845,6 +846,9 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (!context.mounted || selected == null) return;
 
     switch (selected) {
+      case 'edit_post':
+        context.push('/posts/$postId/edit');
+        break;
       case 'delete_post':
         await _deletePost(context, postId);
         break;
@@ -865,18 +869,22 @@ class _PostCardState extends ConsumerState<PostCard> {
         );
         break;
       case 'open_post':
-        context.push(FeedRouting.adaptTargetRoute(
-          '/posts/$postId',
-          currentPath: GoRouterState.of(context).uri.path,
-        ));
+        context.push(
+          FeedRouting.adaptTargetRoute(
+            '/posts/$postId',
+            currentPath: GoRouterState.of(context).uri.path,
+          ),
+        );
         break;
       case 'open_profile':
         if ((handle ?? '').trim().isNotEmpty) {
-          context.push(FeedRouting.adaptProfileRoute(
-                '/u/${handle!.trim()}',
-                currentPath: GoRouterState.of(context).uri.path,
-              ) ??
-              '/u/${handle.trim()}');
+          context.push(
+            FeedRouting.adaptProfileRoute(
+                  '/u/${handle!.trim()}',
+                  currentPath: GoRouterState.of(context).uri.path,
+                ) ??
+                '/u/${handle.trim()}',
+          );
         }
         break;
       case 'copy_link':
@@ -902,11 +910,13 @@ class _PostCardState extends ConsumerState<PostCard> {
   void _openProfile(BuildContext context, String handle) {
     final h = handle.trim();
     if (h.isEmpty) return;
-    context.push(FeedRouting.adaptProfileRoute(
+    context.push(
+      FeedRouting.adaptProfileRoute(
+            '/u/$h',
+            currentPath: GoRouterState.of(context).uri.path,
+          ) ??
           '/u/$h',
-          currentPath: GoRouterState.of(context).uri.path,
-        ) ??
-        '/u/$h');
+    );
   }
 
   Future<void> _openMediaViewer(
@@ -1094,8 +1104,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                           maxLines: collapsedLines,
                         );
 
-                  final maxLines =
-                      (widget.detail || _expanded) ? null : collapsedLines;
+                  final maxLines = (widget.detail || _expanded)
+                      ? null
+                      : collapsedLines;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1497,9 +1508,7 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
 
     void goSignIn() {
       final redirect = GoRouterState.of(context).uri.toString();
-      context.go(
-        '/login?redirect=${Uri.encodeComponent(redirect)}',
-      );
+      context.go('/login?redirect=${Uri.encodeComponent(redirect)}');
     }
 
     Future<void> toggleLike() async {

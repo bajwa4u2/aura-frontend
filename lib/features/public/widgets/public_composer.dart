@@ -51,10 +51,15 @@ class PublicComposer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(authMeDataProvider).valueOrNull;
-    final user = (me?['user'] is Map ? me!['user'] : <String, dynamic>{})
-        as Map<dynamic, dynamic>;
+    final user =
+        (me?['user'] is Map ? me!['user'] : <String, dynamic>{})
+            as Map<dynamic, dynamic>;
     final displayName = (user['displayName'] ?? user['name'] ?? '').toString();
     final handle = (user['handle'] ?? '').toString();
+    final avatarUrl =
+        (user['avatarUrl'] ?? user['photoUrl'] ?? user['imageUrl'] ?? '')
+            .toString()
+            .trim();
 
     return Material(
       color: Colors.transparent,
@@ -79,6 +84,7 @@ class PublicComposer extends ConsumerWidget {
                 name: displayName.isNotEmpty
                     ? displayName
                     : (handle.isNotEmpty ? '@$handle' : 'You'),
+                imageUrl: avatarUrl.isEmpty ? null : avatarUrl,
                 size: 36,
               ),
               const SizedBox(width: AuraSpace.s12),

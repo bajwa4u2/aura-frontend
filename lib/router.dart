@@ -416,7 +416,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   // live-room navigation on the fast path (no extra fetch after the first)
   // and to guard against redirect loops.
   final realtimeMeetingRedirects = <String, String>{}; // sessionId → meetingId
-  final realtimeSurfaceResolved = <String>{}; // sessionIds confirmed non-meeting
+  final realtimeSurfaceResolved =
+      <String>{}; // sessionIds confirmed non-meeting
 
   return GoRouter(
     refreshListenable: refresh,
@@ -954,7 +955,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/meetings/new',
             builder: (context, state) => CreateMeetingScreen(
               institutionId: state.pathParameters['institutionId'],
-              startNow: state.uri.queryParameters['instant'] == '1' ||
+              startNow:
+                  state.uri.queryParameters['instant'] == '1' ||
                   state.uri.queryParameters['instant'] == 'true',
             ),
           ),
@@ -1404,6 +1406,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 parentInstitutionId:
                     state.uri.queryParameters['parentInstitutionId'],
                 heldPostId: state.uri.queryParameters['held'],
+                editPostId: state.uri.queryParameters['edit'],
                 surface: state.uri.queryParameters['surface'],
                 mode: state.uri.queryParameters['mode'],
                 asInstitution: asInstitution,
@@ -1418,6 +1421,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 intent: state.uri.queryParameters['intent']?.trim(),
               );
             },
+          ),
+          GoRoute(
+            path: '/posts/:postId/edit',
+            builder: (context, state) => ComposeScreen(
+              editPostId: state.pathParameters['postId']?.trim(),
+            ),
           ),
           GoRoute(
             path: kEnterInstitutionRoute,
@@ -1777,7 +1786,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
 
           var meetingId = realtimeMeetingRedirects[sessionId];
-          if (meetingId == null && !realtimeSurfaceResolved.contains(sessionId)) {
+          if (meetingId == null &&
+              !realtimeSurfaceResolved.contains(sessionId)) {
             // Guests arriving on a stale `/realtime/` deep link may not be
             // authed yet; exchange the guest token first (using the guestId
             // that survives web reloads) so the surface lookup can succeed.

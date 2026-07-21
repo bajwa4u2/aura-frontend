@@ -45,6 +45,7 @@ class ComposeScreen extends ConsumerStatefulWidget {
   final String? parentInstitutionId;
 
   final String? heldPostId;
+  final String? editPostId;
   final String? surface;
   final String? mode;
 
@@ -79,6 +80,7 @@ class ComposeScreen extends ConsumerStatefulWidget {
     this.replyToInstitutionPostId,
     this.parentInstitutionId,
     this.heldPostId,
+    this.editPostId,
     this.surface,
     this.mode,
     this.asInstitution = false,
@@ -188,8 +190,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// Index into `_kRotatingPrompts` — used only when `_intent` is
   /// `_ComposeIntent.none`. Set once on each composer mount so the
   /// prompt rotates by entry count, not by clock.
-  final int _rotatingIdx = DateTime.now().millisecondsSinceEpoch %
-      _kRotatingPrompts.length;
+  final int _rotatingIdx =
+      DateTime.now().millisecondsSinceEpoch % _kRotatingPrompts.length;
 
   final _textController = TextEditingController();
   // AXR-1 — explicit focus node so governed tag autocomplete can track
@@ -261,8 +263,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String? _linkedinError;
 
   bool get _isReply =>
-      widget.replyToPostId != null ||
-      widget.replyToInstitutionPostId != null;
+      widget.replyToPostId != null || widget.replyToInstitutionPostId != null;
   bool get _isInstitutionPostReply =>
       (widget.replyToInstitutionPostId ?? '').trim().isNotEmpty &&
       (widget.parentInstitutionId ?? '').trim().isNotEmpty;
@@ -270,9 +271,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String get _replyToPostId => (widget.replyToPostId ?? '').trim();
   String get _replyToInstitutionPostId =>
       (widget.replyToInstitutionPostId ?? '').trim();
-  String get _parentInstitutionId =>
-      (widget.parentInstitutionId ?? '').trim();
+  String get _parentInstitutionId => (widget.parentInstitutionId ?? '').trim();
   String get _heldPostId => (widget.heldPostId ?? '').trim();
+  String get _editPostId => (widget.editPostId ?? '').trim();
+  bool get _isEditingPost => _editPostId.isNotEmpty;
 
   bool get _hasText => _textController.text.trim().isNotEmpty;
   bool get _textTooLong => _textController.text.trim().length > _limit;
@@ -300,6 +302,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (!_hasText) return false;
     if (_textTooLong) return false;
     if (_hasUploadingAttachments) return false;
+    if (!_isReply && _primaryTopic == null) return false;
     return true;
   }
 
@@ -467,7 +470,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   void initState() {
     super.initState();
 
-    if (!_isReply) {
+    if (_isEditingPost) {
+      _loadEditablePost();
+    } else if (!_isReply) {
       _loadDraft();
       _loadExternalConnections();
     }
@@ -738,6 +743,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   Future<void> _loadDraft() async {
+    if (_isEditingPost) return;
     if (_isReply) return;
 
     try {
@@ -838,7 +844,73 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
+  Future<void> _loadEditablePost() async {
+    if (!_isEditingPost) return;
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get('/posts/$_editPostId');
+      final root = _asMap(res.data);
+      final postSource = root['post'] ?? root['item'] ?? root['data'] ?? root;
+      if (postSource is! Map) return;
+
+      final post = Map<String, dynamic>.from(postSource);
+      final mediaItems = _listOfMap(post['media']);
+      final loadedAttachments = <Attachment>[];
+      for (final item in mediaItems) {
+        final typeRaw = _str(item['type']).toUpperCase();
+        final mediaId = _str(item['id']);
+        if (mediaId.isEmpty) continue;
+        final isVideo = typeRaw == 'VIDEO';
+        final att = Attachment(
+          localId: mediaId,
+          kind: isVideo ? AttachmentKind.video : AttachmentKind.image,
+          source: AttachmentSource.gallery,
+          mediaId: mediaId,
+          url: _str(item['displayUrl']).isNotEmpty
+              ? _str(item['displayUrl'])
+              : _str(item['url']),
+          thumbUrl: _str(item['thumbnailUrl']).isNotEmpty
+              ? _str(item['thumbnailUrl'])
+              : _str(item['thumbUrl']),
+          width: item['width'] is int
+              ? item['width'] as int
+              : int.tryParse('${item['width'] ?? ''}'),
+          height: item['height'] is int
+              ? item['height'] as int
+              : int.tryParse('${item['height'] ?? ''}'),
+          durationMs: item['duration'] is int
+              ? item['duration'] as int
+              : int.tryParse('${item['duration'] ?? ''}'),
+          uploading: false,
+          attachedToDraft: true,
+        );
+        _ensureCaptionController(att, initialText: _str(item['caption']));
+        loadedAttachments.add(att);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _textController.text = _str(post['text']);
+        _visibility = _visibilityFromApi(post['visibility']);
+        _primaryTopic = AuraTopic.fromWire(_str(post['primaryTopic']));
+        _secondaryTopics = AuraTopic.listFromWire(post['secondaryTopics']);
+        _lastSavedAt = null;
+        _attachments
+          ..clear()
+          ..addAll(loadedAttachments);
+        if (_hasText) _showTextError = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load post for editing: $e')),
+      );
+    }
+  }
+
   void _scheduleAutosave() {
+    if (_isEditingPost) return;
     if (_isReply) return;
 
     _autosaveDebounce?.cancel();
@@ -1060,9 +1132,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final captionText = _captionText(attachment);
       await dio.patch(
         '/media/$mediaId',
-        data: {
-          'caption': captionText.isEmpty ? null : captionText,
-        },
+        data: {'caption': captionText.isEmpty ? null : captionText},
       );
     } catch (_) {
       // best-effort
@@ -1143,7 +1213,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       case _ComposeIntent.raise:
         return 'ISSUE';
       case _ComposeIntent.share:
-        return 'SHARE_UPDATE';
+        return 'UPDATE';
       case _ComposeIntent.none:
         return null;
     }
@@ -1172,16 +1242,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           .asMap()
           .entries
           .where((entry) => (entry.value.mediaId ?? '').trim().isNotEmpty)
-          .map(
-            (entry) {
-              final captionText = _captionText(entry.value);
-              return {
-                'mediaId': entry.value.mediaId,
-                'position': entry.key,
-                'caption': captionText.isEmpty ? null : captionText,
-              };
-            },
-          )
+          .map((entry) {
+            final captionText = _captionText(entry.value);
+            return {
+              'mediaId': entry.value.mediaId,
+              'position': entry.key,
+              'caption': captionText.isEmpty ? null : captionText,
+            };
+          })
           .toList(),
     };
   }
@@ -1190,6 +1258,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     bool silent = false,
     bool allowWhilePosting = false,
   }) async {
+    if (_isEditingPost) return;
     if (_isReply) return;
     if (_saving) return;
     if (_posting && !allowWhilePosting) return;
@@ -1300,10 +1369,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             flex: 8,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildEditorSection(),
-                belowEditorItems,
-              ],
+              children: [_buildEditorSection(), belowEditorItems],
             ),
           ),
           const SizedBox(width: AuraSpace.s16),
@@ -1370,8 +1436,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 // Drop any secondary that now equals the primary, then persist.
                 if (t != null && _secondaryTopics.contains(t)) {
                   setState(() {
-                    _secondaryTopics =
-                        _secondaryTopics.where((x) => x != t).toList();
+                    _secondaryTopics = _secondaryTopics
+                        .where((x) => x != t)
+                        .toList();
                   });
                 }
                 _scheduleAutosave();
@@ -1487,11 +1554,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           const SizedBox(height: AuraSpace.s10),
           Row(
             children: [
-              const Icon(
-                Icons.tag_rounded,
-                size: 12,
-                color: AuraSurface.muted,
-              ),
+              const Icon(Icons.tag_rounded, size: 12, color: AuraSurface.muted),
               const SizedBox(width: 5),
               Text(
                 spaceName.isNotEmpty
@@ -1530,7 +1593,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
               ),
               const SizedBox(height: AuraSpace.s4),
-              if (_isReply && widget.asInstitution &&
+              if (_isReply &&
+                  widget.asInstitution &&
                   (widget.institutionId ?? '').trim().isNotEmpty) ...[
                 _ReplyActorBanner(institutionId: widget.institutionId!.trim()),
                 const SizedBox(height: AuraSpace.s4),
@@ -1567,7 +1631,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       ],
     );
   }
-
 
   Widget _buildDistributionSection() {
     if (_isReply) return const SizedBox.shrink();
@@ -1765,9 +1828,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // Branch on the reply target: regular post vs institution post live in
     // different tables and behind different endpoints.
     if (_isInstitutionPostReply) {
-      final body = <String, dynamic>{
-        'body': text,
-      };
+      final body = <String, dynamic>{'body': text};
       if (widget.asInstitution && instId.isNotEmpty) {
         body['asInstitution'] = true;
         body['actorInstitutionId'] = instId;
@@ -1798,9 +1859,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return _extractPublishedPostId(res.data);
   }
 
+  Future<String?> _saveEditedPostNow() async {
+    final dio = ref.read(dioProvider);
+    final res = await dio.put(
+      '/posts/$_editPostId',
+      data: _buildComposePayload(),
+    );
+    return _extractPublishedPostId(res.data) ?? _editPostId;
+  }
+
   Future<String?> _publishNow() async {
     if (_isReply) {
       return _publishReplyNow();
+    }
+    if (_isEditingPost) {
+      return _saveEditedPostNow();
     }
 
     return _publishPostNow();
@@ -1914,16 +1987,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
-    // For top-level posts with Raise Issue intent, nudge user to add a topic
-    // so the backend can route the record to the right institution.
-    if (!_isReply &&
-        _intent == _ComposeIntent.raise &&
-        _primaryTopic == null) {
+    if (!_isReply && _primaryTopic == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Select a topic so your issue can reach the right institutions.',
-          ),
+          content: Text('Select a topic before publishing.'),
           duration: Duration(seconds: 3),
         ),
       );
@@ -1972,7 +2039,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     String? externalMessage;
 
     try {
-      if (!_isReply) {
+      if (!_isReply && !_isEditingPost) {
         await _saveDraft(silent: true, allowWhilePosting: true);
       }
 
@@ -2479,6 +2546,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (_posting) return;
 
     _autosaveDebounce?.cancel();
+    if (!_isReply && !_isEditingPost) {
+      try {
+        await ref.read(dioProvider).delete('/posts/draft');
+      } catch (_) {
+        // Discard is a local escape hatch too; backend cleanup is retried by
+        // stale-draft filtering on the next Home load.
+      }
+    }
 
     for (final c in _captionControllers.values) {
       c.dispose();
@@ -2495,6 +2570,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _uploadingMedia = false;
       _publishToTikTok = false;
     });
+    ref.invalidate(memberHomeFeedPagedProvider);
 
     if (!mounted) return;
     context.pop(false);
@@ -2579,20 +2655,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _isReply
             ? Icons.reply_rounded
             : (_isMediaFirst
-                ? Icons.perm_media_outlined
-                : Icons.edit_note_rounded),
+                  ? Icons.perm_media_outlined
+                  : Icons.edit_note_rounded),
         color: AuraSurface.accentText,
       ),
     );
 
     final title = _isReply
         ? 'Write a response'
-        : (_isMediaFirst ? 'Create with media' : 'Create post');
+        : (_isEditingPost
+              ? 'Edit post'
+              : (_isMediaFirst ? 'Create with media' : 'Create post'));
     final subtitle = _isReply
         ? 'Reply first. The response stays attached to the conversation.'
-        : (_isMediaFirst
-            ? 'Attach your media first, then add context.'
-            : 'Write first, configure second, review third.');
+        : (_isEditingPost
+              ? 'Update the existing post without creating a duplicate.'
+              : (_isMediaFirst
+                    ? 'Attach your media first, then add context.'
+                    : 'Write first, configure second, review third.'));
 
     return LayoutBuilder(
       builder: (ctx, constraints) {
@@ -2613,24 +2693,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   children: [
                     leadingIcon,
                     const SizedBox(width: AuraSpace.s12),
-                    Expanded(
-                      child: Text(title, style: AuraText.headline),
-                    ),
+                    Expanded(child: Text(title, style: AuraText.headline)),
                     AuraGhostButton(
                       label: 'Back',
                       icon: Icons.arrow_back,
                       onPressed: _posting
-                    ? null
-                    : () {
-                        // Reached via context.go from the Create hub has no
-                        // back-stack — fall back to a safe home so Back is
-                        // never a dead tap.
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/home');
-                        }
-                      },
+                          ? null
+                          : () {
+                              // Reached via context.go from the Create hub has no
+                              // back-stack — fall back to a safe home so Back is
+                              // never a dead tap.
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go('/home');
+                              }
+                            },
                     ),
                   ],
                 ),
@@ -2684,7 +2762,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       },
     );
   }
-
 
   Widget _buildStatusRow() {
     return Wrap(
@@ -2752,7 +2829,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       ),
     );
   }
-
 
   Widget _buildComposerBox() {
     return Container(
@@ -3077,8 +3153,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
 
     final saveDraftBtn = AuraGhostButton(
-      label: _isReply ? 'Save unavailable' : 'Save draft',
-      onPressed: (_isReply || _posting || _saving || !_hasText || _uploadingMedia)
+      label: (_isReply || _isEditingPost) ? 'Save unavailable' : 'Save draft',
+      onPressed:
+          (_isReply ||
+              _isEditingPost ||
+              _posting ||
+              _saving ||
+              !_hasText ||
+              _uploadingMedia)
           ? null
           : () {
               if (!_hasText) {
@@ -3093,8 +3175,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       label: _posting
           ? (_isReply
                 ? 'Publishing reply…'
-                : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
-          : (_isReply ? 'Publish response' : 'Publish post'),
+                : (_isEditingPost
+                      ? 'Saving…'
+                      : (_publishingToTikTok
+                            ? 'Queuing TikTok…'
+                            : 'Publishing…')))
+          : (_isReply
+                ? 'Publish response'
+                : (_isEditingPost ? 'Save changes' : 'Publish post')),
       onPressed: (_posting || !_canPublish)
           ? null
           : () {
@@ -3182,7 +3270,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: kWorkspaceWidth),
+                    constraints: const BoxConstraints(
+                      maxWidth: kWorkspaceWidth,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -3223,9 +3313,11 @@ class _ReplyActorBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(institutionIdentityProvider);
     final name =
-        identity != null && identity.id == institutionId && identity.name.isNotEmpty
-            ? identity.name
-            : 'institution';
+        identity != null &&
+            identity.id == institutionId &&
+            identity.name.isNotEmpty
+        ? identity.name
+        : 'institution';
     return Container(
       margin: const EdgeInsets.only(top: AuraSpace.s4),
       padding: const EdgeInsets.symmetric(

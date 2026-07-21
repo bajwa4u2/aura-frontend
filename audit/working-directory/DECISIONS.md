@@ -63,3 +63,16 @@ VERIFIED WITH RESIDUAL FOUNDER EDITORIAL ITEMS. Audit and deployment were two se
 ## Frozen classification
 
 Aura's product architecture was frozen 2026-07-12 (`AURA_REPRESENTATION_MODULE_INVENTORY.md`, `AURA_PLATFORM_ARCHITECTURE.md` — in `representation/inventory/`). When a later audit runs, Phase 1 is "confirm and cite," never "re-derive and re-freeze."
+## 2026-07-21: Post editing reuses canonical composers
+
+Decision: member and institution post editing must use deterministic edit modes in the canonical composer surfaces, not separate edit architectures or create-mode redirects.
+
+Reason: public/member edit capability disappeared because the affordance was hidden and backend update rejected published posts. Institution edit routed into an unhydrated create-mode composer, risking duplicate/blank mutations. Edit mode must hydrate the existing row, preserve metadata, and save through update endpoints.
+
+Repository impact: `ComposeScreen` accepts `editPostId` and saves through `PUT /posts/:id`; `InstitutionPostComposerScreen` loads `postId` through the single-post endpoint and saves through `PATCH /institutions/:institutionId/posts/:postId`.
+
+## 2026-07-21: Topic selection is canonical state, not raw text
+
+Decision: publishing/editing top-level posts requires selected `AuraTopic` state. Raw text that starts with `#` is tagging/autocomplete text only and does not satisfy topic selection.
+
+Reason: backend routing and doctrine depend on canonical topic enum values. Text tokens can be incomplete, decorative, or stale.
