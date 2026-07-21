@@ -15,7 +15,7 @@ Last updated: 2026-07-21 UTC (Post Integrity Remediation)
 
 ## Current verification note
 
-Post-integrity remediation validated with `flutter analyze`. Targeted Flutter tests were added for composer identity, but local `flutter test` and `--list-tests` invocations timed out before producing test output. Production-flow verification remains required after deployment.
+Post-integrity and mention-remediation changes validated with `flutter analyze`. Targeted Flutter tests were added for composer identity and governed mention selection, but local `flutter test` invocations timed out before producing test output. Production-flow verification remains required after deployment.
 
 ## Release order
 

@@ -76,3 +76,9 @@ Repository impact: `ComposeScreen` accepts `editPostId` and saves through `PUT /
 Decision: publishing/editing top-level posts requires selected `AuraTopic` state. Raw text that starts with `#` is tagging/autocomplete text only and does not satisfy topic selection.
 
 Reason: backend routing and doctrine depend on canonical topic enum values. Text tokens can be incomplete, decorative, or stale.
+
+## 2026-07-21: Mention selection is text plus canonical reference
+
+Decision: governed mention autocomplete replaces the active text token and reports the selected canonical entity reference to the composer. The text remains the renderable source; the `mentions` payload carries selected member/institution ids for backend fanout.
+
+Reason: plain `@handle` text is necessary for readable posts and normal editing, but selected autocomplete results must not lose their canonical identity before publish/update.

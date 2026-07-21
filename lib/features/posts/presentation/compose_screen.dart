@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/tagging/governed_tag_field.dart';
+import '../../../core/tagging/tag_entities.dart';
 import '../../../core/compliance/objectionable_content.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/media/attachment.dart';
@@ -211,6 +212,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// the draft payload and preserved through publish.
   AuraTopic? _primaryTopic;
   List<AuraTopic> _secondaryTopics = <AuraTopic>[];
+  final List<TagReference> _selectedTagReferences = <TagReference>[];
 
   final List<Attachment> _attachments = [];
 
@@ -1228,6 +1230,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // post it publishes into) reflects the composer state. `null` clears.
       'primaryTopic': _primaryTopic?.wire,
       'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
+      'mentions': _currentMentionPayload(),
       // Public-record routing — intent tells the backend which accountability
       // route to attempt when PUBLIC_RECORD_ROUTING_ENABLED is on.
       // Null/absent means no routing is attempted.
@@ -1252,6 +1255,32 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           })
           .toList(),
     };
+  }
+
+  void _rememberSelectedTag(TagReference reference) {
+    if (!reference.isMention) return;
+    final id = reference.canonicalId.trim();
+    final inserted = reference.insertText.trim();
+    if (id.isEmpty || inserted.isEmpty) return;
+    _selectedTagReferences.removeWhere(
+      (existing) =>
+          existing.kind == reference.kind && existing.canonicalId == id,
+    );
+    _selectedTagReferences.add(reference);
+  }
+
+  List<Map<String, dynamic>> _currentMentionPayload() {
+    final text = _textController.text;
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final reference in _selectedTagReferences) {
+      if (!reference.isMention) continue;
+      if (!text.contains(reference.insertText)) continue;
+      final key = '${reference.kind.name}:${reference.canonicalId}';
+      if (!seen.add(key)) continue;
+      out.add(reference.toJson());
+    }
+    return out;
   }
 
   Future<void> _saveDraft({
@@ -1855,7 +1884,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Future<String?> _publishPostNow() async {
     final dio = ref.read(dioProvider);
-    final res = await dio.post('/posts/draft/publish');
+    final res = await dio.post(
+      '/posts/draft/publish',
+      data: _buildComposePayload(),
+    );
     return _extractPublishedPostId(res.data);
   }
 
@@ -2845,6 +2877,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       child: GovernedTagAutocomplete(
         controller: _textController,
         focusNode: _textFocus,
+        onTagSelected: _rememberSelectedTag,
         child: TextField(
           controller: _textController,
           focusNode: _textFocus,

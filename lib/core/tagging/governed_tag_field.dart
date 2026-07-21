@@ -36,12 +36,14 @@ class GovernedTagAutocomplete extends ConsumerStatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.child,
+    this.onTagSelected,
     this.maxOverlayHeight = 280,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final Widget child;
+  final ValueChanged<TagReference>? onTagSelected;
   final double maxOverlayHeight;
 
   @override
@@ -55,6 +57,7 @@ class _GovernedTagAutocompleteState
   OverlayEntry? _overlay;
   Timer? _debounce;
   int _requestSeq = 0;
+  FocusOnKeyEventCallback? _previousOnKeyEvent;
 
   ActiveTagToken? _token;
   List<TagSuggestion> _suggestions = const [];
@@ -65,6 +68,8 @@ class _GovernedTagAutocompleteState
   @override
   void initState() {
     super.initState();
+    _previousOnKeyEvent = widget.focusNode.onKeyEvent;
+    widget.focusNode.onKeyEvent = _onFieldKey;
     widget.controller.addListener(_onTextChanged);
     widget.focusNode.addListener(_onFocusChanged);
   }
@@ -73,6 +78,9 @@ class _GovernedTagAutocompleteState
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
     widget.focusNode.removeListener(_onFocusChanged);
+    if (widget.focusNode.onKeyEvent == _onFieldKey) {
+      widget.focusNode.onKeyEvent = _previousOnKeyEvent;
+    }
     _debounce?.cancel();
     _removeOverlay();
     super.dispose();
@@ -143,13 +151,24 @@ class _GovernedTagAutocompleteState
   void _select(TagSuggestion s) {
     final token = _token;
     if (token == null) return;
-    final applied =
-        applyTagSelection(widget.controller.text, token, s.insertText);
+    final applied = applyTagSelection(
+      widget.controller.text,
+      token,
+      s.insertText,
+    );
     widget.controller.value = TextEditingValue(
       text: applied.text,
       selection: TextSelection.collapsed(offset: applied.cursor),
     );
+    widget.onTagSelected?.call(s.toReference());
+    widget.focusNode.requestFocus();
     _close();
+  }
+
+  KeyEventResult _onFieldKey(FocusNode node, KeyEvent event) {
+    final handled = _onKey(node, event);
+    if (handled == KeyEventResult.handled) return handled;
+    return _previousOnKeyEvent?.call(node, event) ?? KeyEventResult.ignored;
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -164,8 +183,10 @@ class _GovernedTagAutocompleteState
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowUp) {
-      setState(() => _highlight =
-          (_highlight - 1 + _suggestions.length) % _suggestions.length);
+      setState(
+        () => _highlight =
+            (_highlight - 1 + _suggestions.length) % _suggestions.length,
+      );
       _overlay?.markNeedsBuild();
       return KeyEventResult.handled;
     }
@@ -224,10 +245,7 @@ class _GovernedTagAutocompleteState
       // The wrapped field keeps its own FocusNode; this ancestor Focus
       // only intercepts navigation keys while the overlay is open.
       skipTraversal: true,
-      child: CompositedTransformTarget(
-        link: _link,
-        child: widget.child,
-      ),
+      child: CompositedTransformTarget(link: _link, child: widget.child),
     );
   }
 }
@@ -265,14 +283,15 @@ class _SuggestionPanel extends StatelessWidget {
             final selected = i == highlight;
             return MouseRegion(
               onEnter: (_) => onHover(i),
-              child: InkWell(
-                onTap: () => onSelect(s),
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                onPointerDown: (_) => onSelect(s),
                 child: Container(
-                  color: selected
-                      ? AuraSurface.accentSoft
-                      : Colors.transparent,
+                  color: selected ? AuraSurface.accentSoft : Colors.transparent,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       if (s.kind == TagKind.topic)
@@ -284,31 +303,42 @@ class _SuggestionPanel extends StatelessWidget {
                             shape: BoxShape.circle,
                             color: AuraSurface.accentSoft,
                           ),
-                          child: Text('#',
-                              style: AuraText.body.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: AuraSurface.accentText,
-                              )),
+                          child: Text(
+                            '#',
+                            style: AuraText.body.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AuraSurface.accentText,
+                            ),
+                          ),
                         )
                       else
                         AuraAvatar(
-                            name: s.display, imageUrl: s.imageUrl, size: 32),
+                          name: s.display,
+                          imageUrl: s.imageUrl,
+                          size: 32,
+                        ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(s.display,
+                            Text(
+                              s.display,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AuraText.body.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if ((s.subtitle ?? '').isNotEmpty)
+                              Text(
+                                s.subtitle!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AuraText.body.copyWith(
-                                    fontWeight: FontWeight.w700)),
-                            if ((s.subtitle ?? '').isNotEmpty)
-                              Text(s.subtitle!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AuraText.micro.copyWith(
-                                      color: AuraSurface.muted)),
+                                style: AuraText.micro.copyWith(
+                                  color: AuraSurface.muted,
+                                ),
+                              ),
                           ],
                         ),
                       ),

@@ -9,6 +9,7 @@ This document lists only remaining work. No item below is authorized as the next
 1. Complete Flutter test-suite verification from a healthy runner. In this Windows workspace, `flutter test` hangs before test output even on pre-existing tests; `flutter analyze` is clean.
 2. After deployment, production-verify post draft discard, token-only draft suppression, topic enforcement, member edit, and institution edit with seeded production-like accounts.
 3. Re-verify the Railway push-to-deploy behavior before relying on it for a release.
+4. After the edit-save/mention fix deploys, production-verify member edit save, institution edit save, keyboard mention selection, and mouse/touch mention selection.
 
 ## Accepted future enhancements (unprioritized, explicitly not part of AXR-1)
 

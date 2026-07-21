@@ -65,4 +65,37 @@ class TagSuggestion {
 
   /// Avatar / logo for the suggestion row, when the entity has one.
   final String? imageUrl;
+
+  TagReference toReference() => TagReference(
+    kind: kind,
+    canonicalId: canonicalId,
+    display: display,
+    insertText: insertText,
+  );
+}
+
+/// Structured record of an inserted governed tag. The composer still stores
+/// plain text in the field; this companion record lets publish/update payloads
+/// carry the canonical entity chosen by autocomplete.
+class TagReference {
+  const TagReference({
+    required this.kind,
+    required this.canonicalId,
+    required this.display,
+    required this.insertText,
+  });
+
+  final TagKind kind;
+  final String canonicalId;
+  final String display;
+  final String insertText;
+
+  bool get isMention => kind == TagKind.member || kind == TagKind.institution;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'kind': kind.name,
+    'id': canonicalId,
+    'display': display,
+    'insertText': insertText,
+  };
 }

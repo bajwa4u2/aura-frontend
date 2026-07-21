@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/tagging/governed_tag_field.dart';
+import '../../../core/tagging/tag_entities.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
@@ -99,6 +100,7 @@ class _InstitutionPostComposerScreenState
   // before publishing); Secondary topics are suggested + human-editable.
   AuraTopic? _primaryTopic;
   List<AuraTopic> _secondaryTopics = <AuraTopic>[];
+  final List<TagReference> _selectedTagReferences = <TagReference>[];
   bool _uploading = false;
 
   bool _busy = false;
@@ -542,7 +544,34 @@ class _InstitutionPostComposerScreenState
       'distribution': _distribution.wire,
       'primaryTopic': _primaryTopic!.wire,
       'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
+      'mentions': _currentMentionPayload(),
     };
+  }
+
+  void _rememberSelectedTag(TagReference reference) {
+    if (!reference.isMention) return;
+    final id = reference.canonicalId.trim();
+    final inserted = reference.insertText.trim();
+    if (id.isEmpty || inserted.isEmpty) return;
+    _selectedTagReferences.removeWhere(
+      (existing) =>
+          existing.kind == reference.kind && existing.canonicalId == id,
+    );
+    _selectedTagReferences.add(reference);
+  }
+
+  List<Map<String, dynamic>> _currentMentionPayload() {
+    final text = _bodyCtrl.text;
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final reference in _selectedTagReferences) {
+      if (!reference.isMention) continue;
+      if (!text.contains(reference.insertText)) continue;
+      final key = '${reference.kind.name}:${reference.canonicalId}';
+      if (!seen.add(key)) continue;
+      out.add(reference.toJson());
+    }
+    return out;
   }
 
   // ── Media upload (presign flow) ───────────────────────────────────────────
@@ -1128,6 +1157,7 @@ class _InstitutionPostComposerScreenState
                     child: GovernedTagAutocomplete(
                       controller: _bodyCtrl,
                       focusNode: _bodyFocus,
+                      onTagSelected: _rememberSelectedTag,
                       child: TextField(
                         controller: _bodyCtrl,
                         focusNode: _bodyFocus,
@@ -1185,8 +1215,11 @@ class _InstitutionPostComposerScreenState
                     ),
                   const SizedBox(height: AuraSpace.s12),
                   _ComposerActions(
+                    isEditing: widget.isEditing,
                     busy: _busy || _uploading,
+                    canSave: _localValidationError == null,
                     canPublish: canPublish,
+                    onCancel: () => context.pop(false),
                     onSubmitForReview: _submitForReview,
                     onSaveDraft: _saveDraft,
                     onPublish: _publishNow,
@@ -1694,21 +1727,49 @@ class _DistributionSection extends StatelessWidget {
 
 class _ComposerActions extends StatelessWidget {
   const _ComposerActions({
+    required this.isEditing,
     required this.busy,
+    required this.canSave,
     required this.canPublish,
+    required this.onCancel,
     required this.onSubmitForReview,
     required this.onSaveDraft,
     required this.onPublish,
   });
 
+  final bool isEditing;
   final bool busy;
+  final bool canSave;
   final bool canPublish;
+  final VoidCallback onCancel;
   final VoidCallback onSubmitForReview;
   final VoidCallback onSaveDraft;
   final VoidCallback onPublish;
 
   @override
   Widget build(BuildContext context) {
+    if (isEditing) {
+      return Row(
+        children: [
+          Expanded(
+            child: AuraSecondaryButton(
+              label: 'Cancel',
+              icon: Icons.close_rounded,
+              onPressed: busy ? null : onCancel,
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: AuraPrimaryButton(
+              label: busy ? 'Saving...' : 'Save changes',
+              icon: busy ? null : Icons.save_rounded,
+              onPressed: busy || !canSave ? null : onSaveDraft,
+            ),
+          ),
+        ],
+      );
+    }
+
     if (!canPublish) {
       return Row(
         children: [

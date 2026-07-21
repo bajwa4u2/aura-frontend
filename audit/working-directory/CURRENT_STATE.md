@@ -68,3 +68,19 @@ Out-of-scope issues recorded:
 
 - Existing `institutions_repository.dart` had multiple single-line `if` lint issues; fixed because this remediation touched the file.
 - Production verification still required after push/deploy.
+
+## 2026-07-21: Post Edit Save & Mention Attachment Follow-up
+
+Implemented in the working tree, pending commit/push/deploy verification:
+
+- `GovernedTagAutocomplete` now handles keyboard selection through the wrapped field focus node and pointer/touch selection on pointer-down, before overlay focus loss can discard the active token.
+- Selected member/institution suggestions are recorded as canonical `TagReference` values and submitted in composer `mentions` payloads while the inserted token remains in the text.
+- Member draft publish now sends the current compose payload to `/posts/draft/publish`, so selected mention metadata is not dropped at publish time.
+- Institution edit mode now has deterministic `Cancel` / `Save changes` actions and no longer derives the save affordance from publish permission.
+
+Validation recorded:
+
+- `flutter analyze` passed with no issues.
+- Added `test/governed_tag_autocomplete_selection_test.dart` covering tap and keyboard mention insertion.
+- `flutter test -r expanded test\governed_tag_autocomplete_selection_test.dart` timed out after 240s before output.
+- `flutter test -r expanded` timed out after 240s before output.
