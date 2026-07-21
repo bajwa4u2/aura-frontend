@@ -432,6 +432,7 @@ class InstitutionsRepository {
     String kind = 'GENERAL',
     String audience = 'PUBLIC',
     List<String>? mediaIds,
+    List<Map<String, dynamic>>? tagReferences,
   }) async {
     final res = await _dio.post(
       '/institutions/$institutionId/announcements',
@@ -443,6 +444,8 @@ class InstitutionsRepository {
         'kind': kind,
         'audience': audience,
         if (mediaIds != null) 'mediaIds': mediaIds,
+        if (tagReferences != null) 'tagReferences': tagReferences,
+        if (tagReferences != null) 'mentions': tagReferences,
       },
     );
     if (res.data is Map) {
@@ -462,6 +465,7 @@ class InstitutionsRepository {
     String? kind,
     String? audience,
     List<String>? mediaIds,
+    List<Map<String, dynamic>>? tagReferences,
   }) async {
     final res = await _dio.patch(
       '/institutions/$institutionId/announcements/$announcementId',
@@ -473,6 +477,8 @@ class InstitutionsRepository {
         if (kind != null) 'kind': kind,
         if (audience != null) 'audience': audience,
         if (mediaIds != null) 'mediaIds': mediaIds,
+        if (tagReferences != null) 'tagReferences': tagReferences,
+        if (tagReferences != null) 'mentions': tagReferences,
       },
     );
     if (res.data is Map) {

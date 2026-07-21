@@ -1,3 +1,5 @@
+import '../../../core/tagging/tag_entities.dart';
+
 class PostAuthor {
   const PostAuthor({
     required this.id,
@@ -17,17 +19,18 @@ class PostAuthor {
     return PostAuthor(
       id: _readString(j['id']) ?? '',
       handle: _readString(j['handle']) ?? '',
-      displayName: _readString(j['displayName']) ?? _readString(j['name']) ?? '',
+      displayName:
+          _readString(j['displayName']) ?? _readString(j['name']) ?? '',
       avatarUrl: rawAvatar,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'handle': handle,
-        'displayName': displayName,
-        'avatarUrl': avatarUrl,
-      };
+    'id': id,
+    'handle': handle,
+    'displayName': displayName,
+    'avatarUrl': avatarUrl,
+  };
 }
 
 class PostMediaItem {
@@ -129,28 +132,28 @@ class PostMediaItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type,
-        'source': source,
-        'status': status,
-        'url': url,
-        'originalUrl': originalUrl,
-        'displayUrl': displayUrl,
-        'playbackUrl': playbackUrl,
-        'thumbUrl': thumbUrl,
-        'thumbnailUrl': thumbnailUrl,
-        'caption': caption,
-        'altText': altText,
-        'transcript': transcript,
-        'width': width,
-        'height': height,
-        'duration': duration,
-        'position': position,
-        'editDisclosure': editDisclosure,
-        'mimeType': mimeType,
-        'fileName': fileName,
-        'fileSizeBytes': fileSizeBytes,
-      };
+    'id': id,
+    'type': type,
+    'source': source,
+    'status': status,
+    'url': url,
+    'originalUrl': originalUrl,
+    'displayUrl': displayUrl,
+    'playbackUrl': playbackUrl,
+    'thumbUrl': thumbUrl,
+    'thumbnailUrl': thumbnailUrl,
+    'caption': caption,
+    'altText': altText,
+    'transcript': transcript,
+    'width': width,
+    'height': height,
+    'duration': duration,
+    'position': position,
+    'editDisclosure': editDisclosure,
+    'mimeType': mimeType,
+    'fileName': fileName,
+    'fileSizeBytes': fileSizeBytes,
+  };
 }
 
 class PostTranslation {
@@ -170,11 +173,13 @@ class PostTranslation {
 
   factory PostTranslation.fromJson(Map<String, dynamic> json) {
     return PostTranslation(
-      language: _readString(
+      language:
+          _readString(
             json['language'] ?? json['targetLanguage'] ?? json['locale'],
           ) ??
           '',
-      text: _readString(
+      text:
+          _readString(
             json['text'] ?? json['translatedText'] ?? json['content'],
           ) ??
           '',
@@ -184,11 +189,11 @@ class PostTranslation {
   }
 
   Map<String, dynamic> toJson() => {
-        'language': language,
-        'text': text,
-        'provider': provider,
-        'status': status,
-      };
+    'language': language,
+    'text': text,
+    'provider': provider,
+    'status': status,
+  };
 }
 
 class Post {
@@ -217,6 +222,7 @@ class Post {
     this.translatedText,
     this.translationStatus,
     this.availableTranslations = const <PostTranslation>[],
+    this.tagReferences = const <TagReference>[],
   });
 
   final String id;
@@ -248,6 +254,7 @@ class Post {
   final String? translatedText;
   final String? translationStatus;
   final List<PostTranslation> availableTranslations;
+  final List<TagReference> tagReferences;
 
   bool get hasTranslatedText =>
       translatedText != null && translatedText!.trim().isNotEmpty;
@@ -292,6 +299,7 @@ class Post {
     String? translatedText,
     String? translationStatus,
     List<PostTranslation>? availableTranslations,
+    List<TagReference>? tagReferences,
   }) {
     return Post(
       id: id ?? this.id,
@@ -319,6 +327,7 @@ class Post {
       translationStatus: translationStatus ?? this.translationStatus,
       availableTranslations:
           availableTranslations ?? this.availableTranslations,
+      tagReferences: tagReferences ?? this.tagReferences,
     );
   }
 
@@ -350,7 +359,8 @@ class Post {
       id: _readString(j['id']) ?? '',
       authorId: authorId,
       text: _readString(j['text']) ?? '',
-      createdAt: DateTime.tryParse(_readString(j['createdAt']) ?? '') ??
+      createdAt:
+          DateTime.tryParse(_readString(j['createdAt']) ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       replyToPostId: _readString(j['replyToPostId']),
       repostOfPostId: _readString(j['repostOfPostId']),
@@ -366,7 +376,8 @@ class Post {
       mediaDuration: _readInt(j['mediaDuration']) ?? primaryMedia?.duration,
       caption: _readString(j['caption']) ?? primaryMedia?.caption,
       linkTitle: _readString(j['linkTitle']) ?? _readString(j['title']),
-      linkDescription: _readString(
+      linkDescription:
+          _readString(
             j['linkDescription'] ?? j['linkSubtitle'] ?? j['description'],
           ) ??
           _readString(j['subtitle']),
@@ -379,35 +390,37 @@ class Post {
       translatedText: translatedText,
       translationStatus: _readString(j['translationStatus']),
       availableTranslations: translations,
+      tagReferences: _readTagReferences(j['tagReferences']),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'authorId': authorId,
-        'text': text,
-        'createdAt': createdAt.toIso8601String(),
-        'replyToPostId': replyToPostId,
-        'repostOfPostId': repostOfPostId,
-        'visibility': visibility,
-        'author': author?.toJson(),
-        'media': media.map((e) => e.toJson()).toList(),
-        'mediaType': mediaType,
-        'mediaUrl': mediaUrl,
-        'mediaThumbUrl': mediaThumbUrl,
-        'mediaWidth': mediaWidth,
-        'mediaHeight': mediaHeight,
-        'mediaDuration': mediaDuration,
-        'caption': caption,
-        'linkTitle': linkTitle,
-        'linkDescription': linkDescription,
-        'linkImageUrl': linkImageUrl,
-        'originalLanguage': originalLanguage,
-        'translatedLanguage': translatedLanguage,
-        'translatedText': translatedText,
-        'translationStatus': translationStatus,
-        'translations': availableTranslations.map((e) => e.toJson()).toList(),
-      };
+    'id': id,
+    'authorId': authorId,
+    'text': text,
+    'createdAt': createdAt.toIso8601String(),
+    'replyToPostId': replyToPostId,
+    'repostOfPostId': repostOfPostId,
+    'visibility': visibility,
+    'author': author?.toJson(),
+    'media': media.map((e) => e.toJson()).toList(),
+    'mediaType': mediaType,
+    'mediaUrl': mediaUrl,
+    'mediaThumbUrl': mediaThumbUrl,
+    'mediaWidth': mediaWidth,
+    'mediaHeight': mediaHeight,
+    'mediaDuration': mediaDuration,
+    'caption': caption,
+    'linkTitle': linkTitle,
+    'linkDescription': linkDescription,
+    'linkImageUrl': linkImageUrl,
+    'originalLanguage': originalLanguage,
+    'translatedLanguage': translatedLanguage,
+    'translatedText': translatedText,
+    'translationStatus': translationStatus,
+    'translations': availableTranslations.map((e) => e.toJson()).toList(),
+    'tagReferences': tagReferences.map((e) => e.toJson()).toList(),
+  };
 }
 
 Map<String, dynamic>? _readMap(dynamic value) {
@@ -455,7 +468,9 @@ List<PostTranslation> _readTranslations(dynamic value) {
   if (value is List) {
     return value
         .whereType<Map>()
-        .map((item) => PostTranslation.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) => PostTranslation.fromJson(Map<String, dynamic>.from(item)),
+        )
         .where((item) => item.isUsable)
         .toList();
   }
@@ -465,7 +480,10 @@ List<PostTranslation> _readTranslations(dynamic value) {
     final items = <PostTranslation>[];
     map.forEach((key, rawValue) {
       if (rawValue is Map) {
-        final merged = <String, dynamic>{'language': key, ...Map<String, dynamic>.from(rawValue)};
+        final merged = <String, dynamic>{
+          'language': key,
+          ...Map<String, dynamic>.from(rawValue),
+        };
         final item = PostTranslation.fromJson(merged);
         if (item.isUsable) items.add(item);
       } else {
@@ -479,4 +497,12 @@ List<PostTranslation> _readTranslations(dynamic value) {
   }
 
   return const <PostTranslation>[];
+}
+
+List<TagReference> _readTagReferences(dynamic value) {
+  if (value is! List) return const <TagReference>[];
+  return value
+      .whereType<Map>()
+      .map((item) => TagReference.fromJson(Map<String, dynamic>.from(item)))
+      .toList();
 }

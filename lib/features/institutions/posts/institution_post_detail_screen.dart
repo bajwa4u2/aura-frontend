@@ -11,7 +11,6 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/aura_text_block.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../../accountability/widgets/accountability_timeline_rail.dart';
 import '../../feed/data/unified_feed_providers.dart';
@@ -19,6 +18,7 @@ import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
 import '../../feed/presentation/feed_reply_context.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../../public/widgets/mention_text.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../data/institutions_repository.dart';
@@ -53,7 +53,8 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
     // authorized speaker) of THIS institution may edit or delete its
     // posts. Public and cross-institution viewers have no matching
     // identity → no controls. The backend re-checks authority on write.
-    final canGovern = identity != null &&
+    final canGovern =
+        identity != null &&
         identity.id == institutionId &&
         identity.canPublishPosts;
 
@@ -318,7 +319,8 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
                     children: [
                       AccountabilityTimelineRail(replies: page.items),
                       if (page.items.any(
-                          (r) => r.accountabilityTagWire != null))
+                        (r) => r.accountabilityTagWire != null,
+                      ))
                         const SizedBox(height: AuraSpace.s12),
                       for (var i = 0; i < page.items.length; i++) ...[
                         _ReplyCard(
@@ -449,8 +451,9 @@ class _ReplyCard extends StatelessWidget {
           ),
           if (reply.body.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
-            AuraTextBlock(
+            ResolvedTagText(
               reply.body,
+              tagReferences: reply.tagReferences,
               style: AuraText.body.copyWith(
                 color: AuraSurface.ink,
                 height: 1.5,

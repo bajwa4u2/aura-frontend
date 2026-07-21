@@ -14,6 +14,7 @@
 library;
 
 import '../../feed/domain/feed_media.dart';
+import '../../../core/tagging/tag_entities.dart';
 export '../../feed/domain/feed_media.dart' show FeedMedia;
 
 enum InstitutionPostVisibility { publicAll, memberOnly, internal }
@@ -158,6 +159,7 @@ class InstitutionPost {
     this.continuesInstitutionPostId,
     this.primaryTopic,
     this.secondaryTopics = const <String>[],
+    this.tagReferences = const <TagReference>[],
   });
 
   final String id;
@@ -210,6 +212,7 @@ class InstitutionPost {
   final String? continuesInstitutionPostId;
   final String? primaryTopic;
   final List<String> secondaryTopics;
+  final List<TagReference> tagReferences;
 
   bool get isReply =>
       replyToInstitutionPostId != null &&
@@ -304,6 +307,12 @@ class InstitutionPost {
                 .where((e) => e.isNotEmpty)
                 .toList()
           : const <String>[],
+      tagReferences: (json['tagReferences'] is List)
+          ? (json['tagReferences'] as List)
+                .whereType<Map>()
+                .map((e) => TagReference.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
+          : const <TagReference>[],
     );
   }
 
@@ -324,6 +333,8 @@ class InstitutionPost {
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       if (primaryTopic != null) 'primaryTopic': primaryTopic,
       if (secondaryTopics.isNotEmpty) 'secondaryTopics': secondaryTopics,
+      if (tagReferences.isNotEmpty)
+        'tagReferences': tagReferences.map((e) => e.toJson()).toList(),
     };
   }
 }

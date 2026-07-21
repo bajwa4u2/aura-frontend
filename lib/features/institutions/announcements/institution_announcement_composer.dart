@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/governed_tag_field.dart';
+import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
 import '../../../core/net/dio_provider.dart';
@@ -66,6 +68,7 @@ class _InstitutionAnnouncementComposerState
   /// already attached. New picks are appended via [_pickMedia]. The list
   /// is always the source of truth for what we POST/PATCH as `mediaIds`.
   final List<Attachment> _attachments = <Attachment>[];
+  final List<TagReference> _selectedTagReferences = <TagReference>[];
   bool _mediaUploading = false;
 
   static const _kinds = ['GENERAL', 'RELEASE', 'SAFETY', 'GOVERNANCE'];
@@ -82,13 +85,18 @@ class _InstitutionAnnouncementComposerState
       // clean title and the chip group reflects the existing type.
       final rawTitle = d['title']?.toString() ?? '';
       final decoded = InsCommunicationDecoded.parse(rawTitle);
-      _titleController.text =
-          decoded.hadMarker ? decoded.cleanTitle : rawTitle;
+      _titleController.text = decoded.hadMarker ? decoded.cleanTitle : rawTitle;
       _communicationType = decoded.hadMarker
           ? decoded.type
           : InsCommunicationType.announcement;
       _summaryController.text = d['summary']?.toString() ?? '';
-      _bodyController.text = d['bodyMarkdown']?.toString() ?? '';
+      final tagRefs = _parseTagReferences(d['tagReferences']);
+      final hydrated = hydrateTextWithDisplayTags(
+        d['bodyMarkdown']?.toString() ?? '',
+        tagRefs,
+      );
+      _bodyController.text = hydrated.text;
+      _selectedTagReferences.addAll(hydrated.references);
       _kind = d['kind']?.toString() ?? 'GENERAL';
       _audience = d['audience']?.toString() ?? 'PUBLIC';
 
@@ -154,13 +162,59 @@ class _InstitutionAnnouncementComposerState
     return fallback;
   }
 
+  void _rememberSelectedTag(TagReference reference) {
+    if (!reference.isMention) return;
+    final id = reference.durableEntityId;
+    final sourceText = reference.durableSourceText;
+    if (id.isEmpty || sourceText.isEmpty) return;
+    _selectedTagReferences.removeWhere(
+      (existing) =>
+          existing.kind == reference.kind && existing.durableEntityId == id,
+    );
+    _selectedTagReferences.add(reference);
+  }
+
+  List<Map<String, dynamic>> _currentMentionPayload() {
+    final text = _bodyController.text;
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final reference in _selectedTagReferences) {
+      if (!reference.isMention) continue;
+      if (!text.contains(reference.durableSourceText)) continue;
+      final key = '${reference.kind.name}:${reference.durableEntityId}';
+      if (!seen.add(key)) continue;
+      out.add(reference.toJson());
+    }
+    return out;
+  }
+
+  List<TagReference> _parseTagReferences(Object? raw) {
+    if (raw is! List) return const <TagReference>[];
+    final out = <TagReference>[];
+    for (final item in raw) {
+      if (item is Map) {
+        out.add(TagReference.fromJson(Map<String, dynamic>.from(item)));
+      }
+    }
+    return out;
+  }
+
   Future<void> _pickMedia() async {
     if (_saving || _publishing || _mediaUploading) return;
 
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.custom,
-      allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'mov', 'webm'],
+      allowedExtensions: const [
+        'png',
+        'jpg',
+        'jpeg',
+        'webp',
+        'gif',
+        'mp4',
+        'mov',
+        'webm',
+      ],
       withData: true,
     );
 
@@ -170,10 +224,12 @@ class _InstitutionAnnouncementComposerState
     for (final file in result.files) {
       final bytes = file.bytes;
       if (bytes == null || bytes.isEmpty) continue;
-      final mime = inferMimeFromFileName(file.name) ?? 'application/octet-stream';
+      final mime =
+          inferMimeFromFileName(file.name) ?? 'application/octet-stream';
       picked.add(
         Attachment(
-          localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}_${picked.length}',
+          localId:
+              '${DateTime.now().microsecondsSinceEpoch}_${file.name}_${picked.length}',
           kind: kindFromMime(mime),
           source: AttachmentSource.gallery,
           fileName: file.name,
@@ -212,17 +268,19 @@ class _InstitutionAnnouncementComposerState
         mimeType: attachment.mimeType ?? '',
         kind: wireKind(attachment.kind),
         source: wireSource(attachment.source),
-        metadataPatch: const <String, dynamic>{
-          'caption': null,
-        },
+        metadataPatch: const <String, dynamic>{'caption': null},
       );
 
       if (!mounted) return;
       setState(() {
         attachment.mediaId = result.mediaId;
         attachment.url = result.url.isNotEmpty ? result.url : null;
-        attachment.thumbUrl = result.thumbUrl.isNotEmpty ? result.thumbUrl : null;
-        attachment.storageKey = result.storageKey.isNotEmpty ? result.storageKey : null;
+        attachment.thumbUrl = result.thumbUrl.isNotEmpty
+            ? result.thumbUrl
+            : null;
+        attachment.storageKey = result.storageKey.isNotEmpty
+            ? result.storageKey
+            : null;
         attachment.uploading = false;
         attachment.error = null;
       });
@@ -246,7 +304,9 @@ class _InstitutionAnnouncementComposerState
   /// Excludes still-uploading items (no mediaId yet) and errored items.
   List<String> _collectMediaIds() {
     return _attachments
-        .where((a) => !a.uploading && (a.error == null || a.error!.trim().isEmpty))
+        .where(
+          (a) => !a.uploading && (a.error == null || a.error!.trim().isEmpty),
+        )
         .map((a) => (a.mediaId ?? '').trim())
         .where((id) => id.isNotEmpty)
         .toList(growable: false);
@@ -261,12 +321,14 @@ class _InstitutionAnnouncementComposerState
     if (t.isNotEmpty) return t;
     final body = _bodyController.text.trim();
     if (body.isEmpty) return '';
-    final firstLine = body.split('\n').firstWhere(
-          (l) => l.trim().isNotEmpty,
-          orElse: () => '',
-        ).trim();
+    final firstLine = body
+        .split('\n')
+        .firstWhere((l) => l.trim().isNotEmpty, orElse: () => '')
+        .trim();
     if (firstLine.isEmpty) return '';
-    return firstLine.length > 80 ? firstLine.substring(0, 80).trim() : firstLine;
+    return firstLine.length > 80
+        ? firstLine.substring(0, 80).trim()
+        : firstLine;
   }
 
   Future<String?> _save() async {
@@ -278,18 +340,30 @@ class _InstitutionAnnouncementComposerState
       setState(() => _error = 'Title or body is required.');
       return null;
     }
-    if (summary.isEmpty) { setState(() => _error = 'Summary is required.'); return null; }
-    if (body.isEmpty) { setState(() => _error = 'Body is required.'); return null; }
+    if (summary.isEmpty) {
+      setState(() => _error = 'Summary is required.');
+      return null;
+    }
+    if (body.isEmpty) {
+      setState(() => _error = 'Body is required.');
+      return null;
+    }
 
     if (_mediaUploading || _attachments.any((a) => a.uploading)) {
-      setState(() => _error = 'Wait for media uploads to finish before saving.');
+      setState(
+        () => _error = 'Wait for media uploads to finish before saving.',
+      );
       return null;
     }
     final failed = _attachments
-        .where((a) => (a.error ?? '').trim().isNotEmpty && (a.mediaId ?? '').isEmpty)
+        .where(
+          (a) => (a.error ?? '').trim().isNotEmpty && (a.mediaId ?? '').isEmpty,
+        )
         .toList(growable: false);
     if (failed.isNotEmpty) {
-      setState(() => _error = 'Remove or retry the failed media before saving.');
+      setState(
+        () => _error = 'Remove or retry the failed media before saving.',
+      );
       return null;
     }
 
@@ -298,8 +372,12 @@ class _InstitutionAnnouncementComposerState
       cleanTitle: cleanTitle,
     );
     final mediaIds = _collectMediaIds();
+    final tagReferences = _currentMentionPayload();
 
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
 
     try {
       if (_savedId == null) {
@@ -311,6 +389,7 @@ class _InstitutionAnnouncementComposerState
           kind: _kind,
           audience: _audience,
           mediaIds: mediaIds,
+          tagReferences: tagReferences,
         );
         _savedId = result['id']?.toString();
       } else {
@@ -323,27 +402,42 @@ class _InstitutionAnnouncementComposerState
           kind: _kind,
           audience: _audience,
           mediaIds: mediaIds,
+          tagReferences: tagReferences,
         );
       }
-      setState(() { _saving = false; });
+      setState(() {
+        _saving = false;
+      });
       return _savedId;
     } catch (e) {
-      setState(() { _error = _message(e, 'Could not save.'); _saving = false; });
+      setState(() {
+        _error = _message(e, 'Could not save.');
+        _saving = false;
+      });
       return null;
     }
   }
 
   Future<void> _saveAndPublish() async {
-    setState(() { _publishing = true; _error = null; });
+    setState(() {
+      _publishing = true;
+      _error = null;
+    });
     try {
       final id = await _save();
-      if (id == null) { setState(() => _publishing = false); return; }
+      if (id == null) {
+        setState(() => _publishing = false);
+        return;
+      }
       await _repo.publishInstitutionAnnouncement(widget.institutionId, id);
       if (!mounted) return;
       _showAudienceToast(published: true);
       context.pop(true);
     } catch (e) {
-      setState(() { _error = _message(e, 'Could not publish.'); _publishing = false; });
+      setState(() {
+        _error = _message(e, 'Could not publish.');
+        _publishing = false;
+      });
     }
   }
 
@@ -377,8 +471,7 @@ class _InstitutionAnnouncementComposerState
       default:
         reach = 'Public audience';
     }
-    final headline =
-        published ? 'Announcement published' : 'Draft saved';
+    final headline = published ? 'Announcement published' : 'Draft saved';
     messenger.showSnackBar(
       SnackBar(
         content: Text('$headline · $reach'),
@@ -443,15 +536,17 @@ class _InstitutionAnnouncementComposerState
                             attachment.fileName ?? '',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             attachment.uploading
                                 ? 'Uploading…'
                                 : ((attachment.error ?? '').trim().isNotEmpty
-                                    ? attachment.error!
-                                    : 'Ready'),
+                                      ? attachment.error!
+                                      : 'Ready'),
                             style: AuraText.micro.copyWith(
                               color: (attachment.error ?? '').trim().isNotEmpty
                                   ? AuraSurface.coRose
@@ -462,7 +557,9 @@ class _InstitutionAnnouncementComposerState
                       ),
                     ),
                     IconButton(
-                      onPressed: disabled ? null : () => _removeAttachment(attachment),
+                      onPressed: disabled
+                          ? null
+                          : () => _removeAttachment(attachment),
                       icon: const Icon(Icons.close, size: 18),
                       tooltip: 'Remove',
                     ),
@@ -476,22 +573,42 @@ class _InstitutionAnnouncementComposerState
     );
   }
 
-  Widget _buildDropdownRow(String label, String value, List<String> options, void Function(String) onChanged) {
+  Widget _buildDropdownRow(
+    String label,
+    String value,
+    List<String> options,
+    void Function(String) onChanged,
+  ) {
     return Row(
       children: [
         SizedBox(
           width: 100,
-          child: Text(label, style: AuraText.small.copyWith(color: AuraSurface.muted, fontWeight: FontWeight.w600)),
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         Expanded(
           child: DropdownButton<String>(
             value: value,
             isExpanded: true,
-            items: options.map((o) => DropdownMenuItem(
-              value: o,
-              child: Text(o[0] + o.substring(1).toLowerCase(), style: AuraText.small),
-            )).toList(),
-            onChanged: (v) { if (v != null) setState(() => onChanged(v)); },
+            items: options
+                .map(
+                  (o) => DropdownMenuItem(
+                    value: o,
+                    child: Text(
+                      o[0] + o.substring(1).toLowerCase(),
+                      style: AuraText.small,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              if (v != null) setState(() => onChanged(v));
+            },
           ),
         ),
       ],
@@ -527,7 +644,11 @@ class _InstitutionAnnouncementComposerState
                         onTap: () => context.pop(),
                         child: const Padding(
                           padding: EdgeInsets.only(top: 4),
-                          child: Icon(Icons.arrow_back_rounded, size: 20, color: AuraSurface.muted),
+                          child: Icon(
+                            Icons.arrow_back_rounded,
+                            size: 20,
+                            color: AuraSurface.muted,
+                          ),
                         ),
                       ),
                       const SizedBox(width: AuraSpace.s12),
@@ -543,8 +664,7 @@ class _InstitutionAnnouncementComposerState
                   const SizedBox(height: AuraSpace.s12),
                   _AnnouncementCommunicationTypePicker(
                     selected: _communicationType,
-                    onChanged: (t) =>
-                        setState(() => _communicationType = t),
+                    onChanged: (t) => setState(() => _communicationType = t),
                   ),
                   const SizedBox(height: AuraSpace.s14),
                   Container(
@@ -559,9 +679,13 @@ class _InstitutionAnnouncementComposerState
                       children: [
                         TextFormField(
                           controller: _titleController,
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700, fontSize: 18),
+                          style: AuraText.body.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                          ),
                           decoration: const InputDecoration(
-                            labelText: 'Title (optional — derived from body if empty)',
+                            labelText:
+                                'Title (optional — derived from body if empty)',
                             hintText: 'Headline for this statement',
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
@@ -576,7 +700,8 @@ class _InstitutionAnnouncementComposerState
                           maxLines: 2,
                           decoration: const InputDecoration(
                             labelText: 'Summary',
-                            hintText: 'One or two sentences summarising the announcement',
+                            hintText:
+                                'One or two sentences summarising the announcement',
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
@@ -588,6 +713,7 @@ class _InstitutionAnnouncementComposerState
                         GovernedTagAutocomplete(
                           controller: _bodyController,
                           focusNode: _bodyFocus,
+                          onTagSelected: _rememberSelectedTag,
                           child: TextFormField(
                             controller: _bodyController,
                             focusNode: _bodyFocus,
@@ -618,9 +744,19 @@ class _InstitutionAnnouncementComposerState
                     ),
                     child: Column(
                       children: [
-                        _buildDropdownRow('Kind', _kind, _kinds, (v) => _kind = v),
+                        _buildDropdownRow(
+                          'Kind',
+                          _kind,
+                          _kinds,
+                          (v) => _kind = v,
+                        ),
                         const SizedBox(height: AuraSpace.s8),
-                        _buildDropdownRow('Audience', _audience, _audiences, (v) => _audience = v),
+                        _buildDropdownRow(
+                          'Audience',
+                          _audience,
+                          _audiences,
+                          (v) => _audience = v,
+                        ),
                       ],
                     ),
                   ),
@@ -631,16 +767,33 @@ class _InstitutionAnnouncementComposerState
                       decoration: BoxDecoration(
                         color: AuraSurface.coRose.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(AuraRadius.md),
-                        border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: AuraSurface.coRose.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
+                          const Icon(
+                            Icons.error_outline,
+                            size: 16,
+                            color: AuraSurface.coRose,
+                          ),
                           const SizedBox(width: AuraSpace.s8),
-                          Expanded(child: Text(_error!, style: AuraText.small.copyWith(color: AuraSurface.coRose))),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: AuraText.small.copyWith(
+                                color: AuraSurface.coRose,
+                              ),
+                            ),
+                          ),
                           GestureDetector(
                             onTap: () => setState(() => _error = null),
-                            child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: AuraSurface.coRose,
+                            ),
                           ),
                         ],
                       ),

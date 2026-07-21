@@ -14,7 +14,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
-import '../../public/widgets/mention_text.dart' show TagStyledText;
+import '../../public/widgets/mention_text.dart' show ResolvedTagText;
 import '../../institutions/domain/communication_type.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
@@ -89,13 +89,17 @@ class UnifiedFeedCard extends ConsumerWidget {
     // differences (border, title weight, secondary indicator) so types
     // FEEL different without leaving the design system.
     final officialPost = _isOfficialInstitutionPost(item);
-    final InsCommunicationDecoded? decodedTitle =
-        officialPost ? InsCommunicationDecoded.parse(item.title) : null;
-    final isAnnouncement = decodedTitle?.hadMarker == true &&
+    final InsCommunicationDecoded? decodedTitle = officialPost
+        ? InsCommunicationDecoded.parse(item.title)
+        : null;
+    final isAnnouncement =
+        decodedTitle?.hadMarker == true &&
         decodedTitle!.type == InsCommunicationType.announcement;
-    final isAdvisory = decodedTitle?.hadMarker == true &&
+    final isAdvisory =
+        decodedTitle?.hadMarker == true &&
         decodedTitle!.type == InsCommunicationType.advisory;
-    final isUpdate = decodedTitle?.hadMarker == true &&
+    final isUpdate =
+        decodedTitle?.hadMarker == true &&
         decodedTitle!.type == InsCommunicationType.update;
 
     // Per-type title weight, shared by the truncated preview and the
@@ -105,8 +109,8 @@ class UnifiedFeedCard extends ConsumerWidget {
       fontWeight: isAnnouncement
           ? FontWeight.w900
           : isUpdate
-              ? FontWeight.w700
-              : FontWeight.w800,
+          ? FontWeight.w700
+          : FontWeight.w800,
       fontSize: isAnnouncement ? 17 : null,
       height: 1.35,
     );
@@ -273,21 +277,27 @@ class UnifiedFeedCard extends ConsumerWidget {
               // discourse text; the feed keeps a six-line tap-through
               // preview so the whole card stays a navigation target.
               if (bodySelectable)
-                AuraTextBlock(
+                ResolvedTagText(
                   item.body,
-                  style: AuraText.body
-                      .copyWith(color: AuraSurface.ink, height: 1.5),
+                  tagReferences: item.tagReferences,
+                  style: AuraText.body.copyWith(
+                    color: AuraSurface.ink,
+                    height: 1.5,
+                  ),
                   selectable: true,
                 )
               else
                 // AXR-1 — governed tags render highlighted in the feed
                 // preview (styling only; the card stays the tap target).
-                TagStyledText(
+                ResolvedTagText(
                   item.body,
+                  tagReferences: item.tagReferences,
                   maxLines: 6,
                   overflow: TextOverflow.ellipsis,
-                  style: AuraText.body
-                      .copyWith(color: AuraSurface.ink, height: 1.5),
+                  style: AuraText.body.copyWith(
+                    color: AuraSurface.ink,
+                    height: 1.5,
+                  ),
                 ),
             ],
             // C4-followup — prefer canonical media[] when the backend
@@ -308,7 +318,9 @@ class UnifiedFeedCard extends ConsumerWidget {
               const SizedBox(height: AuraSpace.s10),
               _LegacyMediaUrlThumb(
                 url: item.mediaUrl!,
-                attachmentId: item.id.isNotEmpty ? 'feed:${item.id}:media' : null,
+                attachmentId: item.id.isNotEmpty
+                    ? 'feed:${item.id}:media'
+                    : null,
                 mode: mediaMode,
                 downloadContext: _mediaDownloadContext(item.type),
               ),
@@ -337,8 +349,11 @@ class UnifiedFeedCard extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.label_outline_rounded,
-                        size: 13, color: AuraSurface.muted),
+                    const Icon(
+                      Icons.label_outline_rounded,
+                      size: 13,
+                      color: AuraSurface.muted,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       topic.label,
@@ -390,8 +405,7 @@ class UnifiedFeedCard extends ConsumerWidget {
                   // Share reads as a peer reaction in line with Like /
                   // Reply / Repost — gated to publicly-shareable content
                   // (private / member-only / internal never shareable).
-                  onShare:
-                      _canShare(item) ? () => _shareItem(context) : null,
+                  onShare: _canShare(item) ? () => _shareItem(context) : null,
                 ),
             ],
           ],
@@ -562,8 +576,7 @@ bool _shouldRenderSecondary(FeedItem item) {
   if (attr.type == FeedSecondaryAttributionType.unknown) return false;
   final actor = attr.actor;
   if (actor.id.isEmpty) return false;
-  if (actor.displayName.trim().isEmpty &&
-      (actor.handle ?? '').trim().isEmpty) {
+  if (actor.displayName.trim().isEmpty && (actor.handle ?? '').trim().isEmpty) {
     return false;
   }
   // Skip when the secondary actor would duplicate the visible primary
@@ -605,16 +618,13 @@ class _SecondaryAttributionLine extends StatelessWidget {
 
     final nameText = actor.displayName.isNotEmpty
         ? actor.displayName
-        : ((actor.handle ?? '').isNotEmpty
-            ? '@${actor.handle}'
-            : 'A member');
+        : ((actor.handle ?? '').isNotEmpty ? '@${actor.handle}' : 'A member');
 
     // Compose: "Posted by Founder · M S Bajwa"
     //   * verb              — neutral "Posted by"
     //   * role + dot        — when role context is meaningful (e.g. "Founder · ")
     //   * accountable name  — bolder than verb but still muted
-    final composed = StringBuffer(attribution.type.verb)
-      ..write(' ');
+    final composed = StringBuffer(attribution.type.verb)..write(' ');
     if (hasMeaningfulCtx && ctxLabel != null && ctxLabel.contains(' · ')) {
       // ctxLabel like "Founder · Aura Platform" — take the role half only.
       composed.write(ctxLabel.split(' · ').first);
@@ -699,8 +709,8 @@ class _AuthorRow extends StatelessWidget {
     final initial = author.name.trim().isNotEmpty
         ? author.name.trim()[0].toUpperCase()
         : (author.handleOrSlug.isNotEmpty
-            ? author.handleOrSlug[0].toUpperCase()
-            : '?');
+              ? author.handleOrSlug[0].toUpperCase()
+              : '?');
     final tap = profileRoute == null || profileRoute!.isEmpty
         ? null
         : () => context.push(profileRoute!);
@@ -735,12 +745,13 @@ class _AuthorRow extends StatelessWidget {
                         author.name.isNotEmpty
                             ? author.name
                             : (author.handleOrSlug.isNotEmpty
-                                ? '@${author.handleOrSlug}'
-                                : 'Unknown'),
+                                  ? '@${author.handleOrSlug}'
+                                  : 'Unknown'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AuraText.small
-                            .copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.small.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     if (author.context != null &&
@@ -752,16 +763,14 @@ class _AuthorRow extends StatelessWidget {
                     ],
                   ],
                 ),
-                if (author.handleOrSlug.isNotEmpty &&
-                    author.name.isNotEmpty)
+                if (author.handleOrSlug.isNotEmpty && author.name.isNotEmpty)
                   Text(
                     author.isInstitution
                         ? '/${author.handleOrSlug}'
                         : '@${author.handleOrSlug}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style:
-                        AuraText.micro.copyWith(color: AuraSurface.faint),
+                    style: AuraText.micro.copyWith(color: AuraSurface.faint),
                   ),
               ],
             ),
@@ -863,9 +872,7 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shape = isInstitution ? BoxShape.rectangle : BoxShape.circle;
-    final radius = isInstitution
-        ? BorderRadius.circular(AuraRadius.sm)
-        : null;
+    final radius = isInstitution ? BorderRadius.circular(AuraRadius.sm) : null;
     final url = imageUrl?.trim() ?? '';
 
     return Container(
@@ -949,15 +956,15 @@ class _LegacyMediaUrlThumb extends StatelessWidget {
       onTap: trimmed.isEmpty
           ? null
           : () => showAuraMediaViewer(
-                context,
-                items: [
-                  AuraViewerItem(
-                    originalUrl: trimmed,
-                    caption: null,
-                    downloadContext: downloadContext,
-                  ),
-                ],
-              ),
+              context,
+              items: [
+                AuraViewerItem(
+                  originalUrl: trimmed,
+                  caption: null,
+                  downloadContext: downloadContext,
+                ),
+              ],
+            ),
     );
   }
 }
@@ -1090,19 +1097,14 @@ class _ActivityHintLine extends StatelessWidget {
 /// post-detail screen via the parent's already-shell-adapted
 /// `targetRoute`.
 class _ReplyPreviewBlock extends StatelessWidget {
-  const _ReplyPreviewBlock({
-    required this.preview,
-    required this.openTarget,
-  });
+  const _ReplyPreviewBlock({required this.preview, required this.openTarget});
 
   final FeedReplyPreview preview;
   final String openTarget;
 
   @override
   Widget build(BuildContext context) {
-    final tap = openTarget.isEmpty
-        ? null
-        : () => context.push(openTarget);
+    final tap = openTarget.isEmpty ? null : () => context.push(openTarget);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -1176,8 +1178,8 @@ class _PreviewLine extends StatelessWidget {
     final initial = item.author.displayName.trim().isNotEmpty
         ? item.author.displayName.trim()[0].toUpperCase()
         : ((item.author.handle ?? '').isNotEmpty
-            ? item.author.handle![0].toUpperCase()
-            : '?');
+              ? item.author.handle![0].toUpperCase()
+              : '?');
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AuraRadius.sm),
@@ -1241,8 +1243,8 @@ class _PreviewLine extends StatelessWidget {
                       text: item.author.displayName.isNotEmpty
                           ? item.author.displayName
                           : ((item.author.handle ?? '').isNotEmpty
-                              ? '@${item.author.handle}'
-                              : 'Someone'),
+                                ? '@${item.author.handle}'
+                                : 'Someone'),
                       style: AuraText.micro.copyWith(
                         color: AuraSurface.ink,
                         fontWeight: FontWeight.w800,
@@ -1296,12 +1298,12 @@ class _SignalLabel extends StatelessWidget {
     final firstName = first.isViewer
         ? 'You'
         : (first.displayName.trim().isNotEmpty
-            ? first.displayName.trim()
-            : (first.handle ?? '').trim().isNotEmpty
-                ? first.type == FeedAuthorType.institution
+              ? first.displayName.trim()
+              : (first.handle ?? '').trim().isNotEmpty
+              ? first.type == FeedAuthorType.institution
                     ? '/${first.handle}'
                     : '@${first.handle}'
-                : 'Someone');
+              : 'Someone');
     final verb = first.isViewer ? 'reposted' : 'reposted';
     final more = signal.actors.length - 1;
     if (more <= 0) return '$firstName $verb';
@@ -1310,10 +1312,10 @@ class _SignalLabel extends StatelessWidget {
       final secondName = second.isViewer
           ? 'you'
           : (second.displayName.trim().isNotEmpty
-              ? second.displayName.trim()
-              : (second.handle ?? '').trim().isNotEmpty
-                  ? '@${second.handle}'
-                  : 'someone');
+                ? second.displayName.trim()
+                : (second.handle ?? '').trim().isNotEmpty
+                ? '@${second.handle}'
+                : 'someone');
       return '$firstName and $secondName $verb';
     }
     return '$firstName and $more others $verb';
@@ -1325,11 +1327,7 @@ class _SignalLabel extends StatelessWidget {
     if (text.isEmpty) return const SizedBox.shrink();
     return Row(
       children: [
-        const Icon(
-          Icons.repeat_rounded,
-          size: 13,
-          color: AuraSurface.faint,
-        ),
+        const Icon(Icons.repeat_rounded, size: 13, color: AuraSurface.faint),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -1498,11 +1496,7 @@ class _RecentActivityLine extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(
-          Icons.forum_outlined,
-          size: 12,
-          color: AuraSurface.muted,
-        ),
+        const Icon(Icons.forum_outlined, size: 12, color: AuraSurface.muted),
         const SizedBox(width: 5),
         Text(
           label,
@@ -1590,11 +1584,12 @@ class _PublicStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isResolved = label == 'Resolved';
-    final color = isResolved
-        ? const Color(0xFF1B8A4C)
-        : AuraSurface.accent;
+    final color = isResolved ? const Color(0xFF1B8A4C) : AuraSurface.accent;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
@@ -1641,9 +1636,7 @@ class _AdvisoryIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.coSun.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color: AuraSurface.coSun.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: AuraSurface.coSun.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

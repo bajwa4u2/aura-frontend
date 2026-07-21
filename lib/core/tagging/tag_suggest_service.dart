@@ -39,20 +39,26 @@ class TagSuggestService {
     const all = AuraTopic.values;
     final matches = q.isEmpty
         ? all
-        : all.where((t) =>
-            t.label.toLowerCase().startsWith(q) ||
-            t.wire.toLowerCase().startsWith(q)).toList();
+        : all
+              .where(
+                (t) =>
+                    t.label.toLowerCase().startsWith(q) ||
+                    t.wire.toLowerCase().startsWith(q),
+              )
+              .toList();
     return matches
         .take(maxSuggestions)
-        .map((t) => TagSuggestion(
-              kind: TagKind.topic,
-              canonicalId: t.wire,
-              display: t.label,
-              // No spaces inside a token — taxonomy labels with spaces
-              // insert their compact form (e.g. #PublicSafety).
-              insertText: '#${t.label.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}',
-              subtitle: 'Topic',
-            ))
+        .map(
+          (t) => TagSuggestion(
+            kind: TagKind.topic,
+            canonicalId: t.wire,
+            display: t.label,
+            // No spaces inside a token — taxonomy labels with spaces
+            // insert their compact form (e.g. #PublicSafety).
+            insertText: '#${t.label.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}',
+            subtitle: 'Topic',
+          ),
+        )
         .toList();
   }
 
@@ -73,32 +79,36 @@ class TagSuggestService {
     for (final u in result.users) {
       final handle = (u['handle'] ?? '').toString().trim();
       if (handle.isEmpty) continue;
-      out.add(TagSuggestion(
-        kind: TagKind.member,
-        canonicalId: (u['id'] ?? '').toString(),
-        display: (u['displayName'] ?? '').toString().trim().isEmpty
-            ? '@$handle'
-            : (u['displayName'] as Object).toString(),
-        insertText: '@$handle',
-        subtitle: '@$handle',
-        imageUrl: (u['avatarUrl'] ?? '').toString().trim().isEmpty
-            ? null
-            : (u['avatarUrl'] as Object).toString(),
-      ));
+      final displayName = (u['displayName'] ?? '').toString().trim();
+      out.add(
+        TagSuggestion(
+          kind: TagKind.member,
+          canonicalId: (u['id'] ?? '').toString(),
+          display: displayName.isEmpty ? handle : displayName,
+          insertText: '@${displayName.isEmpty ? handle : displayName}',
+          subtitle: '@$handle',
+          imageUrl: (u['avatarUrl'] ?? '').toString().trim().isEmpty
+              ? null
+              : (u['avatarUrl'] as Object).toString(),
+        ),
+      );
     }
     for (final i in result.institutions) {
       final slug = (i['slug'] ?? '').toString().trim();
       if (slug.isEmpty) continue;
-      out.add(TagSuggestion(
-        kind: TagKind.institution,
-        canonicalId: (i['id'] ?? '').toString(),
-        display: (i['name'] ?? slug).toString(),
-        insertText: '@$slug',
-        subtitle: 'Institution',
-        imageUrl: (i['logoUrl'] ?? '').toString().trim().isEmpty
-            ? null
-            : (i['logoUrl'] as Object).toString(),
-      ));
+      final name = (i['name'] ?? '').toString().trim();
+      out.add(
+        TagSuggestion(
+          kind: TagKind.institution,
+          canonicalId: (i['id'] ?? '').toString(),
+          display: name.isEmpty ? slug : name,
+          insertText: '@${name.isEmpty ? slug : name}',
+          subtitle: '@$slug · Institution',
+          imageUrl: (i['logoUrl'] ?? '').toString().trim().isEmpty
+              ? null
+              : (i['logoUrl'] as Object).toString(),
+        ),
+      );
     }
     // Server ranking already ordered each list; interleaving members
     // first matches the platform's identity-first emphasis.

@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_entities.dart';
+import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/compliance/objectionable_content.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/media/attachment.dart';
@@ -826,11 +827,17 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
       if (!mounted) return;
 
+      final tagRefs = _parseTagReferences(draft['tagReferences']);
+      final hydrated = hydrateTextWithDisplayTags(text, tagRefs);
+
       setState(() {
-        _textController.text = text;
+        _textController.text = hydrated.text;
         _visibility = visibility;
         _primaryTopic = AuraTopic.fromWire(_str(draft['primaryTopic']));
         _secondaryTopics = AuraTopic.listFromWire(draft['secondaryTopics']);
+        _selectedTagReferences
+          ..clear()
+          ..addAll(hydrated.references);
         _lastSavedAt = savedAt;
         _attachments
           ..clear()
@@ -892,11 +899,17 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       }
 
       if (!mounted) return;
+      final tagRefs = _parseTagReferences(post['tagReferences']);
+      final hydrated = hydrateTextWithDisplayTags(_str(post['text']), tagRefs);
+
       setState(() {
-        _textController.text = _str(post['text']);
+        _textController.text = hydrated.text;
         _visibility = _visibilityFromApi(post['visibility']);
         _primaryTopic = AuraTopic.fromWire(_str(post['primaryTopic']));
         _secondaryTopics = AuraTopic.listFromWire(post['secondaryTopics']);
+        _selectedTagReferences
+          ..clear()
+          ..addAll(hydrated.references);
         _lastSavedAt = null;
         _attachments
           ..clear()
@@ -1230,6 +1243,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // post it publishes into) reflects the composer state. `null` clears.
       'primaryTopic': _primaryTopic?.wire,
       'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
+      'tagReferences': _currentMentionPayload(),
       'mentions': _currentMentionPayload(),
       // Public-record routing — intent tells the backend which accountability
       // route to attempt when PUBLIC_RECORD_ROUTING_ENABLED is on.
@@ -1279,6 +1293,17 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final key = '${reference.kind.name}:${reference.canonicalId}';
       if (!seen.add(key)) continue;
       out.add(reference.toJson());
+    }
+    return out;
+  }
+
+  List<TagReference> _parseTagReferences(Object? raw) {
+    if (raw is! List) return const <TagReference>[];
+    final out = <TagReference>[];
+    for (final item in raw) {
+      if (item is Map) {
+        out.add(TagReference.fromJson(Map<String, dynamic>.from(item)));
+      }
     }
     return out;
   }

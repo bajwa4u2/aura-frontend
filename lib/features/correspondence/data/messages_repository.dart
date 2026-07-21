@@ -54,14 +54,19 @@ class MessagesRepository {
       if (existing != null) return existing;
     }
 
-    final future = _fetchMessages(threadId: threadId, limit: limit, cursor: cursor);
+    final future = _fetchMessages(
+      threadId: threadId,
+      limit: limit,
+      cursor: cursor,
+    );
     if (useCache) _messagesInFlight[threadId] = future;
 
     try {
       final result = await future;
       if (useCache) {
-        _messagesCache[threadId] =
-            result.map((e) => Map<String, dynamic>.from(e)).toList();
+        _messagesCache[threadId] = result
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
         _messagesCacheAt[threadId] = DateTime.now();
       }
       return result.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -79,10 +84,7 @@ class MessagesRepository {
   }) async {
     final res = await _dio.get(
       '/threads/$threadId/messages',
-      queryParameters: {
-        'limit': limit,
-        if (_hasText(cursor)) 'cursor': cursor,
-      },
+      queryParameters: {'limit': limit, if (_hasText(cursor)) 'cursor': cursor},
     );
     final items = _extractList(res.data);
     return items.map(_asMap).toList();
@@ -95,21 +97,23 @@ class MessagesRepository {
     String? sourceLanguage,
     Map<String, dynamic>? composition,
     Map<String, dynamic>? translation,
+    List<Map<String, dynamic>>? tagReferences,
     String? clientMessageId,
   }) async {
     final payload = <String, dynamic>{
       if (_hasText(body)) 'body': body!.trim(),
       if (attachments.isNotEmpty) 'attachments': attachments,
       if (_hasText(sourceLanguage)) 'sourceLanguage': sourceLanguage!.trim(),
-      if (composition != null && composition.isNotEmpty) 'composition': composition,
-      if (translation != null && translation.isNotEmpty) 'translation': translation,
+      if (composition != null && composition.isNotEmpty)
+        'composition': composition,
+      if (translation != null && translation.isNotEmpty)
+        'translation': translation,
+      if (tagReferences != null) 'tagReferences': tagReferences,
+      if (tagReferences != null) 'mentions': tagReferences,
       if (_hasText(clientMessageId)) 'clientMessageId': clientMessageId!.trim(),
     };
 
-    final res = await _dio.post(
-      '/threads/$threadId/messages',
-      data: payload,
-    );
+    final res = await _dio.post('/threads/$threadId/messages', data: payload);
 
     // Bust the cache so the next listMessages call fetches fresh data.
     clearMessagesCache(threadId);
@@ -123,18 +127,20 @@ class MessagesRepository {
     String? sourceLanguage,
     Map<String, dynamic>? composition,
     Map<String, dynamic>? translation,
+    List<Map<String, dynamic>>? tagReferences,
   }) async {
     final payload = <String, dynamic>{
       'body': body.trim(),
       if (_hasText(sourceLanguage)) 'sourceLanguage': sourceLanguage!.trim(),
-      if (composition != null && composition.isNotEmpty) 'composition': composition,
-      if (translation != null && translation.isNotEmpty) 'translation': translation,
+      if (composition != null && composition.isNotEmpty)
+        'composition': composition,
+      if (translation != null && translation.isNotEmpty)
+        'translation': translation,
+      if (tagReferences != null) 'tagReferences': tagReferences,
+      if (tagReferences != null) 'mentions': tagReferences,
     };
 
-    final res = await _dio.patch(
-      '/messages/$messageId',
-      data: payload,
-    );
+    final res = await _dio.patch('/messages/$messageId', data: payload);
 
     return _unwrapMap(res.data);
   }
@@ -158,23 +164,29 @@ class MessagesRepository {
       final res = await _dio.post('/composition/translate', data: payload);
       final map = _unwrapMap(res.data);
       return {
-        'translatedText': _pickString(
-          map,
-          const ['translatedText', 'text', 'translation', 'translated_text'],
-        ),
-        'targetLanguage': _pickString(
-          map,
-          const ['targetLanguage', 'language', 'target_language'],
-        ).isEmpty
+        'translatedText': _pickString(map, const [
+          'translatedText',
+          'text',
+          'translation',
+          'translated_text',
+        ]),
+        'targetLanguage':
+            _pickString(map, const [
+              'targetLanguage',
+              'language',
+              'target_language',
+            ]).isEmpty
             ? targetLanguage.trim()
-            : _pickString(
-                map,
-                const ['targetLanguage', 'language', 'target_language'],
-              ),
-        'sourceLanguage': _pickString(
-          map,
-          const ['sourceLanguage', 'source_language'],
-        ).isEmpty
+            : _pickString(map, const [
+                'targetLanguage',
+                'language',
+                'target_language',
+              ]),
+        'sourceLanguage':
+            _pickString(map, const [
+              'sourceLanguage',
+              'source_language',
+            ]).isEmpty
             ? (sourceLanguage ?? '')
             : _pickString(map, const ['sourceLanguage', 'source_language']),
         'raw': map,
@@ -188,10 +200,7 @@ class MessagesRepository {
     required String text,
     required String surface,
   }) async {
-    final payload = <String, dynamic>{
-      'text': text,
-      'surface': surface,
-    };
+    final payload = <String, dynamic>{'text': text, 'surface': surface};
 
     try {
       final res = await _dio.post('/composition/review', data: payload);

@@ -9,6 +9,7 @@
 library;
 
 import 'feed_media.dart';
+import '../../../core/tagging/tag_entities.dart';
 export 'feed_media.dart';
 
 enum FeedItemType {
@@ -574,15 +575,14 @@ class FeedReplyPreview {
     final raw = m['items'];
     final items = raw is List
         ? raw
-            .whereType<Map>()
-            .map((e) =>
-                FeedReplyPreviewItem.fromJson(Map<String, dynamic>.from(e)))
-            .toList()
+              .whereType<Map>()
+              .map(
+                (e) =>
+                    FeedReplyPreviewItem.fromJson(Map<String, dynamic>.from(e)),
+              )
+              .toList()
         : <FeedReplyPreviewItem>[];
-    return FeedReplyPreview(
-      items: items,
-      hasMore: m['hasMore'] == true,
-    );
+    return FeedReplyPreview(items: items, hasMore: m['hasMore'] == true);
   }
 }
 
@@ -647,9 +647,7 @@ class FeedReplyPreviewItem {
 
     final authorRaw = m['author'];
     final author = authorRaw is Map
-        ? FeedReplyPreviewAuthor.fromJson(
-            Map<String, dynamic>.from(authorRaw),
-          )
+        ? FeedReplyPreviewAuthor.fromJson(Map<String, dynamic>.from(authorRaw))
         : const FeedReplyPreviewAuthor(id: '', displayName: '');
 
     return FeedReplyPreviewItem(
@@ -680,8 +678,10 @@ class FeedReplyPreviewAuthor {
   final String? handle;
   final String? avatarUrl;
   final String? profileRoute;
+
   /// Phase 6.1.1 — optional identity context. Renders nothing when absent.
   final FeedIdentityContext? context;
+
   /// Phase 6.2 — presence freshness.
   final FeedPresence? presence;
 
@@ -790,9 +790,11 @@ class FeedSignal {
     final raw = m['actors'];
     final actors = raw is List
         ? raw
-            .whereType<Map>()
-            .map((e) => FeedSignalActor.fromJson(Map<String, dynamic>.from(e)))
-            .toList()
+              .whereType<Map>()
+              .map(
+                (e) => FeedSignalActor.fromJson(Map<String, dynamic>.from(e)),
+              )
+              .toList()
         : <FeedSignalActor>[];
     return FeedSignal(
       type: (m['type'] ?? '').toString().toUpperCase(),
@@ -816,6 +818,7 @@ class FeedItem {
     required this.status,
     this.primaryTopic,
     this.secondaryTopics = const <String>[],
+    this.tagReferences = const <TagReference>[],
     this.createdAt,
     this.publishedAt,
     required this.targetRoute,
@@ -860,6 +863,7 @@ class FeedItem {
   /// discovery. Convert to [AuraTopic] in the UI layer for display.
   final String? primaryTopic;
   final List<String> secondaryTopics;
+  final List<TagReference> tagReferences;
 
   final DateTime? createdAt;
   final DateTime? publishedAt;
@@ -946,6 +950,7 @@ class FeedItem {
   bool get isInstitutionPost => type == FeedItemType.institutionPost;
   bool get isUserPost => type == FeedItemType.userPost;
   bool get isAnnouncement => type == FeedItemType.announcement;
+
   /// True for cards that speak with institutional voice — institution
   /// posts and institution announcements alike. Drives the OFFICIAL
   /// pill and disables personal-post-only affordances.
@@ -998,9 +1003,7 @@ class FeedItem {
 
     final replyPreviewRaw = m['replyPreview'];
     final replyPreview = replyPreviewRaw is Map
-        ? FeedReplyPreview.fromJson(
-            Map<String, dynamic>.from(replyPreviewRaw),
-          )
+        ? FeedReplyPreview.fromJson(Map<String, dynamic>.from(replyPreviewRaw))
         : null;
 
     final activityRaw = m['activity'];
@@ -1051,10 +1054,16 @@ class FeedItem {
       primaryTopic: opt(['primaryTopic']),
       secondaryTopics: (m['secondaryTopics'] is List)
           ? (m['secondaryTopics'] as List)
-              .map((e) => e.toString())
-              .where((e) => e.trim().isNotEmpty)
-              .toList()
+                .map((e) => e.toString())
+                .where((e) => e.trim().isNotEmpty)
+                .toList()
           : const <String>[],
+      tagReferences: (m['tagReferences'] is List)
+          ? (m['tagReferences'] as List)
+                .whereType<Map>()
+                .map((e) => TagReference.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
+          : const <TagReference>[],
       createdAt: readDate(m['createdAt']),
       publishedAt: readDate(m['publishedAt']),
       targetRoute: s(['targetRoute']),
@@ -1090,6 +1099,7 @@ class FeedReply {
     required this.id,
     required this.body,
     this.mediaUrl,
+    this.tagReferences = const <TagReference>[],
     required this.author,
     this.createdAt,
     this.updatedAt,
@@ -1101,6 +1111,7 @@ class FeedReply {
   final String id;
   final String body;
   final String? mediaUrl;
+  final List<TagReference> tagReferences;
   final FeedReplyAuthor author;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -1154,6 +1165,12 @@ class FeedReply {
       id: s(['id']),
       body: s(['body']),
       mediaUrl: opt(['mediaUrl']),
+      tagReferences: (m['tagReferences'] is List)
+          ? (m['tagReferences'] as List)
+                .whereType<Map>()
+                .map((e) => TagReference.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
+          : const <TagReference>[],
       author: author,
       createdAt: readDate(m['createdAt']),
       updatedAt: readDate(m['updatedAt']),
@@ -1184,8 +1201,10 @@ class FeedReplyAuthor {
   final String handle;
   final String? avatarUrl;
   final String? profileRoute;
+
   /// Phase 6.1.1 — optional identity context. Renders nothing when absent.
   final FeedIdentityContext? context;
+
   /// Phase 6.2 — presence freshness.
   final FeedPresence? presence;
 

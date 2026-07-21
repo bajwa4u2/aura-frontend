@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 
 import '../../../../core/attachments/aura_media_upload.dart';
+import '../../../../core/tagging/tag_entities.dart';
+import '../../../../core/tagging/tag_text_hydration.dart';
 import '../../../../core/tagging/governed_tag_field.dart';
 import '../../../../core/media/attachment.dart';
 import '../../../../core/media/media_mime.dart';
@@ -53,14 +55,13 @@ class ThreadComposerBar extends ConsumerStatefulWidget {
     required String senderHandle,
     required String senderAvatarUrl,
     required List<Map<String, dynamic>> attachments,
-  })? onOptimisticSend;
+  })?
+  onOptimisticSend;
 
   /// Called when the send round-trip fails so the screen can surface a retry
   /// affordance on the corresponding optimistic message.
-  final void Function({
-    required String clientMessageId,
-    required Object error,
-  })? onSendFailed;
+  final void Function({required String clientMessageId, required Object error})?
+  onSendFailed;
 
   @override
   ConsumerState<ThreadComposerBar> createState() => _ThreadComposerBarState();
@@ -74,6 +75,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
   final _picker = ImagePicker();
 
   final List<Attachment> _attachments = [];
+  final List<TagReference> _selectedTagReferences = <TagReference>[];
   final Set<String> _dismissedSuggestionIds = <String>{};
   final Set<String> _applyingSuggestionIds = <String>{};
 
@@ -350,9 +352,9 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     final mimeError = _validateMimeForKind(mimeType, kind);
     if (mimeError != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mimeError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(mimeError)));
       return;
     }
 
@@ -429,7 +431,8 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       source: wireSource(attachment.source),
       width: attachment.width,
       height: attachment.height,
-      duration: (attachment.kind == AttachmentKind.audio ||
+      duration:
+          (attachment.kind == AttachmentKind.audio ||
                   attachment.kind == AttachmentKind.video) &&
               attachment.durationMs != null
           ? (attachment.durationMs! / 1000).round()
@@ -662,8 +665,10 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       return;
     }
 
-    final attachmentsPayload =
-        readyAttachments.map((a) => a.toMessagePayload()).toList();
+    final attachmentsPayload = readyAttachments
+        .map((a) => a.toMessagePayload())
+        .toList();
+    final tagReferences = _currentMentionPayload();
 
     // B4: idempotency key generated client-side and propagated through both
     // the optimistic message and the network payload so a retry-after-failure
@@ -699,6 +704,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     _controller.clear();
     setState(() {
       _attachments.clear();
+      _selectedTagReferences.clear();
       _sending = true;
       _suggestions = const [];
       _assistSnapshot = null;
@@ -717,6 +723,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
             threadId: widget.threadId,
             body: body,
             attachments: attachmentsPayload,
+            tagReferences: tagReferences,
             clientMessageId: clientMessageId,
           );
 
@@ -736,6 +743,32 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
         setState(() => _sending = false);
       }
     }
+  }
+
+  void _rememberSelectedTag(TagReference reference) {
+    if (!reference.isMention) return;
+    final id = reference.durableEntityId;
+    final sourceText = reference.durableSourceText;
+    if (id.isEmpty || sourceText.isEmpty) return;
+    _selectedTagReferences.removeWhere(
+      (existing) =>
+          existing.kind == reference.kind && existing.durableEntityId == id,
+    );
+    _selectedTagReferences.add(reference);
+  }
+
+  List<Map<String, dynamic>> _currentMentionPayload() {
+    final text = _controller.text;
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final reference in _selectedTagReferences) {
+      if (!reference.isMention) continue;
+      if (!text.contains(reference.durableSourceText)) continue;
+      final key = '${reference.kind.name}:${reference.durableEntityId}';
+      if (!seen.add(key)) continue;
+      out.add(reference.toJson());
+    }
+    return out;
   }
 
   static int _clientMessageIdCounter = 0;
@@ -797,7 +830,9 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                 decoration: BoxDecoration(
                   color: AuraSurface.accentSoft,
                   borderRadius: BorderRadius.circular(AuraRadius.r12),
-                  border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: AuraSurface.accent.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: const Icon(
                   Icons.attach_file_rounded,
@@ -812,7 +847,9 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                   children: [
                     Text(
                       'Add attachment',
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -841,10 +878,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
           insetPadding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: SizedBox(
             width: 460,
-            child: AuraCard(
-              padding: const EdgeInsets.all(16),
-              child: body,
-            ),
+            child: AuraCard(padding: const EdgeInsets.all(16), child: body),
           ),
         );
       }
@@ -852,10 +886,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-          child: AuraCard(
-            padding: const EdgeInsets.all(12),
-            child: body,
-          ),
+          child: AuraCard(padding: const EdgeInsets.all(12), child: body),
         ),
       );
     }
@@ -1016,8 +1047,9 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                                 ? AuraSurface.overlay
                                 : Colors.transparent,
                             border: Border.all(color: AuraSurface.divider),
-                            borderRadius:
-                                BorderRadius.circular(AuraRadius.pill),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
                           ),
                           child: Text(
                             entry.value,
@@ -1090,49 +1122,55 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                   GovernedTagAutocomplete(
                     controller: _controller,
                     focusNode: _composerFocus,
+                    onTagSelected: _rememberSelectedTag,
                     child: TextField(
-                    controller: _controller,
-                    focusNode: _composerFocus,
-                    minLines: 1,
-                    maxLines: 6,
-                    textInputAction: TextInputAction.newline,
-                    decoration: InputDecoration(
-                      hintText: _recordingAudio
-                          ? 'Recording audio...'
-                          : 'Write a message',
-                      filled: true,
-                      fillColor: AuraSurface.subtle,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AuraRadius.r16),
-                        borderSide: const BorderSide(color: AuraSurface.divider),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AuraRadius.r16),
-                        borderSide: const BorderSide(color: AuraSurface.divider),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AuraRadius.r16),
-                        borderSide: const BorderSide(
-                          color: AuraSurface.accent,
+                      controller: _controller,
+                      focusNode: _composerFocus,
+                      minLines: 1,
+                      maxLines: 6,
+                      textInputAction: TextInputAction.newline,
+                      decoration: InputDecoration(
+                        hintText: _recordingAudio
+                            ? 'Recording audio...'
+                            : 'Write a message',
+                        filled: true,
+                        fillColor: AuraSurface.subtle,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AuraRadius.r16),
+                          borderSide: const BorderSide(
+                            color: AuraSurface.divider,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AuraRadius.r16),
+                          borderSide: const BorderSide(
+                            color: AuraSurface.divider,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AuraRadius.r16),
+                          borderSide: const BorderSide(
+                            color: AuraSurface.accent,
+                          ),
                         ),
                       ),
+                      onChanged: (_) {
+                        setState(() {
+                          if ((_assistSnapshot ?? '') !=
+                              _controller.text.trim()) {
+                            _suggestions = const [];
+                            _assistError = null;
+                            _assistSessionId = null;
+                            _dismissedSuggestionIds.clear();
+                          }
+                          if ((_translationSnapshot ?? '') !=
+                              _controller.text.trim()) {
+                            _translationPreview = null;
+                            _translationError = null;
+                          }
+                        });
+                      },
                     ),
-                    onChanged: (_) {
-                      setState(() {
-                        if ((_assistSnapshot ?? '') != _controller.text.trim()) {
-                          _suggestions = const [];
-                          _assistError = null;
-                          _assistSessionId = null;
-                          _dismissedSuggestionIds.clear();
-                        }
-                        if ((_translationSnapshot ?? '') !=
-                            _controller.text.trim()) {
-                          _translationPreview = null;
-                          _translationError = null;
-                        }
-                      });
-                    },
-                  ),
                   ),
                   const SizedBox(height: AuraSpace.s10),
                   if (_attachments.isNotEmpty) ...[
@@ -1190,7 +1228,8 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                     ),
                     const SizedBox(height: AuraSpace.s10),
                   ],
-                  if (_visibleSuggestions.isNotEmpty || _assistError != null) ...[
+                  if (_visibleSuggestions.isNotEmpty ||
+                      _assistError != null) ...[
                     _ComposerAssistPanel(
                       suggestions: _visibleSuggestions,
                       errorText: _assistError,
@@ -1214,8 +1253,9 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                       preview: _translationPreview,
                       errorText: _translationError,
                       busy: _translationBusy,
-                      onApply:
-                          _translationPreview == null ? null : _applyTranslation,
+                      onApply: _translationPreview == null
+                          ? null
+                          : _applyTranslation,
                       onRestore: _translationSnapshot == null
                           ? null
                           : _restoreBeforeTranslation,
@@ -1531,8 +1571,8 @@ class _AttachmentPreviewCard extends StatelessWidget {
 
     final subtitle = attachment.uploading
         ? (progressPct != null && progressPct < 100
-            ? 'Uploading $progressPct%'
-            : 'Uploading…')
+              ? 'Uploading $progressPct%'
+              : 'Uploading…')
         : attachment.error != null
         ? (attachment.error!)
         : attachmentKindLabel(attachment.kind);
@@ -1703,10 +1743,7 @@ class _AttachmentPreviewMedia extends StatelessWidget {
 }
 
 class _AttachmentFallbackTile extends StatelessWidget {
-  const _AttachmentFallbackTile({
-    required this.icon,
-    required this.label,
-  });
+  const _AttachmentFallbackTile({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -1874,20 +1911,27 @@ class ThreadEditMessageDialog extends ConsumerStatefulWidget {
 class _ThreadEditMessageDialogState
     extends ConsumerState<ThreadEditMessageDialog> {
   late final TextEditingController _controller;
+  final _focusNode = FocusNode();
+  final List<TagReference> _selectedTagReferences = <TagReference>[];
   bool _saving = false;
   String? _errorText;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(
-      text: pickString(widget.message, const ['body', 'text', 'content']),
+    final tagRefs = _parseTagReferences(widget.message['tagReferences']);
+    final hydrated = hydrateTextWithDisplayTags(
+      pickString(widget.message, const ['body', 'text', 'content']),
+      tagRefs,
     );
+    _controller = TextEditingController(text: hydrated.text);
+    _selectedTagReferences.addAll(hydrated.references);
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -1910,7 +1954,11 @@ class _ThreadEditMessageDialogState
     try {
       await ref
           .read(messagesRepositoryProvider)
-          .editMessage(messageId: messageId, body: body);
+          .editMessage(
+            messageId: messageId,
+            body: body,
+            tagReferences: _currentMentionPayload(),
+          );
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -1922,6 +1970,43 @@ class _ThreadEditMessageDialogState
     }
   }
 
+  void _rememberSelectedTag(TagReference reference) {
+    if (!reference.isMention) return;
+    final id = reference.durableEntityId;
+    final sourceText = reference.durableSourceText;
+    if (id.isEmpty || sourceText.isEmpty) return;
+    _selectedTagReferences.removeWhere(
+      (existing) =>
+          existing.kind == reference.kind && existing.durableEntityId == id,
+    );
+    _selectedTagReferences.add(reference);
+  }
+
+  List<Map<String, dynamic>> _currentMentionPayload() {
+    final text = _controller.text;
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final reference in _selectedTagReferences) {
+      if (!reference.isMention) continue;
+      if (!text.contains(reference.durableSourceText)) continue;
+      final key = '${reference.kind.name}:${reference.durableEntityId}';
+      if (!seen.add(key)) continue;
+      out.add(reference.toJson());
+    }
+    return out;
+  }
+
+  List<TagReference> _parseTagReferences(Object? raw) {
+    if (raw is! List) return const <TagReference>[];
+    final out = <TagReference>[];
+    for (final item in raw) {
+      if (item is Map) {
+        out.add(TagReference.fromJson(Map<String, dynamic>.from(item)));
+      }
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -1931,11 +2016,17 @@ class _ThreadEditMessageDialogState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            GovernedTagAutocomplete(
               controller: _controller,
-              minLines: 3,
-              maxLines: 6,
-              decoration: const InputDecoration(labelText: 'Message'),
+              focusNode: _focusNode,
+              onTagSelected: _rememberSelectedTag,
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                minLines: 3,
+                maxLines: 6,
+                decoration: const InputDecoration(labelText: 'Message'),
+              ),
             ),
             if (_errorText != null) ...[
               const SizedBox(height: AuraSpace.s12),

@@ -18,6 +18,7 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../../../core/ui/aura_text_block.dart';
+import '../../../public/widgets/mention_text.dart';
 import '../../../feed/data/unified_feed_providers.dart';
 import '../../../feed/domain/feed_item.dart' show FeedRouting;
 import '../../../feed/domain/post.dart';
@@ -1111,8 +1112,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AuraTextBlock(
+                      ResolvedTagText(
                         text,
+                        tagReferences: post.tagReferences,
                         style: bodyTextStyle,
                         maxLines: maxLines,
                         overflow: maxLines == null
@@ -1123,7 +1125,6 @@ class _PostCardState extends ConsumerState<PostCard> {
                         // PostCard is never wrapped in a tap-to-navigate
                         // target at any of its call sites.
                         selectable: true,
-                        semanticsLabel: 'Post body',
                       ),
                       if (showToggle && !_expanded) ...[
                         const SizedBox(height: AuraSpace.s8),

@@ -14,7 +14,20 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../../../core/ui/aura_text_block.dart';
+import '../../../../core/tagging/tag_entities.dart';
+import '../../../public/widgets/mention_text.dart';
 import 'thread_utils.dart';
+
+List<TagReference> _parseTagReferences(Object? raw) {
+  if (raw is! List) return const <TagReference>[];
+  final out = <TagReference>[];
+  for (final item in raw) {
+    if (item is Map) {
+      out.add(TagReference.fromJson(Map<String, dynamic>.from(item)));
+    }
+  }
+  return out;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MESSAGE TILE
@@ -88,14 +101,17 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
                                 ? AuraSurface.overlay
                                 : Colors.transparent,
                             border: Border.all(color: AuraSurface.divider),
-                            borderRadius:
-                                BorderRadius.circular(AuraRadius.pill),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
                           ),
                           child: Text(
                             entry.value,
                             style: AuraText.small.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: active ? AuraSurface.ink : AuraSurface.muted,
+                              color: active
+                                  ? AuraSurface.ink
+                                  : AuraSurface.muted,
                             ),
                           ),
                         ),
@@ -187,14 +203,27 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
     final authorMap = extractAuthorMap(message);
     final src = authorMap.isNotEmpty ? authorMap : message;
     final author = pickString(src, const [
-      'displayName', 'authorName', 'senderName', 'name', 'userName',
+      'displayName',
+      'authorName',
+      'senderName',
+      'name',
+      'userName',
     ]);
     final handle = pickString(src, const [
-      'handle', 'authorHandle', 'senderHandle', 'username',
+      'handle',
+      'authorHandle',
+      'senderHandle',
+      'username',
     ]);
-    final avatarUrl = pickString(src, const ['avatarUrl', 'imageUrl', 'photoUrl']);
+    final avatarUrl = pickString(src, const [
+      'avatarUrl',
+      'imageUrl',
+      'photoUrl',
+    ]);
     final createdAt = pickString(message, const [
-      'createdAt', 'sentAt', 'timestamp',
+      'createdAt',
+      'sentAt',
+      'timestamp',
     ]);
     final attachments = listOfMap(message['attachments']);
     final senderId = extractSenderId(message);
@@ -215,10 +244,7 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1E2756),
-                AuraSurface.overlay,
-              ],
+              colors: [Color(0xFF1E2756), AuraSurface.overlay],
             ),
             border: Border.all(
               color: AuraSurface.accent.withValues(alpha: 0.22),
@@ -248,9 +274,9 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
           if (body.isNotEmpty) ...[
             Directionality(
               textDirection: directionForText(body),
-              child: AuraTextBlock(
+              child: ResolvedTagText(
                 body,
-                textAlign: alignForText(body),
+                tagReferences: _parseTagReferences(message['tagReferences']),
                 style: AuraText.body.copyWith(color: textColor),
                 // Correspondence is discourse too — message text is
                 // selectable so it can be copied and quoted.
@@ -271,8 +297,7 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
                     onTap: _translationBusy
                         ? null
                         : () => _translateMessage(context, body),
-                    borderRadius:
-                        BorderRadius.circular(AuraRadius.pill),
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AuraSpace.s6,
@@ -328,7 +353,11 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.translate, size: 14, color: metaColor),
+                          const Icon(
+                            Icons.translate,
+                            size: 14,
+                            color: metaColor,
+                          ),
                           const SizedBox(width: AuraSpace.s6),
                           Text(
                             languageLabel(
@@ -448,7 +477,11 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
                 const SizedBox(width: AuraSpace.s8),
                 PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.more_horiz, size: 18, color: metaColor),
+                  icon: const Icon(
+                    Icons.more_horiz,
+                    size: 18,
+                    color: metaColor,
+                  ),
                   onSelected: (value) {
                     if (value == 'edit') {
                       onEdit();
@@ -458,7 +491,10 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
                   },
                   itemBuilder: (context) => const [
                     PopupMenuItem<String>(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
                   ],
                 ),
               ],
@@ -641,130 +677,132 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
           builder: (ctx, constraints) {
             final maxW = constraints.maxWidth;
             final maxH = constraints.maxHeight;
-        return Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                minScale: 0.8,
-                maxScale: 4,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: ColoredBox(
-                    color: Colors.black,
-                    child: AuraAttachmentImage(
-                      url: imageUrl,
-                      fit: BoxFit.contain,
-                      placeholder: (_) => SizedBox(
-                        height: maxH.clamp(200, 320),
-                        width: maxW.clamp(200, 520),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white70,
-                                ),
+            return Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    minScale: 0.8,
+                    maxScale: 4,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: ColoredBox(
+                        color: Colors.black,
+                        child: AuraAttachmentImage(
+                          url: imageUrl,
+                          fit: BoxFit.contain,
+                          placeholder: (_) => SizedBox(
+                            height: maxH.clamp(200, 320),
+                            width: maxW.clamp(200, 520),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Loading image…',
+                                    style: AuraText.small.copyWith(
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Loading image…',
-                                style: AuraText.small.copyWith(
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                      errorWidget: (_) => Container(
-                        height: maxH.clamp(200, 320),
-                        width: maxW.clamp(200, 520),
-                        decoration: BoxDecoration(
-                          color: AuraSurface.overlay,
-                          borderRadius: BorderRadius.circular(AuraRadius.card),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Could not load image.',
-                          style: AuraText.body.copyWith(
-                            color: AuraSurface.muted,
+                          errorWidget: (_) => Container(
+                            height: maxH.clamp(200, 320),
+                            width: maxW.clamp(200, 520),
+                            decoration: BoxDecoration(
+                              color: AuraSurface.overlay,
+                              borderRadius: BorderRadius.circular(
+                                AuraRadius.card,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Could not load image.',
+                              style: AuraText.body.copyWith(
+                                color: AuraSurface.muted,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Delete-from-viewer: collapses the four-tap delete
-                  // path (image → close → "…" → Delete) into two taps
-                  // (image → Delete) when the message is mine.
-                  // Closes the dialog first so the deletion's thread
-                  // refresh doesn't leave a stale dialog mounted on a
-                  // now-deleted message.
-                  if (widget.isMine && widget.onDeleteMessage != null) ...[
-                    IconButton(
-                      tooltip: 'Delete message',
-                      style: IconButton.styleFrom(
-                        backgroundColor: AuraSurface.overlay,
-                        foregroundColor: AuraSurface.coRose,
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Delete-from-viewer: collapses the four-tap delete
+                      // path (image → close → "…" → Delete) into two taps
+                      // (image → Delete) when the message is mine.
+                      // Closes the dialog first so the deletion's thread
+                      // refresh doesn't leave a stale dialog mounted on a
+                      // now-deleted message.
+                      if (widget.isMine && widget.onDeleteMessage != null) ...[
+                        IconButton(
+                          tooltip: 'Delete message',
+                          style: IconButton.styleFrom(
+                            backgroundColor: AuraSurface.overlay,
+                            foregroundColor: AuraSurface.coRose,
+                          ),
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            widget.onDeleteMessage!();
+                          },
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: AuraSurface.overlay,
+                          foregroundColor: AuraSurface.ink,
+                        ),
+                        // Use the dialog's own BuildContext (from the LayoutBuilder)
+                        // instead of the outer _MessageAttachmentCardState context.
+                        // The card rebuilds on every thread refresh, after which the
+                        // captured outer context points at a disposed element and
+                        // `Navigator.of(context)` throws "Null check operator used on
+                        // a null value" in the gesture handler — wedging the close
+                        // button. The dialog's context is alive for as long as the
+                        // dialog is mounted, which is exactly when this button can
+                        // be tapped.
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        icon: const Icon(Icons.close),
                       ),
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        widget.onDeleteMessage!();
-                      },
-                      icon: const Icon(Icons.delete_outline),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  IconButton(
-                    style: IconButton.styleFrom(
-                      backgroundColor: AuraSurface.overlay,
-                      foregroundColor: AuraSurface.ink,
-                    ),
-                    // Use the dialog's own BuildContext (from the LayoutBuilder)
-                    // instead of the outer _MessageAttachmentCardState context.
-                    // The card rebuilds on every thread refresh, after which the
-                    // captured outer context points at a disposed element and
-                    // `Navigator.of(context)` throws "Null check operator used on
-                    // a null value" in the gesture handler — wedging the close
-                    // button. The dialog's context is alive for as long as the
-                    // dialog is mounted, which is exactly when this button can
-                    // be tapped.
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ),
-            if (title.isNotEmpty)
-              Positioned(
-                left: 16,
-                right: 72,
-                top: 16,
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    ],
                   ),
                 ),
-              ),
-          ],
-        );
+                if (title.isNotEmpty)
+                  Positioned(
+                    left: 16,
+                    right: 72,
+                    top: 16,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+              ],
+            );
           },
         ),
       ),
@@ -780,10 +818,12 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
     final kind = kindFromMime(mimeType);
     final url = resolveAttachmentUrl(attachment);
     final thumbUrl = resolveAttachmentThumbUrl(attachment);
-    final attachmentId = pickString(
-      attachment,
-      const ['id', 'attachmentId', 'mediaId', 'storageKey'],
-    );
+    final attachmentId = pickString(attachment, const [
+      'id',
+      'attachmentId',
+      'mediaId',
+      'storageKey',
+    ]);
 
     const borderColor = AuraSurface.divider;
     const surfaceColor = AuraSurface.subtle;
@@ -894,6 +934,7 @@ class _ImageAttachmentSurface extends StatelessWidget {
 
   final String thumbUrl;
   final String url;
+
   /// Stable cache key. Server-issued id when present (`id`/`attachmentId`/
   /// `mediaId`/`storageKey`); falls back to URL-based caching inside
   /// AuraAttachmentImage when empty.
@@ -1164,16 +1205,16 @@ class _AudioAttachmentSurface extends StatelessWidget {
         children: [
           Container(
             height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  color: hovering
-                      ? Colors.white.withValues(alpha: 0.06)
-                      : Colors.transparent,
+            width: 48,
+            decoration: BoxDecoration(
+              color: hovering
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.transparent,
               border: Border.all(color: borderColor),
               borderRadius: BorderRadius.circular(14),
             ),
-                child: Icon(Icons.graphic_eq_outlined, color: secondaryTextColor),
-              ),
+            child: Icon(Icons.graphic_eq_outlined, color: secondaryTextColor),
+          ),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Column(
@@ -1248,9 +1289,15 @@ class _DocumentAttachmentSurface extends StatelessWidget {
   String get _docTypeLabel {
     final lower = mimeType.toLowerCase();
     if (lower == 'application/pdf') return 'PDF';
-    if (lower.contains('spreadsheet') || lower.contains('excel')) return 'Spreadsheet';
-    if (lower.contains('presentation') || lower.contains('powerpoint')) return 'Presentation';
-    if (lower.contains('wordprocessingml') || lower.contains('msword')) return 'Document';
+    if (lower.contains('spreadsheet') || lower.contains('excel')) {
+      return 'Spreadsheet';
+    }
+    if (lower.contains('presentation') || lower.contains('powerpoint')) {
+      return 'Presentation';
+    }
+    if (lower.contains('wordprocessingml') || lower.contains('msword')) {
+      return 'Document';
+    }
     if (lower.startsWith('text/')) return 'Text';
     return 'File';
   }
@@ -1292,9 +1339,7 @@ class _DocumentAttachmentSurface extends StatelessWidget {
             height: 48,
             width: 48,
             decoration: BoxDecoration(
-              color: hovering
-                  ? AuraSurface.accentSoft
-                  : AuraSurface.subtle,
+              color: hovering ? AuraSurface.accentSoft : AuraSurface.subtle,
               border: Border.all(color: borderColor),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -1423,10 +1468,7 @@ class _CenterPlayIcon extends StatelessWidget {
 }
 
 class _MediaLoadingPlaceholder extends StatelessWidget {
-  const _MediaLoadingPlaceholder({
-    required this.icon,
-    required this.label,
-  });
+  const _MediaLoadingPlaceholder({required this.icon, required this.label});
 
   final IconData icon;
   final String label;

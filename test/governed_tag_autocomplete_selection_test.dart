@@ -83,10 +83,11 @@ void main() {
     await tester.tap(find.text('Neighbor Person'));
     await tester.pump();
 
-    expect(controller.text, 'Hello @neighbor ');
+    expect(controller.text, 'Hello @Neighbor Person ');
     expect(selected.single.kind, TagKind.member);
     expect(selected.single.canonicalId, 'user-2');
-    expect(selected.single.insertText, '@neighbor');
+    expect(selected.single.insertText, '@Neighbor Person');
+    expect(selected.single.toJson(), containsPair('entityId', 'user-2'));
   });
 
   testWidgets('keyboard selection inserts highlighted mention', (tester) async {
@@ -108,7 +109,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
 
-    expect(controller.text, 'Hello @neighbor ');
+    expect(controller.text, 'Hello @Neighbor Person ');
     expect(selected.single.canonicalId, 'user-2');
   });
 }

@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_entities.dart';
+import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
@@ -158,12 +159,19 @@ class _InstitutionPostComposerScreenState
     final decoded = InsCommunicationDecoded.parse(initial.title);
     _titleCtrl.text = decoded.hadMarker ? decoded.cleanTitle : initial.title;
     _communicationType = decoded.type;
-    _bodyCtrl.text = initial.body;
+    final hydrated = hydrateTextWithDisplayTags(
+      initial.body,
+      initial.tagReferences,
+    );
+    _bodyCtrl.text = hydrated.text;
     _mediaUrl = initial.mediaUrl;
     _visibility = initial.visibility;
     _distribution = initial.distribution;
     _primaryTopic = AuraTopic.fromWire(initial.primaryTopic ?? '');
     _secondaryTopics = AuraTopic.listFromWire(initial.secondaryTopics);
+    _selectedTagReferences
+      ..clear()
+      ..addAll(hydrated.references);
   }
 
   Future<void> _loadExistingPost() async {
@@ -544,6 +552,7 @@ class _InstitutionPostComposerScreenState
       'distribution': _distribution.wire,
       'primaryTopic': _primaryTopic!.wire,
       'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
+      'tagReferences': _currentMentionPayload(),
       'mentions': _currentMentionPayload(),
     };
   }

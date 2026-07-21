@@ -160,7 +160,13 @@ class _GovernedTagAutocompleteState
       text: applied.text,
       selection: TextSelection.collapsed(offset: applied.cursor),
     );
-    widget.onTagSelected?.call(s.toReference());
+    widget.onTagSelected?.call(
+      s.toReference(
+        sourceText: s.insertText,
+        startOffset: token.start,
+        endOffset: token.start + s.insertText.length,
+      ),
+    );
     widget.focusNode.requestFocus();
     _close();
   }
