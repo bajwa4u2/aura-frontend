@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
@@ -73,6 +74,8 @@ class _InstitutionPostComposerScreenState
     extends ConsumerState<InstitutionPostComposerScreen> {
   final _titleCtrl = TextEditingController();
   final _bodyCtrl = TextEditingController();
+  // AXR-1 — explicit focus node for governed tag autocomplete on the body.
+  final _bodyFocus = FocusNode();
 
   late InstitutionPostVisibility _visibility;
   InstitutionPostDistribution _distribution =
@@ -175,6 +178,7 @@ class _InstitutionPostComposerScreenState
     _draftDebounce?.cancel();
     _titleCtrl.dispose();
     _bodyCtrl.dispose();
+    _bodyFocus.dispose();
     super.dispose();
   }
 
@@ -1074,14 +1078,20 @@ class _InstitutionPostComposerScreenState
                       _bodyCtrl.text.length,
                       InstitutionPost.maxBodyChars,
                     ),
-                    child: TextField(
+                    // AXR-1 — governed @/# autocomplete in institution posts.
+                    child: GovernedTagAutocomplete(
                       controller: _bodyCtrl,
-                      maxLength: InstitutionPost.maxBodyChars,
-                      maxLines: 14,
-                      minLines: 8,
-                      decoration: _decoration('Write your post…'),
-                      style: AuraText.body,
-                      buildCounter: _zeroCounter,
+                      focusNode: _bodyFocus,
+                      child: TextField(
+                        controller: _bodyCtrl,
+                        focusNode: _bodyFocus,
+                        maxLength: InstitutionPost.maxBodyChars,
+                        maxLines: 14,
+                        minLines: 8,
+                        decoration: _decoration('Write your post…'),
+                        style: AuraText.body,
+                        buildCounter: _zeroCounter,
+                      ),
                     ),
                   ),
                   _LabeledField(
