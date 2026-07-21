@@ -17,6 +17,7 @@ import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/institutions/data/institution_pending_counts.dart';
+import '../../features/updates/module_attention.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
 import '../../features/meetings/presentation/widgets/active_meeting_return_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
@@ -219,6 +220,20 @@ class MemberShell extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// AXR-1 notification synchronization — which module's unread count a
+/// member nav destination carries. Destinations without an owning module
+/// (Home, Create, Support) never badge; their events live in Activity.
+int _memberBadgeFor(_NavItem item, ModuleAttention attention) {
+  switch (item.path) {
+    case '/messages':
+      return attention.messages;
+    case '/institutions':
+      return attention.institutions;
+    default:
+      return 0;
   }
 }
 
@@ -831,6 +846,9 @@ class _MemberSideNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // AXR-1 notification synchronization — module badges derive from the
+    // same notification rows as the global bell (one source of truth).
+    final attention = ref.watch(moduleAttentionProvider);
     final list = Padding(
       padding: const EdgeInsets.fromLTRB(
           AuraSpace.s12, AuraSpace.s8, AuraSpace.s12, AuraSpace.s20),
@@ -844,6 +862,7 @@ class _MemberSideNav extends ConsumerWidget {
             _MemberSideNavTile(
               item: items[i],
               selected: i == selectedIndex,
+              badgeCount: _memberBadgeFor(items[i], attention),
               onTap: () {
                 final target = items[i].path;
                 if (target != currentPath) context.go(target);
@@ -1143,7 +1162,7 @@ class _MemberMobileBar extends ConsumerWidget {
 // (Works / Messages / Create / Institutions / Support) always one tap away.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MemberBottomNav extends StatelessWidget {
+class _MemberBottomNav extends ConsumerWidget {
   const _MemberBottomNav({
     required this.items,
     required this.selectedIndex,
@@ -1155,7 +1174,9 @@ class _MemberBottomNav extends StatelessWidget {
   final String currentPath;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // AXR-1 — same module-attention source as the side rail.
+    final attention = ref.watch(moduleAttentionProvider);
     return Container(
       decoration: const BoxDecoration(
         color: AuraSurface.card,
@@ -1179,6 +1200,7 @@ class _MemberBottomNav extends StatelessWidget {
                   child: _MemberBottomNavTile(
                     item: items[i],
                     selected: i == selectedIndex,
+                    badgeCount: _memberBadgeFor(items[i], attention),
                     onTap: () {
                       if (items[i].path != currentPath) {
                         context.go(items[i].path);
@@ -1199,11 +1221,15 @@ class _MemberBottomNavTile extends StatelessWidget {
     required this.item,
     required this.selected,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final _NavItem item;
   final bool selected;
   final VoidCallback onTap;
+
+  /// AXR-1 — unread count for this destination's owning module.
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -1215,16 +1241,27 @@ class _MemberBottomNavTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: item.label,
+      label: badgeCount > 0 ? '${item.label}, $badgeCount unread' : item.label,
       child: InkWell(
         onTap: onTap,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              selected ? item.selectedIcon : item.icon,
-              size: AuraIconSize.md,
-              color: color,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  selected ? item.selectedIcon : item.icon,
+                  size: AuraIconSize.md,
+                  color: color,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: -3,
+                    right: -6,
+                    child: _NavCountBadge(count: badgeCount),
+                  ),
+              ],
             ),
             const SizedBox(height: 2),
             Text(
@@ -1248,11 +1285,16 @@ class _MemberSideNavTile extends StatelessWidget {
     required this.item,
     required this.selected,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final _NavItem item;
   final bool selected;
   final VoidCallback onTap;
+
+  /// AXR-1 notification synchronization — unread count for this
+  /// destination's owning module (0 = no badge).
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -1352,6 +1394,10 @@ class _MemberSideNavTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (badgeCount > 0) ...[
+                  const SizedBox(width: AuraSpace.s8),
+                  _NavCountBadge(count: badgeCount),
+                ],
               ],
             ),
           ),

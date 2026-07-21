@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
 import '../../../core/net/dio_provider.dart';
@@ -44,6 +45,8 @@ class _InstitutionAnnouncementComposerState
   final _titleController = TextEditingController();
   final _summaryController = TextEditingController();
   final _bodyController = TextEditingController();
+  // AXR-1 — explicit focus node for governed tag autocomplete on the body.
+  final _bodyFocus = FocusNode();
 
   String _kind = 'GENERAL';
   String _audience = 'PUBLIC';
@@ -136,6 +139,7 @@ class _InstitutionAnnouncementComposerState
     _titleController.dispose();
     _summaryController.dispose();
     _bodyController.dispose();
+    _bodyFocus.dispose();
     super.dispose();
   }
 
@@ -580,17 +584,23 @@ class _InstitutionAnnouncementComposerState
                         ),
                         const Divider(color: AuraSurface.divider),
                         const SizedBox(height: AuraSpace.s8),
-                        TextFormField(
+                        // AXR-1 — governed @/# autocomplete in announcements.
+                        GovernedTagAutocomplete(
                           controller: _bodyController,
-                          style: AuraText.body,
-                          maxLines: 12,
-                          decoration: const InputDecoration(
-                            labelText: 'Body (Markdown)',
-                            hintText: 'Full announcement body…',
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            alignLabelWithHint: true,
+                          focusNode: _bodyFocus,
+                          child: TextFormField(
+                            controller: _bodyController,
+                            focusNode: _bodyFocus,
+                            style: AuraText.body,
+                            maxLines: 12,
+                            decoration: const InputDecoration(
+                              labelText: 'Body (Markdown)',
+                              hintText: 'Full announcement body…',
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              alignLabelWithHint: true,
+                            ),
                           ),
                         ),
                       ],

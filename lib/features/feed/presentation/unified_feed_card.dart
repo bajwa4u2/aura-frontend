@@ -14,6 +14,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
+import '../../public/widgets/mention_text.dart' show TagStyledText;
 import '../../institutions/domain/communication_type.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
@@ -279,7 +280,9 @@ class UnifiedFeedCard extends ConsumerWidget {
                   selectable: true,
                 )
               else
-                Text(
+                // AXR-1 — governed tags render highlighted in the feed
+                // preview (styling only; the card stays the tap target).
+                TagStyledText(
                   item.body,
                   maxLines: 6,
                   overflow: TextOverflow.ellipsis,

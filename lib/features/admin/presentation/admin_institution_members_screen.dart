@@ -247,13 +247,12 @@ class _MemberRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AuraSurface.overlay,
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: AuraText.body,
-            ),
+          // AXR-1 identity precedence — photo first, initials only as
+          // the true fallback (AuraAvatar owns that rule).
+          AuraAvatar(
+            name: name,
+            imageUrl: member.avatarUrl,
+            size: 40,
           ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(

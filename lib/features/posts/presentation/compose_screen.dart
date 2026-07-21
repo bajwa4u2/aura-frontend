@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/compliance/objectionable_content.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/media/attachment.dart';
@@ -191,6 +192,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _kRotatingPrompts.length;
 
   final _textController = TextEditingController();
+  // AXR-1 — explicit focus node so governed tag autocomplete can track
+  // field focus (overlay closes on blur).
+  final _textFocus = FocusNode();
 
   bool _posting = false;
   bool _saving = false;
@@ -492,6 +496,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   void dispose() {
     _autosaveDebounce?.cancel();
     _textController.dispose();
+    _textFocus.dispose();
     for (final c in _captionControllers.values) {
       c.dispose();
     }
@@ -2760,21 +2765,27 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         horizontal: AuraSpace.s14,
         vertical: AuraSpace.s12,
       ),
-      child: TextField(
+      // AXR-1 — governed @member/@institution/#topic autocomplete.
+      child: GovernedTagAutocomplete(
         controller: _textController,
-        maxLines: null,
-        minLines: 10,
-        textCapitalization: TextCapitalization.sentences,
-        keyboardType: TextInputType.multiline,
-        textInputAction: TextInputAction.newline,
-        style: AuraText.body.copyWith(height: 1.55),
-        textDirection: _editorDirection(),
-        textAlign: _editorTextAlign(),
-        decoration: InputDecoration(
-          hintText: _composerHint(),
-          hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
-          border: InputBorder.none,
-          errorText: _showTextError ? 'Text is required' : null,
+        focusNode: _textFocus,
+        child: TextField(
+          controller: _textController,
+          focusNode: _textFocus,
+          maxLines: null,
+          minLines: 10,
+          textCapitalization: TextCapitalization.sentences,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          style: AuraText.body.copyWith(height: 1.55),
+          textDirection: _editorDirection(),
+          textAlign: _editorTextAlign(),
+          decoration: InputDecoration(
+            hintText: _composerHint(),
+            hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
+            border: InputBorder.none,
+            errorText: _showTextError ? 'Text is required' : null,
+          ),
         ),
       ),
     );

@@ -42,6 +42,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    // AXR-1 — governed tag taps arrive as /search?q=... ; seed the query
+    // so the destination opens already showing the tag's results.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final q =
+          GoRouterState.of(context).uri.queryParameters['q']?.trim() ?? '';
+      if (q.isNotEmpty && ref.read(searchQueryProvider).isEmpty) {
+        ref.read(searchQueryProvider.notifier).state = q;
+      }
+    });
   }
 
   @override
@@ -463,6 +473,7 @@ class _InstitutionTile extends StatelessWidget {
     final domain = (i['domain'] ?? '').toString().trim();
     final jurisdiction = (i['jurisdiction'] ?? '').toString().trim();
     final description = (i['description'] ?? '').toString().trim();
+    final logoUrl = (i['logoUrl'] ?? '').toString().trim();
 
     final sublineParts = <String>[
       if (domain.isNotEmpty) domain,
@@ -491,19 +502,33 @@ class _InstitutionTile extends StatelessWidget {
             ),
             child: Row(
               children: [
+                // AXR-1 identity precedence — institution logo when the
+                // institution has one; the building icon is the true
+                // placeholder, not the first resort.
                 Container(
                   width: 40,
                   height: 40,
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: AuraSurface.subtle,
                     borderRadius: BorderRadius.circular(AuraRadius.r10),
                     border: Border.all(color: AuraSurface.divider),
                   ),
-                  child: const Icon(
-                    Icons.apartment_outlined,
-                    size: 20,
-                    color: AuraSurface.muted,
-                  ),
+                  child: logoUrl.isEmpty
+                      ? const Icon(
+                          Icons.apartment_outlined,
+                          size: 20,
+                          color: AuraSurface.muted,
+                        )
+                      : Image.network(
+                          logoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.apartment_outlined,
+                            size: 20,
+                            color: AuraSurface.muted,
+                          ),
+                        ),
                 ),
                 const SizedBox(width: AuraSpace.s12),
                 Expanded(

@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart' show AuraAvatar;
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -875,17 +876,13 @@ class _ParticipantsSection extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 5),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor:
-                              AuraSurface.accent.withValues(alpha: 0.18),
-                          child: Text(
-                            p.displayName.trim()[0].toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                        // AXR-1 identity precedence — members joining a
+                        // meeting carry their profile photo; initials are
+                        // the fallback, not the default.
+                        AuraAvatar(
+                          name: p.displayName,
+                          imageUrl: p.user?.avatarUrl,
+                          size: 24,
                         ),
                         const SizedBox(width: AuraSpace.s10),
                         Expanded(

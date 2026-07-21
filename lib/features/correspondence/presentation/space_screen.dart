@@ -1409,32 +1409,12 @@ class _IdentityAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initials = _initials(label);
-    if (imageUrl.trim().isNotEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundImage: NetworkImage(imageUrl.trim()),
-      );
-    }
-    return CircleAvatar(
-      radius: radius,
-      child: Text(
-        initials,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-      ),
-    );
+    // AXR-1 identity precedence — delegate to the canonical AuraAvatar:
+    // photo first, initials fallback, and (unlike the raw CircleAvatar
+    // this replaced) a broken image URL degrades to initials instead of
+    // a blank circle.
+    return AuraAvatar(name: label, imageUrl: imageUrl, size: radius * 2);
   }
-}
-
-String _initials(String value) {
-  final parts = value
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((e) => e.isNotEmpty)
-      .toList(growable: false);
-  if (parts.isEmpty) return '?';
-  if (parts.length == 1) return parts.first[0].toUpperCase();
-  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
 }
 
 class _LoadingBlock extends StatelessWidget {

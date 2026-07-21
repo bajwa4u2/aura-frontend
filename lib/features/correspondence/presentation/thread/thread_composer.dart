@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 
 import '../../../../core/attachments/aura_media_upload.dart';
+import '../../../../core/tagging/governed_tag_field.dart';
 import '../../../../core/media/attachment.dart';
 import '../../../../core/media/media_mime.dart';
 import '../../../../core/net/dio_provider.dart';
@@ -67,6 +68,8 @@ class ThreadComposerBar extends ConsumerStatefulWidget {
 
 class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
   final _controller = TextEditingController();
+  // AXR-1 — explicit focus node for governed tag autocomplete.
+  final _composerFocus = FocusNode();
   final _audioRecorder = AudioRecorder();
   final _picker = ImagePicker();
 
@@ -103,6 +106,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
   void dispose() {
     _recordingTicker?.cancel();
     _controller.dispose();
+    _composerFocus.dispose();
     _audioRecorder.dispose();
     super.dispose();
   }
@@ -1082,8 +1086,13 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                     ],
                   ),
                   const SizedBox(height: AuraSpace.s10),
-                  TextField(
+                  // AXR-1 — governed @/# autocomplete in messages.
+                  GovernedTagAutocomplete(
                     controller: _controller,
+                    focusNode: _composerFocus,
+                    child: TextField(
+                    controller: _controller,
+                    focusNode: _composerFocus,
                     minLines: 1,
                     maxLines: 6,
                     textInputAction: TextInputAction.newline,
@@ -1123,6 +1132,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                         }
                       });
                     },
+                  ),
                   ),
                   const SizedBox(height: AuraSpace.s10),
                   if (_attachments.isNotEmpty) ...[

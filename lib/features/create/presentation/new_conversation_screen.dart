@@ -1023,12 +1023,14 @@ class _DirectoryRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 20,
-              child: Text(
-                entry.avatarLetter,
-                style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-              ),
+            // AXR-1 identity precedence — the directory entry carries the
+            // member's avatarUrl; rendering only the initial ignored it.
+            AuraAvatar(
+              name: entry.displayName.trim().isNotEmpty
+                  ? entry.displayName
+                  : entry.handle,
+              imageUrl: entry.avatarUrl,
+              size: 40,
             ),
             const SizedBox(width: AuraSpace.s12),
             Expanded(
@@ -1165,12 +1167,4 @@ class _DirectoryEntry {
   final String subtitle;
   final String avatarUrl;
   final String? profileRoute;
-
-  String get avatarLetter {
-    final base = displayName.trim().isNotEmpty
-        ? displayName.trim()
-        : handle.trim();
-    if (base.isEmpty) return '?';
-    return base.characters.first.toUpperCase();
-  }
 }

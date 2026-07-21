@@ -619,6 +619,7 @@ class AdminInstitutionMember {
     this.displayName,
     this.handle,
     this.title,
+    this.avatarUrl,
     this.canSpeakOfficially = false,
   });
 
@@ -629,6 +630,10 @@ class AdminInstitutionMember {
   final String? displayName;
   final String? handle;
   final String? title;
+
+  /// AXR-1 identity precedence — verified profile photo when present,
+  /// so member rows never fall back to initials unnecessarily.
+  final String? avatarUrl;
   final bool canSpeakOfficially;
 
   static String _str(dynamic v) => (v ?? '').toString().trim();
@@ -644,6 +649,7 @@ class AdminInstitutionMember {
       joinedAt: _parseDate(json['joinedAt']) ?? DateTime.now(),
       displayName: user != null ? _str(user['displayName']).let((s) => s.isEmpty ? null : s) : null,
       handle: user != null ? _str(user['handle']).let((s) => s.isEmpty ? null : s) : null,
+      avatarUrl: user != null ? _str(user['avatarUrl']).let((s) => s.isEmpty ? null : s) : null,
       title: _str(json['title']).let((s) => s.isEmpty ? null : s),
       canSpeakOfficially: json['canSpeakOfficially'] == true,
     );
