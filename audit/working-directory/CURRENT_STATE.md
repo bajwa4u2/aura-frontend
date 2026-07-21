@@ -32,12 +32,20 @@ Aura Meetings Flutter frontend (single codebase: iOS + Android + Web). Three app
 - Earlier completed milestones (2026-07-10/11, verified in git history): resolver-driven pre-join (`meeting_entry_resolution.dart`, outcome state machine), invitation OTP flow, authenticated-booking read-only identity card, Profile → Participation continuity tab, managed Past-meetings archive, meeting-workspace surface migration onto AuraSurface tokens (live room internals frozen/untouched).
 - ROS Phase II audit closed: **VERIFIED WITH RESIDUAL FOUNDER EDITORIAL ITEMS** (`representation/inventory/AURA_ROS_PHASE_II_CORRECTION_CLOSEOUT.md`). Full audit deliverable set lives in this repo under `representation/inventory/AURA_*.md`.
 
+## AXR-1 — CERTIFIED, closed 2026-07-21
+
+Founder rulings on the three items left open at first delivery, all resolved same-day:
+
+1. **No Meetings/Mentions nav destinations.** Meeting notifications stay Activity-only until Profile → Participation → Meeting History exists (not yet built). Mention notifications don't need a dedicated tab — they must deep-link to their referenced content instead, which was **already true**: `MENTION` notifications carry `postId` (the reply/post containing the mention) and `_routeFor` in `notifications_screen.dart` already resolves `postId` → `/posts/:id`, a real route serving both top-level posts and replies. No code change needed; verified by re-reading the existing routing logic and the backend's `MENTION` notification payload (`postId: created.id`).
+2. **Topic-seeded search accepted for AXR-1.** A dedicated topic-scoped view is deferred as a future enhancement (recorded in NEXT_WORK), not a defect.
+3. **Institution post composer**: inspected and confirmed a real, routed, active production surface (`/institution/:id/posts/new` and its edit path, `institution_post_composer_screen.dart`). Wired with the same `GovernedTagAutocomplete` pattern as the other three composers — commit `a19547f`. Meeting notes wiring is **not required**: no meeting-notes composer widget exists yet; recorded as a future integration requirement in NEXT_WORK, to be picked up when that composer is built.
+
+`flutter analyze`: 0 issues (file-scoped and full-repo). Full suite: 69 files, all green (1 pre-existing unrelated skip) — unchanged pass count, confirming no regression from the new wiring.
+
 ## Next implementation starting point
 
-No founder-defined next milestone is recorded beyond AXR-1 itself. `NEXT_WORK.md` lists residual/follow-on items awaiting founder decision — including the two AXR-1 items intentionally left unresolved (Meetings/Mentions badge destinations, `#Topic` tap-through route) and the pre-existing ROS Phase II editorial residuals.
+No founder-defined next milestone is recorded beyond AXR-1, which is now closed. `NEXT_WORK.md` lists the accepted future-enhancement items (topic-scoped search view, meeting-notes tagging once that composer exists) — none authorized to start without separate founder direction.
 
 ## Outstanding founder approvals
 
-1. **Push `39e3964` to `origin/main`** and deploy alongside the backend's `37cb22f` (this milestone implemented and tested but did not push/deploy — do so only on explicit instruction; the two repos' AXR-1 changes should ship together since the frontend identity fixes depend on the backend payload fields).
-2. Whether Meetings and Mentions need their own nav-rail destinations to surface the module badges `module_attention.dart` already computes for them (see NEXT_WORK) — a genuine design decision, not a bug fix.
-3. The four residual editorial items from the ROS Phase II closeout (production data/content, not code) — see `NEXT_WORK.md`.
+**None.** AXR-1 is fully implemented, verified, pushed (`a19547f` on `origin/main`, alongside `../aura-backend`'s `37cb22f` on its own `origin/main`), and certified closed. Per this repo's own release doctrine (`OPERATIONAL_BASELINE.md`), pushing `main` is push-to-deploy for the web target on Railway — unlike aura-studio's Cloudflare flow, deploy is not a separate authorized step here. Live cache-busted verification on `auraplatform.org` (the doctrine's own last release-order step) was not performed in this session and is worth a quick confirmation, but is operational follow-through, not a pending decision.

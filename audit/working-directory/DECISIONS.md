@@ -1,8 +1,22 @@
 # Decisions — aura_final
 
-Last updated: 2026-07-21 UTC (AXR-1)
+Last updated: 2026-07-21 UTC (AXR-1 closeout)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-07-21: AXR-1 closeout rulings
+
+Decision, founder-issued to resolve the three items AXR-1's first delivery left open:
+
+1. **No Meetings or Mentions nav destinations solely for badges.** Meeting notifications remain Activity-only until Profile → Participation → Meeting History exists. Mention notifications must deep-link to their referenced content instead of getting a dedicated tab — confirmed already true (see below), not a new build.
+2. **Topic-seeded search is accepted as AXR-1's final behavior.** A dedicated topic-scoped view is future enhancement only, not required for this milestone.
+3. **The institution post composer is in scope.** It is a real, routed, active production surface — inspected and confirmed, not assumed. It gets governed tagging like the other three composers. Meeting notes do not, because no meeting-notes composer exists yet; that's a future integration requirement, not a deferred build.
+
+Verification for (1): `MENTION` notifications already carry `postId` (the reply/post containing the mention — backend `posts.service.ts`'s mention fanout: `postId: created.id`), and `notifications_screen.dart::_routeFor` already resolves `postId` → `/posts/:id`, a route that serves both posts and replies. No code change was needed — the deep-link requirement was already satisfied by existing infrastructure; verifying that first is what avoided building a redundant Mentions tab.
+
+Reason: keeps the badge/nav surface exactly as large as real destinations justify (Single Intent Principle spirit — don't add a nav item whose only job is carrying a number), while confirming attention still reaches the user through Activity + the correct deep link.
+
+Repository impact: `institution_post_composer_screen.dart` wired with `GovernedTagAutocomplete` (commit `a19547f`). No routing changes — the mention deep-link was verified, not built.
 
 ## 2026-07-21: Governed tagging is platform infrastructure, not a Post feature
 
