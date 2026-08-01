@@ -1,8 +1,18 @@
 # Decisions — aura_final
 
-Last updated: 2026-07-21 UTC (AXR-1 closeout)
+Last updated: 2026-07-31 UTC (Communication Integrity System, Milestone 1 — Institution Announcement Integration)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-07-31: Orphaned Aura Editor sheet — retired (superseded, not abandoned)
+
+`compose_screen.dart`'s `_openAuraEditorSheet`/`_runAuraEditor` (plus the sheet-only helpers `_spellingItems`, `_grammarItems`, `_legacySignals`, `_legacyRefinement`, `_listOfString`, and the `_auditBusy`/`_lastAuditAt`/`_auditResult`/`_auditError` state) have been deleted, along with the now-unused `ai/providers.dart` import. This was the March 2026 integrity-gate regression's dead remnant on the personal-post composer — discovered during the Communication Integrity System's editor-reconnection discovery to be completely unreachable (two references in the whole codebase: its own definition and its own recursive "run again" self-call; nothing external ever opened it).
+
+**Sequenced correctly, not removed first:** per founder-approved retirement order, this was deleted only after the real replacement — Communication Integrity Review on institution announcements (`institution_announcement_composer.dart`, backed by `aura-backend`'s runtime-certified CIS pipeline) — was built and verified end to end (backend: 67 suites/799 unit tests + 21 real HTTP scenarios against a disposable database; client: full `flutter analyze` and `flutter test` clean). Confirmed zero routes or tests depended on the removed code before deleting it.
+
+**This is a real capability moving to its correct, doctrine-governed home — not a feature abandoned.** The old sheet gated the wrong surface (personal posts, never institutional) against the wrong contract (legacy `/ai/editor-review` + `/ai/claim-audit`, not the certified Provider→Assessment→Policy→Publication pipeline) and conflated Writing Assistance with integrity review in one panel — exactly the confusion the new design (`lib/features/institutions/announcements/integrity/`) is built to keep separate. `claim_audit_screen.dart` (the standalone admin paste-box tool) is untouched — it's a separate, still-live tool, not part of this retirement.
+
+Full record: `aura-backend/capability/COMMUNICATION_INTEGRITY_SYSTEM_ANNOUNCEMENT_INTEGRATION_PLAN.md`.
 
 ## 2026-07-21: AXR-1 closeout rulings
 

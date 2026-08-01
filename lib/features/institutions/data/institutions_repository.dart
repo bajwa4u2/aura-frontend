@@ -498,6 +498,62 @@ class InstitutionsRepository {
     );
   }
 
+  // ── Communication Integrity (Milestone 1, Class D) ────────────────────────
+  //
+  // Separate from Writing Assistance (composition_review/composition_apply
+  // above) — a different capability, a different backend module
+  // (aura-backend/src/integrity), never the same call or the same UI
+  // language. See announcement_integrity.dart for the response shapes.
+
+  Future<Map<String, dynamic>> requestAnnouncementIntegrityReview(
+    String institutionId,
+    String announcementId,
+  ) async {
+    final res = await _dio.post(
+      '/institutions/$institutionId/announcements/$announcementId/integrity/review',
+    );
+    if (res.data is Map) {
+      return Map<String, dynamic>.from(res.data as Map);
+    }
+    throw Exception('Unexpected response from integrity review.');
+  }
+
+  Future<Map<String, dynamic>> acknowledgeAnnouncementIntegrity(
+    String institutionId,
+    String announcementId,
+    String decisionId,
+  ) async {
+    final res = await _dio.post(
+      '/institutions/$institutionId/announcements/$announcementId/integrity/$decisionId/acknowledge',
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception('Unexpected response from integrity acknowledgement.');
+  }
+
+  Future<Map<String, dynamic>> secondReviewAnnouncementIntegrity(
+    String institutionId,
+    String announcementId,
+    String decisionId,
+  ) async {
+    final res = await _dio.post(
+      '/institutions/$institutionId/announcements/$announcementId/integrity/$decisionId/second-review',
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception('Unexpected response from integrity second review.');
+  }
+
+  Future<Map<String, dynamic>> institutionalApprovalAnnouncementIntegrity(
+    String institutionId,
+    String announcementId,
+    String decisionId,
+  ) async {
+    final res = await _dio.post(
+      '/institutions/$institutionId/announcements/$announcementId/integrity/$decisionId/institutional-approval',
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception('Unexpected response from integrity institutional approval.');
+  }
+
   Future<void> unpublishInstitutionAnnouncement(
     String institutionId,
     String announcementId,

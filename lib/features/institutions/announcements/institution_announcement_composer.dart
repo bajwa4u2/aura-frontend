@@ -22,6 +22,7 @@ import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
 import '../ui/institution_ds.dart';
+import 'integrity/announcement_integrity_review_sheet.dart';
 
 class InstitutionAnnouncementComposer extends ConsumerStatefulWidget {
   const InstitutionAnnouncementComposer({
@@ -418,26 +419,40 @@ class _InstitutionAnnouncementComposerState
     }
   }
 
+  /// Compose -> Communication Integrity Review -> Publisher Decision ->
+  /// Publish. This screen has no existing Writing Assistance step to
+  /// preserve (confirmed during discovery — its import list has never
+  /// included `composition`/`ai`), so the sequence here is exactly
+  /// Compose -> Review -> Publish, per
+  /// COMMUNICATION_INTEGRITY_SYSTEM_ANNOUNCEMENT_INTEGRATION_PLAN.md. The
+  /// sheet itself performs the actual publish call once the governed next
+  /// action (acknowledge / second review / institutional approval) is
+  /// satisfied — this method never calls publish directly, so there is no
+  /// client-side path from "Publish" to a published announcement that
+  /// skips the review sheet.
   Future<void> _saveAndPublish() async {
     setState(() {
       _publishing = true;
       _error = null;
     });
-    try {
-      final id = await _save();
-      if (id == null) {
-        setState(() => _publishing = false);
-        return;
-      }
-      await _repo.publishInstitutionAnnouncement(widget.institutionId, id);
-      if (!mounted) return;
+    final id = await _save();
+    if (id == null) {
+      setState(() => _publishing = false);
+      return;
+    }
+    setState(() => _publishing = false);
+    if (!mounted) return;
+
+    final published = await showAnnouncementIntegrityReviewSheet(
+      context: context,
+      ref: ref,
+      institutionId: widget.institutionId,
+      announcementId: id,
+    );
+
+    if (published == true && mounted) {
       _showAudienceToast(published: true);
       context.pop(true);
-    } catch (e) {
-      setState(() {
-        _error = _message(e, 'Could not publish.');
-        _publishing = false;
-      });
     }
   }
 
