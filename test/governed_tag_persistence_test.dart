@@ -72,17 +72,26 @@ void main() {
 
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
 
-    expect(find.textContaining('@Muhammad'), findsOneWidget);
-    expect(find.textContaining('@msbajwa'), findsNothing);
-    await tester.tap(find.textContaining('@Muhammad'));
+    expect(
+      find.textContaining('@Muhammad', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.textContaining('@msbajwa', findRichText: true), findsNothing);
+    await tester.tapOnText(find.textRange.ofSubstring('@Muhammad'));
     await tester.pumpAndSettle();
     expect(find.text('member:msbajwa'), findsOneWidget);
 
     router.go('/');
     await tester.pumpAndSettle();
-    expect(find.textContaining('@Aura Institute'), findsOneWidget);
-    expect(find.textContaining('@aura-institute'), findsNothing);
-    await tester.tap(find.textContaining('@Aura Institute'));
+    expect(
+      find.textContaining('@Aura Institute', findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('@aura-institute', findRichText: true),
+      findsNothing,
+    );
+    await tester.tapOnText(find.textRange.ofSubstring('@Aura Institute'));
     await tester.pumpAndSettle();
     expect(find.text('institution:aura-institute'), findsOneWidget);
   });
