@@ -25,13 +25,29 @@ AttentionModule? attentionModuleForType(String type) {
     case 'SPACE_INVITE':
     case 'THREAD_INVITE':
     case 'INVITE_ACCEPTED':
+    case 'FOLLOW':
+    case 'ANNOUNCEMENT_PUBLISHED':
+    case 'INSTITUTION_POST_PUBLISHED':
+    case 'ROLE_CHANGED':
+    case 'CAPABILITY_GRANTED':
+    case 'CAPABILITY_REVOKED':
       return AttentionModule.institutions;
     case 'MEETING_BOOKED':
     case 'MEETING_REMINDER':
     case 'MEETING_STARTING':
     case 'MEETING_SUMMARY_SHARED':
+    case 'MEETING_RESCHEDULED':
+    case 'MEETING_CANCELLED':
+    case 'MEETING_RSVP_ACCEPTED':
+    case 'MEETING_RSVP_DECLINED':
+    case 'MEETING_WAITING_ROOM_ARRIVAL':
       return AttentionModule.meetings;
+    case 'REPLY':
+    case 'REPOST':
     case 'MENTION':
+    case 'MODERATION_ACTION_TAKEN':
+    case 'REPORT_RESOLVED':
+    case 'POST_PUBLISH_FAILED':
       return AttentionModule.mentions;
     default:
       return null;

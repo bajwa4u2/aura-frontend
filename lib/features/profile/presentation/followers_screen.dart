@@ -8,6 +8,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/auth/session_providers.dart';
+import '../../updates/providers.dart';
 import '../providers.dart';
 import '../domain/profile.dart';
 
@@ -19,13 +21,42 @@ final followersProvider = FutureProvider.family<List<ProfileListItem>, String>((
   return repo.getFollowers(handle);
 });
 
-class FollowersScreen extends ConsumerWidget {
+class FollowersScreen extends ConsumerStatefulWidget {
   const FollowersScreen({super.key, required this.handle});
 
   final String handle;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FollowersScreen> createState() => _FollowersScreenState();
+}
+
+class _FollowersScreenState extends ConsumerState<FollowersScreen> {
+  bool _attentionMarked = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_attentionMarked) return;
+    _attentionMarked = true;
+    Future.microtask(() async {
+      final me = await ref.read(authMeDataProvider.future);
+      final user = me['user'];
+      final myHandle = (user is Map ? user['handle'] : me['handle'])
+          ?.toString()
+          .trim()
+          .toLowerCase();
+      if (myHandle == null || myHandle != widget.handle.trim().toLowerCase()) {
+        return;
+      }
+      await ref.read(notificationsControllerProvider.notifier).markReadForTarget(
+        types: const ['FOLLOW'],
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final handle = widget.handle;
     final followersAsync = ref.watch(followersProvider(handle));
 
     return AuraScaffold(

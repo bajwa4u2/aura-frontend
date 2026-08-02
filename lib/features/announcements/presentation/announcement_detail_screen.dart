@@ -19,6 +19,7 @@ import '../../../core/ui/surface/aura_discourse_surface.dart';
 import '../../feed/domain/feed_media.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
+import '../../updates/providers.dart';
 import '../providers.dart';
 
 const Map<String, String> _announcementTranslationLanguageLabels = {
@@ -120,6 +121,7 @@ class _AnnouncementDetailScreenState
   String? _translatedBody;
   bool _showTranslation = false;
   String? _targetLanguage;
+  final Set<String> _markedAnnouncementIds = <String>{};
 
   String _fmtDate(DateTime dt) {
     final d = dt.toLocal();
@@ -305,6 +307,13 @@ class _AnnouncementDetailScreenState
           data: (a) {
             if (a == null) {
               return const Center(child: Text('Not found'));
+            }
+            if (a.id.isNotEmpty && _markedAnnouncementIds.add(a.id)) {
+              Future.microtask(() {
+                ref
+                    .read(notificationsControllerProvider.notifier)
+                    .markReadForTarget(announcementId: a.id);
+              });
             }
 
             final title = a.title.isEmpty ? a.slug : a.title;

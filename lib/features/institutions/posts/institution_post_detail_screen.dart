@@ -21,6 +21,7 @@ import '../../feed/presentation/unified_feed_card.dart';
 import '../../public/widgets/mention_text.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../posts/data/reactions_repository.dart';
+import '../../updates/providers.dart';
 import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
 import '../presentation/institution_page.dart';
@@ -34,7 +35,7 @@ import '../ui/institution_ds.dart';
 ///
 /// The legacy `institutionPostRepliesProvider` is no longer used by this
 /// screen.
-class InstitutionPostDetailScreen extends ConsumerWidget {
+class InstitutionPostDetailScreen extends ConsumerStatefulWidget {
   const InstitutionPostDetailScreen({
     super.key,
     required this.institutionId,
@@ -45,7 +46,30 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
   final String postId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InstitutionPostDetailScreen> createState() =>
+      _InstitutionPostDetailScreenState();
+}
+
+class _InstitutionPostDetailScreenState
+    extends ConsumerState<InstitutionPostDetailScreen> {
+  bool _attentionMarked = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_attentionMarked) return;
+    _attentionMarked = true;
+    Future.microtask(() {
+      ref.read(notificationsControllerProvider.notifier).markReadForTarget(
+            institutionPostId: widget.postId,
+          );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final institutionId = widget.institutionId;
+    final postId = widget.postId;
     final identity = ref.watch(institutionIdentityProvider);
     final canActAsInstitution =
         identity != null && identity.id.isNotEmpty && identity.canPublishPosts;

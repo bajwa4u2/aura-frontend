@@ -218,6 +218,30 @@ class NotificationsController extends StateNotifier<NotificationsState>
     await refresh(force: true);
   }
 
+  Future<void> markReadForTarget({
+    String? postId,
+    String? institutionPostId,
+    String? directThreadId,
+    String? meetingId,
+    String? announcementId,
+    String? institutionId,
+    String? threadId,
+    List<String>? types,
+  }) async {
+    if (!_authed) return;
+    await _repo.markReadForTarget(
+      postId: postId,
+      institutionPostId: institutionPostId,
+      directThreadId: directThreadId,
+      meetingId: meetingId,
+      announcementId: announcementId,
+      institutionId: institutionId,
+      threadId: threadId,
+      types: types,
+    );
+    await refresh(force: true);
+  }
+
   Future<void> _refreshInternal({required bool force}) async {
     if (!mounted) return;
     state = state.copyWith(

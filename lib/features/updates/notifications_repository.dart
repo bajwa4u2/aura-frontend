@@ -183,6 +183,40 @@ class NotificationsRepository {
     _unreadCacheAt = DateTime.now();
   }
 
+  Future<void> markReadForTarget({
+    String? postId,
+    String? institutionPostId,
+    String? directThreadId,
+    String? meetingId,
+    String? announcementId,
+    String? institutionId,
+    String? threadId,
+    List<String>? types,
+  }) async {
+    final payload = <String, dynamic>{};
+    void put(String key, String? value) {
+      final trimmed = (value ?? '').trim();
+      if (trimmed.isNotEmpty) payload[key] = trimmed;
+    }
+
+    put('postId', postId);
+    put('institutionPostId', institutionPostId);
+    put('directThreadId', directThreadId);
+    put('meetingId', meetingId);
+    put('announcementId', announcementId);
+    put('institutionId', institutionId);
+    put('threadId', threadId);
+    final normalizedTypes = (types ?? const <String>[])
+        .map((type) => type.trim().toUpperCase())
+        .where((type) => type.isNotEmpty)
+        .toList(growable: false);
+    if (normalizedTypes.isNotEmpty) payload['types'] = normalizedTypes;
+    if (payload.isEmpty) return;
+
+    await _dio.post('/notifications/read-for-target', data: payload);
+    clearCache();
+  }
+
   bool _isCachedAsRead(String id) {
     final cache = _cache;
     if (cache == null) return false;

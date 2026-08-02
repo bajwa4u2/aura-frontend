@@ -19,14 +19,18 @@ void main() {
       n('MESSAGE'),
       n('MESSAGE'),
       n('SPACE_INVITE'),
+      n('FOLLOW'),
+      n('ANNOUNCEMENT_PUBLISHED'),
       n('MEETING_REMINDER'),
       n('MEETING_STARTING'),
+      n('MEETING_CANCELLED'),
       n('MENTION'),
+      n('REPLY'),
     ]);
     expect(attention.messages, 2);
-    expect(attention.institutions, 1);
-    expect(attention.meetings, 2);
-    expect(attention.mentions, 1);
+    expect(attention.institutions, 3);
+    expect(attention.meetings, 3);
+    expect(attention.mentions, 2);
   });
 
   test('read events count nowhere', () {
@@ -40,7 +44,6 @@ void main() {
 
   test('Activity-only types map to no module', () {
     expect(attentionModuleForType('LIKE'), isNull);
-    expect(attentionModuleForType('FOLLOW'), isNull);
     expect(attentionModuleForType('SYSTEM'), isNull);
     expect(attentionModuleForType('POST_PUBLISHED'), isNull);
   });
@@ -51,8 +54,27 @@ void main() {
       'MEETING_REMINDER',
       'MEETING_STARTING',
       'MEETING_SUMMARY_SHARED',
+      'MEETING_RESCHEDULED',
+      'MEETING_CANCELLED',
+      'MEETING_RSVP_ACCEPTED',
+      'MEETING_RSVP_DECLINED',
+      'MEETING_WAITING_ROOM_ARRIVAL',
     ]) {
       expect(attentionModuleForType(t), AttentionModule.meetings,
+          reason: t);
+    }
+  });
+
+  test('institution governance and publication types own Institutions', () {
+    for (final t in [
+      'FOLLOW',
+      'ANNOUNCEMENT_PUBLISHED',
+      'INSTITUTION_POST_PUBLISHED',
+      'ROLE_CHANGED',
+      'CAPABILITY_GRANTED',
+      'CAPABILITY_REVOKED',
+    ]) {
+      expect(attentionModuleForType(t), AttentionModule.institutions,
           reason: t);
     }
   });

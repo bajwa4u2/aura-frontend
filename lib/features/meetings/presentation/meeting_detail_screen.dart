@@ -12,6 +12,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../updates/providers.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_asset.dart';
@@ -32,7 +33,7 @@ import 'widgets/meeting_workroom.dart';
 /// It absorbs the former detail, /prep, summary, and post-meeting workspace
 /// surfaces: those routes all land here now. The live room stays the only
 /// separate surface.
-class MeetingDetailScreen extends ConsumerWidget {
+class MeetingDetailScreen extends ConsumerStatefulWidget {
   final String meetingId;
   final String? institutionId;
 
@@ -43,7 +44,29 @@ class MeetingDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MeetingDetailScreen> createState() =>
+      _MeetingDetailScreenState();
+}
+
+class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
+  bool _attentionMarked = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_attentionMarked) return;
+    _attentionMarked = true;
+    Future.microtask(() {
+      ref
+          .read(notificationsControllerProvider.notifier)
+          .markReadForTarget(meetingId: widget.meetingId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final meetingId = widget.meetingId;
+    final institutionId = widget.institutionId;
     final meetingAsync = ref.watch(meetingProvider(meetingId));
     final myId = ref.watch(authMeDataProvider).maybeWhen(
           data: (me) {

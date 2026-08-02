@@ -9,6 +9,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../../updates/providers.dart';
 import '../ui/institution_ds.dart';
 import 'institution_page.dart';
 
@@ -33,6 +34,7 @@ class _InstitutionMembersScreenState
   String? _removeError;
   String? _updating;
   String? _updateError;
+  bool _attentionMarked = false;
 
   InstitutionsRepository get _repo =>
       ref.read(institutionsRepositoryProvider);
@@ -48,6 +50,24 @@ class _InstitutionMembersScreenState
     // admin (the common case for a verified institution's founder) sees a
     // read-only member list and cannot change roles from the workspace.
     return r == 'ADMIN' || r == 'OWNER' || r == 'PLATFORM_ADMIN';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_attentionMarked) return;
+    _attentionMarked = true;
+    Future.microtask(() {
+      ref.read(notificationsControllerProvider.notifier).markReadForTarget(
+        institutionId: widget.institutionId,
+        types: const [
+          'FOLLOW',
+          'ROLE_CHANGED',
+          'CAPABILITY_GRANTED',
+          'CAPABILITY_REVOKED',
+        ],
+      );
+    });
   }
 
   bool get _isOwner {

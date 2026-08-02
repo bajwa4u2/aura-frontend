@@ -16,6 +16,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/surface/aura_discourse_surface.dart';
 import '../../feed/domain/post.dart';
 import '../../share/aura_share_sheet.dart';
+import '../../updates/providers.dart';
 import 'widgets/post_card.dart';
 import 'widgets/post_card/post_card_utils.dart';
 
@@ -131,13 +132,33 @@ final repliesProvider = FutureProvider.family<List<Post>, String>((
   return _repliesFromAny(res.data);
 });
 
-class PostDetailScreen extends ConsumerWidget {
+class PostDetailScreen extends ConsumerStatefulWidget {
   const PostDetailScreen({super.key, required this.postId});
 
   final String postId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
+  bool _attentionMarked = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_attentionMarked) return;
+    _attentionMarked = true;
+    Future.microtask(() {
+      ref
+          .read(notificationsControllerProvider.notifier)
+          .markReadForTarget(postId: widget.postId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final postId = widget.postId;
     final postAsync = ref.watch(postProvider(postId));
     final repliesAsync = ref.watch(repliesProvider(postId));
 
