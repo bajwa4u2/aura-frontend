@@ -31,19 +31,20 @@ import '../data/institution_draft_store.dart';
 import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
 import '../domain/institution_post.dart';
+import 'integrity/institution_post_integrity_review_sheet.dart';
 import '../ui/institution_ds.dart';
 
 /// Composer for [InstitutionPost]s in create mode.
 ///
 /// Behaviour by role:
-///   * EDITOR — single CTA "Submit for review" (DRAFT -> PENDING_APPROVAL).
-///   * OWNER / ADMIN — split control: Save draft / Publish now.
+///   * EDITOR Ã¢â‚¬â€ single CTA "Submit for review" (DRAFT -> PENDING_APPROVAL).
+///   * OWNER / ADMIN Ã¢â‚¬â€ split control: Save draft / Publish now.
 ///
 /// The composer is **scope-aware**: when launched from the Public / Member /
 /// Internal tab of Explore, the active tab is passed via `?scope=` and
 /// becomes the default visibility for the new post. Distribution is gated
 /// to the public scope (the only scope where global feed eligibility is
-/// meaningful — the backend rejects other combinations).
+/// meaningful Ã¢â‚¬â€ the backend rejects other combinations).
 ///
 /// Media is uploaded via the existing presign flow (`uploadAuraMedia`); the
 /// previous URL-input field has been replaced with a real picker + bounded
@@ -61,7 +62,7 @@ class InstitutionPostComposerScreen extends ConsumerStatefulWidget {
   final String? postId;
   final InstitutionPost? initial;
 
-  /// 'public' | 'member' | 'internal' — passed by the Explore tab so the
+  /// 'public' | 'member' | 'internal' Ã¢â‚¬â€ passed by the Explore tab so the
   /// composer opens with the right visibility preselected.
   final String? defaultScope;
 
@@ -76,7 +77,7 @@ class _InstitutionPostComposerScreenState
     extends ConsumerState<InstitutionPostComposerScreen> {
   final _titleCtrl = TextEditingController();
   final _bodyCtrl = TextEditingController();
-  // AXR-1 — explicit focus node for governed tag autocomplete on the body.
+  // AXR-1 Ã¢â‚¬â€ explicit focus node for governed tag autocomplete on the body.
   final _bodyFocus = FocusNode();
 
   late InstitutionPostVisibility _visibility;
@@ -97,7 +98,7 @@ class _InstitutionPostComposerScreenState
   String? _mediaThumbUrl;
   String? _mediaMimeType;
 
-  // Content Topics — Primary is human-selected and authoritative (required
+  // Content Topics Ã¢â‚¬â€ Primary is human-selected and authoritative (required
   // before publishing); Secondary topics are suggested + human-editable.
   AuraTopic? _primaryTopic;
   List<AuraTopic> _secondaryTopics = <AuraTopic>[];
@@ -108,11 +109,11 @@ class _InstitutionPostComposerScreenState
   bool _loadingExisting = false;
   String? _error;
 
-  // ── Local draft persistence state ─────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Local draft persistence state Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   // The composer auto-saves a per-(institution, user, visibility) draft to
   // SharedPreferences (which is `localStorage` on web). The backend does not
   // currently expose a "list my drafts" endpoint, so a refreshed composer
-  // cannot rehydrate from the server — this local fallback keeps the user's
+  // cannot rehydrate from the server Ã¢â‚¬â€ this local fallback keeps the user's
   // in-progress text alive across reloads. It is **device-local only**.
   Timer? _draftDebounce;
   static const Duration _kDraftDebounce = Duration(milliseconds: 600);
@@ -139,7 +140,7 @@ class _InstitutionPostComposerScreenState
     } else {
       _visibility = _scopeToVisibility(widget.defaultScope);
       // Public institution posts broadcast to the global/member Works feed
-      // by default — institution operating infrastructure publishes to its
+      // by default Ã¢â‚¬â€ institution operating infrastructure publishes to its
       // audience, not just its own profile. The operator can still switch a
       // public post to institution-only via the distribution control.
       if (_visibility == InstitutionPostVisibility.publicAll) {
@@ -212,7 +213,7 @@ class _InstitutionPostComposerScreenState
       case 'members':
         return InstitutionPostVisibility.memberOnly;
       default:
-        // Without an explicit hint, default to member-only — the safe choice
+        // Without an explicit hint, default to member-only Ã¢â‚¬â€ the safe choice
         // that does not surface to the global feed accidentally.
         return InstitutionPostVisibility.memberOnly;
     }
@@ -233,10 +234,10 @@ class _InstitutionPostComposerScreenState
     _scheduleDraftSave();
   }
 
-  // ── Local draft persistence ───────────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Local draft persistence Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
   /// True when the composer should persist drafts locally for this
-  /// invocation. Editing an existing post bypasses local drafts entirely —
+  /// invocation. Editing an existing post bypasses local drafts entirely Ã¢â‚¬â€
   /// edits go through PATCH against the live record, not the draft store.
   bool get _shouldPersistDraft => !widget.isEditing && _currentUserId != null;
 
@@ -247,7 +248,7 @@ class _InstitutionPostComposerScreenState
     _draftBootstrapped = true;
 
     if (widget.isEditing || widget.initial != null) return;
-    // Defer to next frame — `setState` during build is illegal.
+    // Defer to next frame Ã¢â‚¬â€ `setState` during build is illegal.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _loadDraftForCurrentScope();
@@ -265,7 +266,7 @@ class _InstitutionPostComposerScreenState
     );
     if (!mounted) return;
     if (draft == null || draft.isEmpty) {
-      // No draft for this scope — leave fields as-is (which may include text
+      // No draft for this scope Ã¢â‚¬â€ leave fields as-is (which may include text
       // typed into the previous scope before the user switched). We don't
       // wipe the fields here because a brand-new composer should still
       // accept typing without losing it on first scope toggle.
@@ -305,7 +306,7 @@ class _InstitutionPostComposerScreenState
     final title = _titleCtrl.text;
     final body = _bodyCtrl.text;
     if (title.trim().isEmpty && body.trim().isEmpty) {
-      // Nothing meaningful to keep — also remove any prior draft for this
+      // Nothing meaningful to keep Ã¢â‚¬â€ also remove any prior draft for this
       // scope so an emptied composer doesn't quietly resurrect old text.
       await InstitutionDraftStore.remove(
         institutionId: widget.institutionId,
@@ -425,7 +426,7 @@ class _InstitutionPostComposerScreenState
     if (next == _visibility) return;
 
     // Flush whatever the user has typed into the *current* scope before we
-    // switch — otherwise a fast scope-toggle would lose the in-flight text.
+    // switch Ã¢â‚¬â€ otherwise a fast scope-toggle would lose the in-flight text.
     _draftDebounce?.cancel();
     if (_shouldPersistDraft && !_draftCleared) {
       await _persistDraftNow();
@@ -446,7 +447,7 @@ class _InstitutionPostComposerScreenState
     });
 
     // Now load the draft (if any) for the new scope. This intentionally
-    // does NOT clear fields when no draft exists for the new scope — a
+    // does NOT clear fields when no draft exists for the new scope Ã¢â‚¬â€ a
     // brand-new composer should still let the user keep typing into the
     // new scope.
     await _loadDraftForNewScope();
@@ -482,7 +483,7 @@ class _InstitutionPostComposerScreenState
   /// blank, derive a short title from the first non-empty line of the
   /// body (capped at 80 chars) so the institutional statement always
   /// has a headline. Returns an empty string only when both fields are
-  /// blank — in which case [_localValidationError] still rejects the
+  /// blank Ã¢â‚¬â€ in which case [_localValidationError] still rejects the
   /// submit because body is required.
   String _resolvedCleanTitle() {
     final t = _titleCtrl.text.trim();
@@ -511,7 +512,7 @@ class _InstitutionPostComposerScreenState
     final cleanTitle = _resolvedCleanTitle();
     // Title may be derived from body, so we no longer hard-require it
     // at the field level. We still ensure the *resolved* clean title is
-    // non-empty (which fails only when both title and body are blank —
+    // non-empty (which fails only when both title and body are blank Ã¢â‚¬â€
     // body is the next check anyway).
     if (cleanTitle.isEmpty) return 'Title or body is required.';
     final encoded = InsCommunicationDecoded.encode(
@@ -535,7 +536,7 @@ class _InstitutionPostComposerScreenState
 
   /// Builds the request body for create/update.
   ///
-  /// `status` is intentionally **never** placed in the body — the backend's
+  /// `status` is intentionally **never** placed in the body Ã¢â‚¬â€ the backend's
   /// `CreateInstitutionPostDto` rejects unknown properties (`property status
   /// should not exist`). Status is sent as the `?status=` query parameter on
   /// create; updates do not change status (publish/submit/archive go through
@@ -583,7 +584,7 @@ class _InstitutionPostComposerScreenState
     return out;
   }
 
-  // ── Media upload (presign flow) ───────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Media upload (presign flow) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
   Future<void> _pickMedia({required bool video}) async {
     if (_busy || _uploading) return;
@@ -695,7 +696,7 @@ class _InstitutionPostComposerScreenState
     _scheduleDraftSave();
   }
 
-  // _inferMime removed — replaced with `inferMimeFromFileName` from
+  // _inferMime removed Ã¢â‚¬â€ replaced with `inferMimeFromFileName` from
   // lib/core/media/media_mime.dart (canonical).
 
   Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
@@ -711,7 +712,7 @@ class _InstitutionPostComposerScreenState
     }
   }
 
-  // ── Save / submit / publish ────────────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Save / submit / publish Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
   Future<void> _submitForReview() async {
     final err = _localValidationError;
@@ -820,57 +821,46 @@ class _InstitutionPostComposerScreenState
     });
     try {
       final repo = ref.read(institutionsRepositoryProvider);
-      InstitutionPost result;
+      InstitutionPost post;
       if (widget.isEditing) {
-        final updated = await repo.updateInstitutionPost(
+        post = await repo.updateInstitutionPost(
           widget.institutionId,
           widget.postId!,
           _payload(),
         );
-        result = await repo.publishInstitutionPost(
-          widget.institutionId,
-          updated.id,
-        );
       } else {
-        // Single-shot create + publish via ?status=PUBLISHED (backend gates on
-        // ADMIN/OWNER role and short-circuits the second round-trip).
-        result = await repo.createInstitutionPost(
+        // Create a real draft first so the integrity review has a durable
+        // post id to evaluate, acknowledge, and publish against.
+        post = await repo.createInstitutionPost(
           widget.institutionId,
           _payload(),
-          status: 'PUBLISHED',
+          status: 'DRAFT',
         );
       }
+      if (!mounted) return;
+      setState(() => _busy = false);
+
+      final published = await showInstitutionPostIntegrityReviewSheet(
+        context: context,
+        ref: ref,
+        institutionId: widget.institutionId,
+        postId: post.id,
+      );
+
+      if (published != true) return;
+
       if (kDebugMode) {
         debugPrint(
           '[InstitutionPostComposer] publish-now response: '
-          'id=${result.id} status=${result.status.wire} '
-          'visibility=${result.visibility.wire} '
-          'distribution=${result.distribution.wire} '
-          'publishedAt=${result.publishedAt}',
+          'id=${post.id}',
         );
       }
-
-      // Defensive: if the backend somehow returned a non-PUBLISHED status
-      // (e.g. silent permission downgrade, gateway stripping the query
-      // string), bail out before clearing the draft so the user can retry.
-      if (result.status != InstitutionPostStatus.published) {
-        if (!mounted) return;
-        setState(() {
-          _busy = false;
-          _error =
-              'Server saved this post as ${result.status.wire} instead of '
-              'PUBLISHED. Your role may not allow direct publishing — '
-              'try "Save draft" and ask an admin to publish.';
-        });
-        return;
-      }
-
-      // Publish succeeded — clear every visibility-scoped draft this user
+      // Publish succeeded; clear every visibility-scoped draft this user
       // has on this institution so reopening the composer starts fresh.
       await _clearAllLocalDrafts();
       _invalidatePostFeeds();
       if (!mounted) return;
-      // Distribution Phase 1 — publish-success acknowledgment that names
+      // Distribution Phase 1: publish-success acknowledgment that names
       // the audience reach. The backend may or may not enqueue push on
       // this endpoint; the snackbar communicates frontend intent so the
       // host knows which audience just received the statement.
@@ -890,7 +880,7 @@ class _InstitutionPostComposerScreenState
     }
   }
 
-  /// Distribution Phase 1 — surface a calm publish-confirmation snackbar
+  /// Distribution Phase 1 Ã¢â‚¬â€ surface a calm publish-confirmation snackbar
   /// that tells the host who they just reached. The text reflects the
   /// post's [visibility] (and global eligibility for public posts) so
   /// the institutional voice is closing the loop on its own action.
@@ -908,14 +898,14 @@ class _InstitutionPostComposerScreenState
     switch (visibility) {
       case InstitutionPostVisibility.publicAll:
         reach = distribution == InstitutionPostDistribution.globalEligible
-            ? 'Public audience · eligible for the global feed'
+            ? 'Public audience Ã‚Â· eligible for the global feed'
             : 'Public audience';
         break;
       case InstitutionPostVisibility.memberOnly:
         reach = 'Members only';
         break;
       case InstitutionPostVisibility.internal:
-        reach = 'Internal — admins and editors';
+        reach = 'Internal Ã¢â‚¬â€ admins and editors';
         break;
     }
 
@@ -927,7 +917,7 @@ class _InstitutionPostComposerScreenState
 
     messenger.showSnackBar(
       SnackBar(
-        content: Text('$headline · $reach'),
+        content: Text('$headline Ã‚Â· $reach'),
         duration: const Duration(seconds: 4),
         behavior: SnackBarBehavior.floating,
       ),
@@ -938,7 +928,7 @@ class _InstitutionPostComposerScreenState
     // Refresh every unified feed surface. `invalidateUnifiedFeedSurfaces`
     // covers BOTH the FutureProvider variants AND the StateNotifier
     // (paged) variants. The Works tab on `/home` subscribes to the paged
-    // variant — a bare `ref.invalidate(memberHomeFeedProvider)` would
+    // variant Ã¢â‚¬â€ a bare `ref.invalidate(memberHomeFeedProvider)` would
     // miss it and the just-published institution post would not appear
     // in the member home feed until pull-to-refresh.
     invalidateUnifiedFeedSurfaces(ref);
@@ -950,7 +940,7 @@ class _InstitutionPostComposerScreenState
       ),
     );
 
-    // Fire-and-forget the refetches. Errors are swallowed here — the
+    // Fire-and-forget the refetches. Errors are swallowed here Ã¢â‚¬â€ the
     // watcher screens still render their own error states from the same
     // providers.
     ref
@@ -1018,7 +1008,7 @@ class _InstitutionPostComposerScreenState
     return fallback;
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Render Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
   @override
   Widget build(BuildContext context) {
@@ -1108,7 +1098,7 @@ class _InstitutionPostComposerScreenState
                   const SizedBox(height: AuraSpace.s14),
                   _ActorBanner(identity: identity),
                   const SizedBox(height: AuraSpace.s8),
-                  // Phase 3 — composer authority reminder. A single
+                  // Phase 3 Ã¢â‚¬â€ composer authority reminder. A single
                   // muted line below the banner reminds the host that
                   // anything they publish here is institutional speech.
                   Padding(
@@ -1137,7 +1127,8 @@ class _InstitutionPostComposerScreenState
                     ),
                   ),
                   _LabeledField(
-                    label: 'Title (optional — derived from body if empty)',
+                    label:
+                        'Title (optional Ã¢â‚¬â€ derived from body if empty)',
                     counter:
                         '${_titleCtrl.text.length} / '
                         '${InstitutionPost.maxTitleChars}',
@@ -1148,7 +1139,9 @@ class _InstitutionPostComposerScreenState
                     child: TextField(
                       controller: _titleCtrl,
                       maxLength: InstitutionPost.maxTitleChars,
-                      decoration: _decoration('Headline for this statement…'),
+                      decoration: _decoration(
+                        'Headline for this statementÃ¢â‚¬Â¦',
+                      ),
                       style: AuraText.body,
                       buildCounter: _zeroCounter,
                     ),
@@ -1162,7 +1155,7 @@ class _InstitutionPostComposerScreenState
                       _bodyCtrl.text.length,
                       InstitutionPost.maxBodyChars,
                     ),
-                    // AXR-1 — governed @/# autocomplete in institution posts.
+                    // AXR-1 Ã¢â‚¬â€ governed @/# autocomplete in institution posts.
                     child: GovernedTagAutocomplete(
                       controller: _bodyCtrl,
                       focusNode: _bodyFocus,
@@ -1173,7 +1166,7 @@ class _InstitutionPostComposerScreenState
                         maxLength: InstitutionPost.maxBodyChars,
                         maxLines: 14,
                         minLines: 8,
-                        decoration: _decoration('Write your post…'),
+                        decoration: _decoration('Write your postÃ¢â‚¬Â¦'),
                         style: AuraText.body,
                         buildCounter: _zeroCounter,
                       ),
@@ -1280,7 +1273,7 @@ class _InstitutionPostComposerScreenState
   );
 }
 
-// ── Actor banner — "Posting as: <Institution Name>" ─────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Actor banner Ã¢â‚¬â€ "Posting as: <Institution Name>" Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 class _ActorBanner extends StatelessWidget {
   const _ActorBanner({required this.identity});
@@ -1363,7 +1356,7 @@ class _ActorBanner extends StatelessWidget {
   }
 }
 
-// ── Media slot — bounded preview, image/video picker, progress, remove ───────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Media slot Ã¢â‚¬â€ bounded preview, image/video picker, progress, remove Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 class _MediaUploadSlot extends StatelessWidget {
   const _MediaUploadSlot({
@@ -1424,7 +1417,7 @@ class _MediaUploadSlot extends StatelessWidget {
               ),
               label: Text(
                 uploading
-                    ? 'Uploading…'
+                    ? 'UploadingÃ¢â‚¬Â¦'
                     : _hasMedia && !_isVideo
                     ? 'Replace image'
                     : 'Add image',
@@ -1448,7 +1441,7 @@ class _MediaUploadSlot extends StatelessWidget {
               ),
               label: Text(
                 uploading
-                    ? 'Uploading…'
+                    ? 'UploadingÃ¢â‚¬Â¦'
                     : _hasMedia && _isVideo
                     ? 'Replace video'
                     : 'Add video',
@@ -1478,7 +1471,7 @@ class _MediaUploadSlot extends StatelessWidget {
         ),
         const SizedBox(height: AuraSpace.s4),
         Text(
-          'Image up to 8 MB · Video up to 50 MB · uploaded via Aura media presign.',
+          'Image up to 8 MB Ã‚Â· Video up to 50 MB Ã‚Â· uploaded via Aura media presign.',
           style: AuraText.micro.copyWith(color: AuraSurface.faint, height: 1.4),
         ),
       ],
@@ -1555,7 +1548,7 @@ class _MediaValidationException implements Exception {
   String toString() => message;
 }
 
-// ── Layout helpers (unchanged) ───────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Layout helpers (unchanged) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 class _LabeledField extends StatelessWidget {
   const _LabeledField({
@@ -1784,7 +1777,7 @@ class _ComposerActions extends StatelessWidget {
         children: [
           Expanded(
             child: AuraPrimaryButton(
-              label: busy ? 'Submitting…' : 'Submit for review',
+              label: busy ? 'SubmittingÃ¢â‚¬Â¦' : 'Submit for review',
               icon: busy ? null : Icons.send_rounded,
               onPressed: busy ? null : onSubmitForReview,
             ),
@@ -1797,7 +1790,7 @@ class _ComposerActions extends StatelessWidget {
       children: [
         Expanded(
           child: AuraSecondaryButton(
-            label: busy ? 'Saving…' : 'Save draft',
+            label: busy ? 'SavingÃ¢â‚¬Â¦' : 'Save draft',
             icon: Icons.save_outlined,
             onPressed: busy ? null : onSaveDraft,
           ),
@@ -1805,7 +1798,7 @@ class _ComposerActions extends StatelessWidget {
         const SizedBox(width: AuraSpace.s10),
         Expanded(
           child: AuraPrimaryButton(
-            label: busy ? 'Publishing…' : 'Publish now',
+            label: busy ? 'PublishingÃ¢â‚¬Â¦' : 'Publish now',
             icon: busy ? null : Icons.publish_rounded,
             onPressed: busy ? null : onPublish,
           ),
@@ -1815,7 +1808,7 @@ class _ComposerActions extends StatelessWidget {
   }
 }
 
-// ── Draft persistence status ────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Draft persistence status Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 enum _DraftStatus { idle, unsaved, saving, saved }
 
@@ -1835,13 +1828,13 @@ class _DraftStatusRow extends StatelessWidget {
   String _label() {
     switch (status) {
       case _DraftStatus.saving:
-        return 'Saving…';
+        return 'SavingÃ¢â‚¬Â¦';
       case _DraftStatus.saved:
         final at = savedAt;
         if (at == null) return 'Draft saved';
         final hh = at.hour.toString().padLeft(2, '0');
         final mm = at.minute.toString().padLeft(2, '0');
-        return 'Draft saved · $hh:$mm';
+        return 'Draft saved Ã‚Â· $hh:$mm';
       case _DraftStatus.unsaved:
         return 'Unsaved changes';
       case _DraftStatus.idle:

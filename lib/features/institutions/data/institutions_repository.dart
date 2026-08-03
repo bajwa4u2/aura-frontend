@@ -551,7 +551,9 @@ class InstitutionsRepository {
       '/institutions/$institutionId/announcements/$announcementId/integrity/$decisionId/institutional-approval',
     );
     if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
-    throw Exception('Unexpected response from integrity institutional approval.');
+    throw Exception(
+      'Unexpected response from integrity institutional approval.',
+    );
   }
 
   Future<void> unpublishInstitutionAnnouncement(
@@ -868,6 +870,78 @@ class InstitutionsRepository {
     }
     final res = await _dio.post('/institutions/$id/posts/$pid/publish');
     return _readPost(res.data);
+  }
+
+  Future<Map<String, dynamic>> requestInstitutionPostIntegrityReview(
+    String institutionId,
+    String postId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    if (id.isEmpty || pid.isEmpty) {
+      throw Exception('Institution or post id is missing.');
+    }
+    final res = await _dio.post(
+      '/institutions/$id/posts/$pid/integrity/review',
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception('Unexpected response from post integrity review.');
+  }
+
+  Future<Map<String, dynamic>> acknowledgeInstitutionPostIntegrity(
+    String institutionId,
+    String postId,
+    String decisionId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    final did = decisionId.trim();
+    if (id.isEmpty || pid.isEmpty || did.isEmpty) {
+      throw Exception('Institution, post, or decision id is missing.');
+    }
+    final res = await _dio.post(
+      '/institutions/$id/posts/$pid/integrity/$did/acknowledge',
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception('Unexpected response from post integrity acknowledgement.');
+  }
+
+  Future<Map<String, dynamic>> secondReviewInstitutionPostIntegrity(
+    String institutionId,
+    String postId,
+    String decisionId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    final did = decisionId.trim();
+    if (id.isEmpty || pid.isEmpty || did.isEmpty) {
+      throw Exception('Institution, post, or decision id is missing.');
+    }
+    final res = await _dio.post(
+      '/institutions/$id/posts/$pid/integrity/$did/second-review',
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception('Unexpected response from post integrity second review.');
+  }
+
+  Future<Map<String, dynamic>> institutionalApprovalInstitutionPostIntegrity(
+    String institutionId,
+    String postId,
+    String decisionId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    final did = decisionId.trim();
+    if (id.isEmpty || pid.isEmpty || did.isEmpty) {
+      throw Exception('Institution, post, or decision id is missing.');
+    }
+    final res = await _dio.post(
+      '/institutions/$id/posts/$pid/integrity/$did/institutional-approval',
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception(
+      'Unexpected response from post integrity institutional approval.',
+    );
   }
 
   Future<InstitutionPost> archiveInstitutionPost(

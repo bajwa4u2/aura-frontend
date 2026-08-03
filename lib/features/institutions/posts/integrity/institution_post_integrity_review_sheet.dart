@@ -7,55 +7,52 @@ import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
+import '../../announcements/integrity/announcement_integrity.dart';
 import '../../data/institutions_repository.dart';
-import 'announcement_integrity.dart';
+import '../../domain/institution_post.dart';
 
-/// Communication Integrity Review — the publisher-facing surface for
-/// Milestone 1 (institution announcements, Class D). Deliberately styled
-/// unlike the app's writing-support panels: no pencil icon, no "suggestion"
-/// language, a distinct visual register (a shield/ledger mark) so a
-/// publisher can never mistake this for a grammar pass. It renders the
-/// Communication Integrity Assessment and the governed next action — never
-/// raw findings, confidence scores, or provider internals.
+/// Publisher-facing Communication Integrity Review for institution posts.
 ///
-/// Returns `true` if the announcement was actually published from this
-/// sheet, `false`/`null` otherwise (dismissed, or the user backed out).
-Future<bool?> showAnnouncementIntegrityReviewSheet({
+/// The backend remains the publication authority. This sheet only exposes
+/// the required action returned by the governance decision, records the
+/// user's acknowledgement when required, and then retries the normal publish
+/// endpoint so eligibility is re-evaluated server-side.
+Future<bool?> showInstitutionPostIntegrityReviewSheet({
   required BuildContext context,
   required WidgetRef ref,
   required String institutionId,
-  required String announcementId,
+  required String postId,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => _AnnouncementIntegrityReviewSheet(
+    builder: (ctx) => _InstitutionPostIntegrityReviewSheet(
       institutionId: institutionId,
-      announcementId: announcementId,
+      postId: postId,
       repo: ref.read(institutionsRepositoryProvider),
     ),
   );
 }
 
-class _AnnouncementIntegrityReviewSheet extends StatefulWidget {
-  const _AnnouncementIntegrityReviewSheet({
+class _InstitutionPostIntegrityReviewSheet extends StatefulWidget {
+  const _InstitutionPostIntegrityReviewSheet({
     required this.institutionId,
-    required this.announcementId,
+    required this.postId,
     required this.repo,
   });
 
   final String institutionId;
-  final String announcementId;
+  final String postId;
   final InstitutionsRepository repo;
 
   @override
-  State<_AnnouncementIntegrityReviewSheet> createState() =>
-      _AnnouncementIntegrityReviewSheetState();
+  State<_InstitutionPostIntegrityReviewSheet> createState() =>
+      _InstitutionPostIntegrityReviewSheetState();
 }
 
-class _AnnouncementIntegrityReviewSheetState
-    extends State<_AnnouncementIntegrityReviewSheet> {
+class _InstitutionPostIntegrityReviewSheetState
+    extends State<_InstitutionPostIntegrityReviewSheet> {
   bool _loading = true;
   bool _busy = false;
   bool _ackAccepted = false;
@@ -73,8 +70,15 @@ class _AnnouncementIntegrityReviewSheetState
     if (error is DioException) {
       final data = error.response?.data;
       if (data is Map) {
-        final msg = data['message']?.toString().trim() ?? '';
-        if (msg.isNotEmpty) return msg;
+        final errorBlock = data['error'];
+        final nestedMessage = errorBlock is Map
+            ? errorBlock['message']?.toString().trim()
+            : null;
+        if (nestedMessage != null && nestedMessage.isNotEmpty) {
+          return nestedMessage;
+        }
+        final message = data['message']?.toString().trim();
+        if (message != null && message.isNotEmpty) return message;
       }
     }
     return fallback;
@@ -86,9 +90,9 @@ class _AnnouncementIntegrityReviewSheetState
       _error = null;
     });
     try {
-      final raw = await widget.repo.requestAnnouncementIntegrityReview(
+      final raw = await widget.repo.requestInstitutionPostIntegrityReview(
         widget.institutionId,
-        widget.announcementId,
+        widget.postId,
       );
       final result = AnnouncementIntegrityReviewResult.fromJson(raw);
       setState(() {
@@ -105,7 +109,7 @@ class _AnnouncementIntegrityReviewSheetState
     }
   }
 
-  Future<void> _satisfy(
+  Future<bool> _satisfy(
     Future<Map<String, dynamic>> Function() call,
     String failureFallback,
   ) async {
@@ -123,11 +127,13 @@ class _AnnouncementIntegrityReviewSheetState
         _ackAccepted = pending.satisfied;
         _busy = false;
       });
+      return pending.satisfied;
     } catch (e) {
       setState(() {
         _error = _errorMessage(e, failureFallback);
         _busy = false;
       });
+      return false;
     }
   }
 
@@ -137,12 +143,12 @@ class _AnnouncementIntegrityReviewSheetState
       _error = null;
     });
     try {
-      await widget.repo.publishInstitutionAnnouncement(
+      final post = await widget.repo.publishInstitutionPost(
         widget.institutionId,
-        widget.announcementId,
+        widget.postId,
       );
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(post.status == InstitutionPostStatus.published);
     } catch (e) {
       setState(() {
         _error = _errorMessage(e, 'Could not publish.');
@@ -263,10 +269,19 @@ class _AnnouncementIntegrityReviewSheetState
             color: AuraSurface.accentText,
           ),
         ),
-        const SizedBox(height: AuraSpace.s4),
-        Text(
-          pending.reason,
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        const SizedBox(height: AuraSpace.s8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AuraSpace.s12),
+          decoration: BoxDecoration(
+            color: AuraSurface.subtle,
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Text(
+            pending.reason,
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
         ),
         if (pending.outcome ==
                 AnnouncementIntegrityOutcome.requireAcknowledgement &&
@@ -295,9 +310,9 @@ class _AnnouncementIntegrityReviewSheetState
             onPressed: _busy
                 ? null
                 : () => _satisfy(
-                    () => widget.repo.secondReviewAnnouncementIntegrity(
+                    () => widget.repo.secondReviewInstitutionPostIntegrity(
                       widget.institutionId,
-                      widget.announcementId,
+                      widget.postId,
                       pending.decisionId,
                     ),
                     'Could not record the second review.',
@@ -313,10 +328,10 @@ class _AnnouncementIntegrityReviewSheetState
             onPressed: _busy
                 ? null
                 : () => _satisfy(
-                    () =>
-                        widget.repo.institutionalApprovalAnnouncementIntegrity(
+                    () => widget.repo
+                        .institutionalApprovalInstitutionPostIntegrity(
                           widget.institutionId,
-                          widget.announcementId,
+                          widget.postId,
                           pending.decisionId,
                         ),
                     'Could not record institutional approval.',
@@ -332,26 +347,26 @@ class _AnnouncementIntegrityReviewSheetState
             AnnouncementIntegrityOutcome.requireAcknowledgement &&
         !_pending!.satisfied) {
       return AuraPrimaryButton(
-        label: 'I\'ve reviewed this — publish',
+        label: _busy ? 'Recording...' : 'Acknowledge and publish',
         onPressed: (_busy || !_ackAccepted)
             ? null
             : () async {
-                await _satisfy(
-                  () => widget.repo.acknowledgeAnnouncementIntegrity(
+                final satisfied = await _satisfy(
+                  () => widget.repo.acknowledgeInstitutionPostIntegrity(
                     widget.institutionId,
-                    widget.announcementId,
+                    widget.postId,
                     _pending!.decisionId,
                   ),
                   'Could not record acknowledgement.',
                 );
-                if (_pending?.satisfied == true) await _publish();
+                if (satisfied) await _publish();
               },
       );
     }
 
     final canPublish = _pending?.clearsPublish == true;
     return AuraPrimaryButton(
-      label: _busy ? 'Publishing…' : 'Publish',
+      label: _busy ? 'Publishing...' : 'Publish',
       onPressed: (_busy || !canPublish) ? null : _publish,
     );
   }
