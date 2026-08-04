@@ -223,6 +223,7 @@ class Post {
     this.translationStatus,
     this.availableTranslations = const <PostTranslation>[],
     this.tagReferences = const <TagReference>[],
+    this.repostOf,
   });
 
   final String id;
@@ -232,6 +233,7 @@ class Post {
 
   final String? replyToPostId;
   final String? repostOfPostId;
+  final Post? repostOf;
   final String visibility;
 
   final PostAuthor? author;
@@ -300,6 +302,7 @@ class Post {
     String? translationStatus,
     List<PostTranslation>? availableTranslations,
     List<TagReference>? tagReferences,
+    Post? repostOf,
   }) {
     return Post(
       id: id ?? this.id,
@@ -308,6 +311,7 @@ class Post {
       createdAt: createdAt ?? this.createdAt,
       replyToPostId: replyToPostId ?? this.replyToPostId,
       repostOfPostId: repostOfPostId ?? this.repostOfPostId,
+      repostOf: repostOf ?? this.repostOf,
       visibility: visibility ?? this.visibility,
       author: author ?? this.author,
       media: media ?? this.media,
@@ -355,6 +359,9 @@ class Post {
     final mediaType =
         _readString(j['mediaType']) ?? primaryMedia?.type ?? 'NONE';
 
+    final repostOfJson = _readMap(j['repostOf']);
+    final repostOf = repostOfJson != null ? Post.fromJson(repostOfJson) : null;
+
     return Post(
       id: _readString(j['id']) ?? '',
       authorId: authorId,
@@ -391,6 +398,7 @@ class Post {
       translationStatus: _readString(j['translationStatus']),
       availableTranslations: translations,
       tagReferences: _readTagReferences(j['tagReferences']),
+      repostOf: repostOf,
     );
   }
 
@@ -401,6 +409,7 @@ class Post {
     'createdAt': createdAt.toIso8601String(),
     'replyToPostId': replyToPostId,
     'repostOfPostId': repostOfPostId,
+    'repostOf': repostOf?.toJson(),
     'visibility': visibility,
     'author': author?.toJson(),
     'media': media.map((e) => e.toJson()).toList(),

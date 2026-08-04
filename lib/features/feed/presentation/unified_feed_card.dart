@@ -1338,21 +1338,48 @@ class _SignalLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = _label();
     if (text.isEmpty) return const SizedBox.shrink();
-    return Row(
+    // Reshares are required to carry commentary — show the most recent
+    // reposter's own text inline. Without this the label reads as pure
+    // amplification ("X reposted") and the added commentary is lost, even
+    // though it's real, distinct content the actor chose to add.
+    final commentary = signal.actors.isNotEmpty
+        ? (signal.actors.first.commentary ?? '').trim()
+        : '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.repeat_rounded, size: 13, color: AuraSurface.faint),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
-              fontWeight: FontWeight.w600,
+        Row(
+          children: [
+            const Icon(Icons.repeat_rounded, size: 13, color: AuraSurface.faint),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AuraText.micro.copyWith(
+                  color: AuraSurface.faint,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (commentary.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 19),
+            child: Text(
+              commentary,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.ink,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }

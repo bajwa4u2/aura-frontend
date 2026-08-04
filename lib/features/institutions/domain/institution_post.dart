@@ -157,6 +157,8 @@ class InstitutionPost {
     this.replyToInstitutionPostId,
     this.resolvesInstitutionPostId,
     this.continuesInstitutionPostId,
+    this.repostOfInstitutionPostId,
+    this.repostOf,
     this.primaryTopic,
     this.secondaryTopics = const <String>[],
     this.tagReferences = const <TagReference>[],
@@ -210,6 +212,15 @@ class InstitutionPost {
   /// continuations. When set, this post continues an earlier
   /// discussion identified by the referenced post id.
   final String? continuesInstitutionPostId;
+
+  /// Set when this post is a reshare of another InstitutionPost.
+  final String? repostOfInstitutionPostId;
+
+  /// Embedded original post being reshared, when the API returns it
+  /// (mirrors the personal-post `repostOf` projection). Null for
+  /// non-reposts or when the original couldn't be resolved.
+  final InstitutionPost? repostOf;
+
   final String? primaryTopic;
   final List<String> secondaryTopics;
   final List<TagReference> tagReferences;
@@ -273,6 +284,10 @@ class InstitutionPost {
     final author = json['author'];
     final institution = json['institution'];
     final actorInstitution = json['actorInstitution'];
+    final repostOfJson = json['repostOf'];
+    final repostOf = repostOfJson is Map
+        ? InstitutionPost.fromJson(Map<String, dynamic>.from(repostOfJson))
+        : null;
 
     return InstitutionPost(
       id: s(['id']),
@@ -300,6 +315,8 @@ class InstitutionPost {
       replyToInstitutionPostId: opt(['replyToInstitutionPostId']),
       resolvesInstitutionPostId: opt(['resolvesInstitutionPostId']),
       continuesInstitutionPostId: opt(['continuesInstitutionPostId']),
+      repostOfInstitutionPostId: opt(['repostOfInstitutionPostId']),
+      repostOf: repostOf,
       primaryTopic: opt(['primaryTopic']),
       secondaryTopics: (json['secondaryTopics'] is List)
           ? (json['secondaryTopics'] as List)
@@ -331,6 +348,8 @@ class InstitutionPost {
       if (archivedAt != null) 'archivedAt': archivedAt!.toIso8601String(),
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+      if (repostOfInstitutionPostId != null)
+        'repostOfInstitutionPostId': repostOfInstitutionPostId,
       if (primaryTopic != null) 'primaryTopic': primaryTopic,
       if (secondaryTopics.isNotEmpty) 'secondaryTopics': secondaryTopics,
       if (tagReferences.isNotEmpty)

@@ -737,6 +737,7 @@ class FeedSignalActor {
     this.handle,
     this.avatarUrl,
     this.isViewer = false,
+    this.commentary,
   });
 
   final String id;
@@ -748,6 +749,12 @@ class FeedSignalActor {
   /// True when this actor is the viewer — clients render "You reposted"
   /// instead of the displayName.
   final bool isViewer;
+
+  /// The reposter's own added text, when the repost carried commentary.
+  /// Reshares are required to have non-empty commentary, so this is
+  /// normally present — shown inline next to the signal label instead of
+  /// being silently discarded.
+  final String? commentary;
 
   factory FeedSignalActor.fromJson(Map<String, dynamic> m) {
     String s(List<String> keys) {
@@ -773,6 +780,7 @@ class FeedSignalActor {
       handle: opt(['handle']),
       avatarUrl: opt(['avatarUrl', 'avatarOrLogoUrl']),
       isViewer: m['isViewer'] == true,
+      commentary: opt(['commentary']),
     );
   }
 }

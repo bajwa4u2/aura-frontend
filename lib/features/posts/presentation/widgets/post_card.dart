@@ -24,6 +24,7 @@ import '../../../public/widgets/mention_text.dart';
 import '../../../feed/data/unified_feed_providers.dart';
 import '../../../feed/domain/feed_item.dart' show FeedRouting;
 import '../../../feed/domain/post.dart';
+import '../../../feed/presentation/quoted_post_preview.dart';
 import '../../../saves/providers.dart';
 import '../../data/reactions_repository.dart';
 import 'post_card/post_card_models.dart';
@@ -963,6 +964,10 @@ class _PostCardState extends ConsumerState<PostCard> {
                   );
                 },
               ),
+            ],
+            if (post.repostOf != null) ...[
+              const SizedBox(height: AuraSpace.s10),
+              QuotedPostPreview(original: post.repostOf!),
             ],
             _finalAttachmentBlock(
               context,
