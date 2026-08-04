@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
@@ -970,42 +971,28 @@ class _InstitutionPostComposerScreenState
   }
 
   String _readError(Object e, String fallback) {
-    if (e is DioException) {
-      final data = e.response?.data;
-      if (data is Map) {
-        // The Aura error envelope is `{ ok:false, error:{ code, message, details } }`.
-        // Map well-known monetization codes to friendly UI copy so users see
-        // a clear next step rather than a raw backend message.
-        final errorBlock = data['error'];
-        String? code;
-        String? message;
-        if (errorBlock is Map) {
-          code = errorBlock['code']?.toString();
-          message = errorBlock['message']?.toString();
-        } else {
-          code = data['code']?.toString();
-          message = data['message']?.toString();
-        }
+    final appError = AppErrorMapper.from(e, feature: 'publish this');
 
-        switch (code) {
-          case 'PLAN_REQUIRED_PRO':
-            return 'Official posts require Pro. Upgrade your institution to publish in the institution voice.';
-          case 'PLAN_REQUIRED_VERIFIED':
-            return 'This action requires a Verified institution.';
-          case 'MEMBER_LIMIT_REACHED':
-            return 'Your plan\'s member limit is reached. Upgrade to add more members.';
-          case 'CREDITS_REQUIRED':
-            return 'Not enough credits for this action.';
-          case 'BILLING_FORBIDDEN':
-            return 'Only institution owners or admins can perform this action.';
-        }
-
-        if (message != null && message.trim().isNotEmpty) {
-          return message.trim();
-        }
-      }
+    // Map well-known monetization codes to friendly UI copy so users see a
+    // clear next step rather than the raw backend message.
+    switch (appError.code) {
+      case 'PLAN_REQUIRED_PRO':
+        return 'Official posts require Pro. Upgrade your institution to publish in the institution voice.';
+      case 'PLAN_REQUIRED_VERIFIED':
+        return 'This action requires a Verified institution.';
+      case 'MEMBER_LIMIT_REACHED':
+        return 'Your plan\'s member limit is reached. Upgrade to add more members.';
+      case 'CREDITS_REQUIRED':
+        return 'Not enough credits for this action.';
+      case 'BILLING_FORBIDDEN':
+        return 'Only institution owners or admins can perform this action.';
     }
-    return fallback;
+
+    if (appError.hasIssues) {
+      return '${appError.message} (${appError.issues!.join('; ')})';
+    }
+
+    return appError.message.trim().isNotEmpty ? appError.message : fallback;
   }
 
   // Ã¢â€â‚¬Ã¢â€â‚¬ Render Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬

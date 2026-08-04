@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -231,25 +232,38 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
       try {
         final ok = await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Repost'),
-            content: TextField(
-              controller: controller,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Add a short line (optional)…',
-              ),
-            ),
-            actions: [
-              AuraGhostButton(
-                label: 'Cancel',
-                onPressed: () => Navigator.of(ctx).pop(false),
-              ),
-              AuraPrimaryButton(
-                label: 'Repost',
-                onPressed: () => Navigator.of(ctx).pop(true),
-              ),
-            ],
+          builder: (ctx) => StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              final canSubmit = controller.text.trim().isNotEmpty;
+              return AlertDialog(
+                title: const Text('Repost'),
+                content: TextField(
+                  controller: controller,
+                  maxLines: 4,
+                  autofocus: true,
+                  // Discourse Quality requires added commentary on every
+                  // reshare — a silent repost is always rejected server-side
+                  // ("A reshare requires added commentary…"), so the field
+                  // must read as required, not optional.
+                  decoration: const InputDecoration(
+                    hintText: 'Add a line of your own commentary…',
+                  ),
+                  onChanged: (_) => setDialogState(() {}),
+                ),
+                actions: [
+                  AuraGhostButton(
+                    label: 'Cancel',
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                  ),
+                  AuraPrimaryButton(
+                    label: 'Repost',
+                    onPressed: canSubmit
+                        ? () => Navigator.of(ctx).pop(true)
+                        : null,
+                  ),
+                ],
+              );
+            },
           ),
         );
         if (ok != true) return;
@@ -258,8 +272,7 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
         final dio = ref.read(dioProvider);
         if (target is InstitutionPostReactionTarget) {
           final t = target;
-          final body = <String, dynamic>{};
-          if (text.isNotEmpty) body['text'] = text;
+          final body = <String, dynamic>{'text': text};
           if (canActAsInstitution) {
             body['asInstitution'] = true;
             body['actorInstitutionId'] = actor.actorInstitutionId;
@@ -269,8 +282,7 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
             data: body,
           );
         } else {
-          final body = <String, dynamic>{};
-          if (text.isNotEmpty) body['text'] = text;
+          final body = <String, dynamic>{'text': text};
           if (canActAsInstitution) {
             body['asInstitution'] = true;
             body['institutionId'] = actor.actorInstitutionId;
@@ -282,10 +294,11 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Reposted')),
         );
-      } catch (_) {
+      } catch (e) {
         if (!context.mounted) return;
+        final message = AppErrorMapper.from(e, feature: 'repost this').message;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not repost')),
+          SnackBar(content: Text('Could not repost: $message')),
         );
       } finally {
         controller.dispose();

@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
@@ -890,8 +891,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final message = AppErrorMapper.from(e, feature: 'edit this').message;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not load post for editing: $e')),
+        SnackBar(content: Text('Could not load post for editing: $message')),
       );
     }
   }
@@ -1056,11 +1058,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       await _saveDraft(silent: true);
     } catch (e) {
       if (!mounted) return;
+      final message = AppErrorMapper.from(e, feature: 'upload this').message;
       setState(() {
-        attachment.error = e.toString();
+        attachment.error = message;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not upload attachment: $e')),
+        SnackBar(content: Text('Could not upload attachment: $message')),
       );
     } finally {
       if (mounted) {
@@ -1323,9 +1326,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     } catch (e) {
       if (!mounted) return;
       if (!silent) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not hold this work: $e')));
+        final message = AppErrorMapper.from(e, feature: 'save this').message;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not hold this work: $message')),
+        );
       }
       rethrow;
     } finally {
@@ -1921,7 +1925,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             await _publishToTikTokNow(publishedPostId!);
             queuedTargets.add('TikTok');
           } catch (e) {
-            failedTargets.add('TikTok ($e)');
+            failedTargets.add('TikTok (${AppErrorMapper.from(e).message})');
           } finally {
             if (mounted) {
               setState(() {
@@ -1936,7 +1940,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             await _publishToLinkedInNow(publishedPostId!);
             queuedTargets.add('LinkedIn');
           } catch (e) {
-            failedTargets.add('LinkedIn ($e)');
+            failedTargets.add('LinkedIn (${AppErrorMapper.from(e).message})');
           }
         }
 
@@ -2031,10 +2035,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         return;
       }
 
+      final appError = AppErrorMapper.from(e, feature: 'publish this');
+      final detail = appError.hasIssues
+          ? '${appError.message} (${appError.issues!.join('; ')})'
+          : appError.message;
+
       final message =
           publishedPostId != null && publishedPostId.trim().isNotEmpty
-          ? 'Published to Aura, but the screen could not finish cleanly: $e'
-          : 'Could not publish: $e';
+          ? 'Published to Aura, but the screen could not finish cleanly: $detail'
+          : detail;
 
       ScaffoldMessenger.of(
         context,

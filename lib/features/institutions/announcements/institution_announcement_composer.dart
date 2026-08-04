@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
@@ -153,14 +153,11 @@ class _InstitutionAnnouncementComposerState
   }
 
   String _message(Object error, String fallback) {
-    if (error is DioException) {
-      final data = error.response?.data;
-      if (data is Map) {
-        final msg = data['message']?.toString().trim() ?? '';
-        if (msg.isNotEmpty) return msg;
-      }
+    final appError = AppErrorMapper.from(error, feature: 'publish this');
+    if (appError.hasIssues) {
+      return '${appError.message} (${appError.issues!.join('; ')})';
     }
-    return fallback;
+    return appError.message.trim().isNotEmpty ? appError.message : fallback;
   }
 
   void _rememberSelectedTag(TagReference reference) {

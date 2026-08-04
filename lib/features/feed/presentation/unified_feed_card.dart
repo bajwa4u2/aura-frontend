@@ -12,6 +12,9 @@ import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import '../../../core/translation/communication_translate_action.dart';
+import '../../../core/translation/communication_translation.dart'
+    as comm_translation;
 import '../../../core/utils/relative_time.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../../public/widgets/mention_text.dart' show ResolvedTagText;
@@ -299,6 +302,16 @@ class UnifiedFeedCard extends ConsumerWidget {
                     height: 1.5,
                   ),
                 ),
+              const SizedBox(height: AuraSpace.s8),
+              CommunicationTranslateAction(
+                objectType: _communicationObjectTypeFor(item.type),
+                objectId: item.id,
+                sourceText: item.body,
+                bodyStyle: AuraText.body.copyWith(
+                  color: AuraSurface.ink,
+                  height: 1.5,
+                ),
+              ),
             ],
             // C4-followup — prefer canonical media[] when the backend
             // shipped one (institution posts after C4, user posts going
@@ -1407,6 +1420,19 @@ bool _isRecentlyPublished(FeedItem item) {
 
 /// True when the post is ≤ 12 hours old. Drives the soft "Recent update"
 /// reinforcement under announcement titles.
+comm_translation.CommunicationObjectType _communicationObjectTypeFor(
+  FeedItemType type,
+) {
+  switch (type) {
+    case FeedItemType.institutionPost:
+      return comm_translation.CommunicationObjectType.institutionPost;
+    case FeedItemType.announcement:
+      return comm_translation.CommunicationObjectType.announcement;
+    case FeedItemType.userPost:
+      return comm_translation.CommunicationObjectType.post;
+  }
+}
+
 bool _isVeryRecent(FeedItem item) {
   final ts = item.publishedAt ?? item.createdAt;
   if (ts == null) return false;

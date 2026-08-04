@@ -1,8 +1,12 @@
 # Current State — aura_final
 
-Last updated: 2026-07-21 UTC (AXR-1)
+Last updated: 2026-07-21 UTC (AXR-1); defect logged 2026-08-04 (Publication Reliability and Multilingual Communication Completion, see `../aura-backend/audit/working-directory/CURRENT_STATE.md`)
 
 Repository documentation is authoritative. Conversation history is temporary. This continuity set was established 2026-07-21 (workspace-wide continuity doctrine); prior history is reconstructed from git history and the ROS Phase II records.
+
+## Known defect — logged, not repaired (2026-08-04)
+
+`lib/features/institutions/posts/institution_post_composer_screen.dart` lines 1118, 1130, 1156: the "Title" hint (`Ã¢â‚¬â€`), "Headline for this statement…" hint, and "Write your post…" hint literal strings contain mis-encoded em-dash/ellipsis mojibake (`Ã¢â‚¬â€` / `Ã¢â‚¬Â¦`) baked directly into the Dart source — a UTF‑8-decoded-as-Latin‑1 (or similar) re-encoding at some earlier save, not a runtime rendering bug. Cosmetic only (placeholder/label text), found during live certification of institution post publication for the Publication Reliability and Multilingual Communication Completion mission. Confirmed scoped to this one file (`grep` across `lib/` for the same mojibake byte sequence found no other matches, including the visually similar `institution_announcement_composer.dart`, which is unaffected). Deliberately not repaired in that mission's commits — flagged here for a future, separately-scoped fix.
 
 ## Identity
 

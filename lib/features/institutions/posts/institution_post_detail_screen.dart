@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../app/shell/rail/rail_composition.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/translation/communication_translate_action.dart';
+import '../../../core/translation/communication_translation.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -483,6 +485,16 @@ class _ReplyCard extends StatelessWidget {
                 height: 1.5,
               ),
               selectable: true,
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            CommunicationTranslateAction(
+              objectType: CommunicationObjectType.institutionPost,
+              objectId: reply.id,
+              sourceText: reply.body,
+              bodyStyle: AuraText.body.copyWith(
+                color: AuraSurface.ink,
+                height: 1.5,
+              ),
             ),
           ],
           const SizedBox(height: AuraSpace.s8),

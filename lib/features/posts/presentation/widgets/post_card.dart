@@ -7,7 +7,10 @@ import '../../../../core/auth/session_providers.dart';
 import '../../../../core/compliance/blocks_repository.dart';
 import '../../../../core/compliance/report_content_sheet.dart';
 import '../../../../core/compliance/report_repository.dart';
+import '../../../../core/errors/app_error_mapper.dart';
 import '../../../../core/institutions/institution_access_provider.dart';
+import '../../../../core/translation/communication_translate_action.dart';
+import '../../../../core/translation/communication_translation.dart';
 import '../../../../core/media/aura_attachment_image.dart';
 import '../../../../core/media/aura_media_viewer.dart';
 import '../../../../core/net/dio_provider.dart';
@@ -17,7 +20,6 @@ import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
-import '../../../../core/ui/aura_text_block.dart';
 import '../../../public/widgets/mention_text.dart';
 import '../../../feed/data/unified_feed_providers.dart';
 import '../../../feed/domain/feed_item.dart' show FeedRouting;
@@ -52,38 +54,6 @@ String? _cleanNullableText(dynamic value) {
   final text = value?.toString().trim();
   if (text == null || text.isEmpty) return null;
   return text;
-}
-
-const Map<String, String> _translationLanguageLabels = {
-  'en': 'English',
-  'ur': 'Urdu',
-  'ar': 'Arabic',
-  'es': 'Spanish',
-  'fr': 'French',
-  'de': 'German',
-  'it': 'Italian',
-  'pt': 'Portuguese',
-  'tr': 'Turkish',
-  'fa': 'Persian',
-  'hi': 'Hindi',
-  'bn': 'Bengali',
-  'zh': 'Chinese',
-  'ja': 'Japanese',
-  'ko': 'Korean',
-  'ru': 'Russian',
-};
-
-String _languageLabel(String code) {
-  final key = code.trim().toLowerCase();
-  return _translationLanguageLabels[key] ?? key.toUpperCase();
-}
-
-String _defaultTranslationLanguage(BuildContext context) {
-  final code = Localizations.localeOf(
-    context,
-  ).languageCode.trim().toLowerCase();
-  if (_translationLanguageLabels.containsKey(code)) return code;
-  return 'en';
 }
 
 Map<String, dynamic> _asMap(dynamic v) {
@@ -241,171 +211,8 @@ class PostCard extends ConsumerStatefulWidget {
 
 class _PostCardState extends ConsumerState<PostCard> {
   bool _expanded = false;
-  bool _translationBusy = false;
-  bool _showTranslation = false;
-  String? _translatedText;
-  String? _translationError;
-  String? _translationTargetLanguage;
 
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
-
-  Future<void> _pickTranslationLanguage(BuildContext context) async {
-    final current =
-        (_translationTargetLanguage ?? _defaultTranslationLanguage(context))
-            .toLowerCase();
-
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      backgroundColor: AuraSurface.page,
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s8,
-              AuraSpace.s16,
-              AuraSpace.s20,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Translate to',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: _translationLanguageLabels.entries.map((entry) {
-                    final active = entry.key == current;
-                    return InkWell(
-                      onTap: () => Navigator.of(ctx).pop(entry.key),
-                      borderRadius: BorderRadius.circular(AuraRadius.pill),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AuraSpace.s12,
-                          vertical: AuraSpace.s8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: active
-                              ? AuraSurface.elevated
-                              : AuraSurface.page,
-                          borderRadius: BorderRadius.circular(AuraRadius.pill),
-                          border: Border.all(color: AuraSurface.divider),
-                        ),
-                        child: Text(
-                          entry.value,
-                          style: AuraText.small.copyWith(
-                            fontWeight: active
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (!mounted || selected == null || selected.trim().isEmpty) return;
-    setState(() {
-      _translationTargetLanguage = selected.trim().toLowerCase();
-      _translationError = null;
-    });
-  }
-
-  Future<void> _translatePostText(BuildContext context, String text) async {
-    final trimmed = text.trim();
-    if (trimmed.isEmpty || _translationBusy) return;
-
-    final target =
-        (_translationTargetLanguage ?? _defaultTranslationLanguage(context))
-            .toLowerCase();
-
-    setState(() {
-      _translationBusy = true;
-      _translationError = null;
-    });
-
-    try {
-      final dio = ref.read(dioProvider);
-      final response = await dio.post(
-        '/composition/translate',
-        data: {'text': trimmed, 'targetLanguage': target},
-      );
-
-      final root = _asMap(response.data);
-      final data = _asMap(root['data']);
-
-      final translatedText = _readString(
-        root['translatedText'] ??
-            root['text'] ??
-            data['translatedText'] ??
-            data['text'],
-      );
-
-      if (translatedText.isEmpty) {
-        throw Exception('Translation response was empty.');
-      }
-
-      if (!mounted) return;
-
-      setState(() {
-        _translatedText = translatedText;
-        _showTranslation = true;
-        _translationTargetLanguage =
-            _readString(
-              root['targetLanguage'] ?? data['targetLanguage'] ?? target,
-            ).toLowerCase().isEmpty
-            ? target
-            : _readString(
-                root['targetLanguage'] ?? data['targetLanguage'] ?? target,
-              ).toLowerCase();
-      });
-    } on DioException catch (e) {
-      if (!context.mounted) return;
-      final status = e.response?.statusCode;
-      final authRequired = status == 401 || status == 403;
-      final message = authRequired
-          ? 'Sign in to translate this post.'
-          : 'Translation could not run right now.';
-      setState(() {
-        _translationError = message;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authRequired ? 'Sign in to use translation.' : message),
-          action: authRequired
-              ? SnackBarAction(
-                  label: 'Sign in',
-                  onPressed: () => context.go('/login'),
-                )
-              : null,
-        ),
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      const message = 'Translation could not run right now.';
-      setState(() {
-        _translationError = message;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text(message)));
-    } finally {
-      if (mounted) {
-        setState(() => _translationBusy = false);
-      }
-    }
-  }
 
   String? _resolveMediaUrl(WidgetRef ref, String? raw) {
     if (raw == null) return null;
@@ -1028,7 +835,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     final text = fullView
         ? rawText
         : rawText.replaceAll(RegExp(r'\n[ \t]*\n+'), '\n');
-    _translationTargetLanguage ??= _defaultTranslationLanguage(context);
 
     final headerName = displayName.isNotEmpty
         ? displayName
@@ -1147,157 +953,12 @@ class _PostCardState extends ConsumerState<PostCard> {
                         ),
                       ],
                       const SizedBox(height: AuraSpace.s10),
-                      Wrap(
-                        spacing: AuraSpace.s10,
-                        runSpacing: AuraSpace.s10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          InkWell(
-                            onTap: _translationBusy
-                                ? null
-                                : () => _translatePostText(context, text),
-                            borderRadius: BorderRadius.circular(
-                              AuraRadius.pill,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s6,
-                                vertical: AuraSpace.s6,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (_translationBusy) ...[
-                                    const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    const SizedBox(width: AuraSpace.s8),
-                                  ],
-                                  Text(
-                                    _translationBusy
-                                        ? 'Translating...'
-                                        : (_showTranslation
-                                              ? 'Refresh translation'
-                                              : 'Translate'),
-                                    style: AuraText.small.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: AuraSurface.muted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => _pickTranslationLanguage(context),
-                            borderRadius: BorderRadius.circular(
-                              AuraRadius.pill,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s10,
-                                vertical: AuraSpace.s6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AuraSurface.elevated,
-                                borderRadius: BorderRadius.circular(
-                                  AuraRadius.pill,
-                                ),
-                                border: Border.all(color: AuraSurface.divider),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.translate,
-                                    size: 14,
-                                    color: AuraSurface.muted,
-                                  ),
-                                  const SizedBox(width: AuraSpace.s6),
-                                  Text(
-                                    _languageLabel(
-                                      _translationTargetLanguage ??
-                                          _defaultTranslationLanguage(context),
-                                    ),
-                                    style: AuraText.small.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (_showTranslation)
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _showTranslation = false;
-                                  _translationError = null;
-                                });
-                              },
-                              borderRadius: BorderRadius.circular(
-                                AuraRadius.pill,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AuraSpace.s6,
-                                  vertical: AuraSpace.s6,
-                                ),
-                                child: Text(
-                                  'Hide translation',
-                                  style: AuraText.small.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AuraSurface.muted,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                      CommunicationTranslateAction(
+                        objectType: CommunicationObjectType.post,
+                        objectId: post.id,
+                        sourceText: text,
+                        bodyStyle: bodyTextStyle,
                       ),
-                      if ((_translationError ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(
-                          _translationError!,
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.coSun,
-                          ),
-                        ),
-                      ],
-                      if (_showTranslation &&
-                          (_translatedText ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: AuraSpace.s12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(AuraSpace.s12),
-                          decoration: BoxDecoration(
-                            color: AuraSurface.elevated,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AuraSurface.divider),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Translation · ${_languageLabel(_translationTargetLanguage ?? _defaultTranslationLanguage(context))}',
-                                style: AuraText.small.copyWith(
-                                  color: AuraSurface.muted,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s8),
-                              AuraTextBlock(
-                                _translatedText!,
-                                style: bodyTextStyle,
-                                selectable: true,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ],
                   );
                 },
@@ -1643,28 +1304,39 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
       try {
         final ok = await showDialog<bool>(
           context: context,
-          builder: (ctx) {
-            return AlertDialog(
-              title: const Text('Repost'),
-              content: TextField(
-                controller: controller,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: 'Add a short line (optional)…',
+          builder: (ctx) => StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              final canSubmit = controller.text.trim().isNotEmpty;
+              return AlertDialog(
+                title: const Text('Repost'),
+                content: TextField(
+                  controller: controller,
+                  maxLines: 4,
+                  autofocus: true,
+                  // Discourse Quality requires added commentary on every
+                  // reshare — a silent repost is always rejected server-side
+                  // ("A reshare requires added commentary…"), so the field
+                  // must read as required, not optional.
+                  decoration: const InputDecoration(
+                    hintText: 'Add a line of your own commentary…',
+                  ),
+                  onChanged: (_) => setDialogState(() {}),
                 ),
-              ),
-              actions: [
-                AuraGhostButton(
-                  label: 'Cancel',
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                ),
-                AuraPrimaryButton(
-                  label: 'Repost',
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                ),
-              ],
-            );
-          },
+                actions: [
+                  AuraGhostButton(
+                    label: 'Cancel',
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                  ),
+                  AuraPrimaryButton(
+                    label: 'Repost',
+                    onPressed: canSubmit
+                        ? () => Navigator.of(ctx).pop(true)
+                        : null,
+                  ),
+                ],
+              );
+            },
+          ),
         );
 
         if (ok != true) return;
@@ -1672,8 +1344,7 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
         final text = controller.text.trim();
         final dio = ref.read(dioProvider);
 
-        final payload = <String, dynamic>{};
-        if (text.isNotEmpty) payload['text'] = text;
+        final payload = <String, dynamic>{'text': text};
 
         // Phase-3 actor-aware repost: forward asInstitution + institutionId
         // when the active context is the institution shell.
@@ -1689,8 +1360,9 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Work reposted')));
-      } catch (_) {
-        _showError(context, 'Could not repost');
+      } catch (e) {
+        final message = AppErrorMapper.from(e, feature: 'repost this').message;
+        _showError(context, 'Could not repost: $message');
       } finally {
         controller.dispose();
         if (mounted) setState(() => _repostBusy = false);

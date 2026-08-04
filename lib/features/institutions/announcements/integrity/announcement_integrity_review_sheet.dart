@@ -1,7 +1,7 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/app_error_mapper.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -70,14 +70,11 @@ class _AnnouncementIntegrityReviewSheetState
   }
 
   String _errorMessage(Object error, String fallback) {
-    if (error is DioException) {
-      final data = error.response?.data;
-      if (data is Map) {
-        final msg = data['message']?.toString().trim() ?? '';
-        if (msg.isNotEmpty) return msg;
-      }
+    final appError = AppErrorMapper.from(error, feature: 'complete this review');
+    if (appError.hasIssues) {
+      return '${appError.message} (${appError.issues!.join('; ')})';
     }
-    return fallback;
+    return appError.message.trim().isNotEmpty ? appError.message : fallback;
   }
 
   Future<void> _runReview() async {

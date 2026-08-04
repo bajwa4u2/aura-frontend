@@ -6,6 +6,9 @@ import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/translation/communication_translation.dart'
+    show CommunicationObjectType;
+import '../../../core/translation/communication_translation_repository.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -52,37 +55,6 @@ String _defaultAnnouncementTranslationLanguage(BuildContext context) {
   ).languageCode.trim().toLowerCase();
   if (_announcementTranslationLanguageLabels.containsKey(code)) return code;
   return 'en';
-}
-
-Map<String, dynamic> _announcementAsMap(dynamic value) {
-  if (value is Map<String, dynamic>) return value;
-  if (value is Map) return Map<String, dynamic>.from(value);
-  return <String, dynamic>{};
-}
-
-String _announcementReadString(dynamic value) =>
-    (value ?? '').toString().trim();
-
-String _announcementDeepString(
-  Map<String, dynamic> root,
-  List<List<String>> candidatePaths,
-) {
-  for (final path in candidatePaths) {
-    dynamic current = root;
-    var ok = true;
-    for (final key in path) {
-      if (current is Map && current.containsKey(key)) {
-        current = current[key];
-      } else {
-        ok = false;
-        break;
-      }
-    }
-    if (!ok) continue;
-    final value = _announcementReadString(current);
-    if (value.isNotEmpty) return value;
-  }
-  return '';
 }
 
 bool _announcementHasRtlScript(String text) {
@@ -206,6 +178,7 @@ class _AnnouncementDetailScreenState
 
   Future<void> _translateAnnouncement({
     required BuildContext context,
+    required String announcementId,
     required String summary,
     required String body,
   }) async {
@@ -230,32 +203,33 @@ class _AnnouncementDetailScreenState
       String translatedSummary = '';
       String translatedBody = '';
 
+      // Summary and body are translated as two calls against the same
+      // canonical endpoint (each cached independently, keyed by its own
+      // content fingerprint) rather than concatenated into one request —
+      // preserves the summary/body structural split on the translated side.
       if (trimmedSummary.isNotEmpty) {
-        final res = await dio.post(
-          '/composition/translate',
-          data: {'text': trimmedSummary, 'targetLanguage': target},
+        // Same objectId as the body call below — the cache key already
+        // disambiguates on content fingerprint, so summary vs. body never
+        // collide even though both target the same announcement.
+        final result = await translateCommunicationObject(
+          dio,
+          objectType: CommunicationObjectType.announcement,
+          objectId: announcementId,
+          sourceText: trimmedSummary,
+          targetLanguage: target,
         );
-        final root = _announcementAsMap(res.data);
-        translatedSummary = _announcementDeepString(root, const [
-          ['translatedText'],
-          ['translation', 'text'],
-          ['data', 'translatedText'],
-          ['data', 'text'],
-        ]);
+        translatedSummary = result.translatedText;
       }
 
       if (trimmedBody.isNotEmpty) {
-        final res = await dio.post(
-          '/composition/translate',
-          data: {'text': trimmedBody, 'targetLanguage': target},
+        final result = await translateCommunicationObject(
+          dio,
+          objectType: CommunicationObjectType.announcement,
+          objectId: announcementId,
+          sourceText: trimmedBody,
+          targetLanguage: target,
         );
-        final root = _announcementAsMap(res.data);
-        translatedBody = _announcementDeepString(root, const [
-          ['translatedText'],
-          ['translation', 'text'],
-          ['data', 'translatedText'],
-          ['data', 'text'],
-        ]);
+        translatedBody = result.translatedText;
       }
 
       if (!mounted) return;
@@ -267,14 +241,11 @@ class _AnnouncementDetailScreenState
       });
     } catch (e) {
       if (!context.mounted) return;
-      setState(() {
-        _translationError = 'Could not translate this announcement right now.';
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not translate this announcement right now.'),
-        ),
-      );
+      final message = AppErrorMapper.from(e, feature: 'translate this').message;
+      setState(() => _translationError = message);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) {
         setState(() => _translationBusy = false);
@@ -396,6 +367,7 @@ class _AnnouncementDetailScreenState
                                   ? null
                                   : () => _translateAnnouncement(
                                       context: context,
+                                      announcementId: a.id,
                                       summary: summary,
                                       body: body,
                                     ),

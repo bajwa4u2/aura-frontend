@@ -20,6 +20,14 @@ class AppErrorAction {
   final String? route;
 }
 
+/// Canonical, UI-safe representation of any failure surfaced to a human.
+///
+/// [message] is always a short, human-readable string — never a raw object,
+/// stack trace, or backend internals. [toString] intentionally returns
+/// [message] rather than the default `Instance of '...'` so that any call
+/// site that accidentally interpolates an [AppError] directly (`'$error'`)
+/// degrades to readable text instead of a minified class name in release
+/// web builds.
 class AppError {
   const AppError({
     required this.type,
@@ -27,6 +35,9 @@ class AppError {
     this.action,
     this.debugMessage,
     this.statusCode,
+    this.code,
+    this.requestId,
+    this.issues,
   });
 
   final AppErrorType type;
@@ -35,10 +46,23 @@ class AppError {
   final String? debugMessage;
   final int? statusCode;
 
+  /// The backend's stable error code (e.g. `VALIDATION_ERROR`), when known.
+  final String? code;
+
+  /// The backend request id, kept for diagnostics/support correlation.
+  final String? requestId;
+
+  /// Field-level validation issues from `error.details.issues`, when present.
+  final List<String>? issues;
+
   bool get isAuthRequired => type == AppErrorType.authRequired;
+  bool get hasIssues => issues != null && issues!.isNotEmpty;
 
   static const signInAction = AppErrorAction(
     label: 'Sign in',
     route: '/login',
   );
+
+  @override
+  String toString() => message;
 }
