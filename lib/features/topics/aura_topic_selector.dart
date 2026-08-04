@@ -5,19 +5,27 @@ import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import 'topic.dart';
+import 'topic_repository.dart';
+
+enum _FetchStatus { idle, loading, loaded, error }
 
 /// Reusable topic-selection component for content composers.
 ///
-/// Doctrine — Human Authority + Machine Assistance:
+/// Doctrine — Human Authority + Machine Assistance
+/// (TOPIC_CLASSIFICATION_DOCTRINE.md):
 ///   * Primary Topic is **required** and **human-selected** (single choice).
 ///     Aura never sets or overrides it.
-///   * Secondary Topics are optional. Aura *suggests* them from the content
-///     ("Suggest"); the creator may accept, remove, or add any of them.
+///   * Secondary Topics are optional and constrained to the backend's
+///     approved-relationship set for the selected Primary — both for manual
+///     "Add topic" selection and for Aura's ranked suggestions. The backend
+///     is the sole authority for that relationship graph; this widget holds
+///     no local copy of it and applies no local fallback if a request fails.
 ///
-/// Controlled widget: the parent owns the state and is notified via the
-/// `onPrimaryChanged` / `onSecondariesChanged` callbacks. Designed so any
-/// content type (institution post, user post, announcement) can reuse it.
-class AuraTopicSelector extends StatelessWidget {
+/// Controlled widget: the parent owns `primary`/`secondaries` state and is
+/// notified via the `onPrimaryChanged` / `onSecondariesChanged` callbacks.
+/// Designed so any content type (institution post, user post, announcement)
+/// can reuse it.
+class AuraTopicSelector extends StatefulWidget {
   const AuraTopicSelector({
     super.key,
     required this.primary,
@@ -25,44 +33,164 @@ class AuraTopicSelector extends StatelessWidget {
     required this.contentText,
     required this.onPrimaryChanged,
     required this.onSecondariesChanged,
+    required this.fetchApprovedSecondaries,
+    required this.fetchSuggestions,
   });
 
   final AuraTopic? primary;
   final List<AuraTopic> secondaries;
 
-  /// Title + body the suggester analyzes for Secondary Topic suggestions.
+  /// Title + body the suggestion capability analyzes for Secondary Topic
+  /// suggestions.
   final String contentText;
 
   final ValueChanged<AuraTopic?> onPrimaryChanged;
   final ValueChanged<List<AuraTopic>> onSecondariesChanged;
 
-  void _runSuggest() {
-    final suggested = AuraTopicSuggester.suggest(
-      contentText,
-      exclude: primary,
-      max: 3,
-    );
-    final merged = <AuraTopic>[...secondaries];
-    for (final t in suggested) {
-      if (t != primary && !merged.contains(t)) merged.add(t);
+  /// `GET /topics/:primary/secondaries` — the plain, deterministic approved
+  /// set for the selected primary. Drives both manual "Add topic" selection
+  /// and the primary-change auto-drop. Throws on failure; the widget shows a
+  /// recoverable retry state rather than any local fallback list.
+  final Future<List<ApprovedSecondaryTopic>> Function(AuraTopic primary)
+  fetchApprovedSecondaries;
+
+  /// `POST /topics/suggest-secondary` — ranked suggestions from the backend
+  /// (approved-relationship gate → AI semantic relevance → deterministic
+  /// keyword fallback, all server-side). Throws on failure; the widget shows
+  /// a recoverable retry state rather than any local fallback.
+  final Future<TopicSuggestionResult> Function(AuraTopic primary, String text)
+  fetchSuggestions;
+
+  @override
+  State<AuraTopicSelector> createState() => _AuraTopicSelectorState();
+}
+
+class _AuraTopicSelectorState extends State<AuraTopicSelector> {
+  List<AuraTopic> _approved = const <AuraTopic>[];
+  _FetchStatus _approvedStatus = _FetchStatus.idle;
+  bool _suggestBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeFetchApproved(isPrimaryChange: false);
+  }
+
+  @override
+  void didUpdateWidget(covariant AuraTopicSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.primary != widget.primary) {
+      _maybeFetchApproved(isPrimaryChange: true);
     }
-    onSecondariesChanged(merged);
+  }
+
+  void _maybeFetchApproved({required bool isPrimaryChange}) {
+    final primary = widget.primary;
+    if (primary == null) {
+      setState(() {
+        _approved = const <AuraTopic>[];
+        _approvedStatus = _FetchStatus.idle;
+      });
+      return;
+    }
+
+    setState(() => _approvedStatus = _FetchStatus.loading);
+
+    widget
+        .fetchApprovedSecondaries(primary)
+        .then((list) {
+          if (!mounted || widget.primary != primary) return;
+          final approvedTopics = list.map((a) => a.topic).toSet();
+          setState(() {
+            _approved = approvedTopics.toList();
+            _approvedStatus = _FetchStatus.loaded;
+          });
+
+          // Primary Changes (TOPIC_CLASSIFICATION_DOCTRINE.md): only
+          // auto-drop when the user actually switched the primary, not on
+          // the initial load of an existing (possibly legacy) combination —
+          // "existing content remains valid," it's only re-checked going
+          // forward from an explicit primary change.
+          if (!isPrimaryChange) return;
+          final kept = widget.secondaries
+              .where(approvedTopics.contains)
+              .toList();
+          final droppedCount = widget.secondaries.length - kept.length;
+          if (droppedCount == 0) return;
+
+          widget.onSecondariesChanged(kept);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                droppedCount == 1
+                    ? 'Removed 1 secondary topic that no longer relates to the new primary topic.'
+                    : 'Removed $droppedCount secondary topics that no longer relate to the new primary topic.',
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        })
+        .catchError((_) {
+          if (!mounted || widget.primary != primary) return;
+          setState(() => _approvedStatus = _FetchStatus.error);
+        });
+  }
+
+  void _onPrimaryTap(AuraTopic tapped) {
+    widget.onPrimaryChanged(widget.primary == tapped ? null : tapped);
   }
 
   void _addSecondary(AuraTopic t) {
-    if (t == primary || secondaries.contains(t)) return;
-    onSecondariesChanged([...secondaries, t]);
+    final primary = widget.primary;
+    if (primary == null) return;
+    if (_approvedStatus != _FetchStatus.loaded) return;
+    if (t == primary || widget.secondaries.contains(t)) return;
+    if (!_approved.contains(t)) return;
+    widget.onSecondariesChanged([...widget.secondaries, t]);
   }
 
   void _removeSecondary(AuraTopic t) {
-    onSecondariesChanged(secondaries.where((x) => x != t).toList());
+    widget.onSecondariesChanged(
+      widget.secondaries.where((x) => x != t).toList(),
+    );
+  }
+
+  Future<void> _runSuggest() async {
+    final primary = widget.primary;
+    if (primary == null || _suggestBusy) return;
+    setState(() => _suggestBusy = true);
+    try {
+      final result = await widget.fetchSuggestions(
+        primary,
+        widget.contentText,
+      );
+      if (!mounted) return;
+      final merged = <AuraTopic>[...widget.secondaries];
+      for (final t in result.suggestions) {
+        if (t != primary && !merged.contains(t)) merged.add(t);
+      }
+      widget.onSecondariesChanged(merged);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not get topic suggestions. Try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _suggestBusy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final addable = AuraTopic.values
-        .where((t) => t != primary && !secondaries.contains(t))
-        .toList();
+    final primary = widget.primary;
+    final secondaries = widget.secondaries;
+    final addable = _approvedStatus == _FetchStatus.loaded
+        ? _approved.where((t) => !secondaries.contains(t)).toList()
+        : const <AuraTopic>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +217,7 @@ class AuraTopicSelector extends StatelessWidget {
               _TopicChip(
                 label: t.label,
                 selected: primary == t,
-                onTap: () => onPrimaryChanged(primary == t ? null : t),
+                onTap: () => _onPrimaryTap(t),
               ),
           ],
         ),
@@ -109,8 +237,19 @@ class AuraTopicSelector extends StatelessWidget {
             )),
             const Spacer(),
             TextButton.icon(
-              onPressed: contentText.trim().isEmpty ? null : _runSuggest,
-              icon: const Icon(Icons.auto_awesome_outlined, size: 16),
+              onPressed:
+                  (primary == null ||
+                      widget.contentText.trim().isEmpty ||
+                      _suggestBusy)
+                  ? null
+                  : _runSuggest,
+              icon: _suggestBusy
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.auto_awesome_outlined, size: 16),
               label: const Text('Suggest'),
               style: TextButton.styleFrom(
                 foregroundColor: AuraSurface.accentText,
@@ -124,9 +263,10 @@ class AuraTopicSelector extends StatelessWidget {
             ),
           ],
         ),
-        Text(
-          'Aura suggests from your content. You decide — add, remove, or keep.',
-          style: AuraText.micro.copyWith(color: AuraSurface.muted),
+        _HelperRow(
+          primary: primary,
+          status: _approvedStatus,
+          onRetry: () => _maybeFetchApproved(isPrimaryChange: false),
         ),
         const SizedBox(height: AuraSpace.s8),
         if (secondaries.isNotEmpty)
@@ -175,6 +315,62 @@ class AuraTopicSelector extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Status/helper line under the Secondary Topics header — explains why the
+/// "Add topic" control is unavailable (no primary yet, loading, or a failed
+/// fetch with a retry action) rather than silently showing nothing.
+class _HelperRow extends StatelessWidget {
+  const _HelperRow({
+    required this.primary,
+    required this.status,
+    required this.onRetry,
+  });
+
+  final AuraTopic? primary;
+  final _FetchStatus status;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (primary == null) {
+      return Text(
+        'Choose a primary topic first.',
+        style: AuraText.micro.copyWith(color: AuraSurface.muted),
+      );
+    }
+    if (status == _FetchStatus.error) {
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Couldn\'t load related topics.',
+              style: AuraText.micro.copyWith(color: AuraSurface.coRose),
+            ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      );
+    }
+    if (status == _FetchStatus.loading) {
+      return Text(
+        'Loading related topics…',
+        style: AuraText.micro.copyWith(color: AuraSurface.muted),
+      );
+    }
+    return Text(
+      'Aura suggests topics related to your primary topic. You decide — add, remove, or keep.',
+      style: AuraText.micro.copyWith(color: AuraSurface.muted),
     );
   }
 }

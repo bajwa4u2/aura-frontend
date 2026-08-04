@@ -28,6 +28,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../topics/aura_topic_selector.dart';
 import '../../topics/topic.dart';
+import '../../topics/topic_repository.dart';
 import '../data/institution_draft_store.dart';
 import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
@@ -1193,6 +1194,12 @@ class _InstitutionPostComposerScreenState
                     onPrimaryChanged: (t) => setState(() => _primaryTopic = t),
                     onSecondariesChanged: (list) =>
                         setState(() => _secondaryTopics = list),
+                    fetchApprovedSecondaries: (primary) => ref
+                        .read(topicRepositoryProvider)
+                        .approvedSecondaries(primary),
+                    fetchSuggestions: (primary, text) => ref
+                        .read(topicRepositoryProvider)
+                        .suggestSecondary(primary, text),
                   ),
                   const SizedBox(height: AuraSpace.s16),
                   if (!widget.isEditing)

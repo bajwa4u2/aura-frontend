@@ -32,6 +32,7 @@ import '../../feed/data/unified_feed_providers.dart';
 import '../../institutions/posts/integrity/institution_post_integrity_review_sheet.dart';
 import '../../topics/aura_topic_selector.dart';
 import '../../topics/topic.dart';
+import '../../topics/topic_repository.dart';
 import '../../composition/domain/composition_models.dart';
 import '../../composition/presentation/composition_assist.dart';
 import 'compose/compose_models.dart';
@@ -1468,22 +1469,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               primary: _primaryTopic,
               secondaries: _secondaryTopics,
               contentText: _textController.text,
+              // AuraTopicSelector itself now handles dropping any secondary
+              // that is no longer approved under a new primary (relationship
+              // gate, not just an equals-primary check) and calls
+              // onSecondariesChanged accordingly — no extra pruning needed here.
               onPrimaryChanged: (t) {
                 setState(() => _primaryTopic = t);
-                // Drop any secondary that now equals the primary, then persist.
-                if (t != null && _secondaryTopics.contains(t)) {
-                  setState(() {
-                    _secondaryTopics = _secondaryTopics
-                        .where((x) => x != t)
-                        .toList();
-                  });
-                }
                 _scheduleAutosave();
               },
               onSecondariesChanged: (list) {
                 setState(() => _secondaryTopics = list);
                 _scheduleAutosave();
               },
+              fetchApprovedSecondaries: (primary) =>
+                  ref.read(topicRepositoryProvider).approvedSecondaries(primary),
+              fetchSuggestions: (primary, text) =>
+                  ref.read(topicRepositoryProvider).suggestSecondary(primary, text),
             ),
           ],
         ],
