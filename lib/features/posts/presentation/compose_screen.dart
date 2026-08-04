@@ -1773,7 +1773,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Future<void> _publishToLinkedInNow(String postId) async {
     final dio = ref.read(dioProvider);
 
-    final payload = {'postId': postId, 'text': _textController.text.trim()};
+    final payload = {
+      'postId': postId,
+      'commentary': _textController.text.trim(),
+    };
 
     final attempts = <String>['/integrations/linkedin/publish/post'];
 
