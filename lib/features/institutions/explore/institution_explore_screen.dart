@@ -614,14 +614,21 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
     return indexed.map((e) => e.item).toList(growable: false);
   }
 
-  /// Lower = higher priority. Reserve the bottom band (rank 100) for any
-  /// item that isn't a top-level institution post — replies, personal
-  /// posts, reposts — so they always trail authored statements.
+  /// Lower = higher priority. Only genuinely official institution
+  /// communications — posts explicitly marked `[OFFICIAL:TYPE]`
+  /// (Announcement, Advisory, Notice, Update) — get pulled above the
+  /// chronological mix. Everything else (unmarked institution posts,
+  /// replies, personal posts, reposts) shares the bottom band (rank 100)
+  /// and keeps the backend's chronological order via the stable sort below
+  /// — it no longer automatically trails every official post regardless
+  /// of recency.
   int _rankFor(FeedItem item) {
     if (item.type != FeedItemType.institutionPost) return 100;
     final hasTitle = (item.title?.trim().isNotEmpty ?? false);
     if (!hasTitle) return 100;
-    return InsCommunicationDecoded.parse(item.title).type.priorityRank;
+    final decoded = InsCommunicationDecoded.parse(item.title);
+    if (!decoded.hadMarker) return 100;
+    return decoded.type.priorityRank;
   }
 
   FeedItem? _firstOfficialAnnouncement(List<FeedItem> ordered) {

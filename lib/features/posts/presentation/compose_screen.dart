@@ -29,6 +29,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
+import '../../institutions/posts/integrity/institution_post_integrity_review_sheet.dart';
 import '../../topics/aura_topic_selector.dart';
 import '../../topics/topic.dart';
 import '../../composition/domain/composition_models.dart';
@@ -101,6 +102,12 @@ class ComposeScreen extends ConsumerStatefulWidget {
 /// hint, and the "intent" chip group. Backend doesn't know about
 /// intent today — it's purely a UX-shaping signal.
 enum _ComposeIntent { none, ask, raise, share }
+
+/// Thrown when an institution-voice reply's Communication Integrity review
+/// sheet is dismissed without publishing — signals the outer publish flow
+/// to quietly reset (no error toast, no navigation) rather than reporting
+/// a failure the user never actually hit.
+class _ReplyReviewInterrupted implements Exception {}
 
 extension on _ComposeIntent {
   String get label {
@@ -1690,15 +1697,41 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // Branch on the reply target: regular post vs institution post live in
     // different tables and behind different endpoints.
     if (_isInstitutionPostReply) {
+      final asInstitution = widget.asInstitution && instId.isNotEmpty;
       final body = <String, dynamic>{'body': text};
-      if (widget.asInstitution && instId.isNotEmpty) {
+      if (asInstitution) {
         body['asInstitution'] = true;
         body['actorInstitutionId'] = instId;
       }
-      await dio.post(
+      final res = await dio.post(
         '/institutions/$_parentInstitutionId/posts/$_replyToInstitutionPostId/replies',
         data: body,
       );
+
+      // Ordinary member replies publish immediately — nothing further to do.
+      if (!asInstitution) return null;
+
+      // Institution-voice replies are created as a DRAFT pending
+      // Communication Integrity review (2026-08-04 correction — this used
+      // to attempt create+authorize in one step and surface a raw
+      // "REQUIRE_ACKNOWLEDGEMENT" backend error with no way to act on it).
+      // Route through the same review-then-publish sheet the top-level
+      // institution post composer already uses: a CLEAR assessment
+      // publishes immediately, a flagged one gets real acknowledgment UI.
+      final root = _asMap(res.data);
+      final replyId = _str(_asMap(root['post'])['id']);
+      if (replyId.isEmpty) {
+        throw Exception('Reply was created but its id was not returned.');
+      }
+      if (!mounted) throw _ReplyReviewInterrupted();
+
+      final published = await showInstitutionPostIntegrityReviewSheet(
+        context: context,
+        ref: ref,
+        institutionId: _parentInstitutionId,
+        postId: replyId,
+      );
+      if (published != true) throw _ReplyReviewInterrupted();
       return null;
     }
 
@@ -2019,6 +2052,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+
+      // The reply draft was created (and, if Communication Integrity had no
+      // findings, may already be published) — the user just didn't
+      // complete the review sheet. Nothing went wrong; say nothing.
+      if (e is _ReplyReviewInterrupted) return;
 
       // Capability gate: backend returns 403 when the user is not eligible
       // to raise issues (CAN_RAISE_ISSUE_GATE_ENABLED=true). Show a calm,
