@@ -17,6 +17,9 @@ import '../../../core/ui/surface/aura_discourse_surface.dart';
 import '../../feed/domain/post.dart';
 import '../../share/aura_share_sheet.dart';
 import '../../updates/providers.dart';
+import '../data/continuity_providers.dart';
+import '../domain/communication_continuity.dart';
+import 'widgets/communication_continuity_view.dart';
 import 'widgets/post_card.dart';
 import 'widgets/post_card/post_card_utils.dart';
 
@@ -249,6 +252,22 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               ),
                           ],
                         ),
+                        // Communication Governance v1.0, Roadmap Milestone 8
+                        // — Communication Continuity. Only Ask and Raise
+                        // Issue have anything to show here; the widget
+                        // itself renders nothing for other intents.
+                        if (parentId.isEmpty) ...[
+                          const SizedBox(height: AuraSpace.s12),
+                          CommunicationContinuityView(
+                            postId: postId,
+                            postAuthorId: post.authorId,
+                            postIntent: post.intent,
+                          ),
+                          _ContinuationPrompt(
+                            postId: postId,
+                            postIntent: post.intent,
+                          ),
+                        ],
                       ],
                     );
                   },
@@ -550,6 +569,64 @@ class _CountPill extends StatelessWidget {
         style: AuraText.small.copyWith(
           color: AuraSurface.muted,
           fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// Communication Governance v1.0, Roadmap Milestone 8 — Continuation.
+/// Reuses the existing reply/parent-context banner concept: offers an
+/// entry point back into Phase 1 for a NEW communication, never mutating
+/// this one. Scoped here to Ask -> Raise Issue only — the Outcome
+/// doctrine's other named case (a Resolved Issue continued by the
+/// institution's own Advisory/Announcement) has no backend write path yet
+/// (`InstitutionPost.continuesPostId` is schema/DTO-only today), so no
+/// button is shown for it rather than offering an action that wouldn't
+/// actually persist.
+class _ContinuationPrompt extends ConsumerWidget {
+  const _ContinuationPrompt({required this.postId, required this.postIntent});
+
+  final String postId;
+  final String? postIntent;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if ((postIntent ?? '').toUpperCase().trim() != 'ASK') {
+      return const SizedBox.shrink();
+    }
+    final continuityAsync = ref.watch(continuityProvider(postId));
+    final continuity = continuityAsync.valueOrNull;
+    if (continuity is! AskContinuity ||
+        continuity.status != AskContinuityStatus.answered) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AuraSpace.s10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AuraSpace.s12),
+        decoration: BoxDecoration(
+          color: AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'If this points to something an institution should act on:',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            AuraSecondaryButton(
+              label: 'Raise an Issue about this',
+              icon: Icons.report_problem_outlined,
+              onPressed: () => context.push(
+                '/compose?continuesPostId=$postId&intent=raise',
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -224,6 +224,8 @@ class Post {
     this.availableTranslations = const <PostTranslation>[],
     this.tagReferences = const <TagReference>[],
     this.repostOf,
+    this.intent,
+    this.continuesPostId,
   });
 
   final String id;
@@ -235,6 +237,17 @@ class Post {
   final String? repostOfPostId;
   final Post? repostOf;
   final String visibility;
+
+  /// Communication Governance v1.0 — the personal Communication Intent
+  /// (`ASK` / `ISSUE` / `UPDATE`), wire-cased exactly as the backend sends
+  /// it. Null on replies, reposts, and posts predating intent. Gates
+  /// whether the Communication Continuity view has anything to show.
+  final String? intent;
+
+  /// Communication Governance v1.0, Roadmap Milestone 5 — Continuation.
+  /// Set when this post is a new, separate communication that evolved out
+  /// of an earlier one. Never implies the origin's own intent changed.
+  final String? continuesPostId;
 
   final PostAuthor? author;
   final List<PostMediaItem> media;
@@ -303,6 +316,8 @@ class Post {
     List<PostTranslation>? availableTranslations,
     List<TagReference>? tagReferences,
     Post? repostOf,
+    String? intent,
+    String? continuesPostId,
   }) {
     return Post(
       id: id ?? this.id,
@@ -312,6 +327,8 @@ class Post {
       replyToPostId: replyToPostId ?? this.replyToPostId,
       repostOfPostId: repostOfPostId ?? this.repostOfPostId,
       repostOf: repostOf ?? this.repostOf,
+      intent: intent ?? this.intent,
+      continuesPostId: continuesPostId ?? this.continuesPostId,
       visibility: visibility ?? this.visibility,
       author: author ?? this.author,
       media: media ?? this.media,
@@ -399,6 +416,8 @@ class Post {
       availableTranslations: translations,
       tagReferences: _readTagReferences(j['tagReferences']),
       repostOf: repostOf,
+      intent: _readString(j['intent']),
+      continuesPostId: _readString(j['continuesPostId']),
     );
   }
 
@@ -429,6 +448,8 @@ class Post {
     'translationStatus': translationStatus,
     'translations': availableTranslations.map((e) => e.toJson()).toList(),
     'tagReferences': tagReferences.map((e) => e.toJson()).toList(),
+    'intent': intent,
+    'continuesPostId': continuesPostId,
   };
 }
 

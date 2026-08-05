@@ -1419,6 +1419,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 publicSpaceSlug: state.uri.queryParameters['publicSpaceSlug']
                     ?.trim(),
                 intent: state.uri.queryParameters['intent']?.trim(),
+                continuesPostId: state.uri.queryParameters['continuesPostId']
+                    ?.trim(),
               );
             },
           ),
