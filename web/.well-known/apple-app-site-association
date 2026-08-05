@@ -4,7 +4,7 @@
     "details": [
       {
         "appIDs": [
-          "REPLACE_WITH_APPLE_TEAM_ID.org.auraplatform.app"
+          "4WZQA8T5MT.org.auraplatform.app"
         ],
         "components": [
           {
@@ -37,7 +37,7 @@
   },
   "webcredentials": {
     "apps": [
-      "REPLACE_WITH_APPLE_TEAM_ID.org.auraplatform.app"
+      "4WZQA8T5MT.org.auraplatform.app"
     ]
   }
 }
