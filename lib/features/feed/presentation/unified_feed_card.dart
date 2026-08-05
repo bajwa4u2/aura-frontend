@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/session_providers.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/aura_media_viewer.dart';
@@ -396,19 +398,6 @@ class UnifiedFeedCard extends ConsumerWidget {
                 _RecentActivityLine(label: label),
               ],
             ],
-            if (showReplyPreview &&
-                item.replyPreview != null &&
-                item.replyPreview!.items.isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s10),
-              if (item.activity?.recentReply == true) ...[
-                const _ActivityHintLine(label: 'New reply'),
-                const SizedBox(height: 6),
-              ],
-              _ReplyPreviewBlock(
-                preview: item.replyPreview!,
-                openTarget: adaptedTarget,
-              ),
-            ],
             if (showInteractionBar) ...[
               const SizedBox(height: AuraSpace.s12),
               if (_reactionTargetFor(item) case final reactionTarget?)
@@ -420,6 +409,25 @@ class UnifiedFeedCard extends ConsumerWidget {
                   // (private / member-only / internal never shareable).
                   onShare: _canShare(item) ? () => _shareItem(context) : null,
                 ),
+            ],
+            // Reply preview renders after the action row so the Like /
+            // Reply / Repost buttons stay anchored under the content they
+            // act on (the card's own post), rather than sitting under a
+            // preview of someone else's reply.
+            if (showReplyPreview &&
+                item.replyPreview != null &&
+                item.replyPreview!.items.isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s10),
+              if (item.activity?.recentReply == true) ...[
+                const _ActivityHintLine(label: 'New reply'),
+                const SizedBox(height: 6),
+              ],
+              _ReplyPreviewBlock(
+                preview: item.replyPreview!,
+                openTarget: adaptedTarget,
+                resolveReactionTarget: (replyId) =>
+                    _replyReactionTargetFor(item, replyId),
+              ),
             ],
           ],
         ),
@@ -704,6 +712,23 @@ ReactionTarget? _reactionTargetFor(FeedItem item) {
   if (item.type == FeedItemType.announcement) return null;
   if (item.id.trim().isEmpty) return null;
   return PostReactionTarget(item.id);
+}
+
+/// Same polymorphism as [_reactionTargetFor], applied to one previewed
+/// reply instead of the card's own post: a reply to an institution post is
+/// itself an `InstitutionPost` row (self-referential `replyToInstitutionPostId`),
+/// while a reply to a user post is itself a `Post` row (`replyToPostId`) —
+/// the reply always lives in the same table as its parent.
+ReactionTarget? _replyReactionTargetFor(FeedItem parent, String replyId) {
+  final id = replyId.trim();
+  if (id.isEmpty) return null;
+  if (parent.type == FeedItemType.institutionPost) {
+    final instId = parent.author.id.trim();
+    if (instId.isEmpty) return null;
+    return InstitutionPostReactionTarget(institutionId: instId, postId: id);
+  }
+  if (parent.type == FeedItemType.announcement) return null;
+  return PostReactionTarget(id);
 }
 
 class _AuthorRow extends StatelessWidget {
@@ -1105,15 +1130,21 @@ class _ActivityHintLine extends StatelessWidget {
 ///
 /// Phase 5.1 product principle: this is conversation depth, not feed
 /// noise. The block is visually quieter than the parent post — same card
-/// surface, indented avatars, smaller type, no like counts on individual
-/// replies. Tapping any reply or the "View discussion" link opens the
-/// post-detail screen via the parent's already-shell-adapted
-/// `targetRoute`.
+/// surface, indented avatars, smaller type. Tapping any reply or the "View
+/// discussion" link opens the post-detail screen via the parent's
+/// already-shell-adapted `targetRoute`. Each reply also carries its own
+/// compact Like affordance so a reply can be reacted to without leaving
+/// the feed.
 class _ReplyPreviewBlock extends StatelessWidget {
-  const _ReplyPreviewBlock({required this.preview, required this.openTarget});
+  const _ReplyPreviewBlock({
+    required this.preview,
+    required this.openTarget,
+    required this.resolveReactionTarget,
+  });
 
   final FeedReplyPreview preview;
   final String openTarget;
+  final ReactionTarget? Function(String replyId) resolveReactionTarget;
 
   @override
   Widget build(BuildContext context) {
@@ -1135,7 +1166,11 @@ class _ReplyPreviewBlock extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < preview.items.length; i++) ...[
-            _PreviewLine(item: preview.items[i], onTap: tap),
+            _PreviewLine(
+              item: preview.items[i],
+              onTap: tap,
+              reactionTarget: resolveReactionTarget(preview.items[i].id),
+            ),
             if (i < preview.items.length - 1)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 6),
@@ -1181,10 +1216,15 @@ class _ReplyPreviewBlock extends StatelessWidget {
 }
 
 class _PreviewLine extends StatelessWidget {
-  const _PreviewLine({required this.item, required this.onTap});
+  const _PreviewLine({
+    required this.item,
+    required this.onTap,
+    this.reactionTarget,
+  });
 
   final FeedReplyPreviewItem item;
   final VoidCallback? onTap;
+  final ReactionTarget? reactionTarget;
 
   @override
   Widget build(BuildContext context) {
@@ -1287,6 +1327,120 @@ class _PreviewLine extends StatelessWidget {
                 ),
               ),
             ),
+            if (reactionTarget != null) ...[
+              const SizedBox(width: AuraSpace.s6),
+              _ReplyPreviewLike(target: reactionTarget!),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact tap-to-like affordance for one previewed reply, independent of
+/// the parent card's own [FeedInteractionBar]. Reuses the same
+/// [reactionStateProvider] / [ReactionsRepository] the full interaction bar
+/// uses — a reply is a first-class post with its own like state, this just
+/// renders it at preview scale (icon + count, no pill chrome, no
+/// reply/repost — those already read as "open the thread").
+class _ReplyPreviewLike extends ConsumerStatefulWidget {
+  const _ReplyPreviewLike({required this.target});
+
+  final ReactionTarget target;
+
+  @override
+  ConsumerState<_ReplyPreviewLike> createState() => _ReplyPreviewLikeState();
+}
+
+class _ReplyPreviewLikeState extends ConsumerState<_ReplyPreviewLike> {
+  bool _busy = false;
+  bool? _optimisticLiked;
+  int? _optimisticCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = widget.target;
+    final isAuthed = ref.watch(isAuthedProvider);
+    final identity = ref.watch(institutionIdentityProvider);
+    final actor = identity != null && identity.id.isNotEmpty
+        ? ReactionActor.institution(identity.id)
+        : const ReactionActor.user();
+    final reactionKey = ReactionStateKey(target: target, actor: actor);
+    final reactionAsync = ref.watch(reactionStateProvider(reactionKey));
+
+    final providerLiked = reactionAsync.maybeWhen(
+      data: (s) => s.liked,
+      orElse: () => false,
+    );
+    final liked = _optimisticLiked ?? providerLiked;
+    final providerCount = reactionAsync.maybeWhen(
+      data: (s) => s.likeCount,
+      orElse: () => 0,
+    );
+    final count = _optimisticCount ?? providerCount;
+
+    Future<void> toggle() async {
+      if (!isAuthed) {
+        final redirect = GoRouterState.of(context).uri.toString();
+        context.go('/login?redirect=${Uri.encodeComponent(redirect)}');
+        return;
+      }
+      if (_busy) return;
+      final nextLiked = !liked;
+      final nextCount = (count + (nextLiked ? 1 : -1)).clamp(0, 1 << 31).toInt();
+      setState(() {
+        _busy = true;
+        _optimisticLiked = nextLiked;
+        _optimisticCount = nextCount;
+      });
+      try {
+        final repo = ref.read(reactionsRepositoryProvider);
+        final result = await repo.toggle(target, actor: actor);
+        if (!mounted) return;
+        setState(() {
+          _optimisticLiked = result.liked;
+          _optimisticCount = result.likeCount;
+        });
+        ref.invalidate(reactionStateProvider(reactionKey));
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _optimisticLiked = null;
+          _optimisticCount = null;
+        });
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update like')),
+        );
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+    }
+
+    return InkWell(
+      onTap: toggle,
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              liked ? Icons.favorite : Icons.favorite_border,
+              size: 14,
+              color: liked ? AuraSurface.accentText : AuraSurface.muted,
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 3),
+              Text(
+                '$count',
+                style: AuraText.micro.copyWith(
+                  color: liked ? AuraSurface.accentText : AuraSurface.muted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ],
         ),
       ),
