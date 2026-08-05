@@ -64,9 +64,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               type == 'REPLY' ||
               type == 'REPOST' ||
               type == 'MENTION' ||
-              type == 'ACCOUNTABILITY_TAGGED';
+              type == 'ACCOUNTABILITY_TAGGED' ||
+              type == 'THREAD_ACTIVITY' ||
+              type == 'SPACE_ACTIVITY' ||
+              type == 'PRIORITY_PINNED';
         case _ActivityFilter.announcements:
-          return type == 'ANNOUNCEMENT_PUBLISHED';
+          return type == 'ANNOUNCEMENT_PUBLISHED' ||
+              type == 'INSTITUTION_POST_PUBLISHED';
         case _ActivityFilter.system:
           return type == 'POST_PUBLISHED' ||
               type == 'POST_PUBLISH_FAILED' ||
@@ -689,6 +693,39 @@ String _stringOf(dynamic value) {
   return value.toString().trim();
 }
 
+/// Institution-voice notifications (accountability tagging, institution
+/// post published, priority pinned, announcements) carry the acting
+/// institution in a separate `actorInstitution` map, not `actor` — mirrors
+/// `AppNotification.isInstitutionVoice`/`actorInstitution` in
+/// `features/updates/app_notification.dart`. Reading only `actor` here
+/// rendered every institution-voice row as "Someone ...".
+bool _isInstitutionVoice(Map<String, dynamic> item) =>
+    _stringOf(item['actorType']).toUpperCase() == 'INSTITUTION';
+
+String _actorDisplayName(Map<String, dynamic> item) {
+  if (_isInstitutionVoice(item)) {
+    final inst = _mapOf(item['actorInstitution']);
+    final name = _stringOf(inst['name']);
+    if (name.isNotEmpty) return name;
+  }
+  final actor = _mapOf(item['actor']);
+  return _firstNonEmpty([
+    _stringOf(actor['displayName']),
+    _stringOf(actor['handle']),
+    'Someone',
+  ]);
+}
+
+String _actorAvatarUrl(Map<String, dynamic> item) {
+  if (_isInstitutionVoice(item)) {
+    final inst = _mapOf(item['actorInstitution']);
+    final logo = _stringOf(inst['logoUrl']);
+    if (logo.isNotEmpty) return logo;
+  }
+  final actor = _mapOf(item['actor']);
+  return _stringOf(actor['avatarUrl']);
+}
+
 String _firstNonEmpty(List<String> values) {
   for (final value in values) {
     if (value.trim().isNotEmpty) return value.trim();
@@ -845,7 +882,6 @@ class _ActivityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actor = _mapOf(item['actor']);
     final type = _stringOf(item['type']).toUpperCase();
     final title = _buildTitle(item);
     final subtitle = _buildSubtitle(item);
@@ -882,7 +918,7 @@ class _ActivityTile extends StatelessWidget {
                 children: [
                   _ActivityLeadingIcon(
                     type: type,
-                    avatarUrl: _stringOf(actor['avatarUrl']),
+                    avatarUrl: _actorAvatarUrl(item),
                     unread: unread,
                   ),
                   const SizedBox(width: AuraSpace.s12),
@@ -986,6 +1022,13 @@ class _ActivityLeadingIcon extends StatelessWidget {
         return Icons.error_outline_rounded;
       case 'ACCOUNTABILITY_TAGGED':
         return Icons.verified_outlined;
+      case 'THREAD_ACTIVITY':
+        return Icons.forum_outlined;
+      case 'SPACE_ACTIVITY':
+      case 'INSTITUTION_POST_PUBLISHED':
+        return Icons.campaign_outlined;
+      case 'PRIORITY_PINNED':
+        return Icons.push_pin_outlined;
       default:
         return Icons.notifications_none_rounded;
     }
@@ -997,6 +1040,7 @@ class _ActivityLeadingIcon extends StatelessWidget {
         return const Color(0xFFE8738A);
       case 'ANNOUNCEMENT_PUBLISHED':
       case 'POST_PUBLISHED':
+      case 'INSTITUTION_POST_PUBLISHED':
         return AuraSurface.accentText;
       case 'POST_PUBLISH_FAILED':
         return AuraSurface.coSun;
@@ -1074,13 +1118,8 @@ String _resolveCallType(Map<String, dynamic> data) {
 
 String _buildTitle(Map<String, dynamic> item) {
   final type = _stringOf(item['type']).toUpperCase();
-  final actor = _mapOf(item['actor']);
   final data = _mapOf(item['data']);
-  final actorName = _firstNonEmpty([
-    _stringOf(actor['displayName']),
-    _stringOf(actor['handle']),
-    'Someone',
-  ]);
+  final actorName = _actorDisplayName(item);
   final notifKind = _firstNonEmpty([
     _stringOf(data['notificationKind']).toUpperCase(),
     _stringOf(data['realtimeType']).toUpperCase(),
@@ -1137,6 +1176,17 @@ String _buildTitle(Map<String, dynamic> item) {
       return 'Your work was published';
     case 'POST_PUBLISH_FAILED':
       return 'A work could not be published';
+    case 'THREAD_ACTIVITY':
+      return '$actorName replied in a discussion you follow';
+    case 'SPACE_ACTIVITY':
+      final spaceName = _stringOf(data['spaceName']);
+      return spaceName.isNotEmpty
+          ? '$actorName posted in $spaceName'
+          : '$actorName posted in a space you follow';
+    case 'INSTITUTION_POST_PUBLISHED':
+      return '$actorName published a new post';
+    case 'PRIORITY_PINNED':
+      return '$actorName pinned a reply as priority';
     // Communication Governance v1.0 — Accountability Lifecycle progress.
     // One notification type covers Committed/Updated/Resolved/Reopened
     // regardless of which backend path produced it; the specific stage
@@ -1262,6 +1312,10 @@ String _ctaLabel(Map<String, dynamic> item) {
     case 'REPOST':
     case 'MENTION':
     case 'POST_PUBLISHED':
+    case 'THREAD_ACTIVITY':
+    case 'SPACE_ACTIVITY':
+    case 'INSTITUTION_POST_PUBLISHED':
+    case 'PRIORITY_PINNED':
       return 'View';
     case 'ANNOUNCEMENT_PUBLISHED':
       return 'Read';
