@@ -77,7 +77,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               type == 'SYSTEM' ||
               type == 'INVITE_ACCEPTED' ||
               type == 'INVITE_DECLINED' ||
-              type == 'INVITE_REVOKED';
+              type == 'INVITE_REVOKED' ||
+              type == 'MODERATION_ACTION_TAKEN' ||
+              type == 'REPORT_RESOLVED';
         case _ActivityFilter.all:
           return true;
       }
@@ -1029,6 +1031,10 @@ class _ActivityLeadingIcon extends StatelessWidget {
         return Icons.campaign_outlined;
       case 'PRIORITY_PINNED':
         return Icons.push_pin_outlined;
+      case 'MODERATION_ACTION_TAKEN':
+        return Icons.shield_outlined;
+      case 'REPORT_RESOLVED':
+        return Icons.fact_check_outlined;
       default:
         return Icons.notifications_none_rounded;
     }
@@ -1049,6 +1055,10 @@ class _ActivityLeadingIcon extends StatelessWidget {
       case 'SPACE_INVITE':
         return AuraSurface.accentText;
       case 'ACCOUNTABILITY_TAGGED':
+        return AuraSurface.accentText;
+      case 'MODERATION_ACTION_TAKEN':
+        return AuraSurface.coSun;
+      case 'REPORT_RESOLVED':
         return AuraSurface.accentText;
       default:
         return AuraSurface.muted;
@@ -1205,6 +1215,38 @@ String _buildTitle(Map<String, dynamic> item) {
         default:
           return '$actorName updated the status of your issue';
       }
+    // Governed Event & Attention Doctrine, F24 — moderation severity is
+    // governed by the existing ModerationActionType values (data.actionType),
+    // not a flat, unlabeled default. Deliberately neutral/passive phrasing —
+    // the acting moderator's identity is never surfaced here.
+    case 'MODERATION_ACTION_TAKEN':
+      switch (_stringOf(data['actionType']).toUpperCase()) {
+        case 'WARN':
+          return 'You received a warning about your content';
+        case 'REQUEST_CLARIFICATION':
+          return 'Clarification was requested on your content';
+        case 'REQUEST_REVISION':
+          return 'A revision was requested on your content';
+        case 'SOFT_DELETE_POST':
+        case 'SOFT_DELETE_MESSAGE':
+        case 'SOFT_DELETE_ANNOUNCEMENT':
+          return 'Your content was removed by moderation';
+        case 'ARCHIVE_INSTITUTION_POST':
+          return 'Your institution post was archived';
+        case 'DISABLE_USER':
+          return 'Your account was disabled';
+        case 'RESTORE_POST':
+        case 'RESTORE_MESSAGE':
+        case 'RESTORE_ANNOUNCEMENT':
+        case 'RESTORE_INSTITUTION_POST':
+          return 'Your content was restored';
+        case 'RESTORE_USER':
+          return 'Your account was restored';
+        default:
+          return 'Your content was reviewed by moderation';
+      }
+    case 'REPORT_RESOLVED':
+      return 'A report you filed was resolved';
     case 'SYSTEM':
       final title = _stringOf(data['title']);
       return title.isNotEmpty ? title : 'System notice';
@@ -1274,6 +1316,9 @@ String _buildSubtitle(Map<String, dynamic> item) {
     case 'ACCOUNTABILITY_TAGGED':
       final statement = _stringOf(data['resolutionStatement']);
       return statement.isNotEmpty ? _truncate(statement, 120) : 'Open work';
+    case 'MODERATION_ACTION_TAKEN':
+    case 'REPORT_RESOLVED':
+      return 'Open work';
     default:
       return '';
   }
@@ -1320,6 +1365,9 @@ String _ctaLabel(Map<String, dynamic> item) {
     case 'ANNOUNCEMENT_PUBLISHED':
       return 'Read';
     case 'ACCOUNTABILITY_TAGGED':
+      return 'View';
+    case 'MODERATION_ACTION_TAKEN':
+    case 'REPORT_RESOLVED':
       return 'View';
     default:
       return 'Open';
