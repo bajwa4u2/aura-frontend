@@ -64,10 +64,22 @@ class TopicRepository {
   }
 }
 
+/// Every backend response is wrapped in the locked API envelope
+/// (`ResponseWrapInterceptor`, "Aura Contract v1"): `{ ok: true, data: <payload> }`.
+/// Unwraps to the inner payload when present; falls back to the value
+/// as-is for any endpoint that isn't wrapped, so this stays safe either way.
+Map<String, dynamic>? _unwrap(dynamic data) {
+  if (data is! Map) return null;
+  final inner = data['data'];
+  if (inner is Map) return Map<String, dynamic>.from(inner);
+  return Map<String, dynamic>.from(data);
+}
+
 /// Pure parsing of the `GET /topics/:primary/secondaries` response body —
 /// extracted so it's unit-testable without mocking Dio's transport layer.
 List<ApprovedSecondaryTopic> parseApprovedSecondaries(dynamic data) {
-  final raw = data is Map ? data['approved'] : null;
+  final payload = _unwrap(data);
+  final raw = payload?['approved'];
   if (raw is! List) return const <ApprovedSecondaryTopic>[];
   final out = <ApprovedSecondaryTopic>[];
   for (final e in raw) {
@@ -87,8 +99,9 @@ List<ApprovedSecondaryTopic> parseApprovedSecondaries(dynamic data) {
 /// Pure parsing of the `POST /topics/suggest-secondary` response body —
 /// extracted so it's unit-testable without mocking Dio's transport layer.
 TopicSuggestionResult parseSuggestionResult(dynamic data) {
-  final raw = data is Map ? data['suggestions'] : null;
-  final mode = data is Map ? (data['mode']?.toString() ?? 'keyword') : 'keyword';
+  final payload = _unwrap(data);
+  final raw = payload?['suggestions'];
+  final mode = payload?['mode']?.toString() ?? 'keyword';
   final suggestions = <AuraTopic>[];
   if (raw is List) {
     for (final e in raw) {
