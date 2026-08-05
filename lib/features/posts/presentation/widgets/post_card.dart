@@ -27,6 +27,7 @@ import '../../../feed/domain/post.dart';
 import '../../../feed/presentation/quoted_post_preview.dart';
 import '../../../saves/providers.dart';
 import '../../data/reactions_repository.dart';
+import '../post_detail_screen.dart' show postProvider, repliesProvider;
 import 'post_card/post_card_models.dart';
 import 'post_card/post_card_parts.dart';
 import 'post_card/post_card_utils.dart';
@@ -494,6 +495,20 @@ class _PostCardState extends ConsumerState<PostCard> {
     try {
       final dio = ref.read(dioProvider);
       await dio.delete('/posts/$postId');
+
+      // Feed surfaces cache posts client-side (Riverpod) — without this,
+      // a deleted post/reply keeps showing until the user manually
+      // refreshes. Repost/reply already invalidate on success; delete was
+      // missing the same call.
+      invalidateUnifiedFeedSurfaces(ref);
+      // Also invalidate the detail-screen providers: the post's own detail
+      // cache, and — when this is a reply — the parent's reply list, so a
+      // reply deleted from a thread disappears immediately too.
+      ref.invalidate(postProvider(postId));
+      final parentId = (widget.post.replyToPostId ?? '').trim();
+      if (parentId.isNotEmpty) {
+        ref.invalidate(repliesProvider(parentId));
+      }
 
       if (!context.mounted) return;
 
