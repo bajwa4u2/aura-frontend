@@ -30,6 +30,8 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../institutions/posts/integrity/institution_post_integrity_review_sheet.dart';
+import '../../institutions/announcements/integrity/announcement_integrity.dart';
+import '../data/personal_post_integrity_repository.dart';
 import '../../topics/aura_topic_selector.dart';
 import '../../topics/topic.dart';
 import '../../topics/topic_repository.dart';
@@ -78,6 +80,11 @@ class ComposeScreen extends ConsumerStatefulWidget {
   /// composer in its default rotating-prompt state.
   final String? intent;
 
+  /// Communication Governance v1.0, Roadmap Milestone 5/8 — Continuation.
+  /// When set, this new post carries a reference to the communication it
+  /// evolves out of. The origin's own intent is never touched by this.
+  final String? continuesPostId;
+
   const ComposeScreen({
     super.key,
     this.replyToPostId,
@@ -93,6 +100,7 @@ class ComposeScreen extends ConsumerStatefulWidget {
     this.publicSpaceName,
     this.publicSpaceSlug,
     this.intent,
+    this.continuesPostId,
   });
 
   @override
@@ -212,6 +220,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _saving = false;
   bool _showTextError = false;
   bool _uploadingMedia = false;
+
+  /// Communication Governance v1.0, Roadmap Milestone 6 — Enrichment panel
+  /// (Topics/Media/Audience) is collapsed by default, showing a one-line
+  /// summary; nothing about the sections themselves changes on expand.
+  bool _enrichmentExpanded = false;
+
+  /// Communication Governance v1.0, Roadmap Milestone 7 — Ambient
+  /// Governance. Tracks the current draft's own post id (populated from
+  /// the autosave response) so a Communication Integrity review can be
+  /// requested against it — mirrors the institution composer's existing
+  /// "create a real draft first, then review" sequencing.
+  String? _draftPostId;
+  bool _governanceExpanded = false;
+  bool _governanceChecking = false;
+  AnnouncementIntegrityAssessment? _governanceAssessment;
+  AnnouncementIntegrityPendingAction? _governancePendingAction;
+  bool _governanceAckAccepted = false;
+  Timer? _governanceDebounce;
 
   PostVisibility _visibility = PostVisibility.public;
 
@@ -484,6 +510,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   @override
   void dispose() {
     _autosaveDebounce?.cancel();
+    _governanceDebounce?.cancel();
     _textController.dispose();
     _textFocus.dispose();
     for (final c in _captionControllers.values) {
@@ -1232,6 +1259,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // route to attempt when PUBLIC_RECORD_ROUTING_ENABLED is on.
       // Null/absent means no routing is attempted.
       if (intentWire != null) 'intent': intentWire,
+      // Communication Governance v1.0, Milestone 5/8 — Continuation. Only
+      // honored by the backend on initial creation of this draft; harmless
+      // to resend on later autosaves since the backend ignores it then.
+      if ((widget.continuesPostId ?? '').trim().isNotEmpty)
+        'continuesPostId': widget.continuesPostId!.trim(),
       // Public-UX Phase 4 — anchor the post to a public discourse
       // space when the composer was entered with one (or the user
       // picked one). Backend persists this on the draft and replies
@@ -1320,17 +1352,25 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final dio = ref.read(dioProvider);
       final payload = _buildComposePayload();
 
-      await dio.put('/posts/draft', data: payload);
+      final res = await dio.put('/posts/draft', data: payload);
 
       if (!mounted) return;
+      final savedId = _extractPublishedPostId(res.data);
       setState(() {
         _lastSavedAt = DateTime.now();
+        if ((savedId ?? '').trim().isNotEmpty) {
+          _draftPostId = savedId;
+        }
         for (final attachment in _attachments) {
           if ((attachment.mediaId ?? '').trim().isNotEmpty) {
             attachment.attachedToDraft = true;
           }
         }
       });
+      // Communication Governance v1.0, Roadmap Milestone 7 — a draft now
+      // exists (or was updated); check ambient governance against it,
+      // debounced the same way autosave is so typing doesn't spam reviews.
+      _scheduleGovernanceCheck();
     } catch (e) {
       if (!mounted) return;
       if (!silent) {
@@ -1344,6 +1384,78 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (mounted) {
         setState(() => _saving = false);
       }
+    }
+  }
+
+  // ── Communication Governance v1.0, Roadmap Milestone 7 — Ambient Governance ──
+  //
+  // Personal posts previously had no client-side integrity surfacing at
+  // all: `PersonalPostIntegrityGateway` already ran silently on the
+  // backend at publish time, and a REQUIRE_ACKNOWLEDGEMENT decision simply
+  // surfaced as a raw, un-actionable error. This makes the same,
+  // already-real backend capability visible ambiently — a standing status,
+  // not a blocking modal — and gives the author an actual way to satisfy
+  // it, mirroring the institution composer's review flow.
+
+  void _scheduleGovernanceCheck() {
+    if (_isReply) return;
+    final postId = (_draftPostId ?? '').trim();
+    if (postId.isEmpty) return;
+
+    _governanceDebounce?.cancel();
+    _governanceDebounce = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      _runGovernanceReview(postId);
+    });
+  }
+
+  Future<void> _runGovernanceReview(String postId) async {
+    if (_governanceChecking) return;
+    setState(() => _governanceChecking = true);
+    try {
+      final repo = PersonalPostIntegrityRepository(ref.read(dioProvider));
+      final result = await repo.requestReview(postId);
+      if (!mounted) return;
+      setState(() {
+        _governanceAssessment = result.assessment;
+        _governancePendingAction = result.pendingAction;
+        _governanceAckAccepted = result.pendingAction.satisfied;
+        // Auto-expand only when there's something the author needs to act
+        // on — a clear result stays collapsed to a one-line status.
+        if (!result.pendingAction.clearsPublish) {
+          _governanceExpanded = true;
+        }
+      });
+    } catch (_) {
+      // Best-effort ambient check — publish still re-validates server-side
+      // regardless, so a failed background check here is not fatal.
+    } finally {
+      if (mounted) setState(() => _governanceChecking = false);
+    }
+  }
+
+  Future<bool> _acknowledgeGovernance() async {
+    final postId = (_draftPostId ?? '').trim();
+    final pending = _governancePendingAction;
+    if (postId.isEmpty || pending == null) return false;
+
+    setState(() => _governanceChecking = true);
+    try {
+      final repo = PersonalPostIntegrityRepository(ref.read(dioProvider));
+      final updated = await repo.acknowledge(postId: postId, decisionId: pending.decisionId);
+      if (!mounted) return false;
+      setState(() {
+        _governancePendingAction = updated;
+        _governanceAckAccepted = updated.satisfied;
+      });
+      return updated.satisfied;
+    } catch (e) {
+      if (!mounted) return false;
+      final message = AppErrorMapper.from(e, feature: 'record this acknowledgment').message;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      return false;
+    } finally {
+      if (mounted) setState(() => _governanceChecking = false);
     }
   }
 
@@ -1459,36 +1571,215 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             const SizedBox(height: AuraSpace.s16),
             const Divider(color: AuraSurface.divider),
             const SizedBox(height: AuraSpace.s16),
-            _buildInlineAudienceRow(),
-            const SizedBox(height: AuraSpace.s14),
-            _buildAttachmentsBlock(),
+            _buildEnrichmentPanel(),
             const SizedBox(height: AuraSpace.s16),
             const Divider(color: AuraSurface.divider),
             const SizedBox(height: AuraSpace.s16),
-            AuraTopicSelector(
-              primary: _primaryTopic,
-              secondaries: _secondaryTopics,
-              contentText: _textController.text,
-              // AuraTopicSelector itself now handles dropping any secondary
-              // that is no longer approved under a new primary (relationship
-              // gate, not just an equals-primary check) and calls
-              // onSecondariesChanged accordingly — no extra pruning needed here.
-              onPrimaryChanged: (t) {
-                setState(() => _primaryTopic = t);
-                _scheduleAutosave();
-              },
-              onSecondariesChanged: (list) {
-                setState(() => _secondaryTopics = list);
-                _scheduleAutosave();
-              },
-              fetchApprovedSecondaries: (primary) =>
-                  ref.read(topicRepositoryProvider).approvedSecondaries(primary),
-              fetchSuggestions: (primary, text) =>
-                  ref.read(topicRepositoryProvider).suggestSecondary(primary, text),
-            ),
+            _buildGovernancePanel(),
           ],
         ],
       ),
+    );
+  }
+
+  /// Communication Governance v1.0, Roadmap Milestone 7 — Governance
+  /// becomes a visible, standing panel instead of a surprise blocking
+  /// modal. Collapsed to a one-line status when clear; auto-expands the
+  /// moment there's something the author needs to see, per the frozen
+  /// UX Proposal's exact framing.
+  Widget _buildGovernancePanel() {
+    final pending = _governancePendingAction;
+    final assessment = _governanceAssessment;
+
+    String statusLine;
+    IconData statusIcon;
+    Color statusColor;
+    if (_draftPostId == null) {
+      statusLine = 'Not yet reviewed';
+      statusIcon = Icons.hourglass_top_rounded;
+      statusColor = AuraSurface.muted;
+    } else if (_governanceChecking && assessment == null) {
+      statusLine = 'Checking…';
+      statusIcon = Icons.hourglass_top_rounded;
+      statusColor = AuraSurface.muted;
+    } else if (pending == null || pending.clearsPublish) {
+      statusLine = 'Looks clear';
+      statusIcon = Icons.check_circle_outline;
+      statusColor = AuraSurface.coVerdant;
+    } else {
+      statusLine = 'Needs your acknowledgment';
+      statusIcon = Icons.warning_amber_rounded;
+      statusColor = AuraSurface.coSun;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(AuraRadius.md),
+          onTap: () => setState(() => _governanceExpanded = !_governanceExpanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+            child: Row(
+              children: [
+                Icon(
+                  _governanceExpanded
+                      ? Icons.keyboard_arrow_down_rounded
+                      : Icons.keyboard_arrow_right_rounded,
+                  size: 20,
+                  color: AuraSurface.muted,
+                ),
+                const SizedBox(width: AuraSpace.s6),
+                Text(
+                  'Governance',
+                  style: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AuraSurface.muted,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s10),
+                Icon(statusIcon, size: 14, color: statusColor),
+                const SizedBox(width: 4),
+                Text(
+                  statusLine,
+                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: statusColor),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_governanceExpanded && assessment != null && pending != null) ...[
+          const SizedBox(height: AuraSpace.s10),
+          Container(
+            padding: const EdgeInsets.all(AuraSpace.s12),
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              borderRadius: BorderRadius.circular(AuraRadius.md),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(assessment.statusLabel, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: AuraSpace.s4),
+                Text(assessment.summaryExplanation, style: AuraText.small),
+              ],
+            ),
+          ),
+          if (!pending.clearsPublish) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(pending.reason, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+            const SizedBox(height: AuraSpace.s10),
+            CheckboxListTile(
+              value: _governanceAckAccepted,
+              onChanged: _governanceChecking
+                  ? null
+                  : (v) => setState(() => _governanceAckAccepted = v == true),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              activeColor: AuraSurface.accent,
+              title: Text(
+                'I acknowledge this and accept responsibility for publishing it.',
+                style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            AuraSecondaryButton(
+              label: _governanceChecking ? 'Recording…' : 'Acknowledge',
+              onPressed: (_governanceChecking || !_governanceAckAccepted)
+                  ? null
+                  : () => _acknowledgeGovernance(),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  /// Communication Governance v1.0, Roadmap Milestone 6 — Enrichment
+  /// (Topics · Media · Audience). Collapsed by default with a one-line
+  /// summary; expanding reveals the exact same Audience/Attachments/Topics
+  /// widgets that were always here — this is pure re-parenting and
+  /// collapse/expand behavior, not a rewrite of what any section does.
+  Widget _buildEnrichmentPanel() {
+    final topicSummary = _primaryTopic == null
+        ? 'None'
+        : (_secondaryTopics.isEmpty
+              ? _primaryTopic!.label
+              : '${_primaryTopic!.label} · +${_secondaryTopics.length} secondary');
+    final mediaSummary = _attachments.isEmpty
+        ? 'None'
+        : '${_attachments.length} attachment${_attachments.length == 1 ? '' : 's'}';
+    final audienceSummary = _visibilityLabel(_visibility);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(AuraRadius.md),
+          onTap: () => setState(() => _enrichmentExpanded = !_enrichmentExpanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+            child: Row(
+              children: [
+                Icon(
+                  _enrichmentExpanded
+                      ? Icons.keyboard_arrow_down_rounded
+                      : Icons.keyboard_arrow_right_rounded,
+                  size: 20,
+                  color: AuraSurface.muted,
+                ),
+                const SizedBox(width: AuraSpace.s6),
+                Text(
+                  'Enrichment',
+                  style: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AuraSurface.muted,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s10),
+                if (!_enrichmentExpanded)
+                  Expanded(
+                    child: Text(
+                      'Topics: $topicSummary · Media: $mediaSummary · Audience: $audienceSummary',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        if (_enrichmentExpanded) ...[
+          const SizedBox(height: AuraSpace.s12),
+          _buildInlineAudienceRow(),
+          const SizedBox(height: AuraSpace.s14),
+          _buildAttachmentsBlock(),
+          const SizedBox(height: AuraSpace.s16),
+          const Divider(color: AuraSurface.divider),
+          const SizedBox(height: AuraSpace.s16),
+          AuraTopicSelector(
+            primary: _primaryTopic,
+            secondaries: _secondaryTopics,
+            contentText: _textController.text,
+            // AuraTopicSelector itself now handles dropping any secondary
+            // that is no longer approved under a new primary (relationship
+            // gate, not just an equals-primary check) and calls
+            // onSecondariesChanged accordingly — no extra pruning needed here.
+            onPrimaryChanged: (t) {
+              setState(() => _primaryTopic = t);
+              _scheduleAutosave();
+            },
+            onSecondariesChanged: (list) {
+              setState(() => _secondaryTopics = list);
+              _scheduleAutosave();
+            },
+            fetchApprovedSecondaries: (primary) =>
+                ref.read(topicRepositoryProvider).approvedSecondaries(primary),
+            fetchSuggestions: (primary, text) =>
+                ref.read(topicRepositoryProvider).suggestSecondary(primary, text),
+          ),
+        ],
+      ],
     );
   }
 
@@ -1929,6 +2220,28 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
 
     if (!_canPublish) return;
+
+    // Communication Governance v1.0, Roadmap Milestone 7 — if the ambient
+    // check already found something requiring acknowledgment, surface the
+    // panel instead of letting the raw backend rejection through.
+    final pendingGovernance = _governancePendingAction;
+    if (!_isReply &&
+        pendingGovernance != null &&
+        !pendingGovernance.clearsPublish &&
+        !_governanceAckAccepted) {
+      setState(() => _governanceExpanded = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Review the Governance panel before publishing.')),
+      );
+      return;
+    }
+    if (!_isReply &&
+        pendingGovernance != null &&
+        !pendingGovernance.clearsPublish &&
+        _governanceAckAccepted) {
+      final satisfied = await _acknowledgeGovernance();
+      if (!satisfied) return;
+    }
 
     final signedIn = await _ensureSignedIn();
     if (!signedIn) return;
