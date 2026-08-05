@@ -63,7 +63,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               type == 'SAVE' ||
               type == 'REPLY' ||
               type == 'REPOST' ||
-              type == 'MENTION';
+              type == 'MENTION' ||
+              type == 'ACCOUNTABILITY_TAGGED';
         case _ActivityFilter.announcements:
           return type == 'ANNOUNCEMENT_PUBLISHED';
         case _ActivityFilter.system:
@@ -983,6 +984,8 @@ class _ActivityLeadingIcon extends StatelessWidget {
         return Icons.mail_outline_rounded;
       case 'POST_PUBLISH_FAILED':
         return Icons.error_outline_rounded;
+      case 'ACCOUNTABILITY_TAGGED':
+        return Icons.verified_outlined;
       default:
         return Icons.notifications_none_rounded;
     }
@@ -1000,6 +1003,8 @@ class _ActivityLeadingIcon extends StatelessWidget {
       case 'MESSAGE_RECEIVED':
       case 'THREAD_INVITE':
       case 'SPACE_INVITE':
+        return AuraSurface.accentText;
+      case 'ACCOUNTABILITY_TAGGED':
         return AuraSurface.accentText;
       default:
         return AuraSurface.muted;
@@ -1132,6 +1137,24 @@ String _buildTitle(Map<String, dynamic> item) {
       return 'Your work was published';
     case 'POST_PUBLISH_FAILED':
       return 'A work could not be published';
+    // Communication Governance v1.0 — Accountability Lifecycle progress.
+    // One notification type covers Committed/Updated/Resolved/Reopened
+    // regardless of which backend path produced it; the specific stage
+    // rides in data.accountabilityTag.
+    case 'ACCOUNTABILITY_TAGGED':
+      final tag = _stringOf(data['accountabilityTag']).toUpperCase();
+      switch (tag) {
+        case 'RESOLVED':
+          return '$actorName marked your issue as Resolved';
+        case 'COMMITMENT':
+          return '$actorName committed to a response on your issue';
+        case 'UPDATE':
+          return '$actorName posted an update on your issue';
+        case 'REOPENED':
+          return '$actorName reopened a resolved issue';
+        default:
+          return '$actorName updated the status of your issue';
+      }
     case 'SYSTEM':
       final title = _stringOf(data['title']);
       return title.isNotEmpty ? title : 'System notice';
@@ -1198,6 +1221,9 @@ String _buildSubtitle(Map<String, dynamic> item) {
       return 'Read announcement';
     case 'POST_PUBLISH_FAILED':
       return 'Return to presence';
+    case 'ACCOUNTABILITY_TAGGED':
+      final statement = _stringOf(data['resolutionStatement']);
+      return statement.isNotEmpty ? _truncate(statement, 120) : 'Open work';
     default:
       return '';
   }
@@ -1239,6 +1265,8 @@ String _ctaLabel(Map<String, dynamic> item) {
       return 'View';
     case 'ANNOUNCEMENT_PUBLISHED':
       return 'Read';
+    case 'ACCOUNTABILITY_TAGGED':
+      return 'View';
     default:
       return 'Open';
   }
