@@ -1,7 +1,7 @@
 # Aura 1.3.0 — Artifact Integrity Manifest
 
-Build timestamp: 2026-08-05T19:38:57Z (all artifacts built from the same working-tree state, prior to the release commit — see note below)
-Source commit: to be finalized as the Phase 12 release commit (working tree at build time is identical to that commit's content)
+Build timestamp: 2026-08-05T19:38:57Z (all artifacts built from the working-tree state that became the release commit below)
+Source commit: `db3a08838529a2869fe51a9eec270646c4349874` (tag `v1.3.0`, branch `main`)
 
 ## Web
 
