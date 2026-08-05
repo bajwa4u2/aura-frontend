@@ -326,6 +326,27 @@ class _Tile extends StatelessWidget {
         return 'Your meeting with $actorName is starting';
       case 'MEETING_SUMMARY_SHARED':
         return '$actorName shared the meeting summary';
+      // Communication Governance v1.0 — Accountability Lifecycle progress.
+      // One notification type covers every stage regardless of which
+      // backend path produced it (legacy InstitutionPost accountability
+      // tag, or the newer dedicated Resolve/Reopen endpoints); the
+      // specific stage rides in payload.accountabilityTag.
+      case 'ACCOUNTABILITY_TAGGED':
+        final tag = (notification.payload['accountabilityTag'] ?? '')
+            .toString()
+            .toUpperCase();
+        switch (tag) {
+          case 'RESOLVED':
+            return '$actorName marked your issue as Resolved';
+          case 'COMMITMENT':
+            return '$actorName committed to a response on your issue';
+          case 'UPDATE':
+            return '$actorName posted an update on your issue';
+          case 'REOPENED':
+            return '$actorName reopened a resolved issue';
+          default:
+            return '$actorName updated the status of your issue';
+        }
       default:
         return '$actorName interacted with your content';
     }
