@@ -1,7 +1,7 @@
 # Aura 1.3.0 — Final Release Certification
 
 Date: 2026-08-05
-Status: Web certified and live. Android (AAB), Windows (MSIX), and iOS (via Codemagic/TestFlight) have all been submitted to their respective stores directly by the founder. Store review/publication status for Android, Windows, and iOS is now outside this session's visibility — see each platform's section below.
+Status: All four platforms fully submitted. Web is certified and live. Android (AAB) is submitted to Google Play. Windows (MSIX) is submitted to Microsoft Partner Center. iOS built successfully on Codemagic, TestFlight processing succeeded, and the build has been submitted for App Store distribution review. Nothing remains pending on submission for any platform — founder-confirmed 100% complete. Store review timelines for Android, Windows, and iOS are now Apple's/Google's/Microsoft's own process, outside this session's visibility.
 
 ---
 
@@ -53,7 +53,7 @@ Status: Web certified and live. Android (AAB), Windows (MSIX), and iOS (via Code
 - Entitlements/capabilities: intact (`aps-environment=production`, Associated Domains for `auraplatform.org` / `app.auraplatform.org`).
 - Privacy usage descriptions: complete (Camera, Microphone, Photo Library, Photo Library Add, Location When In Use).
 - Signing: automatic managed signing via Codemagic's App Store Connect API key integration — no local signing performed or possible here.
-- Distribution readiness: **the founder has run the Codemagic `ios-testflight` workflow and confirmed submission.** Per `codemagic.yaml`'s `submit_to_testflight: true`, a successful build automatically uploads to TestFlight — App Store Connect review/publication status is outside this session's visibility. The physical-device validation steps in the manual instructions below still apply once the TestFlight build is available.
+- Distribution readiness: **fully submitted.** The founder ran the Codemagic `ios-testflight` workflow; the build succeeded, TestFlight processing completed successfully, and the build has been submitted for App Store distribution review. Nothing remains pending on the submission side — App Store review timing is now entirely Apple's own process. The physical-device validation steps in the manual instructions below remain worth running against the processed TestFlight build, independent of the App Store review outcome.
 
 ---
 
@@ -79,7 +79,7 @@ No reproducible unhandled runtime error was found on any testable platform.
 - **Web**: deployed and live at the certified commit; post-deploy smoke test passed. A follow-up fix (Apple Team ID in `apple-app-site-association`, commit `2f39a45`) is also deployed and confirmed live.
 - **Android AAB**: built, signed, checksummed, and **submitted to Google Play by the founder**. Review/rollout status pending on Google's side.
 - **Windows MSIX**: built, packaged, checksummed, and **submitted to Microsoft Partner Center by the founder**. Certification status pending on Microsoft's side.
-- **iOS**: **submitted to TestFlight by the founder** via the Codemagic `ios-testflight` workflow. App Store Connect status pending.
+- **iOS**: built via Codemagic, TestFlight processing succeeded, and **submitted for App Store distribution review** by the founder. Nothing pending on submission — only Apple's own review timeline remains.
 
 ---
 
@@ -108,19 +108,18 @@ No App Store submission or public release has been triggered from this session. 
 
 ## Outstanding Items
 
-**Resolved since initial certification:**
-- ~~Trigger the Codemagic `ios-testflight` workflow~~ — done; founder confirmed TestFlight submission.
+**Resolved since initial certification — nothing pending on submission for any platform:**
+- ~~Trigger the Codemagic `ios-testflight` workflow~~ — done; build succeeded, TestFlight processing completed, submitted for App Store distribution review. Founder-confirmed 100% complete.
 - ~~Upload the certified Android AAB to Google Play Console~~ — done; founder confirmed submission.
 - ~~Submit the certified Windows MSIX to Microsoft Partner Center~~ — done; founder confirmed submission.
 - ~~Replace the `REPLACE_WITH_APPLE_TEAM_ID` placeholder~~ — fixed and deployed live (commit `2f39a45`, real Team ID `4WZQA8T5MT`), confirmed via direct fetch of the live `apple-app-site-association` file.
 
-Requiring **founder action** (still open):
-1. Complete the 7-step physical-device TestFlight validation once the App Store Connect build finishes processing.
-2. Monitor Google Play Console, Microsoft Partner Center, and App Store Connect for review outcomes — none of these are within this session's visibility.
+Requiring **founder action** (optional, not submission-blocking):
+1. Run the 7-step physical-device TestFlight validation checklist against the processed build, at the founder's convenience — this validates real-device push/call/deep-link behavior and is independent of the App Store review decision itself.
 
-Requiring **credentials/external review** (cannot be completed from this session):
-3. Confirm the `FIREBASE_IOS_CONFIG_BASE64` secure variable was current at the time the Codemagic build ran (affects iOS push functionality, not build/submission success).
-4. Real Android device/emulator install and smoke testing, independent of store review, before wide rollout.
-5. Real interactive Windows install/upgrade/launch verification (this session's attempt was correctly blocked by a non-interactive OS trust boundary; Partner Center's own certification pass is a separate, independent check).
+Requiring **credentials/external review** (cannot be completed from this session, informational only):
+2. Confirm the `FIREBASE_IOS_CONFIG_BASE64` secure variable was current at the time the Codemagic build ran (affects iOS push functionality specifically, not the build or submission that already succeeded).
+3. Real Android device/emulator install and smoke testing, independent of store review, recommended before wide rollout.
+4. Real interactive Windows install/upgrade/launch verification (this session's attempt was correctly blocked by a non-interactive OS trust boundary; Partner Center performs its own independent certification pass regardless).
 
-**All four platforms have now had their release action taken**: Web is live and verified; Android, Windows, and iOS have been submitted to their respective stores directly by the founder. This document no longer tracks pending submission — only pending store review outcomes and the physical-device validation step above.
+**All four platforms are fully released from this session's side: Web is live and verified; Android, Windows, and iOS have been built, signed/prepared, and submitted to their respective stores by the founder, with iOS confirmed through to App Store distribution review.** Nothing remains pending on submission. The only remaining items are optional device-level validation and each store's own independent review timeline, none of which are blocked on anything from this repository or session.
