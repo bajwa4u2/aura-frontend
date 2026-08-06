@@ -1,7 +1,7 @@
 # Aura 1.3.0 — Final Release Certification
 
 Date: 2026-08-05
-Status: Web certified and live. Android/Windows artifacts certified and ready, distribution not yet submitted. iOS requires a manual Codemagic trigger by the founder.
+Status: Web certified and live. Android (AAB), Windows (MSIX), and iOS (via Codemagic/TestFlight) have all been submitted to their respective stores directly by the founder. Store review/publication status for Android, Windows, and iOS is now outside this session's visibility — see each platform's section below.
 
 ---
 
@@ -36,16 +36,16 @@ Status: Web certified and live. Android/Windows artifacts certified and ready, d
 - Artifact: `Aura-1.3.0+24-release.aab` (78,178,652 bytes; SHA-256 `a769674737f67cd5eb453d9c91e85e56131c2571b351d8b56647bad7b5a710eb`).
 - Signing: **PASS** — existing release keystore, no debug flags, expected manifest permissions only.
 - Runtime verification: **NOT PERFORMED** — no Android emulator or physical device available on this workstation (environment limitation, not a code defect).
-- Distribution readiness: artifact ready; **not submitted** to Google Play.
-- Remaining manual action: founder (or a device-equipped environment) should install-test the AAB before wide rollout, then upload to Play Console and manage the release rollout — both outside this session's authorization.
+- Distribution readiness: **submitted to Google Play by the founder directly.** Play Store review/rollout status is outside this session's visibility.
+- Remaining manual action: none from this session; founder to monitor Play Console for review outcome.
 
 ### Windows
 - Build result: **PASS** — `flutter build windows` + `msix:create` both clean.
 - Artifact: `Aura-1.3.0.0-release.msix` (31,920,261 bytes; SHA-256 `2b3dd63223e3e4a1f7fe6726995409bfa1ef9fbb8f8197db45e2eeb56f2f6603`).
 - Signing: intentionally unsigned by existing design (`msix_config.store: true` — Microsoft Partner Center signs on Store ingestion; confirmed against the `msix` package's own source, not a defect).
 - Runtime verification: **PARTIAL** — package identity/version confirmed via manifest inspection (`AuraPlatformLLC.AURAPLATFORM`, `1.3.0.0`, publisher CN matches Partner Center registration exactly, greater than the previously-installed `1.2.3.0`). A real upgrade-install attempt was made using a throwaway local signing certificate; Windows correctly refused to trust it non-interactively (a deliberate OS security boundary, not a defect). The attempt was abandoned rather than forced; the pre-existing `1.2.3.0` installation was confirmed undisturbed afterward.
-- Distribution readiness: artifact ready; **not submitted** to Microsoft Partner Center.
-- Remaining manual action: full install/upgrade/launch verification needs either an interactive session to accept a one-time local trust prompt, or the real Store-signed package post-certification; founder submission to Partner Center.
+- Distribution readiness: **submitted to Microsoft Partner Center by the founder directly.** Partner Center will perform its own signing/certification on ingestion, per the existing governed process. Store review/publication status is outside this session's visibility.
+- Remaining manual action: none from this session; founder to monitor Partner Center for certification outcome.
 
 ### iOS
 - Build result: **not built locally** — requires macOS; Codemagic is the designated environment (unchanged from prior releases).
@@ -53,7 +53,7 @@ Status: Web certified and live. Android/Windows artifacts certified and ready, d
 - Entitlements/capabilities: intact (`aps-environment=production`, Associated Domains for `auraplatform.org` / `app.auraplatform.org`).
 - Privacy usage descriptions: complete (Camera, Microphone, Photo Library, Photo Library Add, Location When In Use).
 - Signing: automatic managed signing via Codemagic's App Store Connect API key integration — no local signing performed or possible here.
-- Distribution readiness: **requires a manual Codemagic run by the founder** — see instructions below.
+- Distribution readiness: **the founder has run the Codemagic `ios-testflight` workflow and confirmed submission.** Per `codemagic.yaml`'s `submit_to_testflight: true`, a successful build automatically uploads to TestFlight — App Store Connect review/publication status is outside this session's visibility. The physical-device validation steps in the manual instructions below still apply once the TestFlight build is available.
 
 ---
 
@@ -76,10 +76,10 @@ No reproducible unhandled runtime error was found on any testable platform.
 
 ## Deployment Status
 
-- **Web**: deployed and live at the certified commit; post-deploy smoke test passed.
-- **Android AAB**: built, signed, checksummed — ready for upload; upload not performed.
-- **Windows MSIX**: built, packaged, checksummed — ready for submission; submission not performed.
-- **iOS**: not built; awaiting the founder's manual Codemagic trigger below.
+- **Web**: deployed and live at the certified commit; post-deploy smoke test passed. A follow-up fix (Apple Team ID in `apple-app-site-association`, commit `2f39a45`) is also deployed and confirmed live.
+- **Android AAB**: built, signed, checksummed, and **submitted to Google Play by the founder**. Review/rollout status pending on Google's side.
+- **Windows MSIX**: built, packaged, checksummed, and **submitted to Microsoft Partner Center by the founder**. Certification status pending on Microsoft's side.
+- **iOS**: **submitted to TestFlight by the founder** via the Codemagic `ios-testflight` workflow. App Store Connect status pending.
 
 ---
 
@@ -108,16 +108,19 @@ No App Store submission or public release has been triggered from this session. 
 
 ## Outstanding Items
 
-Requiring **founder action**:
-1. Trigger the Codemagic `ios-testflight` workflow (see exact instructions above) — this both builds and automatically submits to TestFlight.
-2. Complete the 7-step physical-device TestFlight validation once the build is available.
-3. Upload the certified Android AAB to Google Play Console and manage the release rollout.
-4. Submit the certified Windows MSIX to Microsoft Partner Center.
-5. Provide the real Apple Developer Team ID to replace the `REPLACE_WITH_APPLE_TEAM_ID` placeholder still present in the live `apple-app-site-association` file at `auraplatform.org/.well-known/` — this blocks iOS Universal Links (web-to-app deep linking) specifically. It does not block TestFlight or App Store submission itself, but should be resolved before iOS distribution matters in practice.
+**Resolved since initial certification:**
+- ~~Trigger the Codemagic `ios-testflight` workflow~~ — done; founder confirmed TestFlight submission.
+- ~~Upload the certified Android AAB to Google Play Console~~ — done; founder confirmed submission.
+- ~~Submit the certified Windows MSIX to Microsoft Partner Center~~ — done; founder confirmed submission.
+- ~~Replace the `REPLACE_WITH_APPLE_TEAM_ID` placeholder~~ — fixed and deployed live (commit `2f39a45`, real Team ID `4WZQA8T5MT`), confirmed via direct fetch of the live `apple-app-site-association` file.
+
+Requiring **founder action** (still open):
+1. Complete the 7-step physical-device TestFlight validation once the App Store Connect build finishes processing.
+2. Monitor Google Play Console, Microsoft Partner Center, and App Store Connect for review outcomes — none of these are within this session's visibility.
 
 Requiring **credentials/external review** (cannot be completed from this session):
-6. Confirm the `FIREBASE_IOS_CONFIG_BASE64` secure variable is current in the Codemagic UI.
-7. Real Android device/emulator install and smoke testing before wide Play Store rollout.
-8. Real interactive Windows install/upgrade/launch verification (this session's attempt was correctly blocked by a non-interactive OS trust boundary).
+3. Confirm the `FIREBASE_IOS_CONFIG_BASE64` secure variable was current at the time the Codemagic build ran (affects iOS push functionality, not build/submission success).
+4. Real Android device/emulator install and smoke testing, independent of store review, before wide rollout.
+5. Real interactive Windows install/upgrade/launch verification (this session's attempt was correctly blocked by a non-interactive OS trust boundary; Partner Center's own certification pass is a separate, independent check).
 
-**No store or public distribution has occurred.** Web is live (an existing, pre-authorized continuous-deployment behavior of this platform). Android and Windows artifacts are certified and ready but not submitted. iOS requires the founder's explicit manual trigger, which will also perform the TestFlight submission automatically once run.
+**All four platforms have now had their release action taken**: Web is live and verified; Android, Windows, and iOS have been submitted to their respective stores directly by the founder. This document no longer tracks pending submission — only pending store review outcomes and the physical-device validation step above.
