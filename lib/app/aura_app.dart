@@ -17,7 +17,9 @@ import '../core/notifications/notification_bridge.dart';
 import '../features/correspondence/data/correspondence_live_service.dart';
 import '../features/devices/device_providers.dart';
 import '../features/realtime/application/realtime_providers.dart';
+import '../features/realtime/application/thread_call_lifecycle_controller.dart';
 import '../features/realtime/data/realtime_reconciliation_controller.dart';
+import '../features/realtime/presentation/thread_call_lifecycle_host.dart';
 import '../features/updates/incoming_call_bridge.dart';
 import '../router.dart';
 
@@ -104,8 +106,10 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     );
 
     try {
-      await Future.wait([correspondence, realtime])
-          .timeout(const Duration(seconds: 3));
+      await Future.wait([
+        correspondence,
+        realtime,
+      ]).timeout(const Duration(seconds: 3));
     } on TimeoutException {
       // The timeout case is rare but real: a half-broken transport can
       // leave a socket spinning on close. We accept the leak rather
@@ -199,7 +203,18 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // already connected.
       try {
         unawaited(
-          ref.read(correspondenceLiveServiceProvider).ensureConnected()
+          ref
+              .read(correspondenceLiveServiceProvider)
+              .ensureConnected()
+              .catchError((_) {}),
+        );
+      } catch (_) {}
+
+      try {
+        unawaited(
+          ref
+              .read(threadCallLifecycleProvider.notifier)
+              .onAppResumed()
               .catchError((_) {}),
         );
       } catch (_) {}
@@ -230,12 +245,13 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       if (sessionIds.isEmpty) return;
 
       final me = await ref.read(authMeDataProvider.future);
-      final myUserId = (me['id'] ??
-              me['userId'] ??
-              (me['user'] is Map ? (me['user'] as Map)['id'] : null) ??
-              '')
-          .toString()
-          .trim();
+      final myUserId =
+          (me['id'] ??
+                  me['userId'] ??
+                  (me['user'] is Map ? (me['user'] as Map)['id'] : null) ??
+                  '')
+              .toString()
+              .trim();
       if (myUserId.isEmpty) return;
 
       final repo = ref.read(realtimeRepositoryProvider);
@@ -301,7 +317,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           // ancestors and the gate watches its own provider without
           // forcing a rebuild of the rest of the tree.
           builder: (context, child) {
-            return UpdateGate(child: child ?? const SizedBox.shrink());
+            return ThreadCallLifecycleHost(
+              child: UpdateGate(child: child ?? const SizedBox.shrink()),
+            );
           },
         ),
       ),

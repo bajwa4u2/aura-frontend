@@ -5,11 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/communication/communication_resolver.dart';
 import '../../../core/ui/aura_platform_components.dart';
-import '../../correspondence/data/correspondence_live_service.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../application/thread_call_lifecycle_controller.dart';
 import '../../updates/incoming_call_bridge.dart';
 import '../../updates/providers.dart';
 import '../application/realtime_providers.dart';
@@ -67,12 +67,6 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     )..repeat(reverse: true);
     _pulseAnim = Tween<double>(begin: 0.55, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-    // Ensure the main-namespace socket is connected as soon as the shell mounts
-    // so call invites are delivered even when the user has not opened a thread
-    // or space. ensureConnected() is idempotent and safe to call eagerly.
-    Future.microtask(
-      () => ref.read(correspondenceLiveServiceProvider).ensureConnected(),
     );
   }
 
@@ -175,7 +169,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   }
 
   bool _isCallKind(String kind) =>
-      kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME';
+      kind == 'LIVE' ||
+      kind == 'CALL' ||
+      kind == 'REALTIME' ||
+      kind == 'CALL_RINGING' ||
+      kind == 'LIVE_RINGING';
 
   // ── Interrupt candidate logic ─────────────────────────────────────────────
 
@@ -294,9 +292,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     // GoRouterState.of(context) requires an ACTIVE element; using it after
     // an await can fire when the element is inactive during route transitions.
     final router = GoRouter.of(context);
-    final returnTo = Uri.encodeComponent(
-      GoRouterState.of(context).uri.toString(),
-    );
+    final returnTo = Uri.encodeComponent(_currentUri(context).toString());
 
     setState(() {
       _joining = true;
@@ -309,7 +305,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     // setState on an element that may already be inactive/disposed.
     var navigated = false;
     try {
-      await ref.read(realtimeControllerProvider.notifier).join(sessionId);
+      await ref
+          .read(threadCallLifecycleProvider.notifier)
+          .acceptIncomingCall(item);
       ref.read(incomingCallBridgeProvider.notifier).remove(id);
       if (id.isNotEmpty) {
         await ref.read(notificationsControllerProvider.notifier).markRead(id);
@@ -330,7 +328,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       }
     } catch (e) {
       final msg = e.toString().toLowerCase();
-      final isExpired = msg.contains('invite_expired') ||
+      final isExpired =
+          msg.contains('invite_expired') ||
           msg.contains('session_closed') ||
           msg.contains('invite has expired');
       if (isExpired) {
@@ -424,28 +423,33 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     // matching poll item so a stale notification cannot re-render the card
     // before the next poll. Mirrors the dedup the bridge already does on
     // its own state.
-    ref.listen<List<Map<String, dynamic>>>(
-      incomingCallBridgeProvider,
-      (prev, next) {
-        if (!mounted) return;
-        final prevSet = <String>{
-          for (final item in prev ?? const <Map<String, dynamic>>[])
-            if (_resolveSessionId(item).isNotEmpty) _resolveSessionId(item),
-        };
-        final nextSet = <String>{
-          for (final item in next)
-            if (_resolveSessionId(item).isNotEmpty) _resolveSessionId(item),
-        };
-        for (final removed in prevSet.difference(nextSet)) {
-          _dismissedSessionIds.add(removed);
-        }
-      },
-    );
+    ref.listen<List<Map<String, dynamic>>>(incomingCallBridgeProvider, (
+      prev,
+      next,
+    ) {
+      if (!mounted) return;
+      final prevSet = <String>{
+        for (final item in prev ?? const <Map<String, dynamic>>[])
+          if (_resolveSessionId(item).isNotEmpty) _resolveSessionId(item),
+      };
+      final nextSet = <String>{
+        for (final item in next)
+          if (_resolveSessionId(item).isNotEmpty) _resolveSessionId(item),
+      };
+      for (final removed in prevSet.difference(nextSet)) {
+        _dismissedSessionIds.add(removed);
+      }
+    });
 
     final notifications = ref.watch(notificationsControllerProvider);
     final bridgeItems = ref.watch(incomingCallBridgeProvider);
     final liveState = ref.watch(realtimeControllerProvider);
-    final currentPath = GoRouterState.of(context).uri.path;
+    final currentPath = _currentUri(context).path;
+
+    if (liveState.session?.surfaceType == RealtimeSurfaceType.meeting) {
+      _cancelRingTimer();
+      return widget.child;
+    }
 
     // C3: cross-source dedup. Bridge (correspondence socket) takes priority
     // over poll (notifications API + FCM-triggered refresh) so the same call
@@ -527,9 +531,13 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       children: [
         widget.child,
         Positioned(
-          right: MediaQuery.of(context).size.width >= 700 ? AuraSpace.s20 : AuraSpace.s12,
+          right: MediaQuery.of(context).size.width >= 700
+              ? AuraSpace.s20
+              : AuraSpace.s12,
           left: MediaQuery.of(context).size.width >= 700 ? null : AuraSpace.s12,
-          bottom: MediaQuery.of(context).size.width >= 700 ? AuraSpace.s20 : AuraSpace.s12,
+          bottom: MediaQuery.of(context).size.width >= 700
+              ? AuraSpace.s20
+              : AuraSpace.s12,
           child: SafeArea(
             child: _IncomingCallCard(
               actorName: actorName,
@@ -550,7 +558,6 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     );
   }
 }
-
 
 class _IncomingCallCard extends StatelessWidget {
   const _IncomingCallCard({
@@ -613,11 +620,15 @@ class _IncomingCallCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: ringColor.withValues(alpha: 0.35 + pulseOpacity * 0.25),
+                        color: ringColor.withValues(
+                          alpha: 0.35 + pulseOpacity * 0.25,
+                        ),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: ringColor.withValues(alpha: pulseOpacity * 0.26),
+                          color: ringColor.withValues(
+                            alpha: pulseOpacity * 0.26,
+                          ),
                           blurRadius: 16,
                           spreadRadius: 1,
                         ),
@@ -678,7 +689,9 @@ class _IncomingCallCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AuraSurface.coRose.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AuraRadius.md),
-                border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.35)),
+                border: Border.all(
+                  color: AuraSurface.coRose.withValues(alpha: 0.35),
+                ),
               ),
               child: Text(
                 joinError!,
@@ -709,7 +722,9 @@ class _IncomingCallCard extends StatelessWidget {
                 _CallCircleButton(
                   icon: isVideo ? Icons.videocam_rounded : Icons.call_rounded,
                   color: Colors.white,
-                  background: isVideo ? AuraSurface.accent : AuraSurface.coVerdant,
+                  background: isVideo
+                      ? AuraSurface.accent
+                      : AuraSurface.coVerdant,
                   size: 54,
                   onTap: onAccept,
                   busy: joining,
@@ -844,4 +859,12 @@ String _firstNonEmpty(List<String> values) {
     if (value.trim().isNotEmpty) return value.trim();
   }
   return '';
+}
+
+Uri _currentUri(BuildContext context) {
+  try {
+    return GoRouter.of(context).routerDelegate.currentConfiguration.uri;
+  } catch (_) {
+    return Uri(path: '/');
+  }
 }

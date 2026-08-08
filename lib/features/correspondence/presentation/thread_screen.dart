@@ -16,6 +16,7 @@ import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
+import '../../realtime/application/thread_call_lifecycle_controller.dart';
 import '../../realtime/domain/realtime_state.dart';
 import 'thread/thread_composer.dart';
 import 'thread/thread_message_tile.dart';
@@ -343,23 +344,23 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     if (_callBusy) return;
     setState(() => _callBusy = true);
     try {
-      final controller = ref.read(realtimeControllerProvider.notifier);
       final surfaceType = _threadLiveSurfaceType(thread);
       final surfaceId = _threadLiveSurfaceId(thread, widget.threadId);
-      final sessionId = await controller.ensureCorrespondenceLive(
-        surfaceType: surfaceType,
-        surfaceId: surfaceId,
-        kind: kind,
-        metadata: <String, dynamic>{
-          'threadId': widget.threadId,
-          'spaceId': pickString(thread, const ['spaceId', 'space_id']),
-        }..removeWhere(
-          (key, value) => value == null || value.toString().trim().isEmpty,
-        ),
-        joinAfterCreate: false,
-      );
+      final sessionId = await ref
+          .read(threadCallLifecycleProvider.notifier)
+          .startThreadCall(
+            surfaceType: surfaceType,
+            surfaceId: surfaceId,
+            kind: kind,
+            metadata: <String, dynamic>{
+              'threadId': widget.threadId,
+              'spaceId': pickString(thread, const ['spaceId', 'space_id']),
+            }..removeWhere(
+                (key, value) => value == null || value.toString().trim().isEmpty,
+              ),
+          );
       if (!mounted) return;
-      context.go('/realtime/$sessionId?action=join&returnTo=${Uri.encodeComponent(GoRouterState.of(context).uri.toString())}');
+      context.go('/realtime/$sessionId?returnTo=${Uri.encodeComponent(GoRouterState.of(context).uri.toString())}');
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -643,7 +644,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             onJoin: () async {
                               final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
                               if (sid.isEmpty) return;
-                              context.go('/realtime/$sid?action=join&returnTo=${Uri.encodeComponent(GoRouterState.of(context).uri.toString())}');
+                              final returnTo = Uri.encodeComponent(
+                                GoRouterState.of(context).uri.toString(),
+                              );
+                              await ref
+                                  .read(threadCallLifecycleProvider.notifier)
+                                  .joinThreadCallSession(sid);
+                              if (!context.mounted) return;
+                              context.go('/realtime/$sid?returnTo=$returnTo');
                             },
                             onLeave: () async => ref.read(realtimeControllerProvider.notifier).leave(),
                             onReturn: () {
@@ -695,7 +703,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                       sentAt: DateTime.now(),
                                     ),
                                   );
-                                  if (pending.clientMessageId.isEmpty) return;
+                                  if (pending.clientMessageId.isEmpty) {
+                                    return;
+                                  }
                                   unawaited(_retryPendingMessage(pending));
                                 },
                                 onDismissPending: (clientMessageId) {
@@ -713,7 +723,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                       sentAt: DateTime.now(),
                                     ),
                                   );
-                                  if (pending.clientMessageId.isEmpty) return;
+                                  if (pending.clientMessageId.isEmpty) {
+                                    return;
+                                  }
                                   _dismissPendingMessage(pending);
                                 },
                               );

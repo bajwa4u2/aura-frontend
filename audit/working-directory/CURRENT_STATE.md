@@ -1,6 +1,88 @@
 # Current State — aura_final
 
-Last updated: 2026-07-21 UTC (AXR-1); defect logged 2026-08-04 (Publication Reliability and Multilingual Communication Completion, see `../aura-backend/audit/working-directory/CURRENT_STATE.md`)
+Last updated: 2026-08-08 UTC (Canonical Flutter Thread-Call Lifecycle Stage 1 locally certified; pending founder review/commit)
+
+## Canonical Flutter Thread-Call Lifecycle Stage 1 implemented locally, 2026-08-08
+
+Stage 1 implementation is present in the working tree, locally certified, and not committed. It follows `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`.
+
+Implemented behavior:
+
+- `threadCallLifecycleProvider` now owns Thread-call presentation/runtime intent at app level with client-only phases: `invited`, `joining`, `joined`, `mediaNegotiating`, `connected`, `transportDegraded`, `ended`.
+- `ThreadCallLifecycleHost` is mounted from `AuraApp` under the existing `NotificationBridge`/app-root boundary and wraps routed content with the single incoming live layer for authenticated member sessions.
+- `incomingCallBridgeProvider` remains the pending-call/dedup store and now exposes normalized `addIncoming()` ingestion for socket and foreground-push call payloads.
+- `AuraIncomingLiveLayer` is presentation-only for incoming calls; accept delegates to the lifecycle owner, and route lookup no longer depends on shell-local `GoRouterState`.
+- `MemberShell` and `InstitutionShell` no longer mount their own incoming overlay, preventing duplicate route/shell-owned consumers.
+- Thread caller start, Thread call-card join, and incoming-overlay accept now route through the lifecycle owner, which delegates to the existing `RealtimeController`; `RealtimeController` remains the canonical socket/media/session executor.
+- Foreground FCM call interrupts feed the same bridge path and dedup by `sessionId`.
+- Meeting sessions are excluded from Thread lifecycle projection/overlay interference; no shared realtime files were edited.
+- Existing external/background `/realtime/:sessionId?action=join` route behavior remains unchanged because generic realtime route edits were outside the approved shared-realtime gate.
+
+Gate 2 toolchain health and verification:
+
+- Root cause of the original test/build hangs: Flutter SDK git metadata at `C:/flutter` was not trusted for the current command user (`git -C C:\flutter status -sb` reported dubious ownership). Plain `flutter --version` timed out. Dart itself (`dart.exe --version`) was healthy.
+- Recovery: `C:/flutter` was added to Git `safe.directory`; certification commands were run with the explicit session-local Git config override `GIT_CONFIG_COUNT=1`, `GIT_CONFIG_KEY_0=safe.directory`, `GIT_CONFIG_VALUE_0=C:/flutter`, which made Flutter tool startup healthy. Plain `flutter --version` still times out in this sandbox, so use the override for local Flutter certification until the sandbox/global Git config mismatch is fully corrected.
+- Baseline control: `flutter test --no-pub test\governed_tagging_test.dart -r expanded` passed 11/11.
+- Focused Stage 1 lifecycle tests: `flutter test --no-pub test\thread_call_lifecycle_controller_test.dart -r expanded` passed 6/6.
+- Relevant correspondence/realtime/notification/Meeting set: `flutter test --no-pub test\thread_call_lifecycle_controller_test.dart test\notification_open_reconcile_test.dart test\module_attention_test.dart test\governed_tagging_test.dart test\meeting_entry_resolution_test.dart -r expanded` passed 31/31.
+- Repository-standard practical suite: `flutter test --no-pub --exclude-tags golden -r expanded` passed 125/125.
+- Meeting preservation control: `test\meeting_entry_resolution_test.dart` passed 6/6.
+- `flutter analyze`: clean on 2026-08-08.
+- Production web build: `flutter build web --release --no-wasm-dry-run` completed successfully and produced `build\web`.
+- `git diff --check`: clean for Flutter and backend working trees.
+
+Deferred items unchanged: Activity doctrine, multi-device arbitration, desktop native notification work, Android/iOS background/terminated notification handling, Stage B backend push consolidation, and any Meetings behavior changes.
+
+## Platform-wide engineering governance, recorded 2026-08-08
+
+These doctrines apply across every Aura repository, present and future:
+
+- Certified product surfaces are protected by default.
+- Solve problems within the owning feature/module before touching shared systems.
+- Any work that directly, indirectly, intentionally, or unintentionally touches a shared system must identify the shared boundary, preserve existing behavior, execute targeted regression, certify shared-system health, and report shared-system certification separately.
+- If preserving a certified shared system is impossible, stop and return for founder approval before implementation.
+- Future implementation tasks inherit these rules automatically.
+- Future audits must audit governance compliance in addition to feature correctness.
+- Newly adopted engineering doctrines must be recorded in working continuity during the next implementation task rather than remaining only in conversation history.
+
+## Canonical Flutter Thread-Call Lifecycle Stage 1 blueprint, 2026-08-08
+
+Blueprint: `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`. No Flutter application/runtime/schema/client code was edited.
+
+Approved architecture decision: Stage 1 combines foreground incoming-call ownership and caller/callee realtime synchronization into one canonical Flutter Thread-call lifecycle chapter across web, desktop, Android, and iOS.
+
+Frozen Stage 1 scope:
+
+- Add one app-level Thread-call lifecycle owner, likely `threadCallLifecycleProvider`, mounted from `AuraApp`.
+- Keep existing backend `call:incoming` event and payload; no backend change required.
+- Keep `RealtimeController` as the single realtime socket/media/session controller; do not create competing realtime controllers.
+- Make `AuraIncomingLiveLayer` root-mounted presentation rather than shell-local ownership.
+- Route caller start, recipient accept, and `/realtime/:sessionId?action=join` through one lifecycle entry API.
+- Add a client-only Thread call phase projection: invited, joining, joined, mediaNegotiating, connected, transportDegraded, ended. No backend states.
+- Preserve Meetings exactly as-is. Shared realtime code changes are allowed only if minimal and backed by Meeting regressions.
+
+Deferred by doctrine: Activity representation for active calls, multi-device accept/decline arbitration, desktop native notifications, and Android/iOS background/terminated push handling.
+
+## Thread Calling Reliability - current Flutter risk model, 2026-08-08
+
+Authoritative audit: `../aura-backend/docs/2026-08-08-thread-calling-reliability-collective-audit.md`. Documentation-only update; no Flutter application/runtime/schema/client code was edited.
+
+Founder production evidence now supersedes older "likely foreground socket healthy" classifications:
+
+- Chrome/browser background received the incoming Thread-call notification.
+- Desktop app foreground showed no incoming-call interruption and no Activity entry.
+- iOS app foreground showed no incoming-call interruption and no Activity entry.
+- Android previously showed no interruption/notification, despite recovered backend evidence proving Android FCM `CALL_RINGING` attempts marked `SENT` for some recipients.
+- Party B accepted/participated while Party A remained visually stuck on `Connecting...`.
+
+Current Flutter-facing root-cause domains:
+
+- Shared foreground incoming-call consumer ownership is likely too shell/provider-local. `AuraIncomingLiveLayer` consumes `incomingCallBridgeProvider` in `MemberShell` / `InstitutionShell`; `AuraApp` boots reconciliation but does not globally mount the incoming-call layer, and the global correspondence reconciliation path ignores `call:incoming`.
+- Activity no-entry is proven as a backend/client ledger mismatch: Activity reads `/notifications` actor Notification rows while Stage A Thread calls create `Communication(type=LIVE, data.notificationKind=CALL_RINGING, ...)` rows and push attempts, not actor-aware call Notification rows.
+- Party-A-stuck-on-`Connecting...` points before the visible `RealtimeController` reaches socket `session:join` ack and `joinState=joined`, or to stale/replaced provider state. Media negotiation alone should not keep pre-join `Connecting...` visible because media errors are non-fatal after join ack.
+- Multi-device call notification fans out while media ownership defaults to one same-user runtime device per session (`REALTIME_ALLOW_MULTI_DEVICE=false` on backend), so future client work must account for deterministic replaced/terminal synchronization.
+
+Recommended next work is not authorized yet: shared Flutter foreground call lifecycle ownership, then caller/callee realtime synchronization, then multi-device arbitration, then Activity doctrine, then platform-specific background/native notification handling. Meetings remain a hard preservation boundary.
 
 Repository documentation is authoritative. Conversation history is temporary. This continuity set was established 2026-07-21 (workspace-wide continuity doctrine); prior history is reconstructed from git history and the ROS Phase II records.
 

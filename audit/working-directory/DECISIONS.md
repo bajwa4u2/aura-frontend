@@ -1,8 +1,70 @@
 # Decisions — aura_final
 
-Last updated: 2026-07-31 UTC (Communication Integrity System, Milestone 1 — Institution Announcement Integration)
+Last updated: 2026-08-08 UTC (Canonical Flutter Thread-Call Lifecycle Stage 1 locally certified)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-08: Platform-wide engineering governance adopted
+
+These are platform governance rules, not Flutter-only or backend-only implementation notes.
+
+1. Certified product surfaces are protected by default.
+2. Problems must be solved inside the owning feature/module before touching shared systems.
+3. Any work touching shared systems, directly or indirectly, must identify the shared boundary, preserve existing behavior, execute targeted regression, certify shared-system health, and report that certification separately.
+4. If preserving a certified shared system is impossible, implementation stops and founder approval is required before proceeding.
+5. Future implementation tasks inherit these rules automatically.
+6. Future audits must include governance-compliance review as well as feature correctness.
+7. Newly adopted engineering doctrines must be recorded in working continuity during the next implementation task.
+
+## 2026-08-08: Canonical Flutter Thread-Call Lifecycle Stage 1 implemented locally
+
+Stage 1 implementation is authorized, locally certified, and present in the working tree; do not commit until founder review.
+
+Frozen decisions now implemented:
+
+1. Thread-call lifecycle ownership is app-root owned from `AuraApp`, under the existing notification/app boundary.
+2. `RealtimeController` remains the canonical client owner for realtime socket entry, signaling, ICE/media, and session execution.
+3. The new Thread lifecycle owner coordinates intent and presentation only; it does not add backend states and does not replace shared realtime authority.
+4. Root incoming-call presentation must not depend on `MemberShell`, Thread route lifetime, realtime-room route lifetime, or navigation position.
+5. Activity doctrine, multi-device arbitration, and platform-specific background/native notification work remain deferred.
+6. Meetings are a hard preservation boundary. Stage 1 did not edit shared realtime controller/state/socket/media files or Meetings-specific product code.
+
+## 2026-08-08: Canonical Flutter Thread-Call Lifecycle Stage 1 blueprint approved, implementation not authorized
+
+Blueprint: `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`.
+
+Founder architecture decision: Stage 1 combines foreground incoming-call ownership and caller/callee realtime synchronization into one canonical Flutter Thread-call lifecycle chapter. It is a Flutter chapter across web, desktop, Android, and iOS.
+
+Frozen constraints:
+
+1. Do not implement until founder authorizes coding.
+2. Do not reopen backend Reachability Authority, Session Continuity Authority Phase 1, or Canonical Call Notification Stage A.
+3. Do not change backend event names, payloads, schema, or Stage A push ownership.
+4. Activity doctrine, multi-device arbitration, and platform background/native notification work are deferred.
+5. Meetings must be preserved exactly as-is.
+
+Approved design direction:
+
+1. Use one app-level Thread-call lifecycle owner mounted from `AuraApp`.
+2. Keep `RealtimeController` as the single active realtime socket/media/session owner.
+3. Make caller start, recipient accept, and route join share one lifecycle entry API.
+4. Move incoming-call foreground ownership out of shell-local overlay lifetime.
+5. Add client-only Thread call presentation phases without adding backend states.
+
+## 2026-08-08: Thread Calling Reliability collective audit - no Flutter implementation authorized
+
+Authoritative audit: `../aura-backend/docs/2026-08-08-thread-calling-reliability-collective-audit.md`.
+
+Accepted founder evidence: Chrome background receives Thread-call notification; Desktop foreground and iOS foreground do not show incoming interruption or Activity entry; Android previously showed no interruption/notification despite recovered backend FCM `SENT`; Party B accepted/participated while Party A remained visually stuck on `Connecting...`.
+
+Current decisions/constraints:
+
+1. No Flutter application/runtime/schema/client code change is authorized by this audit.
+2. Do not reopen backend Reachability Authority, Session Continuity Authority Phase 1, or Canonical Call Notification Stage A.
+3. Meetings remain a hard preservation boundary. Any shared realtime client change must prove Meeting behavior unchanged.
+4. Treat the symptoms as one repair program until implementation evidence proves independence.
+
+Recommendation only: next Flutter work should start by stabilizing foreground Thread `call:incoming` consumption at an authenticated app-root or equivalent always-mounted boundary, then address caller/callee realtime join-state synchronization, then multi-device terminal/replaced convergence, then platform-specific background/native notification handling.
 
 ## 2026-07-31: Orphaned Aura Editor sheet — retired (superseded, not abandoned)
 

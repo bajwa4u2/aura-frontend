@@ -1,8 +1,49 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-02 UTC (cold-deep-link-reload defect investigated — does not reproduce; regression test added)
+Last updated: 2026-08-08 UTC (Canonical Flutter Thread-Call Lifecycle Stage 1 locally certified)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
+
+## Canonical Flutter Thread-Call Lifecycle - Stage 1
+
+Status: implemented and locally certified in the working tree; pending founder Gate 2 review and commit authorization. Blueprint/design record: `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`.
+
+Frozen scope:
+
+- foreground incoming-call ownership;
+- caller/callee realtime synchronization;
+- app-root Thread-call lifecycle owner;
+- one active call intent keyed by `sessionId + current user`;
+- existing `RealtimeController` remains the realtime socket/media/session owner;
+- root-mounted incoming-call presentation;
+- client-only Thread call phases for presentation/runtime.
+
+Deferred: Activity doctrine, multi-device accept/decline arbitration, desktop native notifications, Android/iOS background and terminated push handling.
+
+Meetings hard gate: no Meeting behavior change. If shared `RealtimeController`, `RealtimeState`, `RealtimeSocketService`, `RealtimeMediaService`, or route behavior must change, add Meeting regressions and preserve waiting room, admission, guest handling, host controls, Meeting reconnect, leave/end, Meeting UX, and Meeting notification semantics.
+
+Remaining Stage 1 gates:
+
+1. Founder review of local implementation and Gate 2 report.
+2. Commit authorization.
+3. No further local verification gate is known. The prior Flutter test/build hang was traced to Flutter SDK Git safe-directory/tool startup and certification now passes when commands are run with the explicit `C:/flutter` safe-directory environment override.
+
+Closed Stage 1 decisions:
+
+1. Root owner placement is `AuraApp` through `ThreadCallLifecycleHost` under the existing notification/app boundary.
+2. Shared realtime touch boundary was preserved. `RealtimeController`, `RealtimeState`, `RealtimeSocketService`, `RealtimeMediaService`, and generic realtime route behavior were not edited.
+
+## Thread Calling Reliability - Flutter repair program
+
+Status: read-only collective audit recorded in `../aura-backend/docs/2026-08-08-thread-calling-reliability-collective-audit.md`. No Flutter application/runtime/schema/client code was edited.
+
+Do not reopen backend Reachability Authority, Session Continuity Authority Phase 1, or Canonical Call Notification Stage A from this item. Do not modify Meetings without explicit proof and regression coverage that current Meeting behavior is unchanged.
+
+1. ~~Founder decision required - shared foreground call consumer ownership.~~ **Implemented locally in Stage 1; pending founder review/commit.**
+2. ~~Founder decision required - caller/callee synchronization pass.~~ **Implemented locally in Stage 1 as Thread-specific lifecycle coordination over existing `RealtimeController` outputs; pending founder review/commit.**
+3. **Founder decision required - Activity doctrine for active calls.** Activity currently reads `/notifications`; Stage A calls create Communication rows. Coordinate with backend before changing Flutter Activity behavior.
+4. **Founder decision required - multi-device doctrine.** Current backend rings all eligible devices but allows one same-user media owner by default. Client work must honor the final accepted/replaced/terminal synchronization doctrine.
+5. **Platform-specific notification work remains later.** Desktop native push is absent; Android/iOS background and terminated notification display require separate native release work after foreground lifecycle is resolved or explicitly deprioritized.
 
 ## Current remediation follow-up
 

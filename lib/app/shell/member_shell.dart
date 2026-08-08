@@ -21,7 +21,6 @@ import '../../features/updates/module_attention.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
 import '../../features/meetings/presentation/widgets/active_meeting_return_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
-import '../../features/realtime/presentation/incoming_live_overlay.dart';
 import 'rail/rail_composition.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,22 +195,20 @@ class MemberShell extends StatelessWidget {
             // around the app as a return pill — never an abandoned tab.
             child: ActiveMeetingReturnLayer(
               child: GlobalLiveBannerLayer(
-                child: AuraIncomingLiveLayer(
-                  child: GlobalPlatformShell(
-                    contextBar: (!showLeftRail && _showMemberMobileBar(path))
-                        ? const _MemberMobileBar()
-                        : null,
-                    child: Row(
-                      children: [
-                        if (showLeftRail)
-                          _MemberSideNav(
-                            items: _items,
-                            selectedIndex: selectedIndex,
-                            currentPath: path,
-                          ),
-                        Expanded(child: child),
-                      ],
-                    ),
+                child: GlobalPlatformShell(
+                  contextBar: (!showLeftRail && _showMemberMobileBar(path))
+                      ? const _MemberMobileBar()
+                      : null,
+                  child: Row(
+                    children: [
+                      if (showLeftRail)
+                        _MemberSideNav(
+                          items: _items,
+                          selectedIndex: selectedIndex,
+                          currentPath: path,
+                        ),
+                      Expanded(child: child),
+                    ],
                   ),
                 ),
               ),
@@ -359,9 +356,7 @@ class InstitutionShell extends ConsumerWidget {
             top: true,
             bottom: false,
             child: ActiveMeetingReturnLayer(
-              child: GlobalLiveBannerLayer(
-                child: AuraIncomingLiveLayer(child: body),
-              ),
+              child: GlobalLiveBannerLayer(child: body),
             ),
           ),
         );

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/session_providers.dart';
+import '../../features/updates/incoming_call_bridge.dart';
 import '../../features/updates/providers.dart';
 import '../../router.dart';
 import 'notification_open_reconcile.dart';
@@ -26,7 +27,8 @@ class NotificationBridge extends ConsumerStatefulWidget {
 
 class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   static const _browserIdKey = 'aura_browser_notification_device_id';
-  static const _browserRegisteredAtKey = 'aura_browser_notification_registered_at';
+  static const _browserRegisteredAtKey =
+      'aura_browser_notification_registered_at';
 
   final Set<String> _seenNotificationIds = <String>{};
   bool _browserRegistrationReady = false;
@@ -68,10 +70,7 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
           // refresh before navigation lands. /posts/* → post family,
           // /u/* + /institutions/* → follow family, /direct/* + /spaces/*
           // → feed family, /realtime/* → call family.
-          NotificationOpenReconcile.onFcmTap(
-            ref,
-            _payloadFromRoute(route),
-          );
+          NotificationOpenReconcile.onFcmTap(ref, _payloadFromRoute(route));
           ref.read(routerProvider).go(route);
         } catch (e) {
           debugPrint('SW navigate failed: $e');
@@ -102,10 +101,7 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
       return '';
     }
 
-    return <String, dynamic>{
-      'type': inferType(),
-      'deeplink': route,
-    };
+    return <String, dynamic>{'type': inferType(), 'deeplink': route};
   }
 
   void _initFcm() {
@@ -134,6 +130,12 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     if (!mounted) return;
     final payload = _payloadFromFcm(message);
     if (_isCallInterrupt(payload)) {
+      ref
+          .read(incomingCallBridgeProvider.notifier)
+          .addIncoming(
+            Map<String, dynamic>.from(payload)
+              ..['_auraLifecycleSource'] = 'foregroundPush',
+          );
       // Trigger an immediate notification refresh so the incoming-call overlay
       // can show the call without waiting for the next 45-second poll cycle.
       unawaited(
@@ -195,7 +197,11 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   bool _isCallInterrupt(Map<String, dynamic> payload) {
     final kind = _resolveNotificationKind(payload).toUpperCase();
     final attention = _stringOf(payload['attention']).toUpperCase();
-    return (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') &&
+    return (kind == 'LIVE' ||
+            kind == 'CALL' ||
+            kind == 'REALTIME' ||
+            kind == 'CALL_RINGING' ||
+            kind == 'LIVE_RINGING') &&
         attention == 'INTERRUPT' &&
         !_isTerminalCallPayload(payload);
   }
@@ -370,15 +376,21 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
 
     if (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') {
       if (callState == 'MISSED') {
-        return actorName.isNotEmpty ? 'Missed call from $actorName' : 'Missed call';
+        return actorName.isNotEmpty
+            ? 'Missed call from $actorName'
+            : 'Missed call';
       }
       if (callState == 'ENDED') {
-        return actorName.isNotEmpty ? 'Call ended with $actorName' : 'Call ended';
+        return actorName.isNotEmpty
+            ? 'Call ended with $actorName'
+            : 'Call ended';
       }
       if (callState == 'DECLINED') {
         return actorName.isNotEmpty ? '$actorName declined' : 'Call declined';
       }
-      return actorName.isNotEmpty ? '$actorName started a call' : 'Incoming call';
+      return actorName.isNotEmpty
+          ? '$actorName started a call'
+          : 'Incoming call';
     }
 
     if (actorName.isNotEmpty) return actorName;
@@ -422,7 +434,9 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     );
 
     if (_seenNotificationIds.isEmpty && items.isNotEmpty) {
-      _seenNotificationIds.addAll(items.map(_notificationIdOf).whereType<String>());
+      _seenNotificationIds.addAll(
+        items.map(_notificationIdOf).whereType<String>(),
+      );
     }
 
     if (isAuthed && !_browserRegistrationReady && !_registrationSyncQueued) {
@@ -501,7 +515,11 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     final kind = _resolveNotificationKindFromItem(item).toUpperCase();
     final data = _mapOf(item['data']);
     final attention = _stringOf(data['attention']).toUpperCase();
-    return (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') &&
+    return (kind == 'LIVE' ||
+            kind == 'CALL' ||
+            kind == 'REALTIME' ||
+            kind == 'CALL_RINGING' ||
+            kind == 'LIVE_RINGING') &&
         attention == 'INTERRUPT';
   }
 
@@ -544,15 +562,21 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
 
     if (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') {
       if (callState == 'MISSED') {
-        return actorName.isNotEmpty ? 'Missed call from $actorName' : 'Missed call';
+        return actorName.isNotEmpty
+            ? 'Missed call from $actorName'
+            : 'Missed call';
       }
       if (callState == 'ENDED') {
-        return actorName.isNotEmpty ? 'Call ended with $actorName' : 'Call ended';
+        return actorName.isNotEmpty
+            ? 'Call ended with $actorName'
+            : 'Call ended';
       }
       if (callState == 'DECLINED') {
         return actorName.isNotEmpty ? '$actorName declined' : 'Call declined';
       }
-      return actorName.isNotEmpty ? '$actorName started a call' : 'Incoming call';
+      return actorName.isNotEmpty
+          ? '$actorName started a call'
+          : 'Incoming call';
     }
 
     if (actorName.isNotEmpty) return actorName;
