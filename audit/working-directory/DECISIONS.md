@@ -1,8 +1,38 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-08 UTC (Communication Continuity & Presence Chapter 1 contracts frozen)
+Last updated: 2026-08-08 UTC (Correspondence entry flow locally certified)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-08: Correspondence entry flow contract repaired locally
+
+Repair record: `docs/2026-08-08-correspondence-entry-flow-repair.md`.
+
+Decision status: implemented locally and certified; awaiting founder Gate 2 review/commit authorization.
+
+Decisions:
+
+1. Public Messages -> Create remains the canonical communication entry surface for direct private conversations and shared spaces.
+2. Selection state is owned by stable selected-entry identity, not by transient search result membership.
+3. One selected other person with no shared-space title creates a `PRIVATE` one-to-one conversation.
+4. Multiple selected people, or an explicit shared-space title, creates a shared space.
+5. Circle, Workroom, and Salon remain distinct UI modes; backend now accepts `WORKROOM` and `SALON`, while `STUDIO` remains backend-compatible for existing callers.
+6. User-facing create failures should use safe application error mapping rather than raw transport exception text.
+7. Meetings and certified communication authorities remain protected and unchanged.
+
+## 2026-08-08: Device Communication Presence Phase 1 is backend-owned
+
+Backend record: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
+
+Decision status: backend Phase 1 is locally certified and awaiting founder Gate 2 review/commit authorization. No Flutter implementation was authorized or performed in this chapter.
+
+Flutter contract decisions:
+
+1. Existing REST join/decline endpoints and socket event names remain the client contract.
+2. Flutter does not require a new DTO or endpoint to consume backend first-action-wins arbitration.
+3. Existing `session:replaced` remains the released-client-compatible signal for a losing Thread/DM media runtime.
+4. Activity, Notification Delivery, native background notification work, preferred-device policy, and manual transfer remain deferred.
+5. Meetings remain protected and unchanged.
 
 ## 2026-08-08: Platform-wide engineering governance adopted
 

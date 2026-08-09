@@ -1,23 +1,36 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-08 UTC (Communication Continuity & Presence Chapter 1 contracts frozen)
+Last updated: 2026-08-08 UTC (Correspondence entry flow locally certified)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
+## Correspondence entry flow
+
+Status: implemented locally and certified; commit/push requires founder authorization. Record: `docs/2026-08-08-correspondence-entry-flow-repair.md`.
+
+No additional architecture decision is required before committing the local repair. Remaining gates:
+
+1. Founder Gate 2 review of the local repair.
+2. Commit/push authorization if accepted.
+3. Founder production observation after deployment/release.
+
+Deferred enhancements outside this repair: richer shared-space mode education, Activity/timeline work, and any broader public-space taxonomy changes.
+
 ## Communication Continuity & Presence platform architecture
 
-Status: Chapter 1 contracts frozen in backend. Records:
+Status: Device Communication Presence Phase 1 is backend-implemented and locally certified, pending founder Gate 2/commit authorization. Records:
 
 - Discovery: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
 - Chapter 1 contracts: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
+- Device Presence Phase 1: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
 
-No Flutter implementation is authorized.
+No Flutter implementation is authorized for Device Presence Phase 1. Current Flutter contract remains existing join/decline endpoints plus existing socket events.
 
 Founder doctrine decisions are resolved. Remaining gate: authorize the next implementation chapter.
 
 Mandatory before Desktop/Android/iOS production release:
 
-1. Device Communication Presence Phase 1.
+1. ~~Device Communication Presence Phase 1.~~ Backend implemented and locally certified; commit/push requires founder authorization.
 2. Notification Delivery Authority Phase 1.
 3. Native background/terminated notification certification.
 4. Communication Timeline Authority Phase 1.

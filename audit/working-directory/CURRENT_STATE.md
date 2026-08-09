@@ -1,6 +1,43 @@
 # Current State — aura_final
 
-Last updated: 2026-08-08 UTC (Communication Continuity & Presence Chapter 1 contracts frozen)
+Last updated: 2026-08-08 UTC (Correspondence entry flow locally certified)
+
+## Correspondence entry flow repair, 2026-08-08
+
+Repair record: `docs/2026-08-08-correspondence-entry-flow-repair.md`.
+
+Status: implemented locally and certified; not committed, not pushed.
+
+Founder production evidence: selecting a second member in Messages -> Create removed/replaced the first selected member, and create failed with backend validation. Root cause was a split selected-member state model: selected IDs persisted, but selected entries were derived from the current search cache, so changing search results could drop prior selections from the UI and submitted payload. A paired backend contract drift rejected Workroom/Salon mode values exposed by the Flutter UI.
+
+Flutter fix:
+
+- `NewConversationScreen` now stores selected entries by ID independently of current search results;
+- search changes preserve prior selections;
+- duplicate selection is ignored and deselection removes only the intended member;
+- submitted participant IDs come from the same stable selection state shown in the UI;
+- one-to-one private and shared-space mode transitions are deterministic;
+- Circle, Workroom, and Salon remain distinct entry modes;
+- submit errors use the safe app error mapper instead of surfacing raw Dio exceptions;
+- `CompositionAssist` received a layout-only responsive fix for the embedded shared-space details surface.
+
+Verification: focused entry-flow widget tests passed 5/5, `flutter analyze` passed, practical non-golden suite passed 130/130, and web release build passed. Meetings, Reachability, Session Continuity, Canonical Call Notification Stage A, Thread Call Lifecycle Stage 1, and Device Communication Presence Phase 1 were preserved.
+
+## Device Communication Presence Phase 1 backend contract, 2026-08-08
+
+Backend implementation record: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
+
+No Flutter application/runtime/client code was edited. Backend Phase 1 is locally certified and awaiting founder Gate 2 review/commit authorization.
+
+Flutter contract impact:
+
+- existing REST join/decline endpoints remain the client contract;
+- existing socket events remain the client contract, including `session:join`, `session:replaced`, `call:declined`, and `call:terminal`;
+- accepted/declined terminal synchronization is now backend-gated by first-action-wins authority, but released Flutter does not need new request/response fields;
+- late losing Thread/DM media devices receive existing `session:replaced`, which current Flutter already handles by parking the replaced runtime;
+- Activity doctrine, Notification Delivery Authority, native background notification handling, preferred-device policy, and manual transfer remain deferred.
+
+Meetings remain protected. Backend Phase 1 does not track `MEETING` media ownership and did not edit Meeting source files.
 
 ## Communication Continuity & Presence Chapter 1 contracts, 2026-08-08
 

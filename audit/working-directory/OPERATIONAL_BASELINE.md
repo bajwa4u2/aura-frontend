@@ -1,6 +1,6 @@
 # Operational Baseline - aura_final
 
-Last updated: 2026-08-08 UTC (Communication Continuity & Presence Chapter 1 contracts frozen)
+Last updated: 2026-08-08 UTC (Correspondence entry flow locally certified)
 
 ## Production resources
 
@@ -33,6 +33,7 @@ These rules apply across every Aura repository, present and future:
 
 Backend discovery record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
 Backend Chapter 1 contract record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
+Backend Device Presence Phase 1 record: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
 
 Proposed platform authorities:
 
@@ -43,9 +44,19 @@ Proposed platform authorities:
 
 Flutter Stage 1 is the Thread-call foreground lifecycle seed. It is not a replacement for a platform-wide lifecycle authority. Future work must preserve `RealtimeController` as socket/media/session execution authority and preserve Meetings exactly unless founder explicitly authorizes a shared-system change with Meeting regression certification.
 
-Pre-native-production mandatory gates: Device Communication Presence Phase 1, Notification Delivery Authority Phase 1, native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for shared authority implementation.
+Pre-native-production mandatory gates: Device Communication Presence Phase 1 is backend-local and locally certified, awaiting founder commit/push authorization. Notification Delivery Authority Phase 1, native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for later shared authority implementation remain mandatory.
 
 ## Current verification note
+
+Correspondence entry flow repair, 2026-08-08:
+
+- Record: `docs/2026-08-08-correspondence-entry-flow-repair.md`.
+- Focused `test/new_conversation_screen_test.dart` passed 5/5.
+- Practical non-golden Flutter suite passed 130/130.
+- `flutter analyze` passed.
+- Web release build passed.
+- Backend paired contract repair is recorded in `../aura-backend/docs/2026-08-08-correspondence-entry-flow-contract-repair.md`.
+- Meetings, Reachability Authority, Session Continuity Authority, Canonical Call Notification Stage A, Thread Call Lifecycle Stage 1, and Device Communication Presence Phase 1 remain protected.
 
 Stage 1 Gate 2 toolchain health was restored using the `C:/flutter` safe-directory override. Current local verification: focused Stage 1 tests passed 6/6, relevant correspondence/realtime/notification/Meeting set passed 31/31, repository-standard non-golden suite passed 125/125, `flutter analyze` clean, and `flutter build web --release --no-wasm-dry-run` completed successfully.
 
