@@ -93,7 +93,8 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
       _reviewSnapshot = null;
       _dismissedIds.clear();
     }
-    if (_translationSnapshot != null && _translationSnapshot!.trim() != current) {
+    if (_translationSnapshot != null &&
+        _translationSnapshot!.trim() != current) {
       _translation = null;
       _translateError = null;
       _translationSnapshot = null;
@@ -295,9 +296,7 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
               ),
               if (s != suggestions.last) const SizedBox(height: AuraSpace.s10),
             ],
-          ] else if (!_reviewBusy &&
-              hasText &&
-              _reviewSnapshot != null) ...[
+          ] else if (!_reviewBusy && hasText && _reviewSnapshot != null) ...[
             const SizedBox(height: AuraSpace.s10),
             Text(
               'No suggestions right now.',
@@ -308,35 +307,52 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
           Container(height: 1, color: AuraSurface.divider),
           const SizedBox(height: AuraSpace.s14),
           // ── Translation ──────────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _targetLanguage,
-                  decoration: const InputDecoration(labelText: 'Translate to'),
-                  items: [
-                    for (final l in _languages)
-                      DropdownMenuItem(value: l.code, child: Text(l.label)),
-                  ],
-                  onChanged: !on || _translateBusy
-                      ? null
-                      : (v) {
-                          if (v == null) return;
-                          setState(() {
-                            _targetLanguage = v;
-                            _translation = null;
-                            _translateError = null;
-                          });
-                        },
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              AuraSecondaryButton(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final languagePicker = DropdownButtonFormField<String>(
+                initialValue: _targetLanguage,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Translate to'),
+                items: [
+                  for (final l in _languages)
+                    DropdownMenuItem(value: l.code, child: Text(l.label)),
+                ],
+                onChanged: !on || _translateBusy
+                    ? null
+                    : (v) {
+                        if (v == null) return;
+                        setState(() {
+                          _targetLanguage = v;
+                          _translation = null;
+                          _translateError = null;
+                        });
+                      },
+              );
+              final preview = AuraSecondaryButton(
                 label: _translateBusy ? 'Preparing…' : 'Preview',
                 icon: Icons.translate_outlined,
                 onPressed: on && hasText && !_translateBusy ? _translate : null,
-              ),
-            ],
+              );
+
+              if (constraints.maxWidth < 420) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    languagePicker,
+                    const SizedBox(height: AuraSpace.s10),
+                    preview,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: languagePicker),
+                  const SizedBox(width: AuraSpace.s12),
+                  preview,
+                ],
+              );
+            },
           ),
           if ((_translateError ?? '').trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s10),
@@ -360,8 +376,7 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
                 children: [
                   Text(
                     'Preview',
-                    style:
-                        AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                    style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AuraSpace.s8),
                   Directionality(
@@ -403,7 +418,12 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
 
   bool _isRtlCode(String? code) {
     final c = (code ?? '').trim().toLowerCase();
-    return c == 'ur' || c == 'ar' || c == 'fa' || c == 'he' || c == 'ps' || c == 'sd';
+    return c == 'ur' ||
+        c == 'ar' ||
+        c == 'fa' ||
+        c == 'he' ||
+        c == 'ps' ||
+        c == 'sd';
   }
 
   // ── tolerant parsing helpers ───────────────────────────────────────────

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -41,6 +42,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   final TextEditingController _descriptionController = TextEditingController();
 
   final Set<String> _selectedIds = <String>{};
+  final Map<String, _DirectoryEntry> _selectedEntriesById =
+      <String, _DirectoryEntry>{};
 
   List<_DirectoryEntry> _relationshipEntries = const [];
   List<_DirectoryEntry> _searchEntries = const [];
@@ -65,11 +68,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   // flag is retained only for backward-compat with existing links and no
   // longer gates capability.
   bool get _isSharedSpaceMode =>
-      _selectedMemberCount >= 2 ||
-      _titleController.text.trim().isNotEmpty;
+      _selectedMemberCount >= 2 || _titleController.text.trim().isNotEmpty;
 
-  List<_DirectoryEntry> get _selectedEntries => _allEntries
-      .where((entry) => _selectedIds.contains(entry.id))
+  List<_DirectoryEntry> get _selectedEntries => _selectedIds
+      .map((id) => _selectedEntriesById[id])
+      .whereType<_DirectoryEntry>()
       .toList(growable: false);
 
   int get _selectedMemberCount => _selectedEntries.length;
@@ -157,17 +160,27 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         handle: handle,
       );
 
-      final deduped = _dedupeEntries(relationshipEntries)
-        ..sort(
-          (a, b) => a.displayName.toLowerCase().compareTo(
-            b.displayName.toLowerCase(),
-          ),
-        );
-
       final meId = _pickString(me, const ['id', 'userId']);
       final meHandle = _normalizeHandle(
         _pickString(me, const ['handle', 'username']),
       );
+
+      final deduped =
+          _dedupeEntries(
+            relationshipEntries
+                .where((entry) {
+                  return !_isCurrentUserEntry(
+                    entry,
+                    currentUserId: meId,
+                    currentUserHandle: meHandle,
+                  );
+                })
+                .toList(growable: false),
+          )..sort(
+            (a, b) => a.displayName.toLowerCase().compareTo(
+              b.displayName.toLowerCase(),
+            ),
+          );
 
       if (!mounted) return;
 
@@ -255,13 +268,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
           .map(_memberEntryFromMap)
           .whereType<_DirectoryEntry>()
           .where((entry) {
-            final sameId =
-                (_currentUserId ?? '').isNotEmpty &&
-                entry.userId.trim() == (_currentUserId ?? '');
-            final sameHandle =
-                (_currentUserHandle ?? '').isNotEmpty &&
-                _normalizeHandle(entry.handle) == (_currentUserHandle ?? '');
-            return !sameId && !sameHandle;
+            return !_isCurrentUserEntry(
+              entry,
+              currentUserId: _currentUserId ?? '',
+              currentUserHandle: _currentUserHandle ?? '',
+            );
           })
           .toList(growable: false);
 
@@ -289,6 +300,20 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     List<_DirectoryEntry> secondary,
   ) {
     return _dedupeEntries([...primary, ...secondary]);
+  }
+
+  bool _isCurrentUserEntry(
+    _DirectoryEntry entry, {
+    required String currentUserId,
+    required String currentUserHandle,
+  }) {
+    final sameId =
+        currentUserId.trim().isNotEmpty &&
+        entry.userId.trim() == currentUserId.trim();
+    final sameHandle =
+        currentUserHandle.trim().isNotEmpty &&
+        _normalizeHandle(entry.handle) == currentUserHandle.trim();
+    return sameId || sameHandle;
   }
 
   void _applyInitialSelectionIfNeeded() {
@@ -319,6 +344,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     _initialSelectionApplied = true;
 
     if (matched == null) return;
+    final selectedEntry = matched;
 
     setState(() {
       // Seed with the deep-linked member; leave the name empty so a single
@@ -326,7 +352,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       // more people or a name to make it a space).
       _selectedIds
         ..clear()
-        ..add(matched!.id);
+        ..add(selectedEntry.id);
+      _selectedEntriesById
+        ..clear()
+        ..[selectedEntry.id] = selectedEntry;
     });
   }
 
@@ -345,8 +374,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       // that transition impossible.
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
+        _selectedEntriesById.remove(id);
       } else {
         _selectedIds.add(id);
+        _selectedEntriesById[id] = tapped;
       }
     });
   }
@@ -354,6 +385,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   void _removeSelected(String id) {
     setState(() {
       _selectedIds.remove(id);
+      _selectedEntriesById.remove(id);
       _submitError = null;
     });
   }
@@ -425,7 +457,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _submitError = '$e';
+        _submitError = AppErrorMapper.from(
+          e,
+          feature: 'start this conversation',
+        ).message;
       });
     } finally {
       if (mounted) {
@@ -492,7 +527,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     final participantIds = _selectedEntries
         .map((e) => e.userId)
         .where((e) => e.trim().isNotEmpty)
-        .toList();
+        .toSet()
+        .toList(growable: false);
 
     if (!_isSharedSpaceMode && participantIds.length != 1) {
       throw Exception('A direct conversation requires exactly one member.');
@@ -529,8 +565,9 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     // carries the adaptive guidance so the top chrome doesn't flip as the
     // selection changes the derived kind.
     const pageTitle = 'New message';
-    final leadTitle =
-        _isSharedSpaceMode ? 'New shared space' : 'New conversation';
+    final leadTitle = _isSharedSpaceMode
+        ? 'New shared space'
+        : 'New conversation';
 
     return AuraScaffold(
       title: pageTitle,
@@ -597,39 +634,53 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                     style: AuraText.small.copyWith(color: AuraSurface.coSun),
                   ),
                 ),
-              Row(
-                children: [
-                  Expanded(
-                    child: AuraSecondaryButton(
-                      label: 'Cancel',
-                      onPressed: _submitting
-                          ? null
-                          : () {
-                              // Entered via context.go from the Create hub, so
-                              // there's often no back-stack — fall back to the
-                              // messages hub so Cancel is never a dead tap.
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go('/me/correspondence');
-                              }
-                            },
-                      icon: Icons.close_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s12),
-                  Expanded(
-                    child: AuraPrimaryButton(
-                      label: _submitting
-                          ? (_isSharedSpaceMode ? 'Creating…' : 'Starting…')
-                          : (_isSharedSpaceMode
-                                ? 'Create space'
-                                : 'Start conversation'),
-                      onPressed: _canSubmit ? _submit : null,
-                      icon: Icons.arrow_forward_rounded,
-                    ),
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cancel = AuraSecondaryButton(
+                    label: 'Cancel',
+                    onPressed: _submitting
+                        ? null
+                        : () {
+                            // Entered via context.go from the Create hub, so
+                            // there's often no back-stack — fall back to the
+                            // messages hub so Cancel is never a dead tap.
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go('/me/correspondence');
+                            }
+                          },
+                    icon: Icons.close_rounded,
+                  );
+                  final submit = AuraPrimaryButton(
+                    label: _submitting
+                        ? (_isSharedSpaceMode ? 'Creating…' : 'Starting…')
+                        : (_isSharedSpaceMode
+                              ? 'Create space'
+                              : 'Start conversation'),
+                    onPressed: _canSubmit ? _submit : null,
+                    icon: Icons.arrow_forward_rounded,
+                  );
+
+                  if (constraints.maxWidth < 420) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        cancel,
+                        const SizedBox(height: AuraSpace.s10),
+                        submit,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: cancel),
+                      const SizedBox(width: AuraSpace.s12),
+                      Expanded(child: submit),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -701,18 +752,31 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               decoration: const InputDecoration(labelText: 'Description'),
             ),
             const SizedBox(height: AuraSpace.s12),
-            DropdownButtonFormField<String>(
-              initialValue: _spaceType,
-              decoration: const InputDecoration(labelText: 'Type'),
-              items: const [
-                DropdownMenuItem(value: 'CIRCLE', child: Text('Circle')),
-                DropdownMenuItem(value: 'WORKROOM', child: Text('Workroom')),
-                DropdownMenuItem(value: 'SALON', child: Text('Salon')),
+            Text(
+              'Type',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              children: [
+                _SpaceTypeChip(
+                  label: 'Circle',
+                  selected: _spaceType == 'CIRCLE',
+                  onSelected: () => setState(() => _spaceType = 'CIRCLE'),
+                ),
+                _SpaceTypeChip(
+                  label: 'Workroom',
+                  selected: _spaceType == 'WORKROOM',
+                  onSelected: () => setState(() => _spaceType = 'WORKROOM'),
+                ),
+                _SpaceTypeChip(
+                  label: 'Salon',
+                  selected: _spaceType == 'SALON',
+                  onSelected: () => setState(() => _spaceType = 'SALON'),
+                ),
               ],
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => _spaceType = value);
-              },
             ),
             const SizedBox(height: AuraSpace.s16),
             CompositionAssist(
@@ -1067,23 +1131,79 @@ class _SelectedChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s8,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s10,
+          vertical: AuraSpace.s8,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.elevated,
+          border: Border.all(color: AuraSurface.divider),
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                style: AuraText.small,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            InkWell(onTap: onRemoved, child: const Icon(Icons.close, size: 16)),
+          ],
+        ),
       ),
-      decoration: BoxDecoration(
-        color: AuraSurface.elevated,
-        border: Border.all(color: AuraSurface.divider),
+    );
+  }
+}
+
+class _SpaceTypeChip extends StatelessWidget {
+  const _SpaceTypeChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onSelected,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: AuraText.small),
-          const SizedBox(width: AuraSpace.s8),
-          InkWell(onTap: onRemoved, child: const Icon(Icons.close, size: 16)),
-        ],
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 140),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s10,
+            vertical: AuraSpace.s8,
+          ),
+          decoration: BoxDecoration(
+            color: selected
+                ? AuraSurface.accent.withValues(alpha: 0.24)
+                : AuraSurface.elevated,
+            border: Border.all(
+              color: selected ? AuraSurface.accent : AuraSurface.divider,
+            ),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+          ),
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              color: selected ? Colors.white : AuraSurface.ink,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ),
     );
   }
