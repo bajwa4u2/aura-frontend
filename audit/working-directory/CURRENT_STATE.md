@@ -1,6 +1,23 @@
 # Current State — aura_final
 
-Last updated: 2026-08-08 UTC (Correspondence entry flow locally certified)
+Last updated: 2026-08-09 UTC (Notification Delivery Authority Phase 1 backend contract locally certified)
+
+## Notification Delivery Authority Phase 1 backend contract, 2026-08-09
+
+Backend implementation record: `../aura-backend/docs/2026-08-09-notification-delivery-authority-phase-1-implementation.md`.
+
+No Flutter application/runtime/client code was edited.
+
+Flutter contract impact:
+
+- existing `call:incoming` socket payload and event name remain unchanged;
+- existing direct Stage A call push payload remains unchanged;
+- existing canonical Communication-linked push payload remains unchanged;
+- existing notification tap/deeplink handling remains the client contract;
+- `NotificationBridge`, `incomingCallBridgeProvider`, service-worker notification behavior, and root Thread lifecycle ownership remain unchanged;
+- native background/terminated notification certification remains unresolved and mandatory before native production release.
+
+Backend Phase 1 is locally certified and awaiting founder Gate 2 review/commit authorization. It does not by itself create a new native client release artifact.
 
 ## Correspondence entry flow repair, 2026-08-08
 

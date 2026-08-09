@@ -1,6 +1,6 @@
 # Operational Baseline - aura_final
 
-Last updated: 2026-08-08 UTC (Correspondence entry flow locally certified)
+Last updated: 2026-08-09 UTC (Notification Delivery Authority Phase 1 backend contract locally certified)
 
 ## Production resources
 
@@ -34,6 +34,7 @@ These rules apply across every Aura repository, present and future:
 Backend discovery record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
 Backend Chapter 1 contract record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
 Backend Device Presence Phase 1 record: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
+Backend Notification Delivery Phase 1 record: `../aura-backend/docs/2026-08-09-notification-delivery-authority-phase-1-implementation.md`.
 
 Proposed platform authorities:
 
@@ -44,7 +45,7 @@ Proposed platform authorities:
 
 Flutter Stage 1 is the Thread-call foreground lifecycle seed. It is not a replacement for a platform-wide lifecycle authority. Future work must preserve `RealtimeController` as socket/media/session execution authority and preserve Meetings exactly unless founder explicitly authorizes a shared-system change with Meeting regression certification.
 
-Pre-native-production mandatory gates: Device Communication Presence Phase 1 is backend-local and locally certified, awaiting founder commit/push authorization. Notification Delivery Authority Phase 1, native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for later shared authority implementation remain mandatory.
+Pre-native-production mandatory gates: Device Communication Presence Phase 1 and Notification Delivery Authority Phase 1 are backend-local and locally certified, awaiting founder commit/push authorization. Native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for later shared authority implementation remain mandatory.
 
 ## Current verification note
 

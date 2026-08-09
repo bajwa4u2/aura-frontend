@@ -1,8 +1,23 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-08 UTC (Correspondence entry flow locally certified)
+Last updated: 2026-08-09 UTC (Notification Delivery Authority Phase 1 backend contract locally certified)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-09: Notification Delivery Authority Phase 1 is backend-owned
+
+Backend record: `../aura-backend/docs/2026-08-09-notification-delivery-authority-phase-1-implementation.md`.
+
+Decision status: backend Phase 1 is locally certified and awaiting founder Gate 2 review/commit authorization. No Flutter implementation was authorized or performed in this chapter.
+
+Flutter contract decisions:
+
+1. Existing `call:incoming` socket event name and payload remain the client contract.
+2. Existing direct Stage A push payload remains the client contract.
+3. Existing canonical Communication-linked push payload remains the client contract.
+4. Existing notification tap/deeplink behavior remains the client contract.
+5. `NotificationBridge`, `incomingCallBridgeProvider`, service-worker behavior, and root Thread lifecycle ownership were not changed.
+6. Native background/terminated notification certification remains mandatory and unresolved before native production release.
 
 ## 2026-08-08: Correspondence entry flow contract repaired locally
 

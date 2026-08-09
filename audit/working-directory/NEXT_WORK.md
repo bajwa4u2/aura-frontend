@@ -1,6 +1,6 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-08 UTC (Correspondence entry flow locally certified)
+Last updated: 2026-08-09 UTC (Notification Delivery Authority Phase 1 backend contract locally certified)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
@@ -18,20 +18,21 @@ Deferred enhancements outside this repair: richer shared-space mode education, A
 
 ## Communication Continuity & Presence platform architecture
 
-Status: Device Communication Presence Phase 1 is backend-implemented and locally certified, pending founder Gate 2/commit authorization. Records:
+Status: Device Communication Presence Phase 1 and Notification Delivery Authority Phase 1 are backend-implemented and locally certified, pending founder Gate 2/commit authorization. Records:
 
 - Discovery: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
 - Chapter 1 contracts: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
 - Device Presence Phase 1: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
+- Notification Delivery Phase 1: `../aura-backend/docs/2026-08-09-notification-delivery-authority-phase-1-implementation.md`.
 
-No Flutter implementation is authorized for Device Presence Phase 1. Current Flutter contract remains existing join/decline endpoints plus existing socket events.
+No Flutter implementation was required for Device Presence Phase 1 or Notification Delivery Authority Phase 1. Current Flutter contract remains existing join/decline endpoints, existing socket events, existing push payloads, and existing notification tap/deeplink behavior.
 
 Founder doctrine decisions are resolved. Remaining gate: authorize the next implementation chapter.
 
 Mandatory before Desktop/Android/iOS production release:
 
 1. ~~Device Communication Presence Phase 1.~~ Backend implemented and locally certified; commit/push requires founder authorization.
-2. Notification Delivery Authority Phase 1.
+2. ~~Notification Delivery Authority Phase 1.~~ Backend implemented and locally certified; commit/push requires founder authorization.
 3. Native background/terminated notification certification.
 4. Communication Timeline Authority Phase 1.
 5. iOS Firebase/APNs configuration confirmation.
