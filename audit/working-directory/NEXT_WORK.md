@@ -1,12 +1,46 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-08 UTC (Canonical Flutter Thread-Call Lifecycle Stage 1 locally certified)
+Last updated: 2026-08-08 UTC (Communication Continuity & Presence Chapter 1 contracts frozen)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
+## Communication Continuity & Presence platform architecture
+
+Status: Chapter 1 contracts frozen in backend. Records:
+
+- Discovery: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
+- Chapter 1 contracts: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
+
+No Flutter implementation is authorized.
+
+Founder doctrine decisions are resolved. Remaining gate: authorize the next implementation chapter.
+
+Mandatory before Desktop/Android/iOS production release:
+
+1. Device Communication Presence Phase 1.
+2. Notification Delivery Authority Phase 1.
+3. Native background/terminated notification certification.
+4. Communication Timeline Authority Phase 1.
+5. iOS Firebase/APNs configuration confirmation.
+6. Meetings preservation certification for any shared authority implementation.
+
+Communication Runtime Lifecycle Phase 2 can remain later only if current native lifecycle health remains certified and no blocking runtime defect is found.
+
+## Pre-release connected-system health gate
+
+Status: complete. Record: `docs/2026-08-08-pre-release-connected-system-health-audit.md`.
+
+Current verdict: READY WITH NON-BLOCKING RISKS for founder-directed native test builds. Do not start build/release pipelines without founder direction.
+
+Non-blocking risks to carry into build planning:
+
+1. Confirm `FIREBASE_IOS_CONFIG_BASE64` is current in the iOS CI/build environment; local Windows source intentionally does not include `ios/Runner/GoogleService-Info.plist`.
+2. Use the certified `C:/flutter` safe-directory environment override for local Flutter verification in this sandbox until host-level Git config is normalized.
+3. Native runtime certification remains founder/device work after test builds.
+
 ## Canonical Flutter Thread-Call Lifecycle - Stage 1
 
-Status: implemented and locally certified in the working tree; pending founder Gate 2 review and commit authorization. Blueprint/design record: `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`.
+Status: implemented, locally certified, committed, and pushed as `86de6e165931e96185a2e78a349bb5502065940a`. Blueprint/design record: `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`.
 
 Frozen scope:
 
@@ -24,9 +58,8 @@ Meetings hard gate: no Meeting behavior change. If shared `RealtimeController`, 
 
 Remaining Stage 1 gates:
 
-1. Founder review of local implementation and Gate 2 report.
-2. Commit authorization.
-3. No further local verification gate is known. The prior Flutter test/build hang was traced to Flutter SDK Git safe-directory/tool startup and certification now passes when commands are run with the explicit `C:/flutter` safe-directory environment override.
+1. Founder-directed platform test builds and live runtime certification.
+2. No further local source verification gate is known. The prior Flutter test/build hang was traced to Flutter SDK Git safe-directory/tool startup and certification now passes when commands are run with the explicit `C:/flutter` safe-directory environment override.
 
 Closed Stage 1 decisions:
 
@@ -39,8 +72,8 @@ Status: read-only collective audit recorded in `../aura-backend/docs/2026-08-08-
 
 Do not reopen backend Reachability Authority, Session Continuity Authority Phase 1, or Canonical Call Notification Stage A from this item. Do not modify Meetings without explicit proof and regression coverage that current Meeting behavior is unchanged.
 
-1. ~~Founder decision required - shared foreground call consumer ownership.~~ **Implemented locally in Stage 1; pending founder review/commit.**
-2. ~~Founder decision required - caller/callee synchronization pass.~~ **Implemented locally in Stage 1 as Thread-specific lifecycle coordination over existing `RealtimeController` outputs; pending founder review/commit.**
+1. ~~Founder decision required - shared foreground call consumer ownership.~~ **Implemented, certified, committed, and pushed in Stage 1.**
+2. ~~Founder decision required - caller/callee synchronization pass.~~ **Implemented, certified, committed, and pushed in Stage 1 as Thread-specific lifecycle coordination over existing `RealtimeController` outputs.**
 3. **Founder decision required - Activity doctrine for active calls.** Activity currently reads `/notifications`; Stage A calls create Communication rows. Coordinate with backend before changing Flutter Activity behavior.
 4. **Founder decision required - multi-device doctrine.** Current backend rings all eligible devices but allows one same-user media owner by default. Client work must honor the final accepted/replaced/terminal synchronization doctrine.
 5. **Platform-specific notification work remains later.** Desktop native push is absent; Android/iOS background and terminated notification display require separate native release work after foreground lifecycle is resolved or explicitly deprioritized.

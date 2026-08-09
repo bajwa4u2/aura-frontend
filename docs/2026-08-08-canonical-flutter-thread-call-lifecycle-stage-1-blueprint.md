@@ -19,7 +19,7 @@ Closed foundations preserved:
 
 ## 0. Stage 1 Local Implementation Outcome
 
-Status: implemented and locally certified in the Flutter working tree, pending founder Gate 2 review and commit authorization.
+Status: implemented, locally certified, committed, and pushed as `86de6e165931e96185a2e78a349bb5502065940a`.
 
 Implemented files:
 
@@ -444,8 +444,8 @@ Phase D - Regression certification.
 
 ## 13. Founder Gates Still Required Before Commit
 
-1. Review the local Stage 1 implementation and Gate 2 report.
-2. Authorize commit if the Stage 1 scope, Meetings boundary, and verification record are acceptable.
+1. Founder/device runtime certification after new web/desktop/mobile builds.
+2. Activity doctrine, multi-device arbitration, and platform-specific background/native notification work remain separate future chapters.
 
 Resolved by implementation authorization:
 

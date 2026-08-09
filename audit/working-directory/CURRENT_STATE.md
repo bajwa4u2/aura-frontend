@@ -1,10 +1,73 @@
 # Current State — aura_final
 
-Last updated: 2026-08-08 UTC (Canonical Flutter Thread-Call Lifecycle Stage 1 locally certified; pending founder review/commit)
+Last updated: 2026-08-08 UTC (Communication Continuity & Presence Chapter 1 contracts frozen)
 
-## Canonical Flutter Thread-Call Lifecycle Stage 1 implemented locally, 2026-08-08
+## Communication Continuity & Presence Chapter 1 contracts, 2026-08-08
 
-Stage 1 implementation is present in the working tree, locally certified, and not committed. It follows `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`.
+Backend platform contract record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
+
+No Flutter application/runtime/schema/client code was edited. This is contract/test-harness architecture only.
+
+Frozen platform authorities:
+
+1. Communication Runtime Lifecycle Authority.
+2. Notification Delivery Authority.
+3. Device Communication Presence Authority.
+4. Communication Timeline Authority.
+
+Flutter release implications:
+
+- Desktop/Android/iOS production release is blocked until mandatory platform gates are resolved: Device Communication Presence Phase 1, Notification Delivery Authority Phase 1, native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs confirmation, and Meetings preservation certification for shared authority implementation.
+- Communication Runtime Lifecycle Phase 2 can remain later only if current native lifecycle health remains certified and no blocking lifecycle defect is found.
+- Stage 1 Thread lifecycle remains the Thread foreground adapter and does not become a general platform lifecycle authority.
+- `RealtimeController` remains the client media/session execution owner.
+- Meetings remain protected and unchanged.
+
+## Communication Continuity & Presence platform architecture, 2026-08-08
+
+Backend platform record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
+
+This is a new platform infrastructure discovery chapter, not Thread Calling or Meetings feature work. No Flutter application/runtime/schema/client code was edited.
+
+Proposed long-term authorities:
+
+1. Communication Runtime Lifecycle Authority.
+2. Notification Delivery Authority.
+3. Device Communication Presence Authority.
+4. Communication Timeline Authority.
+
+Flutter implications: Stage 1 remains the Thread foreground lifecycle seed, not the whole platform runtime authority. Future work should generalize lifecycle, notification delivery consumption, device ownership synchronization, and communication chronology through platform authorities while preserving `RealtimeController` as media/session execution owner and preserving Meetings unchanged.
+
+## Pre-release connected-system health audit, 2026-08-08
+
+Authoritative gate: `docs/2026-08-08-pre-release-connected-system-health-audit.md`.
+
+Overall verdict: READY WITH NON-BLOCKING RISKS for native test builds.
+
+Health summary:
+
+- App root/provider lifecycle: HEALTHY.
+- Authentication/session: HEALTHY.
+- Notifications/attention: HEALTHY; active-call Activity doctrine remains deferred.
+- Correspondence/Threads: HEALTHY.
+- Realtime: HEALTHY; shared realtime files remain untouched.
+- Meetings: HEALTHY; Meetings product files remain untouched and Meeting controls passed.
+- Device registration: HEALTHY.
+- Navigation/deep links: HEALTHY.
+- Web: HEALTHY.
+- Desktop: HEALTHY for source/compile readiness; runtime certification remains founder/device work.
+- Android: HEALTHY for source/compile readiness; runtime certification remains founder/device work.
+- iOS: AT RISK only because the secure CI `FIREBASE_IOS_CONFIG_BASE64` value cannot be verified from Windows and must be confirmed before/with the iOS build pipeline.
+- Backend contract boundary: HEALTHY; no backend runtime/schema changes after certified backend chapters.
+- Governance compliance: HEALTHY.
+
+Verification completed with the certified `C:/flutter` safe-directory environment override: `flutter analyze` PASS, focused/recent shared-system set PASS 78/78, practical non-golden suite PASS 125/125, web release build PASS, Android debug build PASS, Windows desktop debug build PASS, Flutter doctor PASS, and `git diff --check` PASS for Flutter/backend.
+
+No application/runtime/schema/client code was edited during this audit.
+
+## Canonical Flutter Thread-Call Lifecycle Stage 1 implemented, 2026-08-08
+
+Stage 1 implementation is committed and pushed as `86de6e165931e96185a2e78a349bb5502065940a` (`realtime: establish canonical thread call lifecycle`). It follows `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`.
 
 Implemented behavior:
 

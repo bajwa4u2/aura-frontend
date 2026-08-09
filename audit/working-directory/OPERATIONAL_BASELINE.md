@@ -1,6 +1,6 @@
 # Operational Baseline - aura_final
 
-Last updated: 2026-08-08 UTC (Canonical Flutter Thread-Call Lifecycle Stage 1 locally certified)
+Last updated: 2026-08-08 UTC (Communication Continuity & Presence Chapter 1 contracts frozen)
 
 ## Production resources
 
@@ -29,14 +29,38 @@ These rules apply across every Aura repository, present and future:
 - Future audits must audit governance compliance as well as feature correctness.
 - Newly adopted engineering doctrines must be recorded in working continuity during the next implementation task.
 
+## Communication Continuity & Presence platform authorities
+
+Backend discovery record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
+Backend Chapter 1 contract record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
+
+Proposed platform authorities:
+
+- Communication Runtime Lifecycle Authority.
+- Notification Delivery Authority.
+- Device Communication Presence Authority.
+- Communication Timeline Authority.
+
+Flutter Stage 1 is the Thread-call foreground lifecycle seed. It is not a replacement for a platform-wide lifecycle authority. Future work must preserve `RealtimeController` as socket/media/session execution authority and preserve Meetings exactly unless founder explicitly authorizes a shared-system change with Meeting regression certification.
+
+Pre-native-production mandatory gates: Device Communication Presence Phase 1, Notification Delivery Authority Phase 1, native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for shared authority implementation.
+
 ## Current verification note
 
 Stage 1 Gate 2 toolchain health was restored using the `C:/flutter` safe-directory override. Current local verification: focused Stage 1 tests passed 6/6, relevant correspondence/realtime/notification/Meeting set passed 31/31, repository-standard non-golden suite passed 125/125, `flutter analyze` clean, and `flutter build web --release --no-wasm-dry-run` completed successfully.
 
+Pre-release connected-system health gate, 2026-08-08:
+
+- Record: `docs/2026-08-08-pre-release-connected-system-health-audit.md`.
+- Verdict: READY WITH NON-BLOCKING RISKS for native test builds.
+- Additional verification: focused/recent shared-system set passed 78/78, practical non-golden suite passed 125/125, `flutter analyze` passed, web release build passed, Android debug build passed, Windows desktop debug build passed, Flutter doctor passed, and `git diff --check` passed for Flutter/backend.
+- Meetings: HEALTHY; no Meetings product files or shared realtime controller/state/socket/media files were edited.
+- iOS: AT RISK only because the CI-provided `FIREBASE_IOS_CONFIG_BASE64` secure variable cannot be verified from Windows and must be confirmed before/with the iOS build pipeline.
+
 ## Thread calling reliability baseline
 
 - Current authoritative audit: `../aura-backend/docs/2026-08-08-thread-calling-reliability-collective-audit.md`.
-- Stage 1 blueprint/design record: `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`. Stage 1 is implemented locally and pending founder review/commit.
+- Stage 1 blueprint/design record: `docs/2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md`. Stage 1 is committed and pushed as `86de6e165931e96185a2e78a349bb5502065940a`.
 - Foreground Thread call interruption is now app-root owned locally through `ThreadCallLifecycleHost`, `threadCallLifecycleProvider`, `incomingCallBridgeProvider`, and root-mounted `AuraIncomingLiveLayer`.
 - Activity reads `/notifications`; active Thread calls currently create backend Communication rows and push attempts, not actor-aware call Notification rows.
 - Party-A-stuck-on-`Connecting...` is addressed locally by routing caller start and callee accept through one Thread lifecycle owner that delegates to the existing `RealtimeController` and projects joined/media/connected presentation phases from existing controller state.

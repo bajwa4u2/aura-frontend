@@ -1,6 +1,6 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-08 UTC (Canonical Flutter Thread-Call Lifecycle Stage 1 locally certified)
+Last updated: 2026-08-08 UTC (Communication Continuity & Presence Chapter 1 contracts frozen)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
 
@@ -16,9 +16,56 @@ These are platform governance rules, not Flutter-only or backend-only implementa
 6. Future audits must include governance-compliance review as well as feature correctness.
 7. Newly adopted engineering doctrines must be recorded in working continuity during the next implementation task.
 
-## 2026-08-08: Canonical Flutter Thread-Call Lifecycle Stage 1 implemented locally
+## 2026-08-08: Communication Continuity & Presence platform architecture discovered
 
-Stage 1 implementation is authorized, locally certified, and present in the working tree; do not commit until founder review.
+Backend platform record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
+
+Decision status: superseded by the frozen Chapter 1 contracts below. No Flutter implementation is authorized by the discovery record.
+
+Platform authorities later approved in Chapter 1:
+
+1. Communication Runtime Lifecycle Authority.
+2. Notification Delivery Authority.
+3. Device Communication Presence Authority.
+4. Communication Timeline Authority.
+
+Flutter boundaries:
+
+1. `RealtimeController` remains the client media/session execution owner.
+2. Stage 1 Thread lifecycle remains the Thread foreground adapter.
+3. Meetings remain a protected certified system; Meeting live-room, waiting-room, admission, guest, host-control, reconnect, UX, and notification semantics must remain unchanged.
+4. Future lifecycle/notification/device/timeline work must be authorized as platform infrastructure, not patched into one feature locally.
+
+## 2026-08-08: Communication Continuity & Presence Chapter 1 contracts frozen
+
+Backend contract record: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
+
+Founder decisions resolved:
+
+1. Approved authorities: Communication Runtime Lifecycle, Notification Delivery, Device Communication Presence, Communication Timeline.
+2. Mandatory before Desktop/Android/iOS production release: Device Presence Phase 1, Notification Delivery Phase 1, native background/terminated notification certification, Communication Timeline Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for shared authority implementation.
+3. Multi-device Phase 1: ring all eligible devices, no preferred device, first ACCEPT/DECLINE wins globally, terminal sync to all other devices, one active media-owning device per user/session, deterministic stale-state cleanup.
+4. Desktop: foreground app-level realtime interruption is required; background/minimized reliable system notification path is required before production release if supported by the desktop distribution/runtime model.
+5. Calls must participate in canonical communication chronology before native production release.
+
+No Flutter implementation is authorized by this contract decision.
+
+## 2026-08-08: Pre-release connected-system health gate
+
+Decision record: `docs/2026-08-08-pre-release-connected-system-health-audit.md`.
+
+Current source is READY WITH NON-BLOCKING RISKS for founder-directed native test builds. This is a health gate only, not authorization to publish store builds.
+
+Boundaries:
+
+1. Meetings remain a protected certified surface and were certified healthy without product/runtime edits.
+2. Backend Reachability Authority, Session Continuity Authority Phase 1, and Canonical Call Notification Stage A remain closed and reused as certified foundations.
+3. Activity doctrine, multi-device arbitration, desktop native push, and Android/iOS background/terminated notification work remain deferred.
+4. iOS build readiness depends on confirming the CI-provided `FIREBASE_IOS_CONFIG_BASE64` secure variable; its local absence is expected and is a release risk, not a source blocker.
+
+## 2026-08-08: Canonical Flutter Thread-Call Lifecycle Stage 1 implemented
+
+Stage 1 implementation is authorized, locally certified, committed, and pushed as `86de6e165931e96185a2e78a349bb5502065940a`.
 
 Frozen decisions now implemented:
 
