@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/directory/directory_entry.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -42,12 +43,12 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   final TextEditingController _descriptionController = TextEditingController();
 
   final Set<String> _selectedIds = <String>{};
-  final Map<String, _DirectoryEntry> _selectedEntriesById =
-      <String, _DirectoryEntry>{};
+  final Map<String, DirectoryEntry> _selectedEntriesById =
+      <String, DirectoryEntry>{};
 
-  List<_DirectoryEntry> _relationshipEntries = const [];
-  List<_DirectoryEntry> _searchEntries = const [];
-  List<_DirectoryEntry> _allEntries = const [];
+  List<DirectoryEntry> _relationshipEntries = const [];
+  List<DirectoryEntry> _searchEntries = const [];
+  List<DirectoryEntry> _allEntries = const [];
   bool _loading = true;
   bool _searching = false;
   bool _submitting = false;
@@ -70,9 +71,9 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   bool get _isSharedSpaceMode =>
       _selectedMemberCount >= 2 || _titleController.text.trim().isNotEmpty;
 
-  List<_DirectoryEntry> get _selectedEntries => _selectedIds
+  List<DirectoryEntry> get _selectedEntries => _selectedIds
       .map((id) => _selectedEntriesById[id])
-      .whereType<_DirectoryEntry>()
+      .whereType<DirectoryEntry>()
       .toList(growable: false);
 
   int get _selectedMemberCount => _selectedEntries.length;
@@ -88,7 +89,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     return _selectedMemberCount == 1;
   }
 
-  List<_DirectoryEntry> get _filteredEntries {
+  List<DirectoryEntry> get _filteredEntries {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return _allEntries;
 
@@ -166,7 +167,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       );
 
       final deduped =
-          _dedupeEntries(
+          dedupeDirectoryEntries(
             relationshipEntries
                 .where((entry) {
                   return !_isCurrentUserEntry(
@@ -208,11 +209,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     return _deepFirstMap(res.data);
   }
 
-  Future<List<_DirectoryEntry>> _loadRelationshipEntries(
+  Future<List<DirectoryEntry>> _loadRelationshipEntries(
     Dio dio, {
     required String handle,
   }) async {
-    if (handle.trim().isEmpty) return const <_DirectoryEntry>[];
+    if (handle.trim().isEmpty) return const <DirectoryEntry>[];
 
     final results = await Future.wait<List<Map<String, dynamic>>>([
       _fetchDirectoryList(dio, '/users/$handle/followers'),
@@ -221,8 +222,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
     return results
         .expand((e) => e)
-        .map(_memberEntryFromMap)
-        .whereType<_DirectoryEntry>()
+        .map(memberEntryFromMap)
+        .whereType<DirectoryEntry>()
         .toList();
   }
 
@@ -265,8 +266,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final users = _deepListOfMaps(data['users']);
 
       final found = users
-          .map(_memberEntryFromMap)
-          .whereType<_DirectoryEntry>()
+          .map(memberEntryFromMap)
+          .whereType<DirectoryEntry>()
           .where((entry) {
             return !_isCurrentUserEntry(
               entry,
@@ -295,15 +296,15 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     }
   }
 
-  List<_DirectoryEntry> _mergeEntries(
-    List<_DirectoryEntry> primary,
-    List<_DirectoryEntry> secondary,
+  List<DirectoryEntry> _mergeEntries(
+    List<DirectoryEntry> primary,
+    List<DirectoryEntry> secondary,
   ) {
-    return _dedupeEntries([...primary, ...secondary]);
+    return dedupeDirectoryEntries([...primary, ...secondary]);
   }
 
   bool _isCurrentUserEntry(
-    _DirectoryEntry entry, {
+    DirectoryEntry entry, {
     required String currentUserId,
     required String currentUserHandle,
   }) {
@@ -323,7 +324,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     final wantedHandle = _normalizeHandle(widget.initialHandle);
     final wantedName = (widget.initialName ?? '').trim().toLowerCase();
 
-    _DirectoryEntry? matched;
+    DirectoryEntry? matched;
 
     for (final entry in _allEntries) {
       final entryHandle = _normalizeHandle(entry.handle);
@@ -362,7 +363,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   void _toggleEntry(String id) {
     final tapped = _allEntries.firstWhere(
       (entry) => entry.id == id,
-      orElse: () => const _DirectoryEntry.empty(),
+      orElse: () => const DirectoryEntry.empty(),
     );
 
     if (tapped.id.isEmpty) return;
@@ -473,7 +474,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     Dio dio, {
     required dynamic createdResponse,
     required String spaceId,
-    required _DirectoryEntry member,
+    required DirectoryEntry member,
   }) async {
     final returnedThreadId = _extractThreadId(createdResponse);
     if (returnedThreadId.isNotEmpty) {
@@ -721,6 +722,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                 for (final entry in _selectedEntries)
                   _SelectedChip(
                     label: entry.displayName,
+                    avatarUrl: entry.avatarUrl,
                     onRemoved: () => _removeSelected(entry.id),
                   ),
               ],
@@ -794,7 +796,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
   Widget _buildDirectoryCard(
     BuildContext context,
-    List<_DirectoryEntry> filteredEntries,
+    List<DirectoryEntry> filteredEntries,
   ) {
     return AuraCard(
       child: Column(
@@ -937,57 +939,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     return const [];
   }
 
-  List<_DirectoryEntry> _dedupeEntries(List<_DirectoryEntry> entries) {
-    final seen = <String>{};
-    final out = <_DirectoryEntry>[];
-    for (final entry in entries) {
-      final key = entry.userId.trim().isNotEmpty
-          ? 'user:${entry.userId.trim()}'
-          : 'handle:${_normalizeHandle(entry.handle)}';
-      if (seen.add(key)) {
-        out.add(entry);
-      }
-    }
-    return out;
-  }
-
-  _DirectoryEntry? _memberEntryFromMap(Map<String, dynamic> map) {
-    final id = _pickString(map, const ['id', '_id', 'userId']);
-    final userId = _pickString(map, const ['userId', 'id', '_id']);
-    final handle = _pickString(map, const ['handle', 'username']);
-    final name = _pickString(map, const ['displayName', 'name', 'fullName']);
-    final avatarUrl = _pickString(map, const ['avatarUrl', 'avatar', 'image']);
-
-    final displayName = name.isNotEmpty
-        ? name
-        : (handle.isNotEmpty ? handle.replaceFirst('@', '') : 'Member');
-
-    final subtitle = handle.isNotEmpty
-        ? '@${handle.replaceFirst('@', '')}'
-        : 'Member';
-    final profileRoute = handle.isNotEmpty ? '/$handle' : null;
-
-    final stableId = id.isNotEmpty
-        ? id
-        : (userId.isNotEmpty
-              ? userId
-              : handle.isNotEmpty
-              ? handle
-              : displayName);
-
-    if (stableId.trim().isEmpty) return null;
-
-    return _DirectoryEntry(
-      id: stableId,
-      userId: userId,
-      handle: handle,
-      displayName: displayName,
-      subtitle: subtitle,
-      avatarUrl: avatarUrl,
-      profileRoute: profileRoute,
-    );
-  }
-
   String _pickString(Map<String, dynamic> map, List<String> keys) {
     for (final key in keys) {
       final value = map[key];
@@ -1064,7 +1015,7 @@ class _DirectoryRow extends StatelessWidget {
     required this.onOpenProfile,
   });
 
-  final _DirectoryEntry entry;
+  final DirectoryEntry entry;
   final bool selected;
   final bool allowMultiSelect;
   final VoidCallback onTap;
@@ -1124,9 +1075,14 @@ class _DirectoryRow extends StatelessWidget {
 }
 
 class _SelectedChip extends StatelessWidget {
-  const _SelectedChip({required this.label, required this.onRemoved});
+  const _SelectedChip({
+    required this.label,
+    required this.onRemoved,
+    this.avatarUrl,
+  });
 
   final String label;
+  final String? avatarUrl;
   final VoidCallback onRemoved;
 
   @override
@@ -1146,6 +1102,12 @@ class _SelectedChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Same identity precedence as the directory list row above --
+            // a selected member must render the same canonical identity
+            // before and after selection, not text-only. See Identity
+            // Foundation Phase 1.
+            AuraAvatar(name: label, imageUrl: avatarUrl, size: 20),
+            const SizedBox(width: AuraSpace.s8),
             Flexible(
               child: Text(
                 label,
@@ -1260,31 +1222,3 @@ class _InlineErrorBlock extends StatelessWidget {
   }
 }
 
-class _DirectoryEntry {
-  const _DirectoryEntry({
-    required this.id,
-    required this.userId,
-    required this.handle,
-    required this.displayName,
-    required this.subtitle,
-    required this.avatarUrl,
-    required this.profileRoute,
-  });
-
-  const _DirectoryEntry.empty()
-    : id = '',
-      userId = '',
-      handle = '',
-      displayName = '',
-      subtitle = '',
-      avatarUrl = '',
-      profileRoute = null;
-
-  final String id;
-  final String userId;
-  final String handle;
-  final String displayName;
-  final String subtitle;
-  final String avatarUrl;
-  final String? profileRoute;
-}

@@ -1,6 +1,6 @@
 # Operational Baseline - aura_final
 
-Last updated: 2026-08-09 UTC (Notification Delivery Authority Phase 1 backend contract locally certified)
+Last updated: 2026-08-11 UTC (Takeover audit continuity reconciliation; Identity Foundation Phase 1)
 
 ## Production resources
 
@@ -45,7 +45,16 @@ Proposed platform authorities:
 
 Flutter Stage 1 is the Thread-call foreground lifecycle seed. It is not a replacement for a platform-wide lifecycle authority. Future work must preserve `RealtimeController` as socket/media/session execution authority and preserve Meetings exactly unless founder explicitly authorizes a shared-system change with Meeting regression certification.
 
-Pre-native-production mandatory gates: Device Communication Presence Phase 1 and Notification Delivery Authority Phase 1 are backend-local and locally certified, awaiting founder commit/push authorization. Native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for later shared authority implementation remain mandatory.
+Pre-native-production mandatory gates: Device Communication Presence Phase 1 (`3bf8d67`) and Notification Delivery Authority Phase 1 (`b23ff44`) are backend-local, Gate 2 approved, committed, and pushed. Native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for later shared authority implementation remain mandatory.
+
+## Identity Foundation Phase 1 baseline — chapter COMPLETE
+
+- Record: `../aura-backend/docs/2026-08-11-identity-foundation-phase-1-implementation.md`.
+- `identityBaselineCompleteProvider` (mirrors `emailVerifiedProvider`) + `router.dart`'s `kCompleteIdentityRoute` (`/complete-identity`) redirect, checked before email verification.
+- New `IdentityBaselineScreen`, structurally identical to `VerifyPendingScreen`.
+- No age-eligibility policy is implemented — the one remaining open founder decision for this chapter.
+- Canonical member-identity model at `lib/core/directory/directory_entry.dart` (`DirectoryEntry`/`memberEntryFromMap`/`dedupeDirectoryEntries`), consumed by both `new_conversation_screen.dart` (personal Thread/Space creation) and `institution_spaces_screen.dart` (institution-space creation, via the new `MemberPickerField` widget). One resolver, not two.
+- Verification: `flutter analyze` clean, practical suite **147/147**, `flutter build web --release` succeeded. Meetings, Reachability Authority, Session Continuity Authority, Communication Runtime Lifecycle Authority, Device Communication Presence Phase 1, Notification Delivery Authority Phase 1, Canonical Call Notification Stage A, and Institution authority remain protected.
 
 ## Current verification note
 

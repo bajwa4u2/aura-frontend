@@ -666,6 +666,7 @@ class InstitutionsRepository {
     required String title,
     String? description,
     String visibility = 'INVITE_ONLY',
+    List<String> participantIds = const [],
   }) async {
     final res = await _dio.post(
       '/institutions/$institutionId/spaces',
@@ -674,6 +675,7 @@ class InstitutionsRepository {
         if (description != null && description.trim().isNotEmpty)
           'description': description.trim(),
         'visibility': visibility,
+        if (participantIds.isNotEmpty) 'participantIds': participantIds,
       },
     );
     if (res.data is Map) {

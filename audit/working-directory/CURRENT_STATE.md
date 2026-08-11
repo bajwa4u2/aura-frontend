@@ -1,6 +1,28 @@
 # Current State — aura_final
 
-Last updated: 2026-08-09 UTC (Notification Delivery Authority Phase 1 backend contract locally certified)
+Last updated: 2026-08-11 UTC (Takeover audit continuity reconciliation; Identity Foundation Phase 1)
+
+## Identity Foundation Phase 1, 2026-08-11
+
+Backend implementation record: `../aura-backend/docs/2026-08-11-identity-foundation-phase-1-implementation.md`.
+
+Status: implemented and locally certified; not committed, not pushed — awaiting founder Gate 2 review.
+
+**A. Required identity baseline (Date of Birth).** New `identityBaselineCompleteProvider` (`lib/core/auth/session_providers.dart`), a structural mirror of the existing `emailVerifiedProvider` (same null-means-wait discipline, same institution-account bypass), fed by a new `identityBaselineComplete` field on `/auth/me`. `router.dart` gained `kCompleteIdentityRoute = '/complete-identity'`, `requiresIdentityBaseline(path)`, a `ref.listen` wired into the existing `refresh` notifier, and boot-path plus main-flow redirect blocks placed **before** the email-verification check (DOB is checked first, as "the first identity field"). New `IdentityBaselineScreen` (`lib/features/auth/presentation/identity_baseline_screen.dart`), structurally identical to `VerifyPendingScreen` — full-screen interstitial, carries `redirectTo`, submits via `PATCH /users/me/identity-baseline`, then only invalidates `authMeDataProvider` (the router's own listener handles navigation, no manual `context.go`). This reuses the same proven redirect mechanism email verification and institution access already use, so cross-platform consistency (web refresh, desktop start, Android/iOS resume/launch, deep-link interception before completion) comes for free — no platform-specific code was needed. No age-eligibility threshold implemented — none exists anywhere in this codebase; flag to founder if required.
+
+**B. Shared identity resolution repair.** Root cause, confirmed by reading code: `new_conversation_screen.dart`'s `_DirectoryEntry.id` and `.userId` were resolved via independently-ordered fallback chains that could diverge for a payload where a wrapper/relationship-row id differs from the actual user id — the same real person could surface as two different selectable/selected entries depending on which listing produced them. Fixed by resolving `userId` once, then deriving `id` from it, so selection key and submission key are always the same value. `_SelectedChip` gained an `AuraAvatar` (previously text-only) for pre/post-selection identity consistency. Institution-space creation has no member-picker UI on this client today (confirmed by full-file audit of `institution_spaces_screen.dart`) — nothing to patch there; membership is entirely post-creation self-join/roster management.
+
+Regression proof: new test in `test/new_conversation_screen_test.dart` reproduces the divergent-wrapper-id scenario and was verified to **fail against the pre-fix code** (via a temporary `git stash` of the fix) before being verified green against the fix — a proven regression guard.
+
+Certification (first pass): full-project `flutter analyze` clean; practical non-golden suite 137/137 (including a real app-boot smoke test whose router-trace log confirms `identityBaselineComplete` evaluates correctly during boot); `flutter build web --release` succeeded. Meetings, Reachability, Session Continuity, Communication Runtime Lifecycle, Device Communication Presence, Notification Delivery, and Canonical Call Notification Stage A were not touched.
+
+**Second pass, 2026-08-11 — institution-space member selection, chapter now COMPLETE.** Founder required institution-space member selection end to end before closing this chapter. Extracted the identity model out of `new_conversation_screen.dart`'s private scope into a public, canonical module: `lib/core/directory/directory_entry.dart` (`DirectoryEntry`, `memberEntryFromMap`, `dedupeDirectoryEntries`) — one identity resolver now, not a second one duplicated for institution use. `new_conversation_screen.dart` was refactored to consume it (mechanical extraction, zero behavior change, verified by re-running its full pre-existing test suite unchanged before adding anything new). New reusable `lib/core/directory/member_picker_field.dart` (`MemberPickerField`) — a self-contained selection widget for bounded candidate lists (search/select/dedupe/chips, client-side filtered) — wired into `institution_spaces_screen.dart`'s create form, sourcing candidates from the institution's own roster (`GET /institutions/:id/members`), excluding the current user, submitting `participantIds` built the same way `new_conversation_screen.dart` already does. Backend paired change: `../aura-backend` commit-pending `institutionSpaceSelectWithMembers`/`CreateInstitutionSpaceDto.participantIds`.
+
+Certification (cumulative): full-project `flutter analyze` clean; practical non-golden suite **147/147** (up from 137, still including the app-boot `identityBaselineComplete` smoke-test confirmation); `flutter build web --release` succeeded; `new_conversation_screen_test.dart`'s full suite (2-party, multi-party, and the identity-resolution regression test) re-verified green after the shared-module extraction. Meetings, Reachability, Session Continuity, Communication Runtime Lifecycle, Device Communication Presence, Notification Delivery, Canonical Call Notification Stage A, and Institution authority were not touched.
+
+## Takeover audit continuity reconciliation, 2026-08-11
+
+A Claude takeover audit (read-only, no code edits) verified actual git history against this continuity set and found three entries below still described as "not committed, not pushed, awaiting founder Gate 2 authorization" when they were, in fact, already founder-approved, committed, and pushed to `origin/main`: Notification Delivery Authority Phase 1 (backend-only, `../aura-backend` commit `b23ff4419089483b8f5132f6ab4036d50ebb87ef`), Device Communication Presence Phase 1 (backend-only, `../aura-backend` commit `3bf8d67976c230767e0e108788d67f670dd883e3`), and the Correspondence entry flow repair (this repo, commit `7a47fefe5924ea19a1e483475182d72383b10687`; paired backend `9739ad5fb7551a0857ad22159add3e102eb7cc40`). Root cause: each entry was authored inside the same commit that performed the commit, so the "not committed" tense was already stale the moment it landed, and no follow-up entry ever corrected it. No code defect, no reopened architecture — documentation-tense correction only. Status lines below corrected in place; `DECISIONS.md` gained matching Gate 2 closure entries.
 
 ## Notification Delivery Authority Phase 1 backend contract, 2026-08-09
 
@@ -17,13 +39,13 @@ Flutter contract impact:
 - `NotificationBridge`, `incomingCallBridgeProvider`, service-worker notification behavior, and root Thread lifecycle ownership remain unchanged;
 - native background/terminated notification certification remains unresolved and mandatory before native production release.
 
-Backend Phase 1 is locally certified and awaiting founder Gate 2 review/commit authorization. It does not by itself create a new native client release artifact.
+Backend Phase 1 is Gate 2 approved, committed, and pushed as `b23ff4419089483b8f5132f6ab4036d50ebb87ef` in `../aura-backend`. It does not by itself create a new native client release artifact.
 
 ## Correspondence entry flow repair, 2026-08-08
 
 Repair record: `docs/2026-08-08-correspondence-entry-flow-repair.md`.
 
-Status: implemented locally and certified; not committed, not pushed.
+Status: implemented, founder Gate 2 approved, committed, and pushed as `7a47fefe5924ea19a1e483475182d72383b10687`.
 
 Founder production evidence: selecting a second member in Messages -> Create removed/replaced the first selected member, and create failed with backend validation. Root cause was a split selected-member state model: selected IDs persisted, but selected entries were derived from the current search cache, so changing search results could drop prior selections from the UI and submitted payload. A paired backend contract drift rejected Workroom/Salon mode values exposed by the Flutter UI.
 
@@ -44,7 +66,7 @@ Verification: focused entry-flow widget tests passed 5/5, `flutter analyze` pass
 
 Backend implementation record: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
 
-No Flutter application/runtime/client code was edited. Backend Phase 1 is locally certified and awaiting founder Gate 2 review/commit authorization.
+No Flutter application/runtime/client code was edited. Backend Phase 1 is Gate 2 approved, committed, and pushed as `3bf8d67976c230767e0e108788d67f670dd883e3` in `../aura-backend`.
 
 Flutter contract impact:
 

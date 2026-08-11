@@ -1,42 +1,61 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-09 UTC (Notification Delivery Authority Phase 1 backend contract locally certified)
+Last updated: 2026-08-11 UTC (Takeover audit continuity reconciliation; Identity Foundation Phase 1)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
+## Identity Foundation Phase 1 — COMPLETE, awaiting Gate 2
+
+Status: implemented locally and certified end to end, including institution-space member selection (the founder's required second-pass scope); commit/push requires founder authorization. Record: `../aura-backend/docs/2026-08-11-identity-foundation-phase-1-implementation.md`.
+
+Both founder decisions from the 2026-08-11 continuation resolved: (1) DOB stays capture-only, no age policy; (2) institution-space member selection implemented end to end via `MemberPickerField` + the extracted canonical `directory_entry.dart` model, proven by `test/institution_spaces_screen_test.dart`.
+
+Remaining gates:
+
+1. Founder Gate 2 review.
+2. Commit/push authorization if accepted (paired with the backend commit).
+3. Founder decision on whether a minimum-age/eligibility policy is required — not implemented, not inferred, genuinely open (the only founder decision still outstanding for this chapter).
+4. Founder production observation after deployment/release.
+
+Deferred, not part of this chapter: consolidation of the several duplicate identity-extraction helpers (`CorrespondenceIdentity` and per-screen `_extractMembers`/`_IdentityAvatar` implementations in `space_screen.dart`/`conversations_screen.dart`/`correspondence_hub_screen.dart`/`messages_hub_screen.dart` — real duplication, out of this chapter's narrow scope; `directory_entry.dart` is the natural future consolidation target).
+
 ## Correspondence entry flow
 
-Status: implemented locally and certified; commit/push requires founder authorization. Record: `docs/2026-08-08-correspondence-entry-flow-repair.md`.
+Status: implemented, founder Gate 2 approved, committed, and pushed as `7a47fefe5924ea19a1e483475182d72383b10687`. Record: `docs/2026-08-08-correspondence-entry-flow-repair.md`. (Continuity correction 2026-08-11: previously read "commit/push requires founder authorization" — stale, already happened.)
 
-No additional architecture decision is required before committing the local repair. Remaining gates:
+Remaining gate:
 
-1. Founder Gate 2 review of the local repair.
-2. Commit/push authorization if accepted.
-3. Founder production observation after deployment/release.
+1. Founder production observation after deployment/release.
+
+Selection-stability defect this repair actually fixed is distinct from the identity-resolution defect tracked under Identity Foundation Phase 1 below — do not conflate the two.
 
 Deferred enhancements outside this repair: richer shared-space mode education, Activity/timeline work, and any broader public-space taxonomy changes.
 
 ## Communication Continuity & Presence platform architecture
 
-Status: Device Communication Presence Phase 1 and Notification Delivery Authority Phase 1 are backend-implemented and locally certified, pending founder Gate 2/commit authorization. Records:
+Status: Device Communication Presence Phase 1 and Notification Delivery Authority Phase 1 are backend-implemented, founder Gate 2 approved, committed, and pushed. Records:
 
 - Discovery: `../aura-backend/docs/2026-08-08-communication-continuity-presence-platform-architecture.md`.
 - Chapter 1 contracts: `../aura-backend/docs/2026-08-08-communication-continuity-presence-chapter-1-contracts.md`.
-- Device Presence Phase 1: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
-- Notification Delivery Phase 1: `../aura-backend/docs/2026-08-09-notification-delivery-authority-phase-1-implementation.md`.
+- Device Presence Phase 1: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md` (commit `3bf8d67`).
+- Notification Delivery Phase 1: `../aura-backend/docs/2026-08-09-notification-delivery-authority-phase-1-implementation.md` (commit `b23ff44`).
+
+(Continuity correction 2026-08-11: this section previously said "pending founder Gate 2/commit authorization" — both chapters were already committed and pushed before this correction.)
 
 No Flutter implementation was required for Device Presence Phase 1 or Notification Delivery Authority Phase 1. Current Flutter contract remains existing join/decline endpoints, existing socket events, existing push payloads, and existing notification tap/deeplink behavior.
 
-Founder doctrine decisions are resolved. Remaining gate: authorize the next implementation chapter.
+Founder doctrine decisions are resolved. Identity Foundation Phase 1 is the founder-prioritized next chapter (in progress as of 2026-08-11 — see the Identity Foundation section below).
 
 Mandatory before Desktop/Android/iOS production release:
 
-1. ~~Device Communication Presence Phase 1.~~ Backend implemented and locally certified; commit/push requires founder authorization.
-2. ~~Notification Delivery Authority Phase 1.~~ Backend implemented and locally certified; commit/push requires founder authorization.
-3. Native background/terminated notification certification.
-4. Communication Timeline Authority Phase 1.
-5. iOS Firebase/APNs configuration confirmation.
-6. Meetings preservation certification for any shared authority implementation.
+1. ~~Device Communication Presence Phase 1.~~ Committed and pushed (`3bf8d67`).
+2. ~~Notification Delivery Authority Phase 1.~~ Committed and pushed (`b23ff44`).
+3. ~~Identity Foundation Phase 1.~~ Implemented and locally certified, 2026-08-11; commit/push requires founder authorization.
+4. Compose Link Intelligence / OG Preview Phase 1.
+5. Native background/terminated notification certification.
+6. Communication Timeline Authority Phase 1.
+7. iOS Firebase/APNs configuration confirmation.
+8. Meetings preservation certification for any shared authority implementation.
 
 Communication Runtime Lifecycle Phase 2 can remain later only if current native lifecycle health remains certified and no blocking runtime defect is found.
 

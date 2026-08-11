@@ -1,14 +1,55 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-09 UTC (Notification Delivery Authority Phase 1 backend contract locally certified)
+Last updated: 2026-08-11 UTC (Takeover audit continuity reconciliation; Identity Foundation Phase 1)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-11: Identity Foundation Phase 1 implemented locally
+
+Backend record: `../aura-backend/docs/2026-08-11-identity-foundation-phase-1-implementation.md`.
+
+Decision status: locally implemented and certified; awaiting founder Gate 2 review and commit authorization.
+
+Decisions:
+
+1. `identityBaselineCompleteProvider` mirrors `emailVerifiedProvider`'s exact contract (true/false/null=wait) rather than inventing a new async-state shape.
+2. Blocking is done entirely in `router.dart`'s `redirect` callback, reusing the proven pattern from email verification and institution access — not a new root-level widget host. `ThreadCallLifecycleHost` was read as a reference precedent but is a wrapping/overlay pattern, not a blocking one, and was correctly not reused for this.
+3. The identity-baseline gate is checked before the email-verification gate in the redirect chain (DOB is "the first identity field"), and the two gates explicitly cannot deadlock each other (`requiresVerifiedEmail` excludes `kCompleteIdentityRoute`; the identity-baseline check does not depend on email-verification state).
+4. No age-eligibility threshold is enforced. None exists anywhere in this codebase today. Explicit, open founder decision, not inferred or implemented.
+5. `_DirectoryEntry.id` is now derived from a single canonically-resolved `userId` rather than two independently-ordered fallback chains, fixing the founder-reported "member identities don't resolve" defect for Thread/Space creation.
+6. Institution-space creation has no member-picker UI on this client today (confirmed by full-file audit) — nothing to patch there.
+7. The regression test added for the identity-resolution fix was verified to fail against the pre-fix code (temporary `git stash`) before being verified to pass against the fix — a proven, not assumed, regression guard.
+
+Protected: Meetings, Reachability Authority, Session Continuity Authority, Communication Runtime Lifecycle Authority, Device Communication Presence Authority, Notification Delivery Authority, Canonical Call Notification Stage A, and the already-certified Correspondence entry flow behavior — none touched; full practical suite + web build re-verified.
+
+## 2026-08-11: Identity Foundation Phase 1 — institution-space member selection (second pass), chapter COMPLETE
+
+Founder required institution-space member selection completed end to end, with explicit reuse of the canonical identity path rather than a second identity model.
+
+Decisions:
+
+1. The client-side identity model (`_DirectoryEntry`/`_memberEntryFromMap`/`_dedupeEntries`) was extracted from `new_conversation_screen.dart`'s private scope into a public module, `lib/core/directory/directory_entry.dart` — this repo now has exactly one canonical member-identity resolver, not a duplicate one for institution use.
+2. Institution-space creation gets its own picker widget (`MemberPickerField`, `lib/core/directory/member_picker_field.dart`) rather than being forced through `NewConversationScreen`'s live-platform-search UI — the two surfaces have genuinely different contracts (a bounded institution roster vs. live platform-wide search with no server-side search endpoint), so the shared thing is the identity *model*, not one UI forced onto both products.
+3. Candidates are sourced from `GET /institutions/:id/members` (the institution's own roster), not a general user search — consistent with the backend's own `INVITE_ONLY` join-time restriction.
+4. `MemberPickerField` force-remounts (bumped key token) after a successful create or when the form closes/reopens, so its internal selection state can never drift from the parent's `_selectedMembers` mirror — caught and fixed during this pass before certification, not shipped as a latent bug.
+
+Protected: Meetings, Reachability Authority, Session Continuity Authority, Communication Runtime Lifecycle Authority, Device Communication Presence Authority, Notification Delivery Authority, Canonical Call Notification Stage A, Institution authority, and the already-certified Correspondence entry flow + Identity Foundation DOB baseline behavior — none touched; full practical suite (147/147) + web build re-verified, and `new_conversation_screen_test.dart`'s existing suite re-verified green after the shared-module extraction.
+
+**Chapter status: Identity Foundation Phase 1 is now COMPLETE.** Remaining open item: minimum-age/eligibility policy, an explicit founder decision, not inferred or implemented.
+
+## 2026-08-11: Continuity reconciliation — Gate 2 closure recorded for three chapters
+
+A Claude takeover audit (read-only) found that Notification Delivery Authority Phase 1, Device Communication Presence Phase 1 (both backend-owned), and the Correspondence entry flow repair were each committed and pushed days before this entry, but this file's entries never recorded the actual Gate 2 approval/commit event. Documentation-process gap only — underlying authorization and push are real and independently verified via `git log`/`git show` in both repos.
+
+1. **Notification Delivery Authority Phase 1 — Gate 2 approved. Backend committed `b23ff4419089483b8f5132f6ab4036d50ebb87ef`, pushed to `origin/main`.** No Flutter change in this chapter.
+2. **Device Communication Presence Phase 1 — Gate 2 approved. Backend committed `3bf8d67976c230767e0e108788d67f670dd883e3`, pushed to `origin/main`.** No Flutter change in this chapter.
+3. **Correspondence entry flow repair — Gate 2 approved. Flutter committed `7a47fefe5924ea19a1e483475182d72383b10687`, pushed to `origin/main`; paired backend commit `9739ad5fb7551a0857ad22159add3e102eb7cc40`.**
 
 ## 2026-08-09: Notification Delivery Authority Phase 1 is backend-owned
 
 Backend record: `../aura-backend/docs/2026-08-09-notification-delivery-authority-phase-1-implementation.md`.
 
-Decision status: backend Phase 1 is locally certified and awaiting founder Gate 2 review/commit authorization. No Flutter implementation was authorized or performed in this chapter.
+Decision status: Gate 2 approved, backend committed `b23ff4419089483b8f5132f6ab4036d50ebb87ef`, pushed to `origin/main` (see the 2026-08-11 continuity reconciliation entry above). No Flutter implementation was authorized or performed in this chapter.
 
 Flutter contract decisions:
 
@@ -23,7 +64,7 @@ Flutter contract decisions:
 
 Repair record: `docs/2026-08-08-correspondence-entry-flow-repair.md`.
 
-Decision status: implemented locally and certified; awaiting founder Gate 2 review/commit authorization.
+Decision status: Gate 2 approved, committed `7a47fefe5924ea19a1e483475182d72383b10687`, pushed to `origin/main` (see the 2026-08-11 continuity reconciliation entry above).
 
 Decisions:
 
@@ -39,7 +80,7 @@ Decisions:
 
 Backend record: `../aura-backend/docs/2026-08-08-device-communication-presence-phase-1-implementation.md`.
 
-Decision status: backend Phase 1 is locally certified and awaiting founder Gate 2 review/commit authorization. No Flutter implementation was authorized or performed in this chapter.
+Decision status: Gate 2 approved, backend committed `3bf8d67976c230767e0e108788d67f670dd883e3`, pushed to `origin/main` (see the 2026-08-11 continuity reconciliation entry above). No Flutter implementation was authorized or performed in this chapter.
 
 Flutter contract decisions:
 

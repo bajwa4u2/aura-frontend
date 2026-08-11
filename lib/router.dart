@@ -21,6 +21,7 @@ import 'features/realtime/domain/realtime_enums.dart';
 import 'features/auth/presentation/auth_screen.dart';
 import 'features/auth/presentation/register_screen.dart';
 import 'features/auth/presentation/verify_email_screen.dart';
+import 'features/auth/presentation/identity_baseline_screen.dart';
 import 'features/auth/presentation/verify_pending_screen.dart';
 import 'features/auth/presentation/forgot_password_screen.dart';
 import 'features/auth/presentation/reset_password_screen.dart';
@@ -156,6 +157,8 @@ const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kInstitutionEditProfileRoute = '/institution/edit-profile';
 const String kInstitutionLiveRoomsRoute = '/institution/live-rooms';
 const String kEnterInstitutionRoute = '/enter-institution';
+// Identity Foundation Phase 1 — required identity baseline (Date of Birth).
+const String kCompleteIdentityRoute = '/complete-identity';
 const String kAdminWorkspaceRoute = '/admin';
 const String kAdminCommunicationsRoute = '/admin/communications';
 const String kMeCommunicationsRoute = '/me/settings/communications';
@@ -255,6 +258,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     }
   });
 
+  ref.listen<AsyncValue<bool?>>(identityBaselineCompleteProvider, (prev, next) {
+    final prevValue = prev?.valueOrNull;
+    final nextValue = next.valueOrNull;
+    if (prevValue != nextValue) {
+      refresh.value++;
+      RuntimeTrace.emit(
+        'router.refresh',
+        'identityBaselineComplete',
+        data: {'next': nextValue},
+      );
+    }
+  });
+
   ref.listen<AsyncValue<InstitutionAccess>>(institutionAccessProvider, (
     prev,
     next,
@@ -294,7 +310,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     return path == '/forgot-password' ||
         path == '/reset-password' ||
         path == '/verify-email' ||
-        path == '/verify-pending';
+        path == '/verify-pending' ||
+        path == kCompleteIdentityRoute;
   }
 
   bool isPublicPath(String path) {
@@ -364,7 +381,16 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool requiresVerifiedEmail(String path) {
     return requiresAuth(path) &&
         path != '/verify-email' &&
-        path != '/verify-pending';
+        path != '/verify-pending' &&
+        path != kCompleteIdentityRoute;
+  }
+
+  // Identity Foundation Phase 1 — the first identity field. Deliberately
+  // independent of requiresVerifiedEmail: an unverified member must still
+  // be able to reach and complete this screen, so the two "authed but
+  // incomplete" gates never deadlock each other.
+  bool requiresIdentityBaseline(String path) {
+    return requiresAuth(path) && path != kCompleteIdentityRoute;
   }
 
   bool isGuestOnly(String path) => isPlainAuthPage(path);
@@ -448,6 +474,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final bootstrap = ref.read(sessionBootstrapProvider);
       final authStatus = ref.read(authStatusProvider);
       final emailVerifiedAsync = ref.read(emailVerifiedProvider);
+      final identityBaselineAsync = ref.read(identityBaselineCompleteProvider);
       final institutionAsync = ref.read(institutionAccessProvider);
 
       // Admin probe gating: only allow `/v1/admin/me` to fire when the
@@ -475,6 +502,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = authStatus == AuthStatus.authed;
       final isVerifyPending = path == '/verify-pending';
       final isVerifyEmail = path == '/verify-email';
+      final isCompleteIdentity = path == kCompleteIdentityRoute;
       final isPublic = isPublicPath(path);
       final isAuthAction = isAuthActionPath(path);
 
@@ -492,6 +520,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           (emailVerifiedAsync.isLoading ||
               emailVerifiedAsync.isRefreshing ||
               isVerified == null);
+
+      // Identity Foundation Phase 1 — same null-means-wait discipline as
+      // isVerified above, independent gate.
+      final bool? isIdentityBaselineComplete = identityBaselineAsync.when(
+        data: (value) => value,
+        error: (_, __) => null,
+        loading: () => null,
+      );
+
+      final isIdentityBaselineLoading =
+          isLoggedIn &&
+          (identityBaselineAsync.isLoading ||
+              identityBaselineAsync.isRefreshing ||
+              isIdentityBaselineComplete == null);
 
       final institutionAccess = institutionAsync.maybeWhen(
         data: (value) => value,
@@ -527,6 +569,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (isLoggedIn &&
           (isVerificationLoading ||
+              isIdentityBaselineLoading ||
               institutionAccessLoading ||
               appAdminLoading)) {
         return null;
@@ -542,6 +585,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             _normalizeRedirectDest(redirectDest, fallback: '/public'),
           );
           return '/login?redirect=$encoded';
+        }
+
+        // Identity Foundation Phase 1 — the first identity field, checked
+        // before email verification so the two independent "authed but
+        // incomplete" gates never fight over which one wins on a cold
+        // boot/reopen/refresh.
+        if (isIdentityBaselineComplete == false) {
+          final encoded = Uri.encodeComponent(
+            _normalizeRedirectDest(redirectDest, fallback: '/home'),
+          );
+          return '$kCompleteIdentityRoute?redirect=$encoded';
         }
 
         if (isVerified == false) {
@@ -563,6 +617,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
 
         return null;
+      }
+
+      // Identity Foundation Phase 1 — required identity baseline. Checked
+      // before email verification (see the boot-path block above for why),
+      // and before any deep-link/navigation target so an incomplete member
+      // never reaches normal app content first.
+      if (isIdentityBaselineComplete == false) {
+        if (isCompleteIdentity) return null;
+
+        if (requiresIdentityBaseline(path)) {
+          final encoded = Uri.encodeComponent(
+            _normalizeRedirectDest(currentLocation, fallback: '/home'),
+          );
+          return '$kCompleteIdentityRoute?redirect=$encoded';
+        }
+
+        if (isPublic || isAuthAction) {
+          return null;
+        }
+      }
+
+      if (isIdentityBaselineComplete == true && isCompleteIdentity) {
+        return redirectDest;
       }
 
       if (isVerifyEmail) {
@@ -931,6 +1008,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               emailSent:
                   _queryBool(state.uri.queryParameters['emailSent']) ||
                   state.uri.queryParameters['emailSent'] == null,
+            ),
+          ),
+          GoRoute(
+            path: kCompleteIdentityRoute,
+            builder: (context, state) => IdentityBaselineScreen(
+              redirectTo: state.uri.queryParameters['redirect'],
             ),
           ),
 

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/directory/directory_entry.dart';
+import '../../../core/directory/member_picker_field.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -39,6 +42,12 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   String _visibility = 'INVITE_ONLY';
+  List<DirectoryEntry> _selectedMembers = const [];
+  String? _currentUserId;
+  // Bumped after every successful create so MemberPickerField remounts
+  // with fresh internal selection state instead of retaining stale
+  // selections from the just-completed create.
+  int _pickerResetToken = 0;
 
   String? _actingOn;
   String? _actionError;
@@ -53,6 +62,7 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
   void initState() {
     super.initState();
     _load();
+    _loadCurrentUserId();
   }
 
   @override
@@ -82,13 +92,65 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
         title: title,
         description: _descController.text.trim().isEmpty ? null : _descController.text.trim(),
         visibility: _visibility,
+        participantIds: _selectedMembers
+            .map((e) => e.userId)
+            .where((id) => id.trim().isNotEmpty)
+            .toSet()
+            .toList(growable: false),
       );
       _titleController.clear();
       _descController.clear();
-      setState(() { _creating = false; _showCreate = false; _visibility = 'INVITE_ONLY'; });
+      setState(() {
+        _creating = false;
+        _showCreate = false;
+        _visibility = 'INVITE_ONLY';
+        _selectedMembers = const [];
+        _pickerResetToken++;
+      });
       await _load();
     } catch (e) {
       setState(() { _createError = _message(e, 'Could not create space.'); _creating = false; });
+    }
+  }
+
+  /// Loads the institution's own active roster and resolves it through the
+  /// canonical identity resolver -- the same `memberEntryFromMap` fix
+  /// applied to Thread/personal-space creation. There is no server-side
+  /// member search endpoint (`GET /institutions/:id/members` returns the
+  /// full roster), so filtering is client-side, matching how
+  /// `MemberPickerField`/`NewConversationScreen` already filter locally.
+  Future<List<DirectoryEntry>> _loadInstitutionMemberCandidates() async {
+    final raw = await _repo.listMembers(widget.institutionId);
+    final members = raw['members'];
+    if (members is! List) return const [];
+
+    return members
+        .whereType<Map>()
+        .map((m) {
+          final row = Map<String, dynamic>.from(m);
+          final user = row['user'];
+          return memberEntryFromMap({
+            'userId': row['userId'],
+            if (user is Map) ...Map<String, dynamic>.from(user),
+          });
+        })
+        .whereType<DirectoryEntry>()
+        .toList(growable: false);
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get('/users/me');
+      final data = res.data;
+      final id = data is Map ? (data['id'] ?? data['data']?['id']) : null;
+      if (mounted && id is String && id.trim().isNotEmpty) {
+        setState(() => _currentUserId = id.trim());
+      }
+    } catch (_) {
+      // Non-fatal: the backend already excludes the creating admin from
+      // participantIds server-side, so this is purely a UX nicety (hiding
+      // "yourself" from the picker), not a correctness requirement.
     }
   }
 
@@ -185,7 +247,16 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
             children: [
               const Expanded(child: Text('New space', style: AuraText.subtitle)),
               GestureDetector(
-                onTap: () => setState(() { _showCreate = false; _createError = null; }),
+                onTap: () => setState(() {
+                  _showCreate = false;
+                  _createError = null;
+                  // MemberPickerField unmounts when the form is hidden and
+                  // remounts empty (no initialSelected passed) next time --
+                  // clear the parent's mirror too so it can never go stale
+                  // relative to what the picker will visibly show.
+                  _selectedMembers = const [];
+                  _pickerResetToken++;
+                }),
                 child: const Icon(Icons.close, size: 18, color: AuraSurface.muted),
               ),
             ],
@@ -221,6 +292,27 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Text(
+            'Add members (optional)',
+            style: AuraText.small.copyWith(color: AuraSurface.muted, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          // Identity Foundation Phase 1 -- institution-space member
+          // selection. Scoped to this institution's own active roster
+          // (not the whole platform), keeping creation-time membership
+          // consistent with the existing INVITE_ONLY join rule. Reuses the
+          // same canonical DirectoryEntry/memberEntryFromMap resolver
+          // Thread/personal-space creation already uses.
+          MemberPickerField(
+            key: ValueKey('institution-space-picker-${widget.institutionId}-$_pickerResetToken'),
+            loadCandidates: _loadInstitutionMemberCandidates,
+            excludeUserIds: _currentUserId == null ? const {} : {_currentUserId!},
+            onSelectionChanged: (entries) => setState(() => _selectedMembers = entries),
+            searchHintText: 'Search this institution\'s members',
+            emptyLabel: 'No other institution members yet.',
+            errorLabel: 'Could not load institution members.',
           ),
           if (_createError != null) ...[
             const SizedBox(height: AuraSpace.s8),
@@ -377,6 +469,8 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
               label: _showCreate ? 'Hide form' : 'New Space',
               onPressed: () => setState(() {
                 _showCreate = !_showCreate;
+                _selectedMembers = const [];
+                _pickerResetToken++;
               }),
               icon: _showCreate ? Icons.close_rounded : Icons.add_rounded,
             )

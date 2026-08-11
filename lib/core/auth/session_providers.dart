@@ -150,6 +150,42 @@ final emailVerifiedProvider = FutureProvider<bool?>((ref) async {
   }
 });
 
+/// Identity Foundation Phase 1 — required identity baseline (Date of Birth).
+///
+/// Mirrors [emailVerifiedProvider] exactly: an independent "authed but
+/// incomplete" gate, not layered on top of email verification, so an
+/// unverified member is not blocked from completing DOB by a different
+/// unrelated gate.
+///
+/// Returns:
+/// - true  — confirmed complete (backend said identityBaselineComplete: true)
+/// - false — confirmed incomplete
+/// - null  — unknown: /auth/me failed, empty response, or unexpected error;
+///           router must treat null as "stay/wait", NOT redirect.
+///
+/// Institution accounts bypass this requirement — same rule as email
+/// verification, since they authenticate via a separate institution flow.
+final identityBaselineCompleteProvider = FutureProvider<bool?>((ref) async {
+  final authed = ref.watch(isAuthedProvider);
+  if (!authed) return false;
+
+  try {
+    final inner = await ref.watch(authMeDataProvider.future);
+
+    if (inner.isEmpty) return null;
+
+    final accountType = (inner['accountType'] ?? '').toString().toUpperCase();
+    if (accountType == 'INSTITUTION') return true;
+
+    final direct = inner['identityBaselineComplete'];
+    if (direct is bool) return direct;
+
+    return false;
+  } catch (_) {
+    return null;
+  }
+});
+
 /// Derived session values used by Dio and other layers.
 class SessionState {
   SessionState({

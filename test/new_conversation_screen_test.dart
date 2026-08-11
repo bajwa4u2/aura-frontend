@@ -28,6 +28,57 @@ void main() {
     await tester.pump();
   });
 
+  // Identity Foundation Phase 1 -- shared identity resolution repair.
+  // Regression test for the fixed defect: `_DirectoryEntry.id` and
+  // `.userId` used to be resolved via independently-ordered fallback
+  // chains, so the same underlying user could produce two different `id`
+  // values depending on which listing surfaced them (e.g. a relationship
+  // wrapper's own row id vs the raw user id). That let one real person
+  // appear as two selectable/selected entries. This fixture simulates
+  // exactly that: the same userId ("user-alice") is returned under two
+  // different wrapper `id`s across two searches.
+  testWidgets(
+    'the same underlying member is not treated as two entries when surfaced under different wrapper ids',
+    (tester) async {
+      _useLargeSurface(tester);
+      final posts = <Map<String, dynamic>>[];
+      final dio = _conversationDioWithDivergentWrapperIds(posts: posts);
+      await tester.pumpWidget(_wrap(dio));
+      await tester.pumpAndSettle();
+
+      await _selectMember(tester, 'alice', 'Alice Adams');
+      expect(find.text('Alice Adams'), findsNWidgets(2)); // directory row + chip
+
+      // Re-search (different query text so the listener re-fires, but still
+      // a substring of "Alice Adams" so the client-side filter matches) for
+      // the same person surfaced under a different wrapper id -- simulating
+      // the same user appearing through another endpoint/listing. Tapping
+      // her row here is recognized as toggling the SAME already-selected
+      // entry off (deselect), not adding a second, differently-keyed one --
+      // proving the two listings resolved to one canonical identity. Before
+      // the fix, this tap would have added a distinct second chip instead.
+      await _selectMember(tester, 'adams', 'Alice Adams');
+      expect(find.text('Alice Adams'), findsOneWidget); // chip gone, row remains
+
+      // Re-select via the same (now deselected) row to restore one
+      // participant, then submit.
+      await tester.tap(find.text('Alice Adams').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Alice Adams'), findsNWidgets(2));
+
+      await tester.tap(find.text('Start conversation'));
+      await tester.pumpAndSettle();
+
+      expect(posts, hasLength(1));
+      // Exactly one canonical participant id -- not two -- and it's the
+      // real userId, not either listing's own wrapper id.
+      expect(posts.single['participantIds'], ['user-alice']);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
+
   testWidgets('direct conversation submits PRIVATE payload', (tester) async {
     _useLargeSurface(tester);
     final posts = <Map<String, dynamic>>[];
@@ -162,6 +213,94 @@ Dio _conversationDio({List<Map<String, dynamic>>? posts}) {
               data: {
                 'data': {
                   'users': [_memberForQuery(query)],
+                },
+              },
+            ),
+          );
+        }
+
+        if (options.method == 'POST' && path == '/spaces') {
+          posts?.add(Map<String, dynamic>.from(options.data as Map));
+          return handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'data': {'id': 'space-1', 'threadId': 'thread-1'},
+              },
+            ),
+          );
+        }
+
+        return handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.badResponse,
+            response: Response(
+              requestOptions: options,
+              statusCode: 404,
+              data: 'Unhandled ${options.method} $path',
+            ),
+          ),
+        );
+      },
+    ),
+  );
+  return dio;
+}
+
+/// Same shape as [_conversationDio], but `/search` returns Alice under a
+/// distinct wrapper `id` per query string while keeping the same canonical
+/// `userId` -- reproducing "the same person surfaced via two listings with
+/// different row ids" without needing two different real endpoints.
+Dio _conversationDioWithDivergentWrapperIds({
+  List<Map<String, dynamic>>? posts,
+}) {
+  final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final path = options.path;
+        if (options.method == 'GET' && path == '/users/me') {
+          return handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'data': {'id': 'user-me', 'handle': 'me'},
+              },
+            ),
+          );
+        }
+
+        if (options.method == 'GET' &&
+            (path == '/users/me/followers' || path == '/users/me/following')) {
+          return handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {'data': <Map<String, dynamic>>[]},
+            ),
+          );
+        }
+
+        if (options.method == 'GET' && path == '/search') {
+          final query = (options.queryParameters['q'] ?? '').toString();
+          return handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'data': {
+                  'users': [
+                    {
+                      // Distinct row/relationship id per listing, same
+                      // canonical user underneath.
+                      'id': 'wrapper-$query',
+                      'userId': 'user-alice',
+                      'displayName': 'Alice Adams',
+                    },
+                  ],
                 },
               },
             ),
