@@ -47,7 +47,7 @@ Flutter Stage 1 is the Thread-call foreground lifecycle seed. It is not a replac
 
 Pre-native-production mandatory gates: Device Communication Presence Phase 1 (`3bf8d67`) and Notification Delivery Authority Phase 1 (`b23ff44`) are backend-local, Gate 2 approved, committed, and pushed. Native background/terminated notification certification, Communication Timeline Authority Phase 1, iOS Firebase/APNs configuration confirmation, and Meetings preservation certification for later shared authority implementation remain mandatory.
 
-## Identity Foundation Phase 1 baseline — chapter COMPLETE
+## Identity Foundation Phase 1 baseline — chapter COMPLETE, committed `56a0bb7`, pushed
 
 - Record: `../aura-backend/docs/2026-08-11-identity-foundation-phase-1-implementation.md`.
 - `identityBaselineCompleteProvider` (mirrors `emailVerifiedProvider`) + `router.dart`'s `kCompleteIdentityRoute` (`/complete-identity`) redirect, checked before email verification.

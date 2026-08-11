@@ -4,18 +4,16 @@ Last updated: 2026-08-11 UTC (Takeover audit continuity reconciliation; Identity
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
-## Identity Foundation Phase 1 — COMPLETE, awaiting Gate 2
+## Identity Foundation Phase 1 — COMPLETE, committed, pushed
 
-Status: implemented locally and certified end to end, including institution-space member selection (the founder's required second-pass scope); commit/push requires founder authorization. Record: `../aura-backend/docs/2026-08-11-identity-foundation-phase-1-implementation.md`.
+Status: implemented, certified end to end (including institution-space member selection, the founder's required second-pass scope), founder Gate 2 approved, committed `56a0bb7`, pushed to `origin/main`. Record: `../aura-backend/docs/2026-08-11-identity-foundation-phase-1-implementation.md`.
 
 Both founder decisions from the 2026-08-11 continuation resolved: (1) DOB stays capture-only, no age policy; (2) institution-space member selection implemented end to end via `MemberPickerField` + the extracted canonical `directory_entry.dart` model, proven by `test/institution_spaces_screen_test.dart`.
 
-Remaining gates:
+Remaining:
 
-1. Founder Gate 2 review.
-2. Commit/push authorization if accepted (paired with the backend commit).
-3. Founder decision on whether a minimum-age/eligibility policy is required — not implemented, not inferred, genuinely open (the only founder decision still outstanding for this chapter).
-4. Founder production observation after deployment/release.
+1. Founder decision on whether a minimum-age/eligibility policy is required — not implemented, not inferred, genuinely open (the only founder decision still outstanding for this chapter).
+2. Founder production observation after deployment/release.
 
 Deferred, not part of this chapter: consolidation of the several duplicate identity-extraction helpers (`CorrespondenceIdentity` and per-screen `_extractMembers`/`_IdentityAvatar` implementations in `space_screen.dart`/`conversations_screen.dart`/`correspondence_hub_screen.dart`/`messages_hub_screen.dart` — real duplication, out of this chapter's narrow scope; `directory_entry.dart` is the natural future consolidation target).
 
@@ -50,7 +48,7 @@ Mandatory before Desktop/Android/iOS production release:
 
 1. ~~Device Communication Presence Phase 1.~~ Committed and pushed (`3bf8d67`).
 2. ~~Notification Delivery Authority Phase 1.~~ Committed and pushed (`b23ff44`).
-3. ~~Identity Foundation Phase 1.~~ Implemented and locally certified, 2026-08-11; commit/push requires founder authorization.
+3. ~~Identity Foundation Phase 1.~~ Complete, committed and pushed (`56a0bb7`), 2026-08-11.
 4. Compose Link Intelligence / OG Preview Phase 1.
 5. Native background/terminated notification certification.
 6. Communication Timeline Authority Phase 1.

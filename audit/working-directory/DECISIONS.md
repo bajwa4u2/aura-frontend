@@ -8,7 +8,7 @@ Founder-approved decisions governing this repository (recorded retroactively at 
 
 Backend record: `../aura-backend/docs/2026-08-11-identity-foundation-phase-1-implementation.md`.
 
-Decision status: locally implemented and certified; awaiting founder Gate 2 review and commit authorization.
+Decision status: Gate 2 approved, committed `56a0bb7` ("feat: establish identity foundation phase 1"), pushed to `origin/main`. Paired backend commit `18b2cfb`.
 
 Decisions:
 
@@ -35,7 +35,7 @@ Decisions:
 
 Protected: Meetings, Reachability Authority, Session Continuity Authority, Communication Runtime Lifecycle Authority, Device Communication Presence Authority, Notification Delivery Authority, Canonical Call Notification Stage A, Institution authority, and the already-certified Correspondence entry flow + Identity Foundation DOB baseline behavior — none touched; full practical suite (147/147) + web build re-verified, and `new_conversation_screen_test.dart`'s existing suite re-verified green after the shared-module extraction.
 
-**Chapter status: Identity Foundation Phase 1 is now COMPLETE.** Remaining open item: minimum-age/eligibility policy, an explicit founder decision, not inferred or implemented.
+**Chapter status: Identity Foundation Phase 1 is now COMPLETE.** Founder authorized commit and push, 2026-08-11: committed `56a0bb7`, pushed to `origin/main` (`46eda5d..56a0bb7`), establishing the clean rest point alongside paired backend commit `18b2cfb`. Remaining open item: minimum-age/eligibility policy, an explicit founder decision, not inferred or implemented.
 
 ## 2026-08-11: Continuity reconciliation — Gate 2 closure recorded for three chapters
 
