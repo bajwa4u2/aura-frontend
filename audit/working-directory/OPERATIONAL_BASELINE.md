@@ -1,6 +1,17 @@
 # Operational Baseline - aura_final
 
-Last updated: 2026-08-11 UTC (Takeover audit continuity reconciliation; Identity Foundation Phase 1)
+Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1, incl. Announcement extension)
+
+## Compose Link Intelligence / OG Preview baseline — implemented, locally certified, NOT committed/pushed
+
+- Backend record: `../aura-backend/docs/2026-08-12-compose-link-intelligence-og-preview-phase1-implementation.md`.
+- **Final scope, founder-approved: Member Posts + Institution Posts + Institution Announcements** — one canonical capability across all three.
+- New shared module `lib/core/link_preview/`: `LinkPreview`, `link_url_detection.dart`, `LinkPreviewService` (`POST /link-previews/resolve`), `ComposeLinkDetector` (500ms debounce), `LinkPreviewCard`.
+- `Post`, `FeedItem`, `InstitutionPost`, `Announcement` domain models all gained link fields (`linkUrl`, `linkTitle`, `linkDescription`, `linkImageUrl`, `linkSiteName`, and `FeedItem`/`Announcement` also `linkFaviconUrl`).
+- `compose_screen.dart`, `institution_post_composer_screen.dart`, and `institution_announcement_composer.dart` all wire the identical detector/card/service; `post_card.dart`, `unified_feed_card.dart`, and `announcement_detail_screen.dart` all render via the identical `LinkPreviewCard`.
+- Certification: `flutter analyze` clean, practical suite 172/172 (up from 147), web build succeeded. Real widget tests against all three production composer screens for the first time in this repo (9 tests total), scoped to Link Intelligence only.
+- **Not committed, not pushed.** No production query, no deployment polling, no live production verification performed, per explicit instruction. Awaiting final founder Gate 2 review.
+- Meetings, Reachability Authority, Session Continuity Authority, Communication Runtime Lifecycle Authority, Device Communication Presence Authority, Notification Delivery Authority, Canonical Call Notification Stage A, Institution Authority, Identity Foundation, Member Posts, Institution Posts all remain protected and untouched.
 
 ## Production resources
 

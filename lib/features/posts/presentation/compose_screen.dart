@@ -16,6 +16,10 @@ import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/compliance/objectionable_content.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/link_preview/link_preview.dart';
+import '../../../core/link_preview/link_preview_card.dart';
+import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
 import '../../../core/net/dio_provider.dart';
@@ -250,6 +254,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final List<TagReference> _selectedTagReferences = <TagReference>[];
 
   final List<Attachment> _attachments = [];
+
+  // Compose Link Intelligence / OG Preview -- Phase 1. `_linkPreview` is
+  // the current attached preview (or null); `_linkDetector` watches
+  // `_textController` and resolves a pasted URL through the canonical
+  // backend endpoint. Draft editing stays stable because the detector
+  // clears `_linkPreview` itself the moment the URL leaves the text.
+  LinkPreview? _linkPreview;
+  ComposeLinkDetector? _linkDetector;
 
   /// Per-attachment caption text. Keyed by `attachment.localId`. Owned
   /// by the screen state (not the model) so the canonical `Attachment`
@@ -505,12 +517,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         });
       }
     });
+
+    _linkDetector = ComposeLinkDetector(
+      controller: _textController,
+      resolve: (url) => ref.read(linkPreviewServiceProvider).resolve(url),
+      onPreviewChanged: (preview) {
+        if (!mounted) return;
+        setState(() => _linkPreview = preview);
+        _scheduleAutosave();
+      },
+    );
   }
 
   @override
   void dispose() {
     _autosaveDebounce?.cancel();
     _governanceDebounce?.cancel();
+    _linkDetector?.dispose();
     _textController.dispose();
     _textFocus.dispose();
     for (final c in _captionControllers.values) {
@@ -838,6 +861,26 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final tagRefs = _parseTagReferences(draft['tagReferences']);
       final hydrated = hydrateTextWithDisplayTags(text, tagRefs);
 
+      // Compose Link Intelligence / OG Preview -- Phase 1. Hydrate
+      // directly from the draft's own already-resolved fields rather than
+      // waiting on a fresh resolve() round trip -- the preview appears
+      // immediately on load, not after a debounce delay.
+      final draftLinkUrl = _str(draft['linkUrl']);
+      final draftLinkPreview = draftLinkUrl.isEmpty
+          ? null
+          : LinkPreview(
+              eligible: true,
+              internal: false,
+              sourceUrl: draftLinkUrl,
+              status: _str(draft['linkTitle']).isNotEmpty || _str(draft['linkImageUrl']).isNotEmpty
+                  ? 'READY'
+                  : 'PENDING',
+              title: _str(draft['linkTitle']).isEmpty ? null : _str(draft['linkTitle']),
+              description: _str(draft['linkDescription']).isEmpty ? null : _str(draft['linkDescription']),
+              siteName: _str(draft['linkSiteName']).isEmpty ? null : _str(draft['linkSiteName']),
+              imageUrl: _str(draft['linkImageUrl']).isEmpty ? null : _str(draft['linkImageUrl']),
+            );
+
       setState(() {
         _textController.text = hydrated.text;
         _visibility = visibility;
@@ -850,6 +893,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _attachments
           ..clear()
           ..addAll(loadedAttachments);
+        _linkPreview = draftLinkPreview;
         _syncExternalPublishingToggles();
 
         if (_hasText) {
@@ -910,6 +954,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final tagRefs = _parseTagReferences(post['tagReferences']);
       final hydrated = hydrateTextWithDisplayTags(_str(post['text']), tagRefs);
 
+      final postLinkUrl = _str(post['linkUrl']);
+      final postLinkPreview = postLinkUrl.isEmpty
+          ? null
+          : LinkPreview(
+              eligible: true,
+              internal: false,
+              sourceUrl: postLinkUrl,
+              status: _str(post['linkTitle']).isNotEmpty || _str(post['linkImageUrl']).isNotEmpty
+                  ? 'READY'
+                  : 'PENDING',
+              title: _str(post['linkTitle']).isEmpty ? null : _str(post['linkTitle']),
+              description: _str(post['linkDescription']).isEmpty ? null : _str(post['linkDescription']),
+              siteName: _str(post['linkSiteName']).isEmpty ? null : _str(post['linkSiteName']),
+              imageUrl: _str(post['linkImageUrl']).isEmpty ? null : _str(post['linkImageUrl']),
+            );
+
       setState(() {
         _textController.text = hydrated.text;
         _visibility = _visibilityFromApi(post['visibility']);
@@ -922,6 +982,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _attachments
           ..clear()
           ..addAll(loadedAttachments);
+        _linkPreview = postLinkPreview;
         if (_hasText) _showTextError = false;
       });
     } catch (e) {
@@ -1283,6 +1344,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             };
           })
           .toList(),
+      // Compose Link Intelligence / OG Preview -- Phase 1. Always resent
+      // (like primaryTopic/tagReferences above) so removing the URL from
+      // the text clears the association on the next autosave, not just
+      // locally. `linkPreviewId` is null for an internal/ineligible/absent
+      // link -- only `linkSourceUrl` is kept in that case, so an internal
+      // Aura link or an unresolvable-but-typed URL still renders as a
+      // plain link rather than being silently dropped.
+      'linkPreviewId': (_linkPreview?.eligible ?? false) ? _linkPreview!.linkPreviewId : null,
+      'linkSourceUrl': (_linkPreview?.eligible ?? false) ? _linkPreview!.sourceUrl : null,
     };
   }
 
@@ -1558,6 +1628,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           ],
           const SizedBox(height: AuraSpace.s14),
           _buildComposerBox(),
+          if (_linkPreview != null && _linkPreview!.eligible && !_linkPreview!.internal) ...[
+            const SizedBox(height: AuraSpace.s10),
+            LinkPreviewCard(
+              url: _linkPreview!.sourceUrl,
+              title: _linkPreview!.title,
+              description: _linkPreview!.description,
+              siteName: _linkPreview!.siteName,
+              imageUrl: _linkPreview!.imageUrl,
+              dense: true,
+              onRemove: () {
+                setState(() => _linkPreview = null);
+                _scheduleAutosave();
+              },
+            ),
+          ],
           const SizedBox(height: AuraSpace.s8),
           _buildCharacterLine(),
           if (_showTextError) ...[

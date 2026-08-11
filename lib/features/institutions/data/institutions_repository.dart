@@ -433,6 +433,14 @@ class InstitutionsRepository {
     String audience = 'PUBLIC',
     List<String>? mediaIds,
     List<Map<String, dynamic>>? tagReferences,
+    // Compose Link Intelligence / OG Preview -- Phase 1 (Announcement
+    // extension). Always sent (not `if (x != null)`) so an explicit `null`
+    // reaches the backend the same way it would for a post -- there is no
+    // ambiguity between "not attaching a link" and "clearing one" at
+    // create time, but sending unconditionally keeps this call shape
+    // identical to updateInstitutionAnnouncement's below.
+    String? linkPreviewId,
+    String? linkSourceUrl,
   }) async {
     final res = await _dio.post(
       '/institutions/$institutionId/announcements',
@@ -446,6 +454,8 @@ class InstitutionsRepository {
         if (mediaIds != null) 'mediaIds': mediaIds,
         if (tagReferences != null) 'tagReferences': tagReferences,
         if (tagReferences != null) 'mentions': tagReferences,
+        'linkPreviewId': linkPreviewId,
+        'linkSourceUrl': linkSourceUrl,
       },
     );
     if (res.data is Map) {
@@ -466,6 +476,14 @@ class InstitutionsRepository {
     String? audience,
     List<String>? mediaIds,
     List<Map<String, dynamic>>? tagReferences,
+    // Compose Link Intelligence / OG Preview -- Phase 1 (Announcement
+    // extension). Always sent, unlike every other field above -- the
+    // backend distinguishes "key absent" (leave alone) from "explicit
+    // null" (clear), the same always-resend/null-clears convention
+    // Post/InstitutionPost already use. Omitting these keys here would
+    // make it impossible for the composer to ever clear an attached link.
+    String? linkPreviewId,
+    String? linkSourceUrl,
   }) async {
     final res = await _dio.patch(
       '/institutions/$institutionId/announcements/$announcementId',
@@ -479,6 +497,8 @@ class InstitutionsRepository {
         if (mediaIds != null) 'mediaIds': mediaIds,
         if (tagReferences != null) 'tagReferences': tagReferences,
         if (tagReferences != null) 'mentions': tagReferences,
+        'linkPreviewId': linkPreviewId,
+        'linkSourceUrl': linkSourceUrl,
       },
     );
     if (res.data is Map) {

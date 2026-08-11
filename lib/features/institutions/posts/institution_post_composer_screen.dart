@@ -18,6 +18,10 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/link_preview/link_preview.dart';
+import '../../../core/link_preview/link_preview_card.dart';
+import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -107,6 +111,12 @@ class _InstitutionPostComposerScreenState
   final List<TagReference> _selectedTagReferences = <TagReference>[];
   bool _uploading = false;
 
+  // Compose Link Intelligence / OG Preview -- Phase 1. Same
+  // ComposeLinkDetector wired to _bodyCtrl that compose_screen.dart uses --
+  // one canonical detector/resolver, not a duplicate for institution posts.
+  LinkPreview? _linkPreview;
+  ComposeLinkDetector? _linkDetector;
+
   bool _busy = false;
   bool _loadingExisting = false;
   String? _error;
@@ -151,6 +161,15 @@ class _InstitutionPostComposerScreenState
     }
     _titleCtrl.addListener(_onFieldChanged);
     _bodyCtrl.addListener(_onFieldChanged);
+    _linkDetector = ComposeLinkDetector(
+      controller: _bodyCtrl,
+      resolve: (url) => ref.read(linkPreviewServiceProvider).resolve(url),
+      onPreviewChanged: (preview) {
+        if (!mounted) return;
+        setState(() => _linkPreview = preview);
+        _onFieldChanged();
+      },
+    );
     if (widget.isEditing && initial == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _loadExistingPost();
@@ -168,6 +187,24 @@ class _InstitutionPostComposerScreenState
     );
     _bodyCtrl.text = hydrated.text;
     _mediaUrl = initial.mediaUrl;
+    // Compose Link Intelligence / OG Preview -- Phase 1. Hydrate directly
+    // from the already-resolved post fields rather than waiting on a
+    // fresh resolve() round trip.
+    final initialLinkUrl = (initial.linkUrl ?? '').trim();
+    _linkPreview = initialLinkUrl.isEmpty
+        ? null
+        : LinkPreview(
+            eligible: true,
+            internal: false,
+            sourceUrl: initialLinkUrl,
+            status: (initial.linkTitle ?? '').isNotEmpty || (initial.linkImageUrl ?? '').isNotEmpty
+                ? 'READY'
+                : 'PENDING',
+            title: initial.linkTitle,
+            description: initial.linkDescription,
+            siteName: initial.linkSiteName,
+            imageUrl: initial.linkImageUrl,
+          );
     _visibility = initial.visibility;
     _distribution = initial.distribution;
     _primaryTopic = AuraTopic.fromWire(initial.primaryTopic ?? '');
@@ -224,6 +261,7 @@ class _InstitutionPostComposerScreenState
   @override
   void dispose() {
     _draftDebounce?.cancel();
+    _linkDetector?.dispose();
     _titleCtrl.dispose();
     _bodyCtrl.dispose();
     _bodyFocus.dispose();
@@ -557,6 +595,10 @@ class _InstitutionPostComposerScreenState
       'secondaryTopics': _secondaryTopics.map((t) => t.wire).toList(),
       'tagReferences': _currentMentionPayload(),
       'mentions': _currentMentionPayload(),
+      // Compose Link Intelligence / OG Preview -- Phase 1. Same
+      // always-resend-current-value convention as the other fields above.
+      'linkPreviewId': (_linkPreview?.eligible ?? false) ? _linkPreview!.linkPreviewId : null,
+      'linkSourceUrl': (_linkPreview?.eligible ?? false) ? _linkPreview!.sourceUrl : null,
     };
   }
 
@@ -1160,6 +1202,23 @@ class _InstitutionPostComposerScreenState
                       ),
                     ),
                   ),
+                  if (_linkPreview != null && _linkPreview!.eligible && !_linkPreview!.internal) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AuraSpace.s16),
+                      child: LinkPreviewCard(
+                        url: _linkPreview!.sourceUrl,
+                        title: _linkPreview!.title,
+                        description: _linkPreview!.description,
+                        siteName: _linkPreview!.siteName,
+                        imageUrl: _linkPreview!.imageUrl,
+                        dense: true,
+                        onRemove: () {
+                          setState(() => _linkPreview = null);
+                          _onFieldChanged();
+                        },
+                      ),
+                    ),
+                  ],
                   _LabeledField(
                     label: 'Media (optional)',
                     child: _MediaUploadSlot(

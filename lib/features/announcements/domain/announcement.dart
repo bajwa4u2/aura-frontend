@@ -9,6 +9,12 @@ class Announcement {
     required this.pinned,
     required this.publishedAt,
     required this.media,
+    this.linkUrl,
+    this.linkTitle,
+    this.linkDescription,
+    this.linkImageUrl,
+    this.linkSiteName,
+    this.linkFaviconUrl,
   });
 
   final String id;
@@ -22,6 +28,18 @@ class Announcement {
 
   /// Backend-ready: [{ id, type, url, thumbUrl, width, height, duration, caption }]
   final List<Map<String, dynamic>> media;
+
+  /// Compose Link Intelligence / OG Preview -- Phase 1 (Announcement
+  /// extension). Same flat-field shape as Post/InstitutionPost/FeedItem --
+  /// `linkUrl` is the author's exact typed URL, always present once a link
+  /// was attached; the remaining fields only carry real values once the
+  /// backend's preview resolved (status READY).
+  final String? linkUrl;
+  final String? linkTitle;
+  final String? linkDescription;
+  final String? linkImageUrl;
+  final String? linkSiteName;
+  final String? linkFaviconUrl;
 
   factory Announcement.fromJson(Map<String, dynamic> j) {
     final publishedRaw = j['publishedAt']?.toString();
@@ -38,6 +56,12 @@ class Announcement {
       }
     }
 
+    String? str(dynamic v) {
+      if (v == null) return null;
+      final s = v.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
     return Announcement(
       id: (j['id'] ?? '').toString(),
       slug: (j['slug'] ?? '').toString(),
@@ -48,6 +72,12 @@ class Announcement {
       pinned: (j['pinned'] == true),
       publishedAt: published,
       media: media,
+      linkUrl: str(j['linkUrl']),
+      linkTitle: str(j['linkTitle']),
+      linkDescription: str(j['linkDescription']),
+      linkImageUrl: str(j['linkImageUrl']),
+      linkSiteName: str(j['linkSiteName']),
+      linkFaviconUrl: str(j['linkFaviconUrl']),
     );
   }
 }

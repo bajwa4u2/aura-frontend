@@ -821,6 +821,11 @@ class FeedItem {
     required this.body,
     this.mediaUrl,
     this.media = const <FeedMedia>[],
+    this.linkUrl,
+    this.linkTitle,
+    this.linkDescription,
+    this.linkImageUrl,
+    this.linkSiteName,
     required this.visibility,
     required this.distribution,
     required this.status,
@@ -861,6 +866,18 @@ class FeedItem {
   /// should prefer this list over [mediaUrl] when populated and branch
   /// on each entry's visibility for signed-URL delivery.
   final List<FeedMedia> media;
+
+  /// Compose Link Intelligence / OG Preview -- Phase 1. Same semantics as
+  /// `Post`'s equivalent fields (`feed/domain/post.dart`): `linkUrl` is
+  /// the exact URL the author attached and always renders as a link when
+  /// present; the rest are resolved OG metadata, present only once ready,
+  /// absent (not broken) otherwise.
+  final String? linkUrl;
+  final String? linkTitle;
+  final String? linkDescription;
+  final String? linkImageUrl;
+  final String? linkSiteName;
+
   final FeedVisibility visibility;
   final FeedDistribution distribution;
   final String status;
@@ -1056,6 +1073,11 @@ class FeedItem {
       body: s(['body']),
       mediaUrl: opt(['mediaUrl']),
       media: FeedMedia.listFromJson(m['media']),
+      linkUrl: opt(['linkUrl']),
+      linkTitle: opt(['linkTitle']),
+      linkDescription: opt(['linkDescription']),
+      linkImageUrl: opt(['linkImageUrl']),
+      linkSiteName: opt(['linkSiteName']),
       visibility: FeedVisibility.fromWire(m['visibility']),
       distribution: FeedDistribution.fromWire(m['distribution']),
       status: s(['status']),

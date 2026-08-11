@@ -143,6 +143,11 @@ class InstitutionPost {
     required this.body,
     this.mediaUrl,
     this.media = const <FeedMedia>[],
+    this.linkUrl,
+    this.linkTitle,
+    this.linkDescription,
+    this.linkImageUrl,
+    this.linkSiteName,
     required this.visibility,
     required this.distribution,
     required this.status,
@@ -176,6 +181,16 @@ class InstitutionPost {
   /// should prefer this list over [mediaUrl] when populated and branch
   /// on each entry's `visibility` for signed-URL delivery.
   final List<FeedMedia> media;
+
+  /// Compose Link Intelligence / OG Preview -- Phase 1. Same semantics as
+  /// `Post`/`FeedItem`'s equivalent fields -- one canonical shape shared
+  /// across every surface that carries a link preview.
+  final String? linkUrl;
+  final String? linkTitle;
+  final String? linkDescription;
+  final String? linkImageUrl;
+  final String? linkSiteName;
+
   final InstitutionPostVisibility visibility;
   final InstitutionPostDistribution distribution;
   final InstitutionPostStatus status;
@@ -297,6 +312,11 @@ class InstitutionPost {
       body: s(['body', 'bodyMarkdown']),
       mediaUrl: opt(['mediaUrl']),
       media: FeedMedia.listFromJson(json['media']),
+      linkUrl: opt(['linkUrl']),
+      linkTitle: opt(['linkTitle']),
+      linkDescription: opt(['linkDescription']),
+      linkImageUrl: opt(['linkImageUrl']),
+      linkSiteName: opt(['linkSiteName']),
       visibility: InstitutionPostVisibilityX.fromWire(json['visibility']),
       distribution: InstitutionPostDistributionX.fromWire(json['distribution']),
       status: InstitutionPostStatusX.fromWire(json['status']),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/aura_media_viewer.dart';
@@ -338,6 +339,22 @@ class UnifiedFeedCard extends ConsumerWidget {
                     : null,
                 mode: mediaMode,
                 downloadContext: _mediaDownloadContext(item.type),
+              ),
+            ] else if (item.linkUrl != null && item.linkUrl!.isNotEmpty) ...[
+              // Compose Link Intelligence / OG Preview -- Phase 1. Same
+              // canonical LinkPreviewCard widget personal-post rendering
+              // uses (via post_card.dart's activated _finalAttachmentBlock)
+              // -- institution posts/announcements rendered through this
+              // unified card get the identical preview, not a separate
+              // implementation. Mutually exclusive with media, matching
+              // the same rule post_card.dart already enforces.
+              const SizedBox(height: AuraSpace.s10),
+              LinkPreviewCard(
+                url: item.linkUrl!,
+                title: item.linkTitle,
+                description: item.linkDescription,
+                siteName: item.linkSiteName,
+                imageUrl: item.linkImageUrl,
               ),
             ],
             if (showVisibilityBadge) ...[

@@ -1,8 +1,40 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-11 UTC (Takeover audit continuity reconciliation; Identity Foundation Phase 1)
+Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1, incl. Announcement extension)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-12: Compose Link Intelligence / OG Preview — Announcement extension approved and implemented locally, not committed
+
+Founder reviewed the Member/Institution-Posts-only Gate 2 report, approved it, and required one further scope item before advancing to Communication Timeline Authority: extend the identical capability to Institution Announcements. Decisions:
+
+1. `institution_announcement_composer.dart` wires the exact same `ComposeLinkDetector`/`LinkPreviewCard` pair as the other two composers, no third variant.
+2. `announcement_detail_screen.dart`'s rendering is a top-level block above the `AuraCard`, mutually exclusive with media — matching this screen's own pre-existing media-above-card layout (a genuine, named-acceptable layout adaptation), not a divergent OG-preview system.
+3. The compact list-view `_AnnouncementCard` (`announcements_screen.dart`) was deliberately left unwired — thumbnail-only summary layout, no room for a rich card without a separate redesign.
+4. `institutions_repository.dart`'s `createInstitutionAnnouncement`/`updateInstitutionAnnouncement` send `linkPreviewId`/`linkSourceUrl` unconditionally (unlike every other field in those two methods) — the one deliberate divergence from that file's own convention, required so an explicit `null` reaches the backend and can actually clear an attached link.
+5. Member Posts and Institution Posts are now also explicitly named protected systems for this chapter — zero files under either surface were touched, confirmed via `git status`.
+
+Protected: all previously-named systems plus Member Posts and Institution Posts — none touched; full practical suite (172/172, up from 166) + web build re-verified.
+
+## 2026-08-12: Compose Link Intelligence / OG Preview — Phase 1 (Member Posts + Institution Posts) implemented locally, not committed
+
+Backend record: `../aura-backend/docs/2026-08-12-compose-link-intelligence-og-preview-phase1-implementation.md`.
+
+Decision status: implemented and locally certified. **Not committed, not pushed** — per explicit instruction, awaiting founder Gate 2 review.
+
+Decisions:
+
+1. One shared module, `lib/core/link_preview/`, owns detection (`firstUrlIn`), resolution (`LinkPreviewService`), debounced controller-wiring (`ComposeLinkDetector`), and rendering (`LinkPreviewCard`) — neither `compose_screen.dart` nor `institution_post_composer_screen.dart` implements its own version of any of these.
+2. `ComposeLinkDetector` follows the existing `GovernedTagAutocomplete` pattern (wraps `TextEditingController`, plain Dart class not a widget) rather than inventing a new composer-extension shape.
+3. `LinkPreviewCard` is consumed by both `post_card.dart` (member feed) and `unified_feed_card.dart` (institution/broader feed) — no second rendering widget was created for institution posts.
+4. `Post.linkUrl`/`.linkSiteName` were added because `post_card.dart` already expected them (a real, pre-existing dead-code path found by audit, not assumed) — adding the missing model fields activates that existing rendering with zero changes to the widget file itself.
+5. `FeedItem` gained all 5 link fields; `FeedReply` deliberately did not — link previews are scoped to top-level content, not reply text, consistent with how institution replies/reshares are treated elsewhere in this codebase.
+6. Compose payload convention: `linkPreviewId`/`linkSourceUrl` are always resent on every save/publish (undefined leaves unset, explicit `null` clears) — matching the existing `primaryTopic`/`tagReferences` convention rather than inventing a new patch-semantics.
+7. Draft/edit hydration reads the post's own already-resolved flat link fields directly — no redundant `resolve()` network call fires on opening an existing draft/post.
+8. Widget tests for this chapter mount the real, full production composer screens (`ComposeScreen`, `InstitutionPostComposerScreen`) rather than a minimal harness only, after direct founder pushback on test-coverage framing during this chapter (five separate messages pressing on composer test coverage, culminating in "i do not want it under perform"). This is explicitly scoped to the Link Intelligence feature — comprehensive coverage of every other composer capability remains a separate, undone, future chapter, stated plainly rather than implied as complete.
+9. Announcements were deliberately not wired on this client — the founder named member and institution compose specifically; Announcements is a third, distinct composer surface out of this chapter's bounded scope.
+
+Protected: Meetings, Reachability Authority, Session Continuity Authority, Communication Runtime Lifecycle Authority, Device Communication Presence Authority, Notification Delivery Authority, Canonical Call Notification Stage A, Institution Authority, Identity Foundation — none touched; full practical suite (166/166, up from 147) + web build re-verified.
 
 ## 2026-08-11: Identity Foundation Phase 1 implemented locally
 

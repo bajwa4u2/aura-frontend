@@ -214,9 +214,11 @@ class Post {
     this.mediaHeight,
     this.mediaDuration,
     this.caption,
+    this.linkUrl,
     this.linkTitle,
     this.linkDescription,
     this.linkImageUrl,
+    this.linkSiteName,
     this.originalLanguage,
     this.translatedLanguage,
     this.translatedText,
@@ -260,9 +262,18 @@ class Post {
   final int? mediaDuration;
   final String? caption;
 
+  /// Compose Link Intelligence / OG Preview -- Phase 1. `linkUrl` is the
+  /// exact URL the author typed/pasted (`linkSourceUrl` server-side) --
+  /// what the preview card actually opens. The other fields are resolved
+  /// OG metadata, present only once the backend's LinkPreview reached
+  /// READY; all null together means "post has a link but no preview
+  /// metadata is available," which renders as a plain link, never as a
+  /// broken card.
+  final String? linkUrl;
   final String? linkTitle;
   final String? linkDescription;
   final String? linkImageUrl;
+  final String? linkSiteName;
 
   final String? originalLanguage;
   final String? translatedLanguage;
@@ -306,9 +317,11 @@ class Post {
     int? mediaHeight,
     int? mediaDuration,
     String? caption,
+    String? linkUrl,
     String? linkTitle,
     String? linkDescription,
     String? linkImageUrl,
+    String? linkSiteName,
     String? originalLanguage,
     String? translatedLanguage,
     String? translatedText,
@@ -339,9 +352,11 @@ class Post {
       mediaHeight: mediaHeight ?? this.mediaHeight,
       mediaDuration: mediaDuration ?? this.mediaDuration,
       caption: caption ?? this.caption,
+      linkUrl: linkUrl ?? this.linkUrl,
       linkTitle: linkTitle ?? this.linkTitle,
       linkDescription: linkDescription ?? this.linkDescription,
       linkImageUrl: linkImageUrl ?? this.linkImageUrl,
+      linkSiteName: linkSiteName ?? this.linkSiteName,
       originalLanguage: originalLanguage ?? this.originalLanguage,
       translatedLanguage: translatedLanguage ?? this.translatedLanguage,
       translatedText: translatedText ?? this.translatedText,
@@ -399,6 +414,7 @@ class Post {
       mediaHeight: _readInt(j['mediaHeight']) ?? primaryMedia?.height,
       mediaDuration: _readInt(j['mediaDuration']) ?? primaryMedia?.duration,
       caption: _readString(j['caption']) ?? primaryMedia?.caption,
+      linkUrl: _readString(j['linkUrl']) ?? _readString(j['url']),
       linkTitle: _readString(j['linkTitle']) ?? _readString(j['title']),
       linkDescription:
           _readString(
@@ -407,6 +423,7 @@ class Post {
           _readString(j['subtitle']),
       linkImageUrl:
           _readString(j['linkImageUrl']) ?? _readString(j['linkThumbUrl']),
+      linkSiteName: _readString(j['linkSiteName']) ?? _readString(j['siteName']),
       originalLanguage: _readString(
         j['originalLanguage'] ?? j['sourceLanguage'] ?? j['language'],
       ),

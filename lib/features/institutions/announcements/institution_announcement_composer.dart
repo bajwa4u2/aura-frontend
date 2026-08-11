@@ -7,6 +7,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/errors/app_error_mapper.dart';
+import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/link_preview/link_preview.dart';
+import '../../../core/link_preview/link_preview_card.dart';
+import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
@@ -72,6 +76,13 @@ class _InstitutionAnnouncementComposerState
   final List<TagReference> _selectedTagReferences = <TagReference>[];
   bool _mediaUploading = false;
 
+  // Compose Link Intelligence / OG Preview -- Phase 1 (Announcement
+  // extension). Same ComposeLinkDetector wired to _bodyController that
+  // compose_screen.dart / institution_post_composer_screen.dart use -- one
+  // canonical detector/resolver, not a third duplicate for announcements.
+  LinkPreview? _linkPreview;
+  ComposeLinkDetector? _linkDetector;
+
   static const _kinds = ['GENERAL', 'RELEASE', 'SAFETY', 'GOVERNANCE'];
   static const _audiences = ['PUBLIC', 'MEMBERS', 'INTERNAL'];
 
@@ -125,8 +136,38 @@ class _InstitutionAnnouncementComposerState
           );
         }
       }
+
+      // Compose Link Intelligence / OG Preview -- Phase 1 (Announcement
+      // extension). Hydrate directly from the already-resolved announcement
+      // fields rather than waiting on a fresh resolve() round trip, mirroring
+      // institution_post_composer_screen.dart's _applyInitialPost exactly.
+      final initialLinkUrl = (d['linkUrl']?.toString() ?? '').trim();
+      _linkPreview = initialLinkUrl.isEmpty
+          ? null
+          : LinkPreview(
+              eligible: true,
+              internal: false,
+              sourceUrl: initialLinkUrl,
+              status:
+                  (d['linkTitle']?.toString().trim().isNotEmpty ?? false) ||
+                      (d['linkImageUrl']?.toString().trim().isNotEmpty ?? false)
+                  ? 'READY'
+                  : 'PENDING',
+              title: d['linkTitle']?.toString(),
+              description: d['linkDescription']?.toString(),
+              siteName: d['linkSiteName']?.toString(),
+              imageUrl: d['linkImageUrl']?.toString(),
+            );
     }
     _savedId = widget.announcementId;
+    _linkDetector = ComposeLinkDetector(
+      controller: _bodyController,
+      resolve: (url) => ref.read(linkPreviewServiceProvider).resolve(url),
+      onPreviewChanged: (preview) {
+        if (!mounted) return;
+        setState(() => _linkPreview = preview);
+      },
+    );
   }
 
   AttachmentKind _attachmentKindFromServerType(String? type) {
@@ -145,6 +186,7 @@ class _InstitutionAnnouncementComposerState
 
   @override
   void dispose() {
+    _linkDetector?.dispose();
     _titleController.dispose();
     _summaryController.dispose();
     _bodyController.dispose();
@@ -377,6 +419,20 @@ class _InstitutionAnnouncementComposerState
       _error = null;
     });
 
+    // Compose Link Intelligence / OG Preview -- Phase 1 (Announcement
+    // extension). Always resent on every save (create and update alike),
+    // same convention as compose_screen.dart / institution_post_composer_
+    // screen.dart -- `linkPreviewId` is null for an internal/ineligible/
+    // absent link, in which case only `linkSourceUrl` is kept so an
+    // internal Aura URL still round-trips as plain text without ever
+    // attaching a fetched preview to it.
+    final linkPreviewId = (_linkPreview?.eligible ?? false)
+        ? _linkPreview!.linkPreviewId
+        : null;
+    final linkSourceUrl = (_linkPreview?.eligible ?? false)
+        ? _linkPreview!.sourceUrl
+        : null;
+
     try {
       if (_savedId == null) {
         final result = await _repo.createInstitutionAnnouncement(
@@ -388,6 +444,8 @@ class _InstitutionAnnouncementComposerState
           audience: _audience,
           mediaIds: mediaIds,
           tagReferences: tagReferences,
+          linkPreviewId: linkPreviewId,
+          linkSourceUrl: linkSourceUrl,
         );
         _savedId = result['id']?.toString();
       } else {
@@ -401,6 +459,8 @@ class _InstitutionAnnouncementComposerState
           audience: _audience,
           mediaIds: mediaIds,
           tagReferences: tagReferences,
+          linkPreviewId: linkPreviewId,
+          linkSourceUrl: linkSourceUrl,
         );
       }
       setState(() {
@@ -744,6 +804,20 @@ class _InstitutionAnnouncementComposerState
                       ],
                     ),
                   ),
+                  if (_linkPreview != null &&
+                      _linkPreview!.eligible &&
+                      !_linkPreview!.internal) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    LinkPreviewCard(
+                      url: _linkPreview!.sourceUrl,
+                      title: _linkPreview!.title,
+                      description: _linkPreview!.description,
+                      siteName: _linkPreview!.siteName,
+                      imageUrl: _linkPreview!.imageUrl,
+                      dense: true,
+                      onRemove: () => setState(() => _linkPreview = null),
+                    ),
+                  ],
                   const SizedBox(height: AuraSpace.s16),
                   _buildMediaCard(disabled: isBusy),
                   const SizedBox(height: AuraSpace.s16),
