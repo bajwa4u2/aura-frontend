@@ -1,6 +1,18 @@
 # Current State — aura_final
 
-Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1 CLOSED — committed, pushed)
+Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 implemented, locally certified, not committed)
+
+## Communication Timeline Authority — Phase 1, implemented 2026-08-13
+
+Backend implementation record: `../aura-backend/docs/2026-08-13-communication-timeline-authority-phase1-implementation.md`.
+
+Status: implemented, locally certified. **Not committed, not pushed** — awaiting founder Gate 2 review. Paired backend chapter (same status).
+
+Activated the previously-dead `type == 'LIVE'` branch in `activity_screen.dart`'s `_buildTitle()` — extended to handle the four new founder-approved outcomes (`CALL_COMPLETED`/`CALL_DECLINED`/`CALL_CANCELLED`, plus the pre-existing `CALL_MISSED` case), using a new `direction` field (INCOMING/OUTGOING) to phrase outgoing vs. incoming correctly. `_iconForType()` gained a `LIVE` case (`Icons.call_outlined`) — it previously had none at all, falling through to a generic bell. `_buildSubtitle()`/`_ctaLabel()` needed no changes, both already handled LIVE generically.
+
+**Real, general (not Timeline-scoped) client bug found and fixed while activating this dead code**: `NotificationsRepository._normalizeNotificationItem()` has always read `item['data']` first, but the backend's `ActorNotificationsService.list()` has always returned the row's custom fields under the JSON key `payload`, never `data`. Every pre-existing notification type survived this silently via top-level column fallbacks (`threadId`, `postId`, etc.) — a call-outcome row's only distinguishing field (`notificationKind`) has no such fallback and would have been silently lost even with correct backend data. Fixed with a one-line, general fallback (`item['data'] ?? item['payload']`), not scoped narrowly to this chapter.
+
+Certification: `flutter analyze` clean, practical suite **178/178** (up from 172), web build succeeded. New `test/activity_screen_communication_timeline_test.dart` (6 tests) mounts the real, previously-zero-coverage production `ActivityScreen` end to end for every outcome (missed, completed-outgoing, completed-incoming, declined, cancelled, mixed-feed-no-duplication).
 
 ## Compose Link Intelligence / OG Preview — Phase 1 — CLOSED, 2026-08-12 (final scope: Member Posts + Institution Posts + Institution Announcements)
 

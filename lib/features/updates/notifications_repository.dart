@@ -347,7 +347,18 @@ _NotificationsPayload _normalizePayload(dynamic raw) {
 
 Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
   final item = Map<String, dynamic>.from(raw);
-  final data = _mapOf(item['data']);
+  // Communication Timeline Authority -- Phase 1 finding: the backend's
+  // ActorNotificationsService.list() has always returned this object's
+  // custom fields under the JSON key `payload` (mapped from the
+  // Notification.data column), never `data` -- but this normalizer has
+  // always read `item['data']` first. Every existing notification type
+  // survived this because its important fields are also promoted to
+  // top-level item columns (threadId, postId, etc.), so this mismatch was
+  // never visibly broken before. Falling back to `item['payload']` closes
+  // it generally, not just for the new LIVE call-outcome rows that
+  // actually depend on nested fields (notificationKind, mediaMode) with no
+  // top-level column equivalent.
+  final data = _mapOf(item['data'] ?? item['payload']);
   final payload = _mapOf(data['payload']);
   final target = _mapOf(data['target']);
   final session = _mapOf(data['session']);

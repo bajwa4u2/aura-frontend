@@ -1035,6 +1035,14 @@ class _ActivityLeadingIcon extends StatelessWidget {
         return Icons.shield_outlined;
       case 'REPORT_RESOLVED':
         return Icons.fact_check_outlined;
+      case 'LIVE':
+        // Communication Timeline Authority -- Phase 1 activation. This
+        // dead LIVE-rendering path never had its own icon case either
+        // (fell through to the generic bell) -- outcome-specific coloring
+        // (missed vs completed vs declined) is deliberately not threaded
+        // through here; this widget only receives `type`, not the full
+        // item, and adding that is a larger, separate change.
+        return Icons.call_outlined;
       default:
         return Icons.notifications_none_rounded;
     }
@@ -1135,14 +1143,32 @@ String _buildTitle(Map<String, dynamic> item) {
     _stringOf(data['realtimeType']).toUpperCase(),
   ]);
 
-  // LIVE type — distinguish call invite vs missed call
+  // LIVE type — distinguish call invite vs missed call vs Communication
+  // Timeline Authority Phase 1's durable outcomes (completed/declined/
+  // cancelled). `direction` (INCOMING/OUTGOING) disambiguates whose call
+  // this was -- the backend never assigns the caller's own row DECLINED
+  // (it resolves to CANCELLED when nobody answers), so CALL_DECLINED only
+  // ever appears on an INCOMING row.
   if (type == 'LIVE') {
     final callType = _resolveCallType(data);
+    final direction = _stringOf(data['direction']).toUpperCase();
+    final outgoing = direction == 'OUTGOING';
     if (notifKind == 'CALL_RINGING' || notifKind == 'REALTIME_INVITE') {
       return '$actorName invited you to an $callType';
     }
     if (notifKind == 'CALL_MISSED') {
       return 'Missed $callType from $actorName';
+    }
+    if (notifKind == 'CALL_COMPLETED') {
+      return outgoing ? 'You made a $callType' : '$actorName called you';
+    }
+    if (notifKind == 'CALL_DECLINED') {
+      return 'You declined a call from $actorName';
+    }
+    if (notifKind == 'CALL_CANCELLED') {
+      return outgoing
+          ? 'You cancelled a $callType'
+          : '$actorName cancelled a $callType';
     }
     return '$actorName started a $callType';
   }

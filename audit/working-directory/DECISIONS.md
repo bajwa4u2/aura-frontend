@@ -1,8 +1,19 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1 CLOSED — committed, pushed)
+Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 implemented locally, not committed)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-13: Communication Timeline Authority — Phase 1 implemented locally, not committed
+
+Backend record: `../aura-backend/docs/2026-08-13-communication-timeline-authority-phase1-implementation.md`. Founder froze the outcome vocabulary and attention rules backend-side (see backend `DECISIONS.md`); this repo's decisions:
+
+1. `activity_screen.dart`'s dead `type == 'LIVE'` branch is activated with real data, not rebuilt — `_buildTitle()` extended for the four outcomes, `direction` disambiguates outgoing vs. incoming phrasing. `_buildSubtitle()`/`_ctaLabel()` required no changes.
+2. `_iconForType()` gained a `LIVE` case. Outcome-specific icon coloring (missed=red, etc.) was deliberately not attempted — the leading-icon widget only receives `type`, not the full item; threading that through is a larger, separate change.
+3. `NotificationsRepository._normalizeNotificationItem()`'s `item['data']` → `item['payload']` fallback is a general fix, not scoped to Timeline items only — the mismatch was silently present for every notification type relying on nested fields with no top-level column equivalent.
+4. Widget tests mount the real, full production `ActivityScreen` (previously zero coverage) rather than a minimal harness, consistent with this repo's established testing discipline from the prior chapter.
+
+Protected: Meetings, Reachability Authority, Session Continuity Authority, Communication Runtime Lifecycle Authority, Device Communication Presence Authority, Canonical Call Notification Stage A, Institution Authority, Identity Foundation, Link Intelligence / OG Preview — none touched; full practical suite (178/178, up from 172) + web build re-verified.
 
 ## 2026-08-12: Compose Link Intelligence / OG Preview — Phase 1 — Gate 2 approved, committed, pushed. CHAPTER CLOSED.
 
