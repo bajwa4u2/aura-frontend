@@ -1,10 +1,14 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1, incl. Announcement extension)
+Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1 CLOSED — committed, pushed)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
 
-## 2026-08-12: Compose Link Intelligence / OG Preview — Announcement extension approved and implemented locally, not committed
+## 2026-08-12: Compose Link Intelligence / OG Preview — Phase 1 — Gate 2 approved, committed, pushed. CHAPTER CLOSED.
+
+Final certified scope: Member Posts + Institution Posts + Institution Announcements share one canonical shared frontend module (`lib/core/link_preview/`), wired identically into all three composer screens and rendered identically across `post_card.dart`, `unified_feed_card.dart`, and `announcement_detail_screen.dart`. Founder Gate 2 approved both the original Member/Institution-Posts report and, same day, the Announcement extension. **Committed `6303882` ("feat: establish link intelligence phase 1"), pushed to `origin/main` (`9d0d558..6303882`).** Paired backend commit `ec09202` in `../aura-backend` (`80d9145..ec09202`). No production query, deployment polling, or live production verification performed at any point in this chapter, per explicit instruction. Recorded here so a future takeover audit does not have to reconstruct authorization from git history alone — the two chapter entries below (Announcement extension, then the original Member/Institution-Posts implementation) are the full decision record; this entry is the closure marker.
+
+## 2026-08-12: Compose Link Intelligence / OG Preview — Announcement extension approved and implemented, committed as part of the closing feature commit
 
 Founder reviewed the Member/Institution-Posts-only Gate 2 report, approved it, and required one further scope item before advancing to Communication Timeline Authority: extend the identical capability to Institution Announcements. Decisions:
 
@@ -16,11 +20,11 @@ Founder reviewed the Member/Institution-Posts-only Gate 2 report, approved it, a
 
 Protected: all previously-named systems plus Member Posts and Institution Posts — none touched; full practical suite (172/172, up from 166) + web build re-verified.
 
-## 2026-08-12: Compose Link Intelligence / OG Preview — Phase 1 (Member Posts + Institution Posts) implemented locally, not committed
+## 2026-08-12: Compose Link Intelligence / OG Preview — Phase 1 (Member Posts + Institution Posts) implemented, committed as part of the closing feature commit
 
 Backend record: `../aura-backend/docs/2026-08-12-compose-link-intelligence-og-preview-phase1-implementation.md`.
 
-Decision status: implemented and locally certified. **Not committed, not pushed** — per explicit instruction, awaiting founder Gate 2 review.
+Decision status: implemented, locally certified, founder Gate 2 approved. Committed `6303882` ("feat: establish link intelligence phase 1"), pushed to `origin/main`.
 
 Decisions:
 

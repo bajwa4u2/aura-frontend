@@ -1,12 +1,12 @@
 # Current State — aura_final
 
-Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1, incl. Announcement extension)
+Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1 CLOSED — committed, pushed)
 
-## Compose Link Intelligence / OG Preview — Phase 1, 2026-08-12 (final scope: Member Posts + Institution Posts + Institution Announcements)
+## Compose Link Intelligence / OG Preview — Phase 1 — CLOSED, 2026-08-12 (final scope: Member Posts + Institution Posts + Institution Announcements)
 
 Backend implementation record: `../aura-backend/docs/2026-08-12-compose-link-intelligence-og-preview-phase1-implementation.md`.
 
-Status: implemented, locally certified. **Not committed, not pushed** — per explicit instruction, awaiting founder Gate 2 review. Paired backend chapter (same status).
+Status: implemented, locally certified, **founder Gate 2 approved, committed `6303882` ("feat: establish link intelligence phase 1"), pushed to `origin/main`** (`9d0d558..6303882`). Chapter closed. Paired backend commit `ec09202` (`80d9145..ec09202`).
 
 **Announcement extension, founder-approved same day after the first Gate 2 review.** `institution_announcement_composer.dart` now wires the identical `ComposeLinkDetector`/`LinkPreviewService`/`LinkPreviewCard` trio already proven on the other two composers — same debounce, same always-resend/null-clears payload convention, same edit-mode hydration-without-refetch. `Announcement` domain model gained the same six flat link fields; `announcement_detail_screen.dart` renders the preview as a top-level block mutually exclusive with attached media, matching that screen's own pre-existing media-above-card layout (the one named layout-constraint adaptation, not a divergent rendering system). The compact `_AnnouncementCard` list-view summary row was deliberately left unwired (thumbnail-only layout, no room for a rich card). `institutions_repository.dart`'s `createInstitutionAnnouncement`/`updateInstitutionAnnouncement` gained `linkPreviewId`/`linkSourceUrl` params, always included in the request body (the one deliberate divergence from that file's own `if (x != null)` convention for every other field, required for the null-clears contract). New widget test (`test/institution_announcement_composer_link_preview_test.dart`, 3 tests) mounts the real production `InstitutionAnnouncementComposer` end to end; `Announcement.fromJson` parsing coverage added to the existing `link_preview_model_parsing_test.dart`. Practical suite grew to 172/172 (up from 166), analyzer clean, web build succeeded. Zero files under Member Posts or Institution Posts touched.
 

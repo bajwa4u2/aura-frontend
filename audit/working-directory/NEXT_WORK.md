@@ -1,22 +1,21 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1, incl. Announcement extension — locally certified, not committed)
+Last updated: 2026-08-12 UTC (Compose Link Intelligence / OG Preview — Phase 1 CLOSED — committed, pushed)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
-## Compose Link Intelligence / OG Preview — Phase 1 — implemented, locally certified, awaiting final founder Gate 2 review
+## Compose Link Intelligence / OG Preview — Phase 1 — COMPLETE, committed, pushed
 
-Status: implemented, certified (analyzer clean, practical suite 172/172, web build, real widget tests against all three production composer screens). **Final scope, founder-approved: Member Posts + Institution Posts + Institution Announcements.** **Not committed, not pushed**, per explicit instruction. Backend record: `../aura-backend/docs/2026-08-12-compose-link-intelligence-og-preview-phase1-implementation.md`.
+Status: implemented, certified (analyzer clean, practical suite 172/172, web build, real widget tests against all three production composer screens), founder Gate 2 approved, committed `6303882` ("feat: establish link intelligence phase 1"), pushed to `origin/main` (`9d0d558..6303882`). Chapter closed. **Final scope: Member Posts + Institution Posts + Institution Announcements.** Backend record: `../aura-backend/docs/2026-08-12-compose-link-intelligence-og-preview-phase1-implementation.md`.
 
-Resolved during this chapter: the founder reviewed the original Member/Institution-Posts-only report and explicitly approved extending the identical capability to Institution Announcements before advancing further — no longer an open item.
+Resolved during this chapter: the founder reviewed the original Member/Institution-Posts-only report and explicitly approved extending the identical capability to Institution Announcements before closing.
 
-Remaining:
+Carried forward, not part of this chapter, unscoped/unprioritized:
 
-1. Founder final Gate 2 review and commit/push authorization.
-2. Comprehensive composer test coverage beyond Link Intelligence (topic picker, media upload, cross-post, draft autosave timing, discard, reply threading — across all three composers now) — explicitly out of this chapter's scope, recommended as its own future chapter, not started.
-3. The compact `_AnnouncementCard` list-view summary row (`announcements_screen.dart`) has no link-preview rendering (thumbnail-only layout, deliberately left unwired) — a candidate for a future presentation-layer pass, not currently scoped or requested.
+1. Comprehensive composer test coverage beyond Link Intelligence (topic picker, media upload, cross-post, draft autosave timing, discard, reply threading — across all three composers now) — explicitly out of this chapter's scope, recommended as its own future chapter, not started.
+2. The compact `_AnnouncementCard` list-view summary row (`announcements_screen.dart`) has no link-preview rendering (thumbnail-only layout, deliberately left unwired) — a candidate for a future presentation-layer pass, not currently scoped or requested.
 
-Per founder instruction: **Stop at Gate 2. Do not start Communication Timeline Authority Phase 1** until this chapter is founder-reviewed.
+Next authorized chapter, named, NOT started: Communication Timeline Authority — Phase 1.
 
 ## Identity Foundation Phase 1 — COMPLETE, committed, pushed
 
