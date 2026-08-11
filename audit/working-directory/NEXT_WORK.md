@@ -1,21 +1,21 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 implemented, locally certified, not committed)
+Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 CLOSED — committed, pushed)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
-## Communication Timeline Authority — Phase 1 — implemented, locally certified, awaiting founder Gate 2 review
+## Communication Timeline Authority — Phase 1 — COMPLETE, committed, pushed
 
-Status: implemented, certified (analyzer clean, practical suite 178/178, web build, real widget tests against the previously-zero-coverage production `ActivityScreen`). **Not committed, not pushed**, per explicit instruction. Backend record: `../aura-backend/docs/2026-08-13-communication-timeline-authority-phase1-implementation.md`.
+Status: implemented, certified (analyzer clean, practical suite 178/178, web build, real widget tests against the previously-zero-coverage production `ActivityScreen`), founder Gate 2 approved, committed `38765bc` ("feat: establish communication timeline authority phase 1"), pushed to `origin/main` (`6e1f7aa..38765bc`). Chapter closed. Backend record: `../aura-backend/docs/2026-08-13-communication-timeline-authority-phase1-implementation.md`.
 
-All six founder decisions from the 2026-08-12 investigation are resolved and frozen backend-side (see `../aura-backend/DECISIONS.md`) — no longer open.
+All six founder decisions from the 2026-08-12 investigation resolved and frozen backend-side (see `../aura-backend/DECISIONS.md`).
 
-Remaining:
+Carried forward, not part of this chapter, unscoped/unprioritized:
 
-1. Founder Gate 2 review and commit/push authorization.
-2. Outcome-specific icon coloring in Activity — the leading-icon widget doesn't receive enough data today (only `type`, not the full item); a separate, larger change, not currently scoped or requested.
-3. Deep-pagination Timeline merge (page 2+ of Activity) — backend-side scope limit, disclosed not fixed.
-4. **Institutional Attention Authority — doctrine FROZEN, founder-approved, zero unresolved decisions** (`../aura-backend/docs/2026-08-13-institutional-attention-authority-proposal.md`), backend doctrine, no frontend implication yet. When authorized: a dedicated Institution Attention / Inbox surface inside Institution Workspace, distinct from the personal global bell (frontend implication for a future chapter, not this one). Not started, not scheduled.
+1. Outcome-specific icon coloring in Activity — the leading-icon widget doesn't receive enough data today (only `type`, not the full item); a separate, larger change, not currently scoped or requested.
+2. Deep-pagination Timeline merge (page 2+ of Activity) — backend-side scope limit, disclosed not fixed.
+
+**Institutional Attention Authority — doctrine FROZEN, founder-approved, zero unresolved decisions** (`../aura-backend/docs/2026-08-13-institutional-attention-authority-proposal.md`), backend doctrine, no frontend implication yet. When authorized: a dedicated Institution Attention / Inbox surface inside Institution Workspace, distinct from the personal global bell (frontend implication for a future chapter, not this one). Not started, not scheduled.
 
 Per founder instruction: **Stop at Gate 2.**
 

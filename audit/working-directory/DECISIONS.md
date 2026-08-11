@@ -1,12 +1,12 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 implemented locally, not committed)
+Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 CLOSED — committed, pushed)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
 
-## 2026-08-13: Communication Timeline Authority — Phase 1 implemented locally, not committed
+## 2026-08-13: Communication Timeline Authority — Phase 1 — Gate 2 approved, committed, pushed. CHAPTER CLOSED.
 
-Backend record: `../aura-backend/docs/2026-08-13-communication-timeline-authority-phase1-implementation.md`. Founder froze the outcome vocabulary and attention rules backend-side (see backend `DECISIONS.md`); this repo's decisions:
+Backend record: `../aura-backend/docs/2026-08-13-communication-timeline-authority-phase1-implementation.md`. Founder froze the outcome vocabulary and attention rules backend-side (see backend `DECISIONS.md`), then approved Gate 2. **Committed `38765bc` ("feat: establish communication timeline authority phase 1"), pushed to `origin/main` (`6e1f7aa..38765bc`).** Paired backend commit `47a4fae`. This repo's decisions:
 
 1. `activity_screen.dart`'s dead `type == 'LIVE'` branch is activated with real data, not rebuilt — `_buildTitle()` extended for the four outcomes, `direction` disambiguates outgoing vs. incoming phrasing. `_buildSubtitle()`/`_ctaLabel()` required no changes.
 2. `_iconForType()` gained a `LIVE` case. Outcome-specific icon coloring (missed=red, etc.) was deliberately not attempted — the leading-icon widget only receives `type`, not the full item; threading that through is a larger, separate change.

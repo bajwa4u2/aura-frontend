@@ -1,12 +1,12 @@
 # Current State — aura_final
 
-Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 implemented, locally certified, not committed)
+Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 CLOSED — committed, pushed)
 
 ## Communication Timeline Authority — Phase 1, implemented 2026-08-13
 
 Backend implementation record: `../aura-backend/docs/2026-08-13-communication-timeline-authority-phase1-implementation.md`.
 
-Status: implemented, locally certified. **Not committed, not pushed** — awaiting founder Gate 2 review. Paired backend chapter (same status).
+Status: implemented, locally certified, **founder Gate 2 approved, committed `38765bc` ("feat: establish communication timeline authority phase 1"), pushed to `origin/main`** (`6e1f7aa..38765bc`). Chapter closed. Paired backend commit `47a4fae` (`6b8d97e..47a4fae`).
 
 Activated the previously-dead `type == 'LIVE'` branch in `activity_screen.dart`'s `_buildTitle()` — extended to handle the four new founder-approved outcomes (`CALL_COMPLETED`/`CALL_DECLINED`/`CALL_CANCELLED`, plus the pre-existing `CALL_MISSED` case), using a new `direction` field (INCOMING/OUTGOING) to phrase outgoing vs. incoming correctly. `_iconForType()` gained a `LIVE` case (`Icons.call_outlined`) — it previously had none at all, falling through to a generic bell. `_buildSubtitle()`/`_ctaLabel()` needed no changes, both already handled LIVE generically.
 

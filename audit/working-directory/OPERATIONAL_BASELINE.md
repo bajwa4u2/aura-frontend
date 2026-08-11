@@ -1,17 +1,17 @@
 # Operational Baseline - aura_final
 
-Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 implemented, locally certified, NOT committed/pushed)
+Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 CLOSED — committed, pushed)
 
-## Communication Timeline Authority baseline — implemented, locally certified, NOT committed/pushed
+## Communication Timeline Authority baseline — CLOSED, committed `38765bc`, pushed
 
 - Backend record: `../aura-backend/docs/2026-08-13-communication-timeline-authority-phase1-implementation.md`.
 - Scope: Thread/DM calls only. Meetings excluded.
 - `activity_screen.dart`'s dead `type == 'LIVE'` branch activated: `_buildTitle()` extended for COMPLETED/DECLINED/CANCELLED (plus pre-existing MISSED), `_iconForType()` gained a `LIVE` case.
 - `NotificationsRepository._normalizeNotificationItem()` general fix: falls back to `item['payload']` when `item['data']` is absent — closes a pre-existing contract mismatch for every notification type, not just calls.
 - Certification: `flutter analyze` clean, practical suite 178/178 (up from 172), web build succeeded. New `test/activity_screen_communication_timeline_test.dart` (6 tests) against the real production `ActivityScreen`.
-- **Not committed, not pushed.** No production query, no deployment polling, no live production verification performed, per explicit instruction. Awaiting founder Gate 2 review.
+- **Founder Gate 2 approved. Committed `38765bc` ("feat: establish communication timeline authority phase 1"), pushed to `origin/main` (`6e1f7aa..38765bc`).** No production query, no deployment polling, no live production verification performed at any point in this chapter, per explicit instruction.
 - Meetings, Reachability Authority, Session Continuity Authority, Communication Runtime Lifecycle Authority, Device Communication Presence Authority, Canonical Call Notification Stage A, Institution Authority, Identity Foundation, Link Intelligence / OG Preview all remain protected and untouched.
-- **Institutional Attention Authority is a proposal document only** (backend `docs/2026-08-13-institutional-attention-authority-proposal.md`) — no frontend implication, not implemented.
+- **Institutional Attention Authority doctrine is FROZEN, founder-approved, zero unresolved decisions** (backend `docs/2026-08-13-institutional-attention-authority-proposal.md`) — no frontend implication yet, not implemented.
 
 ## Compose Link Intelligence / OG Preview baseline — CLOSED, committed `6303882`, pushed
 
