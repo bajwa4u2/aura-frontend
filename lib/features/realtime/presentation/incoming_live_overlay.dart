@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/communication/communication_resolver.dart';
+import '../../../core/notifications/native_call_notification_channel.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -302,6 +303,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     if (sessionId.isEmpty) return;
 
     _cancelRingTimer();
+    unawaited(cancelNativeCallNotifications());
 
     // Capture all context-derived values BEFORE any await.
     // Read the router via its Riverpod provider, not GoRouter.of(context) —
@@ -407,6 +409,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
   Future<void> _declineCurrent(Map<String, dynamic> item) async {
     _cancelRingTimer();
+    unawaited(cancelNativeCallNotifications());
     final id = _stringOf(item['id']);
     if (id.isNotEmpty) _dismissedIds.add(id);
 

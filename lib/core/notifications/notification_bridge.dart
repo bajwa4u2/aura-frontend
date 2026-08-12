@@ -11,6 +11,7 @@ import '../auth/session_providers.dart';
 import '../../features/updates/incoming_call_bridge.dart';
 import '../../features/updates/providers.dart';
 import '../../router.dart';
+import 'native_call_notification_channel.dart';
 import 'notification_open_reconcile.dart';
 import 'sw_message_bridge.dart';
 
@@ -176,6 +177,10 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
         Map<String, dynamic>.from(payload)
           ..['_auraLifecycleSource'] = 'notificationTap',
       );
+      // The tap itself is proof the user has seen/acted on this call —
+      // stop the native ringtone-style alert now rather than leaving it
+      // to Android's own (unreliable, for this channel) tap-cancel behavior.
+      unawaited(cancelNativeCallNotifications());
     }
 
     final route = _routeFromPayload(payload);
