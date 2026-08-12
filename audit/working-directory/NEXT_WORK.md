@@ -1,18 +1,27 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-14 UTC (Permanent Call Lifecycle Reconciliation implemented this session; founder device certification for the whole Native Notification Certification chapter still PENDING, chapter still NOT CLOSED)
+Last updated: 2026-08-14 UTC (Meetings router regression restored + Permanent Call Lifecycle Reconciliation, both this session; ONE combined founder certification checklist below covers both)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
+## ONE combined founder certification checklist — Meetings regression + Call Lifecycle Reconciliation, both 2026-08-14
+
+Two independent fixes landed this session, both awaiting founder certification before this engineering gate closes. Do not test them separately — one combined pass covers both:
+
+1. **Meetings**: a booked or invited Aura member opens their meeting and joins (via the "View meeting" post-booking link, or the meeting record's "Enter room" button) — confirm they reach the room directly, with **no redirect to Institution Sign In** at any point.
+2. **Thread call — no false error**: repeat normal accept/decline cycles — confirm no Retry/Dismiss banner ever appears on a call that actually connects.
+3. **Thread call — caller cancel**: caller cancels before the callee answers — confirm the callee's Android ring notification is cancelled (previously only local accept/decline cancelled it).
+4. **Thread call — natural expiry**: let a call ring to natural expiry (90s) without answering — confirm the Android ring notification clears from the shade, not just the in-app card.
+
+Do not begin iOS Firebase/APNs Confirmation, Runtime Lifecycle Phase 2, Selection/Clipboard/Rich Paste, or Legacy Global Runtime Overlay Cleanup until this combined checkpoint is certified.
+
+## Meetings attendee-join router regression — restored this session, founder retest owed
+
+Root cause (full detail in `CURRENT_STATE.md`/`DECISIONS.md`): `router.dart`'s institution-access gate applied a blanket rule to every `/institution/:id/...` path, never carving out Meetings' institution-namespaced attendee routes (added 2026-07-11, for URL context only). Proven not a recent regression — predates Identity Foundation Phase 1 and every shared-runtime change made this session. Fixed at the router-classification boundary only; zero Meetings-file changes; backend untouched (never institution-actor-gated). New test `test/router_institution_access_test.dart`. Certified: analyzer clean, practical suite 201/201.
+
 ## Permanent Call Lifecycle Reconciliation — implemented this session, founder device retest owed
 
-Root-caused and fixed (see `CURRENT_STATE.md` for full detail) the two symptoms that survived Phase D device testing: the join-retry timeout/epoch race causing a Retry/Dismiss banner on calls that actually connected cleanly, and the Android ring notification not being cancelled on remote-driven call endings. Certified via full analyzer + test suite + debug APK build; **not yet retested on the founder's physical device** (not connected via adb when this work completed).
-
-**Founder-device certification checklist (narrow, specific to this fix — not a general re-test of the whole chapter):**
-1. Accept a call slowly enough to approach the old ~15s join window on a real network (or just repeat normal accept/decline cycles several times) — confirm no Retry/Dismiss banner ever appears on a call that connects.
-2. Let a call ring to natural expiry (90s) without answering — confirm the Android ring notification is gone from the shade, not just the in-app card.
-3. Caller cancels before the callee answers — confirm the callee's Android ring notification is cancelled (previously the gap: only local accept/decline cancelled it).
-4. One quick Meetings join/leave cycle — confirm no behavior change (the epoch guard covers the shared `_performJoin` path but should be silent/no-op in the normal case).
+Root-caused and fixed (see `CURRENT_STATE.md` for full detail) the two symptoms that survived Phase D device testing: the join-retry timeout/epoch race causing a Retry/Dismiss banner on calls that actually connected cleanly, and the Android ring notification not being cancelled on remote-driven call endings. Certified via full analyzer + test suite + debug APK build; **not yet retested on the founder's physical device** (not connected via adb when this work completed). One quick Meetings join/leave cycle is also worth a glance during the combined checkpoint above — the epoch guard covers the shared `_performJoin` path but should be silent/no-op in the normal case.
 
 ## Native Background/Terminated Notification Certification — Phase A/B/C/D COMPLETE, repair committed/pushed, founder device certification pending
 

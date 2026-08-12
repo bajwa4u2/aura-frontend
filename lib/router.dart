@@ -183,6 +183,54 @@ bool _queryBool(String? value) {
   return v == '1' || v == 'true' || v == 'yes' || v == 'on';
 }
 
+// 2026-08-14 — Meetings regression restoration. A meeting belonging to an
+// institution does not make its attendee an institution actor: AUTHENTICATION
+// determines who the person is, INSTITUTION AUTHORITY determines whether they
+// may act as the institution, and MEETING ATTENDANCE AUTHORITY (backend:
+// MeetingService.getMeetingForMember — host/participant/invitee/institution-
+// member) determines whether they may attend. The blanket "every
+// /institution/:id/... sub-path requires institutionAccess.hasAccess" rule
+// below predates Meetings' institution-namespaced route family
+// (`/institution/:id/meetings/:meetingId(...)`, added 2026-07-11 so a
+// meeting's URL can carry institution context) and was never narrowed for
+// it — so a legitimate booked/invited attendee with no institution access
+// was redirected to Institution Sign In the moment a "View meeting" link,
+// the post-signin "keep this booking" flow, or the record's own "Enter
+// room" button built that URL. The backend's own authorization for these
+// routes was never institution-actor-gated to begin with — this frontend
+// rule was simply broader than the resource it protects.
+//
+// Extracted to a top-level, dependency-free pure function (previously a
+// closure-local method with identical logic) so it is independently unit
+// testable without a full router/provider harness — it was not otherwise
+// testable, and this exact regression needs a permanent regression guard.
+bool requiresInstitutionAccessForPath(String path) {
+  if (path == kInstitutionDashboardRoute ||
+      path == kInstitutionProfileRoute ||
+      path == kInstitutionEditProfileRoute ||
+      path == kInstitutionCorrespondenceRoute ||
+      path == kInstitutionLiveRoomsRoute ||
+      path == kInstitutionVerificationRoute) {
+    return true;
+  }
+
+  // Meeting attendance sub-paths carry an institutionId for URL context
+  // only — they are governed by Meeting Attendance Authority, not
+  // Institution Authority. "new" is excluded: meeting *creation* under an
+  // institution genuinely is institution-staff-only and must stay gated
+  // (matches `institutionSubPath` below via fallthrough).
+  final meetingAttendeePath = RegExp(
+    r'^/institution/[^/]+/meetings/(?!new(?:/|$))[^/]+',
+  );
+  if (meetingAttendeePath.hasMatch(path)) {
+    return false;
+  }
+
+  // All other /institution/:id/... routes require institution access.
+  final institutionSubPath = RegExp(r'^/institution/[^/]+/.+');
+  return institutionSubPath.hasMatch(path);
+}
+
 /// Routing-hardening — convert a legacy `/institution/<section>`
 /// shorthand into a canonical `/institution/:id/<section>` URL using
 /// the active institution identity. Falls back to the global
@@ -398,19 +446,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool requiresAppAdmin(String path) =>
       path == kAdminWorkspaceRoute || path.startsWith('$kAdminWorkspaceRoute/');
 
-  bool requiresInstitutionAccess(String path) {
-    if (path == kInstitutionDashboardRoute ||
-        path == kInstitutionProfileRoute ||
-        path == kInstitutionEditProfileRoute ||
-        path == kInstitutionCorrespondenceRoute ||
-        path == kInstitutionLiveRoomsRoute ||
-        path == kInstitutionVerificationRoute) {
-      return true;
-    }
-    // All /institution/:id/... routes require institution access
-    final institutionSubPath = RegExp(r'^/institution/[^/]+/.+');
-    return institutionSubPath.hasMatch(path);
-  }
+  bool requiresInstitutionAccess(String path) =>
+      requiresInstitutionAccessForPath(path);
 
   bool requiresInstitutionAdminOrSpeaker(String path) {
     // Announcements require authorized speaker or admin

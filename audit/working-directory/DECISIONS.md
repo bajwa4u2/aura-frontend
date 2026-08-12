@@ -1,8 +1,20 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-14 UTC (Permanent Call Lifecycle Reconciliation implemented this session; founder device certification for the whole Native Notification Certification chapter still PENDING, chapter still NOT CLOSED)
+Last updated: 2026-08-14 UTC (URGENT Meetings router regression restored this session; Permanent Call Lifecycle Reconciliation also this session; founder device certification for both still PENDING)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-14: Meetings attendee-join router regression — restored at the shared router boundary. FROZEN DOCTRINE established.
+
+Founder production evidence: a booked/invited Meeting attendee was redirected to Institution Sign In on join, instead of entering through the certified attendee path. Meetings is frozen/protected; founder required a proven, deterministic root cause before any restoration, then authorized the fix once it was code-proven (not a workaround).
+
+**FROZEN DOCTRINE — the layered-authority principle, applies to any future shared-boundary work touching institution-owned resources, not just Meetings:** AUTHENTICATION determines who the person is. INSTITUTION AUTHORITY (`institutionAccess.hasAccess`) determines whether that person may act *as* the institution. A separate, resource-specific ATTENDANCE/PARTICIPATION AUTHORITY (backend-enforced, e.g. `MeetingService.getMeetingForMember`'s host/participant/invitee check) determines whether they may use a specific institution-owned resource. **An institutionId present in a URL path segment is never sufficient grounds to require Institution Authority — it may exist purely for URL/context purposes.** Do not write or approve a router gate that infers institution-actor identity from institutionId path presence alone; check what authority the underlying resource/backend endpoint actually requires.
+
+**Root cause**: `requiresInstitutionAccess` (now `requiresInstitutionAccessForPath`, extracted to top-level for testability) gated the entire `/institution/:id/...` path space with one blanket regex since 2026-05-01. Meetings' institution-namespaced route family (added 2026-07-11, for URL context only) was never carved out. Proven NOT a recent regression — the two-months gap between the gate and the link generation, both predating Identity Foundation Phase 1 and this session's shared-runtime work, rules out any change made in the current work stream. Proven safe to fix: the actual backend endpoint (`GET /meetings/:id`) has zero dependency on institution-actor role.
+
+**Fix, zero Meetings-file changes**: `router.dart` gained one carve-out — `/institution/:id/meetings/:meetingId(...)` (record/prep/room/waiting/live/summary/post-meeting) no longer requires institution access; `/institution/:id/meetings` (list) and `/meetings/new` (creation) remain gated as genuinely institution-staff-only. New regression test `test/router_institution_access_test.dart`. Certification: `flutter analyze` clean, practical suite 201/201 (up from 197). Backend untouched — its authorization was correct from the start; this was purely a frontend routing-classification bug.
+
+Checked and ruled out, not fixed (no reported defect, no user-facing symptom): `meetings_home_screen.dart`'s identical unconditional-institution-path pattern in `_meetingPathFor` — unreachable except by users who already have institution access (that screen only mounts under the already-gated `/institution/:id/meetings` list route). Checked Institution Spaces for the same pattern — no equivalent public-entry point exists there.
 
 ## 2026-08-14: Permanent Call Lifecycle Reconciliation — founder ordered a stop to incremental patching, mandated a full forensic trace, root cause found and fixed. FROZEN PATTERN established.
 
