@@ -16,7 +16,16 @@ class RealtimeSocketService {
 
   Stream<RealtimeParsedEvent> get events => _eventsController.stream;
 
-  bool get isConnected => _socket?.connected ?? false;
+  // 2026-08-14 — a Socket.IO client that is genuinely connected always has
+  // a server-assigned id. After enough connect/disconnect churn in one app
+  // session, `_socket.connected` can report true for a reference the server
+  // no longer recognizes (found via live device testing: `session:join`
+  // emitted on such a socket never received an ack, stalling the caller/
+  // callee indefinitely). Requiring a non-empty id treats that stale state
+  // as not-connected, so `connect()` below re-establishes a fresh socket
+  // instead of reusing a dead one.
+  bool get isConnected =>
+      (_socket?.connected ?? false) && (_socket?.id ?? '').isNotEmpty;
   String? get socketId => _socket?.id;
 
   Future<void> connect({
