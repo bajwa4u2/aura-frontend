@@ -26,6 +26,18 @@ enum CanonicalParticipantStatus {
   /// Terminal — definitive departure: explicit leave, grace window exceeded, or host removal.
   left,
   /// Terminal — joining exceeded its recovery deadline without reaching connected.
+  ///
+  /// FROZEN DOCTRINE (2026-08-14, founder decision, Phase 0 closeout):
+  /// this status is strictly PARTICIPANT-SCOPED. It must NOT
+  /// automatically transition the whole session to
+  /// [CanonicalSessionStatus.failed]. This matters most for multi-party
+  /// calls: another participant may already be connected, another invite
+  /// may still be actionable, or the failure may be isolated to one
+  /// participant's device/network path. See [evaluateSessionActivity] in
+  /// session_lifecycle.dart, which deliberately has no failed-deriving
+  /// path — only ended — and the regression suite in
+  /// `test/realtime_canonical/join_failed_session_failed_doctrine_test.dart`,
+  /// which proves this explicitly.
   failed,
 }
 

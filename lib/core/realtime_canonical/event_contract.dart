@@ -21,7 +21,18 @@ enum CanonicalRealtimeEvent {
   participantLeft,
   sessionEnding,
   sessionEnded,
+
+  /// PARTICIPANT-scoped (wire name `participant.failed`, not
+  /// `session.failed`). FROZEN DOCTRINE (2026-08-14, founder decision,
+  /// Phase 0 closeout): one participant's join/recovery failed — does
+  /// NOT imply the session ended. See the matching doctrine comment on
+  /// `CanonicalParticipantStatus.failed`.
   joinFailed,
+
+  /// SESSION-scoped. Genuine session-level failure, distinct from and
+  /// never automatically derived from any number of [joinFailed] events.
+  /// New in the Phase 0 closeout.
+  sessionFailed,
 }
 
 /// Every canonical event carries these identity fields at minimum.

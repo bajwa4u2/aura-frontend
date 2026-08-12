@@ -1,8 +1,8 @@
 # Current State — aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 (canonical contracts + executable test harness) COMPLETE, committed and pushed. Thread Call Lifecycle Convergence code fixes remain landed/pushed below; founder combined certification still PENDING)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 CLOSED: JOIN_FAILED/SESSION_FAILED doctrine frozen, canonical docs governed. Thread Call Lifecycle Convergence code fixes remain landed/pushed below; founder combined certification still PENDING)
 
-## Realtime Architecture Correction — Phase 0 (canonical contracts + executable test harness), 2026-08-14 — COMPLETE
+## Realtime Architecture Correction — Phase 0 (canonical contracts + executable test harness), 2026-08-14 — CLOSED
 
 Founder reviewed `AURA_REALTIME_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md` (previously produced as a documentation-only proposal) and approved the architecture direction plus all six §18 decisions: two-axis lifecycle APPROVED; Meetings separate-orchestrator recommendation APPROVED but its implementation stays deferred/last, Phase 0 only names the boundary; Phase 7 (Meetings orchestrator) sequencing stays last; iOS CallKit/PushKit is its own future roadmap chapter, not core architecture; `PresenceService` treated as derived/acceleration-only pending production observability, not re-litigated; event-contract renaming APPROVED via dual-emit (not flag-day). The architecture document itself is now updated in place to **ARCHITECTURE APPROVED — FROZEN**, each decision's resolution recorded in §18.
 
@@ -17,9 +17,17 @@ Founder then authorized Phase 0: turn the target contracts named throughout that
 - `lifecycle_test_harness.dart` — a deterministic, in-memory, Riverpod/Socket.IO-free `LifecycleTestHarness`, structurally identical to the backend's.
 - `test/realtime_canonical/lifecycle_scenarios_test.dart` (the same 29 required scenarios as the backend suite) + `test/realtime_canonical/meetings_contract_fixtures_test.dart` (the same 4 Meetings boundary fixtures) — **33/33 passing**. `flutter analyze lib/core/realtime_canonical test/realtime_canonical` clean.
 
-**Companion document**: `../docs/architecture/PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md` — see the paired backend `CURRENT_STATE.md` entry for the full contract-file inventory and the migration mechanics it specifies.
+**Companion document**: `../aura-backend/capability/REALTIME_ARCHITECTURE_CORRECTION_PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md` — see the paired backend `CURRENT_STATE.md` entry for the full contract-file inventory and the migration mechanics it specifies.
 
 **Explicitly NOT done**: nothing in Phase 0 is wired into any production controller/provider/widget on either side — verified by `git diff` showing only new files under `lib/core/realtime_canonical/`, `test/realtime_canonical/`, and documentation. Phase 1 (backend canonical lifecycle production wiring) is named next but explicitly NOT started, NOT authorized to begin automatically — this chapter stops for founder Gate 1/Phase 0 closeout review per the directive's explicit instruction.
+
+## Realtime Architecture Correction — Phase 0 CLOSEOUT, 2026-08-14 — JOIN_FAILED/SESSION_FAILED doctrine frozen + canonical docs governed
+
+Founder resolved the one remaining open item: **JOIN_FAILED is strictly participant-scoped and must never automatically fail the whole session**; a new `sessionFailed` canonical event was added for genuine session-level failure, applied only as an explicit, non-derived transition. Recorded as doc comments on `CanonicalParticipantStatus.failed`/`CanonicalSessionStatus.failed` in `lib/core/realtime_canonical/participant_lifecycle.dart`/`session_lifecycle.dart`, proven by 4 new tests in `test/realtime_canonical/join_failed_session_failed_doctrine_test.dart` (mirroring the backend's identical suite): one participant JOIN_FAILED doesn't fail a session with another actionable invite; doesn't fail a session with another CONNECTED participant; `evaluateSessionActivity` has no FAILED-deriving path at all; a genuine session-level FAILED remains representable as an explicit `transitionSession` call. Practical suite and `flutter analyze` re-verified clean (33/33 canonical tests including the 4 new ones).
+
+**Canonical documents moved into governed version control** — now live at `aura-backend/capability/REALTIME_ARCHITECTURE_CORRECTION_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md` and `aura-backend/capability/REALTIME_ARCHITECTURE_CORRECTION_PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md`, replacing the previously unversioned parent-level `docs/architecture/` copies. `aura-backend` owns the canonical source; this repo's continuity docs reference that path, per explicit instruction not to duplicate the full plan into both repos. See the paired backend `CURRENT_STATE.md`/`DECISIONS.md` entries for the full reasoning.
+
+**With this closeout, Phase 0 is fully CLOSED and zero founder decisions remain open from it.** Phase 1 is named next and has explicitly NOT started.
 
 **Unchanged, standing finding from the earlier audit**: Meetings currently has no dedicated backend service or frontend controller — it is entirely `isMeetingSession`/`surfaceType === MEETING` branches inside Thread/DM-owned code. Phase 0's Meetings contract fixtures prove the future orchestrator boundary (admission-vs-transport independence, socket-loss-vs-departure, orchestrator-owned reconnect grace) is representable in the canonical contracts without building the orchestrator itself.
 

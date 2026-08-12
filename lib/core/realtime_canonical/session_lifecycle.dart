@@ -30,7 +30,20 @@ enum CanonicalSessionStatus {
   ended,
   /// Terminal — caller withdrew before any participant ever reached accepted.
   cancelled,
-  /// Terminal — unrecoverable technical failure.
+  /// Terminal — genuine SESSION-LEVEL failure (e.g. transport/media
+  /// infrastructure could not be provisioned for the session itself).
+  ///
+  /// FROZEN DOCTRINE (2026-08-14, founder decision, Phase 0 closeout):
+  /// SESSION FAILED != PARTICIPANT FAILED/JOIN_FAILED. A single
+  /// participant's [CanonicalParticipantStatus.failed] must NEVER by
+  /// itself transition the session to this status — see that enum's
+  /// matching doctrine comment. [evaluateSessionActivity] deliberately
+  /// has no path deriving this status from participant state; it only
+  /// ever derives [CanonicalSessionStatus.ended]. Even when every
+  /// participant in a session ends up individually failed, that remains
+  /// an ended outcome ("no one could connect"), not a session-level
+  /// failure — a genuine session FAILED is an explicit caller decision
+  /// via [applySessionTransition], never automatic.
   failed,
 }
 

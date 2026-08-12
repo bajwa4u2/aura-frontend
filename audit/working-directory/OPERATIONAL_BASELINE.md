@@ -1,11 +1,11 @@
 # Operational Baseline - aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 approved and COMPLETE — see below)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 CLOSED — see below)
 
-## Realtime Architecture Correction baseline — architecture APPROVED/FROZEN, Phase 0 (canonical contracts + executable test harness) COMPLETE
+## Realtime Architecture Correction baseline — architecture APPROVED/FROZEN, Phase 0 (canonical contracts + executable test harness) CLOSED
 
-- Full plan: `../docs/architecture/AURA_REALTIME_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md` — status now **ARCHITECTURE APPROVED — FROZEN**, all six §18 decisions resolved. See paired backend `OPERATIONAL_BASELINE.md` entry for the full decision list.
-- Compatibility/migration contract: `../docs/architecture/PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md`.
+- Full plan: `../aura-backend/capability/REALTIME_ARCHITECTURE_CORRECTION_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md` (canonical, version-controlled in `aura-backend` — moved 2026-08-14 from an unversioned parent-level location) — status now **ARCHITECTURE APPROVED — FROZEN**, all six §18 decisions resolved, including the JOIN_FAILED/SESSION_FAILED sub-decision frozen 2026-08-14 (JOIN_FAILED participant-scoped, never auto-fails a session). See paired backend `OPERATIONAL_BASELINE.md` entry for the full decision list.
+- Compatibility/migration contract: `../aura-backend/capability/REALTIME_ARCHITECTURE_CORRECTION_PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md`.
 - **Phase 0 delivered**: pure, isolated, executable Dart canonical contracts in `lib/core/realtime_canonical/` (`session_lifecycle.dart`, `participant_lifecycle.dart`, `device_socket_binding.dart`, `precedence.dart`, `event_contract.dart`, `lifecycle_test_harness.dart`), a behaviorally-identical mirror of `aura-backend`'s `src/realtime/canonical/`. Deterministic test suite: `test/realtime_canonical/lifecycle_scenarios_test.dart` (29 required scenarios) + `test/realtime_canonical/meetings_contract_fixtures_test.dart` (4 Meetings fixtures), **33/33 passing**. `flutter analyze lib/core/realtime_canonical test/realtime_canonical` clean.
 - **Confirmed by `git diff`: zero production widget/provider/controller changes, nothing wired into any live code path.** `lib/core/realtime_canonical/` is deliberately placed outside `lib/features/realtime/` so an accidental production import would stand out in review.
 - Phase 1 (backend canonical lifecycle production wiring) is named next but explicitly NOT started, NOT authorized to begin automatically — stops here for founder Gate 1/Phase 0 closeout review.
