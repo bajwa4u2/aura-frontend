@@ -1,8 +1,16 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-14 UTC (Thread Call Lifecycle Convergence landed this session — natural-expiry caller propagation + stale join-error precedence, after founder certification found the Transport Ownership repair insufficient on 3 of 4 scenarios; ONE combined founder checklist below, now the SECOND certification pass for this chapter)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 (canonical contracts + executable test harness) COMPLETE, committed and pushed. Thread Call Lifecycle Convergence code fixes from earlier this session remain landed and pushed; ONE combined founder certification checklist below still applies to those)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
+
+## Realtime Architecture Correction — Phase 0 COMPLETE (contracts + tests, both languages); Phase 1 named next, NOT started, NOT authorized to begin automatically
+
+Architecture document: `../docs/architecture/AURA_REALTIME_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md`, now **ARCHITECTURE APPROVED — FROZEN**, all six §18 decisions resolved (two-axis lifecycle approved; Meetings separate-orchestrator recommendation approved but its implementation stays deferred/last; Phase 7 sequencing stays last; iOS CallKit/PushKit is its own future roadmap chapter, not core; `PresenceService` treated as derived/acceleration-only pending production observability; event-contract renaming approved via dual-emit). Phase 0 delivered pure, isolated, executable canonical contracts + a 33-scenario deterministic test harness in `lib/core/realtime_canonical/` + `test/realtime_canonical/` (mirroring `aura-backend/src/realtime/canonical/` 1:1), plus the compatibility/migration contract document `../docs/architecture/PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md`. Full detail: `HANDOFF.md`'s matching entry.
+
+**Explicit stop point, per the founder's Phase 0 directive**: Phase 1 (backend canonical lifecycle production wiring) does NOT begin automatically — this chapter stops here for founder Gate 1/Phase 0 closeout review. Nothing in Phase 0 is wired into any production controller/provider/widget on either side.
+
+**Explicitly flagged as safe to do independently, low-risk, low-cost, no dependency on the rest of the plan**: Phase 6 (Meeting attendee-context link-generation fix — 3 files: `booking_confirm_screen.dart`, `keep_meeting_screen.dart`, `meeting_detail_screen.dart`) — still not started, remains available to pull forward whenever prioritized.
 
 ## ONE combined founder certification checklist — second pass, 2026-08-14 (Lifecycle Convergence + everything from the first pass)
 

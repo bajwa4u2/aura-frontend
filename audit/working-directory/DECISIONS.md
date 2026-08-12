@@ -1,8 +1,21 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-14 UTC (Thread Call Lifecycle Convergence — natural-expiry caller propagation + stale join-error precedence, both root-caused and fixed this session; Transport Ownership repair, Meetings router regression, and earlier Call Lifecycle Reconciliation also this session; founder combined certification still PENDING)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 approved and completed; Thread Call Lifecycle Convergence code fixes from earlier this session remain approved/landed)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-14: Realtime Architecture Correction — architecture APPROVED (all six §18 decisions resolved); Phase 0 (canonical contracts + executable test harness) authorized and COMPLETE.
+
+Founder reviewed `../docs/architecture/AURA_REALTIME_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md` (previously recorded here as "NOT YET A DECISION") and resolved all six §18 decisions, superseding that earlier entry:
+
+1. Two-axis session+participant lifecycle model — **APPROVED**, over a single flattened enum.
+2. Meetings separate-orchestrator recommendation — **APPROVED** over continued full sharing or full separation, but scoped: the orchestrator itself is NOT implemented in Phase 0, only its boundary over shared lower-level contracts.
+3. Phase 7 (Meetings orchestrator) sequencing — **stays LAST**. Meeting Attendee Context Restoration was separately approved to pull forward independently, but was not implemented beyond proving the boundary via Meetings contract fixtures.
+4. iOS CallKit/PushKit scope — **NOT core architecture**; own future roadmap chapter.
+5. `PresenceService` in-memory cache — **derived/acceleration-only**, not re-litigated by Phase 0, pending production observability.
+6. Event-contract renaming — **APPROVED**, via dual-emit, not flag-day.
+
+Founder then authorized Phase 0 itself. **Standing fact, unchanged, regardless of which target was chosen**: Meetings currently has no dedicated backend service or frontend controller — it is entirely `isMeetingSession`/`surfaceType === MEETING` branches inside Thread/DM-owned code (`RealtimeController`, `RealtimeSessionService`, `RealtimeContinuityAuthorityService`, etc.). Phase 0's new `lib/core/realtime_canonical/` (mirroring the backend's `src/realtime/canonical/` 1:1) implements the target session/participant lifecycle, device/socket-binding, precedence/reconciliation, and event contracts as pure, isolated Dart, proven by the same 29-scenario + 4-Meetings-fixture deterministic harness as the backend (33/33 passing, `flutter analyze` clean). Explicit instruction, honored: nothing wired into production; Phase 1 does not begin automatically. Full technical detail: `CURRENT_STATE.md`'s matching entry.
 
 ## 2026-08-14: Thread Call Lifecycle Convergence — founder certification of the transport repair failed 3 of 4 scenarios; root-caused and fixed the two provable defects. FROZEN DOCTRINE established.
 

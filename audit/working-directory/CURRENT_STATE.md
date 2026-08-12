@@ -1,8 +1,29 @@
 # Current State — aura_final
 
-Last updated: 2026-08-14 UTC (Thread Call Lifecycle Convergence — founder certification of the transport repair FAILED on 3 of 4 scenarios; root-caused and fixed the natural-expiry caller reconciliation defect (proven, backend) and the stale join-error precedence defect (client). Transport Ownership repair, Meetings router regression, and earlier Call Lifecycle Reconciliation also present below; founder combined certification for the whole chapter still PENDING)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 (canonical contracts + executable test harness) COMPLETE, committed and pushed. Thread Call Lifecycle Convergence code fixes remain landed/pushed below; founder combined certification still PENDING)
 
-## Thread Call Lifecycle Convergence, 2026-08-14 (supersedes/extends the Transport Ownership repair below after founder certification found it insufficient)
+## Realtime Architecture Correction — Phase 0 (canonical contracts + executable test harness), 2026-08-14 — COMPLETE
+
+Founder reviewed `AURA_REALTIME_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md` (previously produced as a documentation-only proposal) and approved the architecture direction plus all six §18 decisions: two-axis lifecycle APPROVED; Meetings separate-orchestrator recommendation APPROVED but its implementation stays deferred/last, Phase 0 only names the boundary; Phase 7 (Meetings orchestrator) sequencing stays last; iOS CallKit/PushKit is its own future roadmap chapter, not core architecture; `PresenceService` treated as derived/acceleration-only pending production observability, not re-litigated; event-contract renaming APPROVED via dual-emit (not flag-day). The architecture document itself is now updated in place to **ARCHITECTURE APPROVED — FROZEN**, each decision's resolution recorded in §18.
+
+Founder then authorized Phase 0: turn the target contracts named throughout that document into pure, executable, isolated code, proven by a deterministic test harness — explicitly so "the founder must no longer be the primary integration debugger."
+
+**New, isolated directory `lib/core/realtime_canonical/`** (deliberately placed OUTSIDE `lib/features/realtime/` so an accidental production import is visually obvious in review; confirmed not imported by any production file) — a behaviorally-identical Dart mirror of `aura-backend/src/realtime/canonical/`'s TypeScript contracts:
+
+- `session_lifecycle.dart` / `participant_lifecycle.dart` — the same two-axis `CanonicalSessionStatus`/`CanonicalParticipantStatus` enums, legal-transition tables, and `evaluateSessionActivity`/`resolveFirstActionWins` pure functions as the backend.
+- `device_socket_binding.dart` — `resolveMediaOwnershipClaim`/`hasAnyLiveOrRecoverableSocket`, mirroring the backend's device/socket/media-ownership layering contract.
+- `precedence.dart` — `reconcileParticipantEvent`/`reconcileSessionEvent`, the same stale-event/duplicate-delivery/terminal-absorbing reconciliation rules that generalize this session's two proven bugs (natural-expiry caller-exclusion, sticky `_joinError`).
+- `event_contract.dart` — `CanonicalRealtimeEvent` enum + `legacyEventMap`, mirroring the backend's `LEGACY_EVENT_MAP` classification of all 8 current ad-hoc event names.
+- `lifecycle_test_harness.dart` — a deterministic, in-memory, Riverpod/Socket.IO-free `LifecycleTestHarness`, structurally identical to the backend's.
+- `test/realtime_canonical/lifecycle_scenarios_test.dart` (the same 29 required scenarios as the backend suite) + `test/realtime_canonical/meetings_contract_fixtures_test.dart` (the same 4 Meetings boundary fixtures) — **33/33 passing**. `flutter analyze lib/core/realtime_canonical test/realtime_canonical` clean.
+
+**Companion document**: `../docs/architecture/PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md` — see the paired backend `CURRENT_STATE.md` entry for the full contract-file inventory and the migration mechanics it specifies.
+
+**Explicitly NOT done**: nothing in Phase 0 is wired into any production controller/provider/widget on either side — verified by `git diff` showing only new files under `lib/core/realtime_canonical/`, `test/realtime_canonical/`, and documentation. Phase 1 (backend canonical lifecycle production wiring) is named next but explicitly NOT started, NOT authorized to begin automatically — this chapter stops for founder Gate 1/Phase 0 closeout review per the directive's explicit instruction.
+
+**Unchanged, standing finding from the earlier audit**: Meetings currently has no dedicated backend service or frontend controller — it is entirely `isMeetingSession`/`surfaceType === MEETING` branches inside Thread/DM-owned code. Phase 0's Meetings contract fixtures prove the future orchestrator boundary (admission-vs-transport independence, socket-loss-vs-departure, orchestrator-owned reconnect grace) is representable in the canonical contracts without building the orchestrator itself.
+
+## Thread Call Lifecycle Convergence, 2026-08-14 (code fixes — landed, committed, pushed; supersedes/extends the Transport Ownership repair below after founder certification found it insufficient)
 
 Founder tested the pushed single-flight transport repair (`cd256d3`) directly. Explicit cannot-close instruction: "FOUNDER CERTIFICATION FAILED — CONTINUE END TO END." Results: (1) explicit caller cancel — **PASS**, preserved unchanged; (2) natural invite expiry — **asymmetric FAIL**, receiver's ring cleared correctly at ~95s but the caller remained ringing/connecting indefinitely with no terminal reconciliation; (3) successful accept could still show "Call ended" + Retry/Dismiss simultaneously with a working connection; (4) accept could still return to an unresolved spinner on a separate call. Founder explicitly forbade another isolated UI/timeout/spinner/ringtone patch and required root-cause proof plus a genuine lifecycle-precedence architecture.
 
