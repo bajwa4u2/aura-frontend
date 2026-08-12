@@ -2329,74 +2329,83 @@ class _CallControlDock extends StatelessWidget {
         color: AuraSurface.subtle,
         border: Border(top: BorderSide(color: AuraSurface.divider)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Mic
-          _DockButton(
-            icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-            label: micOn ? 'Mute' : 'Unmute',
-            active: micOn,
-            warning: !micOn,
-            onPressed: onToggleMic,
-          ),
-          const SizedBox(width: AuraSpace.s8),
-
-          // Camera (video calls only)
-          if (isVideoMode) ...[
+      // 2026-08-14 repair — a plain Row here has no overflow protection; on
+      // a narrow phone screen, adding the speaker button (a 5th control on
+      // audio calls) can silently clip content past the visible width in a
+      // release build (no debug overflow banner to catch it). Wrapping in
+      // a horizontal scroll view guarantees every control stays reachable
+      // regardless of screen width, instead of guessing at exact spacing.
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Mic
             _DockButton(
-              icon: cameraOn
-                  ? Icons.videocam_rounded
-                  : Icons.videocam_off_rounded,
-              label: cameraOn ? 'Camera' : 'Camera off',
-              active: cameraOn,
-              warning: !cameraOn,
-              onPressed: onToggleCamera,
+              icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+              label: micOn ? 'Mute' : 'Unmute',
+              active: micOn,
+              warning: !micOn,
+              onPressed: onToggleMic,
             ),
             const SizedBox(width: AuraSpace.s8),
-          ],
 
-          // Speaker (mobile-native only — 2026-08-14 repair)
-          if (showSpeakerToggle) ...[
+            // Camera (video calls only)
+            if (isVideoMode) ...[
+              _DockButton(
+                icon: cameraOn
+                    ? Icons.videocam_rounded
+                    : Icons.videocam_off_rounded,
+                label: cameraOn ? 'Camera' : 'Camera off',
+                active: cameraOn,
+                warning: !cameraOn,
+                onPressed: onToggleCamera,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+            ],
+
+            // Speaker (mobile-native only — 2026-08-14 repair)
+            if (showSpeakerToggle) ...[
+              _DockButton(
+                icon: speakerOn
+                    ? Icons.volume_up_rounded
+                    : Icons.hearing_rounded,
+                label: speakerOn ? 'Speaker' : 'Earpiece',
+                active: speakerOn,
+                onPressed: onToggleSpeaker ?? () {},
+              ),
+              const SizedBox(width: AuraSpace.s8),
+            ],
+
+            // Participants
             _DockButton(
-              icon: speakerOn
-                  ? Icons.volume_up_rounded
-                  : Icons.hearing_rounded,
-              label: speakerOn ? 'Speaker' : 'Earpiece',
-              active: speakerOn,
-              onPressed: onToggleSpeaker ?? () {},
+              icon: Icons.people_rounded,
+              label: 'Participants',
+              active: activePanel == _kPanelParticipants,
+              onPressed: onParticipants,
             ),
             const SizedBox(width: AuraSpace.s8),
+
+            // More / Settings
+            _DockButton(
+              icon: Icons.tune_rounded,
+              label: 'More',
+              active: activePanel == _kPanelMore,
+              badge: pendingRequests > 0 ? pendingRequests : null,
+              onPressed: onMore,
+            ),
+
+            // Spacer before leave
+            const SizedBox(width: AuraSpace.s16),
+
+            // Leave / End button (distinct, red)
+            _LeaveButton(
+              onPressed: onLeave,
+              label: isEnding ? 'Ending…' : (isEndCall ? 'End' : 'Leave'),
+              busy: isEnding,
+            ),
           ],
-
-          // Participants
-          _DockButton(
-            icon: Icons.people_rounded,
-            label: 'Participants',
-            active: activePanel == _kPanelParticipants,
-            onPressed: onParticipants,
-          ),
-          const SizedBox(width: AuraSpace.s8),
-
-          // More / Settings
-          _DockButton(
-            icon: Icons.tune_rounded,
-            label: 'More',
-            active: activePanel == _kPanelMore,
-            badge: pendingRequests > 0 ? pendingRequests : null,
-            onPressed: onMore,
-          ),
-
-          // Spacer before leave
-          const SizedBox(width: AuraSpace.s16),
-
-          // Leave / End button (distinct, red)
-          _LeaveButton(
-            onPressed: onLeave,
-            label: isEnding ? 'Ending…' : (isEndCall ? 'End' : 'Leave'),
-            busy: isEnding,
-          ),
-        ],
+        ),
       ),
     );
   }

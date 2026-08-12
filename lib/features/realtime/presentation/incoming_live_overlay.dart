@@ -331,7 +331,18 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
           .acceptIncomingCall(item);
       ref.read(incomingCallBridgeProvider.notifier).remove(id);
       if (id.isNotEmpty) {
-        await ref.read(notificationsControllerProvider.notifier).markRead(id);
+        // Best-effort — marking the notification read must never surface
+        // as a join failure. Previously awaited inline: a transient
+        // failure here (found via live device testing) fell into the same
+        // catch block as a real join failure and showed "Could not join
+        // the call" with Retry/Dismiss even though acceptIncomingCall
+        // above — the actual join — had already succeeded.
+        unawaited(
+          ref
+              .read(notificationsControllerProvider.notifier)
+              .markRead(id)
+              .catchError((_) {}),
+        );
       }
 
       if (!context.mounted) return;

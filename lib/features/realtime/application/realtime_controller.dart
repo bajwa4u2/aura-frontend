@@ -1468,6 +1468,17 @@ class RealtimeController extends StateNotifier<RealtimeState>
           audio: wantsAudio,
           video: wantsVideo,
         );
+        // 2026-08-14 — default output routing, applied once when media
+        // first becomes ready (not on every reconnect/renegotiation, so a
+        // manual toggle mid-call is never silently overridden). Video
+        // calls default to speaker — a video call is normally held away
+        // from the ear. Audio calls default to earpiece, matching a
+        // normal phone call, with the explicit speaker toggle available
+        // to switch. No-ops on web/desktop (no speakerphone concept
+        // there — the OS/browser's own output routing is untouched).
+        if (wantsVideo) {
+          unawaited(_mediaService.setSpeakerphoneEnabled(true));
+        }
       }
 
       await _socketService.emitAck('session:audio.set', <String, dynamic>{
