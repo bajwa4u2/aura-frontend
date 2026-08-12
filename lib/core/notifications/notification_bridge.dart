@@ -160,6 +160,24 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   void _onFcmTap(RemoteMessage message) {
     if (!mounted) return;
     final payload = _payloadFromFcm(message);
+
+    // 2026-08-14 repair — tapping a still-ringing call notification must
+    // offer the same Accept/Decline choice a foreground call gets, not
+    // silently join on the recipient's behalf. Registering it on the
+    // shared incoming-call bridge (the same one `_onFcmForeground` already
+    // uses) surfaces `AuraIncomingLiveLayer`'s accept/decline card —
+    // that widget is mounted app-root and renders for any bridge entry
+    // regardless of how it arrived. `_routeFromPayload` below now lands a
+    // joinable call on its thread/space context instead of `/realtime/
+    // :id?action=join`, so nothing auto-joins from a tap. This is shared
+    // Dart code — the fix applies uniformly to Android, iOS, and Web.
+    if (_isCallInterrupt(payload)) {
+      ref.read(incomingCallBridgeProvider.notifier).addIncoming(
+        Map<String, dynamic>.from(payload)
+          ..['_auraLifecycleSource'] = 'notificationTap',
+      );
+    }
+
     final route = _routeFromPayload(payload);
     if (route.isEmpty) return;
 
@@ -268,22 +286,6 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     ]);
   }
 
-  /// True when the FCM data carries an expiresAt and that timestamp is
-  /// already in the past. Used to suppress tap-to-join routing on a stale
-  /// notification that survived the TTL — the backend would reject the join
-  /// with `[join:invite_expired_ttl]`, so we route the user to the thread/space
-  /// context instead of /realtime.
-  bool _isPayloadExpired(Map<String, dynamic> payload) {
-    final raw = _firstNonEmpty([
-      _stringOf(payload['expiresAt']),
-      _stringOf(_mapOf(payload['data'])['expiresAt']),
-    ]);
-    if (raw.isEmpty) return false;
-    final expiresAt = DateTime.tryParse(raw);
-    if (expiresAt == null) return false;
-    return expiresAt.toUtc().isBefore(DateTime.now().toUtc());
-  }
-
   String _resolveSessionId(Map<String, dynamic> payload) {
     return _firstNonEmpty([
       _stringOf(payload['realtimeSessionId']),
@@ -294,15 +296,14 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   String _routeFromPayload(Map<String, dynamic> payload) {
     final kind = _resolveNotificationKind(payload).toUpperCase();
     final isCall = kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME';
-    final isTerminalCall = isCall && _isTerminalCallPayload(payload);
-    final isExpiredCall = isCall && _isPayloadExpired(payload);
-    final isJoinableCall = isCall && !isTerminalCall && !isExpiredCall;
 
-    // Prefer explicit deeplink/route from backend, except terminal/expired
-    // call payloads must not resurrect /realtime after the call is missed,
-    // ended, or past its TTL — those would just hit a 403 from the backend.
-    // R5 — also accept `deepLink` (camelCase) for resilience against
-    // partner integrations / older payload variants.
+    // Prefer explicit deeplink/route from backend, except call payloads must
+    // not auto-navigate straight into /realtime — a still-ringing call is
+    // handled by the incoming-call bridge registration in `_onFcmTap`
+    // (accept/decline overlay), and terminal/expired calls must not
+    // resurrect /realtime either (that would just hit a 403 from the
+    // backend). R5 — also accept `deepLink` (camelCase) for resilience
+    // against partner integrations / older payload variants.
     final deeplink = _firstNonEmpty([
       _stringOf(payload['deeplink']),
       _stringOf(payload['deepLink']),
@@ -310,22 +311,21 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     ]);
     if (deeplink.isNotEmpty && deeplink.startsWith('/')) {
       final isRealtimeDeeplink = deeplink.startsWith('/realtime');
-      if (!((isTerminalCall || isExpiredCall) && isRealtimeDeeplink)) {
+      if (!(isCall && isRealtimeDeeplink)) {
         return deeplink;
       }
     }
 
-    final sessionId = _resolveSessionId(payload);
     final threadId = _stringOf(payload['threadId']);
     final spaceId = _stringOf(payload['spaceId']);
 
-    // Call/live notification tap only opens realtime for active ringing/live
-    // invites. Missed/ended/expired call notifications route back to the
-    // conversation context instead of resurrecting a dead full-screen call.
+    // 2026-08-14 repair — a call notification tap never auto-joins. A
+    // still-ringing call was already registered on the incoming-call
+    // bridge above, so the recipient lands on the call's thread/space
+    // context with the Accept/Decline overlay on top — the same choice a
+    // foreground call already gives them. The accept/decline path is now
+    // the sole way into /realtime from a notification.
     if (isCall) {
-      if (isJoinableCall && sessionId.isNotEmpty) {
-        return '/realtime/$sessionId?action=join';
-      }
       if (threadId.isNotEmpty && spaceId.isNotEmpty) {
         return '/me/correspondence/$spaceId/thread/$threadId';
       }

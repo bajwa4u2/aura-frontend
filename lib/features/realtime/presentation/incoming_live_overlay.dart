@@ -17,6 +17,7 @@ import '../application/realtime_providers.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/realtime_state.dart';
 import 'widgets/floating_call_widget.dart';
+import '../../../router.dart';
 
 // ── TRACE BYPASS FLAGS — flip one at a time, hot-restart, reproduce scenario ──
 // Trace 5: bypass entire overlay → if blank clears, overlay is root cause
@@ -303,10 +304,16 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     _cancelRingTimer();
 
     // Capture all context-derived values BEFORE any await.
-    // GoRouterState.of(context) requires an ACTIVE element; using it after
-    // an await can fire when the element is inactive during route transitions.
-    final router = GoRouter.of(context);
-    final returnTo = Uri.encodeComponent(_currentUri(context).toString());
+    // Read the router via its Riverpod provider, not GoRouter.of(context) —
+    // this widget is mounted inside MaterialApp.router's `builder` parameter
+    // (app-root, wraps the whole routed tree), so its OWN context has no
+    // InheritedGoRouter ancestor and GoRouter.of(context) throws a null-check
+    // failure here (proven by device logs: the identical call inside
+    // `_currentUri` only "worked" because it silently swallows the same
+    // failure in a try/catch and falls back to '/'). The provider gives the
+    // same GoRouter singleton without depending on tree position.
+    final router = ref.read(routerProvider);
+    final returnTo = Uri.encodeComponent(_currentUri(router).toString());
 
     setState(() {
       _joining = true;
@@ -471,7 +478,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final notifications = ref.watch(notificationsControllerProvider);
     final bridgeItems = ref.watch(incomingCallBridgeProvider);
     final liveState = ref.watch(realtimeControllerProvider);
-    final currentPath = _currentUri(context).path;
+    final currentPath = _currentUri(ref.read(routerProvider)).path;
 
     if (liveState.session?.surfaceType == RealtimeSurfaceType.meeting) {
       _cancelRingTimer();
@@ -888,9 +895,9 @@ String _firstNonEmpty(List<String> values) {
   return '';
 }
 
-Uri _currentUri(BuildContext context) {
+Uri _currentUri(GoRouter router) {
   try {
-    return GoRouter.of(context).routerDelegate.currentConfiguration.uri;
+    return router.routerDelegate.currentConfiguration.uri;
   } catch (_) {
     return Uri(path: '/');
   }
