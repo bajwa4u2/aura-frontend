@@ -53,6 +53,23 @@ class RealtimeController extends StateNotifier<RealtimeState>
   bool _terminating = false;
   bool _endingCall = false;
 
+  // 2026-08-14 — permanent fix for a proven race: Future.timeout() does NOT
+  // cancel the timed-out Future, it only stops awaiting it. When a single
+  // _performJoin() attempt ran past the per-attempt timeout (slow ICE/media
+  // on real networks, not a failed join — the authoritative joinState=joined
+  // transition happens BEFORE that slow tail), _performJoinWithRetry started
+  // a second, fully concurrent _performJoin() for the same session while the
+  // first was still alive in the background. Both could mutate `state`
+  // independently; live device logs captured three `session:join` emissions
+  // for one session within 6 seconds. If the superseded attempt's late
+  // success or the retry's spurious "already joined" failure landed last, it
+  // could overwrite a genuinely successful join with an error state — the
+  // proven cause of the call connecting cleanly while a Retry/Dismiss error
+  // banner still appeared. `_joinEpoch` makes every attempt identify itself;
+  // an attempt whose epoch has been superseded by a newer one silently
+  // no-ops instead of mutating shared state.
+  int _joinEpoch = 0;
+
   // ── Media-continuity grace windows ──────────────────────────────────────
   // The media plane no longer dies with the signaling socket. A socket drop
   // starts the signaling grace; the media plane is only torn down if the
@@ -599,10 +616,29 @@ class RealtimeController extends StateNotifier<RealtimeState>
         return;
       }
 
+      // A prior attempt's timeout raced with its own slow-but-successful
+      // completion — by the time we're deciding whether to retry, the
+      // authoritative joinState=joined transition (set BEFORE the slow
+      // media/negotiation tail in _performJoin) may have already landed in
+      // the background. Treat that as success instead of starting a
+      // redundant, concurrent second attempt against an already-joined
+      // session.
+      if (state.isJoined && _isSameManagedSession(sessionId)) {
+        return;
+      }
+
+      final myEpoch = ++_joinEpoch;
       try {
-        await _performJoin(sessionId).timeout(perAttemptTimeout);
+        await _performJoin(sessionId, myEpoch).timeout(perAttemptTimeout);
         return;
       } catch (error, stack) {
+        if (myEpoch != _joinEpoch) {
+          // This attempt was already superseded before it failed. A newer
+          // attempt is responsible for the outcome now — don't let a stale
+          // attempt's error bubble up and clobber a possibly-successful
+          // newer one.
+          return;
+        }
         lastError = error;
         lastStack = stack;
 
@@ -651,7 +687,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
         text.contains('network');
   }
 
-  Future<void> _performJoin(String sessionId) async {
+  Future<void> _performJoin(String sessionId, int epoch) async {
     await hydrateSession(sessionId);
 
     final session = state.session;
@@ -666,6 +702,12 @@ class RealtimeController extends StateNotifier<RealtimeState>
             : 'Live session has already ended.',
       );
     }
+
+    // A newer attempt has started since this one began (this attempt ran
+    // past its per-attempt timeout in _performJoinWithRetry, which does not
+    // cancel it — it keeps running in the background). Stop before touching
+    // shared state; the newer attempt owns the outcome now.
+    if (epoch != _joinEpoch) return;
 
     final isMeetingSession = session.surfaceType == RealtimeSurfaceType.meeting;
     if (isMeetingSession) {
@@ -711,6 +753,14 @@ class RealtimeController extends StateNotifier<RealtimeState>
       '[join-seq] 3 session join ack received sessionId=$sessionId'
       ' ack=$joinAck',
     );
+
+    // Same supersession check as above, re-evaluated after the socket round
+    // trip: this is the authoritative ACCEPT/CONNECTED transition. Only the
+    // current epoch may declare it — a superseded attempt reaching this
+    // point late (its own session:join already acked server-side) must not
+    // overwrite whatever the newer attempt has since done, and must not
+    // start a second heartbeat/media/stats cycle.
+    if (epoch != _joinEpoch) return;
 
     // P0 FIX (guest reconnect storm): start the heartbeat the INSTANT the
     // socket join is acknowledged — BEFORE media/room readiness. Previously

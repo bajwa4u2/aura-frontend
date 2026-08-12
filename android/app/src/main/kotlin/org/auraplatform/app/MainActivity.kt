@@ -2,6 +2,7 @@ package org.auraplatform.app
 
 import android.app.NotificationManager
 import android.os.Build
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -9,12 +10,13 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        Log.i(TAG, "configureFlutterEngine: registering $NOTIFICATIONS_CHANNEL")
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NOTIFICATIONS_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "cancelCallNotifications" -> {
-                        cancelCallNotifications()
-                        result.success(null)
+                        val count = cancelCallNotifications()
+                        result.success(count)
                     }
                     else -> result.notImplemented()
                 }
@@ -29,23 +31,39 @@ class MainActivity : FlutterActivity() {
     // flutter_local_notifications, no custom FirebaseMessagingService), so
     // the ring could keep going well after the user had already tapped the
     // notification or accepted/declined the call from within the app.
-    private fun cancelCallNotifications() {
-        val manager = getSystemService(NotificationManager::class.java) ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            for (entry in manager.activeNotifications) {
-                if (entry.notification.channelId == AuraApplication.CHANNEL_CALLS) {
-                    manager.cancel(entry.id)
-                }
-            }
-        } else {
-            // Pre-M has no per-notification channel introspection API.
-            // Cancelling everything from this app is preferable to leaving
-            // a ringing call notification stuck indefinitely.
-            manager.cancelAll()
+    //
+    // Diagnostic logging added deliberately (not left permanently) to prove
+    // exactly what's happening rather than guess: whether this method runs
+    // at all, what channel every currently-active notification actually
+    // reports, and how many this cancels.
+    private fun cancelCallNotifications(): Int {
+        val manager = getSystemService(NotificationManager::class.java)
+        if (manager == null) {
+            Log.w(TAG, "cancelCallNotifications: no NotificationManager")
+            return 0
         }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            Log.i(TAG, "cancelCallNotifications: pre-M, cancelAll()")
+            manager.cancelAll()
+            return -1
+        }
+        val active = manager.activeNotifications
+        Log.i(TAG, "cancelCallNotifications: ${active.size} active notification(s)")
+        var cancelled = 0
+        for (entry in active) {
+            val channelId = entry.notification.channelId
+            Log.i(TAG, "  id=${entry.id} tag=${entry.tag} channelId=$channelId")
+            if (channelId == AuraApplication.CHANNEL_CALLS) {
+                manager.cancel(entry.tag, entry.id)
+                cancelled++
+            }
+        }
+        Log.i(TAG, "cancelCallNotifications: cancelled=$cancelled")
+        return cancelled
     }
 
     companion object {
+        private const val TAG = "AuraNotifications"
         private const val NOTIFICATIONS_CHANNEL = "org.auraplatform.app/notifications"
     }
 }

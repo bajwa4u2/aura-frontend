@@ -303,7 +303,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     if (sessionId.isEmpty) return;
 
     _cancelRingTimer();
-    unawaited(cancelNativeCallNotifications());
+    // Native notification cancellation now happens centrally in build()'s
+    // bridge-removal listener (see the "single authoritative choke point"
+    // comment there) — it fires the moment `.remove(id)` below changes the
+    // bridge state, covering this and every other termination path
+    // uniformly instead of duplicating the call at each action site.
 
     // Capture all context-derived values BEFORE any await.
     // Read the router via its Riverpod provider, not GoRouter.of(context) —
@@ -409,7 +413,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
   Future<void> _declineCurrent(Map<String, dynamic> item) async {
     _cancelRingTimer();
-    unawaited(cancelNativeCallNotifications());
+    // See _joinCurrent — native notification cancellation is centralized in
+    // build()'s bridge-removal listener now.
     final id = _stringOf(item['id']);
     if (id.isNotEmpty) _dismissedIds.add(id);
 
@@ -471,8 +476,24 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
         for (final item in next)
           if (_resolveSessionId(item).isNotEmpty) _resolveSessionId(item),
       };
-      for (final removed in prevSet.difference(nextSet)) {
+      final removedSessions = prevSet.difference(nextSet);
+      for (final removed in removedSessions) {
         _dismissedSessionIds.add(removed);
+      }
+      if (removedSessions.isNotEmpty) {
+        // 2026-08-14 — single authoritative choke point for cancelling the
+        // native Android ring notification (see
+        // native_call_notification_channel.dart). Every path that ends
+        // ringing — accept, decline, the 90s ring-timeout, a remote
+        // cancel/decline/expiry, or another device answering first —
+        // removes the session from this bridge, so cancelling here (instead
+        // of at each individual action site) guarantees notification
+        // presentation follows lifecycle truth rather than best-effort calls
+        // scattered across action handlers that can't see remote-driven
+        // removals. Previously only wired into local accept/decline, which
+        // is why stale ringing notifications were observed stacking up in
+        // the shade after remote-driven call endings.
+        unawaited(cancelNativeCallNotifications());
       }
 
       // 2026-08-14 repair — foreground incoming-call audible + haptic alert.

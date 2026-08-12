@@ -15,12 +15,20 @@ import 'package:flutter/services.dart';
 /// Android-only; a safe no-op everywhere else (`kIsWeb` checked first —
 /// `Platform.*` throws on web).
 Future<void> cancelNativeCallNotifications() async {
-  if (kIsWeb) return;
-  if (!Platform.isAndroid) return;
+  if (kIsWeb) {
+    debugPrint('[native-notifications] skipped: web');
+    return;
+  }
+  if (!Platform.isAndroid) {
+    debugPrint('[native-notifications] skipped: not Android');
+    return;
+  }
+  debugPrint('[native-notifications] invoking cancelCallNotifications');
   try {
-    await const MethodChannel(
+    final result = await const MethodChannel(
       'org.auraplatform.app/notifications',
-    ).invokeMethod<void>('cancelCallNotifications');
+    ).invokeMethod<int>('cancelCallNotifications');
+    debugPrint('[native-notifications] cancelCallNotifications ok, cancelledCount=$result');
   } catch (error) {
     debugPrint('[native-notifications] cancelCallNotifications failed: $error');
   }

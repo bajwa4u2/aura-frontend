@@ -1,8 +1,20 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-14 UTC (Native Background/Terminated Notification Certification — Phase A/B/C/D repair committed `74d7875` and pushed to `origin/main`; founder device certification PENDING, chapter NOT CLOSED)
+Last updated: 2026-08-14 UTC (Permanent Call Lifecycle Reconciliation implemented this session; founder device certification for the whole Native Notification Certification chapter still PENDING, chapter still NOT CLOSED)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-14: Permanent Call Lifecycle Reconciliation — founder ordered a stop to incremental patching, mandated a full forensic trace, root cause found and fixed. FROZEN PATTERN established.
+
+Founder context: after several rounds of evidence-based device fixes this session (GoRouter crash, notification-tap routing, socket staleness, speaker routing, dock overflow — all confirmed working on the founder's own device), two symptoms kept recurring across fixes: the Android ring notification outlasting accept by ~24s, and a Retry/Dismiss error banner appearing on calls that had already connected and ended cleanly. The founder explicitly named these as evidence of **multiple competing state holders that never converge to one truth**, not independent cosmetic bugs, and ordered a full file/method-level forensic trace before any further local workaround.
+
+**Root cause, proven at the code level (not inferred from symptoms):** `RealtimeController._performJoinWithRetry()` wraps each join attempt in `Future.timeout(15s)`. **`Future.timeout()` does not cancel the underlying computation — it only stops awaiting it.** A `_performJoin()` attempt that ran past 15s due to slow-but-legitimate network conditions (ICE/media negotiation, which happens after the authoritative `joinState: joined` transition and is non-fatal by an earlier fix) kept running in the background while the retry loop started a second, fully concurrent `_performJoin()` for the same session. Live device logs from earlier in this same session had already captured the symptom (three `session:join` emissions for one session within 6 seconds) without an explanation at the time.
+
+**FROZEN PATTERN — applies to any future retry-around-a-timeout logic in this repo, not just this call path:** wrapping an async operation in `.timeout()` and retrying on `TimeoutException` is only safe if either (a) the operation is provably idempotent end-to-end, or (b) each attempt is epoch/generation-tagged so a superseded attempt's late completion — success or failure — can never mutate state a newer attempt now owns. `_performJoin` now takes an `epoch` int, checked before every state-mutating transition; `_performJoinWithRetry` also short-circuits to success if the session is already `isJoined` by the time a retry would start. Do not reintroduce a bare `.timeout()`-retry loop against shared mutable state anywhere in this codebase without this guard.
+
+Second, independent finding: the dual push-delivery pipeline (direct + canonical) recalled from an earlier chapter's memory as a possible contributor to the ring-duration symptom was **explicitly re-verified against current backend code and found not to exist anymore** — `PushNotificationService.sendToUser()` has a single production call site today (`NotificationDeliveryAuthorityService`, with its own dedup guard). The ring symptom is fully explained by Android's `USAGE_NOTIFICATION_RINGTONE` channel semantics (not cancelled until explicit `NotificationManager.cancel()`), now consolidated to one authoritative choke point (the incoming-call bridge's removal listener) instead of two scattered action-site calls that missed remote-driven terminations.
+
+Certification: `flutter analyze` clean, full practical suite 197/197 (1 pre-existing unrelated golden skip), `flutter build apk --debug` succeeded. Backend: 1485/1485 including two new regression tests. Not yet founder-device-retested (device not connected at completion) — narrow checklist recorded in `NEXT_WORK.md`.
 
 ## 2026-08-14: Native Background/Terminated Notification Certification — Phase D repair approved and implemented. FROZEN DOCTRINE established (backend-owned, applies here too).
 

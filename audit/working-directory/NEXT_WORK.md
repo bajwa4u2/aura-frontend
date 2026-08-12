@@ -1,8 +1,18 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-14 UTC (Native Background/Terminated Notification Certification — Phase A/B/C/D repair committed `74d7875` and pushed to `origin/main`; founder device certification PENDING, chapter NOT CLOSED)
+Last updated: 2026-08-14 UTC (Permanent Call Lifecycle Reconciliation implemented this session; founder device certification for the whole Native Notification Certification chapter still PENDING, chapter still NOT CLOSED)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
+
+## Permanent Call Lifecycle Reconciliation — implemented this session, founder device retest owed
+
+Root-caused and fixed (see `CURRENT_STATE.md` for full detail) the two symptoms that survived Phase D device testing: the join-retry timeout/epoch race causing a Retry/Dismiss banner on calls that actually connected cleanly, and the Android ring notification not being cancelled on remote-driven call endings. Certified via full analyzer + test suite + debug APK build; **not yet retested on the founder's physical device** (not connected via adb when this work completed).
+
+**Founder-device certification checklist (narrow, specific to this fix — not a general re-test of the whole chapter):**
+1. Accept a call slowly enough to approach the old ~15s join window on a real network (or just repeat normal accept/decline cycles several times) — confirm no Retry/Dismiss banner ever appears on a call that connects.
+2. Let a call ring to natural expiry (90s) without answering — confirm the Android ring notification is gone from the shade, not just the in-app card.
+3. Caller cancels before the callee answers — confirm the callee's Android ring notification is cancelled (previously the gap: only local accept/decline cancelled it).
+4. One quick Meetings join/leave cycle — confirm no behavior change (the epoch guard covers the shared `_performJoin` path but should be silent/no-op in the normal case).
 
 ## Native Background/Terminated Notification Certification — Phase A/B/C/D COMPLETE, repair committed/pushed, founder device certification pending
 
