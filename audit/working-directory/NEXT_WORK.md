@@ -1,8 +1,23 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 CLOSED — committed, pushed)
+Last updated: 2026-08-14 UTC (Native Background/Terminated Notification Certification — Phase A/B/C/D complete, founder-approved repair IMPLEMENTED + certified, not committed/pushed, stopped at Gate 2)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
+
+## Native Background/Terminated Notification Certification — Phase A/B/C/D COMPLETE, repair implemented, awaiting commit/push authorization
+
+Status: audit + test matrix + evidence reconciliation + founder-approved repair, all complete. Backend record: `../aura-backend/docs/2026-08-14-native-background-terminated-notification-certification.md`. **Not committed, not pushed.** Implemented on this repo's side: `RealtimeState.acceptedByPeer`/`isPeerAcceptedNotYetPresent` + `call:accepted` WS handling (caller-stuck-Connecting fix — the backend-side single point of failure identified in Phase C is now closed by a real caller-facing signal); `AuraIncomingLiveLayer` foreground sound+haptic (`SystemSound`+`HapticFeedback`, reusing the bridge's existing dedup); `RealtimeMediaService.setSpeakerphoneEnabled()`/`RealtimeController.toggleSpeakerphone()`/`_CallControlDock` speaker button (mobile-native only, Meetings untouched). Certification: `flutter analyze` clean, practical suite 190/190 (up from 178), `flutter build web --release` succeeded.
+
+**Remaining after this chapter:**
+
+1. iOS Firebase/APNs confirmation (next named chapter, not started) — add missing `ios/Runner/GoogleService-Info.plist`; decide FCM-registration vs. reviving the raw APNs path.
+2. Android `CALL_CANCELLED` stale-notification gap — remains OPEN, not resolved by this repair (no founder observation exists for that exact scenario).
+3. Chrome double-notification — remains OPEN/NOT ADJUDICATED (two unadjudicated candidates).
+4. Runtime Lifecycle Phase 2 — not started, scope pending evidence.
+5. **Platform-Wide Selection, Clipboard & Rich Paste** — NEW, recorded 2026-08-14, doctrine/scope only, zero implementation. Native text-selection/copy/cut/paste across DMs/Thread/Institution Space messages/Member+Institution Posts/Announcements; rich clipboard paste (image/video/audio/document) in messages/composers must route through the existing governed media/attachment pipeline, never a parallel upload path.
+6. **Legacy Global Runtime Overlay Cleanup** — NEW, recorded 2026-08-14, doctrine/scope only, zero implementation. Trace/retire the vague global bottom overlay; route legitimate feedback to its correct targeted owner (call lifecycle, personal notification, targeted post notification, future Institutional Attention, or local snackbar) — do not build a second global overlay.
+
+Neither #5 nor #6 reorders this list — recorded so they are not lost, not scheduled as next.
 
 ## Communication Timeline Authority — Phase 1 — COMPLETE, committed, pushed
 

@@ -1,8 +1,12 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-13 UTC (Communication Timeline Authority — Phase 1 CLOSED — committed, pushed)
+Last updated: 2026-08-14 UTC (Native Background/Terminated Notification Certification — Phase A/B/C/D complete, founder-approved repair implemented, not committed/pushed, stopped at Gate 2)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-14: Native Background/Terminated Notification Certification — Phase D repair approved and implemented. FROZEN DOCTRINE established (backend-owned, applies here too).
+
+Backend record: `../aura-backend/docs/2026-08-14-native-background-terminated-notification-certification.md`. The frozen doctrine — **ACCEPT/DECLINE TRUTH MUST PROPAGATE FROM THE AUTHORITATIVE ACTION ITSELF; socket/media join is evidence of realtime entry, not the sole acceptance signal; RINGING/CONNECTING → ACCEPTED/JOINING → CONNECTED are never collapsed** — is recorded in full in the backend `DECISIONS.md` and working memory `arch_accept_decline_truth_propagation.md`. This repo's implementation of it: `RealtimeState.acceptedByPeer`/`isPeerAcceptedNotYetPresent`, the `call:accepted` WS case, and the new "Accepted — joining…" UI state — any future call-state work in this repo must preserve this distinction, not reintroduce a collapse of ACCEPTED into CONNECTED. Also decided/implemented this chapter: foreground incoming-call sound+haptic via `SystemSound`/`HapticFeedback` (not a new audio-plugin dependency); Thread/DM speaker-route control via `flutter_webrtc`'s `Helper.setSpeakerphoneOn` (mobile-native only, resolved fresh per call, never persisted). Not committed, not pushed — awaiting founder Gate 2 review.
 
 ## 2026-08-13: Communication Timeline Authority — Phase 1 — Gate 2 approved, committed, pushed. CHAPTER CLOSED.
 

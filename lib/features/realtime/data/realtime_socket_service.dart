@@ -258,6 +258,10 @@ class RealtimeSocketService {
       // Deployment resilience: the server announces a restart so clients hold
       // their media plane through the signaling gap instead of tearing down.
       'session:server.restarting',
+      // 2026-08-14 repair: authoritative caller-facing ACCEPT truth,
+      // independent of realtime/media join completing. See
+      // RealtimeController's 'call:accepted' case for the state it sets.
+      'call:accepted',
       'call:declined',
       'call:terminal',
       'call:incoming',

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback, SystemSound, SystemSoundType;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -272,6 +273,19 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     _ringTimerNotificationId = null;
   }
 
+  /// Foreground incoming-call presentation: one audible + haptic cue per
+  /// genuinely new incoming call, on every platform where the framework
+  /// supports it (`HapticFeedback`/`SystemSound` are safe no-ops elsewhere —
+  /// no platform branching needed). This deliberately does not attempt a
+  /// looping ringtone: Android's existing "already-working" behavior it must
+  /// preserve is a single OS-channel alert burst, not an app-driven loop, so
+  /// a single cue here is consistent rather than inventing new behavior.
+  void _triggerIncomingCallAlert(String sessionId) {
+    if (sessionId.isEmpty) return;
+    unawaited(SystemSound.play(SystemSoundType.alert));
+    unawaited(HapticFeedback.heavyImpact());
+  }
+
   // ── Actions ───────────────────────────────────────────────────────────────
 
   Future<void> _joinCurrent(Map<String, dynamic> item) async {
@@ -438,6 +452,19 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       };
       for (final removed in prevSet.difference(nextSet)) {
         _dismissedSessionIds.add(removed);
+      }
+
+      // 2026-08-14 repair — foreground incoming-call audible + haptic alert.
+      // Governed by the SAME dedup this bridge already performs (by
+      // sessionId/notification id, merging the correspondence socket, the
+      // /realtime socket, and foreground FCM) — a newly-added session id
+      // here is guaranteed to be a genuinely new incoming call, not a
+      // duplicate delivery from a second transport. One alert per newly
+      // seen session; ends implicitly (nothing loops) the moment the
+      // session leaves the bridge via accept/decline/cancel/expiry/terminal,
+      // all of which already remove it from `next` above.
+      for (final added in nextSet.difference(prevSet)) {
+        _triggerIncomingCallAlert(added);
       }
     });
 

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -67,6 +69,15 @@ final _realtimeCurrentUserProvider = FutureProvider<Map<String, dynamic>>((
 
 const _kPanelParticipants = 'participants';
 const _kPanelMore = 'more';
+
+/// 2026-08-14 repair — Thread/DM speaker toggle only does anything on
+/// mobile-native (`Helper.setSpeakerphoneOn`); showing it elsewhere would be
+/// a control with no effect. `kIsWeb` is checked first — `Platform.*` throws
+/// on web.
+bool get _supportsSpeakerphoneToggle {
+  if (kIsWeb) return false;
+  return Platform.isIOS || Platform.isAndroid;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SCREEN
@@ -641,10 +652,20 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     participantCount: state.participants.length,
                     isConnecting: isConnecting,
                     hasIssue: showConnectionIssue,
+                    // ACCEPTED/JOINING: the invited party's ACCEPT has been
+                    // authoritatively confirmed by the backend, but they have
+                    // not yet actually joined media — distinct from both
+                    // "Ringing…" (no answer yet) and "Live" (connected).
+                    // Must not be collapsed into either.
+                    isAccepted:
+                        !isMeetingSession &&
+                        state.isJoined &&
+                        state.isPeerAcceptedNotYetPresent,
                     isRinging:
                         !isMeetingSession &&
                         state.isJoined &&
                         state.participants.length <= 1 &&
+                        !state.acceptedByPeer &&
                         ringingSessionIds.contains(widget.sessionId),
                     waitingLabel:
                         isMeetingSession &&
@@ -736,6 +757,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             pendingRequests: canModerate ? joinRequestCount : 0,
                             onToggleMic: controller.toggleMicrophone,
                             onToggleCamera: controller.toggleCamera,
+                            showSpeakerToggle: _supportsSpeakerphoneToggle,
+                            speakerOn: state.speakerphoneEnabled,
+                            onToggleSpeaker: () =>
+                                unawaited(controller.toggleSpeakerphone()),
                             onParticipants: () =>
                                 _togglePanel(_kPanelParticipants, wide),
                             onMore: () => _togglePanel(_kPanelMore, wide),
@@ -1506,6 +1531,7 @@ class _CallTopBar extends StatelessWidget {
     this.waitingLabel,
     this.contextLabel,
     this.isRinging = false,
+    this.isAccepted = false,
     this.onMinimize,
     this.sessionTypeChip,
     this.trustLine,
@@ -1519,6 +1545,11 @@ class _CallTopBar extends StatelessWidget {
   final bool hasIssue;
   final String? waitingLabel;
   final bool isRinging;
+
+  /// ACCEPTED/JOINING — the invited party's authoritative ACCEPT is
+  /// confirmed, but they have not yet joined media. Never true at the same
+  /// time as a genuinely connected/"Live" state.
+  final bool isAccepted;
   final VoidCallback? onMinimize;
 
   /// Per-type session chip — e.g. "Public session", "Class session",
@@ -1556,6 +1587,9 @@ class _CallTopBar extends StatelessWidget {
     } else if (waitingLabel != null) {
       statusColor = const Color(0xFFFBBF24);
       statusLabel = waitingLabel!;
+    } else if (isAccepted) {
+      statusColor = const Color(0xFFFBBF24);
+      statusLabel = 'Accepted — joining…';
     } else if (isRinging) {
       statusColor = const Color(0xFFFBBF24);
       statusLabel = 'Ringing…';
@@ -2258,6 +2292,9 @@ class _CallControlDock extends StatelessWidget {
     required this.onLeave,
     this.isEndCall = false,
     this.isEnding = false,
+    this.showSpeakerToggle = false,
+    this.speakerOn = false,
+    this.onToggleSpeaker,
   });
 
   final bool micOn;
@@ -2272,6 +2309,12 @@ class _CallControlDock extends StatelessWidget {
   final VoidCallback? onLeave;
   final bool isEndCall;
   final bool isEnding;
+
+  /// 2026-08-14 repair — Thread/DM speaker/output-route control. Only shown
+  /// on platforms where the toggle actually does something (mobile-native).
+  final bool showSpeakerToggle;
+  final bool speakerOn;
+  final VoidCallback? onToggleSpeaker;
 
   @override
   Widget build(BuildContext context) {
@@ -2309,6 +2352,19 @@ class _CallControlDock extends StatelessWidget {
               active: cameraOn,
               warning: !cameraOn,
               onPressed: onToggleCamera,
+            ),
+            const SizedBox(width: AuraSpace.s8),
+          ],
+
+          // Speaker (mobile-native only — 2026-08-14 repair)
+          if (showSpeakerToggle) ...[
+            _DockButton(
+              icon: speakerOn
+                  ? Icons.volume_up_rounded
+                  : Icons.hearing_rounded,
+              label: speakerOn ? 'Speaker' : 'Earpiece',
+              active: speakerOn,
+              onPressed: onToggleSpeaker ?? () {},
             ),
             const SizedBox(width: AuraSpace.s8),
           ],

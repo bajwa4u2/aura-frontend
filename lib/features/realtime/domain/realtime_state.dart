@@ -32,6 +32,8 @@ class RealtimeState {
     this.isCallRoomVisible = false,
     this.isEndingCall = false,
     this.reconnectingUserIds = const <String>{},
+    this.acceptedByPeer = false,
+    this.speakerphoneEnabled = false,
   });
 
   final RealtimeConnectionStatus connectionStatus;
@@ -78,6 +80,20 @@ class RealtimeState {
   /// for real.
   final Set<String> reconnectingUserIds;
 
+  /// Authoritative ACCEPT truth for the CALLER: true once the backend has
+  /// confirmed the invited party's first-action-wins ACCEPT transaction
+  /// committed (`call:accepted`), independent of whether that party's
+  /// realtime/media join has actually completed. This must never be treated
+  /// as proof of connection — `participants` reflecting a present peer
+  /// remains the sole evidence of that. Represents the ACCEPTED/JOINING
+  /// step between RINGING/CONNECTING and CONNECTED.
+  final bool acceptedByPeer;
+
+  /// Thread/DM speaker toggle (2026-08-14 repair) — mirrors
+  /// `RealtimeMediaService.speakerphoneEnabled`. Mobile-native only; resolved
+  /// fresh per call, never a persisted/global preference.
+  final bool speakerphoneEnabled;
+
   factory RealtimeState.initial() {
     return const RealtimeState(
       connectionStatus: RealtimeConnectionStatus.disconnected,
@@ -107,6 +123,8 @@ class RealtimeState {
       isCallRoomVisible: false,
       isEndingCall: false,
       reconnectingUserIds: <String>{},
+      acceptedByPeer: false,
+      speakerphoneEnabled: false,
     );
   }
 
@@ -149,6 +167,8 @@ class RealtimeState {
     bool? isCallRoomVisible,
     bool? isEndingCall,
     Set<String>? reconnectingUserIds,
+    bool? acceptedByPeer,
+    bool? speakerphoneEnabled,
   }) {
     return RealtimeState(
       connectionStatus: connectionStatus ?? this.connectionStatus,
@@ -180,12 +200,18 @@ class RealtimeState {
       isCallRoomVisible: isCallRoomVisible ?? this.isCallRoomVisible,
       isEndingCall: isEndingCall ?? this.isEndingCall,
       reconnectingUserIds: reconnectingUserIds ?? this.reconnectingUserIds,
+      acceptedByPeer: acceptedByPeer ?? this.acceptedByPeer,
+      speakerphoneEnabled: speakerphoneEnabled ?? this.speakerphoneEnabled,
     );
   }
 
   bool get isConnected => connectionStatus == RealtimeConnectionStatus.connected;
   bool get isJoined => joinState == RealtimeJoinState.joined;
   bool get hasIncomingCall => incomingCall != null && incomingCall!.isNotEmpty;
+  /// Peer accepted but has not yet actually joined media — the ACCEPTED/
+  /// JOINING step. Must not be conflated with connected/present.
+  bool get isPeerAcceptedNotYetPresent =>
+      acceptedByPeer && participants.where((p) => p.isPresent).length <= 1;
   bool get isVideoMode => (callMode ?? '').trim().toLowerCase() == 'video';
   bool get isAudioMode => (callMode ?? '').trim().toLowerCase() == 'audio';
 }

@@ -150,6 +150,8 @@ class RealtimeController extends StateNotifier<RealtimeState>
       clearIncomingCall: true,
       clearCallMode: true,
       lastSocketEvent: lastSocketEvent,
+      acceptedByPeer: clearSessionContext ? false : state.acceptedByPeer,
+      speakerphoneEnabled: clearSessionContext ? false : state.speakerphoneEnabled,
     );
   }
 
@@ -468,11 +470,14 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
     // Show "Connecting..." immediately — the user should see progress even
     // while the socket is being established (deeplink, cold page load, etc.).
+    // A fresh join always starts without a prior session's stale ACCEPT
+    // truth attached.
     state = state.copyWith(
       joinState: RealtimeJoinState.joining,
       sessionId: trimmed,
       clearErrorMessage: true,
       clearInfoMessage: true,
+      acceptedByPeer: false,
     );
 
     try {
@@ -1041,6 +1046,17 @@ class RealtimeController extends StateNotifier<RealtimeState>
       'enabled': enabled,
     });
     _patchMyTrack(videoOn: enabled);
+  }
+
+  /// Thread/DM speaker toggle (2026-08-14 repair). Local-only device
+  /// routing — no signaling event, matching how Meetings' existing device
+  /// picker calls `setAudioOutput` directly with no socket round-trip.
+  /// Resolved fresh per call: `RealtimeMediaService` never persists this
+  /// beyond the current session.
+  Future<void> toggleSpeakerphone() async {
+    final sessionId = state.sessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+    await _mediaService.setSpeakerphoneEnabled(!state.speakerphoneEnabled);
   }
 
   /// I1: Start broadcasting the local screen. Replaces the video track on
@@ -1785,6 +1801,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       remoteRenderers: snapshot.remoteRenderers,
       microphoneEnabled: snapshot.micEnabled,
       cameraEnabled: snapshot.cameraEnabled,
+      speakerphoneEnabled: snapshot.speakerphoneEnabled,
       mediaError: snapshot.error,
       isScreenSharing: snapshot.isScreenSharing,
     );
@@ -2247,6 +2264,27 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // mutate `participants` / `joinState` here — the controller is
         // responsible for the join/leave lifecycle, not the ring UI.
         state = state.copyWith(lastSocketEvent: event.name);
+        return;
+      case 'call:accepted':
+        // Authoritative ACCEPT truth, emitted the moment the backend's
+        // first-action-wins ACCEPT transaction committed — independent of
+        // whether the accepting party's realtime/media join has completed.
+        // This deliberately does NOT touch `participants`/`joinState`: it
+        // moves the caller out of indefinite ringing into an ACCEPTED/
+        // JOINING state, but `session:participant.joined` remains the sole
+        // proof of actual connection. Must not be collapsed with CONNECTED.
+        final acceptedSessionId = (event.payload['sessionId'] ?? '')
+            .toString()
+            .trim();
+        if (acceptedSessionId.isNotEmpty &&
+            state.session?.id != null &&
+            acceptedSessionId != state.session!.id) {
+          return;
+        }
+        state = state.copyWith(
+          acceptedByPeer: true,
+          lastSocketEvent: event.name,
+        );
         return;
       case 'call:declined':
         final declinedUserId = (event.payload['userId'] ?? '')

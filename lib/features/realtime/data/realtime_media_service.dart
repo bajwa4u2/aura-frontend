@@ -18,11 +18,15 @@ class RealtimeMediaSnapshot {
     this.localVideoTrackPresent = false,
     this.remoteVideoRendererAttached = false,
     this.cameraUnavailable = false,
+    this.speakerphoneEnabled = false,
   });
 
   final bool ready;
   final bool micEnabled;
   final bool cameraEnabled;
+  /// Thread/DM speaker toggle (2026-08-14 repair) — mobile-native
+  /// speakerphone routing state, resolved fresh per call.
+  final bool speakerphoneEnabled;
   final RTCVideoRenderer? localRenderer;
   final Map<String, RTCVideoRenderer> remoteRenderers;
   final String? error;
@@ -113,6 +117,10 @@ class RealtimeMediaService {
   bool _ready = false;
   bool _micEnabled = true;
   bool _cameraEnabled = true;
+  // Resolved fresh per call (never persisted globally/across sessions) — the
+  // 2026-08-14 Thread/DM speaker-route repair. Mobile-native only (iOS/
+  // Android); web routes output via `setAudioOutput`/device selection.
+  bool _speakerphoneEnabled = false;
   bool _isScreenSharing = false;
   String? _error;
   bool _disposed = false;
@@ -168,6 +176,7 @@ class RealtimeMediaService {
         remoteVideoRendererAttached:
             _remoteStreams.values.any((s) => s.getVideoTracks().isNotEmpty),
         cameraUnavailable: _cameraUnavailable,
+        speakerphoneEnabled: _speakerphoneEnabled,
       );
 
   Future<void> ensureLocalMedia({
@@ -1037,6 +1046,7 @@ class RealtimeMediaService {
   String? get preferredVideoDeviceId => _preferredVideoDeviceId;
   String? get preferredAudioDeviceId => _preferredAudioDeviceId;
   String? get preferredAudioOutputDeviceId => _preferredAudioOutputDeviceId;
+  bool get speakerphoneEnabled => _speakerphoneEnabled;
 
   Future<List<MediaDeviceInfo>> enumerateDevices() async {
     try {
@@ -1194,6 +1204,24 @@ class RealtimeMediaService {
     }
   }
 
+  /// Thread/DM call speaker toggle (2026-08-14 repair) — binary
+  /// speaker/earpiece routing for iOS/Android, via `flutter_webrtc`'s
+  /// native speakerphone API (a real routing change, not a volume/gain
+  /// hack). Deliberately resolved fresh per call: never persisted beyond
+  /// the current session, and reset whenever session media is reset. Web
+  /// has no speakerphone concept — it routes via `setAudioOutput`'s device
+  /// selection instead, so this is a no-op there.
+  Future<void> setSpeakerphoneEnabled(bool enabled) async {
+    if (_disposed || kIsWeb) return;
+    try {
+      await Helper.setSpeakerphoneOn(enabled);
+      _speakerphoneEnabled = enabled;
+      _publish();
+    } catch (error) {
+      debugPrint('[rtc-media] setSpeakerphoneEnabled failed err=$error');
+    }
+  }
+
   Future<void> removePeer(String peerKey) async {
     _iceGraceTimers.remove(peerKey)?.cancel();
     _iceRestartAttempts.remove(peerKey);
@@ -1236,6 +1264,7 @@ class RealtimeMediaService {
     _micEnabled = false;
     _cameraEnabled = false;
     _isScreenSharing = false;
+    _speakerphoneEnabled = false;
     _error = null;
     _publish();
   }
