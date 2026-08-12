@@ -1,8 +1,12 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 approved and completed; Thread Call Lifecycle Convergence code fixes from earlier this session remain approved/landed)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 conditionally approved, amended Gate 2 resolved in aura-backend, no decision made in this repo; Thread Call Lifecycle Convergence code fixes from earlier this session remain approved/landed)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-14: Realtime Architecture Correction — Phase 1 authorized, conditionally approved, amended Gate 2 resolved; implemented entirely in aura-backend, no decision or implementation in this repo at any point.
+
+Founder authorized Phase 1 (Backend Canonical Lifecycle / Participant Truth) with a backend-only scope, then conditionally approved it pending a guest-disconnect investigation and a disposable-Postgres migration replay — both resolved same day, both entirely within `aura-backend`. `aura-backend`'s final recommendation is READY FOR COMMIT/PUSH. This repo's canonical Dart mirror (`lib/core/realtime_canonical/`) required no change at any point in this chapter since the contracts themselves were never touched. See `aura-backend/DECISIONS.md`'s matching 2026-08-14 entries for the full decision record.
 
 ## 2026-08-14: Realtime Architecture Correction — architecture APPROVED (all six §18 decisions resolved); Phase 0 (canonical contracts + executable test harness) authorized and COMPLETE.
 

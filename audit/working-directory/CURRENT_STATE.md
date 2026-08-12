@@ -1,6 +1,10 @@
 # Current State — aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 CLOSED: JOIN_FAILED/SESSION_FAILED doctrine frozen, canonical docs governed. Thread Call Lifecycle Convergence code fixes remain landed/pushed below; founder combined certification still PENDING)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CONDITIONALLY APPROVED/READY FOR COMMIT-PUSH in aura-backend only, zero changes in this repo. Thread Call Lifecycle Convergence code fixes remain landed/pushed below; founder combined certification still PENDING)
+
+## Realtime Architecture Correction — Phase 1, 2026-08-14 — backend-only, no aura_final change (incl. amended Gate 2)
+
+Phase 1 (Backend Canonical Lifecycle / Participant Truth) is implemented and locally certified entirely within `aura-backend` — production wiring of the already-frozen Phase 0 canonical contracts into real backend services (session/participant transition owners, the now-producible `RealtimeJoinState.FAILED`, `maybeEndIdleSession`/`leaveSurfaceSession` routed through the extracted aggregate evaluator). An amended Gate 2 the same day resolved two conditions entirely within `aura-backend`: a guest-disconnect lifecycle question (investigated, proven not a doctrine contradiction) and a full 107-migration disposable-Postgres replay (clean). **Zero file in this repo changed at any point**, including the amendment — the Dart canonical mirror (`lib/core/realtime_canonical/`) is untouched because the contracts themselves did not change, only the backend's own production wiring to them. Full record: `../aura-backend/docs/2026-08-14-realtime-architecture-correction-phase1-implementation.md`. Backend Phase 1's final recommendation is READY FOR COMMIT/PUSH; NOT yet committed/pushed there.
 
 ## Realtime Architecture Correction — Phase 0 (canonical contracts + executable test harness), 2026-08-14 — CLOSED
 

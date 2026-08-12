@@ -1,10 +1,14 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 0 CLOSED, canonical docs governed, committed and pushed. Thread Call Lifecycle Convergence code fixes from earlier this session remain landed and pushed; ONE combined founder certification checklist below still applies to those)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CONDITIONALLY APPROVED/READY FOR COMMIT-PUSH in aura-backend, backend-only, zero changes here. Thread Call Lifecycle Convergence code fixes from earlier this session remain landed and pushed; ONE combined founder certification checklist below still applies to those)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
-## Realtime Architecture Correction — Phase 0 CLOSED (contracts + tests + JOIN_FAILED/SESSION_FAILED doctrine + governed docs); Phase 1 named next, NOT started, NOT authorized to begin automatically
+## Realtime Architecture Correction — Phase 1 READY FOR COMMIT/PUSH in aura-backend (backend-only, zero work in this repo); Phase 2 named next, NOT started, NOT authorized to begin automatically
+
+Phase 1 (Backend Canonical Lifecycle / Participant Truth) is conditionally approved and locally certified in `aura-backend` only — see `../aura-backend/docs/2026-08-14-realtime-architecture-correction-phase1-implementation.md`. Amended Gate 2 (guest disconnect investigation + 107-migration disposable replay) resolved same day; final recommendation there is READY FOR COMMIT/PUSH. No `aura_final` file changed at any point in this chapter, including the amendment; the canonical Dart contracts in `lib/core/realtime_canonical/` remain unchanged from Phase 0. Backend Phase 1 is NOT yet committed/pushed — that's the founder's own action, then Phase 2 (event contract dual-emit, which WILL eventually touch this repo's event-consuming code) can be authorized.
+
+## Realtime Architecture Correction — Phase 0 CLOSED (contracts + tests + JOIN_FAILED/SESSION_FAILED doctrine + governed docs)
 
 Architecture document: `../aura-backend/capability/REALTIME_ARCHITECTURE_CORRECTION_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md`, now **ARCHITECTURE APPROVED — FROZEN**, all six §18 decisions resolved (two-axis lifecycle approved; Meetings separate-orchestrator recommendation approved but its implementation stays deferred/last; Phase 7 sequencing stays last; iOS CallKit/PushKit is its own future roadmap chapter, not core; `PresenceService` treated as derived/acceleration-only pending production observability; event-contract renaming approved via dual-emit). Phase 0 delivered pure, isolated, executable canonical contracts + a 33-scenario deterministic test harness in `lib/core/realtime_canonical/` + `test/realtime_canonical/` (mirroring `aura-backend/src/realtime/canonical/` 1:1), plus the compatibility/migration contract document `../aura-backend/capability/REALTIME_ARCHITECTURE_CORRECTION_PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md`. Full detail: `HANDOFF.md`'s matching entry.
 
