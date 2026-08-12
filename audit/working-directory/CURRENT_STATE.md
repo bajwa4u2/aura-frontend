@@ -1,6 +1,14 @@
 # Current State — aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CLOSED in aura-backend (committed `214e48e`, pushed) — zero changes in this repo. Thread Call Lifecycle Convergence code fixes remain landed/pushed below; founder combined certification still PENDING)
+Last updated: 2026-08-15 UTC (Realtime Architecture Correction — Phase 2 LOCALLY CERTIFIED in aura-backend, NOT committed/pushed, awaiting founder Gate 2 — zero changes in this repo. Phase 1 remains CLOSED in aura-backend (committed `214e48e`, pushed). Thread Call Lifecycle Convergence code fixes remain landed/pushed below; founder combined certification still PENDING)
+
+## Realtime Architecture Correction — Phase 2, 2026-08-15 — CLOSED in aura-backend, backend-only, no aura_final change
+
+**Final closeout**: founder approved the amended Gate 2 subject to one correction — `SESSION_CANCELLED` canonical production is Phase 3 (Thread/DM Orchestrator Migration) scope, not Phase 4. Phase 3/4 renumbered accordingly (Phase 3 = Thread/DM Orchestrator Migration, now also owns establishing authoritative caller-cancellation truth; Phase 4 = Notification/Ringing Projection Migration, consumes that truth). Full record: `../aura-backend/docs/2026-08-15-realtime-architecture-correction-phase2-implementation.md` §23. **When Phase 3 is authorized, it will be the first realtime chapter to touch this repo's `RealtimeController`/`AuraIncomingLiveLayer`/`ThreadCallLifecycleController`/`incomingCallBridgeProvider`** (per the architecture doc's §8/§13) — not started, not scheduled.
+
+## Realtime Architecture Correction — Phase 2, 2026-08-15 (original amended Gate 2 entry, superseded by final closeout above) — backend-only, no aura_final change
+
+Canonical event contract consolidation + compatibility migration, implemented entirely in `aura-backend` (new `CanonicalRealtimeEventService`, dual-emit at 9 call sites, additive schema). Full record: `../aura-backend/docs/2026-08-15-realtime-architecture-correction-phase2-implementation.md`. Zero Dart file touched — no frontend consumer of any canonical wire event was wired this phase by explicit scope (`RealtimeController` untouched); every new canonical event is additive and currently unconsumed. Deliberately no change to `lib/core/realtime_canonical/` (the Dart mirror of the Phase 0 pure contracts) — Phase 2 did not touch Phase 0's contracts, only produced them in the backend for the first time. Frontend canonical-event consumption remains Phase 3/4 scope. **Stopped at local certification, NOT committed/pushed in aura-backend, Phase 3 not authorized.**
 
 ## Realtime Architecture Correction — Phase 1, 2026-08-14 — backend-only, no aura_final change (incl. amended Gate 2)
 
