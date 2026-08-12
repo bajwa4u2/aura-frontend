@@ -1,49 +1,102 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import '../../../config.dart';
 import '../../../core/client_identity/client_identity.dart';
+import '../../../core/concurrency/single_flight.dart';
 import 'realtime_event_parser.dart';
+
+/// Thrown for transport-establishment failures — distinguishes a genuine
+/// connect problem from a caller misusing the API (e.g. emitting before
+/// the transport is ready).
+class RealtimeTransportException implements Exception {
+  RealtimeTransportException(this.message);
+  final String message;
+  @override
+  String toString() => 'RealtimeTransportException: $message';
+}
 
 class RealtimeSocketService {
   RealtimeSocketService();
 
   io.Socket? _socket;
   final _eventsController = StreamController<RealtimeParsedEvent>.broadcast();
-  Future<void>? _connectFuture;
   bool _disposing = false;
+
+  // 2026-08-14 — PERMANENT TRANSPORT OWNERSHIP REPAIR.
+  //
+  // Proven defect (live device logs cross-referenced against backend
+  // logs): RealtimeController.connect() had its own state-based "already
+  // connecting" guard (state.connectionStatus), separate and desyncable
+  // from this service's own connect() guard. Combined with
+  // Future.timeout() not cancelling an abandoned _performJoin() attempt,
+  // multiple logical join attempts could each independently call
+  // connect() here — which always disconnected and recreated the socket —
+  // destroying a sibling attempt's in-progress connection before it could
+  // stabilize. Three real join attempts were captured producing an empty
+  // socket id each time, none ever reaching a server-acknowledged
+  // `session:join`, roughly 2 seconds apart — far too fast to be the 15s
+  // per-attempt timeout elapsing, consistent with fast disconnect/error
+  // events from this churn.
+  //
+  // `ensureConnected()` is now the ONLY way to obtain a ready socket, and
+  // is genuinely single-flight via the generic, independently-tested
+  // SingleFlight primitive (lib/core/concurrency/single_flight.dart): the
+  // first caller becomes the sole owner of establishing the connection;
+  // every other concurrent caller awaits that SAME in-flight operation
+  // instead of starting a competing one. Nobody may disconnect/recreate
+  // the socket while an establishment is in flight.
+  final SingleFlight<void> _connectFlight = SingleFlight<void>();
+
+  static const _establishTimeout = Duration(seconds: 20);
+  static const _idAssignmentPollInterval = Duration(milliseconds: 50);
+  static const _idAssignmentMaxWait = Duration(seconds: 5);
 
   Stream<RealtimeParsedEvent> get events => _eventsController.stream;
 
-  // 2026-08-14 — a Socket.IO client that is genuinely connected always has
-  // a server-assigned id. After enough connect/disconnect churn in one app
-  // session, `_socket.connected` can report true for a reference the server
-  // no longer recognizes (found via live device testing: `session:join`
-  // emitted on such a socket never received an ack, stalling the caller/
-  // callee indefinitely). Requiring a non-empty id treats that stale state
-  // as not-connected, so `connect()` below re-establishes a fresh socket
-  // instead of reusing a dead one.
+  // TRANSPORT READY = Socket.IO connected AND the current socket instance
+  // has a non-empty server-assigned id. `.connected` can report true
+  // slightly before `.id` is populated, and a caller may be holding a
+  // reference to a socket that has since been superseded — both are
+  // treated as not-ready so nothing ever emits against a socket that
+  // isn't actually server-recognized yet.
   bool get isConnected =>
       (_socket?.connected ?? false) && (_socket?.id ?? '').isNotEmpty;
   String? get socketId => _socket?.id;
 
-  Future<void> connect({
+  /// The single canonical entry point for obtaining a ready realtime
+  /// socket. Returns once transport is server-recognized-ready (connected
+  /// AND has a non-empty id). Safe to call from multiple concurrent join
+  /// attempts — they share one establishment instead of racing to
+  /// reconnect over each other.
+  Future<void> ensureConnected({
     required String accessToken,
     ClientIdentity? identity,
   }) async {
+    debugPrint(
+      '[transport-diag] ensureConnected called disposing=$_disposing'
+      ' isConnected=$isConnected inFlight=${_connectFlight.isInFlight}'
+      ' currentSocketId=${_socket?.id} currentConnected=${_socket?.connected}',
+    );
     if (_disposing) return;
     if (isConnected) return;
-    if (_connectFuture != null) return _connectFuture!;
 
-    _connectFuture = _connectInternal(
-      accessToken: accessToken,
-      identity: identity,
-    );
     try {
-      await _connectFuture!;
-    } finally {
-      _connectFuture = null;
+      await _connectFlight.run(
+        () => _establish(
+          accessToken: accessToken,
+          identity: identity,
+        ).timeout(_establishTimeout),
+      );
+      debugPrint(
+        '[transport-diag] ensureConnected succeeded socketId=${_socket?.id}'
+        ' connected=${_socket?.connected}',
+      );
+    } catch (error) {
+      debugPrint('[transport-diag] ensureConnected FAILED error=$error');
+      rethrow;
     }
   }
 
@@ -71,11 +124,18 @@ class RealtimeSocketService {
     }
   }
 
-  Future<void> _connectInternal({
+  // We are the sole owner here — guaranteed by ensureConnected()'s
+  // single-flight gate above — so it is safe to tear down any prior
+  // socket and build a fresh one without racing a sibling attempt.
+  Future<void> _establish({
     required String accessToken,
     ClientIdentity? identity,
   }) async {
-    await disconnect();
+    debugPrint(
+      '[transport-diag] _establish starting, tearing down prior socket'
+      ' (id=${_socket?.id}, connected=${_socket?.connected})',
+    );
+    await _disconnectSocket();
 
     final uri = Uri.parse(AppConfig.apiBaseUrl);
     final origin =
@@ -108,12 +168,64 @@ class RealtimeSocketService {
 
     _wireCoreEvents(socket);
     _socket = socket;
+    debugPrint('[transport-diag] new socket object created, calling connect()');
     socket.connect();
 
-    await _waitForConnect(socket);
+    await _waitForServerRecognizedId(socket);
+    debugPrint(
+      '[transport-diag] _establish complete, id=${socket.id}'
+      ' connected=${socket.connected}',
+    );
   }
 
-  Future<void> _waitForConnect(io.Socket socket) async {
+  /// Waits for the 'connect' event, then — closing the specific race that
+  /// produced empty-id readings — additionally waits for a non-empty
+  /// socket id if it is not yet populated the instant 'connect' fires.
+  /// Aborts if this socket is superseded (torn down by disconnect()) while
+  /// waiting, rather than silently proceeding on a dead socket.
+  Future<void> _waitForServerRecognizedId(io.Socket socket) async {
+    if (!socket.connected) {
+      debugPrint('[transport-diag] waiting for connect event...');
+      await _waitForConnectEvent(socket);
+      debugPrint(
+        '[transport-diag] connect event received, id=${socket.id}'
+        ' connected=${socket.connected}',
+      );
+    } else {
+      debugPrint(
+        '[transport-diag] socket already connected synchronously,'
+        ' id=${socket.id}',
+      );
+    }
+    if (!identical(_socket, socket) || _disposing) {
+      debugPrint('[transport-diag] superseded right after connect event');
+      throw RealtimeTransportException('Socket superseded during connect.');
+    }
+
+    var waited = Duration.zero;
+    while ((socket.id ?? '').isEmpty) {
+      debugPrint(
+        '[transport-diag] id still empty, polling... waited=${waited.inMilliseconds}ms'
+        ' connected=${socket.connected}',
+      );
+      if (!identical(_socket, socket) || _disposing) {
+        throw RealtimeTransportException(
+          'Socket superseded before a server id was assigned.',
+        );
+      }
+      if (waited >= _idAssignmentMaxWait) {
+        debugPrint('[transport-diag] gave up waiting for id after ${waited.inMilliseconds}ms');
+        throw RealtimeTransportException(
+          'Socket connected but never received a server-assigned id.',
+        );
+      }
+      await Future<void>.delayed(_idAssignmentPollInterval);
+      waited += _idAssignmentPollInterval;
+    }
+    debugPrint('[transport-diag] id assigned: ${socket.id}');
+  }
+
+  Future<void> _waitForConnectEvent(io.Socket socket) async {
     if (socket.connected) return;
 
     final completer = Completer<void>();
@@ -137,10 +249,11 @@ class RealtimeSocketService {
     };
 
     onConnectError = (dynamic error) {
+      debugPrint('[transport-diag] connect_error fired: $error');
       if (!completer.isCompleted) {
         cleanup();
         completer.completeError(
-          StateError(
+          RealtimeTransportException(
             'Realtime socket failed to connect: ${error?.toString() ?? 'unknown_error'}',
           ),
         );
@@ -148,10 +261,11 @@ class RealtimeSocketService {
     };
 
     onError = (dynamic error) {
+      debugPrint('[transport-diag] error event fired: $error');
       if (!completer.isCompleted) {
         cleanup();
         completer.completeError(
-          StateError(
+          RealtimeTransportException(
             'Realtime socket error: ${error?.toString() ?? 'unknown_error'}',
           ),
         );
@@ -159,10 +273,11 @@ class RealtimeSocketService {
     };
 
     onDisconnect = (dynamic reason) {
+      debugPrint('[transport-diag] disconnect event fired before connect completed: $reason');
       if (!completer.isCompleted) {
         cleanup();
         completer.completeError(
-          StateError(
+          RealtimeTransportException(
             'Realtime socket disconnected before connection completed: ${reason?.toString() ?? 'unknown_reason'}',
           ),
         );
@@ -291,18 +406,23 @@ class RealtimeSocketService {
     }
   }
 
+  /// Emits an event and awaits its ack. Requires the transport to already
+  /// be ready (via ensureConnected()) — this is a hard invariant, not a
+  /// convenience fallback: no realtime event may be emitted before the
+  /// client has a currently valid, server-recognized socket identity. A
+  /// caller that violates this has a bug and should fail loudly rather
+  /// than silently waiting on a socket it never confirmed was ready.
   Future<Map<String, dynamic>> emitAck(
     String event,
     Map<String, dynamic> payload,
   ) async {
-    final socket = _socket;
-    if (socket == null) {
-      throw StateError('Realtime socket is not connected.');
+    if (!isConnected) {
+      throw RealtimeTransportException(
+        'emitAck($event) called before the transport was ready — '
+        'callers must await ensureConnected() first.',
+      );
     }
-
-    if (!socket.connected) {
-      await _waitForConnect(socket);
-    }
+    final socket = _socket!;
 
     final completer = Completer<Map<String, dynamic>>();
 
@@ -330,7 +450,17 @@ class RealtimeSocketService {
     );
   }
 
+  /// Tears down the current socket and, if a connection establishment is
+  /// currently in flight, aborts it so any waiters don't hang forever
+  /// awaiting a connection that is being intentionally torn down.
   Future<void> disconnect() async {
+    _connectFlight.abort(
+      RealtimeTransportException('Disconnected while connecting.'),
+    );
+    await _disconnectSocket();
+  }
+
+  Future<void> _disconnectSocket() async {
     final socket = _socket;
     _socket = null;
     if (socket != null) {

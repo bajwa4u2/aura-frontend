@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
@@ -280,7 +281,14 @@ class ThreadCallLifecycleController
 
   Future<void> _startJoin(String sessionId, ThreadCallLifecycleSource source) {
     final existing = _joinFutures[sessionId];
-    if (existing != null) return existing;
+    if (existing != null) {
+      debugPrint(
+        '[join-diag] _startJoin returning EXISTING future for sessionId=$sessionId'
+        ' (stale guard candidate if this never resolves)',
+      );
+      return existing;
+    }
+    debugPrint('[join-diag] _startJoin starting NEW future sessionId=$sessionId source=$source');
 
     late final Future<void> future;
     future = _ref

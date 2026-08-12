@@ -1,8 +1,26 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-14 UTC (URGENT Meetings router regression restored this session; Permanent Call Lifecycle Reconciliation also this session; founder device certification for both still PENDING)
+Last updated: 2026-08-14 UTC (Thread Call Transport Ownership permanent root repair, live-device-verified, this session; Meetings router regression and earlier Call Lifecycle Reconciliation also this session; founder combined certification still PENDING)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-14: Thread Call Transport Ownership — permanent root repair. FROZEN DOCTRINE established.
+
+Founder rejected the earlier join-retry epoch fix as insufficient after reproducing the stuck spinner again, and mandated a full forensic closure before any further symptom-level patching: prove the exact concurrency defect, implement single-flight transport ownership, add regression tests, certify, and return once — not another micro-patch.
+
+**Root cause, proven via live device + backend log correlation**: two independent, desyncable "is something already connecting?" guards (`RealtimeController`'s own `state.connectionStatus` check, separate from `RealtimeSocketService`'s own guard) let multiple concurrent join attempts each independently call socket `connect()` — which always disconnected and recreated the shared socket — each destroying a sibling attempt's in-progress connection. Captured directly: three real attempts producing an empty socket id each time, zero successful server acks, confirmed via Railway logs showing zero `session:join` records for the affected user in that session.
+
+**FROZEN DOCTRINE — applies to any future shared-resource establishment/reconnection logic in this repo, not just realtime sockets:** a resource that must be established exactly once per logical need (a socket connection, a device handle, any stateful external resource) must have exactly ONE code path that decides to (re)establish it, gated by a genuine single-flight primitive (a `Completer`/generic `SingleFlight<T>` that a second caller can *await*), never a boolean or enum-state check that a concurrent caller can race past. See `lib/core/concurrency/single_flight.dart` — the extracted, independently-tested primitive this repair introduced; reuse it rather than hand-rolling another guard.
+
+**Fix**: `RealtimeSocketService.connect()` → `ensureConnected()`, rebuilt on `SingleFlight<void>`. Transport readiness formally requires `.connected` AND non-empty server-assigned `.id` (an invariant from an earlier fix this session, now the hard gate `emitAck()` enforces by throwing rather than silently waiting). Every competing reconnect-decision point removed: `_performJoinWithRetry`'s pre-retry reconnect, `join()`'s pre-check, `_rejoinAfterReconnect`'s pre-check — `_performJoin`'s own `connect()` call is the sole path now, for every entry point (fresh join, resume, reconnect-after-drop).
+
+**Live-verified**: a real call placed from the founder's signed-in browser to a locally-built, adb-installed debug APK on the founder's Pixel, with continuous device + backend log capture. Result: single-attempt join, non-empty socket id immediately, full signaling round trip in ~1.3s, stable 3+ minutes, clean end. See `CURRENT_STATE.md` for the full captured sequence.
+
+**Tests**: `test/single_flight_test.dart` (5), `test/realtime_socket_service_test.dart` (3) — new deterministic coverage for the exact concurrency property, since none existed before and this defect must not go untested again.
+
+Certification: analyzer clean, practical suite 209/209 (up from 201), debug APK + web release builds both succeeded. Backend untouched, re-verified clean (1485/1485, two pre-existing unrelated tsc errors noted out of scope).
+
+**Explicitly deferred, per founder instruction**: `session:participant.left` / Thread-DM reconnect-grace semantics were NOT touched — founder's own evidence review found the captured "Call ended" instance was the caller's own explicit `session:leave` on a healthy, single socket, not a stale-registration artifact. Whether it still reproduces after this transport fix is unconfirmed (not re-observed during verification, but not exhaustively retested either) — do not add Thread/DM reconnect grace preemptively; only if post-repair evidence proves it's still needed.
 
 ## 2026-08-14: Meetings attendee-join router regression — restored at the shared router boundary. FROZEN DOCTRINE established.
 

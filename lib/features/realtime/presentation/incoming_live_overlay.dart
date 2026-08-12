@@ -291,7 +291,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   // ── Actions ───────────────────────────────────────────────────────────────
 
   Future<void> _joinCurrent(Map<String, dynamic> item) async {
-    if (_joining) return;
+    debugPrint('[join-diag] _joinCurrent called, _joining=$_joining item.id=${item['id']}');
+    if (_joining) {
+      debugPrint('[join-diag] _joinCurrent early-return: already _joining (stale guard candidate)');
+      return;
+    }
 
     final data = _mapOf(item['data']);
     final target = _resolver.resolveFromPayload({...item, ...data});
@@ -300,7 +304,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       target.sessionId ?? '',
     ]);
 
-    if (sessionId.isEmpty) return;
+    if (sessionId.isEmpty) {
+      debugPrint('[join-diag] _joinCurrent early-return: empty sessionId');
+      return;
+    }
+    debugPrint('[join-diag] _joinCurrent proceeding sessionId=$sessionId');
 
     _cancelRingTimer();
     // Native notification cancellation now happens centrally in build()'s

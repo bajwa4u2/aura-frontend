@@ -278,9 +278,28 @@ class RealtimeController extends StateNotifier<RealtimeState>
     }
   }
 
+  // 2026-08-14 — PERMANENT TRANSPORT OWNERSHIP REPAIR. This used to guard
+  // itself with `state.connectionStatus == connecting`, a SEPARATE signal
+  // from RealtimeSocketService's own internal connect-guard — the two
+  // could desync (e.g. this state stuck at `connecting` from an abandoned
+  // attempt) and, combined with Future.timeout() not cancelling abandoned
+  // attempts, let multiple concurrent callers each reach past this guard
+  // and independently call the socket service's connect, which always
+  // disconnected/recreated the transport. `RealtimeSocketService
+  // .ensureConnected()` is now the SOLE, single-flight owner of connection
+  // establishment — this method is a thin pass-through with no gating
+  // logic of its own; concurrent callers safely share one establishment
+  // underneath instead of racing.
   Future<void> connect() async {
-    if (state.connectionStatus == RealtimeConnectionStatus.connected ||
-        state.connectionStatus == RealtimeConnectionStatus.connecting) {
+    debugPrint(
+      '[transport-diag] RealtimeController.connect() called,'
+      ' socketServiceIsConnected=${_socketService.isConnected}'
+      ' socketId=${_socketService.socketId}',
+    );
+    if (_socketService.isConnected) {
+      if (state.connectionStatus != RealtimeConnectionStatus.connected) {
+        state = state.copyWith(connectionStatus: RealtimeConnectionStatus.connected);
+      }
       return;
     }
 
@@ -304,7 +323,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
         identity = null;
       }
 
-      await _socketService.connect(accessToken: token, identity: identity);
+      await _socketService.ensureConnected(
+        accessToken: token,
+        identity: identity,
+      );
 
       state = state.copyWith(
         connectionStatus: RealtimeConnectionStatus.connected,
@@ -461,17 +483,30 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
   Future<void> join(String sessionId) async {
     final trimmed = sessionId.trim();
-    if (trimmed.isEmpty || _terminating) return;
+    debugPrint(
+      '[join-diag] join() called sessionId=$trimmed'
+      ' terminating=$_terminating joiningSessionId=$_joiningSessionId'
+      ' joinState=${state.joinState} stateSessionId=${state.sessionId}',
+    );
+    if (trimmed.isEmpty || _terminating) {
+      debugPrint('[join-diag] early-return: empty id or terminating');
+      return;
+    }
 
     final currentSessionId = (state.sessionId ?? state.session?.id ?? '')
         .trim();
-    if (_joiningSessionId == trimmed) return;
+    if (_joiningSessionId == trimmed) {
+      debugPrint('[join-diag] early-return: _joiningSessionId already = $trimmed (stale guard candidate)');
+      return;
+    }
     if (state.joinState == RealtimeJoinState.joined &&
         _isSameManagedSession(trimmed)) {
+      debugPrint('[join-diag] early-return: already joined this session');
       return;
     }
     if (state.joinState == RealtimeJoinState.joining &&
         _isSameManagedSession(trimmed)) {
+      debugPrint('[join-diag] early-return: already joining this session (stale guard candidate)');
       return;
     }
 
@@ -498,29 +533,48 @@ class RealtimeController extends StateNotifier<RealtimeState>
     );
 
     try {
-      // P0: Ensure socket is connected BEFORE any join operations.
-      // join() must never execute HTTP/socket join on a disconnected transport.
-      if (!_socketService.isConnected) {
-        await connect();
-      }
-
-      // Perform join with retry-once on transient socket/network errors.
-      // A 30-second timeout covers the entire join phase.
+      // No standalone connect() call here — _performJoin's own connect()
+      // call (delegating to RealtimeSocketService.ensureConnected(),
+      // single-flight) is the sole transport-establishment owner for the
+      // whole join sequence. A second, independent pre-check here used to
+      // exist; removed as part of the transport-ownership repair — see
+      // RealtimeSocketService for why having more than one caller decide
+      // to (re)connect was the actual root defect.
       await _performJoinWithRetry(trimmed);
     } catch (error) {
       if (_terminating) return;
 
       // Retryable connection errors (socket drop, timeout, network) must NOT
       // put the user into a fatal "failed" state. Keep joinState=joining and
-      // show a soft "Connecting…" message so the UI remains actionable and the
-      // user can tap Join again when connectivity recovers.
+      // show a soft "Connecting…" message so the UI remains actionable.
+      //
+      // 2026-08-14 — proven-stuck-spinner fix. The comment above originally
+      // said "the user can tap Join again when connectivity recovers", but
+      // the accept flow (AuraIncomingLiveLayer._joinCurrent) navigates
+      // straight to the room screen on ANY non-throwing join() outcome —
+      // there is no "Join" button left to tap. The room screen's own mount
+      // logic only calls hydrateSession() (a REST refetch) when not already
+      // joined, never re-attempts the socket join. Confirmed via live device
+      // logs: three real _performJoinWithRetry attempts, all failing fast
+      // with an empty socket id, after which nothing ever tried again —
+      // joinState stayed `joining` and connectionStatus stayed
+      // `reconnecting` forever, an unrecoverable stuck spinner. The
+      // 'socket:connected' handler below already has an automatic-rejoin
+      // mechanism (_rejoinAfterReconnect via _awaitingReconnectRejoin) built
+      // for exactly this situation — it was just never armed for a join
+      // that never succeeded in the first place (only for a join that
+      // succeeded and then lost its socket). Arming it here means that
+      // if/when the socket eventually reconnects on its own — including
+      // Socket.IO's own built-in retry — the existing mechanism completes
+      // the join automatically instead of leaving the user stranded.
       if (_isRetryableConnectionError(error)) {
+        _awaitingReconnectRejoin = true;
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.reconnecting,
           infoMessage: 'Connecting…',
           clearErrorMessage: true,
         );
-        return; // Do not rethrow — allow caller to retry.
+        return; // Do not rethrow — 'socket:connected' will retry.
       }
 
       state = state.copyWith(
@@ -554,9 +608,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
       clearErrorMessage: true,
     );
     try {
-      if (!_socketService.isConnected) {
-        await connect();
-      }
+      // No standalone connect() call here — _performJoin's own connect()
+      // (delegating to RealtimeSocketService.ensureConnected(), single-
+      // flight) is the sole transport-establishment owner. A second call
+      // here would be redundant now, not harmful, but this repair's whole
+      // point is exactly one owner per concern.
       await _performJoinWithRetry(trimmed);
     } catch (error) {
       if (_terminating) return;
@@ -655,20 +711,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // reconnecting in lockstep after a server blip would otherwise
         // produce a thundering herd. The jitter window is symmetric so
         // expected backoff matches the base value.
+        //
+        // 2026-08-14 — REMOVED the pre-retry "if not connected, reconnect"
+        // step that used to live here. It was a SECOND, independent owner
+        // of transport reconnection, racing against _performJoin's own
+        // connect() call at the top of the next attempt — proven (live
+        // device + backend log correlation) to tear down a sibling
+        // attempt's in-progress socket before it could stabilize. The next
+        // attempt's own `await connect()` inside _performJoin now goes
+        // through RealtimeSocketService.ensureConnected(), which is
+        // single-flight — it is the only place transport is established,
+        // so there is nothing left for this loop to do here beyond
+        // backing off before starting that next attempt.
         final base = baseDelays[attempt].inMilliseconds;
         final jittered = (base * (0.5 + rng.nextDouble())).round();
         await Future<void>.delayed(Duration(milliseconds: jittered));
-
-        // If we lost the socket between attempts, re-establish before
-        // the next try so the join doesn't fail-fast on no-transport.
-        if (!_socketService.isConnected && !_terminating) {
-          try {
-            await connect().timeout(const Duration(seconds: 10));
-          } catch (_) {
-            // Connect failure here is fine — _performJoin will surface
-            // a clearer error on its own attempt.
-          }
-        }
       }
     }
 
@@ -737,12 +794,33 @@ class RealtimeController extends StateNotifier<RealtimeState>
       _applyBundle(joinedBundle);
     }
 
+    // Superseded during the REST joinSession call above (which can be
+    // slow)? Stop before touching transport — a newer attempt owns this
+    // session now, and ensureConnected() below is single-flight-shared, so
+    // proceeding here would be wasted work at best, not harmful, but there
+    // is no reason to continue past this point once superseded.
+    if (epoch != _joinEpoch) return;
+
     await connect();
     final meSocketId = _socketService.socketId ?? '';
     debugPrint(
       '[join-seq] 1 socket connected socketId=$meSocketId'
       ' sessionId=$sessionId isMeeting=$isMeetingSession',
     );
+
+    // Transport readiness can only be declared by RealtimeSocketService
+    // itself (isConnected requires connected AND a non-empty server-
+    // assigned id — see that class for the proven race this closes). This
+    // is the last checkpoint before the one event that must never fire
+    // from a superseded attempt: a stale attempt emitting session:join
+    // after a newer attempt has already taken over this session's join
+    // state would create a second, unnecessary server-side registration.
+    if (epoch != _joinEpoch) return;
+    if (!_socketService.isConnected) {
+      throw RealtimeTransportException(
+        'Transport not ready after connect() returned — refusing to emit session:join.',
+      );
+    }
 
     debugPrint('[join-seq] 2 session join emitted sessionId=$sessionId');
     final Map<String, dynamic> joinAck = await _socketService.emitAck(
