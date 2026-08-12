@@ -27,6 +27,31 @@ const bool _kBypassOverlay = false;
 const bool _kBypassPiP = false;
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// 2026-08-14 — Thread Call Lifecycle Convergence, Phase 1/2/5. The founder
+/// mandated invariant: "CONNECTED/JOINED truth must invalidate stale
+/// JOINING and stale join-failure presentation... tied to authoritative
+/// event ordering/session identity." Extracted as a pure, top-level
+/// function — not just inline in build() — specifically so it is
+/// independently unit-testable without mounting the full overlay widget
+/// (which needs a large provider-override harness that doesn't exist yet
+/// in this repo; this is the smallest seam that lets this exact
+/// precedence rule be tested today rather than left uncovered).
+///
+/// Returns true when [joinErrorSessionId] (the session an earlier local
+/// join failure belongs to) should no longer be treated as live, because
+/// authoritative state now says that EXACT session is joined — a later,
+/// genuinely different failure (a different session, or [joinErrorSessionId]
+/// null) is never suppressed by this check.
+bool joinErrorIsStale({
+  required String? joinErrorSessionId,
+  required bool isJoined,
+  required String? liveSessionId,
+}) {
+  if (joinErrorSessionId == null || joinErrorSessionId.isEmpty) return false;
+  if (!isJoined) return false;
+  return liveSessionId == joinErrorSessionId;
+}
+
 class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
   const AuraIncomingLiveLayer({super.key, required this.child});
 
@@ -53,6 +78,17 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   final Set<String> _dismissedSessionIds = <String>{};
   bool _joining = false;
   String? _joinError;
+  // 2026-08-14 — Thread Call Lifecycle Convergence, Phase 1/2/5. _joinError
+  // used to be sticky, uncoordinated local state: nothing external ever
+  // cleared it, so a transient failure on an early attempt could keep
+  // showing Retry/Dismiss indefinitely even after the SAME logical call
+  // went on to connect successfully via a later attempt or an automatic
+  // reconnect. Tracking which session an error belongs to lets build()
+  // apply the founder-mandated invariant precisely: authoritative
+  // JOINED/CONNECTED truth for a session invalidates STALE failure
+  // presentation for that same session — without blindly suppressing a
+  // genuinely different, later failure for a different attempt.
+  String? _joinErrorSessionId;
   Timer? _ringTimer;
   String? _ringTimerNotificationId;
   Timer? _joinErrorTimer;
@@ -265,7 +301,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
           ref.read(notificationsControllerProvider.notifier).markRead(id),
         );
       }
-      setState(() => _joinError = null);
+      setState(() {
+        _joinError = null;
+        _joinErrorSessionId = null;
+      });
     });
   }
 
@@ -332,6 +371,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     setState(() {
       _joining = true;
       _joinError = null;
+      _joinErrorSessionId = null;
     });
 
     final id = _stringOf(item['id']);
@@ -384,6 +424,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
         if (context.mounted) {
           setState(() {
             _joinError = 'This call is no longer available.';
+            _joinErrorSessionId = sessionId;
           });
         }
         // Store so it can be cancelled in dispose(); cancel any prior timer.
@@ -392,7 +433,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
           _joinErrorTimer = null;
           if (context.mounted) {
             _dismissedIds.add(id);
-            setState(() => _joinError = null);
+            setState(() {
+              _joinError = null;
+              _joinErrorSessionId = null;
+            });
           }
         });
       } else {
@@ -401,6 +445,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
         if (context.mounted) {
           setState(() {
             _joinError = 'Could not join the call. Check your connection.';
+            _joinErrorSessionId = sessionId;
           });
         }
       }
@@ -415,7 +460,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   }
 
   Future<void> _retryJoin(Map<String, dynamic> item) async {
-    setState(() => _joinError = null);
+    setState(() {
+        _joinError = null;
+        _joinErrorSessionId = null;
+      });
     await _joinCurrent(item);
   }
 
@@ -431,7 +479,12 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
     // Remove from socket bridge and dismiss overlay immediately.
     ref.read(incomingCallBridgeProvider.notifier).remove(id);
-    if (mounted) setState(() => _joinError = null);
+    if (mounted) {
+      setState(() {
+        _joinError = null;
+        _joinErrorSessionId = null;
+      });
+    }
 
     // Authoritative decline: awaited so the backend reflects the decision.
     if (sessionId.isNotEmpty) {
@@ -456,7 +509,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final sessionId = _resolveSessionId(item);
     if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
     ref.read(incomingCallBridgeProvider.notifier).remove(id);
-    setState(() => _joinError = null);
+    setState(() {
+        _joinError = null;
+        _joinErrorSessionId = null;
+      });
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -600,6 +656,18 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final isVideo = mode == 'video';
     final ringLabel = isVideo ? 'Incoming video call' : 'Incoming audio call';
 
+    // Phase 1/2/5 precedence: a stale local join-failure for THIS exact
+    // session must not render once authoritative state says that session
+    // is actually joined — see joinErrorIsStale's doc comment. A genuinely
+    // different failure (different session, or none) is unaffected.
+    final effectiveJoinError = joinErrorIsStale(
+      joinErrorSessionId: _joinErrorSessionId,
+      isJoined: liveState.isJoined,
+      liveSessionId: liveState.sessionId,
+    )
+        ? null
+        : _joinError;
+
     // While a ringing card is on screen the user is in the "decide whether to
     // accept" phase — the PiP must not render. Otherwise a stale joined state
     // from a previous session would put a small floating widget at the bottom
@@ -622,7 +690,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
               ringLabel: ringLabel,
               isVideo: isVideo,
               joining: _joining,
-              joinError: _joinError,
+              joinError: effectiveJoinError,
               pulseAnim: _pulseAnim,
               onAccept: _joining ? null : () => _joinCurrent(item),
               onDecline: _joining ? null : () => _declineCurrent(item),

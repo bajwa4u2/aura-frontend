@@ -1,20 +1,25 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-14 UTC (Thread Call Transport Ownership permanent root repair landed this session, live-device-verified; Meetings router regression + earlier Call Lifecycle Reconciliation also this session; ONE combined founder checklist below covers all three)
+Last updated: 2026-08-14 UTC (Thread Call Lifecycle Convergence landed this session — natural-expiry caller propagation + stale join-error precedence, after founder certification found the Transport Ownership repair insufficient on 3 of 4 scenarios; ONE combined founder checklist below, now the SECOND certification pass for this chapter)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
-## ONE combined founder certification checklist — Transport Ownership + Meetings regression + Call Lifecycle, all 2026-08-14
+## ONE combined founder certification checklist — second pass, 2026-08-14 (Lifecycle Convergence + everything from the first pass)
 
-Three fixes landed this session. The transport ownership repair was already live-device-verified by direct call trace (see `CURRENT_STATE.md`) — this checklist is a normal-use confirmation pass, not a from-scratch investigation. Do not test items separately — one combined pass covers all:
+The founder's first certification pass on `cd256d3` found 3 of 4 scenarios still failing. Root causes for two of them are now proven and fixed (see `CURRENT_STATE.md`). This is the checklist for the second pass — do not test items separately:
 
-1. **Thread call — normal use**: several ordinary accept cycles in a row (not synthetic stress) — confirm consistently fast, single-attempt connects with no spinner, no Retry/Dismiss on a call that connects.
-2. **Meetings**: a booked or invited Aura member opens their meeting and joins (via the "View meeting" post-booking link, or the meeting record's "Enter room" button) — confirm they reach the room directly, with **no redirect to Institution Sign In** at any point.
-3. **Thread call — caller cancel**: caller cancels before the callee answers — confirm the callee's Android ring notification is cancelled.
-4. **Thread call — natural expiry**: let a call ring to natural expiry (90s) without answering — confirm the Android ring notification clears from the shade, not just the in-app card.
-5. **Call Ended / Retry-Dismiss recurrence check**: watch specifically for whether the "call ended while actually joining" symptom still appears now that transport churn is fixed. Live verification this session did not reproduce it, but wasn't an exhaustive retest — if it still occurs, it needs its own separate trace (do NOT let anyone add Thread/DM reconnect grace as a reflex fix — root cause first, per the frozen doctrine in `DECISIONS.md`).
+1. **Thread call — successful accept**: repeat normal accept cycles — confirm the call connects cleanly with **no** "Call ended" / Retry-Dismiss appearing alongside a working connection. (Root cause was a sticky local error state with no live reproduction re-captured post-fix — this is the item most worth watching closely.)
+2. **Thread call — natural expiry, BOTH sides**: let a call ring to natural expiry (~95s) without answering. Confirm the **receiver's** ring clears (already known-working) AND the **caller's** ringing/connecting screen also reconciles to a terminal state — this is the specific asymmetry that failed last time and is now fixed at the exact line that excluded the caller from the broadcast.
+3. **Thread call — accept spinner**: repeat several accept cycles — confirm none return to an unresolved spinner. If this still happens, it needs its own fresh live trace (not another patch) — the transport ownership repair addressed one proven concurrency defect, but a second, separate spinner recurrence was also reported and not independently root-caused this round.
+4. **Thread call — caller cancel**: still expected to PASS (unchanged, already confirmed healthy) — quick sanity check only.
+5. **Meetings**: a booked or invited Aura member opens their meeting and joins — confirm no redirect to Institution Sign In.
+6. **Android ring notification**: confirm it clears on caller-cancel and on natural expiry, not just in-app state.
 
 Do not begin iOS Firebase/APNs Confirmation, Runtime Lifecycle Phase 2, Selection/Clipboard/Rich Paste, or Legacy Global Runtime Overlay Cleanup until this combined checkpoint is certified.
+
+## Thread Call Lifecycle Convergence — implemented this session, founder retest owed (item 3, accept spinner recurrence, may still need its own trace)
+
+Full detail in `CURRENT_STATE.md`/`DECISIONS.md`. Fixed: (1) natural-expiry caller propagation — `maybeEndIdleSession()` already had the correct logic but its caller-facing broadcast was silently excluded by `broadcastCallTerminal`'s actor-exclusion design; now broadcasts directly. (2) Stale join-error precedence — `_joinError` is no longer sticky; a new pure function `joinErrorIsStale()` invalidates it the moment authoritative JOINED truth exists for that exact session. New tests: 3 backend (caller reconciliation + multi-party non-termination), 5 frontend (`joinErrorIsStale` precedence). **Not independently re-confirmed via a fresh live device cycle this session** — proven by precise code tracing (the natural-expiry root cause is pinned to an exact line) and test coverage, per the founder's explicit instruction not to cycle through more broad live testing mid-repair.
 
 ## Thread Call Transport Ownership — permanent root repair, implemented + live-verified this session
 

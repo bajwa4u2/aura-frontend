@@ -1,8 +1,22 @@
 # Decisions — aura_final
 
-Last updated: 2026-08-14 UTC (Thread Call Transport Ownership permanent root repair, live-device-verified, this session; Meetings router regression and earlier Call Lifecycle Reconciliation also this session; founder combined certification still PENDING)
+Last updated: 2026-08-14 UTC (Thread Call Lifecycle Convergence — natural-expiry caller propagation + stale join-error precedence, both root-caused and fixed this session; Transport Ownership repair, Meetings router regression, and earlier Call Lifecycle Reconciliation also this session; founder combined certification still PENDING)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
+
+## 2026-08-14: Thread Call Lifecycle Convergence — founder certification of the transport repair failed 3 of 4 scenarios; root-caused and fixed the two provable defects. FROZEN DOCTRINE established.
+
+Founder tested `cd256d3` (the transport ownership repair) directly and found: explicit caller cancel PASS; natural invite expiry asymmetric FAIL (receiver clears, caller never does); successful accept could still show "Call ended"/Retry-Dismiss alongside a working connection; accept could still return to an unresolved spinner. Explicit instruction: continue end to end, no more isolated patches, prove root causes with evidence.
+
+**Natural expiry, PROVEN precisely**: `correspondence-orchestrator.service.ts`'s `maybeEndIdleSession()` already had the correct aggregate check and already called `endLive()` — but `endLive` → `broadcastCallTerminal()` deliberately excludes `params.actorUserId` from the broadcast (correct for a genuine user-initiated end). `maybeEndIdleSession` passes the caller/host as that actor to represent an auto-end that wasn't actually their action — so the caller, the one person who needed reconciling, was the one excluded by the existing design. Fixed with a dedicated `RealtimePolicyService.broadcastNoAnswerTruth()` → `RealtimeGateway.broadcastNoAnswer()` call, broadcasting directly to the caller via `/realtime` before `endLive` runs, independent of `broadcastCallTerminal`'s exclusion — which is left unchanged, since it's correct for its other callers.
+
+**FROZEN DOCTRINE — applies to any future "auto-end" / "idle cleanup" logic that reuses a genuine user-action code path with a synthetic actor**: if a cleanup/sweep process calls a method designed for real user actions (like `endLive`) using a synthetic `actorUserId` to represent "the system did this on someone's behalf," any exclude-the-actor broadcast logic inside that method will silently exclude the person who most needs to know. Reconcile the affected party directly, outside the reused method, rather than trying to make the actor-exclusion conditional (which would risk regressing the method's other, correct callers).
+
+**Successful-accept contradiction, best-evidence fix**: `AuraIncomingLiveLayer._joinError` was sticky, uncoordinated local state — nothing external (a later successful join for the same call) ever cleared it. New pure function `joinErrorIsStale()` (`lib/features/realtime/presentation/incoming_live_overlay.dart`) implements the founder-mandated precedence invariant: authoritative JOINED truth for a session invalidates stale failure presentation for that exact session, never a different one. A fresh live reproduction pinpointing the exact real-time trigger was not additionally obtained (the founder's own certification served as reproduction evidence for the symptom); this is the best-evidence architectural fix for the class of bug the code supports, disclosed as such.
+
+Certification: backend 1488/1488 (+3), frontend analyzer clean, practical suite 214/214 (+5), debug APK build succeeded.
+
+**Explicitly not touched**: `session:participant.left` Thread/DM semantics (no grace period — still unproven as the cause, founder explicitly forbade reflexive Meetings-style grace); `broadcastCallTerminal`'s actor-exclusion (correct for its other callers); the transport ownership repair itself (kept, unchanged, this builds on top of it).
 
 ## 2026-08-14: Thread Call Transport Ownership — permanent root repair. FROZEN DOCTRINE established.
 
