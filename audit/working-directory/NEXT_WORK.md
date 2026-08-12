@@ -1,12 +1,12 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CONDITIONALLY APPROVED/READY FOR COMMIT-PUSH in aura-backend, backend-only, zero changes here. Thread Call Lifecycle Convergence code fixes from earlier this session remain landed and pushed; ONE combined founder certification checklist below still applies to those)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CLOSED in aura-backend (committed `214e48e`, pushed), backend-only, zero changes here. Thread Call Lifecycle Convergence code fixes from earlier this session remain landed and pushed; ONE combined founder certification checklist below still applies to those)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
-## Realtime Architecture Correction — Phase 1 READY FOR COMMIT/PUSH in aura-backend (backend-only, zero work in this repo); Phase 2 named next, NOT started, NOT authorized to begin automatically
+## Realtime Architecture Correction — Phase 1 CLOSED in aura-backend (backend-only, zero work in this repo); Phase 2 named next, NOT started, NOT authorized to begin automatically
 
-Phase 1 (Backend Canonical Lifecycle / Participant Truth) is conditionally approved and locally certified in `aura-backend` only — see `../aura-backend/docs/2026-08-14-realtime-architecture-correction-phase1-implementation.md`. Amended Gate 2 (guest disconnect investigation + 107-migration disposable replay) resolved same day; final recommendation there is READY FOR COMMIT/PUSH. No `aura_final` file changed at any point in this chapter, including the amendment; the canonical Dart contracts in `lib/core/realtime_canonical/` remain unchanged from Phase 0. Backend Phase 1 is NOT yet committed/pushed — that's the founder's own action, then Phase 2 (event contract dual-emit, which WILL eventually touch this repo's event-consuming code) can be authorized.
+Phase 1 (Backend Canonical Lifecycle / Participant Truth) is conditionally approved and locally certified in `aura-backend` only — see `../aura-backend/docs/2026-08-14-realtime-architecture-correction-phase1-implementation.md`. Amended Gate 2 (guest disconnect investigation + 107-migration disposable replay) resolved same day; Gate 2 was APPROVED there — committed `214e48e`, pushed to `origin/main`. No `aura_final` file changed at any point in this chapter, including the amendment; the canonical Dart contracts in `lib/core/realtime_canonical/` remain unchanged from Phase 0. Backend Phase 1 is committed and pushed. Phase 2 (event contract dual-emit, which WILL eventually touch this repo's event-consuming code) can be authorized.
 
 ## Realtime Architecture Correction — Phase 0 CLOSED (contracts + tests + JOIN_FAILED/SESSION_FAILED doctrine + governed docs)
 

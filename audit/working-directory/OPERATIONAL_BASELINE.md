@@ -1,10 +1,10 @@
 # Operational Baseline - aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CONDITIONALLY APPROVED/READY FOR COMMIT-PUSH in aura-backend only — see below)
+Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CLOSED in aura-backend (committed `214e48e`, pushed) — see below)
 
 ## Realtime Architecture Correction baseline — Phase 1 conditionally approved in aura-backend, zero change in this repo
 
-- Backend Phase 1 record: `../aura-backend/docs/2026-08-14-realtime-architecture-correction-phase1-implementation.md` — CONDITIONALLY APPROVED, amended Gate 2 items RESOLVED (guest disconnect investigated/not-a-contradiction; 107-migration disposable replay clean), READY FOR COMMIT/PUSH, NOT yet committed/pushed.
+- Backend Phase 1 record: `../aura-backend/docs/2026-08-14-realtime-architecture-correction-phase1-implementation.md` — CLOSED — Gate 2 APPROVED, committed `214e48e`, pushed to `origin/main`.
 - **This repo's `lib/core/realtime_canonical/` is unchanged** — Phase 1 (including its amendment) wired only the backend's own production code to the already-frozen Phase 0 contracts; the contracts themselves (and therefore the Dart mirror) did not change.
 
 ## Realtime Architecture Correction baseline — architecture APPROVED/FROZEN, Phase 0 (canonical contracts + executable test harness) CLOSED
