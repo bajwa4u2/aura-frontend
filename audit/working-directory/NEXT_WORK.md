@@ -1,12 +1,12 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-14 UTC (Native Background/Terminated Notification Certification — Phase A/B/C/D complete, founder-approved repair IMPLEMENTED + certified, not committed/pushed, stopped at Gate 2)
+Last updated: 2026-08-14 UTC (Native Background/Terminated Notification Certification — Phase A/B/C/D repair committed `74d7875` and pushed to `origin/main`; founder device certification PENDING, chapter NOT CLOSED)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
-## Native Background/Terminated Notification Certification — Phase A/B/C/D COMPLETE, repair implemented, awaiting commit/push authorization
+## Native Background/Terminated Notification Certification — Phase A/B/C/D COMPLETE, repair committed/pushed, founder device certification pending
 
-Status: audit + test matrix + evidence reconciliation + founder-approved repair, all complete. Backend record: `../aura-backend/docs/2026-08-14-native-background-terminated-notification-certification.md`. **Not committed, not pushed.** Implemented on this repo's side: `RealtimeState.acceptedByPeer`/`isPeerAcceptedNotYetPresent` + `call:accepted` WS handling (caller-stuck-Connecting fix — the backend-side single point of failure identified in Phase C is now closed by a real caller-facing signal); `AuraIncomingLiveLayer` foreground sound+haptic (`SystemSound`+`HapticFeedback`, reusing the bridge's existing dedup); `RealtimeMediaService.setSpeakerphoneEnabled()`/`RealtimeController.toggleSpeakerphone()`/`_CallControlDock` speaker button (mobile-native only, Meetings untouched). Certification: `flutter analyze` clean, practical suite 190/190 (up from 178), `flutter build web --release` succeeded.
+Status: audit + test matrix + evidence reconciliation + founder-approved repair, all complete. Backend record: `../aura-backend/docs/2026-08-14-native-background-terminated-notification-certification.md`. **Committed `74d7875`, pushed to `origin/main`** — a controlled commit/push for founder device certification, not chapter closeout; founder post-deployment device certification remains PENDING. Implemented on this repo's side: `RealtimeState.acceptedByPeer`/`isPeerAcceptedNotYetPresent` + `call:accepted` WS handling (caller-stuck-Connecting fix — the backend-side single point of failure identified in Phase C is now closed by a real caller-facing signal); `AuraIncomingLiveLayer` foreground sound+haptic (`SystemSound`+`HapticFeedback`, reusing the bridge's existing dedup); `RealtimeMediaService.setSpeakerphoneEnabled()`/`RealtimeController.toggleSpeakerphone()`/`_CallControlDock` speaker button (mobile-native only, Meetings untouched). Certification: `flutter analyze` clean, practical suite 190/190 (up from 178), `flutter build web --release` succeeded.
 
 **Remaining after this chapter:**
 
