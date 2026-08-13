@@ -555,6 +555,12 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       _stringOf(actor['handle']),
       'Someone',
     ]);
+    // Caller identity hydration: the canonical actor payload
+    // (buildCanonicalIncomingCallNotification, aura-backend) already
+    // carries a real avatarUrl end to end — it was resolved but never
+    // rendered here, falling back to a generic initial-letter avatar even
+    // when the caller's real photo was available.
+    final actorAvatarUrl = _stringOf(actor['avatarUrl']);
 
     final target = _resolver.resolveFromPayload({...item, ...data});
     final mode = _firstNonEmpty([
@@ -609,6 +615,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
           child: SafeArea(
             child: _IncomingCallCard(
               actorName: actorName,
+              actorAvatarUrl: actorAvatarUrl,
               title: title,
               ringLabel: ringLabel,
               isVideo: isVideo,
@@ -630,6 +637,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 class _IncomingCallCard extends StatelessWidget {
   const _IncomingCallCard({
     required this.actorName,
+    this.actorAvatarUrl,
     required this.title,
     required this.ringLabel,
     required this.isVideo,
@@ -643,6 +651,7 @@ class _IncomingCallCard extends StatelessWidget {
   });
 
   final String actorName;
+  final String? actorAvatarUrl;
   final String title;
   final String ringLabel;
   final bool isVideo;
@@ -702,7 +711,11 @@ class _IncomingCallCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: AuraAvatar(name: actorName, size: 52),
+                    child: AuraAvatar(
+                      name: actorName,
+                      imageUrl: actorAvatarUrl,
+                      size: 52,
+                    ),
                   );
                 },
               ),
