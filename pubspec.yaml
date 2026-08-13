@@ -72,6 +72,7 @@ dependencies:
 
   flutter_web_plugins:
     sdk: flutter
+  html: ^0.15.6
   http: ^1.6.0
   web: ^1.1.1
 

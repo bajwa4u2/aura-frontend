@@ -9,6 +9,7 @@ import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/link_preview/internal_reference_card.dart';
 import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
@@ -783,24 +784,28 @@ class _InstitutionAnnouncementComposerState
                         ),
                         const Divider(color: AuraSurface.divider),
                         const SizedBox(height: AuraSpace.s8),
-                        // AXR-1 — governed @/# autocomplete in announcements.
-                        GovernedTagAutocomplete(
+                        // Item 15 — Rich Paste, wraps the AXR-1 governed
+                        // @/# autocomplete in announcements.
+                        RichPasteField(
                           controller: _bodyController,
-                          focusNode: _bodyFocus,
-                          onTagSelected: _rememberSelectedTag,
-                          child: TextFormField(
+                          child: GovernedTagAutocomplete(
                             controller: _bodyController,
                             focusNode: _bodyFocus,
-                            style: AuraText.body,
-                            maxLines: 12,
-                            maxLength: ContentLengthPolicy.announcementBody,
-                            decoration: const InputDecoration(
-                              labelText: 'Body (Markdown)',
-                              hintText: 'Full announcement body…',
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              alignLabelWithHint: true,
+                            onTagSelected: _rememberSelectedTag,
+                            child: TextFormField(
+                              controller: _bodyController,
+                              focusNode: _bodyFocus,
+                              style: AuraText.body,
+                              maxLines: 12,
+                              maxLength: ContentLengthPolicy.announcementBody,
+                              decoration: const InputDecoration(
+                                labelText: 'Body (Markdown)',
+                                hintText: 'Full announcement body…',
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                alignLabelWithHint: true,
+                              ),
                             ),
                           ),
                         ),

@@ -16,6 +16,7 @@ import '../../../../core/link_preview/internal_reference_card.dart';
 import '../../../../core/link_preview/link_preview.dart';
 import '../../../../core/link_preview/link_preview_card.dart';
 import '../../../../core/link_preview/link_preview_service.dart';
+import '../../../../core/rich_content/rich_paste_field.dart';
 import '../../../../core/tagging/tag_entities.dart';
 import '../../../../core/tagging/tag_text_hydration.dart';
 import '../../../../core/tagging/governed_tag_field.dart';
@@ -1149,8 +1150,11 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                     ],
                   ),
                   const SizedBox(height: AuraSpace.s10),
-                  // AXR-1 — governed @/# autocomplete in messages.
-                  GovernedTagAutocomplete(
+                  // Item 15 — Rich Paste, wraps the AXR-1 governed
+                  // @/# autocomplete in messages.
+                  RichPasteField(
+                    controller: _controller,
+                    child: GovernedTagAutocomplete(
                     controller: _controller,
                     focusNode: _composerFocus,
                     onTagSelected: _rememberSelectedTag,
@@ -1202,6 +1206,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                           }
                         });
                       },
+                    ),
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s10),
@@ -2068,17 +2073,20 @@ class _ThreadEditMessageDialogState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            GovernedTagAutocomplete(
+            RichPasteField(
               controller: _controller,
-              focusNode: _focusNode,
-              onTagSelected: _rememberSelectedTag,
-              child: TextField(
+              child: GovernedTagAutocomplete(
                 controller: _controller,
                 focusNode: _focusNode,
-                maxLength: ContentLengthPolicy.message,
-                minLines: 3,
-                maxLines: 6,
-                decoration: const InputDecoration(labelText: 'Message'),
+                onTagSelected: _rememberSelectedTag,
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  maxLength: ContentLengthPolicy.message,
+                  minLines: 3,
+                  maxLines: 6,
+                  decoration: const InputDecoration(labelText: 'Message'),
+                ),
               ),
             ),
             if (_errorText != null) ...[

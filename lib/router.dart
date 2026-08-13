@@ -1760,8 +1760,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/spaces/:spaceId',
-            builder: (context, state) =>
-                SpaceScreen(spaceId: state.pathParameters['spaceId'] ?? ''),
+            builder: (context, state) => SpaceScreen(
+              spaceId: state.pathParameters['spaceId'] ?? '',
+              institutionId: state.pathParameters['institutionId'],
+            ),
           ),
           GoRoute(
             path:

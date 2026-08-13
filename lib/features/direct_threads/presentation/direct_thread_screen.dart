@@ -14,6 +14,7 @@ import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
+import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/presence_repository.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -848,9 +849,12 @@ class _Composer extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                // AXR-1 — governed @/# autocomplete, same authority every
-                // other mention-bearing composer already uses.
-                child: GovernedTagAutocomplete(
+                // Item 15 — Rich Paste, wraps the AXR-1 governed @/#
+                // autocomplete, same authority every other mention-bearing
+                // composer already uses.
+                child: RichPasteField(
+                  controller: controller,
+                  child: GovernedTagAutocomplete(
                   controller: controller,
                   focusNode: focusNode,
                   onTagSelected: onTagSelected,
@@ -889,6 +893,7 @@ class _Composer extends StatelessWidget {
                         vertical: AuraSpace.s10,
                       ),
                     ),
+                  ),
                   ),
                 ),
               ),

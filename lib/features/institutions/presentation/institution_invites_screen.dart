@@ -392,6 +392,11 @@ class _InstitutionInvitesScreenState
     final status = _inviteStatus(invite);
     final isCopied = _copiedCode == code;
     final isRevoking = _revoking == inviteId;
+    // Invite creation and email delivery are different truths — a valid,
+    // usable invite can still have a failed send. Surface that honestly
+    // rather than implying the recipient was notified when they weren't.
+    final deliveryStatus = invite['emailDeliveryStatus']?.toString();
+    final deliveryFailed = deliveryStatus == 'FAILED';
 
     return Container(
       margin: const EdgeInsets.only(bottom: AuraSpace.s8),
@@ -520,6 +525,34 @@ class _InstitutionInvitesScreenState
               ],
             ],
           ),
+          if (deliveryFailed && email.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s10,
+                vertical: AuraSpace.s8,
+              ),
+              decoration: BoxDecoration(
+                color: AuraSurface.coRose.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AuraRadius.md),
+                border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.28)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.mail_lock_outlined, size: 14, color: AuraSurface.coRose),
+                  const SizedBox(width: AuraSpace.s8),
+                  Expanded(
+                    child: Text(
+                      'Invite email could not be delivered. The code above still works — '
+                      'share it directly.',
+                      style: AuraText.micro.copyWith(color: AuraSurface.coRose),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

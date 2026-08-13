@@ -19,6 +19,7 @@ import '../../../core/compliance/objectionable_content.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
 import '../../../core/link_preview/internal_reference_card.dart';
+import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
@@ -2808,27 +2809,34 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         horizontal: AuraSpace.s14,
         vertical: AuraSpace.s12,
       ),
-      // AXR-1 — governed @member/@institution/#topic autocomplete.
-      child: GovernedTagAutocomplete(
+      // Item 15 — Rich Paste, wraps GovernedTagAutocomplete (which wraps
+      // the TextField) so pasted rich clipboard content converts into
+      // Aura's canonical Markdown before the tag-autocomplete layer ever
+      // sees the resulting text.
+      child: RichPasteField(
         controller: _textController,
-        focusNode: _textFocus,
-        onTagSelected: _rememberSelectedTag,
-        child: TextField(
+        // AXR-1 — governed @member/@institution/#topic autocomplete.
+        child: GovernedTagAutocomplete(
           controller: _textController,
           focusNode: _textFocus,
-          maxLines: null,
-          minLines: 10,
-          textCapitalization: TextCapitalization.sentences,
-          keyboardType: TextInputType.multiline,
-          textInputAction: TextInputAction.newline,
-          style: AuraText.body.copyWith(height: 1.55),
-          textDirection: _editorDirection(),
-          textAlign: _editorTextAlign(),
-          decoration: InputDecoration(
-            hintText: _composerHint(),
-            hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
-            border: InputBorder.none,
-            errorText: _showTextError ? 'Text is required' : null,
+          onTagSelected: _rememberSelectedTag,
+          child: TextField(
+            controller: _textController,
+            focusNode: _textFocus,
+            maxLines: null,
+            minLines: 10,
+            textCapitalization: TextCapitalization.sentences,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            style: AuraText.body.copyWith(height: 1.55),
+            textDirection: _editorDirection(),
+            textAlign: _editorTextAlign(),
+            decoration: InputDecoration(
+              hintText: _composerHint(),
+              hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
+              border: InputBorder.none,
+              errorText: _showTextError ? 'Text is required' : null,
+            ),
           ),
         ),
       ),

@@ -24,6 +24,7 @@ import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -1186,20 +1187,24 @@ class _InstitutionPostComposerScreenState
                       _bodyCtrl.text.length,
                       InstitutionPost.maxBodyChars,
                     ),
-                    // AXR-1 — governed @/# autocomplete in institution posts.
-                    child: GovernedTagAutocomplete(
+                    // Item 15 — Rich Paste, wraps the AXR-1 governed
+                    // @/# autocomplete.
+                    child: RichPasteField(
                       controller: _bodyCtrl,
-                      focusNode: _bodyFocus,
-                      onTagSelected: _rememberSelectedTag,
-                      child: TextField(
+                      child: GovernedTagAutocomplete(
                         controller: _bodyCtrl,
                         focusNode: _bodyFocus,
-                        maxLength: InstitutionPost.maxBodyChars,
-                        maxLines: 14,
-                        minLines: 8,
-                        decoration: _decoration('Write your post…'),
-                        style: AuraText.body,
-                        buildCounter: _zeroCounter,
+                        onTagSelected: _rememberSelectedTag,
+                        child: TextField(
+                          controller: _bodyCtrl,
+                          focusNode: _bodyFocus,
+                          maxLength: InstitutionPost.maxBodyChars,
+                          maxLines: 14,
+                          minLines: 8,
+                          decoration: _decoration('Write your post…'),
+                          style: AuraText.body,
+                          buildCounter: _zeroCounter,
+                        ),
                       ),
                     ),
                   ),

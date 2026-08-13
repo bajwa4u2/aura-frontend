@@ -8,6 +8,7 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../application/realtime_providers.dart';
+import '../../data/orphaned_session_dismissal_cache.dart';
 import '../../domain/orphaned_session.dart';
 import '../../domain/realtime_enums.dart';
 import '../../domain/realtime_models.dart';
@@ -23,6 +24,11 @@ import '../../domain/realtime_models.dart';
 /// than a missed reconnect. Routes through the same `/realtime/:id?action=join`
 /// entry point every other surface already uses — no new join/reconnect
 /// mechanics, no surface-specific policy.
+///
+/// Dismissal is persisted per session id via `OrphanedSessionDismissalCache`
+/// (client-local only — never mutates canonical session truth) so a
+/// still-genuinely-active session that the user already dismissed does not
+/// re-banner on every reload/relaunch; see that class for the full trace.
 class OrphanedSessionBanner extends ConsumerStatefulWidget {
   const OrphanedSessionBanner({super.key, required this.child});
 
@@ -36,6 +42,18 @@ class OrphanedSessionBanner extends ConsumerStatefulWidget {
 class _OrphanedSessionBannerState
     extends ConsumerState<OrphanedSessionBanner> {
   final Set<String> _dismissed = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    // Dismissal must survive a reload/relaunch, not just the widget's own
+    // lifetime — see OrphanedSessionDismissalCache for why.
+    OrphanedSessionDismissalCache.read().then((ids) {
+      if (mounted && ids.isNotEmpty) {
+        setState(() => _dismissed.addAll(ids));
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,8 +97,13 @@ class _OrphanedSessionBannerState
                   setState(() => _dismissed.add(id));
                   context.push('/realtime/$id?action=join');
                 },
-                onDismiss: () =>
-                    setState(() => _dismissed.add(orphaned.id)),
+                onDismiss: () {
+                  setState(() => _dismissed.add(orphaned.id));
+                  OrphanedSessionDismissalCache.markDismissed(
+                    orphaned.id,
+                    stillActiveIds: mySessions.map((s) => s.id).toSet(),
+                  );
+                },
               ),
             ),
           ),

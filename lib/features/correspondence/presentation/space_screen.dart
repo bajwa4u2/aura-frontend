@@ -19,12 +19,27 @@ import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
 import '../data/correspondence_live_service.dart';
 import '../../realtime/application/realtime_providers.dart';
+import '../../institutions/data/institutions_repository.dart';
 
 final _spaceDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, spaceId) async {
       final repo = ref.watch(spacesRepositoryProvider);
       return repo.getSpace(spaceId);
     });
+
+/// Cross-System Institutional Identity Coherence -- the institution-aware
+/// read. `SpaceScreen` previously called `_spaceDetailProvider` (the
+/// PERSONAL correspondence endpoint) unconditionally, even for institution
+/// spaces -- so the institution-aware backend endpoint (which resolves
+/// real institution identity) was simply never reached. This provider is
+/// used instead whenever the route carried an `institutionId`.
+final _institutionSpaceDetailProvider =
+    FutureProvider.family<Map<String, dynamic>, ({String institutionId, String spaceId})>(
+  (ref, args) async {
+    final repo = ref.watch(institutionsRepositoryProvider);
+    return repo.getInstitutionSpace(args.institutionId, args.spaceId);
+  },
+);
 
 final _threadsProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>((
@@ -65,9 +80,15 @@ final _invitesProvider =
     });
 
 class SpaceScreen extends ConsumerStatefulWidget {
-  const SpaceScreen({super.key, required this.spaceId});
+  const SpaceScreen({super.key, required this.spaceId, this.institutionId});
 
   final String spaceId;
+
+  /// Present only when this Space is owned by an institution (routed via
+  /// `/institution/:institutionId/spaces/:spaceId`) -- absent for personal
+  /// correspondence Spaces (`/me/correspondence/:spaceId`). Governs which
+  /// backend authority/endpoint this screen reads through.
+  final String? institutionId;
 
   @override
   ConsumerState<SpaceScreen> createState() => _SpaceScreenState();
@@ -94,7 +115,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
       if (last != null && DateTime.now().difference(last) < const Duration(seconds: 45)) {
         return;
       }
-      ref.invalidate(_spaceDetailProvider(widget.spaceId));
+      _invalidateSpaceDetail();
       ref.invalidate(_threadsProvider(widget.spaceId));
       ref.invalidate(_invitesProvider(widget.spaceId));
     });
@@ -108,7 +129,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
             event.name.startsWith('invite:') ||
             event.name.startsWith('thread:')) {
           _lastSocketEventAt = DateTime.now();
-          ref.invalidate(_spaceDetailProvider(widget.spaceId));
+          _invalidateSpaceDetail();
           ref.invalidate(_threadsProvider(widget.spaceId));
           ref.invalidate(_invitesProvider(widget.spaceId));
         }
@@ -149,11 +170,40 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
     super.dispose();
   }
 
+  void _invalidateSpaceDetail() {
+    final institutionId = widget.institutionId;
+    if (institutionId != null) {
+      ref.invalidate(_institutionSpaceDetailProvider((
+        institutionId: institutionId,
+        spaceId: widget.spaceId,
+      )));
+    } else {
+      _invalidateSpaceDetail();
+    }
+  }
+
+  Future<Map<String, dynamic>> _refreshSpaceDetail() {
+    final institutionId = widget.institutionId;
+    if (institutionId != null) {
+      return ref.read(_institutionSpaceDetailProvider((
+        institutionId: institutionId,
+        spaceId: widget.spaceId,
+      )).future);
+    }
+    return ref.read(_spaceDetailProvider(widget.spaceId).future);
+  }
+
   @override
   Widget build(BuildContext context) {
     final spaceId = widget.spaceId;
+    final institutionId = widget.institutionId;
     final ref = this.ref;
-    final spaceAsync = ref.watch(_spaceDetailProvider(spaceId));
+    final spaceAsync = institutionId != null
+        ? ref.watch(_institutionSpaceDetailProvider((
+            institutionId: institutionId,
+            spaceId: spaceId,
+          )))
+        : ref.watch(_spaceDetailProvider(spaceId));
     final threadsAsync = ref.watch(_threadsProvider(spaceId));
     final invitesAsync = ref.watch(_invitesProvider(spaceId));
 
@@ -194,11 +244,11 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
         title: 'Space',
         body: RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(_spaceDetailProvider(widget.spaceId));
+            _invalidateSpaceDetail();
             ref.invalidate(_threadsProvider(widget.spaceId));
             ref.invalidate(_invitesProvider(spaceId));
             await Future.wait([
-              ref.read(_spaceDetailProvider(spaceId).future),
+              _refreshSpaceDetail(),
               ref.read(_threadsProvider(spaceId).future),
               ref.read(_invitesProvider(spaceId).future),
             ]);
@@ -218,13 +268,19 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
                     title: 'Could not load space',
                     body: '$error',
                     onRetry: () =>
-                        ref.invalidate(_spaceDetailProvider(spaceId)),
+                        _invalidateSpaceDetail(),
                   ),
                 ),
                 data: (space) => _SpaceHeaderCard(
                   space: space,
                   onCreateThread: () => _showCreateThreadDialog(context, ref),
                   onInviteMember: () => _openInviteScreen(context),
+                  onAddMember: institutionId != null
+                      ? () => _showAddInstitutionMemberDialog(
+                            context,
+                            institutionId,
+                          )
+                      : null,
                   onRename: () => _renameSpace(context, ref, space),
                   onArchive: () => _archiveSpace(context, ref),
                 ),
@@ -296,7 +352,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
 
     if (created == true) {
       ref.invalidate(_threadsProvider(widget.spaceId));
-      ref.invalidate(_spaceDetailProvider(widget.spaceId));
+      _invalidateSpaceDetail();
     }
   }
 
@@ -341,7 +397,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
             widget.spaceId,
             name: newName,
           );
-      ref.invalidate(_spaceDetailProvider(widget.spaceId));
+      _invalidateSpaceDetail();
     } catch (e) {
       if (!mounted) return;
       // ignore: use_build_context_synchronously
@@ -398,9 +454,198 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
       '&returnTo=${Uri.encodeComponent('/me/correspondence/${widget.spaceId}')}',
     );
     if (!mounted) return;
-    ref.invalidate(_spaceDetailProvider(widget.spaceId));
+    _invalidateSpaceDetail();
     ref.invalidate(_threadsProvider(widget.spaceId));
     ref.invalidate(_invitesProvider(widget.spaceId));
+  }
+
+  /// Institution Space Membership Doctrine -- "Add Member": lets an
+  /// authorized admin pick an ELIGIBLE EXISTING institution member and
+  /// grant immediate Space membership, through
+  /// `InstitutionsRepository.addInstitutionSpaceMember` (the governed
+  /// direct-add authority) -- never a frontend shortcut that manipulates
+  /// membership state directly, and never the Invite Person lifecycle.
+  Future<void> _showAddInstitutionMemberDialog(
+    BuildContext context,
+    String institutionId,
+  ) async {
+    final existingMemberIds = <String>{};
+    final spaceData =
+        ref.read(_institutionSpaceDetailProvider((
+          institutionId: institutionId,
+          spaceId: widget.spaceId,
+        ))).valueOrNull;
+    final members = spaceData?['members'];
+    if (members is List) {
+      for (final m in members) {
+        if (m is Map) {
+          final uid = _pickString(Map<String, dynamic>.from(m), const ['userId']);
+          if (uid.isNotEmpty) existingMemberIds.add(uid);
+        }
+      }
+    }
+
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (_) => _AddInstitutionMemberDialog(
+        institutionId: institutionId,
+        spaceId: widget.spaceId,
+        excludeUserIds: existingMemberIds,
+      ),
+    );
+
+    if (added == true && mounted) {
+      _invalidateSpaceDetail();
+    }
+  }
+}
+
+class _AddInstitutionMemberDialog extends ConsumerStatefulWidget {
+  const _AddInstitutionMemberDialog({
+    required this.institutionId,
+    required this.spaceId,
+    required this.excludeUserIds,
+  });
+
+  final String institutionId;
+  final String spaceId;
+  final Set<String> excludeUserIds;
+
+  @override
+  ConsumerState<_AddInstitutionMemberDialog> createState() =>
+      _AddInstitutionMemberDialogState();
+}
+
+class _AddInstitutionMemberDialogState
+    extends ConsumerState<_AddInstitutionMemberDialog> {
+  List<Map<String, dynamic>>? _candidates;
+  String? _loadError;
+  String? _addingUserId;
+  String? _addError;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final repo = ref.read(institutionsRepositoryProvider);
+      final result = await repo.listMembers(widget.institutionId);
+      final rows = result['members'];
+      final members = rows is List
+          ? rows
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .where((m) {
+                final uid = _pickString(m, const ['userId', 'id']);
+                return uid.isNotEmpty && !widget.excludeUserIds.contains(uid);
+              })
+              .toList()
+          : <Map<String, dynamic>>[];
+      if (!mounted) return;
+      setState(() => _candidates = members);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadError = 'Could not load institution members: $e');
+    }
+  }
+
+  Future<void> _add(String userId) async {
+    setState(() {
+      _addingUserId = userId;
+      _addError = null;
+    });
+    try {
+      await ref
+          .read(institutionsRepositoryProvider)
+          .addInstitutionSpaceMember(widget.institutionId, widget.spaceId, userId);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _addingUserId = null;
+        _addError = 'Could not add member: $e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add member'),
+      content: SizedBox(
+        width: 420,
+        height: 360,
+        child: _buildBody(),
+      ),
+      actions: [
+        AuraGhostButton(
+          label: 'Close',
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loadError != null) {
+      return _ErrorBlock(title: 'Could not load members', body: _loadError!, onRetry: _load);
+    }
+    final candidates = _candidates;
+    if (candidates == null) {
+      return const _LoadingBlock(label: 'Loading institution members...');
+    }
+    if (candidates.isEmpty) {
+      return const Center(
+        child: Text(
+          'Every eligible institution member is already in this space.',
+          textAlign: TextAlign.center,
+          style: AuraText.body,
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_addError != null) ...[
+          Text(_addError!, style: AuraText.small.copyWith(color: AuraSurface.coRose)),
+          const SizedBox(height: AuraSpace.s8),
+        ],
+        Expanded(
+          child: ListView.separated(
+            itemCount: candidates.length,
+            separatorBuilder: (_, __) => const Divider(height: 1, color: AuraSurface.divider),
+            itemBuilder: (_, i) {
+              final m = candidates[i];
+              final userMap = m['user'] is Map
+                  ? Map<String, dynamic>.from(m['user'] as Map)
+                  : m;
+              final userId = _pickString(m, const ['userId', 'id']);
+              final name = _pickString(userMap, const ['displayName', 'name']);
+              final handle = _pickString(userMap, const ['handle']);
+              final avatarUrl = _pickString(userMap, const ['avatarUrl', 'imageUrl']);
+              final busy = _addingUserId == userId;
+              return ListTile(
+                leading: _IdentityAvatar(label: name.isEmpty ? handle : name, imageUrl: avatarUrl),
+                title: Text(name.isEmpty ? (handle.isEmpty ? userId : '@$handle') : name),
+                subtitle: handle.isNotEmpty && name.isNotEmpty ? Text('@$handle') : null,
+                trailing: busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.add_circle_outline, size: 20),
+                onTap: (_addingUserId != null) ? null : () => _add(userId),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -717,6 +962,7 @@ class _SpaceHeaderCard extends StatelessWidget {
     required this.space,
     required this.onCreateThread,
     required this.onInviteMember,
+    this.onAddMember,
     this.onRename,
     this.onArchive,
   });
@@ -724,6 +970,12 @@ class _SpaceHeaderCard extends StatelessWidget {
   final Map<String, dynamic> space;
   final VoidCallback onCreateThread;
   final VoidCallback onInviteMember;
+
+  /// Institution Space Membership Doctrine -- present only for institution
+  /// spaces (a real institution identity was resolved). Direct membership
+  /// grant for an eligible existing institution member; distinct from
+  /// [onInviteMember]'s governed invitation lifecycle.
+  final VoidCallback? onAddMember;
   final VoidCallback? onRename;
   final VoidCallback? onArchive;
 
@@ -734,11 +986,40 @@ class _SpaceHeaderCard extends StatelessWidget {
     final visibility = _pickString(space, const ['visibility', 'type']);
     final memberCount = _pickInt(space, const ['memberCount', 'membersCount']);
     final threadCount = _pickInt(space, const ['threadCount', 'threadsCount']);
+    // Cross-System Institutional Identity Coherence -- the owning
+    // institution's canonical identity, when this is an institution space.
+    final institution = space['institution'];
+    final institutionName = institution is Map
+        ? _pickString(Map<String, dynamic>.from(institution), const ['name'])
+        : '';
+    final institutionLogoUrl = institution is Map
+        ? _pickString(Map<String, dynamic>.from(institution), const ['logoUrl'])
+        : '';
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (institutionName.isNotEmpty) ...[
+            Row(
+              children: [
+                _IdentityAvatar(
+                  label: institutionName,
+                  imageUrl: institutionLogoUrl,
+                  radius: 12,
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  institutionName,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AuraSpace.s8),
+          ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -810,10 +1091,16 @@ class _SpaceHeaderCard extends StatelessWidget {
                 onPressed: onCreateThread,
                 icon: Icons.add_rounded,
               ),
+              if (onAddMember != null)
+                AuraSecondaryButton(
+                  label: 'Add member',
+                  onPressed: onAddMember,
+                  icon: Icons.person_add_alt_outlined,
+                ),
               AuraSecondaryButton(
-                label: 'Add member',
+                label: onAddMember != null ? 'Invite' : 'Add member',
                 onPressed: onInviteMember,
-                icon: Icons.person_add_alt_outlined,
+                icon: Icons.mail_outline_rounded,
               ),
             ],
           ),

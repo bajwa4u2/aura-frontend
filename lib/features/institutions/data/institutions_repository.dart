@@ -681,6 +681,45 @@ class InstitutionsRepository {
     return <Map<String, dynamic>>[];
   }
 
+  /// Cross-System Institutional Identity Coherence -- the single-space
+  /// read, distinct from `SpacesRepository.getSpace` (the PERSONAL
+  /// correspondence endpoint, `/spaces/:id`). `SpaceScreen` previously
+  /// called the personal endpoint unconditionally even for institution
+  /// spaces, which is why institution identity never resolved -- the
+  /// institution-aware endpoint below was never actually being called.
+  Future<Map<String, dynamic>> getInstitutionSpace(
+    String institutionId,
+    String spaceId,
+  ) async {
+    final res = await _dio.get('/institutions/$institutionId/spaces/$spaceId');
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final space = root['space'];
+      if (space is Map) return Map<String, dynamic>.from(space);
+    }
+    throw Exception('Unexpected response loading space.');
+  }
+
+  /// Institution Space Membership Doctrine -- "Add Member": direct
+  /// membership grant for an eligible existing institution member. Never
+  /// routes through the Invite Person lifecycle.
+  Future<Map<String, dynamic>> addInstitutionSpaceMember(
+    String institutionId,
+    String spaceId,
+    String userId,
+  ) async {
+    final res = await _dio.post(
+      '/institutions/$institutionId/spaces/$spaceId/members',
+      data: <String, dynamic>{'userId': userId},
+    );
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final space = root['space'];
+      if (space is Map) return Map<String, dynamic>.from(space);
+    }
+    throw Exception('Unexpected response adding member.');
+  }
+
   Future<Map<String, dynamic>> createInstitutionSpace(
     String institutionId, {
     required String title,

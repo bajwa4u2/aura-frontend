@@ -4,6 +4,15 @@ Last updated: 2026-08-16 UTC (**Item 15 (Rich-Text Composition) DELIVERED same d
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
+## Founder Acceptance Register — remaining domains OPEN / NOT YET EVALUATED, 2026-08-16
+
+Canonical register: `../aura-backend/capability/FOUNDER_ACCEPTANCE_REGISTER.md`. This repo's owed pieces:
+
+- **Domain 1 — Rich Paste**: live-browser verification owed whenever the founder can perform it personally (`RichPasteField` wired into all 5 composers, ARCHITECTURE/IMPLEMENTATION PASS only). Do not manufacture further widget-harness proof — the existing harness hang was a disclosed, not-yet-diagnosed limitation, not a reason to keep retrying.
+- **Domain 5 — Runtime Lifecycle**: `OrphanedSessionDismissalCache` delivered; PRODUCT-BEHAVIOR awaits founder live verification of the reload/restart/session-ends matrix.
+- **Domains 9-12**: OPEN / NOT YET EVALUATED, no work started in this repo.
+- Do NOT begin Item 17.
+
 ## Realtime Architecture Correction — Phase 1 CLOSED in aura-backend (backend-only, zero work in this repo); Phase 2 named next, NOT started, NOT authorized to begin automatically
 
 Phase 1 (Backend Canonical Lifecycle / Participant Truth) is conditionally approved and locally certified in `aura-backend` only — see `../aura-backend/docs/2026-08-14-realtime-architecture-correction-phase1-implementation.md`. Amended Gate 2 (guest disconnect investigation + 107-migration disposable replay) resolved same day; Gate 2 was APPROVED there — committed `214e48e`, pushed to `origin/main`. No `aura_final` file changed at any point in this chapter, including the amendment; the canonical Dart contracts in `lib/core/realtime_canonical/` remain unchanged from Phase 0. Backend Phase 1 is committed and pushed. Phase 2 (event contract dual-emit, which WILL eventually touch this repo's event-consuming code) can be authorized.
