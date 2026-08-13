@@ -20,6 +20,7 @@ import '../features/realtime/application/realtime_providers.dart';
 import '../features/realtime/application/thread_call_lifecycle_controller.dart';
 import '../features/realtime/data/realtime_reconciliation_controller.dart';
 import '../features/realtime/presentation/thread_call_lifecycle_host.dart';
+import '../features/realtime/presentation/widgets/orphaned_session_banner.dart';
 import '../features/updates/incoming_call_bridge.dart';
 import '../router.dart';
 
@@ -318,7 +319,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           // forcing a rebuild of the rest of the tree.
           builder: (context, child) {
             return ThreadCallLifecycleHost(
-              child: UpdateGate(child: child ?? const SizedBox.shrink()),
+              child: OrphanedSessionBanner(
+                child: UpdateGate(child: child ?? const SizedBox.shrink()),
+              ),
             );
           },
         ),

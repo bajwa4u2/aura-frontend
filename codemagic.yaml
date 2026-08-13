@@ -46,10 +46,16 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        # FIREBASE_IOS_CONFIG_BASE64 lives in this UI-defined group. A group
+        # must be listed here to actually be injected into the build — Codemagic
+        # does not inject grouped variables automatically just because they
+        # exist in the UI.
+        - firebase_ios
       vars:
         BUNDLE_ID: "org.auraplatform.app"
         # FIREBASE_IOS_CONFIG_BASE64 is added as a SECURE variable in the
-        # Codemagic UI — never define its value here.
+        # Codemagic UI (group: firebase_ios) — never define its value here.
     cache:
       cache_paths:
         - $HOME/.pub-cache
