@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/client_identity/client_identity.dart';
 import '../../../core/errors/app_error_mapper.dart';
+import '../../meetings/application/meeting_realtime_semantics.dart';
 import '../data/realtime_event_parser.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
@@ -776,7 +777,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       );
     }
 
-    if (isMeetingSession) {
+    if (MeetingRealtimeSemantics.tolerateRestJoinFailure(session.surfaceType)) {
       // Meeting GUESTS are not DB RealtimeSessionParticipants, so the member
       // REST join (POST /realtime/sessions/:id/join, strict @CurrentUserId)
       // 401s for them. For meetings the socket `session:join` below is
@@ -1845,8 +1846,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // The room-empties decision runs only AFTER the grace expired — a
     // transient drop never ends the meeting for whoever stayed.
     if (updatedParticipants.length <= 1 && state.isJoined) {
-      final isMeeting =
-          state.session?.surfaceType == RealtimeSurfaceType.meeting;
+      final isMeeting = MeetingRealtimeSemantics.waitsForParticipantReturnWhenAlone(
+        state.session?.surfaceType,
+      );
       if (isMeeting) {
         state = state.copyWith(
           infoMessage: 'Waiting for the other participant to return…',
@@ -2171,12 +2173,13 @@ class RealtimeController extends StateNotifier<RealtimeState>
         final leavingPeerKey = _transportPeerKeyFromPayload(event.payload);
         final leftReason =
             (event.payload['reason'] ?? '').toString().trim().toLowerCase();
-        final isMeeting =
-            state.session?.surfaceType == RealtimeSurfaceType.meeting;
-        final transientDrop =
-            leftReason == 'disconnect' || leftReason == 'heartbeat_timeout';
+        final appliesReconnectGrace =
+            MeetingRealtimeSemantics.appliesReconnectGraceOnParticipantLeft(
+          surfaceType: state.session?.surfaceType,
+          leftReason: leftReason,
+        );
 
-        if (isMeeting && transientDrop && leavingUserId.isNotEmpty) {
+        if (appliesReconnectGrace && leavingUserId.isNotEmpty) {
           // RECONNECT GRACE: an involuntary drop does not empty the seat. The
           // participant stays on the roster ("Reconnecting…"), their peer
           // connection stays alive — media often continues flowing while only
@@ -2212,7 +2215,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
         }
 
         if (updatedParticipants.length <= 1 && state.isJoined) {
-          if (isMeeting) {
+          if (MeetingRealtimeSemantics.waitsForParticipantReturnWhenAlone(
+            state.session?.surfaceType,
+          )) {
             state = state.copyWith(
               infoMessage: 'Waiting for the other participant…',
               clearErrorMessage: true,
@@ -2484,8 +2489,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
             .toString()
             .trim()
             .toUpperCase();
-        if (state.session?.surfaceType == RealtimeSurfaceType.meeting &&
-            (terminalReason == 'ACCEPTED' || terminalCallState == 'ACTIVE')) {
+        if (MeetingRealtimeSemantics.discardsOutOfOrderEndedEvent(
+          surfaceType: state.session?.surfaceType,
+          terminalReason: terminalReason,
+          terminalCallState: terminalCallState,
+        )) {
           state = state.copyWith(lastSocketEvent: event.name);
           return;
         }
@@ -2513,7 +2521,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
         );
         return;
       case 'session:stale':
-        if (state.session?.surfaceType == RealtimeSurfaceType.meeting) {
+        if (MeetingRealtimeSemantics.suppressesStaleDisconnectSignal(
+          state.session?.surfaceType,
+        )) {
           state = state.copyWith(lastSocketEvent: event.name);
           return;
         }
