@@ -12,6 +12,7 @@ import 'package:record/record.dart';
 import '../../../../core/attachments/aura_media_upload.dart';
 import '../../../../core/content_policy/content_length_policy.dart';
 import '../../../../core/link_preview/compose_link_detector.dart';
+import '../../../../core/link_preview/internal_reference_card.dart';
 import '../../../../core/link_preview/link_preview.dart';
 import '../../../../core/link_preview/link_preview_card.dart';
 import '../../../../core/link_preview/link_preview_service.dart';
@@ -1204,18 +1205,24 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s10),
-                  if (_linkPreview != null &&
-                      _linkPreview!.eligible &&
-                      !_linkPreview!.internal) ...[
-                    LinkPreviewCard(
-                      url: _linkPreview!.sourceUrl,
-                      title: _linkPreview!.title,
-                      description: _linkPreview!.description,
-                      siteName: _linkPreview!.siteName,
-                      imageUrl: _linkPreview!.imageUrl,
-                      dense: true,
-                      onRemove: () => setState(() => _linkPreview = null),
-                    ),
+                  if (_linkPreview != null && _linkPreview!.eligible) ...[
+                    if (_linkPreview!.internal)
+                      InternalReferenceCard(
+                        sourceUrl: _linkPreview!.sourceUrl,
+                        reference: _linkPreview!.internalReference,
+                        dense: true,
+                        onRemove: () => setState(() => _linkPreview = null),
+                      )
+                    else
+                      LinkPreviewCard(
+                        url: _linkPreview!.sourceUrl,
+                        title: _linkPreview!.title,
+                        description: _linkPreview!.description,
+                        siteName: _linkPreview!.siteName,
+                        imageUrl: _linkPreview!.imageUrl,
+                        dense: true,
+                        onRemove: () => setState(() => _linkPreview = null),
+                      ),
                     const SizedBox(height: AuraSpace.s10),
                   ],
                   if (_attachments.isNotEmpty) ...[

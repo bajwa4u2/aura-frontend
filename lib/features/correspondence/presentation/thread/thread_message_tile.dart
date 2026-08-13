@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/link_preview/link_preview_card.dart';
+import '../../../../core/link_preview/display_link_preview.dart';
 import '../../../../core/media/attachment.dart';
 import '../../../../core/media/aura_attachment_image.dart';
 import '../../../../core/media/media_mime.dart';
@@ -450,17 +450,15 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
             if (attachments.isNotEmpty) const SizedBox(height: AuraSpace.s10),
           ],
           // Item 13 — External Link Representation/OG System, extended
-          // from Posts. linkUrl is set whenever the sender attached a
-          // link, regardless of preview status; LinkPreviewCard itself
-          // degrades to a plain-link representation when there's no rich
-          // metadata to show (never fabricates a placeholder image).
+          // from Posts; Item 14 extends internal Aura references to a
+          // live-revalidated governed preview (DisplayLinkPreview).
           if ((message['linkUrl'] as String?)?.isNotEmpty ?? false) ...[
-            LinkPreviewCard(
-              url: message['linkUrl'] as String,
-              title: message['linkTitle'] as String?,
-              description: message['linkDescription'] as String?,
-              siteName: message['linkSiteName'] as String?,
-              imageUrl: message['linkImageUrl'] as String?,
+            DisplayLinkPreview(
+              linkUrl: message['linkUrl'] as String,
+              linkTitle: message['linkTitle'] as String?,
+              linkDescription: message['linkDescription'] as String?,
+              linkSiteName: message['linkSiteName'] as String?,
+              linkImageUrl: message['linkImageUrl'] as String?,
             ),
             const SizedBox(height: AuraSpace.s10),
           ],

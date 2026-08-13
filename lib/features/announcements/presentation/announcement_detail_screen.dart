@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/shell/rail/rail_composition.dart';
 import '../../../core/errors/app_error_mapper.dart';
-import '../../../core/link_preview/link_preview_card.dart';
+import '../../../core/link_preview/display_link_preview.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/net/dio_provider.dart';
@@ -312,19 +312,21 @@ class _AnnouncementDetailScreenState
                   const SizedBox(height: AuraSpace.s6),
                 ] else if (a.linkUrl != null && a.linkUrl!.isNotEmpty) ...[
                   // Compose Link Intelligence / OG Preview -- Phase 1
-                  // (Announcement extension). Mutually exclusive with
-                  // media, same rendering rule Post/InstitutionPost
-                  // already use (one attachment slot: media or link, not
-                  // both) -- positioned as its own top-level block above
-                  // the AuraCard rather than inside it, matching this
-                  // screen's own existing media-placement layout rather
-                  // than unified_feed_card.dart's in-card placement.
-                  LinkPreviewCard(
-                    url: a.linkUrl!,
-                    title: a.linkTitle,
-                    description: a.linkDescription,
-                    siteName: a.linkSiteName,
-                    imageUrl: a.linkImageUrl,
+                  // (Announcement extension); Item 14 extends internal Aura
+                  // references to a live-revalidated governed preview.
+                  // Mutually exclusive with media, same rendering rule
+                  // Post/InstitutionPost already use (one attachment slot:
+                  // media or link, not both) -- positioned as its own
+                  // top-level block above the AuraCard rather than inside
+                  // it, matching this screen's own existing media-placement
+                  // layout rather than unified_feed_card.dart's in-card
+                  // placement.
+                  DisplayLinkPreview(
+                    linkUrl: a.linkUrl!,
+                    linkTitle: a.linkTitle,
+                    linkDescription: a.linkDescription,
+                    linkSiteName: a.linkSiteName,
+                    linkImageUrl: a.linkImageUrl,
                   ),
                   const SizedBox(height: AuraSpace.s6),
                 ],

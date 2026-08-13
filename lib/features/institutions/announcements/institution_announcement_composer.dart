@@ -9,6 +9,7 @@ import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/link_preview/internal_reference_card.dart';
 import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
@@ -806,19 +807,25 @@ class _InstitutionAnnouncementComposerState
                       ],
                     ),
                   ),
-                  if (_linkPreview != null &&
-                      _linkPreview!.eligible &&
-                      !_linkPreview!.internal) ...[
+                  if (_linkPreview != null && _linkPreview!.eligible) ...[
                     const SizedBox(height: AuraSpace.s12),
-                    LinkPreviewCard(
-                      url: _linkPreview!.sourceUrl,
-                      title: _linkPreview!.title,
-                      description: _linkPreview!.description,
-                      siteName: _linkPreview!.siteName,
-                      imageUrl: _linkPreview!.imageUrl,
-                      dense: true,
-                      onRemove: () => setState(() => _linkPreview = null),
-                    ),
+                    if (_linkPreview!.internal)
+                      InternalReferenceCard(
+                        sourceUrl: _linkPreview!.sourceUrl,
+                        reference: _linkPreview!.internalReference,
+                        dense: true,
+                        onRemove: () => setState(() => _linkPreview = null),
+                      )
+                    else
+                      LinkPreviewCard(
+                        url: _linkPreview!.sourceUrl,
+                        title: _linkPreview!.title,
+                        description: _linkPreview!.description,
+                        siteName: _linkPreview!.siteName,
+                        imageUrl: _linkPreview!.imageUrl,
+                        dense: true,
+                        onRemove: () => setState(() => _linkPreview = null),
+                      ),
                   ],
                   const SizedBox(height: AuraSpace.s16),
                   _buildMediaCard(disabled: isBusy),

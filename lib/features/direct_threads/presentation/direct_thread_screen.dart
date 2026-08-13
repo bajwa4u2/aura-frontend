@@ -8,6 +8,8 @@ import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/link_preview/display_link_preview.dart';
+import '../../../core/link_preview/internal_reference_card.dart';
 import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
@@ -603,17 +605,19 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
                 style: AuraText.body.copyWith(color: AuraSurface.ink),
               ),
               // Item 13 — External Link Representation/OG System, extended
-              // to DMs. linkUrl is set whenever the sender attached a
-              // link; LinkPreviewCard degrades to a plain-link
-              // representation when there's no rich metadata to show.
+              // to DMs; Item 14 extends internal Aura references to a
+              // live-revalidated governed preview (DisplayLinkPreview),
+              // reusing DirectThreadsService's own participant check on
+              // every render rather than trusting a stored/cached result.
               if ((message.linkUrl ?? '').isNotEmpty) ...[
                 const SizedBox(height: AuraSpace.s8),
-                LinkPreviewCard(
-                  url: message.linkUrl!,
-                  title: message.linkTitle,
-                  description: message.linkDescription,
-                  siteName: message.linkSiteName,
-                  imageUrl: message.linkImageUrl,
+                DisplayLinkPreview(
+                  linkUrl: message.linkUrl!,
+                  linkTitle: message.linkTitle,
+                  linkDescription: message.linkDescription,
+                  linkSiteName: message.linkSiteName,
+                  linkImageUrl: message.linkImageUrl,
+                  dense: true,
                 ),
               ],
               // Inline translation surface. Renders below the original
@@ -772,18 +776,24 @@ class _Composer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (linkPreview != null &&
-              linkPreview!.eligible &&
-              !linkPreview!.internal) ...[
-            LinkPreviewCard(
-              url: linkPreview!.sourceUrl,
-              title: linkPreview!.title,
-              description: linkPreview!.description,
-              siteName: linkPreview!.siteName,
-              imageUrl: linkPreview!.imageUrl,
-              dense: true,
-              onRemove: onRemoveLinkPreview,
-            ),
+          if (linkPreview != null && linkPreview!.eligible) ...[
+            if (linkPreview!.internal)
+              InternalReferenceCard(
+                sourceUrl: linkPreview!.sourceUrl,
+                reference: linkPreview!.internalReference,
+                dense: true,
+                onRemove: onRemoveLinkPreview,
+              )
+            else
+              LinkPreviewCard(
+                url: linkPreview!.sourceUrl,
+                title: linkPreview!.title,
+                description: linkPreview!.description,
+                siteName: linkPreview!.siteName,
+                imageUrl: linkPreview!.imageUrl,
+                dense: true,
+                onRemove: onRemoveLinkPreview,
+              ),
             const SizedBox(height: AuraSpace.s10),
           ],
           Row(

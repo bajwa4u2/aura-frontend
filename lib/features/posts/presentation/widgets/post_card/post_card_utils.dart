@@ -28,6 +28,23 @@ String _trimSlash(String url) {
   return s;
 }
 
+/// Item 14 — presentation-routing hint only, mirroring the backend's
+/// `isInternalAuraUrl` host check against the same two hosts this file
+/// already knows about. NOT a security boundary: the real authorization
+/// decision always happens server-side in `InternalReferenceService` on
+/// every resolve. A wrong guess here only affects which widget a link
+/// renders with, never what data it can expose.
+bool isInternalAuraUrl(String url) {
+  final uri = Uri.tryParse(url.trim());
+  if (uri == null || uri.host.isEmpty) return false;
+  final host = uri.host.toLowerCase();
+  final internalHosts = {
+    Uri.parse(_kAuraShareBaseUrl).host.toLowerCase(),
+    Uri.parse(_kAuraWebBaseUrl).host.toLowerCase(),
+  };
+  return internalHosts.contains(host);
+}
+
 /// External (crawler-friendly) share URL for a user post. This is the
 /// URL we copy / surface in Share sheets / send to LinkedIn / Twitter /
 /// Discord / Slack / Facebook. Crawlers fetch this URL and read OG

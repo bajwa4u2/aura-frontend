@@ -6,6 +6,54 @@
 /// post compose -- neither surface defines its own shape.
 library;
 
+/// Item 14 — Internal Aura Link / Canonical Reference Hydration.
+///
+/// Mirrors the backend's `InternalReferenceResult`. Populated only when
+/// `LinkPreview.internal` is true; carries a bounded, canonical-authority
+/// -sourced preview (never OG-scraped) already re-evaluated against the
+/// CURRENT viewer's authorization.
+class InternalReferenceResult {
+  const InternalReferenceResult({
+    required this.outcome,
+    this.kind,
+    this.route,
+    this.title,
+    this.subtitle,
+    this.imageUrl,
+  });
+
+  /// One of: READY, RESTRICTED, SIGN_IN_REQUIRED, UNSUPPORTED.
+  final String outcome;
+
+  /// One of: POST, INSTITUTION_POST, ANNOUNCEMENT, USER_PROFILE,
+  /// INSTITUTION_PROFILE, THREAD, SPACE, INSTITUTION_SPACE, DIRECT_THREAD,
+  /// MEETING -- or null when the reference wasn't recognized at all.
+  final String? kind;
+  final String? route;
+  final String? title;
+  final String? subtitle;
+  final String? imageUrl;
+
+  bool get isReady => outcome == 'READY';
+
+  factory InternalReferenceResult.fromJson(Map<String, dynamic> json) {
+    String? str(dynamic v) {
+      if (v == null) return null;
+      final s = v.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    return InternalReferenceResult(
+      outcome: str(json['outcome']) ?? 'UNSUPPORTED',
+      kind: str(json['kind']),
+      route: str(json['route']),
+      title: str(json['title']),
+      subtitle: str(json['subtitle']),
+      imageUrl: str(json['imageUrl']),
+    );
+  }
+}
+
 class LinkPreview {
   const LinkPreview({
     required this.eligible,
@@ -19,6 +67,7 @@ class LinkPreview {
     this.siteName,
     this.imageUrl,
     this.faviconUrl,
+    this.internalReference,
   });
 
   /// False when the pasted text wasn't a resolvable http(s) URL at all --
@@ -41,6 +90,9 @@ class LinkPreview {
   final String? siteName;
   final String? imageUrl;
   final String? faviconUrl;
+
+  /// Item 14 — only populated when `internal` is true.
+  final InternalReferenceResult? internalReference;
 
   /// True only when there is real OG metadata to render as a card.
   /// Everything else (including a successfully-attached but
@@ -71,6 +123,10 @@ class LinkPreview {
       siteName: str(json['siteName']),
       imageUrl: str(json['imageUrl']),
       faviconUrl: str(json['faviconUrl']),
+      internalReference: json['internalReference'] is Map
+          ? InternalReferenceResult.fromJson(
+              Map<String, dynamic>.from(json['internalReference'] as Map))
+          : null,
     );
   }
 }

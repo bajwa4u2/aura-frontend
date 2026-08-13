@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
-import '../../../core/link_preview/link_preview_card.dart';
+import '../../../core/link_preview/display_link_preview.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/aura_media_viewer.dart';
@@ -341,20 +341,22 @@ class UnifiedFeedCard extends ConsumerWidget {
                 downloadContext: _mediaDownloadContext(item.type),
               ),
             ] else if (item.linkUrl != null && item.linkUrl!.isNotEmpty) ...[
-              // Compose Link Intelligence / OG Preview -- Phase 1. Same
-              // canonical LinkPreviewCard widget personal-post rendering
-              // uses (via post_card.dart's activated _finalAttachmentBlock)
-              // -- institution posts/announcements rendered through this
-              // unified card get the identical preview, not a separate
-              // implementation. Mutually exclusive with media, matching
-              // the same rule post_card.dart already enforces.
+              // Compose Link Intelligence / OG Preview -- Phase 1, extended
+              // by Item 14 for internal Aura references. DisplayLinkPreview
+              // branches on host: external links render from the
+              // already-fetched OG fields below (unchanged); internal Aura
+              // links re-resolve live against the CURRENT viewer so a
+              // governed canonical preview replaces what used to be an
+              // "open externally" link chip for in-app URLs. Mutually
+              // exclusive with media, matching the same rule post_card.dart
+              // already enforces.
               const SizedBox(height: AuraSpace.s10),
-              LinkPreviewCard(
-                url: item.linkUrl!,
-                title: item.linkTitle,
-                description: item.linkDescription,
-                siteName: item.linkSiteName,
-                imageUrl: item.linkImageUrl,
+              DisplayLinkPreview(
+                linkUrl: item.linkUrl!,
+                linkTitle: item.linkTitle,
+                linkDescription: item.linkDescription,
+                linkSiteName: item.linkSiteName,
+                linkImageUrl: item.linkImageUrl,
               ),
             ],
             if (showVisibilityBadge) ...[

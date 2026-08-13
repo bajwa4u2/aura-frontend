@@ -19,6 +19,7 @@ import '../../../core/media/attachment.dart';
 import '../../../core/media/media_mime.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/link_preview/internal_reference_card.dart';
 import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
@@ -1202,21 +1203,31 @@ class _InstitutionPostComposerScreenState
                       ),
                     ),
                   ),
-                  if (_linkPreview != null && _linkPreview!.eligible && !_linkPreview!.internal) ...[
+                  if (_linkPreview != null && _linkPreview!.eligible) ...[
                     Padding(
                       padding: const EdgeInsets.only(bottom: AuraSpace.s16),
-                      child: LinkPreviewCard(
-                        url: _linkPreview!.sourceUrl,
-                        title: _linkPreview!.title,
-                        description: _linkPreview!.description,
-                        siteName: _linkPreview!.siteName,
-                        imageUrl: _linkPreview!.imageUrl,
-                        dense: true,
-                        onRemove: () {
-                          setState(() => _linkPreview = null);
-                          _onFieldChanged();
-                        },
-                      ),
+                      child: _linkPreview!.internal
+                          ? InternalReferenceCard(
+                              sourceUrl: _linkPreview!.sourceUrl,
+                              reference: _linkPreview!.internalReference,
+                              dense: true,
+                              onRemove: () {
+                                setState(() => _linkPreview = null);
+                                _onFieldChanged();
+                              },
+                            )
+                          : LinkPreviewCard(
+                              url: _linkPreview!.sourceUrl,
+                              title: _linkPreview!.title,
+                              description: _linkPreview!.description,
+                              siteName: _linkPreview!.siteName,
+                              imageUrl: _linkPreview!.imageUrl,
+                              dense: true,
+                              onRemove: () {
+                                setState(() => _linkPreview = null);
+                                _onFieldChanged();
+                              },
+                            ),
                     ),
                   ],
                   _LabeledField(
