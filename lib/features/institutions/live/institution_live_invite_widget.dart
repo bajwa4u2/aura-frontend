@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,16 +12,22 @@ import '../../realtime/domain/realtime_enums.dart';
 import '../../realtime/domain/realtime_models.dart';
 
 /// A widget (not a screen) for the institution live-rooms surface that
-/// renders ringing live-session invitations as cards with a TTL countdown.
+/// surfaces this institution's live sessions nobody has joined yet, as
+/// simple "just started, tap to join" cards.
 ///
-/// Behavior:
-///   * Each ringing session shows a card with caller / room name and a
-///     time-to-expiry countdown (TTL from `expiresAt` if surfaced; otherwise
-///     computed from `createdAt + 30s`).
-///   * When countdown reaches 0 the card auto-dismisses, the local
-///     "ringing" sound (if any) stops, and the card transitions to a
-///     "Missed" state for 5 seconds, then disappears entirely.
-///   * No infinite ring.
+/// Realtime Architecture Correction — Phase 8 (Legacy Retirement). This
+/// widget previously simulated point-to-point call semantics (a per-second
+/// ringing countdown, then a 5-second "Missed call" transition) that this
+/// surface never actually had backing it: Institution Room is a join-only
+/// broadcast (`startInstitutionLive` never reaches the invite-issuing path
+/// — `resolveForSurface` only resolves THREAD/DM/SPACE, so no
+/// `call:incoming` socket event is ever emitted for an institution room
+/// going live), so there was no real ring/accept/decline lifecycle for the
+/// old TTL/missed simulation to honestly reflect — it was client-invented
+/// on top of the same plain REST poll (`liveSessionsProvider`) the "Live
+/// Now" discovery banner (`global_live_banner_layer.dart`) already uses
+/// correctly, without fabricating a countdown. This widget now matches
+/// that same honest pattern instead of forking its own.
 class InstitutionLiveInviteWidget extends ConsumerStatefulWidget {
   const InstitutionLiveInviteWidget({
     super.key,
@@ -32,12 +36,6 @@ class InstitutionLiveInviteWidget extends ConsumerStatefulWidget {
 
   final String institutionId;
 
-  /// Default TTL when the API does not surface `expiresAt`.
-  static const Duration defaultTtl = Duration(seconds: 30);
-
-  /// How long the "Missed" state remains visible after expiry.
-  static const Duration missedHoldTime = Duration(seconds: 5);
-
   @override
   ConsumerState<InstitutionLiveInviteWidget> createState() =>
       _InstitutionLiveInviteWidgetState();
@@ -45,62 +43,20 @@ class InstitutionLiveInviteWidget extends ConsumerStatefulWidget {
 
 class _InstitutionLiveInviteWidgetState
     extends ConsumerState<InstitutionLiveInviteWidget> {
-  Timer? _ticker;
-
-  // sessionId -> when it transitioned to "missed" (so we can hide after hold).
-  final Map<String, DateTime> _missedAt = <String, DateTime>{};
   // sessionId -> dismiss requested by the user (hide immediately).
   final Set<String> _dismissed = <String>{};
 
-  @override
-  void initState() {
-    super.initState();
-    _ticker = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      if (!mounted) return;
-      setState(() {});
-      _evictExpiredMissed();
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  void _evictExpiredMissed() {
-    final now = DateTime.now();
-    _missedAt.removeWhere((_, t) =>
-        now.difference(t) > InstitutionLiveInviteWidget.missedHoldTime);
-  }
-
-  /// Compute remaining TTL for a session.
-  Duration _remainingTtl(RealtimeSession session) {
-    final meta = session.metadataJson ?? const {};
-    DateTime? expiresAt;
-    final raw = meta['expiresAt']?.toString().trim() ?? '';
-    if (raw.isNotEmpty) {
-      expiresAt = DateTime.tryParse(raw);
-    }
-    expiresAt ??= (session.createdAt ?? DateTime.now())
-        .add(InstitutionLiveInviteWidget.defaultTtl);
-    final diff = expiresAt.difference(DateTime.now());
-    if (diff.isNegative) return Duration.zero;
-    return diff;
-  }
-
-  bool _isInstitutionInvite(RealtimeSession s) {
+  bool _isInstitutionSession(RealtimeSession s) {
     if (s.surfaceType != RealtimeSurfaceType.institution) return false;
     if (s.surfaceId == null || s.surfaceId!.isEmpty) return false;
     return s.surfaceId == widget.institutionId;
   }
 
-  /// Treat sessions in their first ~TTL window as "ringing" — i.e. the
-  /// invite has been sent but the call has not been answered (joined).
-  bool _isRinging(RealtimeSession s) {
-    if (!s.isActive) return false;
-    if (s.firstJoinedAt != null) return false;
-    return _remainingTtl(s) > Duration.zero;
+  /// Nobody has joined this session yet — the moment it's actually worth
+  /// surfacing as a "tap to join" card here (once occupied, it shows as a
+  /// normal ACTIVE room card elsewhere on this screen instead).
+  bool _isJoinable(RealtimeSession s) {
+    return s.isActive && s.firstJoinedAt == null;
   }
 
   void _dismiss(String sessionId) {
@@ -125,33 +81,12 @@ class _InstitutionLiveInviteWidgetState
       orElse: () => const <RealtimeSession>[],
     );
 
-    final invites = <_InviteCardData>[];
+    final invites = <RealtimeSession>[];
     for (final s in sessions) {
-      if (!_isInstitutionInvite(s)) continue;
+      if (!_isInstitutionSession(s)) continue;
       if (_dismissed.contains(s.id)) continue;
-
-      final ringing = _isRinging(s);
-      if (ringing) {
-        invites.add(_InviteCardData(
-          session: s,
-          state: _InviteState.ringing,
-          remaining: _remainingTtl(s),
-        ));
-        // Clear any prior "missed" record once it's ringing again.
-        _missedAt.remove(s.id);
-      } else if (s.isActive && s.firstJoinedAt == null) {
-        // Just expired — flip to missed state and hold for `missedHoldTime`.
-        _missedAt.putIfAbsent(s.id, () => DateTime.now());
-        final missedAt = _missedAt[s.id]!;
-        if (DateTime.now().difference(missedAt) <
-            InstitutionLiveInviteWidget.missedHoldTime) {
-          invites.add(_InviteCardData(
-            session: s,
-            state: _InviteState.missed,
-            remaining: Duration.zero,
-          ));
-        }
-      }
+      if (!_isJoinable(s)) continue;
+      invites.add(s);
     }
 
     if (invites.isEmpty) return const SizedBox.shrink();
@@ -159,13 +94,13 @@ class _InstitutionLiveInviteWidgetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final data in invites)
+        for (final session in invites)
           Padding(
             padding: const EdgeInsets.only(bottom: AuraSpace.s10),
             child: _InviteCard(
-              data: data,
-              onJoin: () => _join(data.session.id),
-              onDismiss: () => _dismiss(data.session.id),
+              session: session,
+              onJoin: () => _join(session.id),
+              onDismiss: () => _dismiss(session.id),
             ),
           ),
       ],
@@ -173,41 +108,21 @@ class _InstitutionLiveInviteWidgetState
   }
 }
 
-enum _InviteState { ringing, missed }
-
-class _InviteCardData {
-  const _InviteCardData({
-    required this.session,
-    required this.state,
-    required this.remaining,
-  });
-
-  final RealtimeSession session;
-  final _InviteState state;
-  final Duration remaining;
-}
-
 class _InviteCard extends StatelessWidget {
   const _InviteCard({
-    required this.data,
+    required this.session,
     required this.onJoin,
     required this.onDismiss,
   });
 
-  final _InviteCardData data;
+  final RealtimeSession session;
   final VoidCallback onJoin;
   final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
-    final isRinging = data.state == _InviteState.ringing;
-    final session = data.session;
-    final name = session.contextName ?? session.title ?? 'Live invite';
+    final name = session.contextName ?? session.title ?? 'Live session';
     final isVideo = session.kind.toUpperCase() == 'VIDEO';
-    final remainingSec = data.remaining.inSeconds;
-
-    final accentBg = isRinging ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.subtle;
-    final accentInk = isRinging ? AuraSurface.coVerdant : AuraSurface.faint;
 
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
@@ -215,9 +130,7 @@ class _InviteCard extends StatelessWidget {
         color: AuraSurface.card,
         borderRadius: BorderRadius.circular(AuraRadius.card),
         border: Border.all(
-          color: isRinging
-              ? AuraSurface.coVerdant.withValues(alpha: 0.4)
-              : AuraSurface.divider,
+          color: AuraSurface.coVerdant.withValues(alpha: 0.4),
         ),
       ),
       child: Row(
@@ -226,13 +139,13 @@ class _InviteCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: accentBg,
+              color: AuraSurface.coVerdant.withValues(alpha: 0.16),
               shape: BoxShape.circle,
             ),
             child: Icon(
               isVideo ? Icons.videocam_rounded : Icons.mic_rounded,
               size: 18,
-              color: accentInk,
+              color: AuraSurface.coVerdant,
             ),
           ),
           const SizedBox(width: AuraSpace.s12),
@@ -242,46 +155,31 @@ class _InviteCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: AuraText.body
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      isRinging ? 'Ringing…' : 'Missed call',
-                      style: AuraText.micro.copyWith(
-                        color: accentInk,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (isRinging) ...[
-                      const SizedBox(width: AuraSpace.s8),
-                      Text(
-                        '${remainingSec}s',
-                        style: AuraText.micro
-                            .copyWith(color: AuraSurface.muted),
-                      ),
-                    ],
-                  ],
+                Text(
+                  'Just started',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.coVerdant,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
           ),
-          if (isRinging) ...[
-            AuraSecondaryButton(
-              label: 'Dismiss',
-              onPressed: onDismiss,
-            ),
-            const SizedBox(width: AuraSpace.s8),
-            AuraPrimaryButton(
-              label: 'Join',
-              icon: Icons.call_rounded,
-              onPressed: onJoin,
-            ),
-          ],
+          AuraSecondaryButton(
+            label: 'Dismiss',
+            onPressed: onDismiss,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          AuraPrimaryButton(
+            label: 'Join',
+            icon: Icons.call_rounded,
+            onPressed: onJoin,
+          ),
         ],
       ),
     );

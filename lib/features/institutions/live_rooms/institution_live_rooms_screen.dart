@@ -280,8 +280,8 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
 
         const InsModeHeaderGap(),
 
-        // Live invite cards (incoming/outgoing ringing) — handled by the
-        // institution live invite widget; auto-dismisses on TTL.
+        // Live sessions nobody has joined yet — surfaced as "tap to join"
+        // cards; dismissible per-viewer for this screen's lifetime.
         InstitutionLiveInviteWidget(
           institutionId: widget.institutionId,
         ),
