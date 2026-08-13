@@ -528,24 +528,31 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         RealtimeSurfaceType.meeting;
 
     // Guard: meeting sessions must render in MeetingLiveRoomScreen, not here.
-    // Redirect immediately when the hydrated session is a meeting surface.
+    // Redirect when the hydrated session is a meeting surface. Returns the
+    // fallback on EVERY such build, not just the first — navigation itself
+    // is still scheduled only once (_hasNavigatedAway), but a rebuild that
+    // lands in the frame between scheduling and context.go() actually
+    // running must not fall through to render this screen's own call UI
+    // for a meeting session (Realtime Architecture Correction Phase 8 —
+    // closes the race that made that fallthrough occasionally reachable).
     final sessionForGuard = state.session;
     if (sessionForGuard != null &&
-        sessionForGuard.surfaceType == RealtimeSurfaceType.meeting &&
-        !_hasNavigatedAway) {
+        sessionForGuard.surfaceType == RealtimeSurfaceType.meeting) {
       final meetingId = (sessionForGuard.surfaceId ?? '').trim();
       final sid = sessionForGuard.id.trim().isNotEmpty
           ? sessionForGuard.id.trim()
           : (state.sessionId ?? widget.sessionId).trim();
       if (meetingId.isNotEmpty && sid.isNotEmpty) {
-        _hasNavigatedAway = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final guestParam = (widget.guestId ?? '').trim().isNotEmpty
-              ? '&guestId=${Uri.encodeComponent(widget.guestId!.trim())}'
-              : '';
-          context.go('/meetings/$meetingId/live?sessionId=$sid$guestParam');
-        });
+        if (!_hasNavigatedAway) {
+          _hasNavigatedAway = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final guestParam = (widget.guestId ?? '').trim().isNotEmpty
+                ? '&guestId=${Uri.encodeComponent(widget.guestId!.trim())}'
+                : '';
+            context.go('/meetings/$meetingId/live?sessionId=$sid$guestParam');
+          });
+        }
         return const _CallRouteRedirectingFallback();
       }
     }
@@ -821,6 +828,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   // ── Pre-join / lobby view ─────────────────────────────────────────────────
 
+  // Realtime Architecture Correction Phase 8: the redirect guard above
+  // (build()'s opening lines) now returns _CallRouteRedirectingFallback on
+  // EVERY build for a well-formed meeting session, so this method and its
+  // siblings (_buildMeetingWaitingStage, _buildMeetingStage,
+  // _MeetingControlDock) are reachable only in the narrow, malformed-data
+  // case where a meeting session is missing its surfaceId or session id —
+  // a genuine defensive fallback, not live meeting-room UI. The real
+  // meeting experience is MeetingLiveRoomScreen.
   Widget _buildMeetingRoom({
     required RealtimeState state,
     required String myUserId,
