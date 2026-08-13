@@ -58,6 +58,16 @@ bool isTerminalSessionStatus(CanonicalSessionStatus status) =>
 
 /// Legal transition map. A transition not listed here is illegal. Sole
 /// source of truth for session-level legality.
+///
+/// FROZEN DOCTRINE, amended 2026-08-16 (Realtime Architecture Correction —
+/// Phase 3, amended Gate 2). `active -> cancelled` added — mirrors
+/// `aura-backend/src/realtime/canonical/session-lifecycle.ts`'s matching
+/// amendment exactly; see that file's doc comment for the full mechanical
+/// proof (production `RealtimeSession` rows are created already ACTIVE,
+/// with the host auto-accepted, so canonical `created` is never actually
+/// reached — the original `created -> cancelled`-only edge made
+/// `cancelled` unreachable in production). Do not let this file drift
+/// from the backend original.
 final Map<CanonicalSessionStatus, Set<CanonicalSessionStatus>> sessionTransitions = {
   CanonicalSessionStatus.created: {
     CanonicalSessionStatus.active,
@@ -68,6 +78,7 @@ final Map<CanonicalSessionStatus, Set<CanonicalSessionStatus>> sessionTransition
   CanonicalSessionStatus.active: {
     CanonicalSessionStatus.ending,
     CanonicalSessionStatus.ended,
+    CanonicalSessionStatus.cancelled,
     CanonicalSessionStatus.failed,
   },
   CanonicalSessionStatus.ending: {
