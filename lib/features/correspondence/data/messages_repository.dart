@@ -99,6 +99,9 @@ class MessagesRepository {
     Map<String, dynamic>? translation,
     List<Map<String, dynamic>>? tagReferences,
     String? clientMessageId,
+    // Item 13 — External Link Representation/OG System.
+    String? linkPreviewId,
+    String? linkSourceUrl,
   }) async {
     final payload = <String, dynamic>{
       if (_hasText(body)) 'body': body!.trim(),
@@ -111,6 +114,8 @@ class MessagesRepository {
       if (tagReferences != null) 'tagReferences': tagReferences,
       if (tagReferences != null) 'mentions': tagReferences,
       if (_hasText(clientMessageId)) 'clientMessageId': clientMessageId!.trim(),
+      if (linkPreviewId != null) 'linkPreviewId': linkPreviewId,
+      if (_hasText(linkSourceUrl)) 'linkSourceUrl': linkSourceUrl,
     };
 
     final res = await _dio.post('/threads/$threadId/messages', data: payload);

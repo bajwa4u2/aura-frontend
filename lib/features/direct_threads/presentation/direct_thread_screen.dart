@@ -7,6 +7,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
+import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/link_preview/link_preview.dart';
+import '../../../core/link_preview/link_preview_card.dart';
+import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/presence_repository.dart';
@@ -42,6 +46,12 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
   String? _sendError;
   String? _seenForActorKey;
 
+  // Item 13 — External Link Representation/OG System, extended to DMs.
+  // Same "wrap the controller" convention as GovernedTagAutocomplete /
+  // the Thread composer's own wiring.
+  LinkPreview? _linkPreview;
+  ComposeLinkDetector? _linkDetector;
+
   /// Optimistic outbound messages — inserted into the bubble list the
   /// moment the user taps Send so the conversation feels real-time.
   /// Cleared on successful refresh (the just-sent message returns from
@@ -49,7 +59,21 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
   final List<DirectMessage> _optimistic = [];
 
   @override
+  void initState() {
+    super.initState();
+    _linkDetector = ComposeLinkDetector(
+      controller: _bodyCtrl,
+      resolve: (url) => ref.read(linkPreviewServiceProvider).resolve(url),
+      onPreviewChanged: (preview) {
+        if (!mounted) return;
+        setState(() => _linkPreview = preview);
+      },
+    );
+  }
+
+  @override
   void dispose() {
+    _linkDetector?.dispose();
     _bodyCtrl.dispose();
     super.dispose();
   }
@@ -104,11 +128,15 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
       // deliveredAt/seenAt left null → bubble shows "Sending…".
     );
 
+    final attachedLinkPreview =
+        (_linkPreview?.isAttachable ?? false) ? _linkPreview : null;
+
     setState(() {
       _sending = true;
       _sendError = null;
       _optimistic.add(optimistic);
       _bodyCtrl.clear();
+      _linkPreview = null;
     });
 
     try {
@@ -117,6 +145,8 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
         threadId: widget.threadId,
         actor: actor,
         body: body,
+        linkPreviewId: attachedLinkPreview?.linkPreviewId,
+        linkSourceUrl: attachedLinkPreview?.sourceUrl,
       );
       ref.invalidate(directMessagesProvider(key));
       // Inbox snapshot (lastMessageAt/snippet/unread) updates server-side
@@ -273,6 +303,8 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
               busy: _sending,
               actor: actor,
               onSend: () => _send(actorRef, key),
+              linkPreview: _linkPreview,
+              onRemoveLinkPreview: () => setState(() => _linkPreview = null),
             ),
           ],
         ),
@@ -570,6 +602,20 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
                 message.body,
                 style: AuraText.body.copyWith(color: AuraSurface.ink),
               ),
+              // Item 13 — External Link Representation/OG System, extended
+              // to DMs. linkUrl is set whenever the sender attached a
+              // link; LinkPreviewCard degrades to a plain-link
+              // representation when there's no rich metadata to show.
+              if ((message.linkUrl ?? '').isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s8),
+                LinkPreviewCard(
+                  url: message.linkUrl!,
+                  title: message.linkTitle,
+                  description: message.linkDescription,
+                  siteName: message.linkSiteName,
+                  imageUrl: message.linkImageUrl,
+                ),
+              ],
               // Inline translation surface. Renders below the original
               // text when present so users keep context.
               if (_translatedText != null) ...[
@@ -700,12 +746,16 @@ class _Composer extends StatelessWidget {
     required this.busy,
     required this.actor,
     required this.onSend,
+    this.linkPreview,
+    this.onRemoveLinkPreview,
   });
 
   final TextEditingController controller;
   final bool busy;
   final ActorContext actor;
   final VoidCallback onSend;
+  final LinkPreview? linkPreview;
+  final VoidCallback? onRemoveLinkPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -719,51 +769,70 @@ class _Composer extends StatelessWidget {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AuraSurface.divider)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              maxLength: ContentLengthPolicy.message,
-              minLines: 1,
-              maxLines: 4,
-              style: AuraText.body,
-              decoration: InputDecoration(
-                hintText: actor.isInstitution
-                    ? 'Send as ${actor.displayName ?? "institution"}…'
-                    : 'Send a message…',
-                hintStyle:
-                    AuraText.body.copyWith(color: AuraSurface.faint),
-                filled: true,
-                fillColor: AuraSurface.subtle,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide:
-                      const BorderSide(color: AuraSurface.divider),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide:
-                      const BorderSide(color: AuraSurface.divider),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide:
-                      const BorderSide(color: Color(0xFF0D9488), width: 1.5),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s12,
-                  vertical: AuraSpace.s10,
+          if (linkPreview != null &&
+              linkPreview!.eligible &&
+              !linkPreview!.internal) ...[
+            LinkPreviewCard(
+              url: linkPreview!.sourceUrl,
+              title: linkPreview!.title,
+              description: linkPreview!.description,
+              siteName: linkPreview!.siteName,
+              imageUrl: linkPreview!.imageUrl,
+              dense: true,
+              onRemove: onRemoveLinkPreview,
+            ),
+            const SizedBox(height: AuraSpace.s10),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  maxLength: ContentLengthPolicy.message,
+                  minLines: 1,
+                  maxLines: 4,
+                  style: AuraText.body,
+                  decoration: InputDecoration(
+                    hintText: actor.isInstitution
+                        ? 'Send as ${actor.displayName ?? "institution"}…'
+                        : 'Send a message…',
+                    hintStyle:
+                        AuraText.body.copyWith(color: AuraSurface.faint),
+                    filled: true,
+                    fillColor: AuraSurface.subtle,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AuraRadius.md),
+                      borderSide:
+                          const BorderSide(color: AuraSurface.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AuraRadius.md),
+                      borderSide:
+                          const BorderSide(color: AuraSurface.divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AuraRadius.md),
+                      borderSide: const BorderSide(
+                          color: Color(0xFF0D9488), width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s12,
+                      vertical: AuraSpace.s10,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: AuraSpace.s10),
-          AuraPrimaryButton(
-            label: busy ? 'Sending…' : 'Send',
-            icon: busy ? null : Icons.send_rounded,
-            onPressed: busy ? null : onSend,
+              const SizedBox(width: AuraSpace.s10),
+              AuraPrimaryButton(
+                label: busy ? 'Sending…' : 'Send',
+                icon: busy ? null : Icons.send_rounded,
+                onPressed: busy ? null : onSend,
+              ),
+            ],
           ),
         ],
       ),

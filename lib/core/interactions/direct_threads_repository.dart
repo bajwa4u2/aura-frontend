@@ -74,6 +74,12 @@ class DirectMessage {
     this.seenAt,
     this.senderUser,
     this.actorInstitution,
+    this.linkUrl,
+    this.linkTitle,
+    this.linkDescription,
+    this.linkImageUrl,
+    this.linkSiteName,
+    this.linkFaviconUrl,
   });
 
   final String id;
@@ -87,6 +93,14 @@ class DirectMessage {
   final DateTime? seenAt;
   final Map<String, dynamic>? senderUser;
   final Map<String, dynamic>? actorInstitution;
+
+  /// Item 13 — External Link Representation/OG System, extended to DMs.
+  final String? linkUrl;
+  final String? linkTitle;
+  final String? linkDescription;
+  final String? linkImageUrl;
+  final String? linkSiteName;
+  final String? linkFaviconUrl;
 
   bool get isInstitutionVoice =>
       actorType == ActorType.institution &&
@@ -116,6 +130,12 @@ class DirectMessage {
       actorInstitution: json['actorInstitution'] is Map
           ? Map<String, dynamic>.from(json['actorInstitution'] as Map)
           : null,
+      linkUrl: json['linkUrl']?.toString(),
+      linkTitle: json['linkTitle']?.toString(),
+      linkDescription: json['linkDescription']?.toString(),
+      linkImageUrl: json['linkImageUrl']?.toString(),
+      linkSiteName: json['linkSiteName']?.toString(),
+      linkFaviconUrl: json['linkFaviconUrl']?.toString(),
     );
   }
 }
@@ -327,10 +347,15 @@ class DirectThreadsRepository {
     required String threadId,
     required ActorRef actor,
     required String body,
+    // Item 13 — External Link Representation/OG System, extended to DMs.
+    String? linkPreviewId,
+    String? linkSourceUrl,
   }) async {
     final payload = <String, dynamic>{
       ...actor.toFields('actor'),
       'body': body,
+      if (linkPreviewId != null) 'linkPreviewId': linkPreviewId,
+      if ((linkSourceUrl ?? '').isNotEmpty) 'linkSourceUrl': linkSourceUrl,
     };
     final res = await _dio.post(
       '/direct-threads/$threadId/messages',

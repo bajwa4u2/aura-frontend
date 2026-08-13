@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/link_preview/link_preview_card.dart';
 import '../../../../core/media/attachment.dart';
 import '../../../../core/media/aura_attachment_image.dart';
 import '../../../../core/media/media_mime.dart';
@@ -447,6 +448,21 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
               ),
             ],
             if (attachments.isNotEmpty) const SizedBox(height: AuraSpace.s10),
+          ],
+          // Item 13 — External Link Representation/OG System, extended
+          // from Posts. linkUrl is set whenever the sender attached a
+          // link, regardless of preview status; LinkPreviewCard itself
+          // degrades to a plain-link representation when there's no rich
+          // metadata to show (never fabricates a placeholder image).
+          if ((message['linkUrl'] as String?)?.isNotEmpty ?? false) ...[
+            LinkPreviewCard(
+              url: message['linkUrl'] as String,
+              title: message['linkTitle'] as String?,
+              description: message['linkDescription'] as String?,
+              siteName: message['linkSiteName'] as String?,
+              imageUrl: message['linkImageUrl'] as String?,
+            ),
+            const SizedBox(height: AuraSpace.s10),
           ],
           if (attachments.isNotEmpty) ...[
             _MessageAttachmentList(

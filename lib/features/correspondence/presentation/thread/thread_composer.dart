@@ -11,6 +11,10 @@ import 'package:record/record.dart';
 
 import '../../../../core/attachments/aura_media_upload.dart';
 import '../../../../core/content_policy/content_length_policy.dart';
+import '../../../../core/link_preview/compose_link_detector.dart';
+import '../../../../core/link_preview/link_preview.dart';
+import '../../../../core/link_preview/link_preview_card.dart';
+import '../../../../core/link_preview/link_preview_service.dart';
 import '../../../../core/tagging/tag_entities.dart';
 import '../../../../core/tagging/tag_text_hydration.dart';
 import '../../../../core/tagging/governed_tag_field.dart';
@@ -80,6 +84,11 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
   final Set<String> _dismissedSuggestionIds = <String>{};
   final Set<String> _applyingSuggestionIds = <String>{};
 
+  // Item 13 — External Link Representation/OG System, extended from Posts.
+  // Same "wrap the controller" convention as GovernedTagAutocomplete.
+  LinkPreview? _linkPreview;
+  ComposeLinkDetector? _linkDetector;
+
   bool _sending = false;
   bool _recordingAudio = false;
   DateTime? _recordingStartedAt;
@@ -106,8 +115,22 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
   bool get _supportsAudioRecording => _isMobileCapturePlatform;
 
   @override
+  void initState() {
+    super.initState();
+    _linkDetector = ComposeLinkDetector(
+      controller: _controller,
+      resolve: (url) => ref.read(linkPreviewServiceProvider).resolve(url),
+      onPreviewChanged: (preview) {
+        if (!mounted) return;
+        setState(() => _linkPreview = preview);
+      },
+    );
+  }
+
+  @override
   void dispose() {
     _recordingTicker?.cancel();
+    _linkDetector?.dispose();
     _controller.dispose();
     _composerFocus.dispose();
     _audioRecorder.dispose();
@@ -702,10 +725,14 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       }).toList(),
     );
 
+    final attachedLinkPreview =
+        (_linkPreview?.isAttachable ?? false) ? _linkPreview : null;
+
     _controller.clear();
     setState(() {
       _attachments.clear();
       _selectedTagReferences.clear();
+      _linkPreview = null;
       _sending = true;
       _suggestions = const [];
       _assistSnapshot = null;
@@ -726,6 +753,8 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
             attachments: attachmentsPayload,
             tagReferences: tagReferences,
             clientMessageId: clientMessageId,
+            linkPreviewId: attachedLinkPreview?.linkPreviewId,
+            linkSourceUrl: attachedLinkPreview?.sourceUrl,
           );
 
       if (!mounted) return;
@@ -1175,6 +1204,20 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s10),
+                  if (_linkPreview != null &&
+                      _linkPreview!.eligible &&
+                      !_linkPreview!.internal) ...[
+                    LinkPreviewCard(
+                      url: _linkPreview!.sourceUrl,
+                      title: _linkPreview!.title,
+                      description: _linkPreview!.description,
+                      siteName: _linkPreview!.siteName,
+                      imageUrl: _linkPreview!.imageUrl,
+                      dense: true,
+                      onRemove: () => setState(() => _linkPreview = null),
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                  ],
                   if (_attachments.isNotEmpty) ...[
                     _AttachmentPreviewRow(
                       attachments: _attachments,
