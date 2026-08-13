@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/session_providers.dart';
+import '../../features/realtime/application/incoming_call_projection.dart'
+    as projection;
 import '../../features/updates/incoming_call_bridge.dart';
 import '../../features/updates/providers.dart';
 import '../../router.dart';
@@ -217,86 +219,21 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     return data;
   }
 
-  bool _isCallInterrupt(Map<String, dynamic> payload) {
-    final kind = _resolveNotificationKind(payload).toUpperCase();
-    final attention = _stringOf(payload['attention']).toUpperCase();
-    return (kind == 'LIVE' ||
-            kind == 'CALL' ||
-            kind == 'REALTIME' ||
-            kind == 'CALL_RINGING' ||
-            kind == 'LIVE_RINGING') &&
-        attention == 'INTERRUPT' &&
-        !_isTerminalCallPayload(payload);
-  }
+  // Realtime Architecture Correction — Phase 4, Part F: delegate to the ONE
+  // shared projection authority (incoming_call_projection.dart) — this file
+  // previously carried its own near-duplicate of this classification logic,
+  // independently of incoming_live_overlay.dart's copy (their fallback
+  // phrase lists had already drifted apart; merged, not lost, in the shared
+  // module).
 
-  bool _isTerminalCallPayload(Map<String, dynamic> payload) {
-    final data = _mapOf(payload['data']);
-    final terminalValues = <String>{
-      'MISSED',
-      'ENDED',
-      'DECLINED',
-      'EXPIRED',
-      'CANCELLED',
-      'CANCELED',
-      'FAILED',
-      'TIMEOUT',
-      'TIMED_OUT',
-      'NO_ANSWER',
-      'REJECTED',
-      'COMPLETED',
-      'CLOSED',
-    };
-    final stateCandidates = <String>[
-      _stringOf(payload['callState']).toUpperCase(),
-      _stringOf(payload['status']).toUpperCase(),
-      _stringOf(payload['state']).toUpperCase(),
-      _stringOf(payload['result']).toUpperCase(),
-      _stringOf(payload['callStatus']).toUpperCase(),
-      _stringOf(data['callState']).toUpperCase(),
-      _stringOf(data['status']).toUpperCase(),
-      _stringOf(data['state']).toUpperCase(),
-      _stringOf(data['result']).toUpperCase(),
-      _stringOf(data['callStatus']).toUpperCase(),
-    ];
-    if (stateCandidates.any(terminalValues.contains)) return true;
+  bool _isCallInterrupt(Map<String, dynamic> payload) =>
+      projection.isCallInterruptPayload(payload);
 
-    final searchable = <String>[
-      _stringOf(payload['title']),
-      _stringOf(payload['body']),
-      _stringOf(payload['message']),
-      _stringOf(payload['previewText']),
-      _stringOf(data['title']),
-      _stringOf(data['body']),
-      _stringOf(data['message']),
-      _stringOf(data['previewText']),
-    ].join(' ').toLowerCase();
+  String _resolveNotificationKind(Map<String, dynamic> payload) =>
+      projection.resolveNotificationKind(payload);
 
-    return searchable.contains('missed a call') ||
-        searchable.contains('missed call') ||
-        searchable.contains('call ended') ||
-        searchable.contains('call declined') ||
-        searchable.contains('declined a call') ||
-        searchable.contains('call expired') ||
-        searchable.contains('call cancelled') ||
-        searchable.contains('call canceled') ||
-        searchable.contains('no answer');
-  }
-
-  String _resolveNotificationKind(Map<String, dynamic> payload) {
-    return _firstNonEmpty([
-      _stringOf(payload['notificationKind']),
-      _stringOf(payload['type']),
-      _stringOf(payload['communicationType']),
-      _stringOf(payload['kind']),
-    ]);
-  }
-
-  String _resolveSessionId(Map<String, dynamic> payload) {
-    return _firstNonEmpty([
-      _stringOf(payload['realtimeSessionId']),
-      _stringOf(payload['sessionId']),
-    ]);
-  }
+  String _resolveSessionId(Map<String, dynamic> payload) =>
+      projection.resolveCallSessionId(payload);
 
   String _routeFromPayload(Map<String, dynamic> payload) {
     final kind = _resolveNotificationKind(payload).toUpperCase();
@@ -516,27 +453,19 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     }
   }
 
+  // Deliberately does NOT check terminal status (unlike `_isCallInterrupt`
+  // above) — this only decides whether to skip a duplicate snackbar because
+  // AuraIncomingLiveLayer already renders the ringing card; a terminal call
+  // notification legitimately still wants its own history/toast treatment.
   bool _isLiveInterrupt(Map<String, dynamic> item) {
     final kind = _resolveNotificationKindFromItem(item).toUpperCase();
     final data = _mapOf(item['data']);
     final attention = _stringOf(data['attention']).toUpperCase();
-    return (kind == 'LIVE' ||
-            kind == 'CALL' ||
-            kind == 'REALTIME' ||
-            kind == 'CALL_RINGING' ||
-            kind == 'LIVE_RINGING') &&
-        attention == 'INTERRUPT';
+    return projection.isCallKind(kind) && attention == 'INTERRUPT';
   }
 
-  String _resolveNotificationKindFromItem(Map<String, dynamic> item) {
-    final data = _mapOf(item['data']);
-    return _firstNonEmpty([
-      _stringOf(item['notificationKind']),
-      _stringOf(item['type']),
-      _stringOf(data['notificationKind']),
-      _stringOf(data['communicationType']),
-    ]);
-  }
+  String _resolveNotificationKindFromItem(Map<String, dynamic> item) =>
+      projection.resolveNotificationKind(item);
 
   void _showForegroundNotification(Map<String, dynamic> item) {
     final title = _notificationTitle(item);

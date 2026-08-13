@@ -389,6 +389,23 @@ class RealtimeSocketService {
       'call:declined',
       'call:terminal',
       'call:incoming',
+      // Realtime Architecture Correction — Phase 4 (Notification/Ringing
+      // Projection Migration). Canonical dot-case wire names, dual-emitted
+      // by RealtimeGateway on this same namespace since Phase 2/3
+      // (CANONICAL_WIRE_NAME map). Previously never registered here, so
+      // silently dropped even though the backend already sent them.
+      // `session.cancelled` is SESSION_CANCELLED's wire name — the one
+      // canonical event with no pre-existing legacy equivalent name.
+      // Amended Phase 4 Gate 2, 2026-08-16: was briefly `participant.cancelled`
+      // (a pre-existing inconsistency in the backend's own Phase 0 wire-name
+      // table, corrected there — SESSION_CANCELLED is session-scoped truth,
+      // matching session.created/session.ending/session.ended/session.failed).
+      'invite.issued',
+      'participant.accepted',
+      'participant.declined',
+      'participant.expired',
+      'session.cancelled',
+      'session.ended',
       'meeting.state_changed',
       // Phase 3.2 — in-call participation (ephemeral fan-out).
       'session:reaction',

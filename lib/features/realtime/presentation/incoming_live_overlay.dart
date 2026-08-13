@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/communication/communication_resolver.dart';
 import '../../../core/notifications/native_call_notification_channel.dart';
+import '../application/incoming_call_projection.dart' as projection;
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -119,100 +120,22 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   }
 
   // ── Payload helpers ───────────────────────────────────────────────────────
+  // Realtime Architecture Correction — Phase 4, Part F: delegate to the ONE
+  // shared projection authority (incoming_call_projection.dart) instead of
+  // maintaining a second, independently-drifting copy of this classification
+  // logic (notification_bridge.dart previously had a near-duplicate with a
+  // slightly different fallback phrase list — merged there, not lost).
 
-  String _resolveKind(Map<String, dynamic> item) {
-    final data = _mapOf(item['data']);
-    return _firstNonEmpty([
-      _stringOf(item['notificationKind']),
-      _stringOf(item['type']),
-      _stringOf(data['notificationKind']),
-      _stringOf(data['communicationType']),
-      _stringOf(data['type']),
-    ]).toUpperCase();
-  }
+  String _resolveKind(Map<String, dynamic> item) =>
+      projection.resolveNotificationKind(item);
 
-  String _resolveSessionId(Map<String, dynamic> item) {
-    final data = _mapOf(item['data']);
-    return _firstNonEmpty([
-      _stringOf(data['realtimeSessionId']),
-      _stringOf(data['sessionId']),
-      _stringOf(item['realtimeSessionId']),
-      _stringOf(item['sessionId']),
-    ]);
-  }
+  String _resolveSessionId(Map<String, dynamic> item) =>
+      projection.resolveCallSessionId(item);
 
-  String _resolveCallState(Map<String, dynamic> item) {
-    final data = _mapOf(item['data']);
-    return _firstNonEmpty([
-      _stringOf(data['callState']),
-      _stringOf(data['status']),
-      _stringOf(data['state']),
-      _stringOf(data['result']),
-      _stringOf(item['callState']),
-      _stringOf(item['status']),
-      _stringOf(item['state']),
-      _stringOf(item['result']),
-    ]).toUpperCase();
-  }
+  bool _isTerminalCallItem(Map<String, dynamic> item) =>
+      projection.isTerminalCallPayload(item);
 
-  bool _isTerminalCallItem(Map<String, dynamic> item) {
-    final data = _mapOf(item['data']);
-    final terminalValues = <String>{
-      'MISSED',
-      'ENDED',
-      'DECLINED',
-      'EXPIRED',
-      'CANCELLED',
-      'CANCELED',
-      'FAILED',
-      'TIMEOUT',
-      'TIMED_OUT',
-      'NO_ANSWER',
-      'REJECTED',
-      'COMPLETED',
-      'CLOSED',
-    };
-
-    final stateCandidates = <String>[
-      _resolveCallState(item),
-      _stringOf(item['callStatus']).toUpperCase(),
-      _stringOf(item['deliveryState']).toUpperCase(),
-      _stringOf(data['callStatus']).toUpperCase(),
-      _stringOf(data['deliveryState']).toUpperCase(),
-      _stringOf(data['inviteStatus']).toUpperCase(),
-    ];
-    if (stateCandidates.any(terminalValues.contains)) return true;
-
-    final searchable = <String>[
-      _stringOf(item['title']),
-      _stringOf(item['body']),
-      _stringOf(item['message']),
-      _stringOf(item['previewText']),
-      _stringOf(data['title']),
-      _stringOf(data['body']),
-      _stringOf(data['message']),
-      _stringOf(data['previewText']),
-      _stringOf(data['summary']),
-    ].join(' ').toLowerCase();
-
-    return searchable.contains('missed a call') ||
-        searchable.contains('missed call') ||
-        searchable.contains('call ended') ||
-        searchable.contains('ended a call') ||
-        searchable.contains('call declined') ||
-        searchable.contains('declined a call') ||
-        searchable.contains('call expired') ||
-        searchable.contains('call cancelled') ||
-        searchable.contains('call canceled') ||
-        searchable.contains('no answer');
-  }
-
-  bool _isCallKind(String kind) =>
-      kind == 'LIVE' ||
-      kind == 'CALL' ||
-      kind == 'REALTIME' ||
-      kind == 'CALL_RINGING' ||
-      kind == 'LIVE_RINGING';
+  bool _isCallKind(String kind) => projection.isCallKind(kind);
 
   // ── Interrupt candidate logic ─────────────────────────────────────────────
 

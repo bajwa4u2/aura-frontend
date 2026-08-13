@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../correspondence/data/correspondence_live_service.dart';
+import '../realtime/application/incoming_call_projection.dart';
 import '../realtime/application/realtime_providers.dart';
 
 final incomingCallBridgeProvider =
@@ -21,13 +22,15 @@ final incomingCallBridgeProvider =
         correspondenceLiveServiceProvider,
       );
       final correspondenceSub = correspondenceService.events.listen((event) {
-        if (event.name == 'call:incoming') {
+        // Realtime Architecture Correction — Phase 4. Both socket sources'
+        // event names are routed through the ONE projection authority
+        // (incoming_call_projection.dart) instead of each maintaining its
+        // own ad-hoc name list — a duplicate-delivery-safe, canonical- and
+        // legacy-name-aware mapping.
+        final intent = projectCallPresentationEvent(event.name);
+        if (intent == CallPresentationIntent.show) {
           notifier.addIncoming(event.payload);
-        } else if (event.name == 'session:removed' ||
-            event.name == 'realtime:removed' ||
-            event.name == 'session:ended' ||
-            event.name == 'call:terminal' ||
-            event.name == 'call:declined') {
+        } else if (intent == CallPresentationIntent.clear) {
           final sid = _str(event.payload['sessionId']);
           if (sid.isNotEmpty) notifier.removeBySession(sid);
         } else if (event.name == 'socket:connected') {
@@ -43,13 +46,10 @@ final incomingCallBridgeProvider =
 
       final realtimeSocket = ref.watch(realtimeSocketServiceProvider);
       final realtimeSub = realtimeSocket.events.listen((event) {
-        if (event.name == 'call:incoming') {
+        final intent = projectCallPresentationEvent(event.name);
+        if (intent == CallPresentationIntent.show) {
           notifier.addIncoming(event.payload);
-        } else if (event.name == 'session:removed' ||
-            event.name == 'realtime:removed' ||
-            event.name == 'session:ended' ||
-            event.name == 'call:terminal' ||
-            event.name == 'call:declined') {
+        } else if (intent == CallPresentationIntent.clear) {
           final sid = _str(event.payload['sessionId']);
           if (sid.isNotEmpty) notifier.removeBySession(sid);
         }
@@ -65,6 +65,12 @@ final incomingCallBridgeProvider =
 class IncomingCallBridgeNotifier
     extends StateNotifier<List<Map<String, dynamic>>> {
   IncomingCallBridgeNotifier() : super(const <Map<String, dynamic>>[]);
+
+  // Realtime Architecture Correction — Phase 4, Part G. Session-scoped
+  // precedence: once a session has been authoritatively cleared, a late or
+  // reordered SHOW delivery for that exact session must not resurrect it —
+  // see incoming_call_projection.dart's doc comment.
+  final IncomingCallPrecedenceGuard _guard = IncomingCallPrecedenceGuard();
 
   void addIncoming(Map<String, dynamic> payload) {
     final normalized = _normalizeIncomingPayload(payload);
@@ -84,6 +90,11 @@ class IncomingCallBridgeNotifier
     }
 
     final sessionId = data is Map ? _str(data['sessionId']) : '';
+    if (sessionId.isNotEmpty && !_guard.shouldShow(sessionId)) {
+      // A terminal/non-actionable truth already arrived for this exact
+      // session — this SHOW is a late/reordered/duplicate delivery.
+      return;
+    }
 
     // Dedup by both notification ID and session ID so two pushes for the same
     // session (e.g. delivery retry on a different notification ID) don't produce
@@ -104,6 +115,7 @@ class IncomingCallBridgeNotifier
   }
 
   void _onSessionTerminated(String sessionId) {
+    _guard.recordClear(sessionId);
     final next = state.where((item) {
       final data = item['data'];
       final sid = data is Map ? _str(data['sessionId']) : '';
@@ -114,6 +126,16 @@ class IncomingCallBridgeNotifier
 
   void remove(String id) {
     if (id.isEmpty) return;
+    // Local-timeout/accept/decline/dismiss removal — tombstone the
+    // associated session too (Part G), so this presentation-side decision
+    // gets the same precedence protection as a remote terminal event.
+    for (final item in state) {
+      if (_str(item['id']) != id) continue;
+      final data = item['data'];
+      final sid = data is Map ? _str(data['sessionId']) : '';
+      if (sid.isNotEmpty) _guard.recordClear(sid);
+      break;
+    }
     state = state.where((item) => _str(item['id']) != id).toList();
   }
 
@@ -163,7 +185,12 @@ class IncomingCallBridgeNotifier
       if (expiresAtStr.isEmpty) return true;
       final expiresAt = DateTime.tryParse(expiresAtStr);
       if (expiresAt == null) return true;
-      return expiresAt.isAfter(now);
+      final stillValid = expiresAt.isAfter(now);
+      if (!stillValid) {
+        final sid = _str(data['sessionId']);
+        if (sid.isNotEmpty) _guard.recordClear(sid);
+      }
+      return stillValid;
     }).toList();
     if (next.length != state.length) state = next;
   }
@@ -177,6 +204,7 @@ class IncomingCallBridgeNotifier
   /// tab. Called from the auth-drop teardown in `aura_app.dart` so each
   /// identity gets a clean slate.
   void clear() {
+    _guard.reset();
     if (state.isEmpty) return;
     state = const <Map<String, dynamic>>[];
   }
