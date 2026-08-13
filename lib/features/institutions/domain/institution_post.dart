@@ -14,6 +14,7 @@
 library;
 
 import '../../feed/domain/feed_media.dart';
+import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/tagging/tag_entities.dart';
 export '../../feed/domain/feed_media.dart' show FeedMedia;
 
@@ -254,7 +255,7 @@ class InstitutionPost {
       actorInstitutionId != null && actorInstitutionId!.trim().isNotEmpty;
 
   static const int maxTitleChars = 160;
-  static const int maxBodyChars = 10000;
+  static const int maxBodyChars = ContentLengthPolicy.institutionPostBody;
 
   /// Returns a user-facing message when [visibility]/[distribution] form
   /// an invalid combination. Returns null when the combination is valid.

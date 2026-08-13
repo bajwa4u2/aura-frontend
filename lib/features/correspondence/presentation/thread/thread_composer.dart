@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 
 import '../../../../core/attachments/aura_media_upload.dart';
+import '../../../../core/content_policy/content_length_policy.dart';
 import '../../../../core/tagging/tag_entities.dart';
 import '../../../../core/tagging/tag_text_hydration.dart';
 import '../../../../core/tagging/governed_tag_field.dart';
@@ -1126,6 +1127,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                     child: TextField(
                       controller: _controller,
                       focusNode: _composerFocus,
+                      maxLength: ContentLengthPolicy.message,
                       minLines: 1,
                       maxLines: 6,
                       textInputAction: TextInputAction.newline,
@@ -2023,6 +2025,7 @@ class _ThreadEditMessageDialogState
               child: TextField(
                 controller: _controller,
                 focusNode: _focusNode,
+                maxLength: ContentLengthPolicy.message,
                 minLines: 3,
                 maxLines: 6,
                 decoration: const InputDecoration(labelText: 'Message'),

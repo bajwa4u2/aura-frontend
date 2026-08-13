@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/tagging/governed_tag_field.dart';
+import '../../../core/tagging/tag_entities.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -319,16 +322,49 @@ class _OfficialReplySheet extends ConsumerStatefulWidget {
 
 class _OfficialReplySheetState extends ConsumerState<_OfficialReplySheet> {
   final _bodyCtrl = TextEditingController();
+  final _bodyFocus = FocusNode();
+  final List<TagReference> _selectedTagReferences = <TagReference>[];
   _AccountabilityTag _tag = _AccountabilityTag.none;
   bool _busy = false;
   String? _error;
 
-  static const int _maxChars = 2000;
+  // Publishes through the same createInstitutionPost path as the main
+  // Institution Post composer (an official reply IS an Institution Post,
+  // accountability-tagged back to the original), so it shares that
+  // composer's governed content length and mention support.
+  static const int _maxChars = ContentLengthPolicy.institutionPostBody;
 
   @override
   void dispose() {
     _bodyCtrl.dispose();
+    _bodyFocus.dispose();
     super.dispose();
+  }
+
+  void _rememberSelectedTag(TagReference reference) {
+    if (!reference.isMention) return;
+    final id = reference.canonicalId.trim();
+    final inserted = reference.insertText.trim();
+    if (id.isEmpty || inserted.isEmpty) return;
+    _selectedTagReferences.removeWhere(
+      (existing) =>
+          existing.kind == reference.kind && existing.canonicalId == id,
+    );
+    _selectedTagReferences.add(reference);
+  }
+
+  List<Map<String, dynamic>> _currentMentionPayload() {
+    final text = _bodyCtrl.text;
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final reference in _selectedTagReferences) {
+      if (!reference.isMention) continue;
+      if (!text.contains(reference.insertText)) continue;
+      final key = '${reference.kind.name}:${reference.canonicalId}';
+      if (!seen.add(key)) continue;
+      out.add(reference.toJson());
+    }
+    return out;
   }
 
   String _resolvedTitle() {
@@ -368,6 +404,7 @@ class _OfficialReplySheetState extends ConsumerState<_OfficialReplySheet> {
           'body': body,
           'visibility': InstitutionPostVisibility.publicAll.wire,
           'distribution': InstitutionPostDistribution.globalEligible.wire,
+          'tagReferences': _currentMentionPayload(),
         },
         status: 'PUBLISHED',
       );
@@ -542,13 +579,24 @@ class _OfficialReplySheetState extends ConsumerState<_OfficialReplySheet> {
                 ],
               ),
               const SizedBox(height: AuraSpace.s6),
-              TextField(
+              // AXR-1 — governed @/# autocomplete, matching the main
+              // Institution Post composer this reply publishes through.
+              GovernedTagAutocomplete(
                 controller: _bodyCtrl,
+                focusNode: _bodyFocus,
+                onTagSelected: _rememberSelectedTag,
+                child: TextField(
+                controller: _bodyCtrl,
+                focusNode: _bodyFocus,
+                maxLength: _maxChars,
                 maxLines: 7,
                 minLines: 5,
                 onChanged: (_) => setState(() {}),
                 enabled: !_busy,
                 style: AuraText.body,
+                buildCounter:
+                    (context, {required currentLength, required isFocused, maxLength}) =>
+                        null,
                 decoration: InputDecoration(
                   hintText: 'Write the official institutional response…',
                   hintStyle:
@@ -571,6 +619,7 @@ class _OfficialReplySheetState extends ConsumerState<_OfficialReplySheet> {
                         color: Color(0xFF0D9488), width: 1.5),
                   ),
                   contentPadding: const EdgeInsets.all(AuraSpace.s14),
+                ),
                 ),
               ),
               const SizedBox(height: AuraSpace.s16),

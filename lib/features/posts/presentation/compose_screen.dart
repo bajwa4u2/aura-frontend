@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_entities.dart';
@@ -201,7 +202,7 @@ const List<String> _kRotatingPrompts = [
 ];
 
 class _ComposeScreenState extends ConsumerState<ComposeScreen> {
-  static const int _limit = 2000;
+  static const int _limit = ContentLengthPolicy.post;
   static const int _maxAttachments = 5;
 
   /// Public-UX Phase 5 — current selected intent. Initialised from

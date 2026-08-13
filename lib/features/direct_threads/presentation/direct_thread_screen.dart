@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
@@ -724,6 +725,7 @@ class _Composer extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
+              maxLength: ContentLengthPolicy.message,
               minLines: 1,
               maxLines: 4,
               style: AuraText.body,
