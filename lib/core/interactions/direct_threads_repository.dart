@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../net/dio_provider.dart';
+import '../tagging/tag_entities.dart';
 import 'actor_context.dart';
 import 'follows_repository.dart';
 
@@ -61,6 +62,17 @@ class DirectThreadInfo {
   }
 }
 
+List<TagReference> _parseTagReferences(Object? raw) {
+  if (raw is! List) return const <TagReference>[];
+  final out = <TagReference>[];
+  for (final item in raw) {
+    if (item is Map) {
+      out.add(TagReference.fromJson(Map<String, dynamic>.from(item)));
+    }
+  }
+  return out;
+}
+
 class DirectMessage {
   const DirectMessage({
     required this.id,
@@ -74,6 +86,7 @@ class DirectMessage {
     this.seenAt,
     this.senderUser,
     this.actorInstitution,
+    this.tagReferences = const <TagReference>[],
     this.linkUrl,
     this.linkTitle,
     this.linkDescription,
@@ -93,6 +106,10 @@ class DirectMessage {
   final DateTime? seenAt;
   final Map<String, dynamic>? senderUser;
   final Map<String, dynamic>? actorInstitution;
+
+  /// Item 15 — DM structured @mention persistence. Same AXR-1
+  /// `TagReference` model every other mention-bearing surface uses.
+  final List<TagReference> tagReferences;
 
   /// Item 13 — External Link Representation/OG System, extended to DMs.
   final String? linkUrl;
@@ -130,6 +147,7 @@ class DirectMessage {
       actorInstitution: json['actorInstitution'] is Map
           ? Map<String, dynamic>.from(json['actorInstitution'] as Map)
           : null,
+      tagReferences: _parseTagReferences(json['tagReferences']),
       linkUrl: json['linkUrl']?.toString(),
       linkTitle: json['linkTitle']?.toString(),
       linkDescription: json['linkDescription']?.toString(),
@@ -350,12 +368,16 @@ class DirectThreadsRepository {
     // Item 13 — External Link Representation/OG System, extended to DMs.
     String? linkPreviewId,
     String? linkSourceUrl,
+    // Item 15 — DM structured @mention persistence.
+    List<Map<String, dynamic>>? tagReferences,
   }) async {
     final payload = <String, dynamic>{
       ...actor.toFields('actor'),
       'body': body,
       if (linkPreviewId != null) 'linkPreviewId': linkPreviewId,
       if ((linkSourceUrl ?? '').isNotEmpty) 'linkSourceUrl': linkSourceUrl,
+      if (tagReferences != null && tagReferences.isNotEmpty)
+        'tagReferences': tagReferences,
     };
     final res = await _dio.post(
       '/direct-threads/$threadId/messages',

@@ -22,6 +22,9 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/tagging/tag_entities.dart';
+import '../../../core/tagging/governed_tag_field.dart';
+import '../../public/widgets/mention_text.dart';
 import '../../translation/translation_repository.dart';
 
 /// Phase-2 direct-message thread surface — works for both
@@ -44,6 +47,10 @@ class DirectThreadScreen extends ConsumerStatefulWidget {
 
 class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
   final _bodyCtrl = TextEditingController();
+  final _bodyFocus = FocusNode();
+  // Item 15 — DM structured @mention persistence. Same AXR-1 pattern
+  // `thread_composer.dart` already established, not a DM-specific one.
+  final List<TagReference> _selectedTagReferences = <TagReference>[];
   bool _sending = false;
   String? _sendError;
   String? _seenForActorKey;
@@ -77,7 +84,34 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
   void dispose() {
     _linkDetector?.dispose();
     _bodyCtrl.dispose();
+    _bodyFocus.dispose();
     super.dispose();
+  }
+
+  void _rememberSelectedTag(TagReference reference) {
+    if (!reference.isMention) return;
+    final id = reference.durableEntityId;
+    final sourceText = reference.durableSourceText;
+    if (id.isEmpty || sourceText.isEmpty) return;
+    _selectedTagReferences.removeWhere(
+      (existing) =>
+          existing.kind == reference.kind && existing.durableEntityId == id,
+    );
+    _selectedTagReferences.add(reference);
+  }
+
+  List<Map<String, dynamic>> _currentMentionPayload() {
+    final text = _bodyCtrl.text;
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final reference in _selectedTagReferences) {
+      if (!reference.isMention) continue;
+      if (!text.contains(reference.durableSourceText)) continue;
+      final key = '${reference.kind.name}:${reference.durableEntityId}';
+      if (!seen.add(key)) continue;
+      out.add(reference.toJson());
+    }
+    return out;
   }
 
   /// Mark messages as seen the first time we render the screen with a
@@ -132,6 +166,7 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
 
     final attachedLinkPreview =
         (_linkPreview?.isAttachable ?? false) ? _linkPreview : null;
+    final mentionPayload = _currentMentionPayload();
 
     setState(() {
       _sending = true;
@@ -139,6 +174,7 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
       _optimistic.add(optimistic);
       _bodyCtrl.clear();
       _linkPreview = null;
+      _selectedTagReferences.clear();
     });
 
     try {
@@ -149,6 +185,7 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
         body: body,
         linkPreviewId: attachedLinkPreview?.linkPreviewId,
         linkSourceUrl: attachedLinkPreview?.sourceUrl,
+        tagReferences: mentionPayload,
       );
       ref.invalidate(directMessagesProvider(key));
       // Inbox snapshot (lastMessageAt/snippet/unread) updates server-side
@@ -302,9 +339,11 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
               ),
             _Composer(
               controller: _bodyCtrl,
+              focusNode: _bodyFocus,
               busy: _sending,
               actor: actor,
               onSend: () => _send(actorRef, key),
+              onTagSelected: _rememberSelectedTag,
               linkPreview: _linkPreview,
               onRemoveLinkPreview: () => setState(() => _linkPreview = null),
             ),
@@ -600,9 +639,14 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
                 ],
               ),
               const SizedBox(height: 2),
-              Text(
+              // Item 15 — DM structured @mention persistence; renders the
+              // same governed identity/tap-navigation every other
+              // mention-bearing surface already has.
+              ResolvedTagText(
                 message.body,
+                tagReferences: message.tagReferences,
                 style: AuraText.body.copyWith(color: AuraSurface.ink),
+                selectable: true,
               ),
               // Item 13 — External Link Representation/OG System, extended
               // to DMs; Item 14 extends internal Aura references to a
@@ -747,17 +791,21 @@ class _TranslateAction extends StatelessWidget {
 class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
+    required this.focusNode,
     required this.busy,
     required this.actor,
     required this.onSend,
+    required this.onTagSelected,
     this.linkPreview,
     this.onRemoveLinkPreview,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool busy;
   final ActorContext actor;
   final VoidCallback onSend;
+  final ValueChanged<TagReference> onTagSelected;
   final LinkPreview? linkPreview;
   final VoidCallback? onRemoveLinkPreview;
 
@@ -800,38 +848,46 @@ class _Composer extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: TextField(
+                // AXR-1 — governed @/# autocomplete, same authority every
+                // other mention-bearing composer already uses.
+                child: GovernedTagAutocomplete(
                   controller: controller,
-                  maxLength: ContentLengthPolicy.message,
-                  minLines: 1,
-                  maxLines: 4,
-                  style: AuraText.body,
-                  decoration: InputDecoration(
-                    hintText: actor.isInstitution
-                        ? 'Send as ${actor.displayName ?? "institution"}…'
-                        : 'Send a message…',
-                    hintStyle:
-                        AuraText.body.copyWith(color: AuraSurface.faint),
-                    filled: true,
-                    fillColor: AuraSurface.subtle,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AuraRadius.md),
-                      borderSide:
-                          const BorderSide(color: AuraSurface.divider),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AuraRadius.md),
-                      borderSide:
-                          const BorderSide(color: AuraSurface.divider),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AuraRadius.md),
-                      borderSide: const BorderSide(
-                          color: Color(0xFF0D9488), width: 1.5),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s12,
-                      vertical: AuraSpace.s10,
+                  focusNode: focusNode,
+                  onTagSelected: onTagSelected,
+                  child: TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    maxLength: ContentLengthPolicy.message,
+                    minLines: 1,
+                    maxLines: 4,
+                    style: AuraText.body,
+                    decoration: InputDecoration(
+                      hintText: actor.isInstitution
+                          ? 'Send as ${actor.displayName ?? "institution"}…'
+                          : 'Send a message…',
+                      hintStyle:
+                          AuraText.body.copyWith(color: AuraSurface.faint),
+                      filled: true,
+                      fillColor: AuraSurface.subtle,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AuraRadius.md),
+                        borderSide:
+                            const BorderSide(color: AuraSurface.divider),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AuraRadius.md),
+                        borderSide:
+                            const BorderSide(color: AuraSurface.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AuraRadius.md),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF0D9488), width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AuraSpace.s12,
+                        vertical: AuraSpace.s10,
+                      ),
                     ),
                   ),
                 ),

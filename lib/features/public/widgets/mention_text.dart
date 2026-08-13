@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/tagging/tag_entities.dart';
+import '../../../core/rich_content/inline_rich_span_builder.dart';
 
 /// Public-UX Phase 6.1 / AXR-1 — renders body text with governed tags
 /// styled as accent links: `@handle` substrings tap to `/u/:handle`,
@@ -151,7 +152,13 @@ class _ResolvedTagTextState extends State<ResolvedTagText> {
     for (final item in ranges) {
       if (item.start < cursor) continue;
       if (item.start > cursor) {
-        spans.add(TextSpan(text: widget.text.substring(cursor, item.start)));
+        final plain = buildInlineRichSpans(
+          context,
+          widget.text.substring(cursor, item.start),
+          base,
+        );
+        spans.addAll(plain.spans);
+        _recognizers.addAll(plain.recognizers);
       }
       final recognizer = TapGestureRecognizer()
         ..onTap = () => _openReference(context, item.reference);
@@ -170,7 +177,13 @@ class _ResolvedTagTextState extends State<ResolvedTagText> {
     }
 
     if (cursor < widget.text.length) {
-      spans.add(TextSpan(text: widget.text.substring(cursor)));
+      final plain = buildInlineRichSpans(
+        context,
+        widget.text.substring(cursor),
+        base,
+      );
+      spans.addAll(plain.spans);
+      _recognizers.addAll(plain.recognizers);
     }
 
     final span = TextSpan(style: base, children: spans);
