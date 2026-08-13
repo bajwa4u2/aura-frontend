@@ -947,6 +947,12 @@ class _MeScreenState extends ConsumerState<MeScreen>
           trailing: securityTrailing,
           onTap: () => context.push('/security'),
         ),
+        MeSettingsItem(
+          label: 'Devices',
+          icon: Icons.devices_other_outlined,
+          subtitle: 'Manage devices that receive calls and notifications',
+          onTap: () => context.push('/devices'),
+        ),
       ],
     );
   }
