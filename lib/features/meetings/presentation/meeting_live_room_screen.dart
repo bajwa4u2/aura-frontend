@@ -11,9 +11,11 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
+import '../domain/meeting_institution_routing.dart';
 import 'widgets/active_meeting_return_layer.dart';
 import 'widgets/meeting_conversation_panel.dart';
 import 'widgets/meeting_device_picker.dart';
@@ -844,19 +846,48 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   }
 
   // Ownership: exits from the room must land in the meeting's OWNING
-  // context. The route's institutionId wins; otherwise the meeting record
-  // itself says which institution owns it (hydrated in build).
+  // context IF the exiting viewer actually belongs to that institution.
+  // The route's institutionId wins as a signal of institutional intent;
+  // otherwise the meeting record itself says which institution owns it
+  // (hydrated in build). Realtime Architecture Correction — Phase 6,
+  // Meeting Attendee-Context Restoration, 2026-08-16: an external attendee
+  // who joined via the member path (`widget.institutionId == null`) must
+  // not be bounced into the Institution Workspace shell on exit merely
+  // because the meeting happens to be institution-owned — they have no
+  // seat there. `_exitInstitutionId` still names the owning institution
+  // (for the belongs-check and for institutional actors' own exit); it no
+  // longer unconditionally becomes the exit route.
   String? _owningInstitutionId;
   String? get _exitInstitutionId =>
       widget.institutionId ?? _owningInstitutionId;
 
-  String get _summaryPath => _exitInstitutionId == null
-      ? '/home'
-      : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/summary';
+  bool get _viewerBelongsToExitInstitution {
+    final owning = _exitInstitutionId;
+    if (owning == null || owning.isEmpty) return false;
+    // A route-level institutionId is itself proof of institutional intent
+    // (the founder/host explicitly opened this meeting from within that
+    // institution's Workspace) — only fall back to the affiliation check
+    // when we're relying on the meeting record's own ownership instead.
+    if (widget.institutionId != null && widget.institutionId!.isNotEmpty) {
+      return true;
+    }
+    return belongsToOwningInstitution(
+      owningInstitutionId: owning,
+      viewerActiveInstitutionId: ref.read(institutionIdentityProvider)?.id,
+      viewerAffiliationInstitutionIds:
+          ref.read(myAffiliationsProvider).map((a) => a.id),
+    );
+  }
 
-  String get _workspacePath => _exitInstitutionId == null
-      ? '/home'
-      : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/post-meeting';
+  String get _summaryPath =>
+      _exitInstitutionId == null || !_viewerBelongsToExitInstitution
+          ? '/meetings/${widget.meetingId}/summary'
+          : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/summary';
+
+  String get _workspacePath =>
+      _exitInstitutionId == null || !_viewerBelongsToExitInstitution
+          ? '/meetings/${widget.meetingId}'
+          : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/post-meeting';
 
   Future<void> _endMeeting() async {
     if (_endingMeeting) return;

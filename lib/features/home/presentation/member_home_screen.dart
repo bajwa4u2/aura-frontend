@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:aura/core/auth/session_providers.dart';
 
 import '../../../app/shell/rail/rail_composition.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -21,6 +22,7 @@ import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
 import '../../meetings/application/meetings_provider.dart';
 import '../../meetings/domain/meeting.dart';
+import '../../meetings/domain/meeting_institution_routing.dart';
 import '../../public/widgets/activation_overlay.dart';
 import '../../public/widgets/discourse_card.dart';
 import '../../public/widgets/public_composer.dart';
@@ -716,9 +718,24 @@ class _NextMeetingSection extends ConsumerWidget {
         final live = ahead.where((m) => m.isActive).toList();
         final next = live.isNotEmpty ? live.first : (ahead.isNotEmpty ? ahead.first : null);
         if (next == null) return const SizedBox.shrink();
+        // Realtime Architecture Correction — Phase 6, Meeting Attendee-
+        // Context Restoration: this personal home dashboard is never
+        // institution-scoped, so a "next meeting" that happens to be
+        // institution-owned must not route an external attendee into the
+        // Institution Workspace shell they have no seat in.
+        final viewerBelongs = belongsToOwningInstitution(
+          owningInstitutionId: next.owningInstitutionId,
+          viewerActiveInstitutionId: ref.read(institutionIdentityProvider)?.id,
+          viewerAffiliationInstitutionIds:
+              ref.read(myAffiliationsProvider).map((a) => a.id),
+        );
         return Padding(
           padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-          child: _NextMeetingCard(meeting: next, isLive: next.isActive),
+          child: _NextMeetingCard(
+            meeting: next,
+            isLive: next.isActive,
+            viewerBelongsToOwningInstitution: viewerBelongs,
+          ),
         );
       },
       orElse: () => const SizedBox.shrink(),
@@ -727,10 +744,15 @@ class _NextMeetingSection extends ConsumerWidget {
 }
 
 class _NextMeetingCard extends StatelessWidget {
-  const _NextMeetingCard({required this.meeting, required this.isLive});
+  const _NextMeetingCard({
+    required this.meeting,
+    required this.isLive,
+    required this.viewerBelongsToOwningInstitution,
+  });
 
   final Meeting meeting;
   final bool isLive;
+  final bool viewerBelongsToOwningInstitution;
 
   String _timeLabel(BuildContext context) {
     final at = meeting.scheduledAt?.toLocal();
@@ -837,9 +859,11 @@ class _NextMeetingCard extends StatelessWidget {
 
   String get _meetingPath {
     final institutionId = meeting.owningInstitutionId?.trim() ?? '';
-    if (institutionId.isNotEmpty) {
-      return '/institution/$institutionId/meetings/${meeting.id}';
-    }
-    return '/home';
+    if (institutionId.isEmpty) return '/home';
+    return resolveMeetingRecordRoute(
+      meetingId: meeting.id,
+      owningInstitutionId: institutionId,
+      viewerBelongsToOwningInstitution: viewerBelongsToOwningInstitution,
+    );
   }
 }

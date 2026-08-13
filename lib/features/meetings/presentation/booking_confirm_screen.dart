@@ -8,12 +8,14 @@ import '../../../config.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/errors/app_error_mapper.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/guest_shell.dart';
 import '../../../core/utils/local_timezone.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
+import '../domain/meeting_institution_routing.dart';
 
 class BookingConfirmScreen extends ConsumerStatefulWidget {
   final AvailabilityProfile profile;
@@ -482,10 +484,20 @@ class _ConfirmationView extends ConsumerWidget {
                         // The booking just attached server-side — refresh the
                         // cached inventory before landing on it.
                         ref.invalidate(upcomingMeetingsProvider);
-                        final institutionId = institution?.id.trim() ?? '';
-                        final target = institutionId.isNotEmpty
-                            ? '/institution/$institutionId/meetings/${confirmation.meetingId}'
-                            : '/home';
+                        final target = resolveMeetingRecordRoute(
+                          meetingId: confirmation.meetingId,
+                          owningInstitutionId: institution?.id,
+                          viewerBelongsToOwningInstitution:
+                              belongsToOwningInstitution(
+                            owningInstitutionId: institution?.id,
+                            viewerActiveInstitutionId: ref
+                                .read(institutionIdentityProvider)
+                                ?.id,
+                            viewerAffiliationInstitutionIds: ref
+                                .read(myAffiliationsProvider)
+                                .map((a) => a.id),
+                          ),
+                        );
                         context.go(target);
                       },
                     ),

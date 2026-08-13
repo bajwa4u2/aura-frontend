@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
+import '../domain/meeting_institution_routing.dart';
 
 /// Participant continuity — the moment a booking becomes part of an account.
 ///
@@ -67,10 +69,17 @@ class _KeepMeetingScreenState extends ConsumerState<KeepMeetingScreen> {
       ref.invalidate(upcomingMeetingsProvider);
       ref.invalidate(pastMeetingsProvider);
       if (!mounted) return;
-      final institutionId = meeting.owningInstitutionId?.trim() ?? '';
-      final target = institutionId.isNotEmpty
-          ? '/institution/$institutionId/meetings/${meeting.id}'
-          : '/home';
+      final target = resolveMeetingRecordRoute(
+        meetingId: meeting.id,
+        owningInstitutionId: meeting.owningInstitutionId,
+        viewerBelongsToOwningInstitution: belongsToOwningInstitution(
+          owningInstitutionId: meeting.owningInstitutionId,
+          viewerActiveInstitutionId:
+              ref.read(institutionIdentityProvider)?.id,
+          viewerAffiliationInstitutionIds:
+              ref.read(myAffiliationsProvider).map((a) => a.id),
+        ),
+      );
       context.go(target);
     } catch (e) {
       if (!mounted) return;

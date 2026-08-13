@@ -16,6 +16,7 @@ import '../../updates/providers.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_asset.dart';
+import '../domain/meeting_institution_routing.dart' as routing;
 import 'meeting_lifecycle_presenter.dart';
 import 'meeting_status_chip.dart';
 import 'widgets/meeting_assets_section.dart';
@@ -118,12 +119,18 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
         // institution's. Ownership is untouched: the record still renders
         // the institution as the meeting's owner.
         final owningInstitution = meeting.owningInstitutionId;
-        final belongsToOwningInstitution = owningInstitution != null &&
-            owningInstitution.isNotEmpty &&
-            (ref.watch(institutionIdentityProvider)?.id == owningInstitution ||
-                ref
-                    .watch(myAffiliationsProvider)
-                    .any((a) => a.id == owningInstitution));
+        // Realtime Architecture Correction — Phase 6, Meeting Attendee-
+        // Context Restoration. Now the single shared authority
+        // (meeting_institution_routing.dart) also used by
+        // booking_confirm_screen.dart and keep_meeting_screen.dart, instead
+        // of three independent copies of this same doctrine.
+        final belongsToOwningInstitution = routing.belongsToOwningInstitution(
+          owningInstitutionId: owningInstitution,
+          viewerActiveInstitutionId:
+              ref.watch(institutionIdentityProvider)?.id,
+          viewerAffiliationInstitutionIds:
+              ref.watch(myAffiliationsProvider).map((a) => a.id),
+        );
         if (institutionId == null && belongsToOwningInstitution) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {

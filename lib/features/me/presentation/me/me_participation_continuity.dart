@@ -7,8 +7,10 @@ import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
+import '../../../../core/institutions/institution_access_provider.dart';
 import '../../../meetings/application/meetings_provider.dart';
 import '../../../meetings/domain/meeting.dart';
+import '../../../meetings/domain/meeting_institution_routing.dart';
 import 'me_widgets.dart';
 
 /// Profile → Participation — the member's continuity home for institutional
@@ -16,10 +18,20 @@ import 'me_widgets.dart';
 ///
 /// Everything rendered here is a PROJECTION of the canonical institution
 /// meeting record: nothing is user-owned, nothing is duplicated, and every
-/// item resolves back into its owning institution's meeting, subject to that
-/// institution's authorization. There is deliberately no personal meeting
-/// route and no "My Meetings" inventory — meetings belong to institutions;
-/// members participate in them.
+/// item resolves back into the meeting's canonical record, subject to
+/// governed authorization. Ownership is untouched — the record still
+/// renders the institution as the meeting's owner.
+///
+/// Realtime Architecture Correction — Phase 6, Meeting Attendee-Context
+/// Restoration, 2026-08-16: this file previously routed EVERY item
+/// unconditionally into `/institution/:id/meetings/:id` merely because the
+/// meeting had an owning institution — trapping an external participant (a
+/// member who was invited/attended but has no seat in that institution)
+/// inside the Institution Workspace shell. Corrected: only an institutional
+/// actor (a member/affiliate of the OWNING institution specifically)
+/// canonicalizes into the Workspace shell; everyone else opens the
+/// member-path meeting record, which resolves correctly regardless of
+/// ownership. See `meeting_institution_routing.dart`.
 class MeParticipationContinuity extends ConsumerStatefulWidget {
   const MeParticipationContinuity({
     super.key,
@@ -288,23 +300,44 @@ class _MeParticipationContinuityState
   }
 
   // ── CANONICAL ROUTING ──────────────────────────────────────────────────────
-  // Every participation item opens the owning institution's meeting record.
-  // Authorization is the institution's: the meeting screen re-resolves access
-  // on arrival, so revoked access degrades there, not here. Items whose
-  // institution is unknown are inert — there is no personal meeting route.
+  // Every participation item opens the meeting's canonical record — an
+  // institutional actor lands in the Institution Workspace shell; an
+  // external attendee lands on the member-path record instead (Phase 6).
+  // Authorization is re-resolved on arrival either way, so revoked access
+  // degrades there, not here. Items whose institution is unknown open the
+  // member-path record too — never inert (a personal meeting route always
+  // exists now).
 
   VoidCallback? _meetingOnTap(Meeting meeting) {
-    final institutionId = (meeting.owningInstitutionId ?? '').trim();
-    if (institutionId.isEmpty) return null;
-    return () =>
-        context.push('/institution/$institutionId/meetings/${meeting.id}');
+    final meetingId = meeting.id.trim();
+    if (meetingId.isEmpty) return null;
+    return () => context.push(resolveMeetingRecordRoute(
+          meetingId: meetingId,
+          owningInstitutionId: meeting.owningInstitutionId,
+          viewerBelongsToOwningInstitution: belongsToOwningInstitution(
+            owningInstitutionId: meeting.owningInstitutionId,
+            viewerActiveInstitutionId:
+                ref.read(institutionIdentityProvider)?.id,
+            viewerAffiliationInstitutionIds:
+                ref.read(myAffiliationsProvider).map((a) => a.id),
+          ),
+        ));
   }
 
   VoidCallback? _outcomeOnTap(MeetingOutcome outcome) {
-    final institutionId = (outcome.meetingInstitutionId ?? '').trim();
-    if (institutionId.isEmpty) return null;
-    return () => context
-        .push('/institution/$institutionId/meetings/${outcome.meetingId}');
+    final meetingId = outcome.meetingId.trim();
+    if (meetingId.isEmpty) return null;
+    return () => context.push(resolveMeetingRecordRoute(
+          meetingId: meetingId,
+          owningInstitutionId: outcome.meetingInstitutionId,
+          viewerBelongsToOwningInstitution: belongsToOwningInstitution(
+            owningInstitutionId: outcome.meetingInstitutionId,
+            viewerActiveInstitutionId:
+                ref.read(institutionIdentityProvider)?.id,
+            viewerAffiliationInstitutionIds:
+                ref.read(myAffiliationsProvider).map((a) => a.id),
+          ),
+        ));
   }
 }
 
