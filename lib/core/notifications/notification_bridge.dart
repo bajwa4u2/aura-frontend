@@ -15,6 +15,7 @@ import '../../features/updates/providers.dart';
 import '../../router.dart';
 import 'native_call_notification_channel.dart';
 import 'notification_open_reconcile.dart';
+import 'notification_presentation.dart';
 import 'sw_message_bridge.dart';
 
 final auraScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -291,8 +292,8 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   // ── Snackbar ──────────────────────────────────────────────────────────────
 
   void _showForegroundSnackbar(Map<String, dynamic> payload) {
-    final title = _payloadTitle(payload);
-    final body = _payloadBody(payload);
+    final title = resolveNotificationTitle(payload);
+    final body = resolveNotificationBody(payload);
     final messenger = auraScaffoldMessengerKey.currentState;
     if (messenger != null) {
       messenger.hideCurrentSnackBar();
@@ -304,52 +305,6 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
         ),
       );
     }
-  }
-
-  String _payloadTitle(Map<String, dynamic> payload) {
-    final kind = _resolveNotificationKind(payload).toUpperCase();
-    final callState = _stringOf(payload['callState']).toUpperCase();
-    final actor = _mapOf(payload['actor']);
-    final actorName = _firstNonEmpty([
-      _stringOf(actor['displayName']),
-      _stringOf(actor['handle']),
-      _stringOf(payload['actorName']),
-    ]);
-
-    if (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') {
-      if (callState == 'MISSED') {
-        return actorName.isNotEmpty
-            ? 'Missed call from $actorName'
-            : 'Missed call';
-      }
-      if (callState == 'ENDED') {
-        return actorName.isNotEmpty
-            ? 'Call ended with $actorName'
-            : 'Call ended';
-      }
-      if (callState == 'DECLINED') {
-        return actorName.isNotEmpty ? '$actorName declined' : 'Call declined';
-      }
-      return actorName.isNotEmpty
-          ? '$actorName started a call'
-          : 'Incoming call';
-    }
-
-    if (actorName.isNotEmpty) return actorName;
-
-    return _firstNonEmpty([
-      _stringOf(payload['title']),
-      _stringOf(_mapOf(payload['data'])['title']),
-      'Update',
-    ]);
-  }
-
-  String _payloadBody(Map<String, dynamic> payload) {
-    return _firstNonEmpty([
-      _stringOf(payload['body']),
-      _stringOf(_mapOf(payload['data'])['previewText']),
-      _stringOf(_mapOf(payload['data'])['body']),
-    ]);
   }
 
   // ── Polling-based in-app notification handling ────────────────────────────
@@ -468,8 +423,8 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
       projection.resolveNotificationKind(item);
 
   void _showForegroundNotification(Map<String, dynamic> item) {
-    final title = _notificationTitle(item);
-    final body = _notificationBody(item);
+    final title = resolveNotificationTitle(item);
+    final body = resolveNotificationBody(item);
     final messenger = auraScaffoldMessengerKey.currentState;
 
     if (messenger != null) {
@@ -482,52 +437,6 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
         ),
       );
     }
-  }
-
-  String _notificationTitle(Map<String, dynamic> item) {
-    final kind = _resolveNotificationKindFromItem(item).toUpperCase();
-    final data = _mapOf(item['data']);
-    final callState = _stringOf(data['callState']).toUpperCase();
-    final actor = _mapOf(item['actor']);
-    final actorName = _firstNonEmpty([
-      _stringOf(actor['displayName']),
-      _stringOf(actor['handle']),
-    ]);
-
-    if (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') {
-      if (callState == 'MISSED') {
-        return actorName.isNotEmpty
-            ? 'Missed call from $actorName'
-            : 'Missed call';
-      }
-      if (callState == 'ENDED') {
-        return actorName.isNotEmpty
-            ? 'Call ended with $actorName'
-            : 'Call ended';
-      }
-      if (callState == 'DECLINED') {
-        return actorName.isNotEmpty ? '$actorName declined' : 'Call declined';
-      }
-      return actorName.isNotEmpty
-          ? '$actorName started a call'
-          : 'Incoming call';
-    }
-
-    if (actorName.isNotEmpty) return actorName;
-
-    return _firstNonEmpty([
-      _stringOf(item['title']),
-      _stringOf(data['title']),
-      'Update',
-    ]);
-  }
-
-  String _notificationBody(Map<String, dynamic> item) {
-    return _firstNonEmpty([
-      _stringOf(item['body']),
-      _stringOf(_mapOf(item['data'])['previewText']),
-      _stringOf(_mapOf(item['data'])['body']),
-    ]);
   }
 
   String? _notificationIdOf(Map<String, dynamic> item) {
