@@ -1,6 +1,6 @@
 # Next Work - aura_final
 
-Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CLOSED in aura-backend (committed `214e48e`, pushed), backend-only, zero changes here. Thread Call Lifecycle Convergence code fixes from earlier this session remain landed and pushed; ONE combined founder certification checklist below still applies to those)
+Last updated: 2026-08-16 UTC (Realtime Architecture Correction — Phase 4 (Notification/Ringing Projection Migration) CLOSED in this repo, founder-approved, committed `e344dbc` (paired backend `b359a66`), pushed — see `CURRENT_STATE.md`. Next Realtime phase: Phase 5 (Institution Space adapter), not started, requires a new founder directive. **Canonical, governed, cross-repo Consolidated Release-Client Roadmap: `../aura-backend/capability/AURA_RELEASE_CLIENT_CONSOLIDATED_ROADMAP.md`** — read that document for the single authoritative view of everything remaining before an integrated release-client candidate. Founder release doctrine FROZEN: every founder-confirmed roadmap item (native-notification founder-device-certification gate, iOS Firebase/APNs, Runtime Lifecycle Phase 2, Selection/Clipboard/Paste, Legacy Overlay Cleanup, the Meeting attendee-context restoration item below, and items 8-17) is RELEASE REQUIREMENT: MANDATORY, not an engineering A/B/C recommendation. This file remains the tactical, this-repo-scoped work list; the roadmap doc is the strategic reconciliation.)
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
@@ -29,7 +29,7 @@ The founder's first certification pass on `cd256d3` found 3 of 4 scenarios still
 5. **Meetings**: a booked or invited Aura member opens their meeting and joins — confirm no redirect to Institution Sign In.
 6. **Android ring notification**: confirm it clears on caller-cancel and on natural expiry, not just in-app state.
 
-Do not begin iOS Firebase/APNs Confirmation, Runtime Lifecycle Phase 2, Selection/Clipboard/Rich Paste, or Legacy Global Runtime Overlay Cleanup until this combined checkpoint is certified.
+**Corrected 2026-08-16, Realtime Architecture Correction Phase 4 Gate 2**: this line previously stated this checkpoint blocks iOS Firebase/APNs Confirmation, Runtime Lifecycle Phase 2, Selection/Clipboard/Rich Paste, and Legacy Global Runtime Overlay Cleanup outright — that framing is stale relative to the founder-confirmed release doctrine and roadmap sequencing (`aura-backend/capability/AURA_RELEASE_CLIENT_CONSOLIDATED_ROADMAP.md`). This device-certification pass remains mandatory before release and is the direct evidence dependency for Runtime Lifecycle Phase 2's scoping specifically (its scope was always deliberately left undefined pending this evidence). It is not a blanket gate preventing the Realtime Architecture Correction's remaining phases, or the other named post-Realtime roadmap items, from proceeding architecturally — all are independently MANDATORY per the consolidated roadmap, on their own dependency/execution-order terms, not chained behind this one checkpoint.
 
 ## Thread Call Lifecycle Convergence — implemented this session, founder retest owed (item 3, accept spinner recurrence, may still need its own trace)
 
