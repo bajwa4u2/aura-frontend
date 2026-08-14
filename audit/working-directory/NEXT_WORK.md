@@ -4,6 +4,8 @@ Last updated: 2026-08-16 UTC (**Item 15 (Rich-Text Composition) DELIVERED same d
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
+## Domain 9 — CLOSED, committed and pushed, 2026-08-14 (`88efffb`)
+
 ## Domain 9 — Frontend Contextual Mention Eligibility corrected, 2026-08-14 — commit held pending report review
 
 Canonical record (aura-backend-owned): `../aura-backend/capability/FOUNDER_ACCEPTANCE_REGISTER.md` Domain 9. `mention_scope.dart`/`mention_scope_providers.dart` added; Thread/Space/DM composers now pass a bounded, backend-eligible candidate set instead of the global `/search` pool. **Not started, deliberately not required for this checkpoint**: a scoped backend members-search endpoint — local substring filtering over the (small) bounded candidate set was judged sufficient for v1; revisit only if a Space's membership grows large enough for that to become a real UX problem.
