@@ -26,6 +26,7 @@ import '../ui/aura_radius.dart';
 import '../ui/aura_surface.dart';
 import '../ui/aura_text.dart';
 import '../ui/aura_platform_components.dart' show AuraAvatar;
+import 'mention_scope.dart';
 import 'tag_entities.dart';
 import 'tag_suggest_service.dart';
 import 'tag_token.dart';
@@ -38,6 +39,7 @@ class GovernedTagAutocomplete extends ConsumerStatefulWidget {
     required this.child,
     this.onTagSelected,
     this.maxOverlayHeight = 280,
+    this.mentionScope = const MentionScope.global(),
   });
 
   final TextEditingController controller;
@@ -45,6 +47,14 @@ class GovernedTagAutocomplete extends ConsumerStatefulWidget {
   final Widget child;
   final ValueChanged<TagReference>? onTagSelected;
   final double maxOverlayHeight;
+  /// Governs `@` candidates. Default [MentionScope.global] preserves the
+  /// existing live `/search`-backed behavior unchanged — Posts, Institution
+  /// Posts, Announcements, and replies never pass this. Bounded surfaces
+  /// (Thread/Space, DM) pass [MentionScope.bounded] with their own
+  /// already-resolved, contextually-eligible candidate set. `#` topic
+  /// suggestions are unaffected either way — they're a global taxonomy
+  /// with no eligibility concept.
+  final MentionScope mentionScope;
 
   @override
   ConsumerState<GovernedTagAutocomplete> createState() =>
@@ -110,9 +120,7 @@ class _GovernedTagAutocompleteState
         : const Duration(milliseconds: 120);
     final seq = ++_requestSeq;
     _debounce = Timer(wait, () async {
-      final result = await ref
-          .read(tagSuggestServiceProvider)
-          .suggest(token.sigil, token.query);
+      final result = await _resolveSuggestions(token);
       if (!mounted || seq != _requestSeq) return;
       // The token may have moved/closed while the lookup ran.
       final selNow = widget.controller.selection;
@@ -133,6 +141,36 @@ class _GovernedTagAutocompleteState
         _showOverlay();
       }
     });
+  }
+
+  /// `#` always resolves against the local taxonomy (no eligibility
+  /// concept). `@` under [MentionScope.bounded] filters the caller's
+  /// already-eligible candidate set locally — never the raw global
+  /// `/search` result, and never a second network-ranked authority.
+  /// [MentionScope.global] keeps the exact prior behavior.
+  Future<List<TagSuggestion>> _resolveSuggestions(ActiveTagToken token) {
+    if (token.sigil == '#') {
+      return ref.read(tagSuggestServiceProvider).suggest(token.sigil, token.query);
+    }
+    final scope = widget.mentionScope;
+    if (scope is MentionScopeBounded) {
+      return Future.value(_filterBounded(scope.eligible, token.query));
+    }
+    return ref.read(tagSuggestServiceProvider).suggest(token.sigil, token.query);
+  }
+
+  List<TagSuggestion> _filterBounded(List<TagSuggestion> candidates, String query) {
+    final q = query.trim().toLowerCase();
+    final matches = q.isEmpty
+        ? candidates
+        : candidates
+              .where(
+                (c) =>
+                    c.display.toLowerCase().contains(q) ||
+                    (c.subtitle ?? '').toLowerCase().contains(q),
+              )
+              .toList();
+    return matches.take(TagSuggestService.maxSuggestions).toList();
   }
 
   void _close() {

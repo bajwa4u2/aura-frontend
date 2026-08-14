@@ -23,6 +23,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/tagging/mention_scope.dart';
+import '../../../core/tagging/mention_scope_providers.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../public/widgets/mention_text.dart';
@@ -347,6 +349,9 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
               onTagSelected: _rememberSelectedTag,
               linkPreview: _linkPreview,
               onRemoveLinkPreview: () => setState(() => _linkPreview = null),
+              mentionScope: threadAsync.valueOrNull != null
+                  ? directThreadMentionScope(threadAsync.valueOrNull!, actor)
+                  : const MentionScope.global(),
             ),
           ],
         ),
@@ -799,6 +804,7 @@ class _Composer extends StatelessWidget {
     required this.onTagSelected,
     this.linkPreview,
     this.onRemoveLinkPreview,
+    this.mentionScope = const MentionScope.global(),
   });
 
   final TextEditingController controller;
@@ -809,6 +815,7 @@ class _Composer extends StatelessWidget {
   final ValueChanged<TagReference> onTagSelected;
   final LinkPreview? linkPreview;
   final VoidCallback? onRemoveLinkPreview;
+  final MentionScope mentionScope;
 
   @override
   Widget build(BuildContext context) {
@@ -858,6 +865,7 @@ class _Composer extends StatelessWidget {
                   controller: controller,
                   focusNode: focusNode,
                   onTagSelected: onTagSelected,
+                  mentionScope: mentionScope,
                   child: TextField(
                     controller: controller,
                     focusNode: focusNode,

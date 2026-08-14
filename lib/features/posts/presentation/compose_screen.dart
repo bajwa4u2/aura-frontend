@@ -2089,7 +2089,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // different tables and behind different endpoints.
     if (_isInstitutionPostReply) {
       final asInstitution = widget.asInstitution && instId.isNotEmpty;
-      final body = <String, dynamic>{'body': text};
+      // Domain 9 — previously omitted entirely, so a picker-selected
+      // mention in a reply persisted nothing and notified nobody. Same
+      // state/shape the top-level post publish payload already sends.
+      final body = <String, dynamic>{
+        'body': text,
+        'tagReferences': _currentMentionPayload(),
+        'mentions': _currentMentionPayload(),
+      };
       if (asInstitution) {
         body['asInstitution'] = true;
         body['actorInstitutionId'] = instId;
@@ -2130,7 +2137,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       throw Exception('Reply target missing.');
     }
 
-    final body = <String, dynamic>{'text': text};
+    // Domain 9 — previously omitted entirely, so a picker-selected
+    // mention in a reply persisted nothing and notified nobody.
+    final body = <String, dynamic>{
+      'text': text,
+      'tagReferences': _currentMentionPayload(),
+      'mentions': _currentMentionPayload(),
+    };
     if (widget.asInstitution && instId.isNotEmpty) {
       body['asInstitution'] = true;
       body['institutionId'] = instId;

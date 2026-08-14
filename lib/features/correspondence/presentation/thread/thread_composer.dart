@@ -17,6 +17,8 @@ import '../../../../core/link_preview/link_preview.dart';
 import '../../../../core/link_preview/link_preview_card.dart';
 import '../../../../core/link_preview/link_preview_service.dart';
 import '../../../../core/rich_content/rich_paste_field.dart';
+import '../../../../core/tagging/mention_scope.dart';
+import '../../../../core/tagging/mention_scope_providers.dart';
 import '../../../../core/tagging/tag_entities.dart';
 import '../../../../core/tagging/tag_text_hydration.dart';
 import '../../../../core/tagging/governed_tag_field.dart';
@@ -1158,6 +1160,9 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                     controller: _controller,
                     focusNode: _composerFocus,
                     onTagSelected: _rememberSelectedTag,
+                    mentionScope:
+                        ref.watch(threadMentionScopeProvider(widget.threadId)).valueOrNull ??
+                            const MentionScope.global(),
                     child: TextField(
                       controller: _controller,
                       focusNode: _composerFocus,
@@ -1956,9 +1961,14 @@ class _ComposerFooter extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ThreadEditMessageDialog extends ConsumerStatefulWidget {
-  const ThreadEditMessageDialog({super.key, required this.message});
+  const ThreadEditMessageDialog({
+    super.key,
+    required this.message,
+    required this.threadId,
+  });
 
   final Map<String, dynamic> message;
+  final String threadId;
 
   @override
   ConsumerState<ThreadEditMessageDialog> createState() =>
@@ -2079,6 +2089,9 @@ class _ThreadEditMessageDialogState
                 controller: _controller,
                 focusNode: _focusNode,
                 onTagSelected: _rememberSelectedTag,
+                mentionScope:
+                    ref.watch(threadMentionScopeProvider(widget.threadId)).valueOrNull ??
+                        const MentionScope.global(),
                 child: TextField(
                   controller: _controller,
                   focusNode: _focusNode,

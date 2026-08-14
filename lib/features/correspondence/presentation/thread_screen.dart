@@ -832,7 +832,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   ) async {
     final edited = await showDialog<bool>(
       context: context,
-      builder: (_) => ThreadEditMessageDialog(message: message),
+      builder: (_) => ThreadEditMessageDialog(
+        message: message,
+        threadId: widget.threadId,
+      ),
     );
 
     if (edited == true) {
