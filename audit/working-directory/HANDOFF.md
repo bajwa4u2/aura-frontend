@@ -4,6 +4,10 @@ Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 (back
 
 Read this first, then `CURRENT_STATE.md`, then `AGENTS.md` (operating law).
 
+**Institution Ownership Continuity, 2026-08-14 — COMPLETION PASS DELIVERED.** If you build any surface that lists ownership candidates, fetch them from the backend (`fetchOwnershipRecoveryState`) — never assemble or filter a candidate list in this repo. Never add a generic "make owner" control: the backend refuses `role: OWNER` through the member-role endpoint by design. Original entry follows.
+
+**Institution Ownership Continuity, 2026-08-14 — implemented, NOT yet committed.** Canonical doctrine (aura-backend-owned): `../aura-backend/capability/INSTITUTION_OWNERSHIP_CONTINUITY_DOCTRINE.md`. `account_deletion_screen.dart` now handles `OWNERSHIP_TRANSFER_REQUIRED` truthfully — if you add another irreversible/self-service account action, check whether it needs the same "does this strand an institution" guard before assuming it's safe.
+
 **Account Lifecycle / Public Identity, 2026-08-14 — implemented, NOT yet committed.** Canonical doctrine (aura-backend-owned): `../aura-backend/capability/ACCOUNT_LIFECYCLE_DOCTRINE.md`. **If you touch `AuthorProfileScreen` or add a new profile-consuming surface: `Profile.isActive` (from the backend's `accountStatus` field) must gate any action affordance the backend would reject for a non-active account — never render Follow/Message as tappable for a disabled/deleted profile.**
 
 **Domain 9 — CLOSED and pushed, 2026-08-14 (`88efffb`).** Everything below is now live in `main`, not proposed.

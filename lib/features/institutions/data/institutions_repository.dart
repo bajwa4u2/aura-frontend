@@ -278,6 +278,32 @@ class InstitutionsRepository {
     );
   }
 
+  /// Institution Ownership Continuity — PLATFORM EMERGENCY OWNERSHIP
+  /// RECOVERY. Not a normal ownership-transfer mechanism: only reachable
+  /// (and only meaningful) while the institution has no actionable owner.
+  /// Platform administration restores governance to an eligible existing
+  /// member — it never becomes the owner itself. `reason` is required and
+  /// becomes part of the permanent governance evidence record.
+  Future<void> emergencyRecoverOwnership(
+    String institutionId,
+    String newOwnerUserId,
+    String reason,
+  ) async {
+    final id = institutionId.trim();
+    final uid = newOwnerUserId.trim();
+    final why = reason.trim();
+    if (id.isEmpty || uid.isEmpty) {
+      throw Exception('Institution or user id is missing.');
+    }
+    if (why.isEmpty) {
+      throw Exception('A recovery reason is required.');
+    }
+    await _dio.post(
+      '/institutions/$id/authority/emergency-recover-ownership',
+      data: <String, dynamic>{'newOwnerUserId': uid, 'reason': why},
+    );
+  }
+
   /// GOVERNANCE V1 — delegate an institutional capability to a member.
   Future<void> grantCapability(
     String institutionId,

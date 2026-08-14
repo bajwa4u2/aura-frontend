@@ -665,6 +665,120 @@ class AdminInstitutionMember {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// INSTITUTION OWNERSHIP CONTINUITY — emergency recovery operator state
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A member the backend has confirmed is eligible to receive ownership.
+/// Never assembled client-side: the candidate set comes from the same
+/// eligibility authority the recovery endpoint itself enforces, so this
+/// surface cannot offer a choice the backend would reject.
+class OwnershipRecoveryCandidate {
+  const OwnershipRecoveryCandidate({
+    required this.userId,
+    required this.role,
+    this.displayName,
+    this.handle,
+    this.avatarUrl,
+  });
+
+  final String userId;
+  final String role;
+  final String? displayName;
+  final String? handle;
+  final String? avatarUrl;
+
+  String get label {
+    final name = (displayName ?? '').trim();
+    if (name.isNotEmpty) return name;
+    final h = (handle ?? '').trim();
+    if (h.isNotEmpty) return '@$h';
+    return userId;
+  }
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  factory OwnershipRecoveryCandidate.fromJson(Map<String, dynamic> json) {
+    String? orNull(dynamic v) {
+      final s = _str(v);
+      return s.isEmpty ? null : s;
+    }
+
+    return OwnershipRecoveryCandidate(
+      userId: _str(json['userId']),
+      role: _str(json['role'] ?? 'MEMBER'),
+      displayName: orNull(json['displayName']),
+      handle: orNull(json['handle']),
+      avatarUrl: orNull(json['avatarUrl']),
+    );
+  }
+}
+
+/// Whether an institution currently requires governed ownership recovery.
+///
+/// `recoveryRequired` is derived by the backend from canonical ownership
+/// truth (no actionable owner), never persisted as its own state and never
+/// inferred here. When false the candidate list is empty by design —
+/// ownership changes hands through the owner's own transfer, so there is
+/// deliberately no ordinary "choose an owner" affordance.
+class InstitutionOwnershipRecoveryState {
+  const InstitutionOwnershipRecoveryState({
+    required this.recoveryRequired,
+    this.ownerOfRecordUserId,
+    this.ownerOfRecordLabel,
+    this.candidates = const [],
+  });
+
+  const InstitutionOwnershipRecoveryState.notRequired()
+      : recoveryRequired = false,
+        ownerOfRecordUserId = null,
+        ownerOfRecordLabel = null,
+        candidates = const [];
+
+  final bool recoveryRequired;
+
+  /// The owner still recorded in the database but no longer able to
+  /// exercise authority. Null when the institution never had one.
+  final String? ownerOfRecordUserId;
+  final String? ownerOfRecordLabel;
+  final List<OwnershipRecoveryCandidate> candidates;
+
+  factory InstitutionOwnershipRecoveryState.fromJson(Map<String, dynamic> json) {
+    if (json['recoveryRequired'] != true) {
+      return const InstitutionOwnershipRecoveryState.notRequired();
+    }
+
+    final ownerOfRecord = json['ownerOfRecord'];
+    String? ownerId;
+    String? ownerLabel;
+    if (ownerOfRecord is Map) {
+      final map = Map<String, dynamic>.from(ownerOfRecord);
+      final id = (map['userId'] ?? '').toString().trim();
+      ownerId = id.isEmpty ? null : id;
+      final name = (map['displayName'] ?? '').toString().trim();
+      final handle = (map['handle'] ?? '').toString().trim();
+      ownerLabel = name.isNotEmpty
+          ? name
+          : (handle.isNotEmpty ? '@$handle' : ownerId);
+    }
+
+    final rawCandidates = json['candidates'];
+    return InstitutionOwnershipRecoveryState(
+      recoveryRequired: true,
+      ownerOfRecordUserId: ownerId,
+      ownerOfRecordLabel: ownerLabel,
+      candidates: rawCandidates is List
+          ? rawCandidates
+              .whereType<Map>()
+              .map((e) => OwnershipRecoveryCandidate.fromJson(
+                    Map<String, dynamic>.from(e),
+                  ))
+              .toList()
+          : const [],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REVIEW QUEUE
 // ─────────────────────────────────────────────────────────────────────────────
 

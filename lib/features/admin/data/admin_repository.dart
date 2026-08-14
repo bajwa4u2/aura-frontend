@@ -208,6 +208,40 @@ class AdminRepository {
     await _dio.delete('/v1/institutions/$institutionId/members/$targetUserId');
   }
 
+  // ── Institution Ownership Continuity ─────────────────────────────────────
+  //
+  // Emergency ownership recovery is consequential, narrowly-scoped
+  // platform governance authority, not ordinary member administration. The
+  // backend is authoritative for both the recovery CONDITION and the
+  // eligible replacement set; this surface only renders what it is told
+  // and never derives eligibility of its own.
+
+  Future<InstitutionOwnershipRecoveryState> fetchOwnershipRecoveryState(
+    String institutionId,
+  ) async {
+    final res = await _dio.get(
+      '/v1/institutions/$institutionId/authority/ownership-recovery-state',
+    );
+    final data = res.data;
+    if (data is Map) {
+      return InstitutionOwnershipRecoveryState.fromJson(
+        Map<String, dynamic>.from(data),
+      );
+    }
+    return const InstitutionOwnershipRecoveryState.notRequired();
+  }
+
+  Future<void> emergencyRecoverOwnership(
+    String institutionId,
+    String newOwnerUserId,
+    String reason,
+  ) async {
+    await _dio.post(
+      '/v1/institutions/$institutionId/authority/emergency-recover-ownership',
+      data: {'newOwnerUserId': newOwnerUserId, 'reason': reason},
+    );
+  }
+
   // ── Review Queue ────────────────────────────────────────────────────────
 
   Future<List<ReviewQueueItem>> fetchReviewQueue({String? type, String? status}) async {

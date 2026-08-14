@@ -2,6 +2,16 @@
 
 Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 CLOSED in aura-backend (committed `214e48e`, pushed) — see below)
 
+## Institution Ownership Continuity baseline — COMPLETION PASS DELIVERED, 2026-08-14
+
+Platform-admin ownership recovery is reachable from the existing admin institution members screen and appears ONLY when the backend reports no actionable owner. Baseline suite: 411 frontend tests passing, `flutter analyze` clean. Operator-visible behavior change beyond recovery: the members screen no longer offers "Promote to Owner" or "Make Editor" (both were guaranteed-error dead controls), and its blocking progress overlay now clears after successful actions instead of persisting.
+
+## Institution Ownership Continuity baseline — implemented, NOT yet committed (superseded above)
+
+- Canonical doctrine (aura-backend-owned): `../aura-backend/capability/INSTITUTION_OWNERSHIP_CONTINUITY_DOCTRINE.md`. INSTITUTIONAL OWNERSHIP MUST ALWAYS HAVE EXACTLY ONE ACTIONABLE HUMAN OWNER, now enforced at the aura-backend database level (partial unique index) rather than convention.
+- This repo's scope: `account_deletion_screen.dart` surfaces `OWNERSHIP_TRANSFER_REQUIRED` truthfully (names affected institutions); `institutions_repository.dart` gained `emergencyRecoverOwnership(...)` (callable, no dedicated UI built this pass — deliberately deferred, break-glass tooling).
+- `flutter analyze` clean, full practical suite passing.
+
 ## Realtime Architecture Correction baseline — Phase 1 conditionally approved in aura-backend, zero change in this repo
 
 - Backend Phase 1 record: `../aura-backend/docs/2026-08-14-realtime-architecture-correction-phase1-implementation.md` — CLOSED — Gate 2 APPROVED, committed `214e48e`, pushed to `origin/main`.

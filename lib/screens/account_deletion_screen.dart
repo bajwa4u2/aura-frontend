@@ -107,7 +107,9 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
       final code = _readErrorCode(e);
       final message = _readErrorMessage(e);
       setState(() {
-        _error = _mapErrorMessage(code, message);
+        _error = code == 'OWNERSHIP_TRANSFER_REQUIRED'
+            ? _ownershipTransferRequiredMessage(_readOwnershipInstitutions(e))
+            : _mapErrorMessage(code, message);
       });
     } catch (e) {
       if (!mounted) return;
@@ -143,6 +145,36 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
       if (data['message'] is String) return data['message'] as String;
     }
     return e.message ?? 'Request failed';
+  }
+
+  // Institution Ownership Continuity — OWNERSHIP MUST BE TRANSFERRED
+  // BEFORE VOLUNTARY OWNER EXIT. Never silently picked a replacement on
+  // the backend, so the frontend must say exactly which institutions are
+  // affected and what to do, not just "something went wrong."
+  List<Map<String, dynamic>> _readOwnershipInstitutions(DioException e) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final err = data['error'];
+      final institutions =
+          (err is Map ? err['institutions'] : null) ?? data['institutions'];
+      if (institutions is List) {
+        return institutions
+            .whereType<Map>()
+            .map((m) => Map<String, dynamic>.from(m))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  String _ownershipTransferRequiredMessage(List<Map<String, dynamic>> institutions) {
+    final names = institutions
+        .map((m) => (m['name'] ?? '').toString().trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+    final list = names.isEmpty ? 'one or more institutions' : names.join(', ');
+    return 'You are the owner of $list. Transfer ownership to another '
+        'member before deleting your account.';
   }
 
   String _mapErrorMessage(String code, String message) {

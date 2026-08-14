@@ -4,6 +4,14 @@ Last updated: 2026-08-16 UTC (**Item 15 (Rich-Text Composition) DELIVERED same d
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
+## Institution Ownership Continuity, 2026-08-14 — COMPLETION PASS DELIVERED
+
+All four founder decisions resolved; this repo built decision D (the governed recovery surface). **Carried forward, disclosed not deferred silently: the phantom `EDITOR` institution role.** `invite_create_screen.dart` offers `EDITOR` as a selectable invite role and several screens render labels/colors for it, but the backend `InstitutionMemberRole` enum has only OWNER/ADMIN/MEMBER — assigning it cannot succeed. The dead `Make Editor` control was removed from the platform-admin members screen; the wider phantom (especially the invite surface) needs its own founder decision: add the role, or purge it.
+
+## Institution Ownership Continuity, 2026-08-14 — this repo's half implemented, commit held pending founder review (superseded above)
+
+Canonical record (aura-backend-owned): `../aura-backend/capability/INSTITUTION_OWNERSHIP_CONTINUITY_DOCTRINE.md`. Not built this pass, recommended follow-up if needed: a platform-admin dashboard/picker UI for emergency ownership recovery — the repository method and backend endpoint already exist and are callable.
+
 ## Account Lifecycle / Public Identity, 2026-08-14 — this repo's half implemented, commit held pending founder review
 
 Canonical record (aura-backend-owned): `../aura-backend/capability/ACCOUNT_LIFECYCLE_DOCTRINE.md`. Two mandatory obligations recorded OPEN there (Institution Ownership Continuity, Account Retention & Final Deletion) — neither has any frontend scope defined yet.

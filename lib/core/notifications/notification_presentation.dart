@@ -160,6 +160,11 @@ String? _kindPhrase(String kind) {
       return 'granted you a new capability';
     case 'CAPABILITY_REVOKED':
       return 'revoked a capability';
+    // Institution Ownership Continuity — governance attention for an
+    // institution's remaining admins. Names the governance truth without
+    // exposing why the previous owner became unactionable.
+    case 'INSTITUTION_OWNERSHIP_RECOVERED':
+      return 'restored ownership of an institution you help govern';
     default:
       return null;
   }

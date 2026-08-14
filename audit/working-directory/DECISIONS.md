@@ -4,6 +4,14 @@ Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 condi
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
 
+## 2026-08-14: Institution Ownership Continuity — completion pass; founder decision D built here.
+
+Frozen for this repo: **ownership is never a generic reusable control.** The emergency-recovery affordance exists ONLY under the backend-reported recovery condition, inside the existing admin surface — not a new governance dashboard. Candidate lists must come from the backend's own eligibility authority (`listEligibleOwnershipTargets`); this repo must never assemble or filter ownership candidates itself. Internal lifecycle enum names and moderation rationale are never surfaced.
+
+## 2026-08-14: Institution Ownership Continuity — this repo's half implemented, held pending founder review (aura-backend-owned gate, doctrine frozen there). (superseded above)
+
+Canonical doctrine (aura-backend-owned): `../aura-backend/capability/INSTITUTION_OWNERSHIP_CONTINUITY_DOCTRINE.md`. Account deletion now surfaces a truthful, institution-naming error when the user is a sole actionable owner, instead of a generic failure. `institutions_repository.dart` gained the emergency-recovery API call; no dashboard UI was built for it (deliberately, break-glass tooling).
+
 ## 2026-08-14: Account Lifecycle / Public Identity — this repo's half implemented, held pending founder review (aura-backend-owned gate, doctrine frozen there).
 
 Canonical doctrine (aura-backend-owned): `../aura-backend/capability/ACCOUNT_LIFECYCLE_DOCTRINE.md`. This repo's frontend must never offer Follow/Message on a `Profile` where `isActive` is false — the gate lives in `AuthorProfileScreen`, sourced from the backend's new public-safe `accountStatus` field. Never render the raw backend lifecycle state or a moderation reason.
