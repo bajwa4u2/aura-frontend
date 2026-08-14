@@ -281,6 +281,7 @@ class _HubHeader extends StatelessWidget {
       trailing: Wrap(
         spacing: AuraSpace.s8,
         runSpacing: AuraSpace.s8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           AuraStatusChip(
             label: unreadCount > 0 ? '$unreadCount unread' : 'All read',
@@ -310,6 +311,17 @@ class _HubHeader extends StatelessWidget {
             textColor: liveLabel == 'Live now'
                 ? AuraSurface.coSun
                 : AuraSurface.muted,
+          ),
+          // Domain 13 — personal organization state discoverability.
+          // Literal path (not the router.dart constant) to avoid a
+          // circular import — router.dart already imports this file.
+          GestureDetector(
+            onTap: () => context.push('/me/correspondence/archived'),
+            child: const AuraStatusChip(
+              label: 'Archived',
+              backgroundColor: AuraSurface.subtle,
+              textColor: AuraSurface.muted,
+            ),
           ),
         ],
       ),

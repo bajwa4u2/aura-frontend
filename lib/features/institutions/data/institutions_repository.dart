@@ -665,9 +665,13 @@ class InstitutionsRepository {
   // ── Institution Spaces ────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> listInstitutionSpaces(
-    String institutionId,
-  ) async {
-    final res = await _dio.get('/institutions/$institutionId/spaces');
+    String institutionId, {
+    String scope = 'active',
+  }) async {
+    final res = await _dio.get(
+      '/institutions/$institutionId/spaces',
+      queryParameters: {'scope': scope},
+    );
     if (res.data is Map) {
       final root = Map<String, dynamic>.from(res.data as Map);
       final spaces = root['spaces'];
@@ -750,6 +754,15 @@ class InstitutionsRepository {
     String spaceId,
   ) async {
     await _dio.delete('/institutions/$institutionId/spaces/$spaceId');
+  }
+
+  // Domain 13 — governed restore, same institution-admin authority as
+  // archive above.
+  Future<void> restoreInstitutionSpace(
+    String institutionId,
+    String spaceId,
+  ) async {
+    await _dio.post('/institutions/$institutionId/spaces/$spaceId/restore');
   }
 
   Future<void> joinInstitutionSpace(

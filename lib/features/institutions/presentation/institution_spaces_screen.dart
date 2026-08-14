@@ -52,6 +52,10 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
   String? _actingOn;
   String? _actionError;
 
+  // Domain 13 — archived Institution Spaces are institutional lifecycle
+  // state; browsing them is admin-only, same authority as archive/restore.
+  bool _showArchived = false;
+
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 
   /// Single source of truth for admin gating — never trust route query params.
@@ -75,7 +79,10 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final spaces = await _repo.listInstitutionSpaces(widget.institutionId);
+      final spaces = await _repo.listInstitutionSpaces(
+        widget.institutionId,
+        scope: _showArchived ? 'archived' : 'active',
+      );
       setState(() { _spaces = spaces; _loading = false; });
     } catch (e) {
       setState(() { _error = _message(e, 'Could not load spaces.'); _loading = false; });
@@ -190,6 +197,19 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
       await _load();
     } catch (e) {
       setState(() { _actionError = _message(e, 'Could not archive space.'); _actingOn = null; });
+    }
+  }
+
+  // Domain 13 — governed restore, same institution-admin authority as
+  // archive. No confirmation dialog: restoring is the safe direction.
+  Future<void> _restore(String spaceId) async {
+    if (_actingOn != null) return;
+    setState(() { _actingOn = spaceId; _actionError = null; });
+    try {
+      await _repo.restoreInstitutionSpace(widget.institutionId, spaceId);
+      await _load();
+    } catch (e) {
+      setState(() { _actionError = _message(e, 'Could not restore space.'); _actingOn = null; });
     }
   }
 
@@ -384,7 +404,22 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
               const Spacer(),
               if (isActing)
                 const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              else ...[
+              else if (_showArchived) ...[
+                // Archived is institutional lifecycle state, not deleted —
+                // restore is the only action offered here; opening/joining
+                // an archived space isn't ordinary active operation.
+                GestureDetector(
+                  onTap: () => _restore(id),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.unarchive_outlined, size: 14, color: AuraSurface.coVerdant),
+                      const SizedBox(width: AuraSpace.s4),
+                      Text('Restore', style: AuraText.small.copyWith(color: AuraSurface.coVerdant, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ] else ...[
                 GestureDetector(
                   onTap: () => context.push(
                     '/institution/${widget.institutionId}/spaces/$id',
@@ -446,11 +481,39 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
           ),
         ],
         if (_showCreate && _isAdmin) _buildCreateForm(),
+        if (_isAdmin) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _showArchived = !_showArchived);
+                _load();
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _showArchived ? Icons.forum_outlined : Icons.archive_outlined,
+                    size: 14,
+                    color: AuraSurface.accentText,
+                  ),
+                  const SizedBox(width: AuraSpace.s6),
+                  Text(
+                    _showArchived ? 'Back to active spaces' : 'View archived spaces',
+                    style: AuraText.small.copyWith(color: AuraSurface.accentText, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         if (_spaces.isEmpty && !_showCreate)
-          const InsEmptyState(
-            icon: Icons.forum_outlined,
-            title: 'No spaces yet',
-            description: 'Create one with New Space.',
+          InsEmptyState(
+            icon: _showArchived ? Icons.archive_outlined : Icons.forum_outlined,
+            title: _showArchived ? 'No archived spaces' : 'No spaces yet',
+            description: _showArchived
+                ? 'Spaces you archive show up here, restorable any time.'
+                : 'Create one with New Space.',
           )
         else
           ..._spaces.map(_buildSpaceTile),

@@ -37,7 +37,16 @@ class SpacesRepository {
     int limit = 50,
     String? cursor,
     bool forceRefresh = false,
+    // Domain 13 — personal organization state. Archived browsing is a
+    // deliberate, infrequent action; it deliberately bypasses the active-
+    // list cache entirely rather than complicating the TTL cache with a
+    // second scope dimension.
+    String scope = 'active',
   }) async {
+    if (scope == 'archived') {
+      return _fetchSpaces(limit: limit, cursor: cursor, scope: 'archived');
+    }
+
     final now = DateTime.now();
     final useCache = !_hasText(cursor);
 
@@ -75,12 +84,14 @@ class SpacesRepository {
   Future<List<Map<String, dynamic>>> _fetchSpaces({
     required int limit,
     String? cursor,
+    String scope = 'active',
   }) async {
     final res = await _dio.get(
       '/spaces',
       queryParameters: {
         'limit': limit,
         if (_hasText(cursor)) 'cursor': cursor,
+        'scope': scope,
       },
     );
 
@@ -127,18 +138,26 @@ class SpacesRepository {
     String? name,
     String? description,
     String? visibility,
-    bool? archived,
   }) async {
     final body = <String, dynamic>{
       if (_hasText(name)) 'title': name!.trim(),
       if (_hasText(description)) 'description': description!.trim(),
       if (_hasText(visibility)) 'visibility': visibility!.trim(),
-      if (archived != null) 'archived': archived,
     };
 
     final res = await _dio.patch('/spaces/$spaceId', data: body);
 
     return _unwrapData(res.data);
+  }
+
+  // Domain 13 — personal organization state. Archives/unarchives only the
+  // caller's own membership view; never the Space's global/institutional
+  // lifecycle (see InstitutionsRepository.archiveInstitutionSpace for that).
+  Future<void> setPersonalArchived(
+    String spaceId, {
+    required bool archived,
+  }) async {
+    await _dio.post('/spaces/$spaceId/archive', data: {'archived': archived});
   }
 
   Future<Map<String, dynamic>> inviteMember({

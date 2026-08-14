@@ -312,6 +312,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
                     children: [
                       _ThreadsTab(
                         spaceId: spaceId,
+                        institutionId: widget.institutionId,
                         threadsAsync: threadsAsync,
                         onCreateThread: () =>
                             _showCreateThreadDialog(context, ref),
@@ -408,13 +409,24 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   }
 
   Future<void> _archiveSpace(BuildContext context, WidgetRef ref) async {
+    final institutionId = widget.institutionId;
+    final isInstitutional = institutionId != null && institutionId.isNotEmpty;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Archive space'),
-        content: const Text(
-          'Archiving this space will hide it from active views. '
-          'Members will no longer see it in their space list.',
+        content: Text(
+          isInstitutional
+              // Institutional lifecycle action — genuinely affects every
+              // member, matching INSTITUTION_SPACE_MEMBERSHIP_DOCTRINE.md.
+              ? 'Archiving this space is an institutional action. It will '
+                  'leave active discovery for every member and stop '
+                  'accepting new activity. Its content remains an '
+                  'institutional record and can be restored later.'
+              // Personal organization state — affects only the caller.
+              : 'Archiving hides this space from your own space list. '
+                  'Other members keep seeing it in theirs. You can '
+                  'unarchive it later.',
         ),
         actions: [
           AuraGhostButton(
@@ -431,10 +443,19 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
     );
     if (confirmed != true || !mounted) return;
     try {
-      await ref.read(spacesRepositoryProvider).updateSpace(
-            widget.spaceId,
-            archived: true,
-          );
+      // Institution Space archive is an institutional lifecycle action,
+      // governed separately from a personal Space's own archive path —
+      // this must call the institution-scoped authority, never the
+      // generic space PATCH (which has no institutional-archive field).
+      if (isInstitutional) {
+        await ref
+            .read(institutionsRepositoryProvider)
+            .archiveInstitutionSpace(institutionId, widget.spaceId);
+      } else {
+        await ref
+            .read(spacesRepositoryProvider)
+            .setPersonalArchived(widget.spaceId, archived: true);
+      }
       if (!mounted) return;
       // ignore: use_build_context_synchronously
       context.go('/me/correspondence');
@@ -652,19 +673,42 @@ class _AddInstitutionMemberDialogState
 class _ThreadsTab extends StatelessWidget {
   const _ThreadsTab({
     required this.spaceId,
+    this.institutionId,
     required this.threadsAsync,
     required this.onCreateThread,
   });
 
   final String spaceId;
+  final String? institutionId;
   final AsyncValue<List<Map<String, dynamic>>> threadsAsync;
   final VoidCallback onCreateThread;
 
   @override
   Widget build(BuildContext context) {
+    final isInstitutional = institutionId != null && institutionId!.isNotEmpty;
+    final archivedRoute = isInstitutional
+        ? '/institution/$institutionId/spaces/$spaceId/archived-threads'
+        : '/me/correspondence/$spaceId/archived-threads';
     return ListView(
       children: [
-        const Text('Threads', style: AuraText.title),
+        Row(
+          children: [
+            const Expanded(child: Text('Threads', style: AuraText.title)),
+            // Domain 13 — discoverability for both personally- and
+            // globally-archived conversations in this Space.
+            GestureDetector(
+              onTap: () => context.push(archivedRoute),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.archive_outlined, size: 14, color: AuraSurface.muted),
+                  const SizedBox(width: AuraSpace.s4),
+                  Text('Archived', style: AuraText.small.copyWith(color: AuraSurface.muted)),
+                ],
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: AuraSpace.s10),
         threadsAsync.when(
           loading: () =>

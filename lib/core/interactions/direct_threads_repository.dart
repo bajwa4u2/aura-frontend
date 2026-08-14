@@ -267,8 +267,14 @@ class DirectThreadsRepository {
     return outer;
   }
 
-  Future<List<InboxThread>> listForActor({required ActorRef actor}) async {
-    final query = <String, dynamic>{...actor.toQuery('actor')};
+  Future<List<InboxThread>> listForActor({
+    required ActorRef actor,
+    String scope = 'active',
+  }) async {
+    final query = <String, dynamic>{
+      ...actor.toQuery('actor'),
+      'scope': scope,
+    };
     final res = await _dio.get(
       '/direct-threads',
       queryParameters: query,
@@ -301,6 +307,21 @@ class DirectThreadsRepository {
   }) async {
     final body = <String, dynamic>{...actor.toFields('actor')};
     await _dio.post('/direct-threads/$threadId/seen', data: body);
+  }
+
+  // Domain 13 — personal organization state. Archives/unarchives only the
+  // calling actor's own side of the conversation; the other participant
+  // is never affected. No hard delete.
+  Future<void> setArchived({
+    required String threadId,
+    required ActorRef actor,
+    required bool archived,
+  }) async {
+    final body = <String, dynamic>{
+      ...actor.toFields('actor'),
+      'archived': archived,
+    };
+    await _dio.post('/direct-threads/$threadId/archive', data: body);
   }
 
   Future<DirectThreadInfo> openOrCreate({
@@ -426,4 +447,14 @@ final inboxThreadsProvider = FutureProvider.autoDispose
     .family<List<InboxThread>, ActorRef>((ref, actor) async {
   final repo = ref.read(directThreadsRepositoryProvider);
   return repo.listForActor(actor: actor);
+});
+
+// Domain 13 — personal organization state. Separate provider (not just a
+// different `scope` argument on the same family) so the active and
+// archived lists never share a cache entry and each invalidates
+// independently after an archive/unarchive action.
+final archivedInboxThreadsProvider = FutureProvider.autoDispose
+    .family<List<InboxThread>, ActorRef>((ref, actor) async {
+  final repo = ref.read(directThreadsRepositoryProvider);
+  return repo.listForActor(actor: actor, scope: 'archived');
 });

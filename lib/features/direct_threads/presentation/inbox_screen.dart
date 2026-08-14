@@ -18,8 +18,15 @@ import '../../../core/ui/aura_text.dart';
 /// badges. Mounts at:
 ///   * `/messages`                     (member shell)
 ///   * `/institution/:id/messages`     (institution shell — same screen)
+///
+/// Domain 13 — `archived: true` renders the personal-archive view instead
+/// (swipe restores rather than archives). Participant-scoped: archiving a
+/// DM here never affects the other participant, matches
+/// `capability/FOUNDER_ACCEPTANCE_REGISTER.md`'s Domain 13 resolution.
 class InboxScreen extends ConsumerWidget {
-  const InboxScreen({super.key});
+  const InboxScreen({super.key, this.archived = false});
+
+  final bool archived;
 
   ActorRef? _actorRefOf(ActorContext? actor) {
     if (actor == null) return null;
@@ -54,7 +61,13 @@ class InboxScreen extends ConsumerWidget {
       );
     }
 
-    final inboxAsync = ref.watch(inboxThreadsProvider(actorRef));
+    final inboxAsync = archived
+        ? ref.watch(archivedInboxThreadsProvider(actorRef))
+        : ref.watch(inboxThreadsProvider(actorRef));
+    void invalidateBoth() {
+      ref.invalidate(inboxThreadsProvider(actorRef));
+      ref.invalidate(archivedInboxThreadsProvider(actorRef));
+    }
     return AuraScaffold(
       showHeader: false,
       body: SafeArea(
@@ -69,9 +82,22 @@ class InboxScreen extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  const Expanded(
-                    child: Text('Messages', style: AuraText.headline),
+                  Expanded(
+                    child: Text(
+                      archived ? 'Archived' : 'Messages',
+                      style: AuraText.headline,
+                    ),
                   ),
+                  if (!archived)
+                    IconButton(
+                      tooltip: 'Archived conversations',
+                      icon: const Icon(Icons.archive_outlined),
+                      onPressed: () => context.push(
+                        actor!.isInstitution
+                            ? '/institution/${actor.institutionId}/messages/direct/archived'
+                            : '/messages/direct/archived',
+                      ),
+                    ),
                   if (actor!.isInstitution)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -106,26 +132,28 @@ class InboxScreen extends ConsumerWidget {
                     action: AuraSecondaryButton(
                       label: 'Try again',
                       icon: Icons.refresh_rounded,
-                      onPressed: () =>
-                          ref.invalidate(inboxThreadsProvider(actorRef)),
+                      onPressed: invalidateBoth,
                     ),
                   ),
                 ),
                 data: (items) {
                   if (items.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: AuraEmptyState(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        title: 'No conversations yet',
-                        body:
-                            'Start a thread from a profile or post to see it here.',
+                        icon: archived
+                            ? Icons.archive_outlined
+                            : Icons.chat_bubble_outline_rounded,
+                        title: archived
+                            ? 'No archived conversations'
+                            : 'No conversations yet',
+                        body: archived
+                            ? 'Conversations you archive show up here.'
+                            : 'Start a thread from a profile or post to see it here.',
                       ),
                     );
                   }
                   return RefreshIndicator(
-                    onRefresh: () async {
-                      ref.invalidate(inboxThreadsProvider(actorRef));
-                    },
+                    onRefresh: () async => invalidateBoth(),
                     child: ListView.separated(
                       padding: const EdgeInsets.all(AuraSpace.s12),
                       itemCount: items.length,
@@ -135,6 +163,8 @@ class InboxScreen extends ConsumerWidget {
                         thread: items[i],
                         actor: actor,
                         actorRef: actorRef,
+                        archived: archived,
+                        onArchiveChanged: invalidateBoth,
                       ),
                     ),
                   );
@@ -153,11 +183,15 @@ class _InboxTile extends ConsumerWidget {
     required this.thread,
     required this.actor,
     required this.actorRef,
+    this.archived = false,
+    this.onArchiveChanged,
   });
 
   final InboxThread thread;
   final ActorContext actor;
   final ActorRef actorRef;
+  final bool archived;
+  final VoidCallback? onArchiveChanged;
 
   /// Whichever participant is NOT the active actor — the "other side".
   DirectThreadParticipantWithEmbed _other() {
@@ -195,7 +229,7 @@ class _InboxTile extends ConsumerWidget {
     final unread = thread.unreadCount;
     final preview = (thread.lastMessageSnippet ?? '').trim();
 
-    return InkWell(
+    final tile = InkWell(
       onTap: () => context.push(_route(context)),
       borderRadius: BorderRadius.circular(AuraRadius.md),
       child: Container(
@@ -300,6 +334,40 @@ class _InboxTile extends ConsumerWidget {
           ],
         ),
       ),
+    );
+
+    // Domain 13 — personal organization state. Swipe to archive/unarchive
+    // this actor's own view; the other participant is never affected.
+    return Dismissible(
+      key: ValueKey('dm-${thread.threadId}-$archived'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s16),
+        margin: const EdgeInsets.only(bottom: 0),
+        decoration: BoxDecoration(
+          color: archived ? AuraSurface.accentSoft : AuraSurface.coRose.withValues(alpha: 0.16),
+          borderRadius: BorderRadius.circular(AuraRadius.md),
+        ),
+        child: Icon(
+          archived ? Icons.unarchive_outlined : Icons.archive_outlined,
+          color: archived ? AuraSurface.accentText : AuraSurface.coRose,
+        ),
+      ),
+      confirmDismiss: (_) async {
+        try {
+          await ref.read(directThreadsRepositoryProvider).setArchived(
+                threadId: thread.threadId,
+                actor: actorRef,
+                archived: !archived,
+              );
+          onArchiveChanged?.call();
+          return true;
+        } catch (_) {
+          return false;
+        }
+      },
+      child: tile,
     );
   }
 }

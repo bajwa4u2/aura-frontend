@@ -33,8 +33,12 @@ class ThreadsRepository {
 
   Future<List<Map<String, dynamic>>> listThreads({
     required String spaceId,
+    String scope = 'active',
   }) async {
-    final res = await _dio.get('/spaces/$spaceId/threads');
+    final res = await _dio.get(
+      '/spaces/$spaceId/threads',
+      queryParameters: {'scope': scope},
+    );
 
     final payload = res.data;
     final items = _extractList(payload);
@@ -116,6 +120,17 @@ class ThreadsRepository {
   Future<Map<String, dynamic>> markThreadRead(String threadId) async {
     final res = await _dio.post('/threads/$threadId/read');
     return _unwrapData(res.data);
+  }
+
+  // Domain 13 — personal organization state. Archives/unarchives only the
+  // calling user's own view of an ordinary Thread; never affects other
+  // members and never touches Thread.archivedAt (that's `updateThread`'s
+  // `archived` param — the separate, global owner/admin/editor action).
+  Future<void> setPersonalArchived(
+    String threadId, {
+    required bool archived,
+  }) async {
+    await _dio.post('/threads/$threadId/archive', data: {'archived': archived});
   }
 }
 

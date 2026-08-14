@@ -98,6 +98,8 @@ import 'features/institutions/activity/institution_activity_screen.dart';
 import 'features/monetization/presentation/institution_billing_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
+import 'features/correspondence/presentation/archived_spaces_screen.dart';
+import 'features/correspondence/presentation/archived_threads_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
 import 'features/correspondence/presentation/thread_state_wrapper.dart';
 import 'features/correspondence/presentation/invite_member_screen.dart';
@@ -1328,6 +1330,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '$kMessagesRoute/direct',
             builder: (_, __) => const InboxScreen(),
           ),
+          GoRoute(
+            path: '$kMessagesRoute/direct/archived',
+            builder: (_, __) => const InboxScreen(archived: true),
+          ),
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
@@ -1472,6 +1478,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const CorrespondenceHubScreen(),
           ),
           GoRoute(
+            path: '$kCorrespondenceHubRoute/archived',
+            builder: (_, __) => const ArchivedSpacesScreen(),
+          ),
+          GoRoute(
             path: kCreateConversationRoute,
             redirect: (context, state) {
               final query = <String, String>{...state.uri.queryParameters};
@@ -1497,6 +1507,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/me/correspondence/:spaceId',
             builder: (context, state) =>
                 SpaceScreen(spaceId: state.pathParameters['spaceId'] ?? ''),
+          ),
+          GoRoute(
+            path: '/me/correspondence/:spaceId/archived-threads',
+            builder: (context, state) => ArchivedThreadsScreen(
+              spaceId: state.pathParameters['spaceId'] ?? '',
+            ),
           ),
           GoRoute(
             path: '/me/correspondence/:spaceId/invite',
@@ -1766,6 +1782,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/institution/:institutionId/spaces/:spaceId/archived-threads',
+            builder: (context, state) => ArchivedThreadsScreen(
+              spaceId: state.pathParameters['spaceId'] ?? '',
+            ),
+          ),
+          GoRoute(
             path:
                 '/institution/:institutionId/spaces/:spaceId/thread/:threadId',
             builder: (context, state) => ThreadStateWrapper(
@@ -1886,6 +1908,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/institution/:institutionId/messages/direct',
             builder: (_, __) => const InboxScreen(),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/messages/direct/archived',
+            builder: (_, __) => const InboxScreen(archived: true),
           ),
         ],
       ),

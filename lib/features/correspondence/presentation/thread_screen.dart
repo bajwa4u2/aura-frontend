@@ -417,6 +417,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     }
   }
 
+  // Global owner/admin/editor lifecycle action — affects every member.
+  // Distinct from _archiveThreadForMe below (Domain 13, personal
+  // organization state); the two must never be conflated or merged.
   Future<void> _archiveThread() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -424,8 +427,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         backgroundColor: AuraSurface.card,
         title: const Text('Archive conversation'),
         content: const Text(
-          'This conversation will be archived and hidden from your messages. '
-          'Members can still access it.',
+          'This archives the conversation for every member — it will '
+          'leave everyone\'s active list. Members with access can still '
+          'open it; it can be restored later.',
         ),
         actions: [
           TextButton(
@@ -447,6 +451,47 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       await ref
           .read(threadsRepositoryProvider)
           .updateThread(widget.threadId, archived: true);
+      if (!mounted) return;
+      context.pop();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not archive. Please try again.')),
+      );
+    }
+  }
+
+  // Domain 13 — personal organization state. Any space member may hide
+  // their own view of an ordinary conversation; never affects any other
+  // member and never touches the global Thread.archivedAt lifecycle above.
+  Future<void> _archiveThreadForMe() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.card,
+        title: const Text('Archive for me'),
+        content: const Text(
+          'This hides the conversation from your own message list. '
+          'Other members keep seeing it in theirs. You can unarchive it '
+          'later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Archive'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(threadsRepositoryProvider)
+          .setPersonalArchived(widget.threadId, archived: true);
       if (!mounted) return;
       context.pop();
     } catch (_) {
@@ -594,11 +639,15 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       );
                     }
                   : null,
-              // Rename/archive only for group or space threads — not 1:1.
+              // Rename/global-archive only for group or space threads — not
+              // 1:1. Archive-for-me (Domain 13, personal) is available for
+              // any thread including 1:1 — it's the calling user's own
+              // organization state, not a global lifecycle action.
               onRename: !threadContext.isDirect
                   ? () => _renameThread(threadContext.explicitTitle)
                   : null,
               onArchive: !threadContext.isDirect ? _archiveThread : null,
+              onArchiveForMe: _archiveThreadForMe,
             )
           else
             const _ThreadBarPlaceholder(),
@@ -809,6 +858,7 @@ class _ThreadCompactBar extends StatelessWidget {
     this.onAddMembers,
     this.onRename,
     this.onArchive,
+    this.onArchiveForMe,
   });
 
   final CorrespondenceThreadContext contextData;
@@ -821,6 +871,9 @@ class _ThreadCompactBar extends StatelessWidget {
   final VoidCallback? onAddMembers;
   final VoidCallback? onRename;
   final VoidCallback? onArchive;
+  // Domain 13 — personal organization state, distinct from onArchive
+  // (the global owner/admin/editor lifecycle action above).
+  final VoidCallback? onArchiveForMe;
 
   String _contextLine() {
     if (contextData.isSpace) {
@@ -940,7 +993,7 @@ class _ThreadCompactBar extends StatelessWidget {
                   ),
                 ]);
               }
-              if (onRename != null || onArchive != null) {
+              if (onRename != null || onArchive != null || onArchiveForMe != null) {
                 items.add(const PopupMenuDivider());
                 if (onRename != null) {
                   items.add(const PopupMenuItem(
@@ -948,10 +1001,16 @@ class _ThreadCompactBar extends StatelessWidget {
                     child: Text('Rename conversation'),
                   ));
                 }
+                if (onArchiveForMe != null) {
+                  items.add(const PopupMenuItem(
+                    value: 'archive-for-me',
+                    child: Text('Archive for me'),
+                  ));
+                }
                 if (onArchive != null) {
                   items.add(const PopupMenuItem(
                     value: 'archive',
-                    child: Text('Archive conversation'),
+                    child: Text('Archive conversation (everyone)'),
                   ));
                 }
               }
@@ -983,6 +1042,10 @@ class _ThreadCompactBar extends StatelessWidget {
               }
               if (value == 'rename' && onRename != null) {
                 onRename!();
+                return;
+              }
+              if (value == 'archive-for-me' && onArchiveForMe != null) {
+                onArchiveForMe!();
                 return;
               }
               if (value == 'archive' && onArchive != null) {

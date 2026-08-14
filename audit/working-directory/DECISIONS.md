@@ -4,6 +4,18 @@ Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 condi
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
 
+## 2026-08-13: Domain 13 reversibility completion in this repo — archived-browse/restore UI built for Personal Spaces and Threads, closing the gap the founder held commit on.
+
+Canonical record (aura-backend-owned): `../aura-backend/capability/FOUNDER_ACCEPTANCE_REGISTER.md` Domain 13. New `ArchivedSpacesScreen` and `ArchivedThreadsScreen` complete the reversible-lifecycle requirement for all four surfaces (DMs already had this from the first pass).
+
+## 2026-08-13: Domain 13 (Conversation Lifecycle / Retention Consequence Integrity) frontend wiring — personal-vs-institutional archive doctrine applied in this repo.
+
+Canonical resolution (aura-backend-owned): `../aura-backend/capability/FOUNDER_ACCEPTANCE_REGISTER.md` Domain 13. This repo's `space_screen.dart` "Archive space" now correctly routes institutional vs personal Space archive to two different backend authorities instead of one broken shared path; `thread_screen.dart` now exposes personal ("Archive for me") and global ("Archive conversation (everyone)") as genuinely separate actions; DM inbox gained swipe-to-archive and an archived view. Certification held at ARCHITECTURE/IMPLEMENTATION PASS only.
+
+## 2026-08-13: Mandatory Discovery & Improvement Reporting Governance FROZEN as permanent, platform-wide doctrine (aura-backend-owned).
+
+Canonical: `../aura-backend/capability/MANDATORY_DISCOVERY_AND_IMPROVEMENT_REPORTING_GOVERNANCE.md`, not duplicated here. Discovery creates a reporting obligation, not automatic implementation authority — applies in this repo the same as every other Aura Platform repository. Every future checkpoint closeout must include a "Discoveries Outside the Direct Implementation" section.
+
 ## 2026-08-16: Release-Client Product-Reality Reconciliation — Layered Certification Governance + Founder Acceptance Register adopted (aura-backend-owned doctrine, this repo's changes reviewed under it), checkpoint APPROVED FOR COMMIT.
 
 Doctrine and register are canonical in aura-backend (`capability/LAYERED_CERTIFICATION_GOVERNANCE.md`, `capability/FOUNDER_ACCEPTANCE_REGISTER.md`) — not duplicated here. This repo's checkpoint deliverables (Institution Space identity/Add-Member wiring, invitation delivery-status surfacing, the `OrphanedSessionDismissalCache` runtime-lifecycle fix) were approved at ARCHITECTURE + IMPLEMENTATION PASS only — PRODUCT-BEHAVIOR, REAL-BOUNDARY, and FOUNDER/PRODUCT ACCEPTANCE remain explicitly OPEN for all of them pending founder live verification. Founder decision, applying specifically to the Runtime Lifecycle fix: per-session persisted dismissal via `SharedPreferences` is approved because it never mutates canonical session truth (purely local) and self-prunes against live sessions — founder will personally verify the full reload/restart/session-ends matrix before this domain can move past PRODUCT-BEHAVIOR: OPEN. Do NOT begin Item 17.
