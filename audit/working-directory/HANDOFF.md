@@ -1,5 +1,9 @@
 # Handoff - aura_final
 
+## Roadmap authority — 2026-08-14
+
+The canonical roadmap for the whole platform is `../aura-backend/capability/AURA_ROADMAP_RECONCILIATION_AND_UPGRADED_ROADMAP.md` (backend-owned, referenced not duplicated, matching the existing doctrine-document convention). It reconciles the original Phase/Item 1-17 roadmap against what was actually built and replaces the flat item list with a CHAPTER/GATE structure. **"Items 1-17 complete" is false**: implementation is largely complete, but PRODUCT-BEHAVIOR / CROSS-SYSTEM / REAL-BOUNDARY / FOUNDER ACCEPTANCE are open on essentially every item. This repo's largest named debts inside that roadmap: **Cross-System Communication Identity Coherence** (roadmap item 4 — founder observed identity not coherently represented as it moves Thread <-> DM <-> Space <-> Call; two prior audits were explicitly status-corrected from "certification" to "architectural audit / initial findings", so this remains untraced), the owed **live rich-paste verification** (register domain 1 — the `PasteTextIntent` dispatch could not be exercised in this harness and the founder instructed that live verification is owed rather than more harness proof), the **composer toolbar UI** for Institution Posts/Announcements, and the **phantom `EDITOR` role** still selectable in `invite_create_screen.dart`. Next work is Chapter A (Runtime Stability Cluster, which includes this repo's Riverpod ref-after-dispose defect). Item 17 must not begin.
+
 Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 (backend-only) CLOSED in aura-backend (committed `214e48e`, pushed to origin/main), zero changes in THIS repo; Thread Call Lifecycle Convergence code fixes from earlier this session remain landed and pushed)
 
 Read this first, then `CURRENT_STATE.md`, then `AGENTS.md` (operating law).
