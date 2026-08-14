@@ -4,6 +4,10 @@ Last updated: 2026-08-16 UTC (**Item 15 (Rich-Text Composition) DELIVERED same d
 
 This document lists only remaining work. No item below is authorized as the next milestone until the founder prioritizes it.
 
+## Account Lifecycle / Public Identity, 2026-08-14 — this repo's half implemented, commit held pending founder review
+
+Canonical record (aura-backend-owned): `../aura-backend/capability/ACCOUNT_LIFECYCLE_DOCTRINE.md`. Two mandatory obligations recorded OPEN there (Institution Ownership Continuity, Account Retention & Final Deletion) — neither has any frontend scope defined yet.
+
 ## Domain 9 — CLOSED, committed and pushed, 2026-08-14 (`88efffb`)
 
 ## Domain 9 — Frontend Contextual Mention Eligibility corrected, 2026-08-14 — commit held pending report review

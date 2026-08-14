@@ -247,6 +247,31 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     );
   }
 
+  /// Account Lifecycle / Public Identity doctrine — truthful, non-
+  /// judgmental representation. Never states a moderation reason; just
+  /// that the account is no longer active/deleted, so the viewer
+  /// understands why Follow/Message aren't offered.
+  Widget? _lifecycleNotice(Profile profile) {
+    if (profile.isActive) return null;
+    final message = profile.accountStatus == 'DELETED'
+        ? 'This account has been deleted.'
+        : 'This account is currently inactive.';
+    return AuraCard(
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, size: 18, color: AuraSurface.muted),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Text(
+              message,
+              style: AuraText.body.copyWith(color: AuraSurface.muted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _presenceNotice({
     required bool isAuthed,
     required bool canCorrespond,
@@ -494,11 +519,17 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
       _ => 'Follow',
     };
 
+    // Account Lifecycle / Public Identity doctrine — the profile stays
+    // resolvable (historical continuity), but a non-active account must
+    // never offer an action the backend would reject: it's no longer a
+    // valid target for a NEW relationship (follow) or NEW communication
+    // (message/invite).
     final canFollowAction = !isSelf &&
+        profile.isActive &&
         (effectiveFollowState == 'none' ||
             effectiveFollowState == 'outgoing_pending');
     final canCorrespond =
-        isAuthed && !isSelf && followState == 'following';
+        isAuthed && !isSelf && profile.isActive && followState == 'following';
 
     final notice = _presenceNotice(
       isAuthed: isAuthed,
@@ -622,6 +653,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                       ),
                   ],
                 ),
+                if (_lifecycleNotice(profile) != null) ...[
+                  const SizedBox(height: AuraSpace.s16),
+                  _lifecycleNotice(profile)!,
+                ],
                 if (showNotice) ...[
                   const SizedBox(height: AuraSpace.s16),
                   notice,

@@ -13,6 +13,7 @@ class Profile {
     required this.isFollowing,
     this.isVerified = false,
     this.followState = 'none',
+    this.accountStatus = 'ACTIVE',
   });
 
   final String id;
@@ -30,6 +31,15 @@ class Profile {
   final bool isFollowing;
   final bool isVerified;
   final String followState;
+
+  /// Account Lifecycle / Public Identity doctrine — 'ACTIVE' | 'DISABLED'
+  /// | 'DELETED'. Direct profile resolution stays available for historical
+  /// continuity even when non-active; this field is what lets the UI
+  /// truthfully represent that instead of presenting every resolvable
+  /// profile as fully active. Never carries a moderation reason.
+  final String accountStatus;
+
+  bool get isActive => accountStatus == 'ACTIVE';
 
   factory Profile.fromJson(Map<String, dynamic> j) {
     int asInt(dynamic v) {
@@ -71,6 +81,7 @@ class Profile {
                 'VERIFIED'),
       ),
       followState: state.isEmpty ? (following ? 'following' : 'none') : state,
+      accountStatus: (j['accountStatus'] ?? 'ACTIVE').toString().trim().toUpperCase(),
     );
   }
 }

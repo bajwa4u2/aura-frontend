@@ -4,6 +4,10 @@ Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 condi
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).
 
+## 2026-08-14: Account Lifecycle / Public Identity — this repo's half implemented, held pending founder review (aura-backend-owned gate, doctrine frozen there).
+
+Canonical doctrine (aura-backend-owned): `../aura-backend/capability/ACCOUNT_LIFECYCLE_DOCTRINE.md`. This repo's frontend must never offer Follow/Message on a `Profile` where `isActive` is false — the gate lives in `AuthorProfileScreen`, sourced from the backend's new public-safe `accountStatus` field. Never render the raw backend lifecycle state or a moderation reason.
+
 ## 2026-08-14: Domain 9 — CLOSED, this repo's half committed and pushed (`88efffb`, paired aura-backend `4eb214f`).
 
 Verified before commit: every staged change in this repo traced to Domain 9 (including `compose_screen.dart`'s reply-mention-payload fix from an earlier segment of the same chapter — not unrelated work, correctly included per the founder's explicit commit-content checklist). Repo is fully clean post-push, no unrelated modifications remained.

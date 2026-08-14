@@ -4,6 +4,8 @@ Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 (back
 
 Read this first, then `CURRENT_STATE.md`, then `AGENTS.md` (operating law).
 
+**Account Lifecycle / Public Identity, 2026-08-14 — implemented, NOT yet committed.** Canonical doctrine (aura-backend-owned): `../aura-backend/capability/ACCOUNT_LIFECYCLE_DOCTRINE.md`. **If you touch `AuthorProfileScreen` or add a new profile-consuming surface: `Profile.isActive` (from the backend's `accountStatus` field) must gate any action affordance the backend would reject for a non-active account — never render Follow/Message as tappable for a disabled/deleted profile.**
+
 **Domain 9 — CLOSED and pushed, 2026-08-14 (`88efffb`).** Everything below is now live in `main`, not proposed.
 
 **Domain 9 — Frontend Contextual Mention Eligibility, 2026-08-14, commit held pending report review.** Canonical record (aura-backend-owned): `../aura-backend/capability/FOUNDER_ACCEPTANCE_REGISTER.md` Domain 9, "Frontend Contextual Mention Eligibility — Part A". `GovernedTagAutocomplete` (`lib/core/tagging/governed_tag_field.dart`) now takes an optional `mentionScope` param — pass `MentionScope.bounded([...])` for any Thread/Space/DM-like bounded surface, leave the `global()` default for Posts/Institution Posts/Announcements/replies. If you add a new mention-bearing composer on a bounded surface and skip this, you reopen the exact "UI offers a target the backend rejects" defect this checkpoint closed.
