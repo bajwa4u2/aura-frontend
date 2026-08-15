@@ -1,5 +1,21 @@
 # Current State — aura_final
 
+## FRONTEND ARCHITECTURE & PRODUCT COHERENCE INVESTIGATION — READY FOR FOUNDER REVIEW, 2026-08-14
+
+Full report (backend-owned, referenced not duplicated): `../aura-backend/capability/AURA_FRONTEND_ARCHITECTURE_COHERENCE_INVESTIGATION.md`. Investigation-only — **no fixes were applied in this repo**, deliberately, so the systemic picture is decided before further surface-by-surface correction.
+
+**Finding: this repo's shared authorities are real and correct, but have no enforcement mechanism and no adoption ledger.** Adoption is voluntary per-screen and non-adoption is invisible. Concretely, in this repo today:
+
+- `core/notifications/notification_presentation.dart` (the shared resolver from roadmap item 11) is consumed by ONE surface, `notification_bridge.dart`. Seven other surfaces carry their own notification-kind switches, and `features/notifications/presentation/notifications_screen.dart` duplicates the phrase table verbatim and falls back to "<actor> interacted with your content" — which is what the new `INSTITUTION_OWNERSHIP_RECOVERED` governance notification currently renders as. That surface has no test.
+- Two LIVE announcement composers: `features/announcements/presentation/announcement_editor_screen.dart` (1,490 lines) adopts none of `ContentLengthPolicy`, `RichPasteField` or `ComposeLinkDetector`; `features/institutions/announcements/institution_announcement_composer.dart` adopts all three. Both are routed.
+- The phantom `EDITOR` role appears in 6 files across 5 modules, including a capability grant in `institution_explore_screen.dart:138` and a selectable invite role in `invite_create_screen.dart:615`, for a value the backend enum cannot produce.
+- 13 files resolve display identity locally via `displayName ??` chains; `CorrespondenceIdentity` serves five modules from inside `features/correspondence/`.
+- No confirmation authority exists anywhere: 51 raw `showDialog` and 179 raw `showSnackBar` call sites, 7 duplicate error-interpretation helpers, and two coexisting loading idioms (71 files raw `CircularProgressIndicator` vs 61 `AuraLoadingState`).
+
+**Root cause is structural, not discipline**: the backend enforces authorities via guards/interceptors/DI plus an AppModule smoke-boot CI gate; Flutter has no equivalent, and the test topology (62 test files vs 544 source files) certifies adoption while being structurally unable to detect non-adoption.
+
+**A dedicated Frontend Architecture & Product Coherence Reconciliation chapter is recommended before ordinary remaining frontend feature work.** Purpose and boundary are defined in the report; phases are deliberately not designed. Five founder decisions are required first.
+
 ## Roadmap authority — 2026-08-14
 
 The canonical roadmap for the whole platform is `../aura-backend/capability/AURA_ROADMAP_RECONCILIATION_AND_UPGRADED_ROADMAP.md` (backend-owned, referenced not duplicated, matching the existing doctrine-document convention). It reconciles the original Phase/Item 1-17 roadmap against what was actually built and replaces the flat item list with a CHAPTER/GATE structure. **"Items 1-17 complete" is false**: implementation is largely complete, but PRODUCT-BEHAVIOR / CROSS-SYSTEM / REAL-BOUNDARY / FOUNDER ACCEPTANCE are open on essentially every item. This repo's largest named debts inside that roadmap: **Cross-System Communication Identity Coherence** (roadmap item 4 — founder observed identity not coherently represented as it moves Thread <-> DM <-> Space <-> Call; two prior audits were explicitly status-corrected from "certification" to "architectural audit / initial findings", so this remains untraced), the owed **live rich-paste verification** (register domain 1 — the `PasteTextIntent` dispatch could not be exercised in this harness and the founder instructed that live verification is owed rather than more harness proof), the **composer toolbar UI** for Institution Posts/Announcements, and the **phantom `EDITOR` role** still selectable in `invite_create_screen.dart`. Next work is Chapter A (Runtime Stability Cluster, which includes this repo's Riverpod ref-after-dispose defect). Item 17 must not begin.
