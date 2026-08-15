@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/session_providers.dart';
-import '../institutions/institution_access_provider.dart';
 import 'actor_context.dart';
 import 'direct_threads_repository.dart';
 import 'follows_repository.dart';
@@ -62,21 +61,25 @@ class InteractionService {
     }
 
     if (!context.mounted) return;
-    // Pick the actor by shell context: institution shell ⇒ institution
-    // actor (when speaker rights apply); otherwise the user.
-    final path = GoRouterState.of(context).uri.path;
-    final inInstitutionShell =
-        path == '/institution' || path.startsWith('/institution/');
-    final identity = ref.read(institutionIdentityProvider);
-    final ActorRef actor;
-    if (inInstitutionShell &&
-        identity != null &&
-        identity.id.isNotEmpty &&
-        (identity.canPublishPosts || identity.isAdmin)) {
-      actor = ActorRef.institution(identity.id);
-    } else {
-      actor = ActorRef.user(userId);
-    }
+
+    // C1 — A ROUTE NEVER ESTABLISHES THE SENDER.
+    //
+    // This previously started the thread AS THE INSTITUTION whenever the URL
+    // began with `/institution/` and the person passed
+    // `canPublishPosts || isAdmin`. Navigating into an institution's workspace
+    // silently turned a personal message into institutional correspondence,
+    // and the authority test OR-ed a role into a capability question.
+    //
+    // Founder ruling: a route may establish the recipient and the context
+    // being viewed; it may never establish acting identity. With no chooser at
+    // message initiation yet, the only correct sender is the person.
+    //
+    // The contract for institutional correspondence exists as
+    // `ConsequentialAct.correspondAsInstitution`. **C7 owns the chooser**: when
+    // it rebuilds correspondence, resolving that act alongside
+    // `sendDirectMessage` yields two legitimate acting contexts, and the
+    // person must choose explicitly before the message is initiated.
+    final actor = ActorRef.user(userId);
 
     final repo = ref.read(directThreadsRepositoryProvider);
     DirectThreadInfo info;

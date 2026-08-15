@@ -108,10 +108,22 @@ ActorContext? resolveActorContext(
   );
 }
 
-/// Provider variant for places that don't have a [BuildContext]. Note that
-/// this version cannot inspect the route path so it falls back to user-
-/// actor whenever no institution identity is loaded. Components inside the
-/// widget tree should prefer [resolveActorContext] above.
+/// **RETIRED BY C1 — do not add consumers.** Zero consumers remain.
+///
+/// This provider claimed to "fall back to user-actor whenever no institution
+/// identity is loaded", but the code does the opposite: it returns the
+/// **institution** actor whenever an institution identity *is* loaded, with no
+/// route and no act in view. Its one consumer (the presence heartbeat) was
+/// therefore reporting every institutionally-affiliated person as their
+/// institution, everywhere, permanently.
+///
+/// Acting identity is resolved per consequential act by
+/// `core/authority/acting_context.dart`. Ask what an act would represent;
+/// never read an ambient actor.
+@Deprecated(
+  'Use ActingContextAuthority.resolve(ConsequentialAct) from '
+  'core/authority/acting_context.dart. Acting identity is per-act, never ambient.',
+)
 final activeActorContextProvider =
     Provider.autoDispose<ActorContext?>((ref) {
   final auth = ref.watch(authStatusProvider);

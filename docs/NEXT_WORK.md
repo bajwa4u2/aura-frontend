@@ -49,10 +49,30 @@ Full matrix with per-row basis codes: `C0_G5_OWNERSHIP_MATRIX.md`.
 
 ## The next executable chapter
 
-# C1 — ACTING CONTEXT & IDENTITY
+# C1 — ACTING CONTEXT & CAPABILITY PROJECTION ✅ COMPLETE
+
+Founder approved / locally certified 2026-08-15. Registers:
+`C1_AUTHORITY_ARCHITECTURE.md` · `C1_G5_DISPOSITION_MATRIX.md`.
+
+**Two new product disposition checkpoints opened before C11:**
+**PD-1 Platform Administration** (11 files / 34 G5 sites) and
+**PD-2 Authentication & Account Entry** (2 files / 3 sites). Neither has an
+owning chapter in the approved roadmap; both need a product decision.
+
+---
+
+## The next executable chapter
+
+# C2 — IDENTITY, PRESENCE & PROFILE
 
 **⛔ NOT STARTED. Awaiting explicit founder authorisation.** Roadmap approval is
-**not** authorisation to start a chapter, and C0 review is not authorisation for C1.
+**not** authorisation to start a chapter, and C1 closure is not authorisation for C2.
+
+C1 unblocks it. C2 inherits: verification labels (open checkpoint, **no generic
+"Verified"**, gate-enforced) · Presence retirement of its six-meaning overload,
+now that presence is correctly the person · Follow reconciliation across three
+inconsistent backend models · 21 assigned G5 sites (`J` basis — re-verify before
+migrating, as C1 did).
 
 **Unlocks.** C1.
 

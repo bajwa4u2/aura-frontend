@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/session_providers.dart';
+import '../authority/authority_providers.dart';
 import '../net/dio_provider.dart';
 import 'actor_context.dart';
 import 'follows_repository.dart';
@@ -194,11 +195,20 @@ class _PresencePingerState extends ConsumerState<PresencePinger>
       _stop();
       return;
     }
-    final actor = container.read(activeActorContextProvider);
-    if (actor == null) return;
-    final actorRef = actor.isInstitution
-        ? ActorRef.institution(actor.institutionId ?? '')
-        : ActorRef.user(actor.userId ?? '');
+    // C1 — PRESENCE IS ALWAYS THE PERSON.
+    //
+    // This previously read `activeActorContextProvider`, which returns the
+    // INSTITUTION actor whenever any institution identity has loaded. The
+    // result was that every person who merely belongs to an institution sent
+    // their presence heartbeat as that institution, everywhere in the app,
+    // regardless of what they were doing.
+    //
+    // Presence is a person being reachable. It is not institutional speech,
+    // and merely belonging to an institution is not acting as it
+    // (PERSON ≠ INSTITUTION ≠ MEMBERSHIP ≠ ACTING CONTEXT ≠ PRESENCE).
+    final authority = container.read(actingContextAuthorityProvider);
+    if (authority == null) return;
+    final actorRef = ActorRef.user(authority.personId);
     if (actorRef.id.isEmpty) return;
     try {
       await container.read(presenceRepositoryProvider).ping(actorRef);

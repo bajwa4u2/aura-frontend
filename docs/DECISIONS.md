@@ -127,3 +127,47 @@ The `2026-08-16` propagation was an authoring error, corrected across the Aura r
 | **C7** | legacy Correspondence architectural rename/convergence |
 | **C10** | Live plural/contextual language |
 | **All** | measured G2/G3/G4/G5/G7 debt under ratchet |
+
+---
+
+# C1 CLOSEOUT — FROZEN 2026-08-15
+
+**C1 — Acting Context & Capability Projection: COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED.**
+
+## C1-1 · Attribution at the consequential act — FROZEN
+
+> **ACTING AUTHORITY BECOMES EXPLICIT WHEN A CONSEQUENTIAL ACTION REQUIRES ATTRIBUTION — NOT BECAUSE OF THE ROUTE THE PERSON NAVIGATED THROUGH.**
+
+No global acting mode · no route-derived sender · one context → no manufactured choice · several → explicit choice before the act · institutional acting context always person-backed · unavailable actions absent rather than disabled · governance never a delegable capability.
+
+## C1-2 · Surface-dependent personal alternative — FROZEN
+
+> **WHETHER A PERSONAL ACTING ALTERNATIVE EXISTS IS A PROPERTY OF THE SURFACE / ACTION CONTEXT, NOT AN INTRINSIC PROPERTY OF THE CONSEQUENTIAL ACT.**
+
+`resolve(act, offerPersonalAlternative: …)` is the governed contract. A single-purpose institutional composer must not manufacture an alternative it cannot perform.
+
+> **NO CHOICE WITHOUT A REAL CONSEQUENCE.** A control that appears to change acting identity but cannot change the resulting action is prohibited.
+
+## C1-3 · Switch identity — C0 Product Language extension
+
+See `C0_PRODUCT_LANGUAGE_VOCABULARY.md` §6. One semantic action; contextual copy permitted; four competing phrasings gate-prohibited. **C0 extended through governed C1 discovery — not C0 remediation.**
+
+## C1-4 · Presence — FROZEN
+
+Presence is the person. It never inherits institutional identity from affiliation, navigation or membership.
+
+## C1-5 · Backend authority — CONVERGED
+
+`institutions.service.ts` delegates to `InstitutionAuthorityService` (it had been recomputing the effective-capability formula while the canonical service was already injected). Every membership now carries its own effective capabilities — previously only the person's arbitrarily-oldest one did.
+
+## C1-6 · Fabricated capabilities — REMOVED
+
+The six-token client injection was proven **unreachable dead code**: `institution-bootstrap` always creates an `InstitutionMember` row with `role: OWNER`. No backend correction was warranted; no alternate authority path was created.
+
+## C1-7 · G5 ownership correction
+
+38 of 42 C1 sites withdrawn on measured evidence → **PD-1 Platform Administration** (34) and **PD-2 Authentication & Account Entry** (3). C1 retains 4 on `R` basis. C0 ledger annotated; 181 sites still traceable.
+
+## Accepted exceptions — none blocks closeout
+
+R1 (25 files / 85 role-derived booleans, ratcheted) · R2 (3 files / 6 role-literal comparisons, classified) · `resolveActorContext` 3 consumers → C3/C7 · platform-admin flattening → PD-1 · further attribution consumers → owning chapters.

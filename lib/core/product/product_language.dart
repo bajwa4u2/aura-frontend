@@ -200,6 +200,27 @@ enum ProductAction {
   /// View and manage outstanding invitation state. Distinct from issuing one.
   manageInvites,
 
+  /// Change which legitimate acting context — Person or Institution — a
+  /// consequential action will be attributed to, **before it is committed**.
+  ///
+  /// Added 2026-08-15 as an approved extension discovered through C1
+  /// implementation. Normal authority evolution, not C0 remediation.
+  ///
+  /// It does **not**: grant authority · change membership · change role ·
+  /// change account or login identity · edit content · imply impersonation.
+  /// It is available only when multiple legitimate acting contexts genuinely
+  /// exist — see the frozen invariant **NO CHOICE WITHOUT A REAL CONSEQUENCE**.
+  ///
+  /// "Identity" here means selection among canonical acting identities. It
+  /// never collapses PERSON / INSTITUTION / MEMBERSHIP / ACTING CONTEXT /
+  /// PRESENCE / AUTHENTICATION — implementation names the mechanism
+  /// acting-context selection; Product Language presents it as Switch identity.
+  ///
+  /// Contextual copy may describe it naturally for the surface ("Publish
+  /// as…", "Sending as…", "Replying as…"). There is exactly ONE semantic
+  /// action behind all of them.
+  switchIdentity,
+
   /// Generic invitation intent, retained for surfaces where the specific
   /// membership operation is not the subject (e.g. inviting to a meeting).
   ///
@@ -239,6 +260,7 @@ class ProductLabels {
     ProductAction.addMember: 'Add member',
     ProductAction.invitePerson: 'Invite person',
     ProductAction.manageInvites: 'Manage invites',
+    ProductAction.switchIdentity: 'Switch identity',
     ProductAction.invite: 'Invite',
     ProductAction.accept: 'Accept',
     ProductAction.decline: 'Decline',
@@ -284,5 +306,12 @@ class ProductLabels {
     'try again': ProductAction.retry,
     'retry operation': ProductAction.retry,
     'try once more': ProductAction.retry,
+    // Attribution switching has exactly ONE semantic action. These are not
+    // different product actions; inventing them would fragment it.
+    'change publisher': ProductAction.switchIdentity,
+    'change sender': ProductAction.switchIdentity,
+    'change speaker': ProductAction.switchIdentity,
+    'change institution': ProductAction.switchIdentity,
+    'change identity': ProductAction.switchIdentity,
   };
 }

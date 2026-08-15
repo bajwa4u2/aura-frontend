@@ -54,7 +54,7 @@ FD-10 correction: these are **not** synonyms. My original premise that they were
 
 ---
 
-## 3. Canonical actions — `ProductAction` (25 implemented)
+## 3. Canonical actions — `ProductAction` (26 implemented)
 
 | # | Action | Canonical label | Contextual variant | Retired / constrained term | Representation source | Alignment |
 |---|---|---|---|---|---|---|
@@ -81,8 +81,9 @@ FD-10 correction: these are **not** synonyms. My original premise that they were
 | 21 | `view` | **View** | — | — | — | FRONTEND ALIGNED |
 | 22 | `open` | **Open** | — | — | — | FRONTEND ALIGNED |
 | 23 | `remove` | **Remove** | — | — | membership removal | ALIGNED |
-| 24 | `save` | **Save** | — | — | — | FRONTEND ALIGNED |
-| 25 | `edit` | **Edit** | — | — | — | FRONTEND ALIGNED |
+| 24 | `switchIdentity` | **Switch identity** | "Publish as…" · "Send as…" · "Replying as…" | `change publisher` · `change sender` · `change speaker` · `change institution` · `change identity` — banned as competing semantic actions | 🧊 **C0 EXTENSION via governed C1 discovery, 2026-08-15** | ✅ gate-enforced |
+| 25 | `save` | **Save** | — | — | — | FRONTEND ALIGNED |
+| 26 | `edit` | **Edit** | — | — | — | FRONTEND ALIGNED |
 
 ### Prohibited synonyms — enforced, zero tolerance
 
@@ -133,3 +134,36 @@ These are **not product nouns**. `presence` in particular is deliberately unreso
 | ⚠ **WEAK BACKING, recorded** | 1 | Follow — three inconsistent backend models; C2 owns reconciliation |
 
 **Zero founder decisions outstanding on Product Language.** All adjudicated corrections are applied and gate-enforced.
+
+---
+
+## 6. Approved C0 extension — `switchIdentity` (2026-08-15)
+
+**C0 PRODUCT LANGUAGE → EXTENDED THROUGH GOVERNED C1 DISCOVERY.** This is normal authority evolution, **not C0 remediation**. C0 is not reopened.
+
+C1's representative implementation needed a way to say *change which legitimate acting context this action will be attributed to*, and no canonical action covered it — `edit` means edit content; `manage` and `view` do not fit. C1 brought it forward rather than inventing local copy, and the founder ruled.
+
+| | |
+|---|---|
+| **Semantic action** | `ProductAction.switchIdentity` |
+| **Canonical default label** | **Switch identity** |
+| **Meaning** | Change which legitimate Person or Institution acting context will be attributed to a consequential action, **before that action is committed** |
+
+**It does not:** grant authority · change membership · change role · change account/login identity · edit content · imply impersonation.
+
+**Availability:** only when multiple legitimate acting contexts actually exist.
+
+### Contextual copy is permitted; a second semantic action is not
+
+A surface may render *"Publishing as …"*, *"Publish as…"*, *"Sending as …"*, *"Replying as …"* or *"Switch identity"*. All of them mean the same thing.
+
+> **SEMANTIC ACTION → SWITCH IDENTITY.**
+> **CONTEXTUAL COPY → may describe that action naturally for the surface.**
+
+`change publisher` · `change sender` · `change speaker` · `change institution` · `change identity` are **prohibited synonyms**, gate-enforced, so the action cannot fragment into four.
+
+### Terminology boundary
+
+"Identity" here means **selection among canonical acting identities**. It never collapses PERSON / INSTITUTION / MEMBERSHIP / ACTING CONTEXT / PRESENCE / AUTHENTICATION.
+
+The implementation deliberately keeps the more precise internal name — `ActingOption`, `ActingResolution`, acting-context selection — while Product Language presents "Switch identity" to people.

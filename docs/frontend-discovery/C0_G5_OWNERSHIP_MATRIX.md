@@ -21,7 +21,7 @@ This prevents C0 from polishing implementations already approved for demolition 
 
 | Owner | Files | Sites |
 |---|---|---|
-| **C1** — Acting Context & Capability | 14 | 42 |
+| **C1** — Acting Context & Capability | ~~14~~ **1** | ~~42~~ **4** |
 | **C2** — Identity / Presence / Profile | 8 | 21 |
 | **C3** — Navigation / IA | 20 | 44 |
 | **C4** — Attention | 11 | 26 |
@@ -32,6 +32,8 @@ This prevents C0 from polishing implementations already approved for demolition 
 | **C9** — Cross-Platform | 1 | 3 |
 | **C10** — Live | 0 | 0 |
 | **PRESERVE / legitimate exception** | 0 | 0 |
+| **PD-1** — Platform Administration *(new checkpoint)* | 11 | 34 |
+| **PD-2** — Authentication & Account Entry *(new checkpoint)* | 2 | 3 |
 | **TOTAL** | **72** | **181** |
 
 ### Meetings — counted separately, as instructed
@@ -47,6 +49,21 @@ The 14 protected Meetings sites the founder referred to are **G4** (full-surface
 | **G5 direct construction** | **0 of 181** | nothing to own |
 
 ---
+
+> ### CORRECTED BY C1, 2026-08-15 - historical assignment preserved
+>
+> C1 re-verified all 42 sites it was assigned and **disproved 38 of them**.
+> The `J`-basis premise here was that platform-admin screens are "the densest
+> site of role comparison"; measurement found **zero** institutional authority
+> code in all 11 admin files and both auth files.
+>
+> Those 38 sites are **withdrawn from C1** and dispositioned to two named
+> product checkpoints - see `C1_G5_DISPOSITION_MATRIX.md`. The original
+> assignment is left visible above, struck through, because the correction is
+> part of the record.
+>
+> **This is the R/J rule working as intended:** a `J` assignment is a reasoned
+> starting point the owning chapter must verify, not frozen product truth.
 
 ## Basis discipline — read this before trusting the table
 

@@ -12,8 +12,11 @@
 | **Frontend product-architecture adjudication** | ✅ **COMPLETE / FROZEN** |
 | **Final frontend reconstruction roadmap** | ✅ **FOUNDER APPROVED / FROZEN** |
 | **C0 — Cross-Cutting Foundations** | ✅ **COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED** (2026-08-15) |
-| **C1 — Acting Context & Capability** | ⛔ **READY / NOT STARTED / NOT YET AUTHORIZED** |
+| **C1 — Acting Context & Capability** | ✅ **COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED** (2026-08-15) |
+| **C2 — Identity / Presence / Profile** | ⛔ **READY / NOT STARTED / NOT YET AUTHORIZED** |
 | **Frontend implementation (C2–C11)** | ⛔ **NOT STARTED** |
+| **⚡ PD-1 Platform Administration** | ⛔ **NEW PRODUCT DISPOSITION CHECKPOINT** (before C11) |
+| **⚡ PD-2 Authentication & Account Entry** | ⛔ **NEW PRODUCT DISPOSITION CHECKPOINT** (before C11) |
 | **Item 17 — Release Gate** | ⛔ **OPEN, NOT STARTED** |
 
 ## What is frozen
@@ -67,6 +70,28 @@ Three authorities now exist in `lib/core/product/`:
 Registers: `C0_MIGRATION_REGISTER.md` · `C0_G5_OWNERSHIP_MATRIX.md` · `C0_PRODUCT_LANGUAGE_VOCABULARY.md` · `REPRESENTATION_CANONICAL_FRONTEND_ALIGNMENT.md` · `REPRESENTATION_FRONTEND_REDESIGN_INPUTS.md`.
 
 **Verification:** `flutter analyze lib/ test/` clean · `flutter test` **458 passed / 1 skipped / 0 failed** (411 pre-C0, +47 new — no regressions).
+
+## C1 — Acting Context & Capability Projection (implemented 2026-08-15)
+
+Two authorities in `lib/core/authority/`: **Acting Context** (`acting_context.dart`) and **Capability Projection** (`capability_projection.dart`), plus `authority_providers.dart` and the founder-approved Option A attribution component `acting_attribution.dart`.
+
+**Frozen rule:** acting authority becomes explicit when a consequential action requires attribution — **never because of the route the person navigated through**.
+
+**Four real defects corrected.** Presence heartbeat published as the institution for anyone merely affiliated · "tap Message" started threads as the institution purely from the URL · six capability tokens fabricated client-side (proven unreachable dead code) · `/institutions/me` returned capabilities for the person's arbitrarily-oldest membership, so a client viewing institution B reasoned with institution A's authority.
+
+**Backend converged:** `institutions.service.ts` no longer duplicates the effective-capability formula — it delegates to `InstitutionAuthorityService`, which was already injected. Every membership now carries its own effective capabilities.
+
+**The discovery baseline was wrong in both directions:** role-literal comparisons 29 files → **5 files / 6 sites** (3 not authorization at all); `canX` 20 files → **38 files / 73 sites** (most not authorization). The real vector was never named: **86 `isOwner`/`isAdmin` sites**.
+
+**G5 re-verification withdrew 38 of 42 sites from C1** — measured zero institutional authority code in all 11 admin and both auth files. Dispositioned to **PD-1** and **PD-2**. 181 sites still traceable.
+
+Registers: `C1_AUTHORITY_ARCHITECTURE.md` · `C1_G5_DISPOSITION_MATRIX.md`.
+
+**Option A certified** on a representative surface (institution post composer): attribution stated where the act commits, no manufactured chooser, acting person kept visible. 4 widget tests.
+
+**Product Language extended:** `ProductAction.switchIdentity` ("Switch identity") — approved C0 extension discovered through C1 implementation, with four competing phrasings gate-prohibited.
+
+**Verification:** analyze clean · **505 frontend** / **2200 backend** tests passing.
 
 ## What has NOT been touched
 

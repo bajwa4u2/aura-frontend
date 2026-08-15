@@ -269,6 +269,24 @@ void main() {
       expect(ProductLabels.of(ProductAction.reply), 'Reply'); // "Replies"
     });
 
+    test('attribution switching has exactly one semantic action', () {
+      // Founder ruling 2026-08-15 — approved C0 extension discovered through
+      // C1 implementation. Contextual copy may read "Publish as…" or "Send
+      // as…", but there is ONE semantic action behind all of them.
+      expect(ProductLabels.of(ProductAction.switchIdentity), 'Switch identity');
+      for (final banned in const [
+        'change publisher',
+        'change sender',
+        'change speaker',
+        'change institution',
+        'change identity',
+      ]) {
+        expect(ProductLabels.prohibitedActionSynonyms[banned],
+            ProductAction.switchIdentity,
+            reason: '$banned must not become a second semantic action');
+      }
+    });
+
     test('membership operations stay distinguishable', () {
       // INSTITUTION_SPACE_MEMBERSHIP_DOCTRINE.md, founder-approved and frozen:
       // "never renaming one into the other as a shortcut fix."

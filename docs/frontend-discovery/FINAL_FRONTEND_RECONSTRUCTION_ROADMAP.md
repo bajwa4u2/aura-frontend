@@ -75,7 +75,7 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 
 # CHAPTER C1 — ACTING CONTEXT & CAPABILITY PROJECTION
 
-> **STATUS: READY / NOT STARTED / NOT YET AUTHORIZED.** C0 is closed and unblocks this chapter. Roadmap approval and C0 closure are **not** authorisation to begin.
+> **STATUS: COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED — closed 2026-08-15.** Registers: `C1_AUTHORITY_ARCHITECTURE.md` · `C1_G5_DISPOSITION_MATRIX.md`. Opened two product disposition checkpoints before C11: **PD-1 Platform Administration**, **PD-2 Authentication & Account Entry**. **C2 NOT STARTED / NOT AUTHORIZED.**
 
 **PURPOSE.** Make "who is acting" and "what may they do" explicit client authorities.
 

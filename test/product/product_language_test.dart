@@ -37,11 +37,11 @@ void main() {
 
     test('retry is the single word for the failed-operation action', () {
       expect(ProductLabels.of(ProductAction.retry), 'Retry');
-      for (final synonym in ProductLabels.prohibitedActionSynonyms.entries) {
+      for (final phrase in const ['try again', 'retry operation', 'try once more']) {
         expect(
-          synonym.value,
+          ProductLabels.prohibitedActionSynonyms[phrase],
           ProductAction.retry,
-          reason: '${synonym.key} must resolve to the canonical retry action',
+          reason: '$phrase must resolve to the canonical retry action',
         );
       }
     });
@@ -55,6 +55,28 @@ void main() {
       expect(ProductLabels.forStop(StopIntent.dismiss), 'Dismiss');
       expect(ProductLabels.forStop(StopIntent.close), 'Close');
       expect(ProductLabels.forStop(StopIntent.discard), 'Discard');
+    });
+
+    test('attribution switching resolves to one semantic action', () {
+      // Approved C0 extension, 2026-08-15 (discovered through C1).
+      expect(ProductLabels.of(ProductAction.switchIdentity), 'Switch identity');
+      for (final phrase in const [
+        'change publisher',
+        'change sender',
+        'change speaker',
+        'change institution',
+        'change identity',
+      ]) {
+        expect(ProductLabels.prohibitedActionSynonyms[phrase],
+            ProductAction.switchIdentity);
+      }
+    });
+
+    test('every prohibited synonym maps to a real canonical action', () {
+      for (final e in ProductLabels.prohibitedActionSynonyms.entries) {
+        expect(() => ProductLabels.of(e.value), returnsNormally,
+            reason: '${e.key} maps to an action with no label');
+      }
     });
 
     test('no canonical label is itself a prohibited synonym', () {

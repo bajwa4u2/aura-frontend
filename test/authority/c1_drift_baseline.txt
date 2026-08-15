@@ -1,0 +1,50 @@
+# C1 FROZEN DRIFT BASELINE - measured 2026-08-15, chapter C1.
+#
+#   R1  role-derived authority booleans (isOwner / isAdmin / isAdminLike)
+#   R2  role-literal comparisons (role == 'ADMIN' ...)
+#
+# These are NOT all violations. Both patterns are legitimate where ROLE
+# itself has product meaning: governance acts the backend enforces as role
+# checks, and surfaces that DISPLAY a role. The ratchet freezes the measured
+# count so no NEW role-as-permission can appear, and each owning chapter
+# burns down its own share. Per-site A/B/C/D/E classification lives in
+# docs/frontend-discovery/C1_AUTHORITY_ARCHITECTURE.md.
+
+# -- R1 -- 25 files / 85 sites
+R1 1 lib/app/shell/member_shell.dart
+R1 6 lib/app/shell/shell_header_tools.dart
+R1 1 lib/core/auth/admin_access_provider.dart
+R1 2 lib/core/institutions/institution_access_provider.dart
+R1 2 lib/core/release_governance/update_gate.dart
+R1 2 lib/features/announcements/presentation/announcements_screen.dart
+R1 3 lib/features/communications/presentation/communications_center_screen.dart
+R1 6 lib/features/communications/presentation/widgets/communication_center_shell.dart
+R1 9 lib/features/communications/presentation/widgets/communication_role_hero.dart
+R1 3 lib/features/communications/presentation/widgets/communication_status_cards.dart
+R1 2 lib/features/create/presentation/create_hub_screen.dart
+R1 2 lib/features/institutions/activity/institution_activity_screen.dart
+R1 9 lib/features/institutions/correspondence/institution_correspondence_screen.dart
+R1 2 lib/features/institutions/explore/institution_explore_screen.dart
+R1 4 lib/features/institutions/live_rooms/institution_live_rooms_screen.dart
+R1 1 lib/features/institutions/presentation/admin_workspace_screen.dart
+R1 3 lib/features/institutions/presentation/institution_invites_screen.dart
+R1 1 lib/features/institutions/presentation/institution_join_requests_screen.dart
+R1 1 lib/features/institutions/presentation/institution_spaces_screen.dart
+R1 1 lib/features/institutions/profile/institution_edit_profile_screen.dart
+R1 2 lib/features/institutions/profile/institution_profile_screen.dart
+R1 3 lib/features/me/presentation/me_screen.dart
+R1 1 lib/features/public/widgets/reply_unit.dart
+R1 14 lib/features/realtime/presentation/widgets/floating_call_widget.dart
+R1 4 lib/router.dart
+
+# -- R2 -- 3 files / 6 sites
+R2 3 lib/features/admin/presentation/admin_institution_members_screen.dart
+R2 1 lib/features/institutions/explore/institution_explore_screen.dart
+R2 2 lib/features/posts/presentation/widgets/communication_continuity_view.dart
+
+# -- A1 -- route-derived acting identity: 0 files / 0 sites
+# CLEARED 2026-08-15. interaction_service.dart no longer derives the sender
+# from the URL. Institutional correspondence now has an explicit contract
+# (ConsequentialAct.correspondAsInstitution) that C7 consumes when it builds
+# the chooser at message initiation. The rule stays armed at zero.
+

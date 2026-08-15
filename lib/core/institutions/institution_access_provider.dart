@@ -24,6 +24,7 @@ class MemberAffiliation {
     required this.role,
     required this.canSpeakOfficially,
     required this.isVerified,
+    this.capabilities = const <String>{},
   });
 
   final String id;
@@ -35,6 +36,12 @@ class MemberAffiliation {
   final String role;
   final bool canSpeakOfficially;
   final bool isVerified;
+
+  /// Effective capability set for THIS institution, as reported by the
+  /// backend (C1). Previously only the arbitrarily-chosen oldest membership
+  /// carried capabilities, so a client viewing institution B reasoned with
+  /// institution A's authority.
+  final Set<String> capabilities;
 
   /// Tolerant parse of one `memberships[]` entry from `/institutions/me`.
   /// Returns null when the entry lacks a usable institution id.
@@ -54,6 +61,12 @@ class MemberAffiliation {
       logoUrl: logo.isEmpty ? null : logo,
       role: (m['role'] ?? '').toString().trim().toUpperCase(),
       canSpeakOfficially: m['canSpeakOfficially'] == true,
+      capabilities: <String>{
+        if (m['capabilities'] is List)
+          ...(m['capabilities'] as List)
+              .map((e) => e.toString().trim().toUpperCase())
+              .where((s) => s.isNotEmpty),
+      },
       isVerified: inst['isVerified'] == true || status == 'VERIFIED',
     );
   }
@@ -240,16 +253,19 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
     if (rawCaps is List)
       ...rawCaps.map((e) => e.toString().trim().toUpperCase()).where((s) => s.isNotEmpty),
   };
-  if (isAuthorizedSpeaker && role.isEmpty) {
-    capabilities.addAll(const [
-      InstitutionCapabilities.officialRepresentation,
-      InstitutionCapabilities.publishOfficial,
-      InstitutionCapabilities.manageAnnouncements,
-      InstitutionCapabilities.manageMeetings,
-      InstitutionCapabilities.startLive,
-      InstitutionCapabilities.endLive,
-    ]);
-  }
+  // C1 — THE CLIENT NEVER FABRICATES CAPABILITY.
+  //
+  // Six capability tokens used to be injected here whenever the session looked
+  // like an "authorized speaker" with no role, to compensate for a supposed
+  // institution-account gap. Investigation showed the gap does not exist:
+  // `institution-bootstrap.ts` always creates an `InstitutionMember` row with
+  // `role: OWNER, canSpeakOfficially: true`, and `/institutions/me` returns no
+  // top-level `institution` key — so a membership without a role can never
+  // reach this code. The compensation was unreachable, and it made the client
+  // a second source of authority.
+  //
+  // Effective capability is computed by InstitutionAuthorityService and
+  // consumed here unchanged. Gate-enforced by the C1 anti-drift suite.
   final status = readStr(inst, ['status', 'verificationStatus']);
 
   String? readOpt(Map<String, dynamic> m, List<String> keys) {

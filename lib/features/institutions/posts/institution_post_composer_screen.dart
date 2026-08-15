@@ -28,6 +28,9 @@ import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/authority/acting_attribution.dart';
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/authority/capability_projection.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -1046,6 +1049,9 @@ class _InstitutionPostComposerScreenState
   Widget build(BuildContext context) {
     final identity = ref.watch(institutionIdentityProvider);
     final canPublish = identity?.canPublishPosts ?? false;
+    final actingAs = ref.watch(
+      actingResolutionProvider(ConsequentialAct.publishInstitutionPost),
+    );
     final canCreate = identity?.canCreatePosts ?? false;
 
     // Resolve the current user id once and bootstrap the local draft pipeline.
@@ -1285,6 +1291,24 @@ class _InstitutionPostComposerScreenState
                       onDiscard: _busy ? null : _discardDraft,
                     ),
                   const SizedBox(height: AuraSpace.s12),
+                  // C1 — ATTRIBUTION AT THE CONSEQUENTIAL ACT (founder Option A).
+                  //
+                  // Publishing in an institution's voice is consequential, so
+                  // who it represents is stated here, immediately above the
+                  // control that commits it — not inferred from the route that
+                  // led here. This composer publishes only in the institution's
+                  // voice, so no chooser is manufactured; the attribution keeps
+                  // the acting person visible so the institution never appears
+                  // to act by itself.
+                  if (actingAs != null) ...[
+                    ActingAttribution(
+                      resolution: actingAs,
+                      selected: actingAs.recommended!,
+                      onChanged: (_) {},
+                      verb: 'Publishing',
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                  ],
                   _ComposerActions(
                     isEditing: widget.isEditing,
                     busy: _busy || _uploading,
