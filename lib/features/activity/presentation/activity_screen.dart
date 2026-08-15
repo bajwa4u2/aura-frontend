@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/route_targets.dart';
 import '../../../core/communication/communication_resolver.dart';
 import '../../../core/media/aura_attachment_image.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
@@ -477,7 +478,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       title: 'Activity unavailable',
                       body: state.error!,
                       action: AuraSecondaryButton(
-                        label: 'Try again',
+                        label: ProductLabels.of(ProductAction.retry),
                         onPressed: () => ref
                             .read(notificationsControllerProvider.notifier)
                             .refresh(force: true),

@@ -396,7 +396,7 @@ class RealtimeSocketService {
       // silently dropped even though the backend already sent them.
       // `session.cancelled` is SESSION_CANCELLED's wire name — the one
       // canonical event with no pre-existing legacy equivalent name.
-      // Amended Phase 4 Gate 2, 2026-08-16: was briefly `participant.cancelled`
+      // Amended Phase 4 Gate 2, 2026-08-13: was briefly `participant.cancelled`
       // (a pre-existing inconsistency in the backend's own Phase 0 wire-name
       // table, corrected there — SESSION_CANCELLED is session-scoped truth,
       // matching session.created/session.ending/session.ended/session.failed).

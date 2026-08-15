@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -331,7 +332,7 @@ class _ErrorState extends StatelessWidget {
             ),
             const SizedBox(height: AuraSpace.s20),
             _AuraFilledButton(
-              label: 'Try again',
+              label: ProductLabels.of(ProductAction.retry),
               icon: Icons.refresh_rounded,
               onPressed: onRetry,
             ),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/media/canonical_media_thumb.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -502,7 +503,7 @@ class _InstitutionAnnouncementsScreenState
         title: 'Could not load announcements',
         body: _error!,
         action: AuraSecondaryButton(
-          label: 'Try again',
+          label: ProductLabels.of(ProductAction.retry),
           onPressed: _load,
           icon: Icons.refresh_rounded,
         ),

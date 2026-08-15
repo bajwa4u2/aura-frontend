@@ -23,7 +23,7 @@ import 'me_widgets.dart';
 /// renders the institution as the meeting's owner.
 ///
 /// Realtime Architecture Correction — Phase 6, Meeting Attendee-Context
-/// Restoration, 2026-08-16: this file previously routed EVERY item
+/// Restoration, 2026-08-13: this file previously routed EVERY item
 /// unconditionally into `/institution/:id/meetings/:id` merely because the
 /// meeting had an owning institution — trapping an external participant (a
 /// member who was invited/attended but has no seat in that institution)

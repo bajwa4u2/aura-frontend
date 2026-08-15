@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -1790,7 +1791,7 @@ class _ErrorBlock extends StatelessWidget {
         Text(body, style: AuraText.body),
         const SizedBox(height: AuraSpace.s12),
         AuraSecondaryButton(
-          label: 'Try again',
+          label: ProductLabels.of(ProductAction.retry),
           icon: Icons.refresh_rounded,
           onPressed: onRetry,
         ),

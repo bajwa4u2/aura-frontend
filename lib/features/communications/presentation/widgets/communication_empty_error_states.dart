@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/product/product_state.dart';
+import '../../../../core/product/product_state_view.dart';
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 
+/// Communication-centre loading surface.
+///
+/// Delegates to the Product State Presentation Authority. Rendering is
+/// unchanged — `AuraProductState` composes the same `AuraLoadingState` — but
+/// the *meaning* now comes from one place.
 class CommLoadingState extends StatelessWidget {
   const CommLoadingState({super.key, this.message = 'Loading…'});
 
@@ -13,10 +20,19 @@ class CommLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: AuraLoadingState(message: message));
+    return AuraProductState(
+      state: ProductState.loading,
+      headline: message,
+    );
   }
 }
 
+/// Communication-centre error surface.
+///
+/// Declared as [ProductState.retryableError] rather than a generic error: the
+/// caller supplies a recovery handler, so retry is an honest offer here. The
+/// authority renders the canonical Retry label; this widget no longer decides
+/// what that word is.
 class CommErrorState extends StatelessWidget {
   const CommErrorState({
     super.key,
@@ -31,14 +47,11 @@ class CommErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AuraErrorState(
-      title: title,
-      body: body,
-      action: AuraSecondaryButton(
-        label: 'Try again',
-        onPressed: onRetry,
-        icon: Icons.refresh_rounded,
-      ),
+    return AuraProductState(
+      state: ProductState.retryableError,
+      headline: title,
+      detail: body,
+      onRecover: onRetry,
     );
   }
 }

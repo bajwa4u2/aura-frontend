@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -171,7 +172,7 @@ class _MessagesHubScreenState extends ConsumerState<MessagesHubScreen> {
           title: 'Could not load messages',
           body: '$error',
           action: AuraSecondaryButton(
-            label: 'Try again',
+            label: ProductLabels.of(ProductAction.retry),
             icon: Icons.refresh_rounded,
             onPressed: () => ref.invalidate(_messagesDataProvider),
           ),

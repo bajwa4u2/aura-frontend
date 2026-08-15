@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/shell/rail/rail_composition.dart';
 import '../../../config.dart';
 
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
@@ -457,7 +458,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                               body: view.repliesBody,
                               action: view.allowRetry
                                   ? AuraSecondaryButton(
-                                      label: 'Try again',
+                                      label: ProductLabels.of(ProductAction.retry),
                                       icon: Icons.refresh_rounded,
                                       onPressed: () => ref.invalidate(
                                         feedItemRepliesProvider(_args),
@@ -1621,14 +1622,14 @@ class _ThreadErrorView {
         );
       default:
         // Network / 5xx / unknown — actionable retry, no leak.
-        return const _ThreadErrorView(
+        return _ThreadErrorView(
           icon: Icons.cloud_off_rounded,
           title: 'Could not load this discussion',
           body:
               'Check your connection and try again. If the problem continues, return to the home feed.',
           repliesTitle: 'Could not load replies',
           repliesBody: 'Check your connection and try again.',
-          primaryLabel: 'Try again',
+          primaryLabel: ProductLabels.of(ProductAction.retry),
           primaryIcon: Icons.refresh_rounded,
           allowRetry: true,
         );

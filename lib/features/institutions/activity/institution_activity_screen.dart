@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -195,7 +196,7 @@ class _InstitutionActivityScreenState
               title: 'Could not load activity',
               body: '$e',
               action: AuraSecondaryButton(
-                label: 'Try again',
+                label: ProductLabels.of(ProductAction.retry),
                 icon: Icons.refresh_rounded,
                 onPressed: () => ref
                     .invalidate(institutionActivityFirstPageProvider(args)),

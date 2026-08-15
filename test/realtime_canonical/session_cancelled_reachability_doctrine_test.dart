@@ -1,4 +1,4 @@
-// Realtime Architecture Correction — Phase 3, amended Gate 2 (2026-08-16),
+// Realtime Architecture Correction — Phase 3, amended Gate 2 (2026-08-12),
 // founder-directed reconciliation. Dart mirror of aura-backend's
 // session-cancelled-reachability-doctrine.spec.ts — see that file's header
 // for the full mechanical proof (production RealtimeSession rows are
@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:aura/core/realtime_canonical/session_lifecycle.dart';
 
 void main() {
-  group('SESSION_CANCELLED reachability doctrine (amended 2026-08-16)', () {
+  group('SESSION_CANCELLED reachability doctrine (amended 2026-08-12)', () {
     test('active -> cancelled is now legal — the production-reachable path', () {
       final result = applySessionTransition(CanonicalSessionStatus.active, CanonicalSessionStatus.cancelled);
       expect(result.ok, true);

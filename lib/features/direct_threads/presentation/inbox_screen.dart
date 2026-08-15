@@ -6,6 +6,7 @@ import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/media/aura_attachment_image.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -130,7 +131,7 @@ class InboxScreen extends ConsumerWidget {
                     title: 'Could not load inbox',
                     body: '$e',
                     action: AuraSecondaryButton(
-                      label: 'Try again',
+                      label: ProductLabels.of(ProductAction.retry),
                       icon: Icons.refresh_rounded,
                       onPressed: invalidateBoth,
                     ),

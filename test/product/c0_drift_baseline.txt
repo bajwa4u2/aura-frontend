@@ -1,0 +1,185 @@
+# C0 FROZEN DRIFT BASELINE — measured 2026-08-15, end of chapter C0.
+#
+# Format:  <rule> <count> <path>
+#
+# This is DEBT, recorded exactly. It is not a list of things C0 fixed; it is
+# the list of things C0 deliberately did NOT touch, because rewriting them
+# would mean redesigning screens that later chapters own.
+#
+#   G2  human elapsed time formatted locally  ("… ago" built from .difference)
+#   G3  timezone conversion done locally      (.toLocal())
+#   G4  full-surface loading spinner          (Center + CircularProgressIndicator)
+#   G5  a surface constructing AuraLoading/Empty/ErrorState itself
+#   G7  a time formatter declared on a screen (String fn(DateTime …))
+#
+# The gate in c0_anti_drift_gate_test.dart enforces this both ways: a count may
+# never rise and a new file may never appear, and when a count falls the gate
+# fails until this file is updated — so the register can never overstate the
+# remaining debt.
+#
+# CHAPTER OWNERSHIP OF THIS DEBT
+#   Meetings surfaces (14 of the 26 G4 sites, 16 of the 47 G3 sites) are a
+#   PROTECTED CERTIFIED SURFACE. They are frozen here on purpose. C0 has no
+#   authority to modify them and must not do so for convenience.
+#   Admin / devices / security / billing / support surfaces are owned by their
+#   own chapters and are burnt down there, not here.
+
+# ── G2 — local humanized elapsed time ────────────────────────────────────────
+G2 3 lib/features/admin/presentation/admin_grants_screen.dart
+G2 3 lib/features/admin/presentation/admin_review_queue_screen.dart
+G2 3 lib/features/devices/presentation/devices_screen.dart
+G2 3 lib/features/institutions/presentation/institution_dashboard_screen.dart
+G2 6 lib/features/me/presentation/security_screen.dart
+G2 6 lib/features/updates/presentation/updates_screen.dart
+
+# ── G3 — local timezone conversion ───────────────────────────────────────────
+G3 1 lib/features/activity/presentation/activity_screen.dart
+G3 1 lib/features/admin/presentation/admin_audit_logs_screen.dart
+G3 1 lib/features/admin/presentation/admin_moderation_screen.dart
+G3 1 lib/features/admin/presentation/admin_review_queue_screen.dart
+G3 1 lib/features/announcements/presentation/announcement_detail_screen.dart
+G3 1 lib/features/announcements/presentation/announcements_screen.dart
+G3 1 lib/features/conversations/presentation/conversations_screen.dart
+G3 1 lib/features/correspondence/data/correspondence_identity.dart
+G3 1 lib/features/correspondence/presentation/thread/thread_utils.dart
+G3 3 lib/features/correspondence/presentation/thread_screen.dart
+G3 1 lib/features/devices/presentation/devices_screen.dart
+G3 2 lib/features/home/presentation/member_home_screen.dart
+G3 2 lib/features/institutions/activity/institution_activity_screen.dart
+G3 1 lib/features/institutions/announcements/institution_announcements_screen.dart
+G3 1 lib/features/institutions/correspondence/institution_correspondence_screen.dart
+G3 1 lib/features/institutions/data/institution_draft_store.dart
+G3 1 lib/features/institutions/presentation/institution_invites_screen.dart
+G3 1 lib/features/institutions/presentation/institution_join_requests_screen.dart
+G3 1 lib/features/invitations/presentation/invite_accept_screen.dart
+G3 3 lib/features/me/presentation/me/me_participation_continuity.dart
+G3 2 lib/features/me/presentation/security_screen.dart
+G3 1 lib/features/meetings/domain/meeting_asset.dart
+G3 1 lib/features/meetings/domain/meeting_conversation_message.dart
+G3 2 lib/features/meetings/presentation/booking_confirm_screen.dart
+G3 1 lib/features/meetings/presentation/booking_reschedule_screen.dart
+G3 1 lib/features/meetings/presentation/guest_waiting_room_screen.dart
+G3 1 lib/features/meetings/presentation/institution_availability_screen.dart
+G3 3 lib/features/meetings/presentation/meeting_detail_screen.dart
+G3 1 lib/features/meetings/presentation/meeting_lifecycle_presenter.dart
+G3 3 lib/features/meetings/presentation/meetings_home_screen.dart
+G3 1 lib/features/meetings/presentation/slot_picker_screen.dart
+G3 1 lib/features/meetings/presentation/widgets/meeting_preparation_panel.dart
+G3 1 lib/features/messages/presentation/messages_hub_screen.dart
+G3 1 lib/features/posts/presentation/compose_screen.dart
+G3 1 lib/features/realtime/domain/realtime_models.dart
+
+# ── G4 — full-surface loading spinner ────────────────────────────────────────
+G4 1 lib/features/admin/presentation/admin_institution_members_screen.dart
+G4 1 lib/features/devices/presentation/devices_screen.dart
+G4 1 lib/features/institutions/announcements/integrity/announcement_integrity_review_sheet.dart
+G4 1 lib/features/institutions/posts/institution_post_composer_screen.dart
+G4 1 lib/features/institutions/posts/integrity/institution_post_integrity_review_sheet.dart
+G4 1 lib/features/institutions/wizard/institution_onboarding_wizard.dart
+G4 1 lib/features/me/presentation/me/me_participation_continuity.dart
+G4 1 lib/features/meetings/presentation/booking_confirm_screen.dart
+G4 1 lib/features/meetings/presentation/booking_reschedule_screen.dart
+G4 1 lib/features/meetings/presentation/create_meeting_screen.dart
+G4 1 lib/features/meetings/presentation/guest_waiting_room_screen.dart
+G4 2 lib/features/meetings/presentation/institution_availability_screen.dart
+G4 2 lib/features/meetings/presentation/meeting_detail_screen.dart
+G4 1 lib/features/meetings/presentation/meeting_live_room_screen.dart
+G4 2 lib/features/meetings/presentation/meetings_home_screen.dart
+G4 1 lib/features/meetings/presentation/pre_join_screen.dart
+G4 2 lib/features/meetings/presentation/public_booking_screen.dart
+G4 2 lib/features/monetization/presentation/institution_billing_screen.dart
+G4 2 lib/features/support/presentation/admin_support_console_screen.dart
+G4 1 lib/screens/contact_screen.dart
+
+# ── G7 — time formatter declared on a screen ─────────────────────────────────
+G7 2 lib/app/shell/rail/rail_modules.dart
+G7 1 lib/features/admin/presentation/admin_audit_logs_screen.dart
+G7 2 lib/features/admin/presentation/admin_grants_screen.dart
+G7 1 lib/features/admin/presentation/admin_institution_domains_screen.dart
+G7 2 lib/features/admin/presentation/admin_institutions_screen.dart
+G7 1 lib/features/admin/presentation/admin_review_queue_screen.dart
+G7 1 lib/features/announcements/presentation/announcements_screen.dart
+G7 1 lib/features/correspondence/presentation/thread/thread_utils.dart
+G7 1 lib/features/direct_threads/presentation/inbox_screen.dart
+G7 1 lib/features/institutions/activity/institution_activity_screen.dart
+G7 1 lib/features/meetings/presentation/meeting_lifecycle_presenter.dart
+G7 1 lib/features/notifications/presentation/notifications_screen.dart
+G7 1 lib/features/realtime/presentation/widgets/floating_call_widget.dart
+G7 1 lib/widgets/note_card.dart
+
+# -- G5 -- surfaces constructing the state primitives directly ----------------
+# 72 files / 181 sites. This is the burn-down that keeps AuraProductState from
+# sitting declared-and-unconsumed: the count can only fall, never rise.
+# Each later chapter converts the surfaces it owns as it touches them.
+G5 1 lib/features/activity/presentation/activity_screen.dart
+G5 4 lib/features/admin/presentation/admin_audit_logs_screen.dart
+G5 3 lib/features/admin/presentation/admin_feature_flags_screen.dart
+G5 3 lib/features/admin/presentation/admin_grants_screen.dart
+G5 3 lib/features/admin/presentation/admin_institution_domains_screen.dart
+G5 3 lib/features/admin/presentation/admin_institution_members_screen.dart
+G5 6 lib/features/admin/presentation/admin_institutions_screen.dart
+G5 2 lib/features/admin/presentation/admin_moderation_screen.dart
+G5 2 lib/features/admin/presentation/admin_policies_screen.dart
+G5 3 lib/features/admin/presentation/admin_review_queue_screen.dart
+G5 2 lib/features/admin/presentation/admin_settings_screen.dart
+G5 4 lib/features/admin/presentation/admin_users_screen.dart
+G5 1 lib/features/announcements/presentation/announcement_detail_screen.dart
+G5 6 lib/features/announcements/presentation/announcements_screen.dart
+G5 2 lib/features/auth/presentation/auth_screen.dart
+G5 1 lib/features/auth/presentation/register_screen.dart
+G5 1 lib/features/communications/presentation/widgets/admin_ai_draft_panel.dart
+G5 1 lib/features/communications/presentation/widgets/admin_campaign_workflow.dart
+G5 1 lib/features/communications/presentation/widgets/admin_newsletter_lab.dart
+G5 2 lib/features/communications/presentation/widgets/digest_preferences_panel.dart
+G5 2 lib/features/conversations/presentation/conversations_screen.dart
+G5 3 lib/features/correspondence/presentation/archived_spaces_screen.dart
+G5 3 lib/features/correspondence/presentation/archived_threads_screen.dart
+G5 4 lib/features/correspondence/presentation/correspondence_hub_screen.dart
+G5 1 lib/features/correspondence/presentation/space_screen.dart
+G5 1 lib/features/correspondence/presentation/thread_screen.dart
+G5 3 lib/features/direct_threads/presentation/direct_intent_screen.dart
+G5 4 lib/features/direct_threads/presentation/direct_thread_screen.dart
+G5 4 lib/features/direct_threads/presentation/inbox_screen.dart
+G5 2 lib/features/home/presentation/member_home_screen.dart
+G5 4 lib/features/home/presentation/public_home_screen.dart
+G5 2 lib/features/institutions/activity/institution_activity_screen.dart
+G5 2 lib/features/institutions/announcements/institution_announcements_screen.dart
+G5 3 lib/features/institutions/correspondence/institution_correspondence_screen.dart
+G5 1 lib/features/institutions/domain/institution_domains_screen.dart
+G5 2 lib/features/institutions/engagement/engagement_detail_screen.dart
+G5 2 lib/features/institutions/engagement/engagement_list_screen.dart
+G5 2 lib/features/institutions/explore/institution_explore_screen.dart
+G5 3 lib/features/institutions/live_rooms/institution_live_rooms_screen.dart
+G5 2 lib/features/institutions/messaging/institution_messaging_screen.dart
+G5 2 lib/features/institutions/participation/participation_screen.dart
+G5 1 lib/features/institutions/posts/institution_post_composer_screen.dart
+G5 4 lib/features/institutions/posts/institution_post_detail_screen.dart
+G5 4 lib/features/institutions/presentation/admin_workspace_screen.dart
+G5 2 lib/features/institutions/presentation/institution_dashboard_screen.dart
+G5 2 lib/features/institutions/presentation/institution_detail_screen.dart
+G5 2 lib/features/institutions/presentation/institution_invites_screen.dart
+G5 2 lib/features/institutions/presentation/institution_join_requests_screen.dart
+G5 2 lib/features/institutions/presentation/institution_members_screen.dart
+G5 1 lib/features/institutions/presentation/institution_page.dart
+G5 2 lib/features/institutions/presentation/institution_spaces_screen.dart
+G5 3 lib/features/institutions/profile/institution_edit_profile_screen.dart
+G5 4 lib/features/institutions/profile/institution_profile_screen.dart
+G5 1 lib/features/institutions/units/institution_units_screen.dart
+G5 1 lib/features/me/presentation/edit_profile_screen.dart
+G5 2 lib/features/me/presentation/me_screen.dart
+G5 5 lib/features/messages/presentation/messages_hub_screen.dart
+G5 3 lib/features/notifications/presentation/notifications_screen.dart
+G5 2 lib/features/profile/presentation/author_profile_screen.dart
+G5 3 lib/features/profile/presentation/follow_requests_screen.dart
+G5 3 lib/features/profile/presentation/followers_screen.dart
+G5 3 lib/features/profile/presentation/following_screen.dart
+G5 3 lib/features/public/presentation/institution_sector_screen.dart
+G5 3 lib/features/public/presentation/public_institution_units_screen.dart
+G5 3 lib/features/public/presentation/public_institutions_directory_screen.dart
+G5 2 lib/features/public/presentation/public_unit_detail_screen.dart
+G5 1 lib/features/public/presentation/space_detail_screen.dart
+G5 3 lib/features/public/presentation/thread_screen.dart
+G5 3 lib/features/saves/presentation/saved_screen.dart
+G5 3 lib/features/search/presentation/search_screen.dart
+G5 3 lib/features/updates/presentation/updates_screen.dart
+G5 2 lib/shared/media/profile_media_editor.dart

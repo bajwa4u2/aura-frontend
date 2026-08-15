@@ -850,7 +850,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   // The route's institutionId wins as a signal of institutional intent;
   // otherwise the meeting record itself says which institution owns it
   // (hydrated in build). Realtime Architecture Correction — Phase 6,
-  // Meeting Attendee-Context Restoration, 2026-08-16: an external attendee
+  // Meeting Attendee-Context Restoration, 2026-08-13: an external attendee
   // who joined via the member path (`widget.institutionId == null`) must
   // not be bounced into the Institution Workspace shell on exit merely
   // because the meeting happens to be institution-owned — they have no

@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../../core/product/product_language.dart';
 import '../../core/ui/aura_platform_components.dart';
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
@@ -593,7 +594,7 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
               ? 'The image could not be downloaded. Check your network and try again.'
               : 'The selected file may be corrupted or unsupported.',
           action: AuraSecondaryButton(
-            label: 'Try again',
+            label: ProductLabels.of(ProductAction.retry),
             icon: Icons.refresh_rounded,
             onPressed: () {
               setState(() => _decodeError = null);

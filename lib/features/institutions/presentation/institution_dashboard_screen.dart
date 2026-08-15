@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_paths.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -640,7 +641,7 @@ class _InstitutionDashboardScreenState
           title: 'Overview unavailable',
           body: _error!,
           action: AuraSecondaryButton(
-            label: 'Try again',
+            label: ProductLabels.of(ProductAction.retry),
             onPressed: _load,
             icon: Icons.refresh_rounded,
           ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:aura/core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
@@ -148,7 +149,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
                     title: 'Could not load updates',
                     body: _error!,
                     action: AuraSecondaryButton(
-                      label: 'Refresh',
+                      label: ProductLabels.of(ProductAction.retry),
                       onPressed: _load,
                       icon: Icons.refresh_rounded,
                     ),

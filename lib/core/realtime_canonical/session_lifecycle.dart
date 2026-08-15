@@ -59,7 +59,7 @@ bool isTerminalSessionStatus(CanonicalSessionStatus status) =>
 /// Legal transition map. A transition not listed here is illegal. Sole
 /// source of truth for session-level legality.
 ///
-/// FROZEN DOCTRINE, amended 2026-08-16 (Realtime Architecture Correction —
+/// FROZEN DOCTRINE, amended 2026-08-12 (Realtime Architecture Correction —
 /// Phase 3, amended Gate 2). `active -> cancelled` added — mirrors
 /// `aura-backend/src/realtime/canonical/session-lifecycle.ts`'s matching
 /// amendment exactly; see that file's doc comment for the full mechanical

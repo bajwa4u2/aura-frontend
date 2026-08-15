@@ -6,6 +6,7 @@ import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/notifications/notification_open_reconcile.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -134,7 +135,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           body: AppErrorMapper.from(errorText, feature: 'view your notifications')
               .message,
           action: AuraSecondaryButton(
-            label: 'Try again',
+            label: ProductLabels.of(ProductAction.retry),
             icon: Icons.refresh_rounded,
             onPressed: () => ref
                 .read(notificationsControllerProvider.notifier)

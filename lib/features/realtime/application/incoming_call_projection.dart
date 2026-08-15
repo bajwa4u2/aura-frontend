@@ -57,7 +57,7 @@ CallPresentationIntent projectCallPresentationEvent(String eventName) {
     // Session-scoped (`session.` prefix), matching session.ended/
     // session.failed — NOT `participant.cancelled` (a pre-existing
     // backend wire-name inconsistency, corrected at the source in Phase 4
-    // Gate 2, 2026-08-16). Backend already also carries `reason:
+    // Gate 2, 2026-08-13). Backend already also carries `reason:
     // 'CANCELLED'` on the legacy `call:terminal` payload (Phase 3), so this
     // case is redundant-but-safe with that existing path, not the sole
     // source.

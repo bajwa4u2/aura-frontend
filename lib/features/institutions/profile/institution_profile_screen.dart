@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/institutions/institution_paths.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -50,7 +51,7 @@ class InstitutionProfileScreen extends ConsumerWidget {
             title: 'Profile unavailable',
             body: '$e',
             action: AuraSecondaryButton(
-              label: 'Try again',
+              label: ProductLabels.of(ProductAction.retry),
               onPressed: () => ref.invalidate(institutionAccessProvider),
               icon: Icons.refresh_rounded,
             ),

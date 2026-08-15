@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/product/product_language.dart';
 import '../core/ui/aura_platform_components.dart';
 import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_space.dart';
@@ -247,7 +248,7 @@ class _ErrorBlock extends StatelessWidget {
             runSpacing: AuraSpace.s10,
             children: [
               AuraSecondaryButton(
-                label: 'Try again',
+                label: ProductLabels.of(ProductAction.retry),
                 icon: Icons.refresh_rounded,
                 onPressed: onRetry,
               ),

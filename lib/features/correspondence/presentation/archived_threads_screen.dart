@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -159,7 +160,7 @@ class _ArchivedThreadsScreenState extends ConsumerState<ArchivedThreadsScreen> {
           title: 'Could not load archived conversations',
           body: _error!,
           action: AuraSecondaryButton(
-            label: 'Try again',
+            label: ProductLabels.of(ProductAction.retry),
             icon: Icons.refresh_rounded,
             onPressed: _load,
           ),

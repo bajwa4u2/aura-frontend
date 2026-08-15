@@ -23,7 +23,7 @@ void main() {
         'senderUserId': 'u1',
         'actorType': 'USER',
         'body': 'hey @jane check this out',
-        'createdAt': '2026-08-16T00:00:00.000Z',
+        'createdAt': '2026-08-13T00:00:00.000Z',
         'tagReferences': [
           {
             'kind': 'member',
@@ -57,7 +57,7 @@ void main() {
         'senderUserId': 'u1',
         'actorType': 'USER',
         'body': 'plain message',
-        'createdAt': '2026-08-16T00:00:00.000Z',
+        'createdAt': '2026-08-13T00:00:00.000Z',
       });
       expect(message.tagReferences, isEmpty);
     });
@@ -79,7 +79,7 @@ void main() {
               'senderUserId': 'u1',
               'actorType': 'USER',
               'body': 'hey @jane',
-              'createdAt': '2026-08-16T00:00:00.000Z',
+              'createdAt': '2026-08-13T00:00:00.000Z',
             },
           },
         ));
@@ -119,7 +119,7 @@ void main() {
               'senderUserId': 'u1',
               'actorType': 'USER',
               'body': 'plain message',
-              'createdAt': '2026-08-16T00:00:00.000Z',
+              'createdAt': '2026-08-13T00:00:00.000Z',
             },
           },
         ));

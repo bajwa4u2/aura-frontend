@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/shell/rail/rail_composition.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/translation/communication_translate_action.dart';
 import '../../../core/translation/communication_translation.dart';
 import '../../../core/media/aura_media_frame.dart';
@@ -193,7 +194,7 @@ class _InstitutionPostDetailScreenState
           title: 'Could not load post',
           body: AppErrorMapper.from(e, feature: 'view this post').message,
           action: AuraSecondaryButton(
-            label: 'Try again',
+            label: ProductLabels.of(ProductAction.retry),
             icon: Icons.refresh_rounded,
             onPressed: () => ref.invalidate(feedItemDetailProvider(args)),
           ),
@@ -325,7 +326,7 @@ class _InstitutionPostDetailScreenState
                   title: 'Could not load replies',
                   body: AppErrorMapper.from(e, feature: 'view replies').message,
                   action: AuraSecondaryButton(
-                    label: 'Try again',
+                    label: ProductLabels.of(ProductAction.retry),
                     icon: Icons.refresh_rounded,
                     onPressed: () =>
                         ref.invalidate(feedItemRepliesProvider(args)),

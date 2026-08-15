@@ -11,6 +11,7 @@ import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_profile_tab_bar.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -579,7 +580,7 @@ class _MeScreenState extends ConsumerState<MeScreen>
                   title: 'Could not load your presence',
                   body: _error!,
                   action: AuraSecondaryButton(
-                    label: 'Try again',
+                    label: ProductLabels.of(ProductAction.retry),
                     onPressed: _load,
                     icon: Icons.refresh_rounded,
                   ),

@@ -14,6 +14,7 @@ import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/presence_repository.dart';
@@ -281,7 +282,7 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
                     title: 'Could not load messages',
                     body: AppErrorMapper.from(e, feature: 'view this conversation').message,
                     action: AuraSecondaryButton(
-                      label: 'Try again',
+                      label: ProductLabels.of(ProductAction.retry),
                       icon: Icons.refresh_rounded,
                       onPressed: () =>
                           ref.invalidate(directMessagesProvider(key)),
@@ -770,7 +771,7 @@ class _TranslateAction extends StatelessWidget {
       label = 'Hide translation';
       onTap = onHide;
     } else if (hadFailure) {
-      label = 'Try again';
+      label = ProductLabels.of(ProductAction.retry);
       onTap = onTranslate;
     } else {
       label = 'Translate';
