@@ -1133,8 +1133,11 @@ class _MessageBubble extends ConsumerWidget {
       child: GestureDetector(
         // Message actions — Reply/Copy/Translate for everyone; Report
         // (canonical moderation authority, frozen hook) for another
-        // party's message.
+        // party's message. Long-press is the touch ergonomic; right-click
+        // is the desktop one (messenger parity) — same sheet either way.
         onLongPress: () =>
+            _showMessageActions(context, mine: mine, onAction: onAction),
+        onSecondaryTap: () =>
             _showMessageActions(context, mine: mine, onAction: onAction),
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 3),
