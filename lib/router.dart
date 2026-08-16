@@ -91,6 +91,7 @@ import 'features/institutions/participation/participation_screen.dart';
 import 'features/direct_threads/presentation/direct_intent_screen.dart';
 import 'features/direct_threads/presentation/direct_thread_screen.dart';
 import 'features/direct_threads/presentation/inbox_screen.dart';
+import 'features/discover/presentation/discover_screen.dart';
 import 'features/messages/presentation/messages_hub_screen.dart';
 import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/notifications/presentation/notifications_screen.dart';
@@ -392,6 +393,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/patrons' ||
         path == '/supporters' ||
         path == '/search' ||
+        path == '/discover' ||
         path.startsWith('/posts/') ||
         path.startsWith('/u/') ||
         path.startsWith('/author/') ||
@@ -925,6 +927,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
 
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
+          // C3 — DISCOVER: founder-frozen consolidated discovery intention.
+          GoRoute(
+            path: '/discover',
+            builder: (_, __) => const DiscoverScreen(),
+          ),
           GoRoute(
             path: '/posts/:id',
             builder: (context, state) =>
@@ -1872,6 +1879,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/direct/:threadId',
             builder: (context, state) => DirectThreadScreen(
               threadId: state.pathParameters['threadId'] ?? '',
+              institutionContextId: state.pathParameters['institutionId'],
             ),
           ),
           GoRoute(
@@ -1901,17 +1909,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           // inbox lives at /institution/:id/messages/direct.
           GoRoute(
             path: '/institution/:institutionId/messages',
+            // C3 — the institution-inbox destination states its context
+            // EXPLICITLY; the path itself confers nothing.
             builder: (context, state) => InstitutionMessagingScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/messages/direct',
-            builder: (_, __) => const InboxScreen(),
+            builder: (_, state) => InboxScreen(
+              institutionContextId: state.pathParameters['institutionId'],
+            ),
           ),
           GoRoute(
             path: '/institution/:institutionId/messages/direct/archived',
-            builder: (_, __) => const InboxScreen(archived: true),
+            builder: (_, state) => InboxScreen(
+              archived: true,
+              institutionContextId: state.pathParameters['institutionId'],
+            ),
           ),
         ],
       ),

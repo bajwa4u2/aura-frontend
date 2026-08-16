@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../core/navigation/navigation_authority.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'route_classification.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/diagnostics/runtime_trace.dart';
@@ -72,18 +72,24 @@ class AppShell extends ConsumerWidget {
     // Host ownership is handled by the institution path → InstitutionShell.
     final isGuest = isGuestAccessToken(store.accessToken);
 
+    // C3 — shell classification comes from the canonical Navigation
+    // Authority and is PRESENTATION ONLY: which chrome frames the surface.
+    // It confers no acting identity and no authority — C1 froze acting
+    // context as per-act, and the retired path-derived actor mechanism
+    // must never return through shell selection.
     final Widget shell;
     final String chose;
+    final ctx = NavigationAuthority.contextOf(path, isAuthed: isAuthed);
     if (isGuest) {
       shell = PublicShell(child: child);
       chose = 'PublicShell(guest)';
-    } else if (isAdminShellPath(path)) {
+    } else if (ctx == ShellContext.admin) {
       shell = AdminShell(child: child);
       chose = 'AdminShell';
-    } else if (isInstitutionShellPath(path)) {
+    } else if (ctx == ShellContext.institution) {
       shell = InstitutionShell(child: child);
       chose = 'InstitutionShell';
-    } else if (isAuthed) {
+    } else if (ctx == ShellContext.member) {
       shell = MemberShell(child: child);
       chose = 'MemberShell';
     } else {

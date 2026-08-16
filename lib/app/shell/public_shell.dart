@@ -124,28 +124,22 @@ class _PublicHeader extends ConsumerWidget {
                   // "Open Aura" — the moment authStatus settles we re-render.
                 ] else if (isAuthed) ...[
                   if (isTablet) ...[
+                    // C3 — founder-frozen public navigation: Home · Discover.
+                    // Institutions/Search are Discover facets, not primaries.
                     _NavTextLink(
-                      label: 'Institutions',
-                      onTap: () => context.go('/institutions'),
-                    ),
-                    const SizedBox(width: AuraSpace.s12),
-                    _NavTextLink(
-                      label: 'Explore',
-                      onTap: () => context.go('/search'),
+                      label: 'Discover',
+                      onTap: () => context.go('/discover'),
                     ),
                     const SizedBox(width: AuraSpace.s12),
                   ],
                   _GoHomeButton(onTap: () => context.go('/home')),
                 ] else ...[
                   if (isTablet) ...[
+                    // C3 — founder-frozen public navigation: Home · Discover.
+                    // Institutions/Search are Discover facets, not primaries.
                     _NavTextLink(
-                      label: 'Institutions',
-                      onTap: () => context.go('/institutions'),
-                    ),
-                    const SizedBox(width: AuraSpace.s12),
-                    _NavTextLink(
-                      label: 'Explore',
-                      onTap: () => context.go('/search'),
+                      label: 'Discover',
+                      onTap: () => context.go('/discover'),
                     ),
                     const SizedBox(width: AuraSpace.s12),
                   ],

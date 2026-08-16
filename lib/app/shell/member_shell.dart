@@ -15,6 +15,7 @@ import '../../core/ui/aura_space.dart';
 import '../../core/ui/surface/surface_composition.dart';
 import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
+import '../../core/navigation/navigation_authority.dart';
 import '../../core/trust/trust_marks.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/institutions/data/institution_pending_counts.dart';
@@ -68,6 +69,11 @@ class MemberShell extends StatelessWidget {
 
   final Widget child;
 
+  // C3 — FOUNDER-FROZEN authenticated primaries (destination checkpoint,
+  // 2026-08-16): Home · Messages · Discover · Meetings · Me. Exactly five,
+  // identical identities on mobile and desktop. CREATE is a contextual
+  // action, not a destination; Institutions directory is a Discover
+  // facet; Support lives under Me depth.
   static const List<_NavItem> _items = [
     _NavItem(
       label: 'Home',
@@ -82,23 +88,22 @@ class MemberShell extends StatelessWidget {
       path: '/messages',
     ),
     _NavItem(
-      label: 'Create',
-      icon: Icons.add_rounded,
-      selectedIcon: Icons.add_rounded,
-      path: '/create',
-      isPrimary: true,
+      label: 'Discover',
+      icon: Icons.explore_outlined,
+      selectedIcon: Icons.explore_rounded,
+      path: '/discover',
     ),
     _NavItem(
-      label: 'Institutions',
-      icon: Icons.apartment_outlined,
-      selectedIcon: Icons.apartment_rounded,
-      path: '/institutions',
+      label: 'Meetings',
+      icon: Icons.event_outlined,
+      selectedIcon: Icons.event_rounded,
+      path: '/meetings',
     ),
     _NavItem(
-      label: 'Support',
-      icon: Icons.support_agent_outlined,
-      selectedIcon: Icons.support_agent_rounded,
-      path: '/support/agent',
+      label: 'Me',
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
+      path: '/me',
     ),
   ];
 
@@ -115,21 +120,11 @@ class MemberShell extends StatelessWidget {
   /// were inside the product. Returning -1 produces a clean "no item
   /// selected" state on detail routes, which is the truthful signal.
   int _indexForPath(String path) {
-    if (path == '/home') return 0;
-    if (path == '/messages' ||
-        path == '/me/correspondence' ||
-        path.startsWith('/me/correspondence/') ||
-        path == '/conversations') {
-      return 1;
-    }
-    if (path == '/create' ||
-        path == '/compose' ||
-        path == '/announcements/create') {
-      return 2;
-    }
-    if (path == '/institutions' || path.startsWith('/institutions/')) return 3;
-    if (path.startsWith('/support')) return 4;
-    return -1;
+    // C3 — selected state is DESTINATION IDENTITY, resolved by the
+    // canonical Navigation Authority (never local substring matching).
+    final primary = NavigationAuthority.primaryOf(path);
+    if (primary == null) return -1;
+    return _items.indexWhere((i) => i.path == primary.route);
   }
 
   @override
@@ -1228,11 +1223,7 @@ class _MemberBottomNavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The "Create" item is primary — it reads as the accent action whether or
-    // not it's the selected tab, matching its left-rail treatment.
-    final color = selected || item.isPrimary
-        ? AuraSurface.accentText
-        : AuraSurface.muted;
+    final color = selected ? AuraSurface.accentText : AuraSurface.muted;
     return Semantics(
       button: true,
       selected: selected,
@@ -1293,60 +1284,7 @@ class _MemberSideNavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (item.isPrimary) {
-      return Semantics(
-        button: true,
-        label: item.label,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-            child: AnimatedContainer(
-              duration: AuraMotion.fast,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s16,
-                vertical: AuraSpace.s10,
-              ),
-              decoration: BoxDecoration(
-                gradient: selected ? null : AuraGradients.accent,
-                color: selected ? AuraSurface.accentSoft : null,
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-                border: Border.all(
-                  color: selected
-                      ? AuraSurface.accent.withValues(alpha: 0.4)
-                      : Colors.transparent,
-                ),
-                boxShadow: selected ? [] : AuraShadows.glow,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    item.icon,
-                    size: AuraIconSize.md,
-                    color: selected
-                        ? AuraSurface.accentText
-                        : Colors.white,
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                  Text(
-                    item.label,
-                    style: AuraText.small.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: selected
-                          ? AuraSurface.accentText
-                          : Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+
 
     final iconData = selected ? item.selectedIcon : item.icon;
     final fgColor = selected ? AuraSurface.ink : AuraSurface.muted;
@@ -2007,12 +1945,10 @@ class _NavItem {
     required this.icon,
     required this.selectedIcon,
     required this.path,
-    this.isPrimary = false,
   });
 
   final String label;
   final IconData icon;
   final IconData selectedIcon;
   final String path;
-  final bool isPrimary;
 }
