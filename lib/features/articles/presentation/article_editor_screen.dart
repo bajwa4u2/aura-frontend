@@ -17,6 +17,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/publication/aura_publication_markdown.dart';
 import '../data/articles_repository.dart';
+import '../../../core/navigation/navigation_authority.dart';
 
 /// ARTICLE AUTHORING — purpose-built long-form writing (founder addendum
 /// 2026-08-16). NOT the Post composer enlarged, NOT a CMS: title + a
@@ -41,6 +42,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
   bool _loading = true;
   bool _publishing = false;
   bool _preview = false;
+  bool _wasPublished = false;
   String _saveState = '';
 
   @override
@@ -56,6 +58,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
           ? await repo.getOwn(widget.articleId!)
           : await repo.createDraft();
       _articleId = article.id;
+      _wasPublished = article.isPublished;
       _title.text = article.title;
       _body.text = article.bodyMarkdown;
     } catch (_) {
@@ -160,10 +163,17 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     _autosave?.cancel();
     try {
       await _saveNow();
+      // Publishing a draft mints the slug; saving changes to an already
+      // published article revises IN PLACE (founder ruling: same identity,
+      // same canonical URL, durable revision history server-side).
       final article = await ref.read(articlesRepositoryProvider).publish(id);
       ref.invalidate(publishedArticlesProvider);
+      if (article.slug != null) {
+        ref.invalidate(articleBySlugProvider(article.slug!));
+      }
       if (mounted && article.slug != null) {
-        context.pushReplacement('/articles/${article.slug}');
+        context.pushReplacement(
+            NavigationAuthority.articleRoute(article.slug!));
       }
     } catch (e) {
       if (mounted) {
@@ -186,21 +196,52 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
           body: const AuraProductState(state: ProductState.loading));
     }
     return AuraScaffold(
-      title: 'Article',
-      actions: [
-        TextButton(
-          onPressed: () => setState(() => _preview = !_preview),
-          child: Text(_preview ? 'Write' : 'Preview'),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: AuraSpace.s8),
-          child: AuraPrimaryButton(
-            label: _publishing ? 'Publishing…' : 'Publish',
-            onPressed: _publishing ? null : _publish,
+      showHeader: false,
+      body: Column(
+        children: [
+          // VISIBLE editor bar — AuraScaffold renders no chrome of its
+          // own, so the editor owns Publish/Preview explicitly.
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s8, vertical: AuraSpace.s6),
+            decoration: const BoxDecoration(
+              color: AuraSurface.card,
+              border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: 'Back',
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () => context.canPop()
+                      ? context.pop()
+                      : context.go(NavigationAuthority.createRoute),
+                ),
+                Text('Article',
+                    style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AuraSurface.ink)),
+                const Spacer(),
+                Text(_saveState,
+                    style:
+                        AuraText.micro.copyWith(color: AuraSurface.faint)),
+                const SizedBox(width: AuraSpace.s10),
+                TextButton(
+                  onPressed: () => setState(() => _preview = !_preview),
+                  child: Text(_preview ? 'Write' : 'Preview'),
+                ),
+                const SizedBox(width: AuraSpace.s6),
+                AuraPrimaryButton(
+                  label: _publishing
+                      ? 'Publishing…'
+                      : (_wasPublished ? 'Save changes' : 'Publish'),
+                  onPressed: _publishing ? null : _publish,
+                ),
+                const SizedBox(width: AuraSpace.s6),
+              ],
+            ),
           ),
-        ),
-      ],
-      body: Center(
+          Expanded(child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
           child: _preview
@@ -291,6 +332,9 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
                   ],
                 ),
         ),
+      ),
+          ),
+        ],
       ),
     );
   }

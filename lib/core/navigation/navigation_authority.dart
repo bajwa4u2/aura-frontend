@@ -179,6 +179,14 @@ class NavigationAuthority {
   /// icon was dead parameter surface and is retired).
   static const String inviteHubRoute = '/invite';
 
+  /// MESSAGES — the conversation primary's canonical address (used by
+  /// in-body headers navigating "back to Messages" when there is no
+  /// pop stack, e.g. a direct deep link).
+  static const String messagesRoute = '/messages';
+
+  /// CREATE — the creation primary's canonical address.
+  static const String createRoute = '/create';
+
   // ── Canonical object route builders ──────────────────────────────
 
   static String personRoute(String handle) => '/u/$handle';
@@ -186,6 +194,19 @@ class NavigationAuthority {
   static String threadRoute(String id) => '/thread/$id';
   static String directThreadRoute(String id) => '/direct/$id';
   static String postRoute(String id) => '/posts/$id';
+
+  /// Realtime session entry (Conversation calls, Go Live broadcasts) —
+  /// capabilities attach; the session screen is the one transport surface.
+  static String realtimeSessionRoute(String sessionId) =>
+      '/realtime/$sessionId';
+
+  /// Published Article canonical address (identity survives revision —
+  /// founder ruling 2026-08-16: same identity, same canonical URL).
+  static String articleRoute(String slug) => '/articles/$slug';
+
+  /// Article editor for an existing draft or published article.
+  static String articleEditorRoute(String articleId) =>
+      '/articles/write/$articleId';
 
   /// DR4 — legacy mirrored-alias resolution. The per-route demolition test
   /// (roadmap C3) proved exactly TWO mirrors were pure duplicates of

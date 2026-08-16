@@ -99,8 +99,14 @@ void main() {
         NavigationAuthority.threadRoute('t1'),
         NavigationAuthority.directThreadRoute('d1'),
         NavigationAuthority.postRoute('p1'),
+        NavigationAuthority.realtimeSessionRoute('s1'),
+        NavigationAuthority.articleRoute('my-article'),
+        NavigationAuthority.articleEditorRoute('a1'),
       ];
       expect(outputs[0], '/messages/c/c123');
+      expect(outputs[6], '/realtime/s1');
+      expect(outputs[7], '/articles/my-article');
+      expect(outputs[8], '/articles/write/a1');
       for (final out in outputs) {
         expect(out.contains(r'$'), isFalse,
             reason: 'unresolved placeholder in builder output: $out');

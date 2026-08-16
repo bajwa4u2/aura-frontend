@@ -150,6 +150,11 @@ void main() {
       NavigationAuthority.threadRoute('*'),
       NavigationAuthority.directThreadRoute('*'),
       NavigationAuthority.postRoute('*'),
+      NavigationAuthority.messagesRoute,
+      NavigationAuthority.createRoute,
+      NavigationAuthority.realtimeSessionRoute('*'),
+      NavigationAuthority.articleRoute('*'),
+      NavigationAuthority.articleEditorRoute('*'),
     ];
     final unbacked = <String>[
       for (final a in authorityAddresses)

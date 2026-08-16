@@ -87,6 +87,8 @@ class ConversationMessage {
     required this.createdAt,
     this.mediaIds = const [],
     this.media = const [],
+    this.replyTo,
+    this.linkPreview,
   });
 
   final String id;
@@ -102,6 +104,13 @@ class ConversationMessage {
   /// Kind/mime per attachment (from the canonical Media authority) so the
   /// bubble renders images/audio/video truthfully.
   final List<MessageMediaRef> media;
+
+  /// Quoted parent (reply-to), server-verified to live in THIS conversation.
+  final ReplyRef? replyTo;
+
+  /// READY external link preview from the canonical link-intelligence
+  /// pipeline (same LinkPreview rows Posts/Announcements consume).
+  final LinkPreviewRef? linkPreview;
 
   bool get isSystem => systemKind != null;
 
@@ -125,8 +134,59 @@ class ConversationMessage {
                 mimeType: _ns(m['mimeType']),
               ))
           .toList(),
+      replyTo: json['replyTo'] is Map<String, dynamic>
+          ? ReplyRef.fromJson(json['replyTo'] as Map<String, dynamic>)
+          : null,
+      linkPreview: json['linkPreview'] is Map<String, dynamic>
+          ? LinkPreviewRef.fromJson(
+              json['linkPreview'] as Map<String, dynamic>)
+          : null,
     );
   }
+}
+
+class ReplyRef {
+  const ReplyRef({
+    required this.id,
+    required this.senderUserId,
+    required this.body,
+    required this.deleted,
+  });
+  final String id;
+  final String senderUserId;
+  final String body;
+  final bool deleted;
+
+  factory ReplyRef.fromJson(Map<String, dynamic> json) => ReplyRef(
+        id: _s(json['id']),
+        senderUserId: _s(json['senderUserId']),
+        body: _s(json['body']),
+        deleted: json['deleted'] == true,
+      );
+}
+
+class LinkPreviewRef {
+  const LinkPreviewRef({
+    required this.url,
+    this.title,
+    this.description,
+    this.siteName,
+    this.imageUrl,
+  });
+  final String url;
+  final String? title;
+  final String? description;
+  final String? siteName;
+  final String? imageUrl;
+
+  factory LinkPreviewRef.fromJson(Map<String, dynamic> json) =>
+      LinkPreviewRef(
+        url: _s(json['canonicalUrl']),
+        title: _ns(json['title']),
+        description: _ns(json['description']),
+        siteName: _ns(json['siteName']),
+        imageUrl: _ns(json['imageUrl']),
+      );
 }
 
 class MessageMediaRef {
@@ -224,15 +284,42 @@ class ConversationsRepository {
   }
 
   Future<ConversationMessage> send(String id, String body,
-      {String? speakingForInstitutionId, List<String> mediaIds = const []}) async {
+      {String? speakingForInstitutionId,
+      List<String> mediaIds = const [],
+      String? replyToMessageId,
+      String? linkPreviewId}) async {
     final res = await _dio.post<dynamic>('/conversations/$id/messages', data: {
       'body': body,
       if (speakingForInstitutionId != null)
         'speakingForInstitutionId': speakingForInstitutionId,
       if (mediaIds.isNotEmpty) 'mediaIds': mediaIds,
+      if (replyToMessageId != null) 'replyToMessageId': replyToMessageId,
+      if (linkPreviewId != null) 'linkPreviewId': linkPreviewId,
     });
     return ConversationMessage.fromJson(
         _unwrap(res.data)['message'] as Map<String, dynamic>);
+  }
+
+  /// Compose-time link resolution through the canonical SSRF-safe
+  /// link-intelligence pipeline (internal Aura links hydrate from their
+  /// own authorities; external links resolve to a LinkPreview).
+  Future<Map<String, dynamic>> resolveLinkPreview(String url) async {
+    final res =
+        await _dio.post<dynamic>('/link-previews/resolve', data: {'url': url});
+    return _unwrap(res.data) as Map<String, dynamic>? ?? const {};
+  }
+
+  /// On-demand translation through the canonical communication-translation
+  /// engine (party-access-checked server-side).
+  Future<String> translateMessage(
+      String messageId, String sourceText, String targetLanguage) async {
+    final res = await _dio.post<dynamic>('/communication/translate', data: {
+      'objectType': 'CONVERSATION_MESSAGE',
+      'objectId': messageId,
+      'sourceText': sourceText,
+      'targetLanguage': targetLanguage,
+    });
+    return _s(_unwrap(res.data)['translatedText']);
   }
 
   /// CAPABILITIES ATTACH (canon): start an ephemeral realtime session
@@ -241,6 +328,18 @@ class ConversationsRepository {
     final path = kind == 'VIDEO' ? 'video' : 'audio';
     final res =
         await _dio.post<dynamic>('/conversations/$id/live/$path/start');
+    final session =
+        _unwrap(res.data)['session'] as Map<String, dynamic>? ?? const {};
+    return _s(session['id']);
+  }
+
+  /// GO LIVE (founder doctrine 2026-08-16): intentionally originate a
+  /// PUBLIC Live broadcast from this private conversation. The
+  /// conversation itself never becomes public.
+  Future<String> startBroadcast(String id, {String kind = 'VIDEO'}) async {
+    final path = kind == 'AUDIO' ? 'audio' : 'video';
+    final res = await _dio
+        .post<dynamic>('/conversations/$id/live/broadcast/$path/start');
     final session =
         _unwrap(res.data)['session'] as Map<String, dynamic>? ?? const {};
     return _s(session['id']);

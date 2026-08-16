@@ -1,19 +1,24 @@
-import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dio/dio.dart' as dio_pkg;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pasteboard/pasteboard.dart';
 import 'package:record/record.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/compliance/report_content_sheet.dart';
 import '../../../core/compliance/report_repository.dart';
 import '../../../core/media/aura_attachment_image.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/product/product_state.dart';
@@ -59,11 +64,171 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   bool _startingCall = false;
   bool _recording = false;
 
+  /// Reply-to draft state: the quoted message the next send answers.
+  ConversationMessage? _replyTo;
+
+  /// On-demand translations shown under bubbles, keyed by message id.
+  final Map<String, String> _translations = {};
+
+  /// Draft link intelligence: debounce + last resolved preview.
+  Timer? _linkDebounce;
+  Map<String, dynamic>? _pendingPreview;
+  String? _pendingPreviewUrl;
+  bool _previewDismissed = false;
+
+  /// @mention suggestions for the token at the caret.
+  List<ConversationParty> _mentionMatches = const [];
+
   @override
   void dispose() {
+    _linkDebounce?.cancel();
     _composer.dispose();
     _recorder.dispose();
     super.dispose();
+  }
+
+  // ── Composer intelligence ─────────────────────────────────────────
+
+  void _onComposerChanged(String text, Conversation c) {
+    final sel = _composer.selection;
+    final caret =
+        sel.isValid ? sel.baseOffset.clamp(0, text.length) : text.length;
+    final upto = text.substring(0, caret);
+    final token = RegExp(r'@([^\s@]*)$').firstMatch(upto);
+    List<ConversationParty> matches = const [];
+    if (token != null) {
+      final q = token.group(1)!.toLowerCase();
+      matches = c.parties
+          .where((p) =>
+              p.isPerson &&
+              p.isActive &&
+              (p.displayName ?? '').isNotEmpty &&
+              p.displayName!.toLowerCase().contains(q))
+          .take(4)
+          .toList();
+    }
+    setState(() => _mentionMatches = matches);
+
+    _linkDebounce?.cancel();
+    _linkDebounce = Timer(
+        const Duration(milliseconds: 600), () => _resolveDraftLink(text));
+  }
+
+  Future<void> _resolveDraftLink(String text) async {
+    final raw = RegExp(r'https?://[^\s]+').firstMatch(text)?.group(0);
+    final url = raw == null ? null : _trimUrlToken(raw);
+    if (url == null || url.isEmpty) {
+      if (_pendingPreview != null || _pendingPreviewUrl != null) {
+        if (mounted) {
+          setState(() {
+            _pendingPreview = null;
+            _pendingPreviewUrl = null;
+            _previewDismissed = false;
+          });
+        }
+      }
+      return;
+    }
+    if (url == _pendingPreviewUrl) return;
+    _pendingPreviewUrl = url;
+    _previewDismissed = false;
+    try {
+      final resolved = await ref
+          .read(conversationsRepositoryProvider)
+          .resolveLinkPreview(url);
+      if (!mounted || _pendingPreviewUrl != url) return;
+      setState(() => _pendingPreview = resolved);
+    } catch (_) {
+      // A preview is enrichment — never blocks composing or sending.
+    }
+  }
+
+  void _insertMention(ConversationParty p) {
+    final name = p.displayName ?? '';
+    if (name.isEmpty) return;
+    final text = _composer.text;
+    final sel = _composer.selection;
+    final caret =
+        sel.isValid ? sel.baseOffset.clamp(0, text.length) : text.length;
+    final upto = text.substring(0, caret);
+    final token = RegExp(r'@([^\s@]*)$').firstMatch(upto);
+    if (token == null) return;
+    final next =
+        '${upto.substring(0, token.start)}@$name ${text.substring(caret)}';
+    _composer.text = next;
+    _composer.selection =
+        TextSelection.collapsed(offset: token.start + name.length + 2);
+    setState(() => _mentionMatches = const []);
+  }
+
+  /// Ctrl/Cmd+V with an image on the clipboard becomes an attachment
+  /// through the same coherent intake as drag/drop; text paste untouched.
+  KeyEventResult _composerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyV &&
+        (HardwareKeyboard.instance.isControlPressed ||
+            HardwareKeyboard.instance.isMetaPressed)) {
+      _tryPasteImage();
+    }
+    return KeyEventResult.ignored;
+  }
+
+  Future<void> _tryPasteImage() async {
+    try {
+      final bytes = await Pasteboard.image;
+      if (bytes != null && bytes.isNotEmpty) {
+        await _ingestBytes(bytes, 'pasted-image.png', 'image/png');
+      }
+    } catch (_) {
+      // No image on the clipboard — the native text paste proceeds.
+    }
+  }
+
+  Future<void> _messageAction(String action, ConversationMessage msg) async {
+    switch (action) {
+      case 'reply':
+        setState(() => _replyTo = msg);
+        return;
+      case 'copy':
+        await Clipboard.setData(ClipboardData(text: msg.body));
+        return;
+      case 'translate':
+        final target = Localizations.localeOf(context).languageCode;
+        try {
+          final t = await ref
+              .read(conversationsRepositoryProvider)
+              .translateMessage(msg.id, msg.body, target);
+          if (mounted) {
+            setState(() => _translations[msg.id] =
+                t.trim() == msg.body.trim() ? 'Already in your language' : t);
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Translation is not available right now.')));
+          }
+        }
+        return;
+      case 'report':
+        if (mounted) {
+          ReportContentSheet.show(
+            context,
+            targetType: ReportTargetType.conversationMessage,
+            targetId: msg.id,
+            contextLabel: 'this message',
+          );
+        }
+        return;
+    }
+  }
+
+  String _partyName(Conversation c, String userId) {
+    for (final p in c.parties) {
+      if (p.userId == userId && (p.displayName ?? '').isNotEmpty) {
+        return p.displayName!;
+      }
+    }
+    return 'Someone';
   }
 
   bool get _uploading =>
@@ -174,11 +339,77 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final picked = await ImagePicker().pickVideo(source: ImageSource.camera);
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
-    final pending =
-        _PendingAttachment(name: 'Video message', kind: 'VIDEO');
-    setState(() => _attachments.add(pending));
-    await _upload(
-        pending, bytes, picked.name, picked.mimeType ?? 'video/webm');
+    // A video MESSAGE sends itself — capture IS the send.
+    await _uploadAndSendImmediately(
+        bytes, picked.name, picked.mimeType ?? 'video/webm', 'VIDEO');
+  }
+
+  /// Voice/video MESSAGES are sent the moment capture completes (WhatsApp
+  /// ergonomics); picked/dropped files stay reviewable before send.
+  Future<void> _uploadAndSendImmediately(
+      Uint8List bytes, String fileName, String mimeType, String kind) async {
+    try {
+      final result = await uploadAuraMedia(
+        dio: ref.read(dioProvider),
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: mimeType,
+        kind: kind,
+        source: kind == 'AUDIO' ? 'RECORDING' : 'CAMERA',
+      );
+      await ref.read(conversationsRepositoryProvider).send(
+            widget.conversationId,
+            '…',
+            mediaIds: [result.mediaId],
+          );
+      ref.invalidate(conversationMessagesProvider(widget.conversationId));
+      ref.invalidate(conversationsListProvider);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Could not send — try again.')));
+      }
+    }
+  }
+
+  /// GO LIVE: explicit human boundary crossing (founder doctrine): the
+  /// conversation stays private; only what is transmitted into the Live
+  /// session becomes public.
+  Future<void> _goLive() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Go Live — public broadcast'),
+        content: const Text(
+            'This starts a PUBLIC Live broadcast. Your conversation stays '
+            'private — viewers see only what you transmit in the Live '
+            'session, never your messages, attachments, or history. '
+            'Ending the Live returns you here.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Go Live')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final sessionId = await ref
+          .read(conversationsRepositoryProvider)
+          .startBroadcast(widget.conversationId);
+      if (sessionId.isEmpty) throw Exception('no session');
+      if (mounted) {
+        context.push(NavigationAuthority.realtimeSessionRoute(sessionId));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Could not go live — try again.')));
+      }
+    }
   }
 
   Future<void> _attachDocument() async {
@@ -243,10 +474,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         );
         final bytes = Uint8List.fromList(res.data ?? const []);
         if (bytes.isEmpty) throw Exception('empty recording');
-        final pending =
-            _PendingAttachment(name: 'Voice note', kind: 'AUDIO');
-        setState(() => _attachments.add(pending));
-        await _upload(pending, bytes, 'voice-note.webm', 'audio/webm');
+        // Messenger ergonomics (founder): a voice MESSAGE sends itself —
+        // stop recording IS the send.
+        await _uploadAndSendImmediately(
+            bytes, 'voice-note.webm', 'audio/webm', 'AUDIO');
       } catch (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -276,13 +507,25 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     if ((text.isEmpty && mediaIds.isEmpty) || _sending || _uploading) return;
     setState(() => _sending = true);
     try {
+      final previewId = _previewDismissed
+          ? null
+          : _pendingPreview?['linkPreviewId'] as String?;
       await ref.read(conversationsRepositoryProvider).send(
             widget.conversationId,
             text.isEmpty ? '…' : text,
             mediaIds: mediaIds,
+            replyToMessageId: _replyTo?.id,
+            linkPreviewId: previewId,
           );
       _composer.clear();
-      setState(() => _attachments.clear());
+      setState(() {
+        _attachments.clear();
+        _replyTo = null;
+        _pendingPreview = null;
+        _pendingPreviewUrl = null;
+        _previewDismissed = false;
+        _mentionMatches = const [];
+      });
       ref.invalidate(conversationMessagesProvider(widget.conversationId));
       ref.invalidate(conversationsListProvider);
     } catch (e) {
@@ -307,7 +550,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           .read(conversationsRepositoryProvider)
           .startLive(widget.conversationId, kind: kind);
       if (sessionId.isEmpty) throw Exception('no session');
-      if (mounted) context.push('/realtime/$sessionId');
+      if (mounted) {
+        context.push(NavigationAuthority.realtimeSessionRoute(sessionId));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -316,6 +561,19 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     } finally {
       if (mounted) setState(() => _startingCall = false);
     }
+  }
+
+  String _draftPreviewLabel() {
+    final p = _pendingPreview ?? const {};
+    final internal = p['internalReference'];
+    if (internal is Map<String, dynamic>) {
+      final t = internal['title'] ?? internal['label'] ?? internal['name'];
+      if (t != null && '$t'.isNotEmpty) return 'Aura · $t';
+      return 'Aura link';
+    }
+    final title = p['title'];
+    if (title != null && '$title'.isNotEmpty) return '$title';
+    return '${p['canonicalUrl'] ?? p['sourceUrl'] ?? ''}';
   }
 
   Future<void> _menu(String action, Conversation c) async {
@@ -402,39 +660,84 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           }
         },
         child: AuraScaffold(
-        title: conversationDisplayName(c, myUserId),
-        actions: [
-          IconButton(
-            tooltip: 'Add people',
-            icon: const Icon(Icons.person_add_alt_1_rounded),
-            onPressed: () =>
-                showAddPeopleSheet(context, ref, widget.conversationId),
-          ),
-          IconButton(
-            tooltip: 'Call',
-            icon: const Icon(Icons.call_rounded),
-            onPressed: _startingCall ? null : () => _startCall('AUDIO'),
-          ),
-          IconButton(
-            tooltip: 'Video',
-            icon: const Icon(Icons.videocam_rounded),
-            onPressed: _startingCall ? null : () => _startCall('VIDEO'),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (a) => _menu(a, c),
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'rename', child: Text('Name')),
-              PopupMenuItem(
-                  value: 'mute', child: Text(c.muted ? 'Unmute' : 'Mute')),
-              PopupMenuItem(
-                  value: 'archive',
-                  child: Text(c.archived ? 'Unarchive' : 'Archive')),
-              const PopupMenuItem(value: 'leave', child: Text('Leave')),
-            ],
-          ),
-        ],
+        showHeader: false,
         body: Column(
           children: [
+            // VISIBLE conversation header — AuraScaffold renders no chrome
+            // of its own (the live "calls nowhere / add buried" defect), so
+            // the conversation owns its bar: identity left, capabilities
+            // right, messenger-grade.
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s8, vertical: AuraSpace.s6),
+              decoration: const BoxDecoration(
+                color: AuraSurface.card,
+                border:
+                    Border(bottom: BorderSide(color: AuraSurface.divider)),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Back',
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    onPressed: () => context.canPop()
+                        ? context.pop()
+                        : context.go(NavigationAuthority.messagesRoute),
+                  ),
+                  AuraAvatar(
+                      name: conversationDisplayName(c, myUserId), size: 34),
+                  const SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: Text(
+                      conversationDisplayName(c, myUserId),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AuraSurface.ink),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Call',
+                    icon: const Icon(Icons.call_rounded),
+                    onPressed:
+                        _startingCall ? null : () => _startCall('AUDIO'),
+                  ),
+                  IconButton(
+                    tooltip: 'Video',
+                    icon: const Icon(Icons.videocam_rounded),
+                    onPressed:
+                        _startingCall ? null : () => _startCall('VIDEO'),
+                  ),
+                  IconButton(
+                    tooltip: 'Add people',
+                    icon: const Icon(Icons.person_add_alt_1_rounded),
+                    onPressed: () => showAddPeopleSheet(
+                        context, ref, widget.conversationId),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (a) =>
+                        a == 'golive' ? _goLive() : _menu(a, c),
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                          value: 'golive',
+                          child: Text('Go Live — public broadcast')),
+                      const PopupMenuItem(
+                          value: 'rename', child: Text('Name')),
+                      PopupMenuItem(
+                          value: 'mute',
+                          child: Text(c.muted ? 'Unmute' : 'Mute')),
+                      PopupMenuItem(
+                          value: 'archive',
+                          child:
+                              Text(c.archived ? 'Unarchive' : 'Archive')),
+                      const PopupMenuItem(
+                          value: 'leave', child: Text('Leave')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: messagesAsync.when(
                 loading: () => const AuraProductState(
@@ -453,6 +756,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     message: messages[i],
                     mine: messages[i].senderUserId == myUserId,
                     conversation: c,
+                    translation: _translations[messages[i].id],
+                    onAction: (a) => _messageAction(a, messages[i]),
                   ),
                 ),
               ),
@@ -475,6 +780,92 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         ),
                     ],
                   ),
+                ),
+              ),
+            if (_mentionMatches.isNotEmpty)
+              Container(
+                width: double.infinity,
+                color: AuraSurface.card,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s12, vertical: AuraSpace.s6),
+                child: Wrap(
+                  spacing: AuraSpace.s6,
+                  children: [
+                    for (final p in _mentionMatches)
+                      ActionChip(
+                        avatar:
+                            AuraAvatar(name: p.displayName ?? '', size: 20),
+                        label: Text(p.displayName ?? ''),
+                        onPressed: () => _insertMention(p),
+                      ),
+                  ],
+                ),
+              ),
+            if (_replyTo != null)
+              Container(
+                color: AuraSurface.card,
+                padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s12, AuraSpace.s6, AuraSpace.s4, AuraSpace.s6),
+                child: Row(
+                  children: [
+                    const Icon(Icons.reply_rounded,
+                        size: 16, color: AuraSurface.muted),
+                    const SizedBox(width: AuraSpace.s8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_partyName(c, _replyTo!.senderUserId),
+                              style: AuraText.micro.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AuraSurface.accentText)),
+                          Text(_replyTo!.body,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AuraText.micro
+                                  .copyWith(color: AuraSurface.muted)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 16),
+                      onPressed: () => setState(() => _replyTo = null),
+                    ),
+                  ],
+                ),
+              ),
+            if (_pendingPreview != null &&
+                !_previewDismissed &&
+                (_pendingPreview!['status'] == 'READY' ||
+                    _pendingPreview!['status'] == 'INTERNAL'))
+              Container(
+                color: AuraSurface.card,
+                padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s12, AuraSpace.s6, AuraSpace.s4, AuraSpace.s6),
+                child: Row(
+                  children: [
+                    Icon(
+                        _pendingPreview!['status'] == 'INTERNAL'
+                            ? Icons.link_rounded
+                            : Icons.public_rounded,
+                        size: 16,
+                        color: AuraSurface.muted),
+                    const SizedBox(width: AuraSpace.s8),
+                    Expanded(
+                      child: Text(
+                        _draftPreviewLabel(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.micro
+                            .copyWith(color: AuraSurface.muted),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 16),
+                      onPressed: () =>
+                          setState(() => _previewDismissed = true),
+                    ),
+                  ],
                 ),
               ),
             SafeArea(
@@ -501,24 +892,38 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       onPressed: _toggleVoiceNote,
                     ),
                     Expanded(
-                      child: TextField(
-                        controller: _composer,
-                        minLines: 1,
-                        maxLines: 5,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _send(),
-                        decoration: InputDecoration(
-                          hintText:
-                              _recording ? 'Recording…' : 'Message…',
-                          filled: true,
-                          fillColor: AuraSurface.card,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
+                      child: Focus(
+                        onKeyEvent: _composerKeyEvent,
+                        child: TextField(
+                          controller: _composer,
+                          minLines: 1,
+                          maxLines: 5,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _send(),
+                          onChanged: (t) => _onComposerChanged(t, c),
+                          contentInsertionConfiguration:
+                              ContentInsertionConfiguration(
+                            onContentInserted: (content) async {
+                              final data = content.data;
+                              if (data != null && data.isNotEmpty) {
+                                await _ingestBytes(Uint8List.fromList(data),
+                                    'pasted-image.png', content.mimeType);
+                              }
+                            },
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AuraSpace.s16,
-                              vertical: AuraSpace.s10),
+                          decoration: InputDecoration(
+                            hintText:
+                                _recording ? 'Recording…' : 'Message…',
+                            filled: true,
+                            fillColor: AuraSurface.card,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: AuraSpace.s16,
+                                vertical: AuraSpace.s10),
+                          ),
                         ),
                       ),
                     ),
@@ -687,10 +1092,14 @@ class _MessageBubble extends ConsumerWidget {
     required this.message,
     required this.mine,
     required this.conversation,
+    required this.onAction,
+    this.translation,
   });
   final ConversationMessage message;
   final bool mine;
   final Conversation conversation;
+  final void Function(String action) onAction;
+  final String? translation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -722,15 +1131,11 @@ class _MessageBubble extends ConsumerWidget {
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
-        // Message → Report → canonical moderation authority (frozen hook).
-        onLongPress: mine
-            ? null
-            : () => ReportContentSheet.show(
-                  context,
-                  targetType: ReportTargetType.conversationMessage,
-                  targetId: message.id,
-                  contextLabel: 'this message',
-                ),
+        // Message actions — Reply/Copy/Translate for everyone; Report
+        // (canonical moderation authority, frozen hook) for another
+        // party's message.
+        onLongPress: () =>
+            _showMessageActions(context, mine: mine, onAction: onAction),
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 3),
           padding: const EdgeInsets.symmetric(
@@ -750,13 +1155,57 @@ class _MessageBubble extends ConsumerWidget {
                         color: AuraSurface.accentText)),
                 const SizedBox(height: 2),
               ],
+              if (message.replyTo != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+                  decoration: const BoxDecoration(
+                    color: AuraSurface.subtle,
+                    border: Border(
+                        left: BorderSide(
+                            color: AuraSurface.accentText, width: 3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          _conversationSenderName(
+                              conversation, message.replyTo!.senderUserId),
+                          style: AuraText.micro.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AuraSurface.accentText)),
+                      Text(
+                        message.replyTo!.deleted
+                            ? 'Message removed'
+                            : message.replyTo!.body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.micro
+                            .copyWith(color: AuraSurface.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s6),
+              ],
               for (final m in message.media) ...[
                 _ConversationAttachment(media: m),
                 const SizedBox(height: AuraSpace.s6),
               ],
               if (message.body.trim() != '…' || message.media.isEmpty)
-                SelectableText(message.body,
-                    style: AuraText.body.copyWith(color: AuraSurface.ink)),
+                SelectableText.rich(
+                    _conversationRichBody(context, message.body, conversation)),
+              if (message.linkPreview != null) ...[
+                const SizedBox(height: AuraSpace.s6),
+                _LinkPreviewCard(preview: message.linkPreview!),
+              ],
+              if (translation != null) ...[
+                const SizedBox(height: AuraSpace.s4),
+                Text(translation!,
+                    style: AuraText.micro.copyWith(
+                        color: AuraSurface.muted,
+                        fontStyle: FontStyle.italic)),
+              ],
             ],
           ),
         ),
@@ -944,3 +1393,207 @@ final _deliveryUrlProvider =
     FutureProvider.family<String?, String>((ref, mediaId) async {
   return ref.watch(conversationsRepositoryProvider).mediaDeliveryUrl(mediaId);
 });
+
+
+/// Message action sheet: the shared per-message capability surface.
+void _showMessageActions(BuildContext context,
+    {required bool mine, required void Function(String action) onAction}) {
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.reply_rounded),
+            title: const Text('Reply'),
+            onTap: () {
+              Navigator.of(ctx).pop();
+              onAction('reply');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.copy_rounded),
+            title: const Text('Copy text'),
+            onTap: () {
+              Navigator.of(ctx).pop();
+              onAction('copy');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.translate_rounded),
+            title: const Text('Translate'),
+            onTap: () {
+              Navigator.of(ctx).pop();
+              onAction('translate');
+            },
+          ),
+          if (!mine)
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Report'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                onAction('report');
+              },
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+String _conversationSenderName(Conversation c, String userId) {
+  for (final p in c.parties) {
+    if (p.userId == userId && (p.displayName ?? '').isNotEmpty) {
+      return p.displayName!;
+    }
+  }
+  return 'Someone';
+}
+
+String _trimUrlToken(String u) {
+  var out = u;
+  while (out.isNotEmpty && '.,;:)]}\u2026'.contains(out[out.length - 1])) {
+    out = out.substring(0, out.length - 1);
+  }
+  return out;
+}
+
+/// Body text with live links (internal Aura links stay inside the product,
+/// external links open outside) and @mention highlighting.
+TextSpan _conversationRichBody(
+    BuildContext context, String body, Conversation conversation) {
+  final base = AuraText.body.copyWith(color: AuraSurface.ink);
+  final spans = <InlineSpan>[];
+  final mentionNames = conversation.parties
+      .where((p) => p.isPerson && (p.displayName ?? '').isNotEmpty)
+      .map((p) => p.displayName!)
+      .toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+
+  void addTextWithMentions(String t) {
+    var i = 0;
+    while (i < t.length) {
+      final at = t.indexOf('@', i);
+      if (at < 0) {
+        spans.add(TextSpan(text: t.substring(i)));
+        return;
+      }
+      if (at > i) spans.add(TextSpan(text: t.substring(i, at)));
+      String? hit;
+      for (final n in mentionNames) {
+        if (t.startsWith('@$n', at)) {
+          hit = n;
+          break;
+        }
+      }
+      if (hit != null) {
+        spans.add(TextSpan(
+            text: '@$hit',
+            style: base.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AuraSurface.accentText)));
+        i = at + hit.length + 1;
+      } else {
+        spans.add(const TextSpan(text: '@'));
+        i = at + 1;
+      }
+    }
+  }
+
+  var idx = 0;
+  for (final m in RegExp(r'https?://[^\s]+').allMatches(body)) {
+    if (m.start > idx) addTextWithMentions(body.substring(idx, m.start));
+    final url = _trimUrlToken(m.group(0)!);
+    spans.add(TextSpan(
+      text: url,
+      style: base.copyWith(
+          color: AuraSurface.accentText,
+          decoration: TextDecoration.underline),
+      recognizer: TapGestureRecognizer()
+        ..onTap = () => _openConversationUrl(context, url),
+    ));
+    final tail = m.group(0)!.substring(url.length);
+    if (tail.isNotEmpty) spans.add(TextSpan(text: tail));
+    idx = m.end;
+  }
+  if (idx < body.length) addTextWithMentions(body.substring(idx));
+  return TextSpan(style: base, children: spans);
+}
+
+void _openConversationUrl(BuildContext context, String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  final host = uri.host.toLowerCase();
+  final internal =
+      host == 'auraplatform.org' || host.endsWith('.auraplatform.org');
+  if (internal && uri.path.isNotEmpty && uri.path != '/') {
+    // Internal Aura link: stay inside the product — the destination's
+    // own authority decides what this viewer may see.
+    GoRouter.of(context)
+        .push(uri.path + (uri.hasQuery ? '?${uri.query}' : ''));
+    return;
+  }
+  launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+/// Rendered external-link preview card (canonical LinkPreview data).
+class _LinkPreviewCard extends StatelessWidget {
+  const _LinkPreviewCard({required this.preview});
+  final LinkPreviewRef preview;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _openConversationUrl(context, preview.url),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 340),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (preview.imageUrl != null)
+              Image.network(
+                preview.imageUrl!,
+                height: 140,
+                width: 340,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(AuraSpace.s10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (preview.siteName != null)
+                    Text(preview.siteName!,
+                        style: AuraText.micro
+                            .copyWith(color: AuraSurface.faint)),
+                  if (preview.title != null)
+                    Text(preview.title!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.micro.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AuraSurface.ink)),
+                  if (preview.description != null)
+                    Text(preview.description!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.micro
+                            .copyWith(color: AuraSurface.muted)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

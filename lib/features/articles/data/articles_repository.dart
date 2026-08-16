@@ -33,6 +33,7 @@ class Article {
     required this.status,
     required this.publishedAt,
     this.author,
+    this.revised = false,
   });
 
   final String id;
@@ -43,6 +44,10 @@ class Article {
   final String status; // DRAFT | PUBLISHED
   final DateTime? publishedAt;
   final ArticleAuthor? author;
+
+  /// True when the published article has been revised (durable history
+  /// preserved server-side; presentation shows an honest edited marker).
+  final bool revised;
 
   bool get isPublished => status == 'PUBLISHED';
 
@@ -59,6 +64,7 @@ class Article {
         author: json['author'] is Map<String, dynamic>
             ? ArticleAuthor.fromJson(json['author'] as Map<String, dynamic>)
             : null,
+        revised: json['revised'] == true,
       );
 }
 

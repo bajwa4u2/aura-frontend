@@ -11,7 +11,9 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/publication/aura_publication_markdown.dart';
+import '../../conversation/presentation/conversation_identity.dart';
 import '../data/articles_repository.dart';
+import '../../../core/navigation/navigation_authority.dart';
 
 /// PUBLISHED ARTICLE — the durable long-form reading experience: author
 /// attribution, published time, canonical link identity (/articles/:slug),
@@ -63,8 +65,9 @@ class ArticleScreen extends ConsumerWidget {
                             if (article.publishedAt != null)
                               Text(
                                 AuraTemporal.calendar(ProductTime(
-                                    article.publishedAt!,
-                                    TimeEvent.published)),
+                                        article.publishedAt!,
+                                        TimeEvent.published)) +
+                                    (article.revised ? ' · Edited' : ''),
                                 style: AuraText.micro
                                     .copyWith(color: AuraSurface.muted),
                               ),
@@ -72,6 +75,16 @@ class ArticleScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    if (article.author?.userId ==
+                        ref.watch(myUserIdProvider))
+                      TextButton.icon(
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Edit'),
+                        onPressed: () =>
+                            context.push(
+                                NavigationAuthority.articleEditorRoute(
+                                    article.id)),
+                      ),
                   ],
                 ),
                 const SizedBox(height: AuraSpace.s20),
@@ -144,7 +157,7 @@ class ArticlesDiscoveryScreen extends ConsumerWidget {
                         ),
                         onTap: a.slug == null
                             ? null
-                            : () => context.push('/articles/${a.slug}'),
+                            : () => context.push(NavigationAuthority.articleRoute(a.slug!)),
                       ),
                   ],
                 );

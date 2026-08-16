@@ -122,10 +122,9 @@
 # conversation module / discover module.
 3 lib/features/conversation/presentation/claim_invitation_screen.dart
 2 lib/features/discover/presentation/people_discovery_screen.dart
-# 2026-08-16 Conversation capability attachment: the realtime session join
-# (/realtime/:id) pending a session-route authority builder; owner:
-# conversation module.
-1 lib/features/conversation/presentation/conversation_screen.dart
-# 2026-08-16 Articles (real): published-article + author links pending
-# dedicated authority builders; owner: articles module.
-1 lib/features/articles/presentation/article_screen.dart
+# 2026-08-16 shared-primitives wave burn-down: realtimeSessionRoute,
+# articleRoute, articleEditorRoute, messagesRoute, createRoute now exist
+# on the Navigation Authority; conversation + articles surfaces carry
+# ZERO scattered literals (1 -> 0 and 1 -> 0).
+0 lib/features/conversation/presentation/conversation_screen.dart
+0 lib/features/articles/presentation/article_screen.dart
