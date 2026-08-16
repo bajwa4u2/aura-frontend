@@ -303,3 +303,10 @@ A future agent must NOT infer that Free/Pro entitlements were decided during C2.
 - *Path-manufactured context* is structurally impossible: resolveActorContext deleted (0 mechanisms), shell classification is alias-aware destination-identity presentation pinned as never-authority, and the route-integrity gate + literal ratchet prevent regression.
 - The institutional-inbox quartet (4 routes) carries the explicit-context contract and finalizes with C7.
 - The Phase-1 phrasing "the :institutionId prefix is what dies" is SUPERSEDED as over-broad; the roadmap's per-route DR4 test is the governing wording and was applied per route.
+
+
+## FOUNDER-OWNED ROADMAP GAPS (recorded 2026-08-16 at C4 opening; NOT chapter work)
+
+**GAP 1 — Settings / Personal Controls.** The roadmap charters no Settings chapter; prior "C4 Settings" references were continuity shorthand, now formally reclassified. The broader personal Settings experience is UNCHARTERED. The **Availability Off user-facing control** remains: C2 doctrine frozen, runtime semantics canonical, control required, **implementation owner UNASSIGNED pending founder roadmap placement**. Availability doctrine is not reopened by this gap.
+
+**GAP 2 — Long-Form Publishing / Articles.** Net-new first-class capability, NOT reconstruction debt. Frozen product distinction to preserve for later architecture: **Post = timely expression/discourse participation · Article = substantial authored thought/durable long-form publication · Announcement = governed institutional communication.** Full lifecycle eventually required (authoring → drafting → structuring/revision → preview → publication → reading → attribution → discussion → continuity). Person and Institution authorship both legitimate; institutional publication inherits canonical acting-identity/authority doctrine — route/context never manufactures authorship. NOT a Post extension, NOT part of C4, no chapter number assigned; awaiting deliberate founder dependency placement.
