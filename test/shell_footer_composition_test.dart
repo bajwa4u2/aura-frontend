@@ -62,9 +62,10 @@ void main() {
     // first link in the first link column.
     final brand = tester.getRect(
       find.text(
-        'Aura is institution operating infrastructure. Institutions run their '
-        'public and member-facing life on one verified identity and one '
-        'accountable record.',
+        'Aura is a platform for purposeful public and personal communication, '
+        'where conversations keep their context and people speak under a clear '
+        'identity. Institutions take part under verified identity, so what they '
+        'say officially stays attributable.',
       ),
     );
     final firstColLabel = tester.getRect(find.text('AURA'));
@@ -84,9 +85,10 @@ void main() {
 
     final brand = tester.getRect(
       find.text(
-        'Aura is institution operating infrastructure. Institutions run their '
-        'public and member-facing life on one verified identity and one '
-        'accountable record.',
+        'Aura is a platform for purposeful public and personal communication, '
+        'where conversations keep their context and people speak under a clear '
+        'identity. Institutions take part under verified identity, so what they '
+        'say officially stays attributable.',
       ),
     );
     final firstColLabel = tester.getRect(find.text('AURA'));

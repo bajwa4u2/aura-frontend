@@ -17,6 +17,22 @@ Aura is **verified-identity civic discourse infrastructure**. This frontend is *
 
 If a change would flatten Aura into any of those, refuse it.
 
+
+## Public-first interpretive lens (added 2026-08-15)
+
+**Read `../AGENTS.md` → "Aura Public-First Causal Doctrine" before product-significant
+frontend work.** Canonical source (never restated here):
+`representation/inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md`.
+
+Short form for this repo: **Aura is public-first, not institution-first.** Person is the
+originating human identity; institutional identity is accountability infrastructure, not the
+reason people participate. Classify every surface you touch as **general/public**,
+**person/social**, or **institution-specific**, and apply the doctrine accordingly — the
+Institution Shell is legitimately institution-focused; the shared shell, auth, onboarding,
+navigation, Explore and general CTAs are not.
+
+This does **not** relax the category guardrail above. Public-first ≠ consumer social app.
+
 ## Architecture boundaries
 
 ```

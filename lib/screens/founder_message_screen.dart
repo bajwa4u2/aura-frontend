@@ -65,8 +65,8 @@ class FounderMessageScreen extends StatelessWidget {
           'Public and institutional communication has decayed into a '
           'system that rewards reaction over responsibility. Identity '
           'is blurred, corrections are lost, and the record of what was '
-          'said and what followed evaporates. Aura is the '
-          'institution operating infrastructure for the opposite: people and '
+          'said and what followed evaporates. Aura is built for the '
+          'opposite: people and '
           'institutions speaking under verified identity, with '
           'structure that keeps positions attributable and outcomes '
           'durable.',

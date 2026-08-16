@@ -18,6 +18,15 @@ The admin screens are governed by `AppAdminAccess` — a **binary platform-admin
 
 ---
 
+
+> **Public-first inheritance (2026-08-15).** Both checkpoints govern **general product
+> surfaces** — platform administration framing and the authentication/account-entry
+> journey. Under the founder-frozen public-first doctrine
+> (`representation/inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md`), neither may
+> reintroduce an institution-first identity model: sign-in, registration and general
+> product framing must not imply that institutional participation precedes or authorises
+> human participation. Platform administration remains legitimately operator-focused.
+
 ## Two named PRODUCT DISPOSITION CHECKPOINTS
 
 No approved chapter C0–C10 genuinely owns these concerns, so per the ruling they receive **named checkpoints before C11** rather than an invented architectural home.

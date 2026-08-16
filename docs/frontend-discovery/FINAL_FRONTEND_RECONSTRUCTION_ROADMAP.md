@@ -26,6 +26,23 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 
 ---
 
+
+> ## Aura Public-First Causal Doctrine — inherited by every chapter below
+>
+> **Canonical source, never restated here:** `representation/inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md` (founder-frozen 2026-08-15).
+> Agent-facing pre-flight and drift rules: `aura/AGENTS.md`.
+>
+> **Aura is public-first, not institution-first.** People and their communication needs are
+> the originating force; institutional identity is accountability infrastructure inside a
+> public environment whose value already exists — not the acquisition premise.
+>
+> **Roadmap ordering is unchanged by this doctrine.** It is an interpretive lens, not a
+> resequencing instruction. Classify each surface as **general/public**, **person/social**
+> or **institution-specific** and apply it accordingly. Institution-specific surfaces remain
+> legitimately institution-focused; do not weaken them to prove alignment, and do not force
+> public-first language onto institutional administration screens.
+
+
 # CHAPTER C0 — CROSS-CUTTING FOUNDATIONS
 
 > **STATUS: ✅ COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED — closed 2026-08-15.**
@@ -118,6 +135,9 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 
 # CHAPTER C2 — IDENTITY, PRESENCE & PROFILE
 
+> **Public-first inheritance.** Person is the **originating human identity**. Institutional identity remains a separate accountability identity, never a prerequisite for human identity or public participation. Person / Institution / Membership / Acting Context / Availability / Authority stay distinct.
+
+
 **PURPOSE.** One canonical identity presentation with contextual projection — and the rebuilt profile surfaces that consume it.
 
 **WHY NOW.** Depends on C1. Feeds attention, composition, realtime participants and people selection.
@@ -159,6 +179,9 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 
 # CHAPTER C3 — NAVIGATION & INFORMATION ARCHITECTURE
 
+> **Public-first inheritance.** Do **not** organise general Aura as institution-first. Institution discovery is a legitimate capability, not the master product model or the primary public journey.
+
+
 **PURPOSE.** One coherent IA where people navigate to **objects and intentions, not backend modules**.
 
 **WHY NOW.** Depends on C1 (acting context) and C0 (language). Blocks attention deep-routing and composition entry points.
@@ -199,6 +222,9 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 
 # CHAPTER C4 — ATTENTION
 
+> **Public-first inheritance.** Attention serves **human obligations and communication**, not institutional broadcast volume.
+
+
 **PURPOSE.** One governed Attention Hub answering *"what needs my attention?"* as a **projection**, never a new owner.
 
 **WHY NOW.** Needs identity (C2) for people/institutions, navigation (C3) for exact-context routing, temporal (C0) for ordering, capability (C1) for actions.
@@ -238,6 +264,9 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 ---
 
 # CHAPTER C5 — COMPOSITION, CONTENT INTAKE & ATTACHMENTS
+
+> **Public-first inheritance.** Personal/public communication and institutional communication are **distinct but equally first-class**. Neither is the default that the other decorates.
+
 
 **PURPOSE.** One canonical composition system, one attachment lifecycle, one governed content-intake layer.
 
@@ -286,6 +315,9 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 
 # CHAPTER C6 — REALTIME PRESENTATION CONVERGENCE
 
+> **Public-first inheritance.** Human communication and collaboration are first-class; realtime audio/video is part of meaningful collaboration, not an isolated calling feature.
+
+
 **PURPOSE.** Converge realtime **presentation** beneath distinct product semantics — and finally expose frozen multi-device capability.
 
 **WHY NOW.** Needs identity (participants), capability (host controls), product state. Blocks Institution Room, Threads/Spaces realtime and Live.
@@ -326,6 +358,9 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 ---
 
 # CHAPTER C7 — THREADS, SPACES & CORRESPONDENCE
+
+> **Public-first inheritance.** Threads and Spaces are **purposeful communication contexts** — social, working and creative — not institution-only collaboration containers.
+
 
 > **ADDED OBLIGATION (founder decision 2026-08-15).** "Correspondence" now has exactly **one** canonical product meaning — the governed formal/deliberate communication form. The legacy umbrella sense (Spaces + Threads + Messages + Direct Threads) is **architectural naming drift**. C7 determines the correct umbrella/internal name and migrates safely, preserving compatibility and history. Filesystem/package naming may retain the legacy sense until this chapter runs; documentation and the Product Language Authority may not.
 
@@ -368,6 +403,9 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 ---
 
 # CHAPTER C8 — INSTITUTION ROOM
+
+> **Public-first inheritance.** **Legitimately institution-owned.** Public-first does not erase institutional ownership; do not dilute this surface to prove alignment.
+
 
 **PURPOSE.** Build the client for the frozen D5 Institution Room authority.
 
@@ -450,6 +488,9 @@ Per **FD-13**, a chapter is complete only when: *authority + consumer migration 
 ---
 
 # CHAPTER C10 — LIVE (CROSS-REPOSITORY)
+
+> **Public-first inheritance.** A public communication context first; institutional official participation follows its own governed authority. Do not treat Live as a separate generic broadcast product, and do not market future capability as current.
+
 
 > ## ⚠ THIS IS A CROSS-REPOSITORY CONSTRUCTION CHAPTER — **NOT A FRONTEND PHASE**.
 > Backend construction must not be hidden inside it.

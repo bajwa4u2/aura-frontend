@@ -47,6 +47,11 @@ Full matrix with per-row basis codes: `C0_G5_OWNERSHIP_MATRIX.md`.
 
 ---
 
+> **Every remaining chapter inherits the Aura Public-First Causal Doctrine.** Canonical
+> source: `representation/inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md`. Per-chapter inheritance is
+> recorded in the roadmap. Roadmap ordering is unchanged by the doctrine.
+
+
 ## The next executable chapter
 
 # C1 — ACTING CONTEXT & CAPABILITY PROJECTION ✅ COMPLETE

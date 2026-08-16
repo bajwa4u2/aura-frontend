@@ -171,3 +171,44 @@ The six-token client injection was proven **unreachable dead code**: `institutio
 ## Accepted exceptions — none blocks closeout
 
 R1 (25 files / 85 role-derived booleans, ratcheted) · R2 (3 files / 6 role-literal comparisons, classified) · `resolveActorContext` 3 consumers → C3/C7 · platform-admin flattening → PD-1 · further attribution consumers → owning chapters.
+
+---
+
+# AURA PUBLIC-FIRST CAUSAL DOCTRINE — ADOPTED 2026-08-15
+
+**Canonical source, never restated:** `representation/inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md` (founder-frozen, incorporated into `PRODUCT_IDENTITY_CANON.md` and `PUBLIC_REPRESENTATION_CANON.md`).
+
+**Aura is public-first, not institution-first.** People and their need for better communication, discourse, continuity and accountable relationships are the originating force. Institutional identity is **accountability and responsibility infrastructure inside a public environment whose value already exists** — not Aura's acquisition premise.
+
+**Prohibited reverse model:** institutions join, establish presence, and become the reason people discover and engage.
+
+**This is a product-interpretation rule, not copy guidance**, and it is a **clarification, not a pivot** — Aura's reality has not changed; the agent interpretation has become more accurate. Older institution-first wording is not product truth merely because it predates the clarification.
+
+## What it does not authorise
+
+- It does **not** make Aura a consumer social network. Responsibility, attribution, credible discourse, continuity, governed authority and institutional accountability remain the differentiators.
+- It does **not** weaken institution-specific surfaces. Institution governance, membership administration and official communication remain legitimately institution-focused.
+- It does **not** invert commercialization into "sell institutions first so they bring the users."
+- It does **not** override implementation truth. `Aura Identity -> Institutional Identity -> Discovery` remains a valid *technical* dependency; it is simply not the public-product causal story.
+
+## Frozen surface classes
+
+**GENERAL AURA SURFACE** (shared shell, landing, sign in/register, onboarding, general navigation, Explore, cross-product empty states, public CTAs) → must reflect public-first identity.
+**PERSON / SOCIAL COMMUNICATION SURFACE** → begins from human communication, participation, continuity, relationships.
+**INSTITUTION-SPECIFIC SURFACE** → legitimately institution-focused.
+
+## Agent consumption
+
+The pre-flight rule and running-product drift rule live in `aura/AGENTS.md` → *Aura Public-First Causal Doctrine*, with concise pointers in `aura_final/AGENTS.md` and `aura-backend/AGENTS.md`. One canonical source; references everywhere else.
+
+## Chapter inheritance
+
+Recorded per chapter in `docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md`. **Roadmap ordering is unchanged by this doctrine.**
+
+## Running-product contradictions found during propagation
+
+Four institution-first framings were found on **general/public** surfaces and are recorded in `docs/frontend-discovery/PUBLIC_FIRST_RUNNING_PRODUCT_CONTRADICTIONS.md`.
+
+**Founder ruling 2026-08-15: resolve now, do not defer into PD-2.** All four are **RESOLVED** under a narrow *public-first general-entry product copy reconciliation* — copy only, no auth redesign, no behaviour change. One canonical general expression was derived from the three canonical sources and adapted for length; C-4 needed no change (already gated to institution entry); the pubspec had a second stale occurrence in `msix_config`. Enforced by `test/doctrine/public_first_causal_gate_test.dart`, scoped to named general surfaces so institution-specific language stays legitimate.
+
+**PD-2-ADJACENT PUBLIC-FIRST COPY DRIFT → RESOLVED. PD-2 STRUCTURAL DISPOSITION → STILL OPEN.**

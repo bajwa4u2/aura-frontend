@@ -8,6 +8,8 @@
 
 | Track | State |
 |---|---|
+| **Aura Public-First Causal Doctrine** | ✅ **FOUNDER-FROZEN / ADOPTED** (2026-08-15) — interpretive lens for all product work; canonical source in Representation |
+| **Public-first general-entry copy** | ✅ **RECONCILED / LOCALLY CERTIFIED** (2026-08-15) — C-1…C-4 resolved; gate at `test/doctrine/` |
 | **Backend construction baseline** | ✅ **FROZEN** (aura-backend, commit `2a92a0e`) |
 | **Frontend product-architecture adjudication** | ✅ **COMPLETE / FROZEN** |
 | **Final frontend reconstruction roadmap** | ✅ **FOUNDER APPROVED / FROZEN** |

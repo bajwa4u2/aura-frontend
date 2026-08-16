@@ -16,6 +16,8 @@
 
 > **AUTHORITIES BEFORE SURFACES.**
 
+- **Aura is PUBLIC-FIRST, not institution-first.** People are the originating force; institutional identity is accountability infrastructure, not the acquisition premise. Canonical source: `representation/inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md`. Read `aura/AGENTS.md` → *Aura Public-First Causal Doctrine* for the pre-flight and drift rules. **It is a clarification, not a pivot** — do not treat older institution-first wording as product truth just because it is older.
+
 - **Nothing may begin without explicit founder authorisation.** Roadmap approval ≠ chapter authorisation.
 - **FD-13 definition of done:** a chapter is complete only with *authority + consumer migration + hard anti-drift gate + narrow reviewable exceptions + regression + certification*. **Code compiling is not completion.**
 - **No standalone enforcement chapter.** Gates ship with the authority they protect.

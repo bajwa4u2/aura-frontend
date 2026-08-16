@@ -369,7 +369,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   body:
                                       'Sign in to continue your work, conversations, institutions, and meetings.',
                                   accent:
-                                      'Aura is institution operating infrastructure — one verified identity, one accountable record.',
+                                      'Aura is for purposeful communication and discourse — one clear identity, conversations that keep their context.',
                                 ),
                               ),
                               const SizedBox(width: AuraSpace.s16),
@@ -383,7 +383,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 body:
                                     'Sign in to continue your work, conversations, institutions, and meetings.',
                                 accent:
-                                    'Aura is institution operating infrastructure — one verified identity, one accountable record.',
+                                    'Aura is for purposeful communication and discourse — one clear identity, conversations that keep their context.',
                               ),
                               const SizedBox(height: AuraSpace.s16),
                               formWidget,

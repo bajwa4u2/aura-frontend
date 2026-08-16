@@ -69,8 +69,9 @@ class SupportersHubScreen extends StatelessWidget {
         const _ValueBlock(
           label: 'Share',
           body:
-              'Invite thoughtful users and institutions who would '
-              'benefit from institution operating infrastructure.',
+              'Invite thoughtful people and institutions who would '
+              'benefit from communication that stays attributable and in '
+              'context.',
         ),
 
         PubText.h('What supporters are not'),

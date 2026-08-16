@@ -1,5 +1,5 @@
 name: aura
-description: "Aura — institution operating infrastructure: the system an institution runs its public and member-facing life on."
+description: "Aura — a platform for purposeful public and personal communication, where conversations keep their context and people and institutions speak under clear, accountable identity."
 publish_to: "none"
 # Version convention:
 #   X.Y.Z   — semantic build name, exposed everywhere
@@ -173,7 +173,7 @@ msix_config:
   # communication translation, reshare commentary, severity-aware
   # moderation labels, notification routing repairs.
   msix_version: 1.3.0.0
-  description: "Aura — institution operating infrastructure: the system an institution runs its public and member-facing life on."
+  description: "Aura — a platform for purposeful public and personal communication, where conversations keep their context and people and institutions speak under clear, accountable identity."
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png
   icons_background_color: "#1A1A2E"
