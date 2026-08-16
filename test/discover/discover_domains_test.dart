@@ -107,6 +107,84 @@ void main() {
     });
   });
 
+  group('DISCOVER ROUTE MOUNT + old-taxonomy retirement (live-defect pins, '
+      '2026-08-16)', () {
+    test('/discover mounts the canonical DiscoverScreen', () {
+      final router = File('lib/router.dart').readAsStringSync();
+      final mount = RegExp(
+        r"path:\s*'/discover',\s*\n\s*builder:\s*\(_, __\) => const DiscoverScreen\(\)",
+      );
+      expect(mount.hasMatch(router), isTrue,
+          reason: 'The canonical /discover route must mount DiscoverScreen '
+              '(features/discover) — the frozen four-domain framework. A '
+              'different widget here is the stale-landing defect.');
+      expect(
+        RegExp(r'class DiscoverScreen\b')
+            .allMatches(
+                File('lib/features/discover/presentation/discover_screen.dart')
+                    .readAsStringSync())
+            .length,
+        1,
+        reason: 'Exactly one DiscoverScreen implementation may exist.',
+      );
+    });
+
+    test('the old taxonomy label "Creators" is retired platform-wide', () {
+      // Aura discovers PEOPLE, not a privileged creator class (frozen).
+      final offenders = <String>[];
+      for (final f in Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))) {
+        // Scan CODE only — doc comments may name the banned label in
+        // order to ban it.
+        final src = f
+            .readAsStringSync()
+            .replaceAll(RegExp(r'///.*'), '')
+            .replaceAll(RegExp(r'//.*'), '');
+        if (src.contains("'Creators'") || src.contains('"Creators"')) {
+          offenders.add(f.path);
+        }
+      }
+      expect(offenders, isEmpty,
+          reason: '"Creators" is banned user-facing vocabulary: $offenders');
+    });
+  });
+
+  group('ADD INSTITUTION lifecycle action (live-defect pins, 2026-08-16)',
+      () {
+    final headerSrc =
+        File('lib/app/shell/shell_header_tools.dart').readAsStringSync();
+
+    test('visible at EVERY width for a person with no institution — gated '
+        'only by canonical relationship truth', () {
+      expect(headerSrc.contains('if (!hasInstitution) ...['), isTrue,
+          reason: 'The Add Institution action must render whenever the '
+              'person has no institution relationship — not desktop-only.');
+      expect(headerSrc.contains('myAffiliationsProvider'), isTrue,
+          reason: 'Visibility must derive from canonical relationship '
+              'truth, never route/shell/cached assumptions.');
+      expect(
+          RegExp(r'isDesktop\s*&&\s*!hasInstitution').hasMatch(headerSrc),
+          isFalse,
+          reason: 'Width must not gate the lifecycle action.');
+    });
+
+    test('disappears once a relationship exists — no buried menu fallback',
+        () {
+      expect(headerSrc.contains("'add_institution'"), isFalse,
+          reason: 'The account-menu variant is retired: with an '
+              'institution relationship the onboarding action is ABSENT, '
+              'not relocated into a menu.');
+    });
+
+    test('resolves directly to the ONE canonical onboarding journey', () {
+      expect(
+          headerSrc.contains('NavigationAuthority.institutionOnboardingRoute'),
+          isTrue);
+    });
+  });
+
   group('Spaces taxonomy registry integrity', () {
     test('slugs, ids, and tags are unique and stable-shaped', () {
       final container = ProviderContainer();

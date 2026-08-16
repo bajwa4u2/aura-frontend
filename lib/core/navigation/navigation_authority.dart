@@ -171,7 +171,7 @@ class NavigationAuthority {
 
   /// Canonical Conversation address (Conversation System, 2026-08-16).
   static String conversationRoute(String conversationId) =>
-      '/messages/c/\$conversationId';
+      '/messages/c/$conversationId';
 
   /// INVITATION — person-owned invitation creation (into Aura, a space,
   /// or a thread). A creation intention: lives in Create and in Me →

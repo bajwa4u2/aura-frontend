@@ -85,6 +85,31 @@ void main() {
     });
   });
 
+  group('BUILDER OUTPUT INTEGRITY — no unresolved placeholders (live-defect '
+      'pin, 2026-08-16)', () {
+    // A shipped defect emitted the LITERAL "/messages/c/\$conversationId"
+    // because tooling escaped the interpolation. Every typed builder must
+    // interpolate its argument for real: output contains the argument and
+    // never a dollar/brace placeholder.
+    test('every builder interpolates its argument', () {
+      final outputs = <String>[
+        NavigationAuthority.conversationRoute('c123'),
+        NavigationAuthority.personRoute('amina'),
+        NavigationAuthority.institutionRoute('acme'),
+        NavigationAuthority.threadRoute('t1'),
+        NavigationAuthority.directThreadRoute('d1'),
+        NavigationAuthority.postRoute('p1'),
+      ];
+      expect(outputs[0], '/messages/c/c123');
+      for (final out in outputs) {
+        expect(out.contains(r'$'), isFalse,
+            reason: 'unresolved placeholder in builder output: $out');
+        expect(out.contains('{'), isFalse,
+            reason: 'unresolved placeholder in builder output: $out');
+      }
+    });
+  });
+
   group('shell context is PRESENTATION, never authority', () {
     test('classifies chrome contexts', () {
       expect(NavigationAuthority.contextOf('/admin/users', isAuthed: true),

@@ -194,7 +194,7 @@ class _SearchEmptyPrompt extends StatelessWidget {
         const SizedBox(height: AuraSpace.s12),
         const _SearchHintRow(
           icon: Icons.person_outline_rounded,
-          title: 'Creators',
+          title: 'People',
           body: 'Profiles, handles, and public presence.',
         ),
         const SizedBox(height: AuraSpace.s8),
@@ -324,7 +324,7 @@ class _SearchResults extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (r.users.isNotEmpty) ...[
-              const _SearchSectionLabel(label: 'Creators'),
+              const _SearchSectionLabel(label: 'People'),
               const SizedBox(height: AuraSpace.s10),
               ...r.users.take(8).map((u) => _AuthorTile(u: u)),
               const SizedBox(height: AuraSpace.s20),

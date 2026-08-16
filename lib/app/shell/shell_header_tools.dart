@@ -86,12 +86,6 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         // from any surface; gated on the display-only admin signal.
         context.go('/ai/claim-audit');
         return;
-      case 'add_institution':
-        // GLOBAL ACTION — institution onboarding (C3 post-closeout
-        // correction): the ONE canonical journey. Menu entry renders
-        // below desktop widths; desktop shows the labeled header pill.
-        context.push(NavigationAuthority.institutionOnboardingRoute);
-        return;
       case 'logout':
         await _logout();
         return;
@@ -157,25 +151,24 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         gap,
         const _HeaderLiveBtn(),
       ],
-      // INSTITUTION ACQUISITION — lifecycle-contextual visibility
-      // (founder ruling 2026-08-16): the labeled header action renders at
-      // desktop widths only while the member has NO institutional
-      // participation (that is when establishing an institution is a
-      // major available action). Once the member participates in an
-      // institution, the action stops shouting and remains an accessible
-      // secondary entry — in the account menu (every width) and on the
-      // Create hub — because multi-institution membership is a real
-      // supported case (affiliations model + workspace switcher).
-      if (widget.isDesktop && !hasInstitution) ...[
+      // ADD INSTITUTION — frozen lifecycle behavior (founder live-defect
+      // ruling, 2026-08-16): a Person with NO institution relationship
+      // keeps this first-class action persistently visible in the global
+      // authenticated chrome at EVERY width. Once an institution
+      // relationship exists, the onboarding action DISAPPEARS — the
+      // workspace relationship takes over. Visibility derives only from
+      // canonical relationship truth (myAffiliationsProvider); never from
+      // route, shell, or cached assumptions. Not a Discover domain, not a
+      // Create domain, never buried in menus/settings/redirect chains.
+      if (!hasInstitution) ...[
         gap,
-        const _HeaderAddInstitutionBtn(),
+        _HeaderAddInstitutionBtn(compact: !widget.isTablet),
       ],
       gap,
       _HeaderAccountBtn(
         busy: _busyLogout,
         me: me,
         isAdmin: isAdmin,
-        showAddInstitution: !widget.isDesktop || hasInstitution,
         onSelected: (v) => unawaited(_handleAccountAction(v)),
       ),
     ];
@@ -362,7 +355,10 @@ class _LiveSessionMenuTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HeaderAddInstitutionBtn extends StatelessWidget {
-  const _HeaderAddInstitutionBtn();
+  const _HeaderAddInstitutionBtn({this.compact = false});
+
+  /// Compact label below tablet widths — same action, same prominence.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +388,7 @@ class _HeaderAddInstitutionBtn extends StatelessWidget {
                     size: 16, color: AuraSurface.muted),
                 const SizedBox(width: AuraSpace.s6),
                 Text(
-                  'Add your institution',
+                  compact ? 'Add institution' : 'Add your institution',
                   style: AuraText.small.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AuraSurface.muted,
@@ -538,19 +534,12 @@ class _HeaderAccountBtn extends StatelessWidget {
     required this.busy,
     required this.me,
     required this.isAdmin,
-    required this.showAddInstitution,
     required this.onSelected,
   });
 
   final bool busy;
   final Map<String, dynamic> me;
   final bool isAdmin;
-
-  /// True whenever the header pill is not showing (below desktop widths,
-  /// or the member already participates in an institution) — the
-  /// acquisition action then lives here as the accessible secondary
-  /// entry (multi-institution membership is a supported case).
-  final bool showAddInstitution;
   final ValueChanged<String> onSelected;
 
   @override
@@ -569,12 +558,6 @@ class _HeaderAccountBtn extends StatelessWidget {
           _menuItem('profile', Icons.person_outline_rounded, 'Profile'),
           _menuItem('preferences', Icons.tune_outlined, 'Preferences'),
           _menuItem('settings', Icons.shield_outlined, 'Settings'),
-          if (showAddInstitution)
-            _menuItem(
-              'add_institution',
-              Icons.add_business_outlined,
-              'Add your institution',
-            ),
           if (isAdmin)
             _menuItem('claim_audit', Icons.fact_check_outlined, 'Claim audit'),
           const PopupMenuDivider(),
