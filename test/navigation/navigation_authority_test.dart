@@ -82,6 +82,28 @@ void main() {
           ShellContext.public);
     });
 
+    test('a retired mirror alias classifies as its CANONICAL destination',
+        () {
+      // Legacy alias to a Person object must never summon institution
+      // chrome; classification follows the canonical target.
+      expect(
+          NavigationAuthority.contextOf('/institution/i1/u/amina',
+              isAuthed: true),
+          ShellContext.member);
+      expect(
+          NavigationAuthority.legacyAliasTarget('/institution/i1/u/amina'),
+          '/u/amina');
+      expect(
+          NavigationAuthority.legacyAliasTarget(
+              '/institution/i1/institutions/acme'),
+          '/institutions/acme');
+      // Canonical institution DEPTH still classifies as institution chrome.
+      expect(
+          NavigationAuthority.contextOf('/institution/i1/members',
+              isAuthed: true),
+          ShellContext.institution);
+    });
+
     test('the institutions DIRECTORY and OBJECT are never institution chrome',
         () {
       expect(NavigationAuthority.contextOf('/institutions', isAuthed: true),

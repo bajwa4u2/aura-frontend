@@ -12,7 +12,7 @@
 
 ## DR4 verdict (per-route demolition test, executed)
 
-Of the 40 mirrored routes: **2 were pure duplicates** of global objects (`…/u/:handle`, `…/institutions/:slug` — identical builders) → **retired to alias redirects** resolved through the authority; every feature call site migrated (gate-enforced: navigating to a retired mirror fails the build). **35 are genuinely institution-owned contextual depth** (dashboard, members, invites, join-requests, domains, billing, availability, branding, verification-request, announcements, posts-manage, spaces-scoped, live-rooms, explore, activity, units, engagement, correspondence, meetings-in-institution — Meetings protected) — the single canonical home of those destinations, not mirrors. **3 are the institutional-inbox trio** (`…/messages`, `…/messages/direct(±archived)`, `…/direct/:threadId`) — preserved with **explicit** `institutionContextId` from their route builders until C7 reconstructs the correspondence sender experience (handoff in `actor_context.dart`).
+Of the 40 mirrored routes: **2 were pure duplicates** of global objects (`…/u/:handle`, `…/institutions/:slug` — identical builders) → **retired to alias redirects** resolved through the authority; every feature call site migrated (gate-enforced: navigating to a retired mirror fails the build). **34 are genuinely institution-owned contextual depth** (count corrected by the DR4 reconciliation — see C3_DR4_ARCHITECTURE_RECONCILIATION.md) (dashboard, members, invites, join-requests, domains, billing, availability, branding, verification-request, announcements, posts-manage, spaces-scoped, live-rooms, explore, activity, units, engagement, correspondence, meetings-in-institution — Meetings protected) — the single canonical home of those destinations, not mirrors. **4 are the institutional-inbox quartet** (`…/messages`, `…/messages/direct`, `…/messages/direct/archived`, `…/direct/:threadId`) — preserved with **explicit** `institutionContextId` from their route builders until C7 reconstructs the correspondence sender experience (handoff in `actor_context.dart`).
 
 ## Acting-identity safety — 0 route-derived mechanisms
 
@@ -44,3 +44,8 @@ People: five clear places, identical across devices, truthful selection (Discove
 ## Remaining C3-owned debt: NONE unexplained
 
 Every remainder above carries owner + retirement condition (literal baseline per-surface owners; C7 trio; alias retirement = link-traffic evidence at a future observed window; G5 C3-owned sites burn with their surfaces per the standing register).
+
+
+## DR4 reconciliation (2026-08-16, post-closeout)
+
+Founder-ordered architectural proof executed: `C3_DR4_ARCHITECTURE_RECONCILIATION.md`. Result: proof HELD — the retained routes are canonical object-local institution depth (34) + C7-held inbox quartet (4); the Phase-1 "prefix dies" phrasing is formally superseded as over-broad shorthand (the canon's own per-route test was never violated — what died was mirroring and context-manufacture, which are now structurally impossible). Hardening added: alias-aware shell classification + pin. Frozen distinction: **MIRRORED ROUTE ≠ OBJECT-LOCAL INSTITUTION DEPTH ≠ PATH-MANUFACTURED CONTEXT.** Recommendation: C3 FINAL CLOSE.

@@ -292,3 +292,14 @@ Interim, deliberately NOT frozen: the customer-facing name of the tier persisted
 **REQUIRED BEFORE ENFORCEMENT: complete post-reconstruction product inventory + founder adjudication.**
 
 A future agent must NOT infer that Free/Pro entitlements were decided during C2. Official-publishing gating, credit metering for AI/translation/realtime, and env member limits are all *current behavior preserved*, not adjudicated commercial policy.
+
+
+## C3 — DR4 Final Architecture (reconciliation outcome, 2026-08-16; for founder freeze at C3 closure)
+
+**MIRRORED ROUTE ≠ OBJECT-LOCAL INSTITUTION DEPTH ≠ PATH-MANUFACTURED CONTEXT.**
+
+- A *mirrored route* duplicates a global capability under an acting-context path — demolished (2 existed; both retired to aliases, gate-pinned unbuildable).
+- *Object-local institution depth* (`/institution/:id/…`, 34 routes) is the single canonical address space of institution-owned operations: the id is OBJECT SCOPE (whose members/domains/billing/…), immutable across renames, and carries no authority, no acting identity, and no shell truth. `/institutions/:slug` remains the public durable link contract — mutable human identity for sharing; internal id for rename-stable operational addresses.
+- *Path-manufactured context* is structurally impossible: resolveActorContext deleted (0 mechanisms), shell classification is alias-aware destination-identity presentation pinned as never-authority, and the route-integrity gate + literal ratchet prevent regression.
+- The institutional-inbox quartet (4 routes) carries the explicit-context contract and finalizes with C7.
+- The Phase-1 phrasing "the :institutionId prefix is what dies" is SUPERSEDED as over-broad; the roadmap's per-route DR4 test is the governing wording and was applied per route.

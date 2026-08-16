@@ -113,7 +113,13 @@ class NavigationAuthority {
   /// nothing. Acting identity remains per-act (C1) and is pinned as
   /// independent of this classification.
   static ShellContext contextOf(String path, {required bool isAuthed}) {
-    final p = _normalize(path);
+    // Alias-aware: a retired mirror address classifies as its CANONICAL
+    // destination, so a legacy alias can never summon institution chrome
+    // for a non-institution destination (defense in depth — the router
+    // redirects aliases before any shell builds, but the classification
+    // must be truthful on its own).
+    final canonical = legacyAliasTarget(path);
+    final p = _normalize(canonical ?? path);
     if (p == '/admin' || p.startsWith('/admin/')) return ShellContext.admin;
     if (p == '/institution' || p.startsWith('/institution/')) {
       return ShellContext.institution;
