@@ -212,3 +212,83 @@ Four institution-first framings were found on **general/public** surfaces and ar
 **Founder ruling 2026-08-15: resolve now, do not defer into PD-2.** All four are **RESOLVED** under a narrow *public-first general-entry product copy reconciliation* — copy only, no auth redesign, no behaviour change. One canonical general expression was derived from the three canonical sources and adapted for length; C-4 needed no change (already gated to institution entry); the pubspec had a second stale occurrence in `msix_config`. Enforced by `test/doctrine/public_first_causal_gate_test.dart`, scoped to named general surfaces so institution-specific language stays legitimate.
 
 **PD-2-ADJACENT PUBLIC-FIRST COPY DRIFT → RESOLVED. PD-2 STRUCTURAL DISPOSITION → STILL OPEN.**
+
+---
+
+# C2 FOUNDER ADJUDICATION — 2026-08-15 (chapter still open)
+
+Full text: `docs/frontend-discovery/C2_FOLLOW_FORENSIC.md` -> *Founder Adjudication*.
+
+| # | Ruling |
+|---|---|
+| **R1** | **Blocking (D2/D6) resolved inside C2.** `BLOCKING OUTRANKS FOLLOW / RELATIONSHIP / MESSAGING ELIGIBILITY.` Use the canonical existing blocking authority; do not create a second one. |
+| **R2** | **FOLLOW = a governed relationship between an acting Person or Institution and another Person or Institution, subject to the target's applicable relationship and consent rules.** FROZEN. Public-first does not make Person->Person ontologically superior; do not manufacture symmetry. |
+| **R3** | `InteractionFollow` is the stronger foundation but **its current schema is NOT a safe canonical replacement**. **Live Follow data must NOT be migrated into it.** Target: actor-aware authority + full consent lifecycle + blocking + downstream consequences. No semantics flattened to obtain one table. |
+| **R4** | **FOLLOW != SUBSCRIBE — FROZEN.** Shared storage does not define ontology. C2 records semantics; **C4 owns the vocabulary.** C0 not reopened. |
+| **R5** | **BLOCK > EXPLICIT CONSENT/REJECTION > ACTIVE FOLLOW.** REJECTED wins over an active follow; **provenance preserved, history not erased.** |
+| **R6** | **No historical relationship may silently gain a new behavioural consequence because its row moved.** Consequence model certified before migration is authorized. |
+| **R7** | Relationship **domain events** (REQUEST/APPROVAL/REJECTION) are C2; **attention delivery policy is C4**. Dormant templates are evidence of intent, not authority. |
+| **R8** | No zombie `REQUESTED`; no accepted-and-discarded request `message`. Both classified from evidence. |
+| **R9** | **Institution->Person must be classified, not inferred from API reach.** Institutional power over public relationships must not expand because the schema allows it. |
+| **R10** | Blocking prerequisite first, then **complete §8-§12 discovery before destructive convergence.** |
+
+**Not executed:** no migration, no convergence, no blocking implementation yet.
+
+---
+
+# FOUNDER RECONSTRUCTION DOCTRINE — FROZEN 2026-08-16
+
+> **RECONSTRUCTION IS COMPLETE ONLY WHEN CANONICAL PRODUCT TRUTH IS ADOPTED BY THE RUNTIME/RELEASE CLIENT AND LEGACY IMPLEMENTATION HAS AN EXPLICIT RETIREMENT PATH.**
+>
+> **VISIBLE PRODUCT OUTCOME IS A REQUIRED CLOSEOUT DIMENSION.**
+
+The objective is a reconstructed release client, not a governed legacy client. Legacy implementation has no preservation right merely because it exists, is embedded, or is hard to migrate. Compatibility layers are transitional only — each must carry a reason, canonical destination, retirement condition and path. Every chapter demonstrates: CANONICAL ARCHITECTURE → RUNTIME ADOPTION → VISIBLE PRODUCT OUTCOME → LEGACY RETIREMENT. Correctness constraints (product truth, data integrity, privacy/security, frozen doctrine, certified shared surfaces) are not relaxed.
+
+Applied register: \`docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md\` (chapter-level completeness table + all compatibility retirements).
+
+## D1 — FROZEN FEED SEMANTIC (founder-authorized)
+
+An established Person→Person Follow makes eligible public participation from the followed Person **available to the member feed's existing visibility/ranking rules**. It does not guarantee delivery, bypass ranking/visibility/moderation/blocks, expose restricted content, or become Subscribe.
+
+## C2 — Trust presentation doctrine (frozen by implementation, 2026-08-16)
+
+- **Layered, never collapsed.** Person verification presents one mark per governed class (IDENTITY / INSTITUTION_AFFILIATION / ROLE_OR_CREDENTIAL); "Verified person" does not exist as a product concept. Absence renders nothing — absence is not suspicion.
+- **Subject-explicit wording.** No user-facing mark may say bare "Verified" except the institution compact mark rendered adjacent to the institution name it describes, and even that carries "Verified institution" + meaning in semantics/tooltip. Labels are literal restatements of frozen governed classes — founder may refine ROLE_OR_CREDENTIAL public wording ("Role or credential verified" chosen as the non-inventive restatement).
+- **Verification is not authority.** Official institutional speech is never presented from a verification fact (violation found and corrected in the realtime trust line). Verification is not endorsement, popularity, payment eligibility, or portability; ROLE_OR_CREDENTIAL presents as an Aura record, not a portable credential.
+- **Revoked/expired first-class.** Public surfaces stop presenting positively by construction (active-class wire); admin/governance surfaces present full history with REVOKED/EXPIRED as states, never flattened to "not verified".
+- **Unknown wire classes are dropped, never guessed at** — an older client stays quiet about a newer taxonomy entry rather than inventing wording.
+
+
+## C2 — Monetization × Verification Decoupling (founder ruling, FROZEN 2026-08-16)
+
+1. **Verification is not purchasable.**
+2. **A commercial tier does not establish verification.** Payment never writes `Institution.isVerified`; downgrade never erases it. The only writer is the verification authority (`approveVerificationRequest`), which writes verification fields ONLY (status/verifiedAt/isVerified) and never touches plan/memberLimit/canSpeakOfficially.
+3. **Trust is not a purchasable Aura status.**
+4. **TRUSTED is rejected as a commercial product concept.** Retired from the offered taxonomy; legacy persisted rows resolve with operational capabilities and no trust semantics until the founder adjudicates their remapping.
+5. **Verification authority and commercial entitlement are separate**, structurally (no `capabilities.isVerified` anywhere) and visually (the billing entitlements card no longer presents verification).
+6. **ROLE_OR_CREDENTIAL is governed attestation, not a portable credential.**
+7. **“Role attested” is the public wording** where the underlying fact concerns a role; the public wire carries class only (no subtype), so it is the narrowest non-overclaiming presentation for the whole class. Model limitation recorded: role vs credential-like facts are not publicly distinguishable today.
+8. **Official institutional speech remains authority, not verification** (reaffirmed; the realtime violation was corrected in the trust reconstruction).
+
+Interim, deliberately NOT frozen: the customer-facing name of the tier persisted as `InstitutionPlan.VERIFIED` (displayed as neutral “Institution plan” placeholder) — founder names it; then a staged enum/data migration retires the legacy value.
+
+
+## C2 — Commercial Taxonomy Closeout (founder ruling, FROZEN 2026-08-16)
+
+1. **Active commercial taxonomy = FREE + PRO.**
+2. **The legacy VERIFIED middle tier is retired, not renamed.** No replacement middle tier; no capabilities invented to justify preserving it.
+3. **TRUSTED remains permanently rejected.**
+4. **No final Free/Pro entitlement boundary is decided now.**
+5. **No new payment enforcement during release-client reconstruction** — none introduced, none strengthened.
+6. **Existing behavior is preserved for now** — legacy VERIFIED rows keep their exact effective entitlements through a behavior-preserving legacy read until observed migration.
+7. **Before payment enforcement:** inventory the COMPLETED Aura product and obtain founder adjudication of Free/Pro/credits/limits/pricing.
+8. **Current implementation does not prejudge future commercialization policy** — today's configuration is implementation history, not pricing doctrine.
+
+### FUTURE COMMERCIALIZATION GOVERNANCE MARKER (survives handoff)
+
+**COMMERCIAL TAXONOMY: FREE + PRO — FROZEN.**
+**FINAL COMMERCIAL ENTITLEMENT BOUNDARY: NOT YET FROZEN.**
+**PAYMENT ENFORCEMENT: NOT TO BE ACTIVATED/EXPANDED DURING RELEASE-CLIENT RECONSTRUCTION.**
+**REQUIRED BEFORE ENFORCEMENT: complete post-reconstruction product inventory + founder adjudication.**
+
+A future agent must NOT infer that Free/Pro entitlements were decided during C2. Official-publishing gating, credit metering for AI/translation/realtime, and env member limits are all *current behavior preserved*, not adjudicated commercial policy.
