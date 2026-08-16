@@ -127,7 +127,9 @@ Registers: `C1_AUTHORITY_ARCHITECTURE.md` · `C1_G5_DISPOSITION_MATRIX.md`.
 
 **C2: FINAL CLOSURE DECLARED BY FOUNDER 2026-08-16.**
 
-**C3: AUTHORIZED — NOT STARTED.** Founder paused at closure; no C3 discovery or implementation has begun. Next session starts C3 from the C2 closeout contracts (C2_FINAL_CLOSEOUT.md + C2_PRE_MIGRATION_CLOSEOUT.md), which C3 must not reopen. Boot incident fixed + app-boot graph spec added (79de236). C3 not authorized.
+**C3 (NAVIGATION & IA): PHASE 1 FORENSIC COMPLETE 2026-08-16** — see C3_NAVIGATION_IA_RECONSTRUCTION.md. Re-measured: 171 routes / 40 DR4 mirrors / 27 redirects / 266 feature route literals in 92 files. Root cause identified: shell selection is path-derived (AppShell), which forces the mirrored universe; resolveActorContext still derives institutional acting context from path (3 consumers — DM-actor fix is C7-reserved per C1 contract). Capability-adaptive institution nav already RESOLVED (hidden-not-disabled, effective-capability-true). **Awaiting FOUNDER PRIMARY-DESTINATION CHECKPOINT** (proposal delivered) before any restructure/demolition. No code changed, nothing committed in C3 yet.
+
+**C3 was previously: AUTHORIZED — NOT STARTED.** Founder paused at closure; no C3 discovery or implementation has begun. Next session starts C3 from the C2 closeout contracts (C2_FINAL_CLOSEOUT.md + C2_PRE_MIGRATION_CLOSEOUT.md), which C3 must not reopen. Boot incident fixed + app-boot graph spec added (79de236). C3 not authorized.
 
 ## What has NOT been touched
 
