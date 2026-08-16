@@ -5,9 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_paths.dart';
-import '../../../core/interactions/actor_context.dart';
 import '../../../core/diagnostics/runtime_trace.dart';
 import '../../../core/interactions/follow_invalidation.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/interaction_service.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -942,32 +942,44 @@ class _InstitutionProfileCtaRowState
   // flight.
   bool? _optimisticFollowing;
 
+  /// C3 Follow-as (founder ruling): the acting context for Follow is an
+  /// EXPLICIT choice, never derived from the route/shell. Defaults to the
+  /// Person; the institutional option appears only when the viewer holds
+  /// real authority to follow as their institution, and switching is the
+  /// explicit "Follow as" selection made before the consequential act.
+  bool _actAsInstitution = false;
+
   ActorRef _targetRef() => ActorRef.institution(widget.institutionId);
 
-  ActorRef? _actorRefOf(ActorContext actor) {
-    if (actor.isInstitution) {
-      final id = (actor.institutionId ?? '').trim();
-      if (id.isEmpty) return null;
-      return ActorRef.institution(id);
-    }
-    final uid = (actor.userId ?? '').trim();
+  /// The signed-in Person — always a legitimate acting context here.
+  ActorRef? _personalActorRef() {
+    final me = ref.read(authMeDataProvider).valueOrNull;
+    final user = me?['user'];
+    final uid = user is Map ? (user['id']?.toString().trim() ?? '') : '';
     if (uid.isEmpty) return null;
     return ActorRef.user(uid);
   }
 
-  bool _isOwnInstitution(ActorContext actor) {
-    return actor.isInstitution &&
-        (actor.institutionId ?? '') == widget.institutionId;
+  /// The viewer's institution, ONLY when governance authority permits
+  /// acting as it for Follow (mirrors the backend actor-authority gate:
+  /// OWNER/ADMIN role or representative capability) and it is not the
+  /// viewed institution itself.
+  ActorRef? _institutionActingOption() {
+    final identity = ref.read(institutionIdentityProvider);
+    if (identity == null || identity.id.isEmpty) return null;
+    if (identity.id == widget.institutionId) return null;
+    final authorized =
+        identity.canActAsInstitution;
+    if (!authorized) return null;
+    return ActorRef.institution(identity.id);
   }
 
   Future<void> _toggleFollow(
-    ActorContext actor,
+    ActorRef actorRef,
     FollowState current,
     FollowStateKey key,
   ) async {
     if (_busy) return;
-    final actorRef = _actorRefOf(actor);
-    if (actorRef == null) return;
     final nextFollowing = !current.following;
     setState(() {
       _busy = true;
@@ -1047,7 +1059,7 @@ class _InstitutionProfileCtaRowState
     }
   }
 
-  Future<void> _openMessage(ActorContext actor) async {
+  Future<void> _openMessage() async {
     setState(() {
       _busy = true;
       _error = null;
@@ -1104,14 +1116,19 @@ class _InstitutionProfileCtaRowState
       );
     }
 
-    final actor = resolveActorContext(context, ref);
-    if (actor == null) {
-      return const SizedBox.shrink();
-    }
-    final actorRef = _actorRefOf(actor);
-    if (actorRef == null) return const SizedBox.shrink();
+    // C3 — acting context is explicit, never route-derived. The former
+    // resolveActorContext path inference is retired.
+    final personal = _personalActorRef();
+    if (personal == null) return const SizedBox.shrink();
+    final institutionOption = _institutionActingOption();
+    final actorRef = (_actAsInstitution && institutionOption != null)
+        ? institutionOption
+        : personal;
 
-    if (_isOwnInstitution(actor)) {
+    final ownIdentity = ref.watch(institutionIdentityProvider);
+    final viewingOwnInstitution =
+        ownIdentity != null && ownIdentity.id == widget.institutionId;
+    if (viewingOwnInstitution) {
       return Wrap(
         spacing: AuraSpace.s10,
         runSpacing: AuraSpace.s10,
@@ -1139,10 +1156,43 @@ class _InstitutionProfileCtaRowState
 
     final key = FollowStateKey(actor: actorRef, target: _targetRef());
     final stateAsync = ref.watch(followStateProvider(key));
+    final identityName = ref.watch(institutionIdentityProvider)?.name ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (institutionOption != null) ...[
+          // Explicit "Follow as" — shown only when a real choice exists.
+          Padding(
+            padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+            child: Wrap(
+              spacing: AuraSpace.s6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  'Follow as',
+                  style: AuraText.micro.copyWith(color: AuraSurface.muted),
+                ),
+                _FollowAsChip(
+                  label: 'You',
+                  selected: !_actAsInstitution,
+                  onTap: () => setState(() {
+                    _actAsInstitution = false;
+                    _optimisticFollowing = null;
+                  }),
+                ),
+                _FollowAsChip(
+                  label: identityName.isEmpty ? 'Your institution' : identityName,
+                  selected: _actAsInstitution,
+                  onTap: () => setState(() {
+                    _actAsInstitution = true;
+                    _optimisticFollowing = null;
+                  }),
+                ),
+              ],
+            ),
+          ),
+        ],
         stateAsync.when(
           // Hold the current Follow / Following button visible during the
           // post-toggle invalidate — without this the SizedBox+spinner
@@ -1181,16 +1231,17 @@ class _InstitutionProfileCtaRowState
                       : Icons.add_rounded,
                   onPressed: _busy
                       ? null
-                      : () => _toggleFollow(actor, state, key),
+                      : () => _toggleFollow(actorRef, state, key),
                 ),
                 AuraSecondaryButton(
                   label: state.canMessage
                       ? (_busy ? 'Opening…' : 'Message')
-                      : (actor.isUser ? 'Follow to message' : 'Cannot message'),
+                      : (identical(actorRef, personal) || !_actAsInstitution
+                          ? 'Follow to message'
+                          : 'Cannot message'),
                   icon: Icons.mail_outline_rounded,
-                  onPressed: state.canMessage && !_busy
-                      ? () => _openMessage(actor)
-                      : null,
+                  onPressed:
+                      state.canMessage && !_busy ? _openMessage : null,
                 ),
               ],
             );
@@ -1204,6 +1255,57 @@ class _InstitutionProfileCtaRowState
           ),
         ],
       ],
+    );
+  }
+}
+
+
+/// Compact acting-context selector for the Follow-as choice. Human labels
+/// only ("You" / the institution's name) — never actor types or
+/// capability vocabulary.
+class _FollowAsChip extends StatelessWidget {
+  const _FollowAsChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Follow as $label',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s10,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            color: selected ? AuraSurface.accentSoft : Colors.transparent,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(
+              color: selected
+                  ? AuraSurface.accent.withValues(alpha: 0.5)
+                  : AuraSurface.divider,
+            ),
+          ),
+          child: Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: selected ? AuraSurface.accentText : AuraSurface.muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

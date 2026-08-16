@@ -16,7 +16,8 @@
 R1 1 lib/app/shell/member_shell.dart
 R1 6 lib/app/shell/shell_header_tools.dart
 R1 1 lib/core/auth/admin_access_provider.dart
-R1 2 lib/core/institutions/institution_access_provider.dart
+R1 4 lib/core/institutions/institution_access_provider.dart
+# 2 -> 4 (2026-08-16, C3): canActAsInstitution — the ONE canonical governance predicate mirroring the backend actor-authority gate (OWNER/ADMIN/representative). Governance acts remain role authority per C1; consumers use the predicate, never re-compose roles.
 R1 2 lib/core/release_governance/update_gate.dart
 R1 2 lib/features/announcements/presentation/announcements_screen.dart
 R1 3 lib/features/communications/presentation/communications_center_screen.dart

@@ -1,8 +1,4 @@
-import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../auth/session_providers.dart';
 import '../institutions/institution_access_provider.dart';
 
 /// Discriminator for actor identity.
@@ -45,121 +41,17 @@ class ActorContext {
       isInstitution ? (institutionId ?? '') : (userId ?? '');
 }
 
-/// True when the path begins with `/institution/` (the institution shell).
-/// Anything else falls back to user-actor context.
-bool _pathIsInstitutionShell(String path) {
-  if (path.isEmpty) return false;
-  if (path == '/institution') return true;
-  return path.startsWith('/institution/');
-}
-
-/// Resolves the active [ActorContext] for the current frame.
-///
-/// `null` ⇒ the user is unauthenticated. Components MUST handle this
-/// (typically by rendering Sign in / Join CTAs instead of follow/message).
-ActorContext? resolveActorContext(
-  BuildContext context,
-  WidgetRef ref,
-) {
-  final auth = ref.watch(authStatusProvider);
-  if (auth != AuthStatus.authed) return null;
-
-  final me = ref.watch(authMeDataProvider).valueOrNull;
-  final identity = ref.watch(institutionIdentityProvider);
-  final path = GoRouterState.of(context).uri.path;
-
-  // Personal user fallback — display name + avatar pulled from /auth/me when
-  // available. Personal id comes from the `user` block of /auth/me.
-  String? userId;
-  String? userName;
-  String? userAvatar;
-  if (me != null) {
-    final user = me['user'];
-    if (user is Map) {
-      userId = user['id']?.toString();
-      userName = user['displayName']?.toString() ?? user['handle']?.toString();
-      userAvatar = user['avatarUrl']?.toString();
-    }
-  }
-
-  // In institution shell with a loaded institution identity → institution actor.
-  if (_pathIsInstitutionShell(path) &&
-      identity != null &&
-      identity.id.isNotEmpty) {
-    return ActorContext(
-      type: ActorType.institution,
-      userId: userId,
-      institutionId: identity.id,
-      displayName: identity.name,
-      avatarUrl: identity.logoUrl,
-      canSpeakAsInstitution:
-          identity.canPublishPosts || identity.isAdmin,
-    );
-  }
-
-  if (userId == null || userId.trim().isEmpty) {
-    return null;
-  }
-  return ActorContext(
-    type: ActorType.user,
-    userId: userId,
-    displayName: userName,
-    avatarUrl: userAvatar,
-  );
-}
-
-/// **RETIRED BY C1 — do not add consumers.** Zero consumers remain.
-///
-/// This provider claimed to "fall back to user-actor whenever no institution
-/// identity is loaded", but the code does the opposite: it returns the
-/// **institution** actor whenever an institution identity *is* loaded, with no
-/// route and no act in view. Its one consumer (the presence heartbeat) was
-/// therefore reporting every institutionally-affiliated person as their
-/// institution, everywhere, permanently.
-///
-/// Acting identity is resolved per consequential act by
-/// `core/authority/acting_context.dart`. Ask what an act would represent;
-/// never read an ambient actor.
-@Deprecated(
-  'Use ActingContextAuthority.resolve(ConsequentialAct) from '
-  'core/authority/acting_context.dart. Acting identity is per-act, never ambient.',
-)
-final activeActorContextProvider =
-    Provider.autoDispose<ActorContext?>((ref) {
-  final auth = ref.watch(authStatusProvider);
-  if (auth != AuthStatus.authed) return null;
-
-  final me = ref.watch(authMeDataProvider).valueOrNull;
-  final identity = ref.watch(institutionIdentityProvider);
-
-  String? userId;
-  String? userName;
-  String? userAvatar;
-  if (me != null) {
-    final user = me['user'];
-    if (user is Map) {
-      userId = user['id']?.toString();
-      userName = user['displayName']?.toString() ?? user['handle']?.toString();
-      userAvatar = user['avatarUrl']?.toString();
-    }
-  }
-
-  if (identity != null && identity.id.isNotEmpty) {
-    return ActorContext(
-      type: ActorType.institution,
-      userId: userId,
-      institutionId: identity.id,
-      displayName: identity.name,
-      avatarUrl: identity.logoUrl,
-      canSpeakAsInstitution:
-          identity.canPublishPosts || identity.isAdmin,
-    );
-  }
-  if (userId == null || userId.trim().isEmpty) return null;
-  return ActorContext(
-    type: ActorType.user,
-    userId: userId,
-    displayName: userName,
-    avatarUrl: userAvatar,
-  );
-});
+/// C3 RETIREMENT (2026-08-16) — the former `resolveActorContext` and its
+/// `_pathIsInstitutionShell` inference are DELETED. They manufactured an
+/// institutional acting context from the URL prefix, violating the frozen
+/// C1 rule that acting context is per act and never route-derived.
+/// Consumers now receive context EXPLICITLY:
+///   • institution_detail Follow → explicit Follow-as selection;
+///   • institution inbox/thread → `institutionContextId` stated by the
+///     destination's own route builder (viewing context, not authority).
+/// C7 HANDOFF: the correspondence sender-choice EXPERIENCE (explicit
+/// acting choice at message initiation, per `ConsequentialAct.
+/// correspondAsInstitution`) remains C7-owned; until C7 closes, the
+/// institution inbox preserves shipped viewing behavior through the
+/// explicit parameter above. No route-derived sender may survive C7
+/// closure.

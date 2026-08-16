@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
+import '../../../core/auth/session_providers.dart';
+import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/product/product_language.dart';
@@ -25,26 +27,65 @@ import '../../../core/ui/aura_text.dart';
 /// DM here never affects the other participant, matches
 /// `capability/FOUNDER_ACCEPTANCE_REGISTER.md`'s Domain 13 resolution.
 class InboxScreen extends ConsumerWidget {
-  const InboxScreen({super.key, this.archived = false});
+  const InboxScreen({super.key, this.archived = false, this.institutionContextId});
 
   final bool archived;
 
-  ActorRef? _actorRefOf(ActorContext? actor) {
+  /// C3 — EXPLICIT institutional context, passed by the institution
+  /// messages destination. Never inferred from the path: the route
+  /// builder that OWNS the institution-inbox destination states it.
+  final String? institutionContextId;
+
+  /// C3 — explicit context, never path-inferred: the institution context
+  /// exists ONLY when this surface was opened as the institution's inbox
+  /// destination ([institutionContextId]) and the loaded workspace
+  /// identity matches; otherwise the signed-in Person.
+  ActorContext? _explicitActorContext(WidgetRef ref) {
+    final me = ref.watch(authMeDataProvider).valueOrNull;
+    final user = me?['user'];
+    final uid = user is Map ? (user['id']?.toString().trim() ?? '') : '';
+    final uname = user is Map
+        ? (user['displayName']?.toString() ?? user['handle']?.toString())
+        : null;
+    final uavatar = user is Map ? user['avatarUrl']?.toString() : null;
+
+    final instId = (institutionContextId ?? '').trim();
+    if (instId.isNotEmpty) {
+      final identity = ref.watch(institutionIdentityProvider);
+      if (identity != null && identity.id == instId) {
+        return ActorContext(
+          type: ActorType.institution,
+          userId: uid.isEmpty ? null : uid,
+          institutionId: identity.id,
+          displayName: identity.name,
+          avatarUrl: identity.logoUrl,
+          canSpeakAsInstitution: identity.canActAsInstitution,
+        );
+      }
+    }
+    if (uid.isEmpty) return null;
+    return ActorContext(
+      type: ActorType.user,
+      userId: uid,
+      displayName: uname,
+      avatarUrl: uavatar,
+    );
+  }
+
+  ActorRef? _actorRefFrom(ActorContext? actor) {
     if (actor == null) return null;
     if (actor.isInstitution) {
       final id = (actor.institutionId ?? '').trim();
-      if (id.isEmpty) return null;
-      return ActorRef.institution(id);
+      return id.isEmpty ? null : ActorRef.institution(id);
     }
     final uid = (actor.userId ?? '').trim();
-    if (uid.isEmpty) return null;
-    return ActorRef.user(uid);
+    return uid.isEmpty ? null : ActorRef.user(uid);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final actor = resolveActorContext(context, ref);
-    final actorRef = _actorRefOf(actor);
+    final actor = _explicitActorContext(ref);
+    final actorRef = _actorRefFrom(actor);
 
     if (actorRef == null) {
       return AuraScaffold(

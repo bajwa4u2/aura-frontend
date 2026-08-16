@@ -206,6 +206,14 @@ class InstitutionIdentity {
       can(InstitutionCapabilities.manageAvailability);
   bool get canStartLive => can(InstitutionCapabilities.startLive);
 
+  /// C3 — may this member make the institution the ACTING PARTY of an
+  /// actor-level operation (institution follow, institution inbox)?
+  /// Mirrors the backend actor-authority gate exactly: OWNER/ADMIN role or
+  /// representative standing. This is GOVERNANCE authority (C1: governance
+  /// acts remain role authority, deliberately not delegable capability) —
+  /// the one canonical predicate; consumers must not re-compose it.
+  bool get canActAsInstitution => isOwner || isAdmin || canRepresent;
+
   /// True when the acting member can author in the institution's voice.
   bool get canCreatePosts =>
       canRepresent || can(InstitutionCapabilities.publishOfficial);

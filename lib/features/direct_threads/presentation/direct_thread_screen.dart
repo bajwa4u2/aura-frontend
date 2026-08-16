@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/errors/app_error_mapper.dart';
-import '../../../core/interactions/actor_context.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
 import '../../../core/link_preview/display_link_preview.dart';
 import '../../../core/link_preview/internal_reference_card.dart';
@@ -16,6 +15,9 @@ import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/rich_content/rich_paste_field.dart';
+import '../../../core/auth/session_providers.dart';
+import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/presence_repository.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -36,13 +38,19 @@ import '../../translation/translation_repository.dart';
 /// `/institution/:institutionId/direct/:threadId` (institution shell).
 ///
 /// The `actor` for read + send is resolved from the route + active
-/// institution identity via [resolveActorContext]. Messages render with
+/// institution identity via the explicit [institutionContextId]. Messages render with
 /// the institution name as headline when the row's `actorInstitutionId`
 /// is set, with the human author shown as a "via @user" byline.
 class DirectThreadScreen extends ConsumerStatefulWidget {
-  const DirectThreadScreen({super.key, required this.threadId});
+  const DirectThreadScreen({super.key, required this.threadId, this.institutionContextId});
 
   final String threadId;
+
+  /// C3 — EXPLICIT institutional context from the institution messages
+  /// destination; never inferred from the path. The sender-choice
+  /// EXPERIENCE remains C7-owned — this parameter only preserves the
+  /// shipped institution-inbox viewing behavior without route inference.
+  final String? institutionContextId;
 
   @override
   ConsumerState<DirectThreadScreen> createState() =>
@@ -135,16 +143,51 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
     });
   }
 
-  ActorRef? _actorRefFor(ActorContext? actor) {
+  /// C3 — the acting/viewing context is built EXPLICITLY, never from the
+  /// path. Institutional context exists only when this surface was opened
+  /// as the institution inbox destination ([institutionContextId]) and the
+  /// loaded workspace identity matches. The sender-choice EXPERIENCE
+  /// remains C7-owned (see actor_context.dart retirement note).
+  ActorContext? _explicitActorContext() {
+    final me = ref.watch(authMeDataProvider).valueOrNull;
+    final user = me?['user'];
+    final uid = user is Map ? (user['id']?.toString().trim() ?? '') : '';
+    final uname = user is Map
+        ? (user['displayName']?.toString() ?? user['handle']?.toString())
+        : null;
+    final uavatar = user is Map ? user['avatarUrl']?.toString() : null;
+
+    final instId = (widget.institutionContextId ?? '').trim();
+    if (instId.isNotEmpty) {
+      final identity = ref.watch(institutionIdentityProvider);
+      if (identity != null && identity.id == instId) {
+        return ActorContext(
+          type: ActorType.institution,
+          userId: uid.isEmpty ? null : uid,
+          institutionId: identity.id,
+          displayName: identity.name,
+          avatarUrl: identity.logoUrl,
+          canSpeakAsInstitution: identity.canActAsInstitution,
+        );
+      }
+    }
+    if (uid.isEmpty) return null;
+    return ActorContext(
+      type: ActorType.user,
+      userId: uid,
+      displayName: uname,
+      avatarUrl: uavatar,
+    );
+  }
+
+  ActorRef? _actorRefFrom(ActorContext? actor) {
     if (actor == null) return null;
     if (actor.isInstitution) {
       final id = (actor.institutionId ?? '').trim();
-      if (id.isEmpty) return null;
-      return ActorRef.institution(id);
+      return id.isEmpty ? null : ActorRef.institution(id);
     }
     final uid = (actor.userId ?? '').trim();
-    if (uid.isEmpty) return null;
-    return ActorRef.user(uid);
+    return uid.isEmpty ? null : ActorRef.user(uid);
   }
 
   Future<void> _send(ActorRef actor, DirectThreadKey key) async {
@@ -238,8 +281,8 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final actor = resolveActorContext(context, ref);
-    final actorRef = _actorRefFor(actor);
+    final actor = _explicitActorContext();
+    final actorRef = _actorRefFrom(actor);
 
     if (actorRef == null) {
       return AuraScaffold(
