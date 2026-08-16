@@ -121,7 +121,9 @@ Registers: `C1_AUTHORITY_ARCHITECTURE.md` · `C1_G5_DISPOSITION_MATRIX.md`.
 
 **Public Home reconstruction — EXECUTED 2026-08-16** (`C2_PUBLIC_HOME_RECONSTRUCTION.md`): institution-first hero on `/` replaced with public-first entry copy; verification glyph decoupled from 8 institution-involvement/accountability motifs (3 files); hand-rolled Verified-institution line → canonical mark; feed-card timestamp off the deprecated shim (11→10 callers); 6 G5 sites → product-state authority with retry (baseline burn-down recorded); retired "works" vocabulary removed; participation copy made truthful; **public-first gate extended to cover both home surfaces** (the gap that let the old hero ship). No founder decisions required.
 
-**Still open in C2:** remaining convergence/closeout (incl. the two Follow direct-dio screens: me_screen, follow_requests_screen) · physical Follow migration (gated on deployment observation) · People Selection sites (future-owned, named owners) · C2 closeout.
+**FINAL CONVERGENCE + PRE-MIGRATION CLOSEOUT — EXECUTED 2026-08-16** (`C2_PRE_MIGRATION_CLOSEOUT.md` is the handoff authority): Follow HTTP-in-widget retired (FollowsRepository now owns the consent lifecycle + canonical counts); live-rooms startLive gate converged onto C1 capability projection (R1 burn-down recorded); dead FeedPresence.lastActiveAt parse slot removed; final debt remeasured — zero unexplained C2-owned remainder. **Frontend committed in 5 bounded commits** (11e85fa, 0d0abf5, 121d029, cff6982, 7a243e1 + closeout doc); backend 9 bounded commits, Representation 1 — all local, nothing pushed.
+
+**C2 STATUS: RECONSTRUCTION LOCALLY COMPLETE.** Final closure awaits only the founder-observed data transitions: (1) backend deployment observation → (2) commercial/verification reconciliation script → (3) physical Follow migration (FollowEdge+FollowConsent) → (4) evidence-based legacy remaps → (5) founder closure. C3 not authorized.
 
 ## What has NOT been touched
 
