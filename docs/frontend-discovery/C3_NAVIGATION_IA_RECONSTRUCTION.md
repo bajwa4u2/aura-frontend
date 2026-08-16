@@ -60,3 +60,18 @@ See the checkpoint report (§50 AI–AP) delivered with this document. Summary o
 ## 7. Migration sequence (post-approval)
 
 1. Typed destination registry + Navigation Authority (route identity, generation, alias resolution). 2. Feature literal convergence (266 sites → authority calls). 3. DR4 convergence per-route (A-set first; B-set re-homed as object-local depth under `/institutions/:slug/...` or successor canonical object path), alias redirects added. 4. Shell selection off path → off destination identity + session; acting-context path-derivation deleted (with C7 coordinating the correspondence actor). 5. Redirect burn-down (D/C/F classes) + literal-route gate (no route strings outside the authority). 6. G5/R1 burn + registry-enforced reachability tests + deep-link suite.
+
+
+---
+
+## Phase 2 — certified boundary (2026-08-16)
+
+**FOUNDER FROZE:** the five authenticated primaries (Home/Messages/Discover/Meetings/Me), Discover semantics (intention, search = mechanism, facets stay distinct objects), institution = contextual object not a universe, public nav Home/Discover, Admin from Me, Create = contextual action, same identities across widths, Follow-as ruling (explicit choice only when real).
+
+**Shipped at this boundary** (commits `9ffb777`, `d577e67`):
+- `core/navigation/navigation_authority.dart` — typed destination identity, frozen primary sets, path→destination resolution (selected state), presentation-shell context classification (non-authority, pinned).
+- `/discover` (public) + DiscoverScreen; directory/search/spaces highlight Discover; MemberShell five primaries (bottom nav + rail, same identities); PublicShell Home/Discover; AppShell consumes authority context.
+- **Route-derived acting context RETIRED**: `resolveActorContext` deleted. Follow-as at institution detail (explicit chip choice, default You, governance-gated institutional option via the single canonical `canActAsInstitution` predicate — R1-baselined with justification). Institution inbox/threads receive `institutionContextId` explicitly from their route builders. C7 handoff recorded in `actor_context.dart`.
+- 10 navigation pins; full suite 544 green; all gates + ratchets green.
+
+**Explicit next segment (not yet executed):** DR4 per-route convergence of the 40 mirrors + alias map · 266 feature literal migration onto the authority · redirect burn-down (D/C/F classes) · route-literal gate · deep-link test matrix · shell-selection full de-pathing (context classification still keys on the `/institution/` prefix inside the authority — one owner now, semantics unchanged; retires with DR4 since mirrors are what the prefix matches).
