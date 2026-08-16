@@ -188,15 +188,16 @@ class _CurrentPlanCard extends StatelessWidget {
         children: [
           const Text('Current plan', style: AuraText.muted),
           const SizedBox(height: AuraSpace.s6),
-          Text(entitlements.plan, style: AuraText.title),
+          Text(entitlements.displayName, style: AuraText.title),
           const SizedBox(height: AuraSpace.s10),
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              _Chip(
-                label: entitlements.isVerified ? 'Verified' : 'Not verified',
-              ),
+              // C2 — verification is deliberately NOT presented here:
+              // this card summarizes what the institution PAYS FOR, and
+              // verification is a governed fact, not an entitlement.
+              // Plans and verification must not visually bleed together.
               _Chip(
                 label: entitlements.canSpeakOfficially
                     ? 'Official voice on'

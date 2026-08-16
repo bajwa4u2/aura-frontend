@@ -2,9 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
-import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/authority/capability_projection.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/institutions/institution_paths.dart';
 import '../../../core/net/dio_provider.dart';
@@ -15,6 +17,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../shared/media/profile_media_editor.dart';
+import '../../../shared/media/profile_media_pipeline.dart';
 import '../../institution_ontology/models.dart';
 import '../../institution_ontology/providers.dart';
 import '../data/institutions_repository.dart';
@@ -56,7 +59,9 @@ class _InstitutionEditProfileScreenState
   final _descCtrl = TextEditingController();
 
   // ── Branding ────────────────────────────────────────────────────────────
-  final _picker = ImagePicker();
+  late final ProfileMediaPipeline _media = ProfileMediaPipeline(
+    dio: ref.read(dioProvider),
+  );
   String? _logoUrl;
   String? _coverUrl;
   bool _uploadingLogo = false;
@@ -144,11 +149,6 @@ class _InstitutionEditProfileScreenState
 
   static const int _kLogoMaxBytes = 2 * 1024 * 1024;
   static const int _kCoverMaxBytes = 4 * 1024 * 1024;
-  static const Set<String> _kImageMimeWhitelist = {
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-  };
 
   @override
   void initState() {
@@ -406,124 +406,25 @@ class _InstitutionEditProfileScreenState
     if (_busy) return;
     final url = (isLogo ? _logoUrl : _coverUrl)?.trim() ?? '';
     if (url.isEmpty) return;
-
-    final cropped = await ProfileMediaEditor.openFromUrl(
-      context,
-      imageUrl: url,
-      config: isLogo
-          ? ProfileMediaEditorConfig.institutionLogo
-          : ProfileMediaEditorConfig.institutionCover,
-    );
-    if (cropped == null || !mounted) return;
-
-    setState(() {
-      _error = null;
-      if (isLogo) {
-        _uploadingLogo = true;
-      } else {
-        _uploadingCover = true;
-      }
-    });
-
-    try {
-      final outW = isLogo
-          ? ProfileMediaEditorConfig.institutionLogo.outputWidth
-          : ProfileMediaEditorConfig.institutionCover.outputWidth;
-      final outH = isLogo
-          ? ProfileMediaEditorConfig.institutionLogo.outputHeight
-          : ProfileMediaEditorConfig.institutionCover.outputHeight;
-      final result = await uploadAuraMedia(
-        dio: ref.read(dioProvider),
-        bytes: cropped,
-        fileName: isLogo ? 'logo-edit.png' : 'cover-edit.png',
-        mimeType: 'image/png',
-        kind: 'IMAGE',
-        source: 'UPLOAD',
-        width: outW,
-        height: outH,
-        metadataPatch: <String, dynamic>{
-          'width': outW,
-          'height': outH,
-          'editDisclosure': true,
-        },
-      );
-      final newUrl = result.url.trim();
-      if (newUrl.isEmpty) throw Exception('Uploaded image URL missing.');
-      if (!mounted) return;
-      setState(() {
-        if (isLogo) {
-          _logoUrl = newUrl;
-        } else {
-          _coverUrl = newUrl;
-        }
-      });
-      await _persistBranding(
-        isLogo ? {'logoUrl': newUrl} : {'coverUrl': newUrl},
-      );
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() => _error = _readDioError(e, 'Could not upload image.'));
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _error = 'Could not upload image.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          if (isLogo) {
-            _uploadingLogo = false;
-          } else {
-            _uploadingCover = false;
-          }
-        });
-      }
-    }
+    await _runPipeline(isLogo: isLogo, editCurrent: true);
   }
 
   Future<void> _pickAndUploadImage({required bool isLogo}) async {
     if (_busy) return;
-    final file = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 92,
-    );
-    if (file == null) return;
+    await _runPipeline(isLogo: isLogo, editCurrent: false);
+  }
 
-    final pickedBytes = await file.readAsBytes();
-    final mimeType = file.mimeType ?? _inferMime(file.name);
-    if (pickedBytes.isEmpty) {
-      if (mounted) setState(() => _error = 'Image file is empty.');
-      return;
-    }
-    if (!_kImageMimeWhitelist.contains(mimeType.toLowerCase())) {
-      if (mounted) {
-        setState(
-          () => _error = 'Unsupported image type. Use JPEG, PNG, or WebP.',
-        );
-      }
-      return;
-    }
-    final maxBytes = isLogo ? _kLogoMaxBytes : _kCoverMaxBytes;
-    if (pickedBytes.length > maxBytes) {
-      final mb = (maxBytes / (1024 * 1024)).toStringAsFixed(0);
-      if (mounted) {
-        setState(
-          () => _error = isLogo
-              ? 'Logo must be $mb MB or smaller.'
-              : 'Cover must be $mb MB or smaller.',
-        );
-      }
-      return;
-    }
-
-    if (!mounted) return;
-
-    final cropped = await ProfileMediaEditor.open(
-      context,
-      imageBytes: pickedBytes,
-      config: isLogo
-          ? ProfileMediaEditorConfig.institutionLogo
-          : ProfileMediaEditorConfig.institutionCover,
-    );
-    if (cropped == null || !mounted) return;
+  /// Shared mechanic (pick -> validate -> crop -> upload) via the C2
+  /// ProfileMediaPipeline. This screen keeps what is institution-specific:
+  /// the configs, the domain fields (logoUrl/coverUrl), and the auto-persist
+  /// semantic — branding saves on its own, independent of the form.
+  Future<void> _runPipeline({
+    required bool isLogo,
+    required bool editCurrent,
+  }) async {
+    final config = isLogo
+        ? ProfileMediaEditorConfig.institutionLogo
+        : ProfileMediaEditorConfig.institutionCover;
 
     setState(() {
       _error = null;
@@ -535,51 +436,37 @@ class _InstitutionEditProfileScreenState
     });
 
     try {
-      final outW = isLogo
-          ? ProfileMediaEditorConfig.institutionLogo.outputWidth
-          : ProfileMediaEditorConfig.institutionCover.outputWidth;
-      final outH = isLogo
-          ? ProfileMediaEditorConfig.institutionLogo.outputHeight
-          : ProfileMediaEditorConfig.institutionCover.outputHeight;
-      final base = file.name.contains('.')
-          ? file.name.substring(0, file.name.lastIndexOf('.'))
-          : file.name;
-      final processedName = '$base-${isLogo ? 'logo' : 'cover'}.png';
+      if (!mounted) return;
+      final result = editCurrent
+          ? await _media.editCurrentUpload(
+              // ignore: use_build_context_synchronously
+              context,
+              imageUrl: (isLogo ? _logoUrl : _coverUrl) ?? '',
+              config: config,
+              fileTag: isLogo ? 'logo' : 'cover',
+            )
+          : await _media.pickEditUpload(
+              // ignore: use_build_context_synchronously
+              context,
+              config: config,
+              maxBytes: isLogo ? _kLogoMaxBytes : _kCoverMaxBytes,
+              fileTag: isLogo ? 'logo' : 'cover',
+            );
 
-      final result = await uploadAuraMedia(
-        dio: ref.read(dioProvider),
-        bytes: cropped,
-        fileName: processedName,
-        mimeType: 'image/png',
-        kind: 'IMAGE',
-        source: 'UPLOAD',
-        width: outW,
-        height: outH,
-        metadataPatch: <String, dynamic>{
-          'width': outW,
-          'height': outH,
-          'editDisclosure': true,
-        },
-      );
-      final url = result.url.trim();
-      if (url.isEmpty) throw Exception('Uploaded image URL missing.');
       if (!mounted) return;
-      setState(() {
-        if (isLogo) {
-          _logoUrl = url;
-        } else {
-          _coverUrl = url;
-        }
-      });
-      await _persistBranding(isLogo ? {'logoUrl': url} : {'coverUrl': url});
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = _readDioError(e, 'Could not upload image.');
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _error = 'Could not upload image.');
+      if (result.isSuccess) {
+        final url = result.url!;
+        setState(() {
+          if (isLogo) {
+            _logoUrl = url;
+          } else {
+            _coverUrl = url;
+          }
+        });
+        await _persistBranding(isLogo ? {'logoUrl': url} : {'coverUrl': url});
+      } else if (!result.isCancelled) {
+        setState(() => _error = result.message ?? 'Could not upload image.');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -591,13 +478,6 @@ class _InstitutionEditProfileScreenState
         });
       }
     }
-  }
-
-  String _inferMime(String name) {
-    final ext = name.split('.').last.toLowerCase();
-    if (ext == 'png') return 'image/png';
-    if (ext == 'webp') return 'image/webp';
-    return 'image/jpeg';
   }
 
   String _readDioError(DioException e, String fallback) {
@@ -616,22 +496,46 @@ class _InstitutionEditProfileScreenState
     final accessAsync = ref.watch(institutionAccessProvider);
     final identity = ref.watch(institutionIdentityProvider);
 
+    // C2 §9 — the gate asks the CAPABILITY question, not the role question.
+    //
+    // The backend guards PATCH /institutions/:id with MANAGE_BRANDING, and
+    // ADMIN_CAPABILITIES does NOT include it (owner-held, delegable). The old
+    // `identity.isAdmin` gate therefore showed the full editor to admins whose
+    // save would 403. Capability Projection is the canonical C1 mechanism and
+    // matches the backend truth exactly.
+    final canEdit = ref
+            .watch(capabilityProjectionProvider)
+            .presentationFor(ConsequentialAct.manageBranding) ==
+        ControlPresentation.available;
+
     return AuraScaffold(
       showHeader: false,
       body: accessAsync.when(
-        loading: () =>
-            const AuraLoadingState(message: 'Loading identity studio…'),
+        loading: () => const AuraProductState(
+          state: ProductState.loading,
+          headline: 'Loading identity studio…',
+        ),
         error: (e, _) => Padding(
           padding: const EdgeInsets.all(InsSpacing.screenHPad),
-          child: AuraErrorState(title: 'Unavailable', body: '$e'),
+          child: AuraProductState(
+            state: ProductState.retryableError,
+            headline: 'Could not load the identity studio',
+            detail: '$e',
+            onRecover: () => ref.invalidate(institutionAccessProvider),
+          ),
         ),
         data: (access) {
-          if (identity == null || !identity.isAdmin) {
+          if (identity == null || !canEdit) {
+            // A denial is NOT an error (C0 doctrine): neutral presentation,
+            // with the honest capability-based explanation.
             return Padding(
               padding: const EdgeInsets.all(InsSpacing.screenHPad),
-              child: AuraErrorState(
-                title: 'Access denied',
-                body: 'Only institution admins can edit the profile.',
+              child: AuraProductState(
+                state: ProductState.unauthorized,
+                headline: 'You do not have access',
+                detail:
+                    'Editing the institution profile requires the branding '
+                    'responsibility for this institution.',
                 action: AuraSecondaryButton(
                   label: 'Back to profile',
                   onPressed: () => context.go(

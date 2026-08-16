@@ -1,11 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
-import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -14,13 +10,19 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import '../../../shared/media/profile_media_editor.dart';
+import '../../../shared/media/profile_media_pipeline.dart';
 import 'edit_profile/edit_profile_widgets.dart';
 
 enum _EditSection {
   identity,
   coverAndAvatar,
-  presence,
+  // C2 — was `presence`. This section edits location + website. Under the
+  // frozen C2 classification, Presence/Availability means reachability; using
+  // the word for a location block was part of the six-meaning overload.
+  whereFound,
   publications,
   links,
   account,
@@ -40,7 +42,7 @@ const _kSections = <_SectionItem>[
     'Cover & Avatar',
     Icons.photo_outlined,
   ),
-  _SectionItem(_EditSection.presence, 'Presence', Icons.location_on_outlined),
+  _SectionItem(_EditSection.whereFound, 'Location', Icons.location_on_outlined),
   _SectionItem(
     _EditSection.publications,
     'Publications',
@@ -63,7 +65,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _bioController = TextEditingController();
   final _locationController = TextEditingController();
   final _websiteController = TextEditingController();
-  final _picker = ImagePicker();
+  late final ProfileMediaPipeline _media = ProfileMediaPipeline(
+    dio: ref.read(dioProvider),
+  );
 
   bool _loading = true;
   bool _saving = false;
@@ -159,7 +163,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final fallback = '${_firstName.trim()} ${_lastName.trim()}'.trim();
     if (fallback.isNotEmpty) return fallback;
     if (_handle.trim().isNotEmpty) return _handle.trim();
-    return 'Presence';
+    return 'Your name';
   }
 
   String get _bio => _bioController.text.trim();
@@ -277,204 +281,109 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
+  // Same caps as the parallel institution media kinds (logo 2 MB / cover
+  // 4 MB) — the existing product rule applied to the person editor, which
+  // previously uploaded unvalidated.
+  static const int _kAvatarMaxBytes = 2 * 1024 * 1024;
+  static const int _kCoverMaxBytes = 4 * 1024 * 1024;
+
   Future<void> _pickAvatar() async {
     if (_busy) return;
-    await _pickAndUploadImage(isAvatar: true);
+    await _runPipeline(isAvatar: true, editCurrent: false);
   }
 
   Future<void> _pickCover() async {
     if (_busy) return;
-    await _pickAndUploadImage(isAvatar: false);
+    await _runPipeline(isAvatar: false, editCurrent: false);
   }
 
   /// "Edit current" — open the editor against the existing avatar URL so the
   /// user can pan/zoom + re-save without re-picking a file.
   Future<void> _editCurrentAvatar() async {
-    final url = (_avatarUrl ?? '').trim();
-    if (_busy || url.isEmpty) return;
-    await _editFromUrl(url, isAvatar: true);
+    if (_busy || (_avatarUrl ?? '').trim().isEmpty) return;
+    await _runPipeline(isAvatar: true, editCurrent: true);
   }
 
   /// "Edit current" — same flow for the cover image.
   Future<void> _editCurrentCover() async {
-    final url = (_coverUrl ?? '').trim();
-    if (_busy || url.isEmpty) return;
-    await _editFromUrl(url, isAvatar: false);
+    if (_busy || (_coverUrl ?? '').trim().isEmpty) return;
+    await _runPipeline(isAvatar: false, editCurrent: true);
   }
 
-  Future<void> _editFromUrl(String url, {required bool isAvatar}) async {
-    final cropped = await ProfileMediaEditor.openFromUrl(
-      context,
-      imageUrl: url,
-      config: isAvatar
-          ? ProfileMediaEditorConfig.memberAvatar
-          : ProfileMediaEditorConfig.memberCover,
-    );
-    if (cropped == null || !mounted) return;
-
-    setState(() {
-      _errorText = null;
-      if (isAvatar) {
-        _uploadingAvatar = true;
-      } else {
-        _uploadingCover = true;
-      }
-    });
-
-    try {
-      final uploadedUrl = await _uploadProcessedBytes(
-        bytes: cropped,
-        fileName: isAvatar ? 'avatar-edit.png' : 'cover-edit.png',
-        outputW: isAvatar
-            ? ProfileMediaEditorConfig.memberAvatar.outputWidth
-            : ProfileMediaEditorConfig.memberCover.outputWidth,
-        outputH: isAvatar
-            ? ProfileMediaEditorConfig.memberAvatar.outputHeight
-            : ProfileMediaEditorConfig.memberCover.outputHeight,
-      );
-      if (!mounted) return;
-      setState(() {
-        if (isAvatar) {
-          _avatarUrl = uploadedUrl;
-        } else {
-          _coverUrl = uploadedUrl;
-        }
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorText = _readApiError(e, fallback: 'Could not upload image.');
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _errorText = 'Could not upload image.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          if (isAvatar) {
-            _uploadingAvatar = false;
-          } else {
-            _uploadingCover = false;
-          }
-        });
-      }
-    }
-  }
-
-  Future<void> _pickAndUploadImage({required bool isAvatar}) async {
-    final file = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 92,
-    );
-    if (file == null) return;
-
-    final pickedBytes = await file.readAsBytes();
-    if (!mounted) return;
-
-    // Route every picked file through the shared ProfileMediaEditor so
-    // the user can pan + zoom before save. The editor returns the cropped
-    // PNG bytes (or null on cancel).
-    final cropped = await ProfileMediaEditor.open(
-      context,
-      imageBytes: pickedBytes,
-      config: isAvatar
-          ? ProfileMediaEditorConfig.memberAvatar
-          : ProfileMediaEditorConfig.memberCover,
-    );
-    if (cropped == null || !mounted) return;
-
-    setState(() {
-      _errorText = null;
-      if (isAvatar) {
-        _uploadingAvatar = true;
-      } else {
-        _uploadingCover = true;
-      }
-    });
-
-    try {
-      final uploadedUrl = await _uploadProcessedBytes(
-        bytes: cropped,
-        fileName: _processedFileName(file.name, isAvatar),
-        outputW: isAvatar
-            ? ProfileMediaEditorConfig.memberAvatar.outputWidth
-            : ProfileMediaEditorConfig.memberCover.outputWidth,
-        outputH: isAvatar
-            ? ProfileMediaEditorConfig.memberAvatar.outputHeight
-            : ProfileMediaEditorConfig.memberCover.outputHeight,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        if (isAvatar) {
-          _avatarUrl = uploadedUrl;
-        } else {
-          _coverUrl = uploadedUrl;
-        }
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorText = _readApiError(e, fallback: 'Could not upload image.');
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _errorText = 'Could not upload image.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          if (isAvatar) {
-            _uploadingAvatar = false;
-          } else {
-            _uploadingCover = false;
-          }
-        });
-      }
-    }
-  }
-
-  String _processedFileName(String original, bool isAvatar) {
-    // Editor outputs PNG; replace the extension so the upload signs the
-    // correct content-type and the CDN serves it back as PNG.
-    final base = original.contains('.')
-        ? original.substring(0, original.lastIndexOf('.'))
-        : original;
-    final tag = isAvatar ? 'avatar' : 'cover';
-    return '$base-$tag.png';
-  }
-
-  Future<String> _uploadProcessedBytes({
-    required Uint8List bytes,
-    required String fileName,
-    required int outputW,
-    required int outputH,
+  /// One shared mechanic for all four flows (pick/edit-current x
+  /// avatar/cover). The pipeline owns pick -> validate -> crop -> upload;
+  /// this screen owns what the URL MEANS (avatarUrl vs coverUrl) and that
+  /// person media saves on submit, not on upload.
+  Future<void> _runPipeline({
+    required bool isAvatar,
+    required bool editCurrent,
   }) async {
-    final result = await uploadAuraMedia(
-      dio: ref.read(dioProvider),
-      bytes: bytes,
-      fileName: fileName,
-      mimeType: 'image/png',
-      kind: 'IMAGE',
-      source: 'UPLOAD',
-      width: outputW,
-      height: outputH,
-      metadataPatch: <String, dynamic>{
-        'width': outputW,
-        'height': outputH,
-        'editDisclosure': true,
-      },
-    );
+    final config = isAvatar
+        ? ProfileMediaEditorConfig.memberAvatar
+        : ProfileMediaEditorConfig.memberCover;
 
-    final url = result.url.trim();
-    if (url.isNotEmpty) return url;
+    setState(() {
+      _errorText = null;
+      if (isAvatar) {
+        _uploadingAvatar = true;
+      } else {
+        _uploadingCover = true;
+      }
+    });
 
-    throw Exception('Uploaded image URL missing.');
+    try {
+      if (!mounted) return;
+      final result = editCurrent
+          ? await _media.editCurrentUpload(
+              // ignore: use_build_context_synchronously
+              context,
+              imageUrl: (isAvatar ? _avatarUrl : _coverUrl) ?? '',
+              config: config,
+              fileTag: isAvatar ? 'avatar' : 'cover',
+            )
+          : await _media.pickEditUpload(
+              // ignore: use_build_context_synchronously
+              context,
+              config: config,
+              maxBytes: isAvatar ? _kAvatarMaxBytes : _kCoverMaxBytes,
+              fileTag: isAvatar ? 'avatar' : 'cover',
+            );
+
+      if (!mounted) return;
+      setState(() {
+        if (result.isSuccess) {
+          if (isAvatar) {
+            _avatarUrl = result.url;
+          } else {
+            _coverUrl = result.url;
+          }
+        } else if (!result.isCancelled) {
+          _errorText = result.message ?? 'Could not upload image.';
+        }
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (isAvatar) {
+            _uploadingAvatar = false;
+          } else {
+            _uploadingCover = false;
+          }
+        });
+      }
+    }
   }
 
   Future<void> _save() async {
     if (_busy || !_hasChanges) return;
+
+    // Same http(s) rule the institution editor enforces; previously the
+    // person website was submitted unvalidated.
+    final websiteError = httpUrlValidator(_websiteController.text);
+    if (websiteError != null) {
+      setState(() => _errorText = 'Website: $websiteError');
+      return;
+    }
 
     setState(() {
       _saving = true;
@@ -523,7 +432,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Presence updated')));
+      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -657,8 +566,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_loading) {
       return AuraScaffold(
         title: 'Edit profile',
-        body: const Center(
-          child: AuraLoadingState(message: 'Loading profile…'),
+        body: const AuraProductState(
+          state: ProductState.loading,
+          headline: 'Loading profile…',
         ),
       );
     }
@@ -1538,7 +1448,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         return _buildIdentityBlock();
       case _EditSection.coverAndAvatar:
         return _buildCoverAndAvatarSection();
-      case _EditSection.presence:
+      case _EditSection.whereFound:
         return _buildPresenceBlock();
       case _EditSection.publications:
         return _buildPublicationsBlock();

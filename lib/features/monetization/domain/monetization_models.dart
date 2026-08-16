@@ -21,29 +21,20 @@ MonetizationMode _modeFrom(String? raw) {
   }
 }
 
+/// C2 — FOUNDER RULING: VERIFICATION IS NOT PURCHASABLE. `isVerified`
+/// was removed from the commercial capability map — verification is a
+/// governed fact from the verification authority, never a plan feature.
+/// C2 taxonomy closeout — `hasAiEditor`/`hasTranslation`/`hasRealtime`
+/// deleted with their backend counterparts: zero consumers, and they
+/// falsely presented credit-metered plan-independent features as tier
+/// capabilities.
 class PlanCapabilities {
-  PlanCapabilities({
-    required this.canSpeakOfficially,
-    required this.isVerified,
-    required this.hasAiEditor,
-    required this.hasTranslation,
-    required this.hasRealtime,
-  });
+  PlanCapabilities({required this.canSpeakOfficially});
 
   factory PlanCapabilities.fromJson(Map<String, dynamic> json) =>
-      PlanCapabilities(
-        canSpeakOfficially: json['canSpeakOfficially'] == true,
-        isVerified: json['isVerified'] == true,
-        hasAiEditor: json['hasAiEditor'] == true,
-        hasTranslation: json['hasTranslation'] == true,
-        hasRealtime: json['hasRealtime'] == true,
-      );
+      PlanCapabilities(canSpeakOfficially: json['canSpeakOfficially'] == true);
 
   final bool canSpeakOfficially;
-  final bool isVerified;
-  final bool hasAiEditor;
-  final bool hasTranslation;
-  final bool hasRealtime;
 }
 
 class PlanConfig {
@@ -191,6 +182,7 @@ class InstitutionEntitlements {
   InstitutionEntitlements({
     required this.institutionId,
     required this.plan,
+    this.planLabel = '',
     required this.capabilities,
     required this.isVerified,
     required this.canSpeakOfficially,
@@ -203,6 +195,12 @@ class InstitutionEntitlements {
       InstitutionEntitlements(
         institutionId: (json['institutionId'] ?? '').toString(),
         plan: (json['plan'] ?? 'FREE').toString(),
+        planLabel: (() {
+          final config = json['planConfig'];
+          final label =
+              config is Map ? (config['label'] ?? '').toString().trim() : '';
+          return label;
+        })(),
         capabilities: PlanCapabilities.fromJson(
           Map<String, dynamic>.from(json['capabilities'] as Map? ?? const {}),
         ),
@@ -217,6 +215,14 @@ class InstitutionEntitlements {
 
   final String institutionId;
   final String plan;
+
+  /// Customer-facing plan name from the config wire. Retired enum values
+  /// (legacy VERIFIED/TRUSTED rows) resolve to a neutral legacy label
+  /// backend-side, so retired vocabulary never reaches this surface.
+  final String planLabel;
+
+  /// The label when present, else the raw plan code.
+  String get displayName => planLabel.isNotEmpty ? planLabel : plan;
   final PlanCapabilities capabilities;
   final bool isVerified;
   final bool canSpeakOfficially;
