@@ -21,7 +21,7 @@ Founder observed the canonical-store deploy healthy → final retirement execute
 - Legacy billing identifiers: deleted (evidence-gated).
 - Frontend: **zero client changes required** — the wire contract was invariant through cutover and retirement, as designed.
 
-**NO MIGRATION-DEPENDENT DEBT REMAINS. C2 awaits only the founder's FINAL CLOSURE declaration.**
+**C2 FINAL CLOSURE DECLARED BY FOUNDER — 2026-08-16.** C3 is AUTHORIZED and deliberately NOT STARTED (founder paused the effort at closure). C3 begins from the frozen contracts in this document and `C2_PRE_MIGRATION_CLOSEOUT.md`; it must not reopen them without new founder adjudication.
 
 ## Incident recorded during the window
 
