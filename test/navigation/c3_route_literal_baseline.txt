@@ -56,7 +56,10 @@
 1 lib/features/institutions/presentation/institution_members_screen.dart
 1 lib/features/institutions/presentation/institution_spaces_screen.dart
 3 lib/features/institutions/profile/institution_profile_screen.dart
-7 lib/features/institutions/wizard/institution_onboarding_wizard.dart
+# 2026-08-16 onboarding residue retirement: 7 -> 6 (the fourth path card
+# "Existing institution admin -> /institution/sign-in" retired — one
+# authenticated Person identity; no second authentication universe).
+6 lib/features/institutions/wizard/institution_onboarding_wizard.dart
 3 lib/features/invitations/presentation/invitations_screen.dart
 3 lib/features/invitations/presentation/invite_accept_screen.dart
 2 lib/features/invitations/presentation/invite_hub_screen.dart
@@ -119,3 +122,7 @@
 # conversation module / discover module.
 3 lib/features/conversation/presentation/claim_invitation_screen.dart
 2 lib/features/discover/presentation/people_discovery_screen.dart
+# 2026-08-16 Conversation capability attachment: the realtime session join
+# (/realtime/:id) pending a session-route authority builder; owner:
+# conversation module.
+1 lib/features/conversation/presentation/conversation_screen.dart

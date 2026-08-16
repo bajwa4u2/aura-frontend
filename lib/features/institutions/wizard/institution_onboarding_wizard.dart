@@ -455,13 +455,17 @@ class _InstitutionOnboardingWizardState
             _selectPath(_WizardPath.join);
           },
         ),
-        const SizedBox(height: AuraSpace.s12),
-        _PathCard(
-          icon: Icons.login_rounded,
-          title: 'Existing institution admin',
-          subtitle: 'Sign in to your existing institution workspace.',
-          onTap: () => context.go('/institution/sign-in'),
-        ),
+        // RETIRED (founder ruling 2026-08-16): "Existing institution admin /
+        // Sign in to your existing institution workspace." Aura has ONE
+        // authenticated Person identity — an Institution is not a second
+        // authentication universe. A Person with an institution relationship
+        // reaches it through canonical workspace access; a Person without
+        // one is here to establish one. The three legitimate onboarding
+        // intentions remain below. NOTE: "Join with invite" still runs on
+        // legacy institution invite-code mechanics
+        // (POST /institutions/invites/accept) — its convergence onto the
+        // foundational Invitation System is C7-chartered (Institutional
+        // Conversation & Desk: membership/join/invite reconstruction).
         const SizedBox(height: AuraSpace.s24),
         _TrustNote(),
       ],

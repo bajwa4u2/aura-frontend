@@ -85,6 +85,7 @@ class ConversationMessage {
     required this.body,
     required this.systemKind,
     required this.createdAt,
+    this.mediaIds = const [],
   });
 
   final String id;
@@ -94,9 +95,16 @@ class ConversationMessage {
   final String? systemKind; // JOINED | LEFT | RENAMED | null
   final DateTime createdAt;
 
+  /// Canonical Media ids attached to this message (position-ordered).
+  final List<String> mediaIds;
+
   bool get isSystem => systemKind != null;
 
   factory ConversationMessage.fromJson(Map<String, dynamic> json) {
+    final mediaRows = (json['media'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => _i(a['position']).compareTo(_i(b['position'])));
     return ConversationMessage(
       id: _s(json['id']),
       senderUserId: _s(json['senderUserId']),
@@ -104,6 +112,7 @@ class ConversationMessage {
       body: _s(json['body']),
       systemKind: _ns(json['systemKind']),
       createdAt: _date(json['createdAt']) ?? DateTime.now(),
+      mediaIds: mediaRows.map((m) => _s(m['mediaId'])).toList(),
     );
   }
 }
@@ -182,14 +191,34 @@ class ConversationsRepository {
   }
 
   Future<ConversationMessage> send(String id, String body,
-      {String? speakingForInstitutionId}) async {
+      {String? speakingForInstitutionId, List<String> mediaIds = const []}) async {
     final res = await _dio.post<dynamic>('/conversations/$id/messages', data: {
       'body': body,
       if (speakingForInstitutionId != null)
         'speakingForInstitutionId': speakingForInstitutionId,
+      if (mediaIds.isNotEmpty) 'mediaIds': mediaIds,
     });
     return ConversationMessage.fromJson(
         _unwrap(res.data)['message'] as Map<String, dynamic>);
+  }
+
+  /// CAPABILITIES ATTACH (canon): start an ephemeral realtime session
+  /// parented by this conversation. Returns the session id to join.
+  Future<String> startLive(String id, {required String kind}) async {
+    final path = kind == 'VIDEO' ? 'video' : 'audio';
+    final res =
+        await _dio.post<dynamic>('/conversations/$id/live/$path/start');
+    final session =
+        _unwrap(res.data)['session'] as Map<String, dynamic>? ?? const {};
+    return _s(session['id']);
+  }
+
+  /// Render-ready delivery URL for an attachment (visibility-checked
+  /// server-side by the canonical Media authority).
+  Future<String?> mediaDeliveryUrl(String mediaId) async {
+    final res = await _dio.get<dynamic>('/media/$mediaId/url');
+    final body = _unwrap(res.data);
+    return _ns(body['url'] ?? body['deliveryUrl']);
   }
 
   Future<void> addPeople(String id,

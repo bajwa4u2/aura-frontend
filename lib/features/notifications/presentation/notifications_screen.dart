@@ -81,6 +81,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   String? _routeFor(AppNotification n) {
+    // AURA CONVERSATION SYSTEM (canon 2026-08-16): canonical conversation
+    // notifications carry conversationId in data; invitations land on
+    // Messages where the invitation row offers accept/decline.
+    final conversationId =
+        (n.payload['conversationId'] ?? '').toString().trim();
+    if (conversationId.isNotEmpty) {
+      return '/messages/c/$conversationId';
+    }
+    if (n.type == 'INVITATION') return '/messages';
+
     // Phase 3 — backend stores a canonical deeplink in payload.deeplink
     // for every notification kind that has a target. Honor it first; the
     // manual resolver below is the legacy fallback for older rows.

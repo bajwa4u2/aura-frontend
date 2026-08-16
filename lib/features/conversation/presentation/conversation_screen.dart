@@ -1,7 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/compliance/report_content_sheet.dart';
+import '../../../core/compliance/report_repository.dart';
+import '../../../core/media/aura_attachment_image.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
@@ -14,10 +22,12 @@ import '../data/conversations_repository.dart';
 import 'add_people_sheet.dart';
 import 'conversation_identity.dart';
 
-/// ONE Conversation screen (canon): talk immediately; capabilities appear
-/// when intention reaches them. Text v1; richer capabilities (attachments,
-/// calls, screen share, Live) attach here as their conversation-surface
-/// adapters land — they never fork sibling products.
+/// ONE Conversation screen (canon): talk immediately; CAPABILITIES ATTACH
+/// when intention reaches them — attachments and audio/video calls ride
+/// the certified shared engines through the CONVERSATION surface; screen
+/// share lives inside the active call session; message reporting reaches
+/// the canonical moderation authority. Nothing forks into a sibling
+/// product and no session/thread vocabulary reaches the person.
 class ConversationScreen extends ConsumerStatefulWidget {
   const ConversationScreen({super.key, required this.conversationId});
   final String conversationId;
@@ -26,9 +36,18 @@ class ConversationScreen extends ConsumerStatefulWidget {
   ConsumerState<ConversationScreen> createState() => _ConversationScreenState();
 }
 
+class _PendingAttachment {
+  _PendingAttachment({required this.name});
+  final String name;
+  String? mediaId;
+  bool failed = false;
+}
+
 class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final _composer = TextEditingController();
+  final List<_PendingAttachment> _attachments = [];
   bool _sending = false;
+  bool _startingCall = false;
 
   @override
   void dispose() {
@@ -36,15 +55,55 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     super.dispose();
   }
 
+  bool get _uploading =>
+      _attachments.any((a) => a.mediaId == null && !a.failed);
+
+  Future<void> _attachImage() async {
+    final picked =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+    final pending = _PendingAttachment(name: picked.name);
+    setState(() => _attachments.add(pending));
+    try {
+      final Uint8List bytes = await picked.readAsBytes();
+      final mime = picked.mimeType ??
+          (picked.name.toLowerCase().endsWith('.png')
+              ? 'image/png'
+              : 'image/jpeg');
+      final result = await uploadAuraMedia(
+        dio: ref.read(dioProvider),
+        bytes: bytes,
+        fileName: picked.name,
+        mimeType: mime,
+        kind: 'IMAGE',
+        source: 'GALLERY',
+      );
+      if (mounted) setState(() => pending.mediaId = result.mediaId);
+    } catch (_) {
+      if (mounted) {
+        setState(() => pending.failed = true);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Attachment failed — remove it and try again.')));
+      }
+    }
+  }
+
   Future<void> _send() async {
     final text = _composer.text.trim();
-    if (text.isEmpty || _sending) return;
+    final mediaIds = _attachments
+        .map((a) => a.mediaId)
+        .whereType<String>()
+        .toList();
+    if ((text.isEmpty && mediaIds.isEmpty) || _sending || _uploading) return;
     setState(() => _sending = true);
     try {
-      await ref
-          .read(conversationsRepositoryProvider)
-          .send(widget.conversationId, text);
+      await ref.read(conversationsRepositoryProvider).send(
+            widget.conversationId,
+            text.isEmpty ? '…' : text,
+            mediaIds: mediaIds,
+          );
       _composer.clear();
+      setState(() => _attachments.clear());
       ref.invalidate(conversationMessagesProvider(widget.conversationId));
       ref.invalidate(conversationsListProvider);
     } catch (e) {
@@ -55,6 +114,28 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       }
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// Conversation → Call/Video: the session is an ephemeral capability of
+  /// this conversation; the other parties receive the canonical incoming
+  /// experience through the certified call-notification pipeline.
+  Future<void> _startCall(String kind) async {
+    if (_startingCall) return;
+    setState(() => _startingCall = true);
+    try {
+      final sessionId = await ref
+          .read(conversationsRepositoryProvider)
+          .startLive(widget.conversationId, kind: kind);
+      if (sessionId.isEmpty) throw Exception('no session');
+      if (mounted) context.push('/realtime/$sessionId');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Could not start the call — try again.')));
+      }
+    } finally {
+      if (mounted) setState(() => _startingCall = false);
     }
   }
 
@@ -140,6 +221,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       data: (c) => AuraScaffold(
         title: conversationDisplayName(c, myUserId),
         actions: [
+          IconButton(
+            tooltip: 'Call',
+            icon: const Icon(Icons.call_rounded),
+            onPressed: _startingCall ? null : () => _startCall('AUDIO'),
+          ),
+          IconButton(
+            tooltip: 'Video',
+            icon: const Icon(Icons.videocam_rounded),
+            onPressed: _startingCall ? null : () => _startCall('VIDEO'),
+          ),
           PopupMenuButton<String>(
             onSelected: (a) => _menu(a, c),
             itemBuilder: (_) => [
@@ -178,6 +269,38 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 ),
               ),
             ),
+            if (_attachments.isNotEmpty)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s12),
+                  child: Wrap(
+                    spacing: AuraSpace.s6,
+                    children: [
+                      for (final a in _attachments)
+                        InputChip(
+                          avatar: a.failed
+                              ? const Icon(Icons.error_outline_rounded,
+                                  size: 16)
+                              : a.mediaId == null
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
+                                  : const Icon(Icons.image_outlined,
+                                      size: 16),
+                          label: Text(a.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          onDeleted: () =>
+                              setState(() => _attachments.remove(a)),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             SafeArea(
               top: false,
               child: Padding(
@@ -185,6 +308,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     AuraSpace.s12, AuraSpace.s6, AuraSpace.s12, AuraSpace.s12),
                 child: Row(
                   children: [
+                    IconButton(
+                      tooltip: 'Attach',
+                      icon: const Icon(Icons.attach_file_rounded),
+                      onPressed: _attachImage,
+                    ),
                     Expanded(
                       child: TextField(
                         controller: _composer,
@@ -208,7 +336,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     ),
                     const SizedBox(width: AuraSpace.s8),
                     IconButton.filled(
-                      onPressed: _sending ? null : _send,
+                      onPressed: (_sending || _uploading) ? null : _send,
                       icon: const Icon(Icons.arrow_upward_rounded),
                     ),
                   ],
@@ -222,7 +350,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
+class _MessageBubble extends ConsumerWidget {
   const _MessageBubble({
     required this.message,
     required this.mine,
@@ -233,7 +361,7 @@ class _MessageBubble extends StatelessWidget {
   final Conversation conversation;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (message.isSystem) {
       final label = switch (message.systemKind) {
         'JOINED' => 'joined the conversation',
@@ -261,30 +389,113 @@ class _MessageBubble extends StatelessWidget {
 
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 3),
-        padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s14, vertical: AuraSpace.s10),
-        constraints: const BoxConstraints(maxWidth: 520),
-        decoration: BoxDecoration(
-          color: mine ? AuraSurface.accentSoft : AuraSurface.card,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (institutionName != null) ...[
-              Text(institutionName,
-                  style: AuraText.micro.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AuraSurface.accentText)),
-              const SizedBox(height: 2),
+      child: GestureDetector(
+        // Message → Report → canonical moderation authority (frozen hook).
+        onLongPress: mine
+            ? null
+            : () => ReportContentSheet.show(
+                  context,
+                  targetType: ReportTargetType.conversationMessage,
+                  targetId: message.id,
+                  contextLabel: 'this message',
+                ),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 3),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s14, vertical: AuraSpace.s10),
+          constraints: const BoxConstraints(maxWidth: 520),
+          decoration: BoxDecoration(
+            color: mine ? AuraSurface.accentSoft : AuraSurface.card,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (institutionName != null) ...[
+                Text(institutionName,
+                    style: AuraText.micro.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AuraSurface.accentText)),
+                const SizedBox(height: 2),
+              ],
+              for (final mediaId in message.mediaIds) ...[
+                _ConversationAttachment(mediaId: mediaId),
+                const SizedBox(height: AuraSpace.s6),
+              ],
+              if (message.body.trim() != '…' || message.mediaIds.isEmpty)
+                Text(message.body,
+                    style: AuraText.body.copyWith(color: AuraSurface.ink)),
             ],
-            Text(message.body,
-                style: AuraText.body.copyWith(color: AuraSurface.ink)),
-          ],
+          ),
         ),
       ),
     );
   }
 }
+
+/// Attachment renderer: resolves the visibility-checked delivery URL from
+/// the canonical Media authority, renders images inline, and falls back to
+/// an honest file chip when the media is not an inline-renderable image.
+class _ConversationAttachment extends ConsumerWidget {
+  const _ConversationAttachment({required this.mediaId});
+  final String mediaId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final urlAsync = ref.watch(_deliveryUrlProvider(mediaId));
+    return urlAsync.when(
+      loading: () => Container(
+        width: 220,
+        height: 140,
+        decoration: BoxDecoration(
+          color: AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+            child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2))),
+      ),
+      error: (e, _) => _fileChip(),
+      data: (url) => url == null
+          ? _fileChip()
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: AuraAttachmentImage(
+                url: url,
+                attachmentId: mediaId,
+                width: 260,
+                fit: BoxFit.cover,
+                errorWidget: (_) => _fileChip(),
+              ),
+            ),
+    );
+  }
+
+  Widget _fileChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s10, vertical: AuraSpace.s8),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.insert_drive_file_outlined,
+              size: 16, color: AuraSurface.muted),
+          const SizedBox(width: AuraSpace.s6),
+          Text('Attachment',
+              style: AuraText.micro.copyWith(color: AuraSurface.muted)),
+        ],
+      ),
+    );
+  }
+}
+
+final _deliveryUrlProvider =
+    FutureProvider.family<String?, String>((ref, mediaId) async {
+  return ref.watch(conversationsRepositoryProvider).mediaDeliveryUrl(mediaId);
+});

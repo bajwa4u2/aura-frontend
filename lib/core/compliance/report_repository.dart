@@ -19,6 +19,10 @@ enum ReportTargetType {
   user,
   message,
   institution,
+
+  /// AURA CONVERSATION SYSTEM (canon 2026-08-16): canonical conversation
+  /// message.
+  conversationMessage,
 }
 
 extension ReportTargetTypeWire on ReportTargetType {
@@ -34,6 +38,8 @@ extension ReportTargetTypeWire on ReportTargetType {
         return 'MESSAGE';
       case ReportTargetType.institution:
         return 'INSTITUTION';
+      case ReportTargetType.conversationMessage:
+        return 'CONVERSATION_MESSAGE';
     }
   }
 }
