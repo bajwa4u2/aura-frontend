@@ -31,8 +31,8 @@ import '../../../core/ui/aura_text.dart';
 ///    truthful, capability-aware, and acting-identity-aware (C1: the
 ///    lifecycle asks AS WHOM only where a genuine choice exists — e.g.
 ///    the announcement scope choice below).
-///  * Article creation is NOT exposed — Long-Form Publishing does not
-///    exist yet (founder-owned roadmap gap); no dead actions.
+///  * Article creation is REAL (2026-08-16): a distinct long-form
+///    intention — never collapsed into Post, never labeled "Write".
 ///  * Institution meeting creation stays CONTEXTUAL-ONLY in the
 ///    institution workspace — the institution owns the meeting
 ///    lifecycle; global Create does not manufacture an institution
@@ -133,6 +133,20 @@ class CreateHubScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AuraSpace.s20),
               _CreateSection(
+                title: 'Write at length',
+                items: [
+                  _CreateActionData(
+                    title: 'Article',
+                    subtitle:
+                        'Substantial authored thought — durable long-form '
+                        'writing under your name.',
+                    icon: Icons.article_outlined,
+                    route: '/articles/write',
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s20),
+              _CreateSection(
                 title: 'Talk to someone',
                 items: [
                   _CreateActionData(
@@ -194,7 +208,7 @@ class _CreateHero extends StatelessWidget {
                 const Text('Create', style: AuraText.headline),
                 const SizedBox(height: AuraSpace.s8),
                 Text(
-                  'Start something — a message, a post, or an official notice.',
+                  'Start something — a message, a post, an article, or an official notice.',
                   style: AuraText.body.copyWith(
                     color: AuraSurface.muted,
                     height: 1.5,

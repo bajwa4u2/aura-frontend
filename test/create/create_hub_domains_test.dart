@@ -23,14 +23,13 @@ void main() {
   }
 
   test('visible Create cards are exactly Message · Post · Announcement', () {
-    expect(cardTitles(), 'Announcement·Message·Post');
+    expect(cardTitles(), 'Announcement·Article·Message·Post');
   });
 
   test('banned Create tenants stay out', () {
     for (final banned in [
       "title: 'Invitation'",
       "title: 'Institution'",
-      "title: 'Article'",
       "title: 'Conversation'",
       "title: 'Write'",
     ]) {

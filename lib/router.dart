@@ -99,6 +99,8 @@ import 'features/conversation/presentation/conversation_screen.dart';
 import 'features/conversation/presentation/new_conversation_picker.dart';
 import 'features/conversation/presentation/claim_invitation_screen.dart';
 import 'features/discover/presentation/people_discovery_screen.dart';
+import 'features/articles/presentation/article_editor_screen.dart';
+import 'features/articles/presentation/article_screen.dart';
 import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/notifications/presentation/notifications_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
@@ -410,6 +412,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     if (path == '/announcements') return true;
     if (path.startsWith('/announcements/')) return true;
+
+    // Articles are durable public thought (reading is public; the /write
+    // authoring paths stay authenticated).
+    if (path == '/discover/articles') return true;
+    if (path.startsWith('/articles/') && !path.startsWith('/articles/write')) {
+      return true;
+    }
 
     // Public booking pages — no auth required
     if (path.startsWith('/meet/')) return true;
@@ -1362,6 +1371,29 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/discover/people',
             builder: (_, __) => const PeopleDiscoveryScreen(),
+          ),
+          // AURA ARTICLES (founder addendum 2026-08-16): the fourth
+          // Discover domain, now REAL. Reading is public product surface;
+          // authoring is the author's own.
+          GoRoute(
+            path: '/discover/articles',
+            builder: (_, __) => const ArticlesDiscoveryScreen(),
+          ),
+          GoRoute(
+            path: '/articles/write',
+            builder: (_, __) => const ArticleEditorScreen(),
+          ),
+          GoRoute(
+            path: '/articles/write/:articleId',
+            builder: (context, state) => ArticleEditorScreen(
+              articleId: state.pathParameters['articleId'],
+            ),
+          ),
+          GoRoute(
+            path: '/articles/:slug',
+            builder: (context, state) => ArticleScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
           ),
           // External invitation claim landing — PUBLIC by nature (the
           // recipient may not have an account). Single-segment /i/:token;

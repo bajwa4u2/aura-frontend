@@ -31,12 +31,10 @@ void main() {
       expect(byTitle['People']!.route, '/discover/people');
       expect(byTitle['Institutions']!.route, '/institutions');
       expect(byTitle['Spaces']!.route, '/spaces');
-      // Articles is CANONICALLY DECLARED, not implemented (Long-Form
-      // Publishing is a founder-owned roadmap gap). Founder visibility
-      // ruling: declared domains without truthful capability are NOT
-      // rendered in the live experience — no route, no CTA, no card.
-      expect(byTitle['Articles']!.route, isNull);
-      expect(byTitle['Articles']!.unavailableNote, isNotNull);
+      // Articles is REAL (2026-08-16 addendum): the fourth domain renders
+      // and routes to the Article discovery/reading surface.
+      expect(byTitle['Articles']!.route, '/discover/articles');
+      expect(byTitle['Articles']!.unavailableNote, isNull);
     });
 
     test('every unavailable domain carries an honest note; available ones do not',
@@ -49,20 +47,21 @@ void main() {
 
   group('Discover renders the framework honestly', () {
     testWidgets(
-        'live domains render; declared-unavailable Articles renders NOTHING '
-        '(no dead card in the live experience — founder visibility ruling)',
+        'all four domains render — Articles is real (2026-08-16 addendum)',
         (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(home: Material(child: DiscoverScreen())),
         ),
       );
-      for (final title in ['People', 'Institutions', 'Spaces']) {
+      for (final title in [
+        'People',
+        'Institutions',
+        'Spaces',
+        'Articles',
+      ]) {
         expect(find.text(title), findsOneWidget);
       }
-      // Articles is canonically declared in the registry but must not
-      // occupy the live experience until truthful capability exists.
-      expect(find.text('Articles'), findsNothing);
     });
   });
 

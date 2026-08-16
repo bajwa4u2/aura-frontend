@@ -86,6 +86,7 @@ class ConversationMessage {
     required this.systemKind,
     required this.createdAt,
     this.mediaIds = const [],
+    this.media = const [],
   });
 
   final String id;
@@ -97,6 +98,10 @@ class ConversationMessage {
 
   /// Canonical Media ids attached to this message (position-ordered).
   final List<String> mediaIds;
+
+  /// Kind/mime per attachment (from the canonical Media authority) so the
+  /// bubble renders images/audio/video truthfully.
+  final List<MessageMediaRef> media;
 
   bool get isSystem => systemKind != null;
 
@@ -113,8 +118,36 @@ class ConversationMessage {
       systemKind: _ns(json['systemKind']),
       createdAt: _date(json['createdAt']) ?? DateTime.now(),
       mediaIds: mediaRows.map((m) => _s(m['mediaId'])).toList(),
+      media: mediaRows
+          .map((m) => MessageMediaRef(
+                mediaId: _s(m['mediaId']),
+                kind: _ns(m['kind']),
+                mimeType: _ns(m['mimeType']),
+              ))
+          .toList(),
     );
   }
+}
+
+class MessageMediaRef {
+  const MessageMediaRef({
+    required this.mediaId,
+    required this.kind,
+    required this.mimeType,
+  });
+  final String mediaId;
+  final String? kind; // IMAGE | AUDIO | VIDEO | DOCUMENT | null
+  final String? mimeType;
+
+  bool get isImage =>
+      (kind ?? '').toUpperCase() == 'IMAGE' ||
+      (mimeType ?? '').startsWith('image/');
+  bool get isAudio =>
+      (kind ?? '').toUpperCase() == 'AUDIO' ||
+      (mimeType ?? '').startsWith('audio/');
+  bool get isVideo =>
+      (kind ?? '').toUpperCase() == 'VIDEO' ||
+      (mimeType ?? '').startsWith('video/');
 }
 
 class PendingInvitation {

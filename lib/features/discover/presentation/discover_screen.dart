@@ -135,14 +135,12 @@ const List<DiscoveryDomain> kDiscoveryDomains = [
   (
     icon: Icons.article_outlined,
     title: 'Articles',
-    // The FOURTH immediate domain, canonically declared — but Long-Form
-    // Publishing does not exist yet (founder-owned roadmap gap; Post ≠
-    // Article ≠ Announcement is frozen). route: null keeps it OUT of the
-    // live experience entirely (no dead card, no fake feed, no Posts in
-    // costume) until a truthful reading/discovery route ships.
-    body: 'Substantial authored thought — durable long-form publication.',
-    route: null,
-    unavailableNote: 'Not yet available.',
+    // The FOURTH domain, REAL as of 2026-08-16 (founder addendum): the
+    // Article lifecycle (write → draft → publish → read) shipped; Post ≠
+    // Article ≠ Announcement stays frozen.
+    body: 'Substantial authored thought — durable long-form writing.',
+    route: '/discover/articles',
+    unavailableNote: null,
   ),
 ];
 

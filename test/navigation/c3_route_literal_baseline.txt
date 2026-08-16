@@ -126,3 +126,6 @@
 # (/realtime/:id) pending a session-route authority builder; owner:
 # conversation module.
 1 lib/features/conversation/presentation/conversation_screen.dart
+# 2026-08-16 Articles (real): published-article + author links pending
+# dedicated authority builders; owner: articles module.
+1 lib/features/articles/presentation/article_screen.dart
