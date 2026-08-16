@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/trust/trust_marks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -212,7 +213,11 @@ class _BookingIntro extends StatelessWidget {
                         ),
                         if (institution!.isVerified) ...[
                           const SizedBox(width: 8),
-                          const _MiniBadge(label: 'Verified'),
+                          // C2 — canonical mark: same compact 'Verified'
+                          // adjacency, now with subject-explicit semantics.
+                          const InstitutionVerifiedMark(
+                            size: TrustMarkSize.standard,
+                          ),
                         ],
                       ],
                     ),
@@ -422,36 +427,6 @@ class _HostAvatar extends StatelessWidget {
               ),
             )
           : null,
-    );
-  }
-}
-
-class _MiniBadge extends StatelessWidget {
-  final String label;
-
-  const _MiniBadge({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: const Color(0xFF6C63FF).withValues(alpha: 0.30),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFFD9D7FF),
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
     );
   }
 }

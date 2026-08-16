@@ -15,6 +15,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../accountability/widgets/continuation_chain_rail.dart';
 import '../../discourse_intelligence/models.dart';
@@ -695,37 +696,7 @@ class _PublicIdentity extends StatelessWidget {
           children: [
             Text(title, style: AuraText.title),
             if (institution.isVerified)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s8,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: AuraSurface.coVerdant.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  border: Border.all(
-                    color: AuraSurface.coVerdant.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 12,
-                      color: AuraSurface.coVerdant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Verified',
-                      style: AuraText.micro.copyWith(
-                        color: AuraSurface.coVerdant,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const InstitutionVerifiedMark(size: TrustMarkSize.standard),
           ],
         ),
         if (subtitleParts.isNotEmpty) ...[
@@ -792,7 +763,7 @@ class _PublicStatChips extends StatelessWidget {
       chips,
       _PublicStatChip(
         icon: Icons.verified_rounded,
-        label: institution.isVerified ? 'Verified' : 'Unverified',
+        label: institution.isVerified ? 'Verified institution' : 'Not verified',
         good: institution.isVerified,
       ),
     );

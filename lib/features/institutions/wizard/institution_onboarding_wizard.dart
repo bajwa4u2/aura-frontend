@@ -12,6 +12,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 
 // ─── Wizard entry point ───────────────────────────────────────────────────────
@@ -1303,9 +1304,8 @@ class _InstitutionResultTile extends StatelessWidget {
                         ),
                         if (isVerified) ...[
                           const SizedBox(width: AuraSpace.s6),
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 14,
+                          const InstitutionVerifiedIcon(
+                            iconSize: 14,
                             color: AuraSurface.accentText,
                           ),
                         ],

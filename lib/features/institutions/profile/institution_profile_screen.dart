@@ -273,7 +273,9 @@ class _ProfileBody extends ConsumerWidget {
                     title: 'Profile',
                     primaryAction:
                         (identity != null &&
-                                identity!.isAdmin &&
+                                // C2 §9: backend guards profile editing with
+                                // MANAGE_BRANDING; role is not the question.
+                                identity!.canManageBranding &&
                                 identity!.id.isNotEmpty)
                             ? AuraPrimaryButton(
                                 label: 'Edit profile',
@@ -507,7 +509,8 @@ class _ActionGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canEdit = identity != null && identity!.isAdmin;
+    // C2 §9: capability question (MANAGE_BRANDING), matching the backend guard.
+    final canEdit = identity != null && identity!.canManageBranding;
     final canPreview = identity != null &&
         identity!.slug.isNotEmpty &&
         identity!.id.isNotEmpty;

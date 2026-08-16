@@ -417,7 +417,7 @@ class _ResultsBody extends StatelessWidget {
       children: [
         if (page.verified.isNotEmpty) ...[
           _SectionHeading(
-            label: 'Verified',
+            label: 'Verified institutions',
             count: page.verified.length,
             tone: _SectionTone.verified,
             blurb: 'Organizations whose identity Aura has confirmed.',

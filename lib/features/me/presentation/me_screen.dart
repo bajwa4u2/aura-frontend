@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/interactions/follows_repository.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -141,38 +142,40 @@ class _MeScreenState extends ConsumerState<MeScreen>
       final user = _unwrapUser(meResponse.data);
 
       final handle = _value(user['handle']);
+      // C2 closeout — Follow reads go through the canonical Follow
+      // repository. Counts come from the profile authority (D4), never
+      // from fetching whole lists and counting them client-side.
+      final follows = ref.read(followsRepositoryProvider);
+      Future<T?> quiet<T>(Future<T> future) =>
+          future.then<T?>((v) => v).catchError((_) => null);
+
       final futures = await Future.wait<dynamic>([
         if (handle.isNotEmpty)
-          _safeGet(dio, '/users/$handle/followers')
+          quiet(follows.personFollowCounts(handle))
         else
           Future.value(null),
-        if (handle.isNotEmpty)
-          _safeGet(dio, '/users/$handle/following')
-        else
-          Future.value(null),
-        _safeGet(dio, '/users/me/follow/requests/inbox'),
-        _safeGet(dio, '/users/me/follow/requests/outbox'),
+        quiet(follows.incomingFollowRequests()),
+        quiet(follows.outgoingFollowRequests()),
         _safeGet(dio, '/integrations/tiktok/account'),
         _safeGet(dio, '/integrations/linkedin/account'),
         _safeGet(dio, '/invites'),
       ]);
 
-      final followersRes = futures[0];
-      final followingRes = futures[1];
-      final inboxRes = futures[2];
-      final outboxRes = futures[3];
-      final tiktokRes = futures[4];
-      final linkedinRes = futures[5];
-      final inviteInboxRes = futures[6];
+      final counts = futures[0] as ({int followers, int following})?;
+      final inbox = futures[1] as List<PersonFollowRequest>?;
+      final outbox = futures[2] as List<PersonFollowRequest>?;
+      final tiktokRes = futures[3];
+      final linkedinRes = futures[4];
+      final inviteInboxRes = futures[5];
 
       if (!mounted) return;
 
       setState(() {
         _user = user;
-        _followersCount = _countItemsFromPayload(followersRes?.data);
-        _followingCount = _countItemsFromPayload(followingRes?.data);
-        _incomingRequestsCount = _countItemsFromPayload(inboxRes?.data);
-        _outgoingRequestsCount = _countItemsFromPayload(outboxRes?.data);
+        _followersCount = counts?.followers ?? 0;
+        _followingCount = counts?.following ?? 0;
+        _incomingRequestsCount = inbox?.length ?? 0;
+        _outgoingRequestsCount = outbox?.length ?? 0;
         _incomingInvitesCount = _countItemsFromPayload(inviteInboxRes?.data);
         _sentInvitesCount = 0;
         _approvalInvitesCount = 0;
@@ -183,13 +186,13 @@ class _MeScreenState extends ConsumerState<MeScreen>
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = _readApiError(e, fallback: 'Could not load your presence.');
+        _error = _readApiError(e, fallback: 'Could not load your profile.');
         _loading = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Could not load your presence.';
+        _error = 'Could not load your profile.';
         _loading = false;
       });
     }
@@ -933,7 +936,7 @@ class _MeScreenState extends ConsumerState<MeScreen>
     Widget? securityTrailing;
     if (!verifying) {
       securityTrailing = MeStatusBadge(
-        label: isVerified ? 'Verified' : 'Verify email',
+        label: isVerified ? 'Email verified' : 'Verify email',
         style: isVerified ? MeStatusStyle.good : MeStatusStyle.warn,
       );
     }

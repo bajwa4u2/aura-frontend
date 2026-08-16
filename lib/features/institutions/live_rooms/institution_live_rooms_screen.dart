@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/authority/capability_projection.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -9,6 +11,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/utils/relative_time.dart';
@@ -232,10 +235,16 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = widget.identity?.isAdmin ?? false;
+    // C2 closeout — starting a live session is a consequential act; the
+    // gate is the C1 capability projection (ConsequentialAct.startLive),
+    // never a role label. Matches the backend's actual authority.
+    final canStartLive = ref
+            .watch(capabilityProjectionProvider)
+            .presentationFor(ConsequentialAct.startLive) ==
+        ControlPresentation.available;
 
     Widget? primaryAction;
-    if (isAdmin) {
+    if (canStartLive) {
       primaryAction = AuraPrimaryButton(
         label: _starting ? 'Starting…' : 'Start session',
         icon: Icons.podcasts_rounded,
@@ -304,7 +313,7 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
           InsEmptyState(
             icon: Icons.radio_outlined,
             title: 'No live rooms',
-            description: isAdmin
+            description: canStartLive
                 ? 'Start one with Start session.'
                 : 'No active sessions.',
           ),
@@ -1066,9 +1075,8 @@ class _InstitutionTrustLine extends StatelessWidget {
         ),
         if (id.isVerified) ...[
           const SizedBox(width: 4),
-          const Icon(
-            Icons.verified_rounded,
-            size: 11,
+          const InstitutionVerifiedIcon(
+            iconSize: 11,
             color: AuraSurface.accentText,
           ),
         ],

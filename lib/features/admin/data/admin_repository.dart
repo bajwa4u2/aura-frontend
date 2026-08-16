@@ -71,6 +71,51 @@ class AdminRepository {
     await _dio.patch('/v1/admin/users/$userId/status', data: {'status': status});
   }
 
+  // C2 — Person Verification administration. Thin wire client over the
+  // VERIFICATION_READ/WRITE admin endpoints; every governed rule lives in
+  // the backend Person Verification Authority.
+  Future<AdminPersonVerification> fetchPersonVerification(String userId) async {
+    final res = await _dio.get('/v1/admin/users/$userId/verification');
+    return AdminPersonVerification.fromJson(_asMap(res.data));
+  }
+
+  Future<void> grantPersonVerification(
+    String userId, {
+    required String verificationClass,
+    required String reason,
+    String? issuingAuthority,
+    String? issuingInstitutionId,
+    String? classSubtype,
+  }) async {
+    await _dio.post(
+      '/v1/admin/users/$userId/verification/grant',
+      data: {
+        'verificationClass': verificationClass,
+        'reason': reason,
+        if (issuingAuthority != null && issuingAuthority.isNotEmpty)
+          'issuingAuthority': issuingAuthority,
+        if (issuingInstitutionId != null && issuingInstitutionId.isNotEmpty)
+          'issuingInstitutionId': issuingInstitutionId,
+        if (classSubtype != null && classSubtype.isNotEmpty)
+          'classSubtype': classSubtype,
+      },
+    );
+  }
+
+  Future<void> revokePersonVerification(
+    String userId, {
+    required String verificationClass,
+    required String reason,
+  }) async {
+    await _dio.post(
+      '/v1/admin/users/$userId/verification/revoke',
+      data: {
+        'verificationClass': verificationClass,
+        'reason': reason,
+      },
+    );
+  }
+
   Future<List<AdminGrant>> fetchGrants() async {
     final res = await _dio.get('/v1/admin/grants');
     return _parseList(res.data, AdminGrant.fromJson);

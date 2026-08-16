@@ -391,7 +391,7 @@ class _SectorBody extends StatelessWidget {
       children: [
         if (page.verified.isNotEmpty) ...[
           _RowHeader(
-            label: 'Verified',
+            label: 'Verified institutions',
             count: page.verified.length,
           ),
           const SizedBox(height: AuraSpace.s10),

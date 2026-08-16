@@ -21,6 +21,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import 'global_live_discovery.dart';
 import 'institution_session_meta.dart';
@@ -223,9 +224,8 @@ class LiveNowCard extends StatelessWidget {
                         ),
                         if (data.isVerifiedHost) ...[
                           const SizedBox(width: 4),
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 11,
+                          const InstitutionVerifiedIcon(
+                            iconSize: 11,
                             color: AuraSurface.accentText,
                           ),
                         ],

@@ -6,6 +6,7 @@ import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/surface/surface_composition.dart';
 import '../../../features/admin/data/admin_providers.dart';
@@ -342,22 +343,9 @@ class WorkspaceActivityRailModule extends ConsumerWidget {
           ),
           if (identity?.isVerified == true) ...[
             const SizedBox(height: AuraSpace.s8),
-            Row(
-              children: [
-                const Icon(
-                  Icons.verified_rounded,
-                  size: 13,
-                  color: AuraSurface.accentText,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Verified institution',
-                  style: AuraText.micro.copyWith(
-                    color: AuraSurface.accentText,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+            const InstitutionVerifiedMark(
+              compactLabel: false,
+              color: AuraSurface.accentText,
             ),
           ],
         ],

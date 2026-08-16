@@ -20,6 +20,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../correspondence/presentation/thread_screen.dart';
 import '../../institutions/live_rooms/institution_session_meta.dart';
@@ -1360,9 +1361,20 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             color: AuraSurface.faint,
           ),
           const SizedBox(width: 4),
+          // C2/§11 — official institutional speech comes from AUTHORITY,
+          // never from verification. The old line claimed "Official
+          // session" from isVerified alone, which was a false authority
+          // claim; verification now presents as itself.
+          if (verified) ...[
+            const InstitutionVerifiedIcon(
+              iconSize: 11,
+              color: AuraSurface.faint,
+            ),
+            const SizedBox(width: 4),
+          ],
           Flexible(
             child: Text(
-              verified ? 'Official session by $name' : 'Session by $name',
+              'Session by $name',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AuraText.micro.copyWith(

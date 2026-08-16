@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/trust/trust_marks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -159,9 +161,8 @@ class _HistoryTile extends StatelessWidget {
                   ),
                   if (row.verified) ...[
                     const SizedBox(width: 4),
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 11,
+                    const InstitutionVerifiedIcon(
+                      iconSize: 11,
                       color: AuraSurface.accentText,
                     ),
                   ],

@@ -1,3 +1,5 @@
+import '../../../core/trust/verification.dart';
+
 class Profile {
   Profile({
     required this.id,
@@ -11,7 +13,7 @@ class Profile {
     required this.followersCount,
     required this.followingCount,
     required this.isFollowing,
-    this.isVerified = false,
+    this.verification = const PersonVerification.none(),
     this.followState = 'none',
     this.accountStatus = 'ACTIVE',
   });
@@ -29,7 +31,12 @@ class Profile {
   final int followersCount;
   final int followingCount;
   final bool isFollowing;
-  final bool isVerified;
+
+  /// C2 — layered Person verification (canonical trust domain authority).
+  /// A SET of governed classes, never a boolean: the legacy `isVerified`
+  /// here parsed wire fields no profile endpoint ever sent, so the old
+  /// person "Verified" badge was a dead generic claim path.
+  final PersonVerification verification;
   final String followState;
 
   /// Account Lifecycle / Public Identity doctrine — 'ACTIVE' | 'DISABLED'
@@ -46,12 +53,6 @@ class Profile {
       if (v is int) return v;
       if (v is num) return v.toInt();
       return int.tryParse((v ?? '').toString()) ?? 0;
-    }
-
-    bool asBool(dynamic v) {
-      if (v is bool) return v;
-      final text = (v ?? '').toString().trim().toLowerCase();
-      return text == 'true' || text == '1' || text == 'yes';
     }
 
     String? asNullableString(dynamic v) {
@@ -74,12 +75,7 @@ class Profile {
       followersCount: asInt(j['followersCount']),
       followingCount: asInt(j['followingCount']),
       isFollowing: following,
-      isVerified: asBool(
-        j['isVerified'] ??
-            j['verified'] ??
-            ((j['verificationStatus'] ?? '').toString().trim().toUpperCase() ==
-                'VERIFIED'),
-      ),
+      verification: PersonVerification.fromJson(j['verification']),
       followState: state.isEmpty ? (following ? 'following' : 'none') : state,
       accountStatus: (j['accountStatus'] ?? 'ACTIVE').toString().trim().toUpperCase(),
     );

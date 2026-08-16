@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/trust/trust_marks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -372,9 +373,8 @@ class _ConfirmationView extends ConsumerWidget {
                         if (institution?.isVerified == true)
                           const Padding(
                             padding: EdgeInsets.only(left: AuraSpace.s8),
-                            child: _PillChip(
-                              icon: Icons.verified_rounded,
-                              label: 'Verified',
+                            child: InstitutionVerifiedMark(
+                              size: TrustMarkSize.standard,
                             ),
                           ),
                       ],

@@ -33,6 +33,7 @@ import '../../../core/authority/authority_providers.dart';
 import '../../../core/authority/capability_projection.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../topics/aura_topic_selector.dart';
@@ -1424,19 +1425,7 @@ class _ActorBanner extends StatelessWidget {
                     ),
                     if (identity?.isVerified == true) ...[
                       const SizedBox(width: 6),
-                      const Icon(
-                        Icons.verified_rounded,
-                        size: 16,
-                        color: _accentText,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '(Verified)',
-                        style: AuraText.small.copyWith(
-                          color: _accentText,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      const InstitutionVerifiedMark(color: _accentText),
                     ],
                   ],
                 ),

@@ -26,6 +26,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import 'global_live_discovery.dart';
@@ -313,9 +314,8 @@ class _LiveBannerCard extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isVerified) ...[
-                        const Icon(
-                          Icons.verified_rounded,
-                          size: 11,
+                        const InstitutionVerifiedIcon(
+                          iconSize: 11,
                           color: AuraSurface.accentText,
                         ),
                         const SizedBox(width: 4),

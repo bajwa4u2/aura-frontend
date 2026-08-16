@@ -9,6 +9,7 @@ import '../../../core/compliance/report_content_sheet.dart';
 import '../../../core/compliance/report_repository.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/interaction_service.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_profile_tab_bar.dart';
@@ -296,40 +297,11 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
   List<Widget> _presenceMeta(Profile profile) {
     final meta = <Widget>[];
 
-    if (profile.isVerified) {
-      meta.add(
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s10,
-            vertical: AuraSpace.s4,
-          ),
-          decoration: BoxDecoration(
-            color: AuraSurface.coVerdant.withValues(alpha: 0.16),
-            border: Border.all(
-              color: AuraSurface.coVerdant.withValues(alpha: 0.35),
-            ),
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.verified_rounded,
-                size: 12,
-                color: AuraSurface.coVerdant,
-              ),
-              const SizedBox(width: AuraSpace.s4),
-              Text(
-                'Verified',
-                style: AuraText.micro.copyWith(
-                  color: AuraSurface.coVerdant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+    // C2 — layered Person verification. One mark per governed class
+    // (identity / affiliation / role-or-credential), never a collapsed
+    // "Verified person". Nothing renders when nothing is verified.
+    for (final verifiedClass in profile.verification.classes) {
+      meta.add(TrustMark(fact: TrustFact.ofPersonClass(verifiedClass)));
     }
 
     final location = _cleanValue(profile.location);
@@ -516,6 +488,11 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     final followLabel = switch (effectiveFollowState) {
       'following' => 'Following',
       'outgoing_pending' => 'Requested',
+      // C2 canonical Follow — the rejection cooldown is truthful relationship
+      // state. Presenting "Follow" here would offer an action the backend
+      // refuses; the person sees the honest state instead of a surprise error.
+      'cooldown' => 'Not available yet',
+      'incoming_pending' => 'Follow',
       _ => 'Follow',
     };
 
@@ -527,6 +504,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     final canFollowAction = !isSelf &&
         profile.isActive &&
         (effectiveFollowState == 'none' ||
+            effectiveFollowState == 'incoming_pending' ||
             effectiveFollowState == 'outgoing_pending');
     final canCorrespond =
         isAuthed && !isSelf && profile.isActive && followState == 'following';

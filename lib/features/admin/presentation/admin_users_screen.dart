@@ -10,6 +10,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
 import 'admin_error.dart';
+import 'admin_person_verification_sheet.dart';
 
 class AdminUsersScreen extends ConsumerStatefulWidget {
   const AdminUsersScreen({super.key});
@@ -96,6 +97,15 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     }
   }
 
+  void _openVerification(AdminUserSummary user) {
+    AdminPersonVerificationSheet.show(
+      context,
+      userId: user.id,
+      userLabel:
+          user.displayName.isNotEmpty ? user.displayName : '@${user.handle}',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
@@ -178,6 +188,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                           user: _users[i],
                           actionLoading: _actionLoading,
                           onStatusChange: _changeStatus,
+                          onVerification: _openVerification,
                         ),
                         if (i < _users.length - 1)
                           Container(
@@ -380,16 +391,22 @@ class _SectionHeader extends StatelessWidget {
 // USER ROW
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Sentinel menu value distinguishing the verification action from the
+/// status values.
+const String _verificationAction = '__verification__';
+
 class _UserRow extends StatelessWidget {
   const _UserRow({
     required this.user,
     required this.actionLoading,
     required this.onStatusChange,
+    required this.onVerification,
   });
 
   final AdminUserSummary user;
   final bool actionLoading;
   final Future<void> Function(String userId, String status) onStatusChange;
+  final void Function(AdminUserSummary user) onVerification;
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
@@ -460,9 +477,21 @@ class _UserRow extends StatelessWidget {
               size: 18,
               color: AuraSurface.faint,
             ),
-            tooltip: 'Change status',
-            onSelected: (status) => onStatusChange(user.id, status),
+            tooltip: 'User actions',
+            onSelected: (value) {
+              if (value == _verificationAction) {
+                onVerification(user);
+                return;
+              }
+              onStatusChange(user.id, value);
+            },
             itemBuilder: (_) => const [
+              // C2 — layered person verification management (§19).
+              PopupMenuItem(
+                value: _verificationAction,
+                child: Text('Verification…'),
+              ),
+              PopupMenuDivider(),
               PopupMenuItem(value: 'ACTIVE', child: Text('Set Active')),
               PopupMenuItem(value: 'DISABLED', child: Text('Disable')),
               PopupMenuItem(value: 'SUSPENDED', child: Text('Suspend')),

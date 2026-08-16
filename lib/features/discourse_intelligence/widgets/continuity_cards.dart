@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/trust/trust_marks.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_radius.dart';
@@ -304,9 +306,8 @@ class ResponsivenessObservationCard extends StatelessWidget {
                   ),
                   if (row.verified) ...[
                     const SizedBox(width: 4),
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 12,
+                    const InstitutionVerifiedIcon(
+                      iconSize: 12,
                       color: AuraSurface.accentText,
                     ),
                   ],
@@ -415,9 +416,8 @@ class _RelatedChip extends StatelessWidget {
                   ),
                   if (row.verified) ...[
                     const SizedBox(width: 4),
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 11,
+                    const InstitutionVerifiedIcon(
+                      iconSize: 11,
                       color: AuraSurface.accentText,
                     ),
                   ],

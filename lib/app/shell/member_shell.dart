@@ -15,6 +15,7 @@ import '../../core/ui/aura_space.dart';
 import '../../core/ui/surface/surface_composition.dart';
 import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
+import '../../core/trust/trust_marks.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/institutions/data/institution_pending_counts.dart';
 import '../../features/updates/module_attention.dart';
@@ -1050,9 +1051,8 @@ class _AffiliationLine extends StatelessWidget {
                 ),
                 if (primary.isVerified) ...[
                   const SizedBox(width: 3),
-                  const Icon(
-                    Icons.verified_rounded,
-                    size: 11,
+                  const InstitutionVerifiedIcon(
+                    iconSize: 11,
                     color: AuraSurface.accentText,
                   ),
                 ],
@@ -1798,24 +1798,8 @@ class _RailIdentityHeader extends StatelessWidget {
                     ),
                   ),
                   if (verified)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.verified_rounded,
-                          size: 12,
-                          color: _institutionAccentText,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Verified',
-                          style: AuraText.micro.copyWith(
-                            color: _institutionAccentText,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
+                    const InstitutionVerifiedMark(
+                      color: _institutionAccentText,
                     ),
                 ],
               ),

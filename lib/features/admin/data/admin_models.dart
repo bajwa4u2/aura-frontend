@@ -1257,3 +1257,82 @@ class ModerationReport {
     );
   }
 }
+
+/// C2 — Person Verification administration (layered taxonomy, full
+/// governed record). Admin is the one audience for whom REVOKED/EXPIRED
+/// history is first-class: it is never flattened into "not verified".
+class AdminPersonVerificationRecord {
+  const AdminPersonVerificationRecord({
+    required this.verificationClass,
+    required this.state,
+    required this.reason,
+    this.classSubtype,
+    this.issuingAuthority,
+    this.issuingInstitutionId,
+    this.grantedAt,
+    this.expiresAt,
+    this.revokedAt,
+    this.revocationReason,
+  });
+
+  final String verificationClass;
+  final String state;
+  final String reason;
+  final String? classSubtype;
+  final String? issuingAuthority;
+  final String? issuingInstitutionId;
+  final DateTime? grantedAt;
+  final DateTime? expiresAt;
+  final DateTime? revokedAt;
+  final String? revocationReason;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  static String? _opt(dynamic v) {
+    final s = _str(v);
+    return s.isEmpty ? null : s;
+  }
+
+  static DateTime? _date(dynamic v) =>
+      v == null ? null : DateTime.tryParse(v.toString());
+
+  factory AdminPersonVerificationRecord.fromJson(Map<String, dynamic> json) {
+    return AdminPersonVerificationRecord(
+      verificationClass: _str(json['verificationClass']),
+      state: _str(json['state']),
+      reason: _str(json['reason']),
+      classSubtype: _opt(json['classSubtype']),
+      issuingAuthority: _opt(json['issuingAuthority']),
+      issuingInstitutionId: _opt(json['issuingInstitutionId']),
+      grantedAt: _date(json['grantedAt']),
+      expiresAt: _date(json['expiresAt']),
+      revokedAt: _date(json['revokedAt']),
+      revocationReason: _opt(json['revocationReason']),
+    );
+  }
+}
+
+class AdminPersonVerification {
+  const AdminPersonVerification({
+    required this.activeClasses,
+    required this.history,
+  });
+
+  final List<String> activeClasses;
+  final List<AdminPersonVerificationRecord> history;
+
+  factory AdminPersonVerification.fromJson(Map<String, dynamic> json) {
+    final active = <String>[
+      for (final c in (json['activeClasses'] as List? ?? const []))
+        (c ?? '').toString().trim(),
+    ]..removeWhere((c) => c.isEmpty);
+    final history = <AdminPersonVerificationRecord>[
+      for (final row in (json['history'] as List? ?? const []))
+        if (row is Map)
+          AdminPersonVerificationRecord.fromJson(
+            Map<String, dynamic>.from(row),
+          ),
+    ];
+    return AdminPersonVerification(activeClasses: active, history: history);
+  }
+}
