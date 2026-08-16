@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/product/temporal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -340,16 +342,13 @@ String _firstNonEmpty(List<String> values) {
 }
 
 String _timeAgo(String raw) {
+  // C0 Human Temporal Presentation Authority (§12 convergence) — the
+  // canonical compact dialect replaces this file's private thresholds.
+  // ProductTime owns the local-zone conversion; no local toLocal() here.
   final parsed = DateTime.tryParse(raw);
   if (parsed == null) return '';
-  final now = DateTime.now().toUtc();
-  final dt = parsed.toUtc();
-  final diff = now.difference(dt);
-  if (diff.inSeconds < 45) return 'Just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  if (diff.inDays < 7) return '${diff.inDays}d ago';
-  if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
-  if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo ago';
-  return '${(diff.inDays / 365).floor()}y ago';
+  return AuraTemporal.humanize(
+    ProductTime(parsed, TimeEvent.occurred),
+    style: TemporalStyle.compact,
+  );
 }

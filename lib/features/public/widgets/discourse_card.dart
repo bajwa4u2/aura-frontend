@@ -53,7 +53,8 @@ extension on _PulseKind {
       case _PulseKind.peopleResponding:
         return Icons.forum_rounded;
       case _PulseKind.institutionInvolved:
-        return Icons.verified_rounded;
+        // Attribution, not verification (glyph reserved for actual marks).
+        return Icons.account_balance_rounded;
       case _PulseKind.awaitingInstitutionResponse:
         return Icons.hourglass_top_rounded;
     }
@@ -297,7 +298,8 @@ class _EntryHookCTA extends StatelessWidget {
       case _PulseKind.outcomeResolved:
         return Icons.check_circle_outline_rounded;
       case _PulseKind.institutionInvolved:
-        return Icons.verified_rounded;
+        // Attribution, not verification (glyph reserved for actual marks).
+        return Icons.account_balance_rounded;
       case _PulseKind.awaitingInstitutionResponse:
         return Icons.hourglass_top_rounded;
       case _PulseKind.peopleResponding:

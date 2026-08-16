@@ -30,7 +30,7 @@ G2 3 lib/features/admin/presentation/admin_review_queue_screen.dart
 G2 3 lib/features/devices/presentation/devices_screen.dart
 G2 3 lib/features/institutions/presentation/institution_dashboard_screen.dart
 G2 6 lib/features/me/presentation/security_screen.dart
-G2 6 lib/features/updates/presentation/updates_screen.dart
+# updates_screen G2 6 -> 0: converged onto AuraTemporal (C2 §12, 2026-08-16)
 
 # ── G3 — local timezone conversion ───────────────────────────────────────────
 G3 1 lib/features/activity/presentation/activity_screen.dart
@@ -108,7 +108,9 @@ G7 1 lib/features/realtime/presentation/widgets/floating_call_widget.dart
 G7 1 lib/widgets/note_card.dart
 
 # -- G5 -- surfaces constructing the state primitives directly ----------------
-# 72 files / 181 sites. This is the burn-down that keeps AuraProductState from
+# C2 §9 (2026-08-15) eliminated 4 sites across the two edit-profile screens
+# by converging onto AuraProductState. Canonical Follow adoption (2026-08-16)
+# consumed the nine Follow-blocked sites. Measured remainder: 67 files / 168 sites. This is the burn-down that keeps AuraProductState from
 # sitting declared-and-unconsumed: the count can only fall, never rise.
 # Each later chapter converts the surfaces it owns as it touches them.
 G5 1 lib/features/activity/presentation/activity_screen.dart
@@ -140,8 +142,8 @@ G5 1 lib/features/correspondence/presentation/thread_screen.dart
 G5 3 lib/features/direct_threads/presentation/direct_intent_screen.dart
 G5 4 lib/features/direct_threads/presentation/direct_thread_screen.dart
 G5 4 lib/features/direct_threads/presentation/inbox_screen.dart
-G5 2 lib/features/home/presentation/member_home_screen.dart
-G5 4 lib/features/home/presentation/public_home_screen.dart
+# member_home G5 2 -> 0: Public Home reconstruction (C2, 2026-08-16)
+# public_home G5 4 -> 0: Public Home reconstruction (C2, 2026-08-16)
 G5 2 lib/features/institutions/activity/institution_activity_screen.dart
 G5 2 lib/features/institutions/announcements/institution_announcements_screen.dart
 G5 3 lib/features/institutions/correspondence/institution_correspondence_screen.dart
@@ -162,17 +164,12 @@ G5 2 lib/features/institutions/presentation/institution_join_requests_screen.dar
 G5 2 lib/features/institutions/presentation/institution_members_screen.dart
 G5 1 lib/features/institutions/presentation/institution_page.dart
 G5 2 lib/features/institutions/presentation/institution_spaces_screen.dart
-G5 3 lib/features/institutions/profile/institution_edit_profile_screen.dart
 G5 4 lib/features/institutions/profile/institution_profile_screen.dart
 G5 1 lib/features/institutions/units/institution_units_screen.dart
-G5 1 lib/features/me/presentation/edit_profile_screen.dart
 G5 2 lib/features/me/presentation/me_screen.dart
 G5 5 lib/features/messages/presentation/messages_hub_screen.dart
 G5 3 lib/features/notifications/presentation/notifications_screen.dart
 G5 2 lib/features/profile/presentation/author_profile_screen.dart
-G5 3 lib/features/profile/presentation/follow_requests_screen.dart
-G5 3 lib/features/profile/presentation/followers_screen.dart
-G5 3 lib/features/profile/presentation/following_screen.dart
 G5 3 lib/features/public/presentation/institution_sector_screen.dart
 G5 3 lib/features/public/presentation/public_institution_units_screen.dart
 G5 3 lib/features/public/presentation/public_institutions_directory_screen.dart

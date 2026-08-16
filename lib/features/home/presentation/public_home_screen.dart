@@ -21,6 +21,8 @@ import '../../institutions/live_rooms/live_now_card.dart';
 import '../../discourse_intelligence/widgets/civic_memory_continuity_cue.dart';
 import '../../public/data/public_spaces_repository.dart';
 import '../../public/domain/space.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import '../../public/widgets/discourse_card.dart';
 
 /// Public-UX Phase 7 — homepage restructured around discourse: live
@@ -279,26 +281,31 @@ class _HeroLeft extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
-                Icons.auto_awesome_rounded,
+                Icons.forum_rounded,
                 size: 11,
                 color: AuraSurface.accentText,
               ),
               const SizedBox(width: AuraSpace.s6),
               Text(
-                'Verified institutional communication',
+                'Public communication with accountability',
                 style: AuraText.label.copyWith(color: AuraSurface.accentText),
               ),
             ],
           ),
         ),
         const SizedBox(height: AuraSpace.s20),
+        // Public-first causal doctrine — people and the communication they
+        // already struggle with are the originating force; institutions
+        // enter as accountable participants. The previous hero led with an
+        // institutions-first, verification-as-premise headline — the
+        // prohibited acquisition framing (see the public-first gate).
         const Text(
-          'A verified public presence\nfor institutions.',
+          'Public conversation that\nkeeps its context.',
           style: AuraText.display,
         ),
         const SizedBox(height: AuraSpace.s16),
         Text(
-          'For governments, universities, agencies, and associations: a verified identity, official communication, and an accountable public record — where the public raises issues, institutions respond, and commitments are resolved in the open. Not a feed. A record.',
+          'Raise what matters in the open, with people who answer under their real identity. Conversations keep their history, commitments stay on the record, and when institutions take part they respond where everyone can see it — governments, universities, agencies, and associations included. Not a feed. A record.',
           style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
         ),
         const SizedBox(height: AuraSpace.s28),
@@ -318,10 +325,9 @@ class _HeroLeft extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AuraSpace.s12),
-        // Institutional discovery — first-class entry point alongside the
-        // discourse and join CTAs. Aura's brief is explicit that institutions
-        // are the authority roots where public discourse happens, so a
-        // visitor should be one click away from the institutional ecosystem.
+        // Institutional discovery — a legitimate first-class capability
+        // (public-first doctrine: institution discovery remains real; it is
+        // simply not the originating proposition of the entry surface).
         InkWell(
           onTap: () => context.go('/institutions'),
           borderRadius: BorderRadius.circular(AuraRadius.r10),
@@ -362,7 +368,7 @@ class _HeroLeft extends StatelessWidget {
           runSpacing: AuraSpace.s8,
           children: [
             _TrustPill(
-              label: 'Verified identities',
+              label: 'Accountable identities',
               icon: Icons.verified_user_outlined,
             ),
             _TrustPill(
@@ -449,7 +455,7 @@ class _LiveDiscoursePulse extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s10),
           _PulseStatRow(
-            icon: Icons.verified_rounded,
+            icon: Icons.account_balance_rounded,
             tint: AuraSurface.accent,
             label: 'institution responses',
             count: classified.institutionResponseCount,
@@ -714,7 +720,7 @@ class _LiveDiscourseSection extends StatelessWidget {
                     if (classified.institutionResponded.isNotEmpty)
                       _DiscourseRail(
                         title: 'Institution responded',
-                        icon: Icons.verified_rounded,
+                        icon: Icons.account_balance_rounded,
                         count: classified.institutionResponded.length,
                         items: classified.institutionResponded
                             .take(5)
@@ -990,7 +996,7 @@ class _RailCard extends StatelessWidget {
                     if (officialReplies.isNotEmpty) ...[
                       const SizedBox(width: AuraSpace.s8),
                       const Icon(
-                        Icons.verified_rounded,
+                        Icons.account_balance_rounded,
                         size: 14,
                         color: AuraSurface.accentText,
                       ),
@@ -1046,7 +1052,10 @@ class _RailPill extends StatelessWidget {
     final isInstitutional = kind == _RailKind.institutionResponded;
     final label =
         isInstitutional ? 'Institution involved' : 'Active discussion';
-    final icon = isInstitutional ? Icons.verified_rounded : Icons.bolt_rounded;
+    // Institutional involvement is attribution, not verification — the
+    // verification glyph stays reserved for actual verification marks.
+    final icon =
+        isInstitutional ? Icons.account_balance_rounded : Icons.bolt_rounded;
     final bg = isInstitutional
         ? AuraSurface.accent.withValues(alpha: 0.18)
         : AuraSurface.accentSoft;
@@ -1086,7 +1095,7 @@ class _RailPill extends StatelessWidget {
 // SECTION 3 — DISCUSSION PREVIEW
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _DiscussionPreviewSection extends StatelessWidget {
+class _DiscussionPreviewSection extends ConsumerWidget {
   const _DiscussionPreviewSection({
     required this.feedAsync,
     required this.isAuthed,
@@ -1096,7 +1105,7 @@ class _DiscussionPreviewSection extends StatelessWidget {
   final bool isAuthed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AuraSpace.s16,
@@ -1129,9 +1138,10 @@ class _DiscussionPreviewSection extends StatelessWidget {
               feedAsync.when(
                 data: (page) {
                   if (page.items.isEmpty) {
-                    return const AuraEmptyState(
-                      title: 'No public discussions yet',
-                      body:
+                    return const AuraProductState(
+                      state: ProductState.empty,
+                      headline: 'No public discussions yet',
+                      detail:
                           'When people raise issues and institutions respond, those discussions appear here.',
                       icon: Icons.forum_outlined,
                     );
@@ -1162,11 +1172,14 @@ class _DiscussionPreviewSection extends StatelessWidget {
                     ],
                   );
                 },
-                loading: () =>
-                    const AuraLoadingState(message: 'Loading discussions…'),
-                error: (e, _) => const AuraErrorState(
-                  title: 'Could not load discussions',
-                  body: 'Refresh the page or try again in a moment.',
+                loading: () => const AuraProductState(
+                  state: ProductState.loading,
+                  headline: 'Loading discussions…',
+                ),
+                error: (e, _) => AuraProductState(
+                  state: ProductState.retryableError,
+                  headline: 'Could not load discussions',
+                  onRecover: () => ref.invalidate(globalPublicFeedProvider),
                 ),
               ),
             ],
@@ -1208,7 +1221,7 @@ class _DiscourseRailFooter extends StatelessWidget {
     if (_hasInstitutionalReply) {
       label = 'Institution responded';
       cta = 'View responses';
-      icon = Icons.verified_rounded;
+      icon = Icons.account_balance_rounded;
       onTap = () => _openThreadFocused(context, item, 'first-official');
     } else if (_replyCount == 0) {
       label = 'No responses yet';
@@ -1506,7 +1519,10 @@ class _SpacesSection extends ConsumerWidget {
                 },
                 loading: () => const Padding(
                   padding: EdgeInsets.symmetric(vertical: AuraSpace.s16),
-                  child: AuraLoadingState(message: 'Loading spaces…'),
+                  child: AuraProductState(
+                    state: ProductState.loading,
+                    headline: 'Loading spaces…',
+                  ),
                 ),
                 error: (_, __) => const SizedBox.shrink(),
               ),
@@ -1670,7 +1686,7 @@ class _ParticipationBand extends StatelessWidget {
                           const TextSpan(text: ' '),
                           const TextSpan(
                             text:
-                                'Paid actions — priority responses and hosted sessions — are always labeled. Identities are verified.',
+                                'Paid actions — priority responses and hosted sessions — are always labeled. Participation is attributable: people and institutions take part under their real identity.',
                           ),
                         ],
                       ),

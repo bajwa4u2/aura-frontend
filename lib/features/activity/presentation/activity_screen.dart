@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/product/temporal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -1408,17 +1410,14 @@ String _truncate(String value, int max) {
 }
 
 String _timeAgoLabel(dynamic raw) {
+  // C0 Human Temporal Presentation Authority — this file previously kept
+  // its own threshold dialect (§12 finding: local reimplementation).
   final value = _stringOf(raw);
   if (value.isEmpty) return '';
   final createdAt = DateTime.tryParse(value)?.toLocal();
   if (createdAt == null) return '';
-  final now = DateTime.now();
-  final diff = now.difference(createdAt);
-  if (diff.inSeconds < 60) return 'now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-  if (diff.inHours < 24) return '${diff.inHours}h';
-  if (diff.inDays < 7) return '${diff.inDays}d';
-  if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w';
-  if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo';
-  return '${(diff.inDays / 365).floor()}y';
+  return AuraTemporal.humanize(
+    ProductTime(createdAt, TimeEvent.occurred),
+    style: TemporalStyle.compact,
+  );
 }

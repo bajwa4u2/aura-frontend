@@ -224,22 +224,17 @@ enum FeedPresenceState {
 }
 
 class FeedPresence {
-  const FeedPresence({required this.state, this.lastActiveAt});
+  // `lastActiveAt` was removed (C2 closeout): the backend availability
+  // authority deliberately never emits raw activity timestamps to third
+  // parties, the field was never populated or read, and keeping a parse
+  // slot for privacy-suppressed data invites accidental future use.
+  const FeedPresence({required this.state});
 
   final FeedPresenceState state;
-  final DateTime? lastActiveAt;
 
   factory FeedPresence.fromJson(Map<String, dynamic> m) {
-    DateTime? readDate(dynamic raw) {
-      if (raw == null) return null;
-      final s = raw.toString().trim();
-      if (s.isEmpty) return null;
-      return DateTime.tryParse(s);
-    }
-
     return FeedPresence(
       state: FeedPresenceState.fromWire(m['state']),
-      lastActiveAt: readDate(m['lastActiveAt']),
     );
   }
 }

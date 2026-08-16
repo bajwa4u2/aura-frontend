@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -465,7 +467,7 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
 // WORKS SECTION WITH SORT TOGGLE
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Member Home "Works" feed — backed by the unified
+/// Member Home discourse stream — backed by the unified
 /// `memberHomeFeedPagedProvider` (`GET /v1/feed/member`). Renders both
 /// user posts and globally-eligible institution posts with
 /// `UnifiedFeedCard`. Phase 3 restored cursor pagination — a "Load more"
@@ -491,15 +493,11 @@ class _DiscourseStream extends ConsumerWidget {
           AuraCardSkeleton(),
         ],
       ),
-      error: (e, _) => AuraErrorState(
-        title: 'Could not load works',
-        body: 'Refresh or try again in a moment.',
-        action: AuraSecondaryButton(
-          label: 'Refresh',
-          onPressed: () =>
-              ref.read(memberHomeFeedPagedProvider.notifier).refresh(),
-          icon: Icons.refresh_rounded,
-        ),
+      error: (e, _) => AuraProductState(
+        state: ProductState.retryableError,
+        headline: 'Could not load the stream',
+        onRecover: () =>
+            ref.read(memberHomeFeedPagedProvider.notifier).refresh(),
       ),
       data: (page) {
         final liveEntries = liveAsync.maybeWhen(
@@ -530,9 +528,10 @@ class _DiscourseStream extends ConsumerWidget {
                 ],
                 const SizedBox(height: AuraSpace.s14),
               ],
-              const AuraEmptyState(
-                title: 'Quiet on the public stream right now',
-                body:
+              const AuraProductState(
+                state: ProductState.empty,
+                headline: 'Quiet on the public stream right now',
+                detail:
                     'When people publish, their statements will appear here.',
                 icon: Icons.forum_outlined,
               ),

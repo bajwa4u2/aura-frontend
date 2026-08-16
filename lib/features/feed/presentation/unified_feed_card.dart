@@ -18,7 +18,8 @@ import '../../../core/ui/aura_text_block.dart';
 import '../../../core/translation/communication_translate_action.dart';
 import '../../../core/translation/communication_translation.dart'
     as comm_translation;
-import '../../../core/utils/relative_time.dart';
+import '../../../core/product/temporal.dart';
+import '../../../core/trust/trust_marks.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../../public/widgets/mention_text.dart' show ResolvedTagText;
 import '../../institutions/domain/communication_type.dart';
@@ -835,7 +836,10 @@ class _AuthorRow extends StatelessWidget {
         ),
         if (publishedAt != null)
           Text(
-            formatRelative(publishedAt!),
+            AuraTemporal.humanize(
+              ProductTime(publishedAt!, TimeEvent.posted),
+              style: TemporalStyle.compact,
+            ),
             style: AuraText.micro.copyWith(color: AuraSurface.faint),
           ),
       ],
@@ -1585,25 +1589,11 @@ class _VerifiedInstitutionLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(
-          Icons.verified_rounded,
-          size: 12,
-          color: AuraSurface.accentText,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          'Verified institution',
-          style: AuraText.micro.copyWith(
-            color: AuraSurface.accentText,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
-            fontSize: 10,
-          ),
-        ),
-      ],
+    // Canonical trust presentation — the same calm line, now carrying the
+    // subject-explicit semantics and meaning the trust layer guarantees.
+    return const InstitutionVerifiedMark(
+      compactLabel: false,
+      color: AuraSurface.accentText,
     );
   }
 }
@@ -1825,9 +1815,10 @@ class _PublicStatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
+            // Accountability state, not verification.
             isResolved
                 ? Icons.check_circle_outline_rounded
-                : Icons.verified_outlined,
+                : Icons.hourglass_top_rounded,
             size: 12,
             color: color,
           ),

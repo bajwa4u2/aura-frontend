@@ -10,7 +10,9 @@
 # burns down its own share. Per-site A/B/C/D/E classification lives in
 # docs/frontend-discovery/C1_AUTHORITY_ARCHITECTURE.md.
 
-# -- R1 -- 25 files / 85 sites
+# -- R1 -- measured 2026-08-15 after C2 §9: the institution profile gates now
+# ask the capability question (MANAGE_BRANDING) instead of isAdmin.
+# -- R1 -- 23 files / 82 sites
 R1 1 lib/app/shell/member_shell.dart
 R1 6 lib/app/shell/shell_header_tools.dart
 R1 1 lib/core/auth/admin_access_provider.dart
@@ -25,13 +27,11 @@ R1 2 lib/features/create/presentation/create_hub_screen.dart
 R1 2 lib/features/institutions/activity/institution_activity_screen.dart
 R1 9 lib/features/institutions/correspondence/institution_correspondence_screen.dart
 R1 2 lib/features/institutions/explore/institution_explore_screen.dart
-R1 4 lib/features/institutions/live_rooms/institution_live_rooms_screen.dart
+# live_rooms 4 -> 0: startLive gate converged onto C1 capability projection (C2 closeout, 2026-08-16)
 R1 1 lib/features/institutions/presentation/admin_workspace_screen.dart
 R1 3 lib/features/institutions/presentation/institution_invites_screen.dart
 R1 1 lib/features/institutions/presentation/institution_join_requests_screen.dart
 R1 1 lib/features/institutions/presentation/institution_spaces_screen.dart
-R1 1 lib/features/institutions/profile/institution_edit_profile_screen.dart
-R1 2 lib/features/institutions/profile/institution_profile_screen.dart
 R1 3 lib/features/me/presentation/me_screen.dart
 R1 1 lib/features/public/widgets/reply_unit.dart
 R1 14 lib/features/realtime/presentation/widgets/floating_call_widget.dart

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/product/temporal.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_radius.dart';
@@ -28,14 +30,13 @@ class CivicSignalCard extends StatelessWidget {
   final bool dense;
 
   String _relativeTime() {
+    // C0 Human Temporal Presentation Authority (§12 convergence).
     final at = signal.publishedAt;
     if (at == null) return '';
-    final diff = DateTime.now().difference(at);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-    if (diff.inHours < 24) return '${diff.inHours}h';
-    if (diff.inDays < 7) return '${diff.inDays}d';
-    return '${(diff.inDays / 7).floor()}w';
+    return AuraTemporal.humanize(
+      ProductTime(at, TimeEvent.published),
+      style: TemporalStyle.compact,
+    );
   }
 
   @override

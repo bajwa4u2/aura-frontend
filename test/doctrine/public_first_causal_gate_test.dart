@@ -25,6 +25,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// General / shared / authentication surfaces: these speak for Aura itself.
 const _generalSurfaces = <String>[
+  // The entry surfaces speak for Aura before anything else does. Their
+  // absence from this list is how an institution-first hero shipped on
+  // '/' — found and corrected in the C2 Public Home reconstruction.
+  'lib/features/home/presentation/public_home_screen.dart',
+  'lib/features/home/presentation/member_home_screen.dart',
   'lib/app/shell/shell_shared.dart',
   'lib/features/auth/presentation/auth_screen.dart',
   'lib/features/auth/presentation/register_screen.dart',
@@ -54,6 +59,14 @@ const _prohibited = <String, String>{
   'build credentials':
       'Implies portable/verifiable credentials. Aura issues nothing portable — '
           'ROLE_OR_CREDENTIAL is an internal governed attestation only.',
+  'verified public presence':
+      'Institution-first acquisition premise — verification sold as the '
+          'reason to arrive. Public Home shipped this hero until the C2 '
+          'reconstruction; the causal doctrine prohibits it on general '
+          'surfaces.',
+  'verified institutional communication':
+      'Verification-as-value-proposition framing on a general surface; '
+          'verification is a governed fact, not the product premise.',
 };
 
 void main() {
