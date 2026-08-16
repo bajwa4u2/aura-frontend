@@ -123,7 +123,7 @@ Registers: `C1_AUTHORITY_ARCHITECTURE.md` · `C1_G5_DISPOSITION_MATRIX.md`.
 
 **FINAL CONVERGENCE + PRE-MIGRATION CLOSEOUT — EXECUTED 2026-08-16** (`C2_PRE_MIGRATION_CLOSEOUT.md` is the handoff authority): Follow HTTP-in-widget retired (FollowsRepository now owns the consent lifecycle + canonical counts); live-rooms startLive gate converged onto C1 capability projection (R1 burn-down recorded); dead FeedPresence.lastActiveAt parse slot removed; final debt remeasured — zero unexplained C2-owned remainder. **Frontend committed in 5 bounded commits** (11e85fa, 0d0abf5, 121d029, cff6982, 7a243e1 + closeout doc); backend 9 bounded commits, Representation 1 — all local, nothing pushed.
 
-**C2 STATUS: RECONSTRUCTION LOCALLY COMPLETE.** Final closure awaits only the founder-observed data transitions: (1) backend deployment observation → (2) commercial/verification reconciliation script → (3) physical Follow migration (FollowEdge+FollowConsent) → (4) evidence-based legacy remaps → (5) founder closure. C3 not authorized.
+**C2 STATUS: DATA TRANSITIONS EXECUTED 2026-08-16** (see C2_FINAL_CLOSEOUT.md): verification reconciled (drift 0), TRUSTED+legacy VERIFIED enum values physically retired (zero-row evidence), Follow migrated to FollowEdge+FollowConsent with 8/8 equivalence checks and canonical-store cutover live (AURA_FOLLOW_STORE=canonical). Remaining: founder observes canonical-store deploy → legacy Follow table/branch deletion → **founder C2 FINAL CLOSURE declaration**. Boot incident fixed + app-boot graph spec added (79de236). C3 not authorized.
 
 ## What has NOT been touched
 
