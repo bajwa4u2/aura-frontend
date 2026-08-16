@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/product/product_language.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -62,23 +65,25 @@ class _FollowersScreenState extends ConsumerState<FollowersScreen> {
     return AuraScaffold(
       title: '@$handle followers',
       child: followersAsync.when(
-        loading: () => const Center(
-          child: AuraLoadingState(message: 'Loading followers…'),
+        // C2 — canonical Follow surfaces speak through the C0 state authority.
+        loading: () => const AuraProductState(
+          state: ProductState.loading,
+          headline: 'Loading followers…',
         ),
-        error: (_, __) => const Center(
-          child: AuraErrorState(
-            title: 'Could not load followers',
-            body: 'Check your connection and try again.',
-          ),
+        error: (_, __) => AuraProductState(
+          state: ProductState.retryableError,
+          headline: 'Could not load followers',
+          onRecover: () => ref.invalidate(followersProvider(handle)),
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const Center(
-              child: AuraEmptyState(
-                icon: Icons.people_outline,
-                title: 'No followers yet',
-                body: 'When people follow this account, they will appear here.',
-              ),
+            return const AuraProductState(
+              state: ProductState.empty,
+              subject: ProductNoun.person,
+              headline: 'No followers yet',
+              detail:
+                  'When people follow this account, they will appear here.',
+              icon: Icons.people_outline,
             );
           }
 

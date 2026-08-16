@@ -162,6 +162,111 @@ class FollowsRepository {
     final res = await _dio.delete('/follows', queryParameters: query);
     return FollowState.fromJson(res.data);
   }
+
+  // ── Person→Person consent lifecycle ────────────────────────────────────
+  //
+  // C2 closeout — the canonical Follow client boundary now carries the
+  // consent operations too, so no screen owns Follow transport directly.
+  // Semantics are the backend CanonicalFollowService's frozen model:
+  // request → accept/decline, REJECTED persists (cooldown anchor),
+  // BLOCK > CONSENT > FOLLOW, rejection stays silent.
+
+  static List<PersonFollowRequest> _parseRequestList(dynamic raw) {
+    Map<String, dynamic> asMap(dynamic v) {
+      if (v is Map<String, dynamic>) return v;
+      if (v is Map) return Map<String, dynamic>.from(v);
+      return <String, dynamic>{};
+    }
+
+    final root = asMap(raw);
+    dynamic items = root['items'];
+    if (items == null && root['data'] is Map) {
+      items = asMap(root['data'])['items'];
+    }
+    if (items is! List) return const [];
+    return items
+        .whereType<Map>()
+        .map((e) => PersonFollowRequest.fromJson(Map<String, dynamic>.from(e)))
+        .where((e) => e.id.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  /// Pending requests addressed to the signed-in person.
+  Future<List<PersonFollowRequest>> incomingFollowRequests() async {
+    final res = await _dio.get('/users/me/follow/requests/inbox');
+    return _parseRequestList(res.data);
+  }
+
+  /// Pending requests the signed-in person has sent.
+  Future<List<PersonFollowRequest>> outgoingFollowRequests() async {
+    final res = await _dio.get('/users/me/follow/requests/outbox');
+    return _parseRequestList(res.data);
+  }
+
+  Future<void> acceptFollowRequest(String requestId) async {
+    await _dio.post('/users/me/follow/requests/$requestId/accept');
+  }
+
+  Future<void> declineFollowRequest(String requestId) async {
+    await _dio.post('/users/me/follow/requests/$requestId/decline');
+  }
+
+  /// Canonical person follower/following counts, as the profile authority
+  /// reports them (D4 — emitted from the canonical person-follow stores).
+  /// Never derived client-side by fetching and counting whole lists.
+  Future<({int followers, int following})> personFollowCounts(
+    String handle,
+  ) async {
+    final res = await _dio.get('/users/$handle');
+    final data = res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : const <String, dynamic>{};
+    int asInt(dynamic v) =>
+        v is num ? v.toInt() : int.tryParse((v ?? '').toString()) ?? 0;
+    return (
+      followers: asInt(data['followersCount']),
+      following: asInt(data['followingCount']),
+    );
+  }
+}
+
+/// A pending Person→Person follow request (consent lifecycle item).
+class PersonFollowRequest {
+  const PersonFollowRequest({
+    required this.id,
+    required this.createdAt,
+    required this.requesterId,
+    required this.handle,
+    required this.displayName,
+    required this.avatarUrl,
+  });
+
+  final String id;
+  final DateTime? createdAt;
+  final String requesterId;
+  final String handle;
+  final String displayName;
+  final String avatarUrl;
+
+  factory PersonFollowRequest.fromJson(Map<String, dynamic> json) {
+    final requesterRaw = json['requester'];
+    final requester = requesterRaw is Map<String, dynamic>
+        ? requesterRaw
+        : requesterRaw is Map
+            ? Map<String, dynamic>.from(requesterRaw)
+            : <String, dynamic>{};
+    DateTime? createdAt;
+    final createdAtRaw = (json['createdAt'] ?? '').toString().trim();
+    if (createdAtRaw.isNotEmpty) createdAt = DateTime.tryParse(createdAtRaw);
+    return PersonFollowRequest(
+      id: (json['id'] ?? '').toString().trim(),
+      createdAt: createdAt,
+      requesterId: (requester['id'] ?? '').toString().trim(),
+      handle: (requester['handle'] ?? '').toString().trim(),
+      displayName: (requester['displayName'] ?? '').toString().trim(),
+      avatarUrl: (requester['avatarUrl'] ?? '').toString().trim(),
+    );
+  }
 }
 
 final followsRepositoryProvider = Provider<FollowsRepository>(

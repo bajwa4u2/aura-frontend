@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/product/product_language.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -31,23 +34,24 @@ class FollowingScreen extends ConsumerWidget {
     return AuraScaffold(
       title: '@$handle following',
       child: followingAsync.when(
-        loading: () => const Center(
-          child: AuraLoadingState(message: 'Loading following…'),
+        // C2 — canonical Follow surfaces speak through the C0 state authority.
+        loading: () => const AuraProductState(
+          state: ProductState.loading,
+          headline: 'Loading following…',
         ),
-        error: (_, __) => const Center(
-          child: AuraErrorState(
-            title: 'Could not load following',
-            body: 'Check your connection and try again.',
-          ),
+        error: (_, __) => AuraProductState(
+          state: ProductState.retryableError,
+          headline: 'Could not load following',
+          onRecover: () => ref.invalidate(followingProvider(handle)),
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const Center(
-              child: AuraEmptyState(
-                icon: Icons.person_add_alt_1_outlined,
-                title: 'Not following anyone yet',
-                body: 'Accounts followed will appear here.',
-              ),
+            return const AuraProductState(
+              state: ProductState.empty,
+              subject: ProductNoun.person,
+              headline: 'Not following anyone yet',
+              detail: 'Accounts followed will appear here.',
+              icon: Icons.person_add_alt_1_outlined,
             );
           }
 
