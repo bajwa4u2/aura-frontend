@@ -6,14 +6,33 @@
 /// context classification. Feature code and shells consume it; nothing else
 /// may define what a primary destination is.
 ///
-/// ── FOUNDER-FROZEN PRIMARY IA (C3 destination checkpoint, 2026-08-16) ────
-/// Authenticated primaries — exactly five, frozen:
-///   HOME · MESSAGES · DISCOVER · MEETINGS · ME
-/// Public primaries: HOME · DISCOVER. About is informational depth; Sign
-/// in / Join are account actions. Admin is a separate governed shell,
-/// reached contextually from Me — never primary chrome. CREATE is a
-/// contextual consequential action, not a destination. Mobile and desktop
-/// present the SAME five destination identities.
+/// ── FOUNDER-APPROVED PRIMARY IA (founder-observed correction,
+/// 2026-08-16 — amends the original C3 destination checkpoint) ──────────
+/// Authenticated primaries — exactly four:
+///   HOME · MESSAGES · DISCOVER · CREATE
+/// The governing test: PRIMARY NAVIGATION REPRESENTS A FUNDAMENTAL,
+/// RECURRING HUMAN INTENTION (see / continue · communicate · discover ·
+/// create). Architecture proposes coherence; human use validates meaning.
+///
+/// Amendments by founder ruling after production observation:
+///  * ME removed — identity/profile/account depth, persistently served by
+///    the identity/avatar chrome; not a distinct recurring intention.
+///    `/me` and all personal depth remain as destinations.
+///  * MEETINGS removed — MEETINGS ARE AN INSTITUTIONAL DOMAIN. The
+///    institution owns the meeting lifecycle; a member's relationship is
+///    contextual (booking, invitation/attention, Me → Participations,
+///    deep links). No personal meetings landing exists or is manufactured.
+///  * CREATE restored — creation itself is a persistent primary human
+///    intention ("I want to create something"), independent of having
+///    navigated to the object's contextual home first. GLOBAL CREATE and
+///    CONTEXTUAL CREATE are complementary: one lifecycle per creation
+///    kind, multiple legitimate entry points.
+///  * No fifth destination is invented or reserved. Attention may argue
+///    for primary status at C4's own founder checkpoint, on its merits.
+///
+/// Public primaries: HOME · DISCOVER. Admin is a separate governed shell,
+/// reached contextually from the Me destination — never primary chrome.
+/// Mobile and desktop present the SAME four destination identities.
 ///
 /// DISCOVER is the canonical consolidated intention "find something or
 /// someone relevant" — People / Institutions / Spaces / search results are
@@ -28,13 +47,12 @@
 /// inference was retired with this authority's adoption.
 library;
 
-/// The five founder-frozen authenticated primary destinations.
+/// The four founder-approved authenticated primary destinations.
 enum PrimaryDestination {
   home('Home', '/home'),
   messages('Messages', '/messages'),
   discover('Discover', '/discover'),
-  meetings('Meetings', '/meetings'),
-  me('Me', '/me');
+  create('Create', '/create');
 
   const PrimaryDestination(this.label, this.route);
 
@@ -52,13 +70,12 @@ enum ShellContext { public, member, institution, admin }
 class NavigationAuthority {
   const NavigationAuthority._();
 
-  /// Founder-frozen: exactly these five, in this order.
+  /// Founder-approved: exactly these four, in this order.
   static const List<PrimaryDestination> authenticatedPrimaries = [
     PrimaryDestination.home,
     PrimaryDestination.messages,
     PrimaryDestination.discover,
-    PrimaryDestination.meetings,
-    PrimaryDestination.me,
+    PrimaryDestination.create,
   ];
 
   /// Founder-frozen public product navigation.
@@ -82,6 +99,7 @@ class NavigationAuthority {
       return PrimaryDestination.home;
     }
     if (p == '/messages' ||
+        p.startsWith('/messages/') ||
         p == '/conversations' ||
         p == '/me/correspondence' ||
         p.startsWith('/me/correspondence/')) {
@@ -94,12 +112,15 @@ class NavigationAuthority {
         p == '/spaces') {
       return PrimaryDestination.discover;
     }
-    if (p == '/meetings' || p.startsWith('/meetings/')) {
-      return PrimaryDestination.meetings;
+    // The composer is the Create intention's canonical lifecycle surface;
+    // it lights Create up regardless of which entry point reached it.
+    if (p == '/create' || p == '/compose') {
+      return PrimaryDestination.create;
     }
-    if (p == '/me' || (p.startsWith('/me/') && !p.startsWith('/me/correspondence'))) {
-      return PrimaryDestination.me;
-    }
+    // `/me` and `/meetings/…` are DEPTH, not primaries (founder-observed
+    // correction 2026-08-16): personal depth is reached through the
+    // identity/avatar chrome; meetings are an institutional domain with
+    // contextual personal relationships. Truthful no-selection.
     return null;
   }
 
@@ -126,6 +147,37 @@ class NavigationAuthority {
     }
     return isAuthed ? ShellContext.member : ShellContext.public;
   }
+
+  // ── Canonical global actions ─────────────────────────────────────
+
+  /// INSTITUTION ONBOARDING — a first-class ACQUISITION ACTION whose
+  /// visibility is LIFECYCLE-CONTEXTUAL, not a permanent primary
+  /// (founder ruling 2026-08-16): prominent while the member has no
+  /// institutional participation (desktop header action), and an
+  /// accessible secondary action afterwards (account menu — multi-
+  /// institution membership is a real supported case, so the action
+  /// never disappears entirely). It is NOT a Create domain (§42/§53). It is NOT a primary destination,
+  /// NOT a Discover tenant, and never buried behind redirects. This
+  /// address is the ONE canonical onboarding journey — every entry point
+  /// routes here; nothing may fork a second wizard.
+  static const String institutionOnboardingRoute = '/institutions/get-started';
+
+  /// NEW CONVERSATION — the one canonical conversation-creation flow of
+  /// the clean-sheet Conversation System (canon 2026-08-16): choose a
+  /// person, the conversation opens, talk immediately. Contextual entry
+  /// on Messages and global entry from Create both lead HERE — one
+  /// lifecycle, multiple legitimate entry points.
+  static const String newConversationRoute = '/messages/new';
+
+  /// Canonical Conversation address (Conversation System, 2026-08-16).
+  static String conversationRoute(String conversationId) =>
+      '/messages/c/\$conversationId';
+
+  /// INVITATION — person-owned invitation creation (into Aura, a space,
+  /// or a thread). A creation intention: lives in Create and in Me →
+  /// Connections; it is NOT global header chrome (the old header invite
+  /// icon was dead parameter surface and is retired).
+  static const String inviteHubRoute = '/invite';
 
   // ── Canonical object route builders ──────────────────────────────
 

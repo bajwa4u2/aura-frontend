@@ -2,19 +2,21 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aura/core/navigation/navigation_authority.dart';
 
-/// C3 — NAVIGATION AUTHORITY PINS.
+/// NAVIGATION AUTHORITY PINS.
 ///
-/// The five authenticated primaries are founder-frozen (destination
-/// checkpoint, 2026-08-16). Selected state is destination identity.
-/// Shell context is presentation chrome only — never acting authority.
+/// The four authenticated primaries are founder-approved (founder-observed
+/// correction, 2026-08-16, amending the original C3 five): primary
+/// navigation represents fundamental recurring human intentions. Selected
+/// state is destination identity. Shell context is presentation chrome
+/// only — never acting authority.
 void main() {
-  group('founder-frozen primary IA', () {
-    test('authenticated primaries are exactly the five, in order', () {
+  group('founder-approved primary IA', () {
+    test('authenticated primaries are exactly the four, in order', () {
       expect(
         NavigationAuthority.authenticatedPrimaries
             .map((d) => d.label)
             .toList(),
-        ['Home', 'Messages', 'Discover', 'Meetings', 'Me'],
+        ['Home', 'Messages', 'Discover', 'Create'],
       );
     });
 
@@ -30,7 +32,7 @@ void main() {
         NavigationAuthority.authenticatedPrimaries
             .map((d) => d.route)
             .toList(),
-        ['/home', '/messages', '/discover', '/meetings', '/me'],
+        ['/home', '/messages', '/discover', '/create'],
       );
     });
   });
@@ -54,9 +56,24 @@ void main() {
       }
     });
 
-    test('me depth resolves to Me but correspondence does not', () {
-      expect(NavigationAuthority.primaryOf('/me'), PrimaryDestination.me);
-      expect(NavigationAuthority.primaryOf('/me/edit'), PrimaryDestination.me);
+    test('create facets highlight Create (composer included)', () {
+      for (final p in ['/create', '/compose']) {
+        expect(NavigationAuthority.primaryOf(p), PrimaryDestination.create,
+            reason: p);
+      }
+    });
+
+    test(
+        'me and meetings are DEPTH, not primaries (founder-observed '
+        'correction) — but me correspondence stays Messages', () {
+      // Me: personal depth behind the identity/avatar chrome.
+      expect(NavigationAuthority.primaryOf('/me'), isNull);
+      expect(NavigationAuthority.primaryOf('/me/edit'), isNull);
+      // Meetings: an institutional domain; personal relationships to a
+      // meeting are contextual (booking, attention, participations).
+      expect(NavigationAuthority.primaryOf('/meetings/m1'), isNull);
+      expect(NavigationAuthority.primaryOf('/meetings/m1/room'), isNull);
+      // Correspondence remains the Messages intention.
       expect(NavigationAuthority.primaryOf('/me/correspondence/t1'),
           PrimaryDestination.messages);
     });

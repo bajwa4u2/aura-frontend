@@ -310,3 +310,76 @@ A future agent must NOT infer that Free/Pro entitlements were decided during C2.
 **GAP 1 — Settings / Personal Controls.** The roadmap charters no Settings chapter; prior "C4 Settings" references were continuity shorthand, now formally reclassified. The broader personal Settings experience is UNCHARTERED. The **Availability Off user-facing control** remains: C2 doctrine frozen, runtime semantics canonical, control required, **implementation owner UNASSIGNED pending founder roadmap placement**. Availability doctrine is not reopened by this gap.
 
 **GAP 2 — Long-Form Publishing / Articles.** Net-new first-class capability, NOT reconstruction debt. Frozen product distinction to preserve for later architecture: **Post = timely expression/discourse participation · Article = substantial authored thought/durable long-form publication · Announcement = governed institutional communication.** Full lifecycle eventually required (authoring → drafting → structuring/revision → preview → publication → reading → attribution → discussion → continuity). Person and Institution authorship both legitimate; institutional publication inherits canonical acting-identity/authority doctrine — route/context never manufactures authorship. NOT a Post extension, NOT part of C4, no chapter number assigned; awaiting deliberate founder dependency placement.
+
+
+## FOUNDER-OBSERVED NAVIGATION CORRECTION (2026-08-16, authoritative founder rulings — amends the C3 five-primary freeze)
+
+**GOVERNING TEST (frozen): PRIMARY NAVIGATION MUST REPRESENT A FUNDAMENTAL, RECURRING HUMAN INTENTION IN AURA.** Importance, route count, functionality, convenience, precedent, and symmetry do not qualify a destination; being technically an "action" does not disqualify one.
+
+**AUTHENTICATED PRIMARIES — FOUR: HOME · MESSAGES · DISCOVER · CREATE** (see/continue · communicate · discover · create). Public primaries unchanged (Home · Discover).
+
+- **ME — REMOVED from primary navigation (CLOSED).** Identity/profile/account depth, served persistently by the identity/avatar chrome (rail/drawer identity block → `/me`; header avatar account menu → Profile/Preferences/Settings/Sign out). `/me` and all personal depth (Personal Record, Participations, Connections, Devices, workspace/Admin jumps) are PRESERVED as destinations.
+- **MEETINGS — REMOVED from primary navigation (CLOSED). MEETINGS ARE AN INSTITUTIONAL DOMAIN**: the institution owns the meeting lifecycle; a member's relationship is contextual — Institution workspace → Meetings (operate) · Book (initiate) · Attention/Invitation (respond) · Me → Participations (continuity) · deep links (direct access). There is deliberately NO bare `/meetings` destination and no manufactured personal meetings landing.
+- **CREATE — RESTORED as primary.** "Create is a contextual action, not a destination" is SUPERSEDED: creation itself is a persistent primary human intention. **GLOBAL CREATE and CONTEXTUAL CREATE are complementary — one canonical lifecycle per creation kind, multiple legitimate entry points.** Create exposes human creation intentions only: current, truthful, capability-aware, acting-identity-aware (C1 inherited); never a backend-module menu, never disabled-action forests. Current composition: Write (post) · Conversation (canonical chooser) · Invitation · Institution (acquisition) · Announcement (authority-gated). Article creation NOT exposed until Long-Form Publishing exists. Institution meeting creation stays contextual-only in the workspace.
+- **NO FIFTH DESTINATION** is invented or reserved. Attention may earn primary status only at C4's own founder checkpoint, on product merits — navigation count is not a product requirement.
+- **INSTITUTION ONBOARDING = lifecycle-contextual acquisition action**, not permanent primary chrome: desktop header action only while the member has no institutional participation; accessible secondary entry afterwards (account menu + Create hub — multi-institution membership is a real supported case). One canonical journey: `/institutions/get-started` (`NavigationAuthority.institutionOnboardingRoute`).
+- **DISCOVER = extensible discovery framework; immediate domains PEOPLE · INSTITUTIONS · SPACES · ARTICLES.** People = personalized human discovery with search always available (current truthful capability is search; personalization capability recorded, not faked). Institutions = public participation discovery; onboarding/workspace affordances removed; **verification is never relevance ranking** — one activity-ordered list, truthfully labeled "recent activity", verification as per-item mark + explicit filter. Spaces = subject discovery, single-registry taxonomy (10 subjects). Articles = canonically declared, **NOT rendered in the live experience** until truthful reading capability exists (founder visibility ruling — no dead "coming soon" tenancy).
+- **Header semantic layers:** primaries (rail/bottom bar only) · identity/account (avatar) · attention (bell, until C4) · institution acquisition (lifecycle-gated) · Live (justified global) · **invite icon RETIRED** (dead parameter surface; invitation creation lives in Create + Me → Connections).
+
+**GOVERNANCE LESSON (record, not app copy): ARCHITECTURE CAN PROPOSE COHERENCE. HUMAN USE VALIDATES MEANING. WHEN THEY CONFLICT, INVESTIGATE THE CONFLICT RATHER THAN PROTECTING THE ARCHITECTURE.** C3's five-primary model was locally certified and internally coherent — and still product-wrong in observed use (dead `/meetings` primary; orphaned Create hub; Me duplication). A locally certified architecture can be product-wrong; founder observation is evidence with amending authority.
+
+**CERTIFICATION CORRECTION:** the C3 route-integrity gate tested registry self-consistency, not registry → router executability, which let a declared primary ship with no executable route. The gate now proves every authority-declared address (primaries, object builders, global actions) against the declared route table.
+
+
+## AURA CONVERSATION SYSTEM + AURA INVITATION SYSTEM (founder-frozen 2026-08-16)
+
+Canonical doctrine lives in ONE place per system (no duplication here):
+**aura-backend/docs/2026-08-16-aura-conversation-system-canon.md** and
+**aura-backend/docs/2026-08-16-aura-invitation-system-canon.md** — the
+constitutional definitions (Conversation/Space/Publication/Attention/Delivery/
+Identity/Authority never collapse), ten-year doctrine (capabilities attach,
+never fork), origin ≠ governance (v1 = leave-only), direct-pair identity
+survives naming, party legitimacy (AI = capability, not Party), institution
+desk defaults, block/consent truth, address-verified invitation binding,
+invitation/destination/attention/delivery boundaries, and the legacy
+disposition rules. The clean-sheet implementation replaces the DirectThread
+and Space-as-conversation stacks; MESSAGES is one conversation list; the
+external claim journey is `/i/:token`.
+
+**DISCOVER → PEOPLE (frozen doctrine):** personalized human discovery, with
+search always available, using legitimate, explainable, privacy-safe signals.
+The v1 signal weighting (`PEOPLE_DISCOVERY_WEIGHTS`) is a TUNABLE
+IMPLEMENTATION HEURISTIC, not product doctrine. "Not interested" feedback is
+a recorded future enhancement triggered by observed need — not debt.
+
+**C7 AMENDMENT — FOUNDER-APPROVED AND FROZEN (2026-08-16):**
+**C7 = INSTITUTIONAL CONVERSATION & DESK.** C7 consumes canonical
+Conversation and foundational Invitation; owns the institution-side
+Conversation/Desk experience and appropriate institutional
+participation/membership-entry reconstruction. C7 does NOT recreate
+Correspondence as a product, does NOT own Invitation, and there is ONE
+canonical Conversation system.
+
+**CREATE INTENT VOCABULARY (founder §5, frozen 2026-08-16):** MESSAGE ·
+POST · ARTICLE (when real) · contextual ANNOUNCEMENT. "Message" is the
+human intention; "Conversation" is the durable object underneath. No
+"Write" umbrella, no Invitation/Institution/Article tenants until real.
+Pinned by test/create/create_hub_domains_test.dart.
+
+**CONVERSATION COMPLETION REGISTER (frozen obligation, 2026-08-16):** the
+already-frozen capabilities — audio call · video call · screen sharing ·
+media/attachments · intentional Live · message reporting/moderation —
+remain REQUIRED contextual attachments of canonical Conversation, to be
+built against the CONVERSATION realtime surface. No fake UI ships
+meanwhile. Conversation is NOT final-certified until this register is
+resolved; C4 progression does not erase it.
+
+**INVITATION ABUSE POLICY (founder §3, 2026-08-16):** no numerical
+issuance caps/cooldowns for this release; hooks + block/authority/safety
+protections stand; numbers come from evidence later. NOT release-blocking
+debt.
+
+**C5 HARD GATE (frozen transition rule):** C5 remains CLOSED until C4 is
+implemented, locally certified, pushed as authorized, deployed, observed
+end-to-end on the LIVE site, live defects resolved, and founder declares C4
+certified/closed. C4 LOCAL CERTIFICATION ≠ C5 AUTHORIZATION.

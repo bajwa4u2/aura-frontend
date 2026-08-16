@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -11,14 +12,36 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
-/// Role/capability visibility matrix:
+/// CREATE — the fourth PRIMARY (founder-observed correction, 2026-08-16).
+///
+/// FROZEN CREATE INTENT VOCABULARY (founder §5 resolution, 2026-08-16):
+/// MESSAGE · POST · ARTICLE (when real) · contextual ANNOUNCEMENT.
+/// "Message" is the human intention; "Conversation" is the durable object
+/// opened underneath it. No "Write" umbrella (Post ≠ future Article), no
+/// Invitation, no Institution onboarding, no Article until real.
+///
+/// CREATE IS A PERSISTENT PRIMARY HUMAN INTENTION: a member may arrive in
+/// Aura with "I want to create something", before any contextual home.
+/// This hub is that intention's destination. Frozen rules:
+///  * GLOBAL CREATE and CONTEXTUAL CREATE are complementary — every card
+///    here leads into the SAME canonical lifecycle its contextual entry
+///    uses (one lifecycle, multiple legitimate entry points).
+///  * Create exposes HUMAN CREATION INTENTIONS — never backend module
+///    names, never a forest of disabled actions. Options are current,
+///    truthful, capability-aware, and acting-identity-aware (C1: the
+///    lifecycle asks AS WHOM only where a genuine choice exists — e.g.
+///    the announcement scope choice below).
+///  * Article creation is NOT exposed — Long-Form Publishing does not
+///    exist yet (founder-owned roadmap gap); no dead actions.
+///  * Institution meeting creation stays CONTEXTUAL-ONLY in the
+///    institution workspace — the institution owns the meeting
+///    lifecycle; global Create does not manufacture an institution
+///    picker for it.
+///
+/// Capability matrix:
 ///   canAnnounceAsPlatform:    appAdmin.isAdmin
 ///   canAnnounceAsInstitution: institutionAccess.state == authorizedSpeaker
 ///   canAnnounce:              either of the above
-///   canClaimAudit:            appAdmin.isAdmin
-///
-/// Base member cards (always shown): New Work, With Media, Conversation, Space
-/// Authority cards (conditional):    Announcement, Claim Audit
 class CreateHubScreen extends ConsumerWidget {
   const CreateHubScreen({super.key});
 
@@ -96,12 +119,13 @@ class CreateHubScreen extends ConsumerWidget {
               _CreateHero(),
               const SizedBox(height: AuraSpace.s28),
               _CreateSection(
-                title: 'Writing',
+                title: 'Say something',
                 items: [
                   _CreateActionData(
-                    title: 'Write',
+                    title: 'Post',
                     subtitle:
-                        'Start a post — add media, topics, and audience as you go.',
+                        'Say something on the public record — media, topics, '
+                        'and audience as you go.',
                     icon: Icons.edit_note_rounded,
                     route: '/compose',
                   ),
@@ -109,18 +133,18 @@ class CreateHubScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AuraSpace.s20),
               _CreateSection(
-                title: 'Messages',
+                title: 'Talk to someone',
                 items: [
                   _CreateActionData(
                     title: 'Message',
                     subtitle:
-                        'Start a direct conversation — add more people or a '
-                        'name to make a shared space.',
+                        'Pick a person and start talking — add people later.',
                     icon: Icons.forum_outlined,
-                    route: '/me/correspondence?start=private',
+                    route: NavigationAuthority.newConversationRoute,
                   ),
                 ],
               ),
+
               if (hasAuthoritySection) ...[
                 const SizedBox(height: AuraSpace.s20),
                 _CreateSection(
@@ -170,7 +194,7 @@ class _CreateHero extends StatelessWidget {
                 const Text('Create', style: AuraText.headline),
                 const SizedBox(height: AuraSpace.s8),
                 Text(
-                  'Start something — writing, a message, or a platform notice.',
+                  'Start something — a message, a post, or an official notice.',
                   style: AuraText.body.copyWith(
                     color: AuraSurface.muted,
                     height: 1.5,

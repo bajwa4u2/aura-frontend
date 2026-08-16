@@ -1,11 +1,17 @@
-/// Frontend registry of public discourse spaces.
+/// Registry of public discourse spaces — the SPACES discovery domain's
+/// single subject taxonomy (C3 post-closeout Discover correction,
+/// 2026-08-16).
 ///
-/// Public-UX Phase 2: this file is the temporary source of truth for
-/// the set of spaces visible to all viewers. Each entry has a stable
-/// id + slug + tag so URLs, deep links, and tagged posts are stable
-/// across releases. When a public `/spaces` discovery endpoint ships,
-/// `publicSpacesProvider` swaps to call the backend and the registry
-/// becomes a fallback.
+/// Ownership + extension path: this registry is the one source of truth
+/// for the subject taxonomy — extending Spaces means adding an entry
+/// HERE (stable id + slug + tag), never scattering subject literals
+/// across surfaces. Every space is immediately real: its stream is the
+/// tag-filtered public feed and its composer prefills the tag, so a new
+/// subject starts as a genuine (initially quiet) discourse environment,
+/// not a fabricated one. When a backend `/spaces` discovery endpoint
+/// ships, `publicSpacesProvider` swaps to call it and this registry
+/// becomes the fallback; ids/slugs/tags are frozen wire contracts so
+/// URLs, deep links, and tagged posts survive that migration.
 library;
 
 import 'package:flutter/material.dart';
@@ -61,6 +67,40 @@ const List<PubSpace> _kCuratedSpaces = [
     description: 'Discussions anchored in your region.',
     icon: Icons.place_outlined,
     tag: 'local',
+  ),
+  // Taxonomy broadened by the C3 post-closeout Discover correction
+  // (2026-08-16) — subjects, not audiences; same subject-based model.
+  PubSpace(
+    id: 'ECONOMY',
+    slug: 'economy',
+    name: 'Economy',
+    description: 'Work, business, markets, and public finance.',
+    icon: Icons.trending_up_rounded,
+    tag: 'economy',
+  ),
+  PubSpace(
+    id: 'SCIENCE',
+    slug: 'science',
+    name: 'Science',
+    description: 'Research, evidence, and open scientific discourse.',
+    icon: Icons.science_outlined,
+    tag: 'science',
+  ),
+  PubSpace(
+    id: 'CULTURE',
+    slug: 'culture',
+    name: 'Culture',
+    description: 'Arts, media, heritage, and public life.',
+    icon: Icons.palette_outlined,
+    tag: 'culture',
+  ),
+  PubSpace(
+    id: 'JUSTICE',
+    slug: 'justice',
+    name: 'Justice',
+    description: 'Law, rights, and institutional accountability.',
+    icon: Icons.gavel_rounded,
+    tag: 'justice',
   ),
 ];
 

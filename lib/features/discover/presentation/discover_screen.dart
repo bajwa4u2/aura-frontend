@@ -8,15 +8,28 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
-/// C3 — DISCOVER: the canonical consolidated intention
-/// "find something or someone relevant" (founder-frozen).
+/// DISCOVER — AURA'S EXTENSIBLE DISCOVERY FRAMEWORK (founder-frozen,
+/// C3 post-closeout correction, 2026-08-16).
 ///
-/// Search is the MECHANISM and lives here as the primary affordance;
-/// People / Institutions / Spaces remain DISTINCT objects, reachable as
-/// truthful facets. This surface consolidates the previously fragmented
-/// entry points (`/search`, the institutions directory, spaces
-/// discovery) into one destination intention — it does not merge those
-/// objects, invent ranking, or become an institution-first directory.
+/// Discover is not a page of links; it is the platform's discovery
+/// framework, with search as the always-available mechanism and a
+/// governed set of DISCOVERY DOMAINS as its structure. Immediate
+/// domains: PEOPLE · INSTITUTIONS · SPACES · ARTICLES.
+///
+/// Framework rules (frozen):
+///  * Each domain is a DISTINCT object universe — never merged, never
+///    ranked against each other.
+///  * A domain appears here only truthfully: a declared domain whose
+///    experience does not exist yet says so honestly (no dead CTA, no
+///    faking it with a different object type). Articles is currently
+///    declared-not-available (Long-Form Publishing is a founder-owned
+///    roadmap gap; Post ≠ Article ≠ Announcement is frozen).
+///  * No fabricated personalization: a domain may only claim
+///    "relevant to you" when a real signal produces that relevance.
+///  * Discover DISCOVERS. It carries no onboarding, workspace, or
+///    self-promotion affordances ("Add your institution" lives in the
+///    global chrome action, never here).
+///  * Verification is identity truth, never relevance ranking.
 class DiscoverScreen extends StatelessWidget {
   const DiscoverScreen({super.key});
 
@@ -31,7 +44,7 @@ class DiscoverScreen extends StatelessWidget {
           const Text('Discover', style: AuraText.display),
           const SizedBox(height: AuraSpace.s6),
           Text(
-            'Find people, institutions, spaces, and conversations that matter to you.',
+            'Find people, institutions, spaces, and conversations across Aura.',
             style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
           ),
           const SizedBox(height: AuraSpace.s16),
@@ -78,38 +91,78 @@ class _DiscoverSearchEntry extends StatelessWidget {
   }
 }
 
+/// The governed discovery-domain registry. Extending Discover means
+/// adding an entry here. `route: null` = CANONICALLY DECLARED, NOT YET
+/// AVAILABLE: the domain exists in the taxonomy and the registry, but it
+/// is NOT rendered in the live experience — founder visibility ruling
+/// (2026-08-16): "Do not fill the live Discover experience with a
+/// prominent dead 'Coming soon' destination merely to prove the taxonomy
+/// has four members." It becomes interactive the moment a truthful
+/// route exists.
+typedef DiscoveryDomain = ({
+  IconData icon,
+  String title,
+  String body,
+  String? route,
+  String? unavailableNote,
+});
+
+const List<DiscoveryDomain> kDiscoveryDomains = [
+  (
+    icon: Icons.groups_outlined,
+    title: 'People',
+    // Honest scope: today People discovery IS search (always
+    // available). Personalized discovery may only be added when a real
+    // relevance signal exists — never fabricated, never a leaderboard.
+    body: 'People suggested for you — search always available.',
+    route: '/discover/people',
+    unavailableNote: null,
+  ),
+  (
+    icon: Icons.account_balance_outlined,
+    title: 'Institutions',
+    body: 'Discover institutions and their public participation.',
+    route: '/institutions',
+    unavailableNote: null,
+  ),
+  (
+    icon: Icons.forum_outlined,
+    title: 'Spaces',
+    body: 'Shared subject contexts for continuing conversations.',
+    route: '/spaces',
+    unavailableNote: null,
+  ),
+  (
+    icon: Icons.article_outlined,
+    title: 'Articles',
+    // The FOURTH immediate domain, canonically declared — but Long-Form
+    // Publishing does not exist yet (founder-owned roadmap gap; Post ≠
+    // Article ≠ Announcement is frozen). route: null keeps it OUT of the
+    // live experience entirely (no dead card, no fake feed, no Posts in
+    // costume) until a truthful reading/discovery route ships.
+    body: 'Substantial authored thought — durable long-form publication.',
+    route: null,
+    unavailableNote: 'Not yet available.',
+  ),
+];
+
 class _FacetGrid extends StatelessWidget {
   const _FacetGrid();
 
   @override
   Widget build(BuildContext context) {
-    const facets = [
-      (
-        icon: Icons.groups_outlined,
-        title: 'People',
-        body: 'Find people to follow and talk with.',
-        route: '/search',
-      ),
-      (
-        icon: Icons.account_balance_outlined,
-        title: 'Institutions',
-        body: 'Organizations participating on Aura, on the record.',
-        route: '/institutions',
-      ),
-      (
-        icon: Icons.forum_outlined,
-        title: 'Spaces',
-        body: 'Shared contexts for continuing conversations.',
-        route: '/spaces',
-      ),
-    ];
     return LayoutBuilder(
       builder: (context, c) {
         final wide = c.maxWidth >= 720;
+        // Only domains with a truthful route render — declared-but-
+        // unavailable domains (Articles) stay canonical in the registry
+        // without occupying the live experience (founder ruling).
+        final live =
+            kDiscoveryDomains.where((f) => f.route != null).toList();
         final children = [
-          for (final f in facets)
+          for (final f in live)
             AuraCard(
-              onTap: () => context.push(f.route),
+              onTap: () => context.push(f.route!),
               child: Row(
                 children: [
                   Icon(f.icon, size: 28, color: AuraSurface.accentText),
@@ -137,14 +190,16 @@ class _FacetGrid extends StatelessWidget {
             ),
         ];
         if (wide) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Domains read best two-up; a single wide row compresses each
+          // card below comfortable reading width.
+          const gap = AuraSpace.s12;
+          final cardWidth = (c.maxWidth - gap) / 2;
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
             children: [
-              for (var i = 0; i < children.length; i++) ...[
-                Expanded(child: children[i]),
-                if (i != children.length - 1)
-                  const SizedBox(width: AuraSpace.s12),
-              ],
+              for (final child in children)
+                SizedBox(width: cardWidth, child: child),
             ],
           );
         }

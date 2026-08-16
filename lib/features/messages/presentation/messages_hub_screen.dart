@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -349,6 +350,7 @@ class _MessagesHeader extends StatelessWidget {
       trailing: Wrap(
         spacing: AuraSpace.s8,
         runSpacing: AuraSpace.s8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           if (unreadCount > 0)
             AuraStatusChip(
@@ -363,6 +365,17 @@ class _MessagesHeader extends StatelessWidget {
               backgroundColor: AuraSurface.coVerdant.withValues(alpha: 0.16),
               textColor: AuraSurface.coVerdant,
             ),
+          // CONTEXTUAL CREATE (founder ruling 2026-08-16): the person is
+          // already inside the communicate intention, so the creation
+          // affordance lives right here — persistently, not only in the
+          // empty state. Same canonical chooser lifecycle as global
+          // Create's Conversation card (one lifecycle, many doors).
+          AuraPrimaryButton(
+            label: 'New conversation',
+            icon: Icons.add_comment_outlined,
+            onPressed: () =>
+                context.push(NavigationAuthority.newConversationRoute),
+          ),
         ],
       ),
     );
@@ -521,7 +534,7 @@ class _AllTab extends StatelessWidget {
           label: 'Start a conversation',
           icon: Icons.chat_bubble_outline_rounded,
           onPressed: () =>
-              context.push('/me/correspondence?start=private'),
+              context.push(NavigationAuthority.newConversationRoute),
         ),
       );
     }

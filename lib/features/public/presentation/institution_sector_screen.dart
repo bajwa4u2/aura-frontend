@@ -380,32 +380,24 @@ class _SectorBody extends StatelessWidget {
           body: isFiltered
               ? 'Try a different type or clear the filter to see every '
                   '$classLabel institution on the platform.'
-              : 'When $classLabel organisations join Aura and complete '
-                  'verification, they appear here.',
+              : 'When $classLabel organisations join Aura, they appear '
+                  'here.',
           icon: Icons.account_balance_outlined,
         ),
       );
     }
+    // ONE activity-ordered list — same doctrine as the main directory:
+    // verification renders as identity truth on each card, never as a
+    // ranking cohort (C3 post-closeout Discover correction).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (page.verified.isNotEmpty) ...[
-          _RowHeader(
-            label: 'Verified institutions',
-            count: page.verified.length,
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          _SectorGrid(items: page.verified),
-        ],
-        if (page.other.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s24),
-          _RowHeader(
-            label: 'On the platform',
-            count: page.other.length,
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          _SectorGrid(items: page.other),
-        ],
+        _RowHeader(
+          label: 'On the platform',
+          count: page.all.length,
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        _SectorGrid(items: page.all),
       ],
     );
   }

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:aura/core/navigation/navigation_authority.dart';
+
 /// C3 — ROUTE INTEGRITY GATE + LITERAL RATCHET (hard build failure).
 ///
 /// The Navigation Authority owns destination grammar. Feature code still
@@ -116,6 +118,58 @@ void main() {
           'Navigation Authority builders, or fix the address:\n  ' +
           violations.join('\n  '),
     );
+  });
+
+  test(
+      'AUTHORITY-DECLARED DESTINATIONS ARE EXECUTABLE — every primary and '
+      'every route the Navigation Authority can emit exists in the router',
+      () {
+    // Founder-observed correction pin (2026-08-16). The original gate only
+    // validated inline `context.go/push('...')` literals, so a destination
+    // declared BY THE AUTHORITY ITSELF (the since-removed Meetings primary
+    // → '/meetings') shipped with no executable route behind it: nav items
+    // navigate via `context.go(item.path)` — a variable, invisible to the
+    // literal scan. The certification tested registry SELF-consistency,
+    // never registry → router EXECUTABILITY. This test closes that class
+    // for the current four primaries and every future one: any address
+    // the authority declares or builds must resolve against the declared
+    // route table, or the build fails.
+    final authorityAddresses = <String>[
+      // Every primary, authenticated and public.
+      for (final d in NavigationAuthority.authenticatedPrimaries) d.route,
+      for (final d in NavigationAuthority.publicPrimaries) d.route,
+      // The canonical global actions.
+      NavigationAuthority.institutionOnboardingRoute,
+      NavigationAuthority.newConversationRoute,
+      NavigationAuthority.inviteHubRoute,
+      NavigationAuthority.conversationRoute('*'),
+      // Every object route builder, with representative arguments
+      // (wildcarded like feature literals so parameters match).
+      NavigationAuthority.personRoute('*'),
+      NavigationAuthority.institutionRoute('*'),
+      NavigationAuthority.threadRoute('*'),
+      NavigationAuthority.directThreadRoute('*'),
+      NavigationAuthority.postRoute('*'),
+    ];
+    final unbacked = <String>[
+      for (final a in authorityAddresses)
+        if (!resolves(a)) a,
+    ];
+    expect(
+      unbacked,
+      isEmpty,
+      reason: '[C3 PRIMARY EXECUTABILITY] The Navigation Authority declares '
+          'destinations the router does not implement — this is exactly the '
+          'defect that shipped "/meetings → Route not found" to production. '
+          'Every declared destination must have an executable route:\n  ' +
+          unbacked.join('\n  '),
+    );
+    // Meetings is an institutional domain (founder ruling 2026-08-16):
+    // there must be NO bare personal `/meetings` destination — the old
+    // primary is gone and no landing page may be manufactured for it.
+    expect(declared, isNot(contains('/meetings')),
+        reason: 'A bare /meetings destination re-appeared — meetings are '
+            'institution-owned; personal relationships are contextual.');
   });
 
   test('route-literal ratchet — no new scattered navigation grammar', () {

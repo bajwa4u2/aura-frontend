@@ -134,3 +134,45 @@ Registers: `C1_AUTHORITY_ARCHITECTURE.md` · `C1_G5_DISPOSITION_MATRIX.md`.
 ## What has NOT been touched
 
 No routes · no screens redesigned · no layout or visual treatment changed · Meetings untouched · no backend · no Representation. **Nothing committed.**
+
+
+---
+
+**C3: FINAL CLOSURE DECLARED BY FOUNDER; pushed + deployed (70ec625..4aa3035).** The stale "not pushed / nothing committed" lines above predate that push and are superseded by this entry.
+
+**FOUNDER-OBSERVED NAVIGATION CORRECTION EXECUTED 2026-08-16** (authoritative rulings — see DECISIONS.md "FOUNDER-OBSERVED NAVIGATION CORRECTION"): authenticated primaries amended to **HOME · MESSAGES · DISCOVER · CREATE** (Me removed → identity/avatar chrome; Meetings removed → institutional domain, no bare /meetings destination; Create restored as primary human intention with global+contextual complementarity). Discover corrected: four-domain framework (Articles canonically declared, not rendered until truthful capability), institutions directory de-contaminated + verification-as-ranking retired end-to-end (backend single activity-ordered list with keyset cursor + transitional cohort arrays for released clients), Spaces taxonomy broadened to 10 in the single registry. Messages gained the persistent contextual "New conversation" entry (canonical chooser lifecycle). Institution onboarding = lifecycle-gated acquisition action (desktop header while no affiliation; account menu + Create hub afterwards). Header invite icon retired (dead parameter surface). Route-integrity gate strengthened: authority-declared addresses proven executable against the router table (the /meetings class of defect cannot recur). C4 (ATTENTION) forensic evidence base complete; C4 implementation NOT started, held per founder sequencing.
+
+
+**AURA CONVERSATION + INVITATION SYSTEMS BUILT (2026-08-16, local, uncommitted;
+awaiting §62 checkpoint ruling):** canon frozen (see DECISIONS pointer); backend
+foundation complete (AuraInvitation + Conversation* schema, additive migration
+20260825…, InvitationAuthority + ConversationAuthority + adapter registry,
+People Discovery /v1/discover/people; backend 2307/2307 + 32 new-system tests).
+Frontend: new lib/features/conversation/ module (MessagesScreen at /messages,
+ConversationScreen /messages/c/:id, picker /messages/new, AddPeople→Invitation,
+/i/:token claim landing) + Discover→People personalized surface
+(/discover/people); Create hub per §53 (Invitation/Institution cards removed);
+frontend 557/557, analyzer clean, all gates green incl. C0 product-state
+ratchet (new surfaces consume AuraProductState; ProductNoun.conversation
+added). Production measured (read-only): 5 DirectThreads/9 msgs, 10 PRIVATE
+personal spaces/67 msgs, 0 grown-past-pair, 2 named personal spaces.
+Idempotent migration script scripts/migrate-conversations.js (+ dry-run
+measurement mode) and scripts/seed-public-spaces.js (4 broadened subjects →
+real PublicSpace rows) ready for authorized deploy. Legacy conversation
+surfaces NOT yet retired (Phase 5 follows verified production migration);
+legacy hub parked at /messages/legacy-hub. C4 held; C5 hard-gated.
+
+**§62 FOUNDER RESOLUTION APPLIED (2026-08-16):** C7 amendment FROZEN
+(Institutional Conversation & Desk); both named personal spaces inspected
+individually ("family" CIRCLE 2 members/3 msgs; "Aura Internal" WORKROOM 3
+members/1 msg — single-thread each) → MIGRATE with human-chosen names as
+Conversation presentation (migration script extended + dry-run verified);
+Create vocabulary corrected to frozen intent (Message · Post · contextual
+Announcement; pinned); Conversation completion register recorded (realtime/
+media/report attach before Conversation final certification); abuse policy =
+hooks only per founder; Phase 5 retirement NOT authorized (gate: additive
+deploy → migration → founder live observation → journey certification →
+explicit authorization). Release authorized: commit + push both repos;
+founder observes deployment; migration + PublicSpace seed run through the
+authorized deployment path. C4 next after founder live certification; C5
+hard-gated on C4 live closure.

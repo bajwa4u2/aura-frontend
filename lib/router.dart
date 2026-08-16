@@ -94,6 +94,11 @@ import 'features/direct_threads/presentation/inbox_screen.dart';
 import 'core/navigation/navigation_authority.dart';
 import 'features/discover/presentation/discover_screen.dart';
 import 'features/messages/presentation/messages_hub_screen.dart';
+import 'features/conversation/presentation/messages_screen.dart';
+import 'features/conversation/presentation/conversation_screen.dart';
+import 'features/conversation/presentation/new_conversation_picker.dart';
+import 'features/conversation/presentation/claim_invitation_screen.dart';
+import 'features/discover/presentation/people_discovery_screen.dart';
 import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/notifications/presentation/notifications_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
@@ -1069,11 +1074,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
 
           // ── Meetings ─────────────────────────────────────────────────
-          // Institution Context Doctrine: meetings live in institution
-          // workspaces — there is no personal meetings home or personal
-          // creation route. IMPORTANT: static paths (/meetings/join/:code)
-          // must appear BEFORE the dynamic /meetings/:id route so
-          // GoRouter's first-match-wins order resolves them correctly.
+          // MEETINGS ARE AN INSTITUTIONAL DOMAIN (founder ruling,
+          // 2026-08-16): the institution owns the meeting lifecycle; a
+          // member's relationship is contextual — booking, invitation /
+          // attention, Me → Participations, and direct deep links below.
+          // There is deliberately NO bare `/meetings` destination and no
+          // personal meetings home; Meetings is not a primary. IMPORTANT:
+          // static paths (/meetings/join/:code) must appear BEFORE the
+          // dynamic /meetings/:id route so GoRouter's first-match-wins
+          // order resolves them correctly.
           GoRoute(
             path: '/institution/:institutionId/meetings',
             builder: (context, state) => MeetingsHomeScreen(
@@ -1330,8 +1339,41 @@ final routerProvider = Provider<GoRouter>((ref) {
           // conversations/spaces/invites). The new actor-aware direct
           // inbox is mounted as a sub-route at /messages/direct so it's
           // an addition, not a replacement.
+          // ── AURA CONVERSATION SYSTEM (canon 2026-08-16) ─────────────
+          // MESSAGES = where my Conversations live. One list, one screen,
+          // one composer, one creation flow. The legacy hub and its
+          // routes retire in the transition phase after history
+          // migration; until then their addresses remain reachable.
           GoRoute(
             path: kMessagesRoute,
+            builder: (_, __) => const MessagesScreen(),
+          ),
+          GoRoute(
+            path: '/messages/new',
+            builder: (_, __) => const NewConversationPicker(),
+          ),
+          GoRoute(
+            path: '/messages/c/:conversationId',
+            builder: (context, state) => ConversationScreen(
+              conversationId: state.pathParameters['conversationId'] ?? '',
+            ),
+          ),
+          // Discover → People: personalized human discovery (frozen).
+          GoRoute(
+            path: '/discover/people',
+            builder: (_, __) => const PeopleDiscoveryScreen(),
+          ),
+          // External invitation claim landing — PUBLIC by nature (the
+          // recipient may not have an account). Single-segment /i/:token;
+          // the /i/:slug/meet/... booking namespace is 3+ segments.
+          GoRoute(
+            path: '/i/:token',
+            builder: (context, state) => ClaimInvitationScreen(
+              token: state.pathParameters['token'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/messages/legacy-hub',
             builder: (_, __) => const MessagesHubScreen(),
           ),
           GoRoute(

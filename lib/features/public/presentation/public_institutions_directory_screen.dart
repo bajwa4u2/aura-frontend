@@ -19,24 +19,23 @@ import '../../../features/institution_ontology/widgets/sector_grid.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../data/public_institutions_repository.dart';
 
-/// Public institution directory.
+/// Public institution directory — the INSTITUTIONS discovery domain.
 ///
 /// This is the single `/institutions` route. It renders THE SAME public
-/// directory whether the visitor is signed in or not — the brief is
-/// explicit that institutions must not feel hidden behind auth. Auth
-/// affordances are added inline:
-///   * Authed visitor with institution access → "Open your workspace"
-///     pill at the top so they can re-enter the operator surface.
-///   * Authed visitor without institution access → "Set up your
-///     institution" pill linking to the existing /institutions/get-started
-///     wizard.
-///   * Unauthed visitor → "Join Aura" pill linking to /register.
+/// directory whether the visitor is signed in or not — institutions
+/// must not feel hidden behind auth.
 ///
-/// The directory itself is sectioned by verification: verified
-/// institutions are pinned at the top with a clear visual separator,
-/// the unverified cohort follows. Within each cohort, items are sorted
-/// by most-recent activity (institution.updatedAt) — newer activity
-/// surfaces first without needing a trending algorithm.
+/// Frozen by the C3 post-closeout Discover correction (2026-08-16):
+///  * Discover DISCOVERS. Onboarding ("Add your institution") and
+///    workspace re-entry ("Your workspace") affordances were REMOVED
+///    from this surface — institution onboarding is a first-class
+///    GLOBAL chrome action (see shell_header_tools.dart), never a
+///    discovery tenant. Unauthed visitors keep the plain Join/Sign-in
+///    affordances (session entry, not onboarding).
+///  * VERIFICATION IS IDENTITY TRUTH, NEVER RELEVANCE RANKING (C2).
+///    The directory is ONE list ordered by recent public activity;
+///    verification stays visible on each card and as the explicit
+///    "Verified only" filter — it no longer pins a cohort to the top.
 class PublicInstitutionsDirectoryScreen extends ConsumerStatefulWidget {
   const PublicInstitutionsDirectoryScreen({super.key});
 
@@ -233,56 +232,44 @@ class _Header extends ConsumerWidget {
         const Text('Institutions', style: AuraText.headline),
         const SizedBox(height: AuraSpace.s6),
         Text(
-          'Add your institution to Aura: a verified public presence under '
-          'your official identity, where what you say and commit to stays '
-          'on the public record. Verified organizations are listed first.',
+          'Institutions participating publicly on Aura, under their '
+          'official identity — what they say and commit to stays on the '
+          'public record.',
           style: AuraText.body.copyWith(
             color: AuraSurface.muted,
             height: 1.55,
           ),
         ),
-        const SizedBox(height: AuraSpace.s14),
-        _AuthAffordance(isAuthed: isAuthed),
+        if (!isAuthed) ...[
+          const SizedBox(height: AuraSpace.s14),
+          const _GuestSessionAffordance(),
+        ],
       ],
     );
   }
 }
 
-class _AuthAffordance extends ConsumerWidget {
-  const _AuthAffordance({required this.isAuthed});
-  final bool isAuthed;
+/// Session-entry affordances for signed-out visitors only. Onboarding
+/// and workspace affordances are deliberately ABSENT — Discover
+/// discovers; "Add your institution" is the global chrome action.
+class _GuestSessionAffordance extends StatelessWidget {
+  const _GuestSessionAffordance();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (!isAuthed) {
-      return Wrap(
-        spacing: AuraSpace.s8,
-        runSpacing: AuraSpace.s8,
-        children: [
-          AuraSecondaryButton(
-            label: 'Add your institution',
-            onPressed: () => context.go('/institutions/get-started'),
-          ),
-          AuraSecondaryButton(
-            label: 'Join Aura',
-            onPressed: () => context.go('/register'),
-          ),
-          AuraSecondaryButton(
-            label: 'Sign in',
-            onPressed: () => context.go('/login'),
-          ),
-        ],
-      );
-    }
-    // Authed: link to the workspace entry. The /institution/dashboard
-    // route is itself access-aware — it routes the user to setup if
-    // they don't yet have institution access, so we don't need to
-    // probe access state from here (probing would slow down the public
-    // directory load for every authed visitor for no UX benefit).
-    return AuraSecondaryButton(
-      label: 'Your workspace',
-      icon: Icons.arrow_outward_rounded,
-      onPressed: () => context.go('/institution/dashboard'),
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: [
+        AuraSecondaryButton(
+          label: 'Join Aura',
+          onPressed: () => context.go('/register'),
+        ),
+        AuraSecondaryButton(
+          label: 'Sign in',
+          onPressed: () => context.go('/login'),
+        ),
+      ],
     );
   }
 }
@@ -396,72 +383,41 @@ class _ResultsBody extends StatelessWidget {
               ? 'No institutions match this classification yet'
               : (hasQuery
                   ? 'No institutions match those filters'
-                  : 'Verified institutions arrive here as they onboard'),
+                  : 'Institutions arrive here as they join Aura'),
           body: ontologyFilterActive
               ? 'Try a different class or clear the filter to browse '
                   'every institution on the platform.'
               : (hasQuery
                   ? 'Try removing a filter or widening your search.'
-                  : 'When organizations join Aura and complete '
-                      'verification, their public profile appears on '
-                      'this directory. Until then, you can explore '
-                      'individual institutions through links shared in '
-                      'posts and announcements.'),
+                  : 'When organizations join Aura, their public profile '
+                      'appears on this directory. Until then, you can '
+                      'explore individual institutions through links '
+                      'shared in posts and announcements.'),
           icon: Icons.account_balance_outlined,
         ),
       );
     }
 
+    // ONE list, ordered by recent public activity. Verification renders
+    // as identity truth on each card (badge) — it is not a ranking
+    // cohort and gets no pinned section (C2: verification ≠ relevance).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (page.verified.isNotEmpty) ...[
-          _SectionHeading(
-            label: 'Verified institutions',
-            count: page.verified.length,
-            tone: _SectionTone.verified,
-            blurb: 'Organizations whose identity Aura has confirmed.',
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          _InstitutionGrid(items: page.verified),
-        ],
-        if (page.other.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s24),
-          _SectionHeading(
-            label: 'On the platform',
-            count: page.other.length,
-            tone: _SectionTone.other,
-            blurb:
-                'Organizations active on Aura. Verification confirms the '
-                'identity behind the name; it is in progress for these.',
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          _InstitutionGrid(items: page.other),
-        ],
+        _DirectoryHeading(count: page.all.length),
+        const SizedBox(height: AuraSpace.s10),
+        _InstitutionGrid(items: page.all),
       ],
     );
   }
 }
 
-enum _SectionTone { verified, other }
-
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({
-    required this.label,
-    required this.count,
-    required this.tone,
-    required this.blurb,
-  });
-  final String label;
+class _DirectoryHeading extends StatelessWidget {
+  const _DirectoryHeading({required this.count});
   final int count;
-  final _SectionTone tone;
-  final String blurb;
 
   @override
   Widget build(BuildContext context) {
-    final accent = tone == _SectionTone.verified
-        ? Theme.of(context).colorScheme.primary
-        : AuraSurface.muted;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -471,12 +427,12 @@ class _SectionHeading extends StatelessWidget {
               width: 6,
               height: 18,
               decoration: BoxDecoration(
-                color: accent,
+                color: AuraSurface.muted,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(width: AuraSpace.s8),
-            Text(label, style: AuraText.title),
+            const Text('On the platform', style: AuraText.title),
             const SizedBox(width: AuraSpace.s8),
             Container(
               padding: const EdgeInsets.symmetric(
@@ -504,7 +460,8 @@ class _SectionHeading extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 14),
           child: Text(
-            blurb,
+            'Ordered by recent activity. The verified mark confirms the '
+            'identity behind the name.',
             style: AuraText.small.copyWith(
               color: AuraSurface.muted,
               height: 1.4,

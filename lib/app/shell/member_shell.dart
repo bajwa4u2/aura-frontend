@@ -69,11 +69,15 @@ class MemberShell extends StatelessWidget {
 
   final Widget child;
 
-  // C3 — FOUNDER-FROZEN authenticated primaries (destination checkpoint,
-  // 2026-08-16): Home · Messages · Discover · Meetings · Me. Exactly five,
-  // identical identities on mobile and desktop. CREATE is a contextual
-  // action, not a destination; Institutions directory is a Discover
-  // facet; Support lives under Me depth.
+  // FOUNDER-APPROVED authenticated primaries (founder-observed correction,
+  // 2026-08-16, amending the original C3 five): Home · Messages · Discover
+  // · Create — the four recurring human intentions (see/continue ·
+  // communicate · discover · create), identical on mobile and desktop.
+  // ME was removed (personal depth lives behind the identity/avatar
+  // chrome — /me is unchanged as a destination). MEETINGS was removed
+  // (an institutional domain; personal relationships to meetings are
+  // contextual). No fifth slot exists or is reserved — Attention argues
+  // its own case at C4's founder checkpoint.
   static const List<_NavItem> _items = [
     _NavItem(
       label: 'Home',
@@ -94,16 +98,10 @@ class MemberShell extends StatelessWidget {
       path: '/discover',
     ),
     _NavItem(
-      label: 'Meetings',
-      icon: Icons.event_outlined,
-      selectedIcon: Icons.event_rounded,
-      path: '/meetings',
-    ),
-    _NavItem(
-      label: 'Me',
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
-      path: '/me',
+      label: 'Create',
+      icon: Icons.add_circle_outline_rounded,
+      selectedIcon: Icons.add_circle_rounded,
+      path: '/create',
     ),
   ];
 

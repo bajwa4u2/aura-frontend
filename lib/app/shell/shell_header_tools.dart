@@ -7,7 +7,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/admin_access_provider.dart';
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/session_providers.dart';
+import '../../core/institutions/institution_access_provider.dart';
 import '../../core/media/aura_attachment_image.dart';
+import '../../core/navigation/navigation_authority.dart';
 import '../../core/net/dio_provider.dart';
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
@@ -37,7 +39,6 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
     required this.isDesktop,
     this.searchPath,
     this.activityPath,
-    this.invitePath,
     this.showLive = true,
   });
 
@@ -53,8 +54,10 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
   /// When null the activity (notifications) bell is hidden.
   final String? activityPath;
 
-  /// When null the invite icon is hidden.
-  final String? invitePath;
+  // The former `invitePath` invite icon was retired (founder header
+  // cleanup, 2026-08-16): no shell ever passed it, and invitation
+  // creation is a CREATION intention, not a global utility — it lives in
+  // the Create hub and Me → Connections.
 
   /// When false the Live pill is hidden.
   final bool showLive;
@@ -82,6 +85,12 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         // tool, not an act of creation. Surfaced here so admins can reach it
         // from any surface; gated on the display-only admin signal.
         context.go('/ai/claim-audit');
+        return;
+      case 'add_institution':
+        // GLOBAL ACTION — institution onboarding (C3 post-closeout
+        // correction): the ONE canonical journey. Menu entry renders
+        // below desktop widths; desktop shows the labeled header pill.
+        context.push(NavigationAuthority.institutionOnboardingRoute);
         return;
       case 'logout':
         await _logout();
@@ -125,6 +134,9 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
     // Display-only admin signal (no probe) — gates the admin-only Claim audit
     // entry in the account menu.
     final isAdmin = ref.watch(appAdminCachedDisplayProvider);
+    // Lifecycle signal for the institution-acquisition action: does the
+    // member already participate in any institution?
+    final hasInstitution = ref.watch(myAffiliationsProvider).isNotEmpty;
     const gap = SizedBox(width: AuraSpace.s6);
 
     final tools = <Widget>[
@@ -145,19 +157,25 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         gap,
         const _HeaderLiveBtn(),
       ],
-      if (widget.invitePath != null) ...[
+      // INSTITUTION ACQUISITION — lifecycle-contextual visibility
+      // (founder ruling 2026-08-16): the labeled header action renders at
+      // desktop widths only while the member has NO institutional
+      // participation (that is when establishing an institution is a
+      // major available action). Once the member participates in an
+      // institution, the action stops shouting and remains an accessible
+      // secondary entry — in the account menu (every width) and on the
+      // Create hub — because multi-institution membership is a real
+      // supported case (affiliations model + workspace switcher).
+      if (widget.isDesktop && !hasInstitution) ...[
         gap,
-        _HeaderIconBtn(
-          icon: Icons.outbound_outlined,
-          tooltip: 'Invite',
-          onTap: () => context.push(widget.invitePath!),
-        ),
+        const _HeaderAddInstitutionBtn(),
       ],
       gap,
       _HeaderAccountBtn(
         busy: _busyLogout,
         me: me,
         isAdmin: isAdmin,
+        showAddInstitution: !widget.isDesktop || hasInstitution,
         onSelected: (v) => unawaited(_handleAccountAction(v)),
       ),
     ];
@@ -339,6 +357,57 @@ class _LiveSessionMenuTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ADD-INSTITUTION BUTTON — the institution-onboarding GLOBAL ACTION
+// (desktop widths; folds into the account menu below them).
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HeaderAddInstitutionBtn extends StatelessWidget {
+  const _HeaderAddInstitutionBtn();
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Bring your organization onto Aura',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () =>
+              context.push(NavigationAuthority.institutionOnboardingRoute),
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          hoverColor: const Color(0x1AFFFFFF),
+          focusColor: const Color(0x22FFFFFF),
+          splashColor: const Color(0x14FFFFFF),
+          child: Container(
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12),
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add_business_outlined,
+                    size: 16, color: AuraSurface.muted),
+                const SizedBox(width: AuraSpace.s6),
+                Text(
+                  'Add your institution',
+                  style: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AuraSurface.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // HEADER BUTTON ATOMS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -469,12 +538,19 @@ class _HeaderAccountBtn extends StatelessWidget {
     required this.busy,
     required this.me,
     required this.isAdmin,
+    required this.showAddInstitution,
     required this.onSelected,
   });
 
   final bool busy;
   final Map<String, dynamic> me;
   final bool isAdmin;
+
+  /// True whenever the header pill is not showing (below desktop widths,
+  /// or the member already participates in an institution) — the
+  /// acquisition action then lives here as the accessible secondary
+  /// entry (multi-institution membership is a supported case).
+  final bool showAddInstitution;
   final ValueChanged<String> onSelected;
 
   @override
@@ -493,6 +569,12 @@ class _HeaderAccountBtn extends StatelessWidget {
           _menuItem('profile', Icons.person_outline_rounded, 'Profile'),
           _menuItem('preferences', Icons.tune_outlined, 'Preferences'),
           _menuItem('settings', Icons.shield_outlined, 'Settings'),
+          if (showAddInstitution)
+            _menuItem(
+              'add_institution',
+              Icons.add_business_outlined,
+              'Add your institution',
+            ),
           if (isAdmin)
             _menuItem('claim_audit', Icons.fact_check_outlined, 'Claim audit'),
           const PopupMenuDivider(),

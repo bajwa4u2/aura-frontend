@@ -123,7 +123,6 @@ class GlobalPlatformShell extends StatelessWidget {
     this.showLive = true,
     this.searchPath = '/search',
     this.activityPath = '/notifications',
-    this.invitePath,
   });
 
   /// The routed body + per-shell context. This widget composes the
@@ -147,9 +146,6 @@ class GlobalPlatformShell extends StatelessWidget {
 
   /// Path the notifications bell pushes to. Null suppresses the bell.
   final String? activityPath;
-
-  /// Optional invite shortcut path. Most shells omit this.
-  final String? invitePath;
 
   /// Logical height of the platform bar. Kept stable across breakpoints
   /// so the user perceives a continuous top edge while navigating.
@@ -178,7 +174,6 @@ class GlobalPlatformShell extends StatelessWidget {
               showLive: showLive,
               searchPath: searchPath,
               activityPath: activityPath,
-              invitePath: invitePath,
             ),
             if (contextBar != null) contextBar!,
             Expanded(child: child),
@@ -196,7 +191,6 @@ class _PlatformBar extends StatelessWidget {
     required this.showLive,
     required this.searchPath,
     required this.activityPath,
-    required this.invitePath,
   });
 
   final bool isDesktop;
@@ -204,7 +198,6 @@ class _PlatformBar extends StatelessWidget {
   final bool showLive;
   final String? searchPath;
   final String? activityPath;
-  final String? invitePath;
 
   @override
   Widget build(BuildContext context) {
@@ -252,8 +245,7 @@ class _PlatformBar extends StatelessWidget {
                   showLive: showLive,
                   searchPath: searchPath,
                   activityPath: activityPath,
-                  invitePath: invitePath,
-                ),
+                    ),
               ],
             ),
           ),

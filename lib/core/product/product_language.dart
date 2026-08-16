@@ -64,6 +64,11 @@ class ProductNoun {
   static const room = ProductNoun._('room', 'Room', 'Rooms');
   static const live = ProductNoun._('live', 'Live', 'Live');
   static const message = ProductNoun._('message', 'Message', 'Messages');
+
+  /// AURA CONVERSATION SYSTEM (canon 2026-08-16): the dominant private
+  /// communication domain noun.
+  static const conversation =
+      ProductNoun._('conversation', 'Conversation', 'Conversations');
   /// **ONE canonical product meaning** (founder decision, 2026-08-15): a
   /// distinct governed **formal/deliberate communication form**. This is the
   /// FD-10 meaning and it is the only one.
@@ -88,6 +93,7 @@ class ProductNoun {
       ProductNoun._('announcement', 'Announcement', 'Announcements');
 
   static const all = <ProductNoun>[
+    conversation,
     person, institution, member, participant, thread, space, meeting,
     room, live, message, correspondence, post, announcement,
   ];

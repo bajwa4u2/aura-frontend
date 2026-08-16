@@ -106,17 +106,29 @@ class PublicInstitutionSummary {
 
 class PublicInstitutionsPage {
   const PublicInstitutionsPage({
+    required this.all,
     required this.verified,
     required this.other,
     required this.nextCursor,
   });
 
+  /// The canonical directory order: ONE activity-sorted list in which
+  /// verification is per-item identity truth, never a ranking cohort
+  /// (C3 post-closeout Discover correction, 2026-08-16). Parsed from
+  /// the wire's `institutions`; when talking to an older backend that
+  /// only ships cohorts, falls back to their concatenation.
+  final List<PublicInstitutionSummary> all;
+
+  /// TRANSITIONAL cohort views of the same page (reason: released
+  /// mobile clients still render sectioned cohorts; destination: `all`;
+  /// retirement: when the backend stops shipping cohort arrays after
+  /// store clients update). New code must not section by these.
   final List<PublicInstitutionSummary> verified;
   final List<PublicInstitutionSummary> other;
   final String? nextCursor;
 
-  bool get isEmpty => verified.isEmpty && other.isEmpty;
-  int get total => verified.length + other.length;
+  bool get isEmpty => all.isEmpty;
+  int get total => all.length;
 }
 
 class PublicUnit {
@@ -256,7 +268,14 @@ class PublicInstitutionsRepository {
         .whereType<Map<String, dynamic>>()
         .map(PublicInstitutionSummary.fromJson)
         .toList();
+    // Canonical unified order from the backend; older backends only
+    // ship cohorts, so degrade to their concatenation.
+    final all = (body['institutions'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(PublicInstitutionSummary.fromJson)
+        .toList();
     return PublicInstitutionsPage(
+      all: all.isNotEmpty ? all : [...verified, ...other],
       verified: verified,
       other: other,
       nextCursor: _ns(body['nextCursor']),

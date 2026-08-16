@@ -74,7 +74,10 @@
 2 lib/features/meetings/presentation/meetings_home_screen.dart
 3 lib/features/meetings/presentation/pre_join_screen.dart
 1 lib/features/meetings/presentation/public_booking_screen.dart
-7 lib/features/messages/presentation/messages_hub_screen.dart
+# 2026-08-16 founder-observed navigation correction: 7 -> 6 (empty-state
+# start-conversation entry now routes via NavigationAuthority.newConversationRoute
+# — the one canonical conversation-creation lifecycle).
+6 lib/features/messages/presentation/messages_hub_screen.dart
 3 lib/features/posts/presentation/compose_screen.dart
 5 lib/features/posts/presentation/post_detail_screen.dart
 3 lib/features/posts/presentation/widgets/post_card.dart
@@ -84,7 +87,10 @@
 1 lib/features/profile/presentation/following_screen.dart
 2 lib/features/public/presentation/institution_sector_screen.dart
 2 lib/features/public/presentation/public_institution_units_screen.dart
-5 lib/features/public/presentation/public_institutions_directory_screen.dart
+# 2026-08-16 C3 post-closeout Discover correction: 5 -> 3 (removed the
+# onboarding + workspace affordances — Discover discovers; onboarding is
+# the global chrome action via NavigationAuthority.institutionOnboardingRoute).
+3 lib/features/public/presentation/public_institutions_directory_screen.dart
 3 lib/features/public/presentation/public_unit_detail_screen.dart
 2 lib/features/public/presentation/space_detail_screen.dart
 1 lib/features/public/presentation/spaces_discovery_screen.dart
@@ -108,3 +114,8 @@
 2 lib/screens/supporters_hub_screen.dart
 2 lib/screens/terms_screen.dart
 1 lib/screens/white_paper_screen.dart
+# 2026-08-16 Conversation System + People Discovery (clean-sheet surfaces):
+# session-entry + object links pending dedicated authority builders; owners:
+# conversation module / discover module.
+3 lib/features/conversation/presentation/claim_invitation_screen.dart
+2 lib/features/discover/presentation/people_discovery_screen.dart
