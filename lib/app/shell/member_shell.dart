@@ -1587,7 +1587,7 @@ List<_InstEntry> _buildInstEntries(
       icon: Icons.open_in_new_rounded,
       selectedIcon: Icons.open_in_new_rounded,
       pathBuilder: (_) => (slug.isNotEmpty && id.isNotEmpty)
-          ? '/institution/$id/institutions/$slug'
+          ? '/institutions/$slug'
           : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/institutions/'),

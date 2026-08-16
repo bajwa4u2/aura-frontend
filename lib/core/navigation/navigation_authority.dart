@@ -104,8 +104,14 @@ class NavigationAuthority {
   }
 
   /// PRESENTATION shell classification (chrome only — never authority).
-  /// Mechanism moved here from path-prefix helpers so the rule has one
-  /// owner and its non-authority nature is documented and pinned by test.
+  ///
+  /// Post-DR4 this is DESTINATION-IDENTITY classification, not path
+  /// inference: the per-route demolition test proved `/institution/:id/…`
+  /// is the single canonical address space of institution-owned contextual
+  /// depth (the two pure duplicates were retired to aliases), so matching
+  /// that space identifies WHICH destinations these are — it manufactures
+  /// nothing. Acting identity remains per-act (C1) and is pinned as
+  /// independent of this classification.
   static ShellContext contextOf(String path, {required bool isAuthed}) {
     final p = _normalize(path);
     if (p == '/admin' || p.startsWith('/admin/')) return ShellContext.admin;
@@ -113,6 +119,33 @@ class NavigationAuthority {
       return ShellContext.institution;
     }
     return isAuthed ? ShellContext.member : ShellContext.public;
+  }
+
+  // ── Canonical object route builders ──────────────────────────────
+
+  static String personRoute(String handle) => '/u/$handle';
+  static String institutionRoute(String slug) => '/institutions/$slug';
+  static String threadRoute(String id) => '/thread/$id';
+  static String directThreadRoute(String id) => '/direct/$id';
+  static String postRoute(String id) => '/posts/$id';
+
+  /// DR4 — legacy mirrored-alias resolution. The per-route demolition test
+  /// (roadmap C3) proved exactly TWO mirrors were pure duplicates of
+  /// global objects; their addresses survive only as aliases resolved
+  /// here. Everything else under `/institution/:id/…` is genuinely
+  /// institution-owned contextual depth — the single canonical home of
+  /// those destinations, not a mirror of anything.
+  ///
+  /// Returns the canonical route for a retired legacy path, or null when
+  /// the path is not a retired alias.
+  static String? legacyAliasTarget(String path) {
+    final p = _normalize(path);
+    final person = RegExp(r'^/institution/[^/]+/u/([^/]+)$').firstMatch(p);
+    if (person != null) return personRoute(person.group(1)!);
+    final inst =
+        RegExp(r'^/institution/[^/]+/institutions/([^/]+)$').firstMatch(p);
+    if (inst != null) return institutionRoute(inst.group(1)!);
+    return null;
   }
 
   static String _normalize(String path) {

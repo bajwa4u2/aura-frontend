@@ -454,7 +454,7 @@ class _ProfileBody extends ConsumerWidget {
                         label: 'Open public profile',
                         icon: Icons.open_in_new_rounded,
                         onPressed: () => context.push(
-                          '/institution/${identity!.id}/institutions/$slug',
+                          '/institutions/$slug',
                         ),
                       ),
                       child: _PublicPostsPreview(
@@ -524,7 +524,7 @@ class _ActionGroup extends StatelessWidget {
             label: 'Public preview',
             icon: Icons.visibility_outlined,
             onPressed: () => context.push(
-              '/institution/${identity!.id}/institutions/${identity!.slug}',
+              '/institutions/${identity!.slug}',
             ),
           ),
         if (publicLink.isNotEmpty)

@@ -91,6 +91,7 @@ import 'features/institutions/participation/participation_screen.dart';
 import 'features/direct_threads/presentation/direct_intent_screen.dart';
 import 'features/direct_threads/presentation/direct_thread_screen.dart';
 import 'features/direct_threads/presentation/inbox_screen.dart';
+import 'core/navigation/navigation_authority.dart';
 import 'features/discover/presentation/discover_screen.dart';
 import 'features/messages/presentation/messages_hub_screen.dart';
 import 'features/institutions/messaging/institution_messaging_screen.dart';
@@ -1865,15 +1866,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           // buttons act as the institution.
           GoRoute(
             path: '/institution/:institutionId/u/:handle',
-            builder: (context, state) => AuthorProfileScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
+            // DR4 — retired mirror (pure duplicate of the Person object).
+            // The address survives as an alias; the modern destination
+            // owns the experience.
+            redirect: (context, state) =>
+                NavigationAuthority.legacyAliasTarget(state.uri.path) ??
+                '/u/${state.pathParameters['handle'] ?? ''}',
           ),
           GoRoute(
             path: '/institution/:institutionId/institutions/:slug',
-            builder: (context, state) => InstitutionDetailScreen(
-              slug: state.pathParameters['slug'] ?? '',
-            ),
+            // DR4 — retired mirror (pure duplicate of the Institution
+            // object).
+            redirect: (context, state) =>
+                NavigationAuthority.legacyAliasTarget(state.uri.path) ??
+                '/institutions/${state.pathParameters['slug'] ?? ''}',
           ),
           GoRoute(
             path: '/institution/:institutionId/direct/:threadId',
