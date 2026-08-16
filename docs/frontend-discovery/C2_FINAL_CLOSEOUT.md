@@ -14,11 +14,14 @@
 
 `AURA_FOLLOW_STORE` lives **only** inside `CanonicalFollowService`. Every remaining legacy reader was converged first (users list/inbox/outbox readers, invites follow-gate, reactions FOLLOWERS-gate), so cutover changed zero consumers by construction. Canonical mode reads/writes FollowEdge+FollowConsent exclusively — the legacy union read is retired. Rollback before final retirement = flip the flag back (legacy stores remain intact and equivalent).
 
-## Remaining (final observation gate only)
+## Final retirement EXECUTED (cutover observed healthy)
 
-- **Legacy Follow store deletion** (drop `Follow`/`FollowRequest` tables, delete legacy branches + flag from the authority, delete zombie `InteractionFollowStatus.BLOCKED/REQUESTED` enum values): executes after the founder confirms the canonical-store deployment healthy. Rollback point is documented until then.
-- Legacy billing identifiers: **already deleted** (evidence-gated).
-- Frontend: **zero client changes required** — the wire contract was invariant through cutover, as designed.
+Founder observed the canonical-store deploy healthy → final retirement executed (`d18b0bb`): `Follow`/`FollowRequest` tables **dropped** (0 remaining), the `AURA_FOLLOW_STORE` flag and every legacy branch deleted (authority single-store by construction), zombie `InteractionFollowStatus` values dropped (enum now `{FOLLOWING}`), inert Railway var cleared. Post-state: FollowEdge=13, FollowConsent=21, `InstitutionPlan={FREE,PRO}` in pg_enum. Specs repinned onto canonical stores with every behavioral pin preserved; **2272 tests green**, boot graph compiles.
+
+- Legacy billing identifiers: deleted (evidence-gated).
+- Frontend: **zero client changes required** — the wire contract was invariant through cutover and retirement, as designed.
+
+**NO MIGRATION-DEPENDENT DEBT REMAINS. C2 awaits only the founder's FINAL CLOSURE declaration.**
 
 ## Incident recorded during the window
 
