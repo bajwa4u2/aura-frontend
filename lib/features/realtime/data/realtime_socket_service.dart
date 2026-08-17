@@ -173,8 +173,16 @@ class RealtimeSocketService {
       });
     }
 
+    // TRANSPORT ALIGNMENT (three-party failure correction, 2026-08-17):
+    // constructed to match the proven-working messages socket exactly —
+    // websocket-only. The prior ['websocket', 'polling'] list left the
+    // engine hanging on web with NO transport ever constructed (observed
+    // live: zero WebSocket constructions, zero polling XHR, three clean
+    // 15s connect timeouts), while a raw WebSocket to the same engine
+    // connected instantly. Identity/auth ride the socket.io auth payload,
+    // which the backend handshake parser reads.
     final socket = io.io('$origin/realtime', <String, dynamic>{
-      'transports': <String>['websocket', 'polling'],
+      'transports': <String>['websocket'],
       'autoConnect': false,
       'forceNew': true,
       'auth': auth,
