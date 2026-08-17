@@ -334,7 +334,18 @@ class RealtimeSocketService {
       const Duration(seconds: 15),
       onTimeout: () {
         cleanup();
-        throw TimeoutException('Realtime socket connect timed out.');
+        // rtc-b1 diagnostics: the Manager's internal state at timeout is
+        // the discriminating observable — 'opening/closed' means the
+        // engine never opened a transport; 'open' with the namespace not
+        // connected means the CONNECT packet is being lost/refused.
+        String mgrState = 'unknown';
+        try {
+          mgrState = socket.io.readyState;
+        } catch (_) {}
+        throw TimeoutException(
+          'Realtime socket connect timed out '
+          '(rtc-b1 mgr=$mgrState nsp=${socket.connected} id=${socket.id ?? '-'})',
+        );
       },
     );
   }
