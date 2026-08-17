@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -223,8 +224,9 @@ class _LiveRow extends StatelessWidget {
           const SizedBox(width: AuraSpace.s12),
           AuraPrimaryButton(
             label: 'Watch',
-            onPressed: () =>
-                context.push('/realtime/${session.id}?action=join'),
+            onPressed: () => context.push(
+              NavigationAuthority.realtimeSessionJoinRoute(session.id),
+            ),
           ),
         ],
       ),

@@ -1,3 +1,179 @@
+/// ROUTE CLASSIFICATION AUTHORITY — founder ruling 2026-08-17 (F069).
+///
+/// Frozen invariants:
+///   1. **UNKNOWN IS NOT PUBLIC.**
+///   2. Every route declared by Aura's router must be explicitly classified.
+///   3. Minimum semantic classes: PUBLIC · MEMBER · AUTH_ACTION ·
+///      GUEST_REACHABLE. Further classes only where a genuinely distinct
+///      authority model exists, explicitly named and tested.
+///   4. GUEST_REACHABLE describes a route's permitted ENTRY MODEL. It does
+///      NOT itself authorize the visitor — guest admission still depends on
+///      the canonical guest/invitation/Meeting/realtime authority for that
+///      destination.
+///   5. Unknown/unclassified routes **fail closed** (treated as MEMBER)
+///      rather than silently rendering unauthenticated.
+///
+/// Why this exists: classification used to live inside the router closure
+/// as an un-testable, hand-maintained allowlist that failed OPEN. Verified
+/// consequence — `/articles/write` was excluded from the public list but
+/// never added to the member list, so an unauthenticated visitor reached
+/// the authoring surface with no redirect and no destination preservation
+/// (a second root cause of "my article draft disappeared on refresh",
+/// independent of durable draft identity).
+///
+/// The `c3_route_classification_gate` test proves every path declared in
+/// `router.dart` lands in an explicit class, so a future route cannot
+/// silently bypass this contract.
+library;
+
+/// The four canonical entry models. See invariant 3.
+enum RouteClass {
+  /// Open to the internet: marketing, discovery, published reading.
+  public,
+
+  /// Requires an authenticated Aura member session.
+  member,
+
+  /// Authentication ceremonies (login, verification, identity completion).
+  authAction,
+
+  /// A guest MAY enter without a member session — the destination's own
+  /// canonical authority decides whether this particular guest is admitted.
+  guestReachable,
+}
+
+const String kRouterBootPath = '/_boot';
+const String kCompleteIdentityPath = '/complete-identity';
+
+bool isBootPath(String path) => path == kRouterBootPath;
+
+bool isPlainAuthPage(String path) =>
+    path == '/login' || path == '/register' || path == '/auth';
+
+bool isAuthActionPath(String path) {
+  return path == '/forgot-password' ||
+      path == '/reset-password' ||
+      path == '/verify-email' ||
+      path == '/verify-pending' ||
+      // Institution sign-in is an authentication ceremony, not a member
+      // surface: a person must be able to reach it to establish
+      // institution authority (F069 sweep — previously unclassified).
+      path == '/institution/sign-in' ||
+      path == kCompleteIdentityPath;
+}
+
+/// GUEST_REACHABLE — booking and meeting-entry surfaces an invited guest
+/// legitimately reaches without an Aura account. Deliberately NOT collapsed
+/// into PUBLIC (founder ruling): these are not open reading surfaces, they
+/// are guarded destinations with a guest entry model. Meeting admission
+/// semantics are untouched by this classification.
+bool isGuestReachablePath(String path) {
+  // Public booking pages (personal and institution-owned).
+  if (path.startsWith('/meet/')) return true;
+  if (path.startsWith('/i/')) return true;
+
+  // Pre-join / code-entry recovery — an external guest must never hit a
+  // login wall here.
+  if (path == '/meetings/join') return true;
+  if (path == '/meetings/join-error') return true;
+  if (path.startsWith('/meetings/join/')) return true;
+
+  // The meeting room itself: lobby, waiting, live, summary.
+  if (RegExp(
+    r'^/meetings/[^/]+/(room|waiting|live|summary|post-meeting)$',
+  ).hasMatch(path)) {
+    return true;
+  }
+
+  // Realtime session surfaces accept guest entry (meeting guests arrive
+  // with a guestId); the realtime authority still adjudicates admission.
+  if (path == '/realtime' || path.startsWith('/realtime/')) return true;
+
+  return false;
+}
+
+bool isPublicInviteAcceptPath(String path) => path == '/invite/accept';
+
+/// PUBLIC — open to the internet.
+bool isPublicPath(String path) {
+  if (path == '/' || path == '/public') return true;
+  if (isBootPath(path)) return true;
+  if (isPlainAuthPage(path)) return true;
+  if (isAuthActionPath(path)) return true;
+
+  if (path == '/mission' ||
+      path == '/white-paper' ||
+      path == '/terms' ||
+      path == '/founder' ||
+      path == '/privacy' ||
+      path == '/child-safety' ||
+      path == '/safety' ||
+      path == '/trust-safety' ||
+      path == '/contact' ||
+      path == '/account-deletion' ||
+      path == '/investors' ||
+      // Institutional discovery — directory, detail and public unit pages
+      // are browsable without sign-in; only the onboarding wizard is gated
+      // (matched by isMemberShellPath).
+      path == '/institutions' ||
+      (path.startsWith('/institutions/') &&
+          path != '/institutions/get-started') ||
+      path == '/patrons' ||
+      path == '/supporters' ||
+      path == '/search' ||
+      path == '/discover' ||
+      path.startsWith('/posts/') ||
+      path.startsWith('/u/') ||
+      path.startsWith('/author/') ||
+      path.startsWith('/support/') ||
+      isPublicInviteAcceptPath(path)) {
+    return true;
+  }
+
+  if (path == '/announcements') return true;
+  if (path.startsWith('/announcements/')) return true;
+
+  // Articles are durable public thought — READING is public; the authoring
+  // paths are member-gated (see isMemberShellPath).
+  if (path == '/discover/articles') return true;
+  if (path.startsWith('/articles/') && !path.startsWith('/articles/write')) {
+    return true;
+  }
+
+  return false;
+}
+
+/// The single classification entry point. Order matters: explicit member
+/// authoring paths win over the broad public article prefix, and the
+/// fall-through is MEMBER — never public (invariant 1 + 5).
+RouteClass classifyRoute(String path) {
+  // Order is behavioral, not cosmetic. Open-entry models are evaluated
+  // BEFORE the member allowlist because the member matcher is partly
+  // pattern-based: `^/meetings/[^/]+$` legitimately claims meeting detail
+  // pages but also swallows `/meetings/join-error`, a guest recovery
+  // screen. Under the old router that collision was masked (the blanket
+  // isPublic check won); classifying member-first would have started
+  // bouncing meeting guests to a login wall — a Meetings regression the
+  // F069 gate caught before it shipped.
+  if (isAuthActionPath(path)) return RouteClass.authAction;
+  if (isGuestReachablePath(path)) return RouteClass.guestReachable;
+  if (isPublicPath(path)) return RouteClass.public;
+  if (isMemberShellPath(path)) return RouteClass.member;
+  return RouteClass.member; // fail closed — unknown is not public
+}
+
+/// True when a visitor without a member session may legitimately *reach*
+/// this route (they may still be refused by the destination's own
+/// authority — see invariant 4). Replaces the router's former blanket
+/// `isPublic` check so guest and auth-ceremony routes keep behaving
+/// exactly as before while remaining distinctly classified.
+bool routeAllowsUnauthenticatedEntry(String path) {
+  final c = classifyRoute(path);
+  return c == RouteClass.public ||
+      c == RouteClass.authAction ||
+      c == RouteClass.guestReachable;
+}
+
 bool isAdminShellPath(String path) {
   return path == '/admin' || path.startsWith('/admin/');
 }
@@ -46,11 +222,38 @@ bool isMemberShellPath(String path) {
       path == '/me/correspondence/create/conversation' ||
       path == '/me/correspondence/create/space' ||
       path.startsWith('/me/correspondence/') ||
-      // `/meetings/join` (codeless legacy links) is a PUBLIC guest recovery
-      // route — exclude it from member gating so guests are never bounced to
-      // login / verify-email. Real meeting detail ids still gate normally.
+      // Article AUTHORING (F069 evidence): reading an article is public,
+      // but composing/editing one is a member act. This was excluded from
+      // the public list yet never added here, leaving it unclassified and
+      // failing open — an unauthenticated visitor reached the editor with
+      // no login redirect and no destination preservation.
+      path == '/articles/write' ||
+      path.startsWith('/articles/write/') ||
+      // ── F069 sweep (2026-08-17): routes the router declares that the
+      // classification allowlist never covered. Every one of them used to
+      // fail OPEN — `requiresAuth` returned false, so an unauthenticated
+      // visitor reached the surface with no login redirect and no
+      // destination preservation. Admin is the starkest case: the entire
+      // /admin workspace was unclassified.
+      isAdminShellPath(path) ||
+      path == '/thread' ||
+      path.startsWith('/thread/') ||
+      path == '/spaces' ||
+      path.startsWith('/spaces/') ||
+      path == '/aura/participation' ||
+      path == '/discover/people' ||
+      path == '/devices' ||
+      path == '/change-password' ||
+      path == '/invite/import' ||
+      RegExp(r'^/meetings/[^/]+/prep$').hasMatch(path) ||
+      // Meeting DETAIL pages are member surfaces, but the same shape also
+      // matches guest recovery screens (`/meetings/join`,
+      // `/meetings/join-error`). Excluding every GUEST_REACHABLE path here
+      // keeps the two classes genuinely disjoint rather than relying on
+      // evaluation order to mask the overlap — guests are never bounced to
+      // a login/verify wall, and Meetings behavior is unchanged.
       (RegExp(r'^/meetings/[^/]+$').hasMatch(path) &&
-          path != '/meetings/join') ||
+          !isGuestReachablePath(path)) ||
       // Institution onboarding/entry points — these require personal auth
       // before institution auth. NOTE: `/institutions` itself is *public*
       // discovery (the directory), so it must NOT be classified as a
@@ -60,8 +263,6 @@ bool isMemberShellPath(String path) {
       path == '/enter-institution' ||
       isInstitutionShellPath(path);
 }
-
-bool isPublicInviteAcceptPath(String path) => path == '/invite/accept';
 
 /// True for the ACTIVE meeting room — a focus surface, not a normal workspace
 /// page. In these routes the shell drops its persistent left navigation rail

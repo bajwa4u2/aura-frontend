@@ -276,12 +276,12 @@ class _HeaderLiveBtn extends ConsumerWidget {
       },
       onSelected: (value) {
         if (value == '__open') {
-          context.push('/realtime');
+          context.push(NavigationAuthority.liveDirectoryRoute);
         } else if (value.startsWith('__watch:')) {
           final id = value.substring('__watch:'.length);
-          context.push('/realtime/$id?action=join');
+          context.push(NavigationAuthority.realtimeSessionJoinRoute(id));
         } else {
-          context.go('/realtime/$value');
+          context.go(NavigationAuthority.realtimeSessionRoute(value));
         }
       },
       child: Container(

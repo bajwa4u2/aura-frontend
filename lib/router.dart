@@ -360,89 +360,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     }
   });
 
-  bool isBootPath(String path) => path == kRouterBootRoute;
+  // ROUTE CLASSIFICATION (F069, founder ruling 2026-08-17) now lives in the
+  // testable shared authority `app/route_classification.dart` — PUBLIC ·
+  // MEMBER · AUTH_ACTION · GUEST_REACHABLE, unknown fails CLOSED. These
+  // thin aliases keep the redirect logic below reading naturally.
+  //
+  // `isPublic` here means "a visitor without a member session may reach
+  // this route" — public, auth ceremonies, and guest-reachable meeting
+  // entry alike. Guest-reachable paths are no longer collapsed into
+  // PUBLIC in the classification itself; guest ADMISSION continues to be
+  // decided by the destination's own canonical authority, exactly as
+  // before (Meetings behavior unchanged).
+  bool isPublicPath(String path) => routeAllowsUnauthenticatedEntry(path);
 
-  bool isPlainAuthPage(String path) {
-    return path == '/login' || path == '/register' || path == '/auth';
-  }
-
-  bool isAuthActionPath(String path) {
-    return path == '/forgot-password' ||
-        path == '/reset-password' ||
-        path == '/verify-email' ||
-        path == '/verify-pending' ||
-        path == kCompleteIdentityRoute;
-  }
-
-  bool isPublicPath(String path) {
-    if (path == '/' || path == '/public') return true;
-    if (isBootPath(path)) return true;
-    if (isPlainAuthPage(path)) return true;
-    if (isAuthActionPath(path)) return true;
-
-    if (path == '/mission' ||
-        path == '/white-paper' ||
-        path == '/terms' ||
-        path == '/founder' ||
-        path == '/privacy' ||
-        path == '/child-safety' ||
-        path == '/safety' ||
-        path == '/trust-safety' ||
-        path == '/contact' ||
-        path == '/account-deletion' ||
-        path == '/investors' ||
-        // Institutional discovery — the directory hub, detail pages, and
-        // public unit pages are all browsable without sign-in. Only the
-        // onboarding wizard (/institutions/get-started) is auth-gated;
-        // it's matched separately by isMemberShellPath.
-        path == '/institutions' ||
-        (path.startsWith('/institutions/') &&
-            path != '/institutions/get-started') ||
-        path == '/patrons' ||
-        path == '/supporters' ||
-        path == '/search' ||
-        path == '/discover' ||
-        path.startsWith('/posts/') ||
-        path.startsWith('/u/') ||
-        path.startsWith('/author/') ||
-        path.startsWith('/support/') ||
-        isPublicInviteAcceptPath(path)) {
-      return true;
-    }
-
-    if (path == '/announcements') return true;
-    if (path.startsWith('/announcements/')) return true;
-
-    // Articles are durable public thought (reading is public; the /write
-    // authoring paths stay authenticated).
-    if (path == '/discover/articles') return true;
-    if (path.startsWith('/articles/') && !path.startsWith('/articles/write')) {
-      return true;
-    }
-
-    // Public booking pages — no auth required
-    if (path.startsWith('/meet/')) return true;
-
-    // Institution-owned public booking pages — /i/:slug/meet/:bookingSlug
-    if (path.startsWith('/i/')) return true;
-
-    // Pre-join screen — guests arrive here from booking confirmation emails.
-    // The bare `/meetings/join` (codeless legacy links) is public too so an
-    // external guest reaches the code-entry recovery screen, never a login wall.
-    if (path == '/meetings/join') return true;
-    if (path == '/meetings/join-error') return true;
-    if (path.startsWith('/meetings/join/')) return true;
-    // Guest-reachable meeting paths: room (pre-live lobby), waiting, live, summary
-    if (RegExp(
-      r'^/meetings/[^/]+/(room|waiting|live|summary|post-meeting)$',
-    ).hasMatch(path)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  bool isMemberPath(String path) => isMemberShellPath(path);
+  bool isMemberPath(String path) => classifyRoute(path) == RouteClass.member;
 
   bool requiresAuth(String path) => isMemberPath(path);
 

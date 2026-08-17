@@ -200,6 +200,17 @@ class NavigationAuthority {
   static String realtimeSessionRoute(String sessionId) =>
       '/realtime/$sessionId';
 
+  /// Joining a session directly (accepting a ring, watching a Live). The
+  /// `action=join` intent belongs to the address, not to scattered string
+  /// building at each call site.
+  static String realtimeSessionJoinRoute(String sessionId) =>
+      '${realtimeSessionRoute(sessionId)}?action=join';
+
+  /// The global Live directory — "what is live on Aura right now".
+  /// Discovery only; Live never originates here (founder ruling
+  /// 2026-08-17: origination is contextual, discovery is global).
+  static const String liveDirectoryRoute = '/realtime';
+
   /// Published Article canonical address (identity survives revision —
   /// founder ruling 2026-08-16: same identity, same canonical URL).
   static String articleRoute(String slug) => '/articles/$slug';

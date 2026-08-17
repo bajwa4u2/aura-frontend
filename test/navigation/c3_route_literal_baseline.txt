@@ -8,7 +8,7 @@
 4 lib/app/shell/member_shell.dart
 3 lib/app/shell/public_shell.dart
 13 lib/app/shell/rail/rail_modules.dart
-6 lib/app/shell/shell_header_tools.dart
+4 lib/app/shell/shell_header_tools.dart
 1 lib/app/shell/shell_shared.dart
 1 lib/core/translation/communication_translate_action.dart
 1 lib/core/ui/aura_identity_surface.dart
