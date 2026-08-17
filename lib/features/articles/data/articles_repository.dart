@@ -95,7 +95,10 @@ class ArticlesRepository {
   }
 
   Future<Article> createDraft() async {
-    final res = await _dio.post<dynamic>('/articles', data: const {});
+    // Explicit fields: an empty map can be dropped from the wire entirely
+    // on web, arriving server-side as no body at all.
+    final res = await _dio.post<dynamic>('/articles',
+        data: const {'title': '', 'bodyMarkdown': ''});
     return Article.fromJson(
         _unwrap(res.data)['article'] as Map<String, dynamic>);
   }
