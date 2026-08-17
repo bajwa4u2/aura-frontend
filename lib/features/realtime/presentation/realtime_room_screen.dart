@@ -365,6 +365,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           return '/meetings';
         case RealtimeSurfaceType.space:
           if (surfaceId.isNotEmpty) return '/me/correspondence/$surfaceId';
+        case RealtimeSurfaceType.conversation:
+          // Conversation calls return to their conversation — the durable
+          // parent surface (canon: capabilities attach, they do not fork).
+          if (surfaceId.isNotEmpty) return '/messages/c/$surfaceId';
+          return '/messages';
         case RealtimeSurfaceType.dm:
         case RealtimeSurfaceType.thread:
           // DM/thread call sessions only carry surfaceId; they do not always
@@ -1478,6 +1483,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
       case RealtimeSurfaceType.thread:
+      case RealtimeSurfaceType.conversation:
         return isVideo ? 'Video call' : 'Audio call';
       case RealtimeSurfaceType.space:
       case RealtimeSurfaceType.room:
@@ -1507,6 +1513,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
         return named != null ? 'Direct call · $named' : 'Direct call';
+      case RealtimeSurfaceType.conversation:
+        return named != null ? 'in $named' : null;
       case RealtimeSurfaceType.thread:
         return named != null ? 'in $named' : null;
       case RealtimeSurfaceType.space:

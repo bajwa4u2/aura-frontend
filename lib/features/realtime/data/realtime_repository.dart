@@ -371,6 +371,15 @@ class RealtimeRepository {
       return loadSessionBundle(id, forceRefresh: true);
     }
 
+    if (surfaceType == 'conversation' && surfaceId.isNotEmpty) {
+      // First-class Conversation surface consumer (founder directive
+      // 2026-08-17 §3): the conversation-scoped join carries the surface's
+      // own presence/notification semantics — never the generic fallback.
+      final joinPath = '/conversations/$surfaceId/live/$id/join';
+      await _dio.post(joinPath);
+      return loadSessionBundle(id, forceRefresh: true);
+    }
+
     if (surfaceType == 'space' && surfaceId.isNotEmpty) {
       final joinPath = '/spaces/$surfaceId/live/$id/join';
       await _dio.post(joinPath);

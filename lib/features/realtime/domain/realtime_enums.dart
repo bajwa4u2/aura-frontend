@@ -54,6 +54,13 @@ enum RealtimeSurfaceType {
   room,
   meeting,
   institution,
+
+  /// The clean-sheet Conversation surface (canon 2026-08-16). A first-class
+  /// consumer of the shared realtime engine — never parsed as `unknown`,
+  /// which routed conversation calls through every unknown-surface
+  /// fallback (generic join, /home return route) during the failed
+  /// three-party certification of 2026-08-17.
+  conversation,
   unknown,
 }
 

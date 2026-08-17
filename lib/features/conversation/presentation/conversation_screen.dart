@@ -685,7 +685,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         : context.go(NavigationAuthority.messagesRoute),
                   ),
                   AuraAvatar(
-                      name: conversationDisplayName(c, myUserId), size: 34),
+                      name: conversationDisplayName(c, myUserId),
+                      imageUrl: _counterpartAvatarUrl(c, myUserId),
+                      size: 34),
                   const SizedBox(width: AuraSpace.s10),
                   Expanded(
                     child: Text(
@@ -793,8 +795,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   children: [
                     for (final p in _mentionMatches)
                       ActionChip(
-                        avatar:
-                            AuraAvatar(name: p.displayName ?? '', size: 20),
+                        avatar: AuraAvatar(
+                            name: p.displayName ?? '',
+                            imageUrl: p.avatarUrl,
+                            size: 20),
                         label: Text(p.displayName ?? ''),
                         onPressed: () => _insertMention(p),
                       ),
@@ -1202,6 +1206,10 @@ class _MessageBubble extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s6),
                 _LinkPreviewCard(preview: message.linkPreview!),
               ],
+              if (message.internalRef != null) ...[
+                const SizedBox(height: AuraSpace.s6),
+                _InternalRefCard(reference: message.internalRef!),
+              ],
               if (translation != null) ...[
                 const SizedBox(height: AuraSpace.s4),
                 Text(translation!,
@@ -1591,6 +1599,113 @@ class _LinkPreviewCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: AuraText.micro
                             .copyWith(color: AuraSurface.muted)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// The direct counterpart's real identity image (person avatar or
+/// institution logo) for header/list presentation.
+String? _counterpartAvatarUrl(Conversation c, String? myUserId) {
+  for (final p in c.parties) {
+    if (p.isActive && !(p.isPerson && p.userId == myUserId)) {
+      final url = (p.avatarUrl ?? '').trim();
+      if (url.isNotEmpty) return url;
+    }
+  }
+  return null;
+}
+
+/// Internal Aura reference card — the same visual grade as an external
+/// preview, sourced from the object's OWN authority (real content, not
+/// scraped). Tapping stays inside the product on the canonical route.
+class _InternalRefCard extends StatelessWidget {
+  const _InternalRefCard({required this.reference});
+  final InternalRef reference;
+
+  static const _kindLabels = <String, String>{
+    'POST': 'Post',
+    'INSTITUTION_POST': 'Institution post',
+    'ANNOUNCEMENT': 'Announcement',
+    'ARTICLE': 'Article',
+    'USER_PROFILE': 'Profile',
+    'INSTITUTION_PROFILE': 'Institution',
+    'MEETING': 'Meeting',
+    'THREAD': 'Thread',
+    'SPACE': 'Space',
+    'INSTITUTION_SPACE': 'Space',
+    'DIRECT_THREAD': 'Direct message',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _kindLabels[reference.kind] ?? 'Aura';
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => GoRouter.of(context).push(reference.route),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 340),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (reference.imageUrl != null)
+              Image.network(
+                reference.imageUrl!,
+                height: 140,
+                width: 340,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(AuraSpace.s10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AuraSurface.accentText,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: AuraSpace.s6),
+                      Text('Aura \u00b7 $label',
+                          style: AuraText.micro
+                              .copyWith(color: AuraSurface.faint)),
+                    ],
+                  ),
+                  if (reference.title != null) ...[
+                    const SizedBox(height: AuraSpace.s4),
+                    Text(reference.title!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.micro.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AuraSurface.ink)),
+                  ],
+                  if (reference.subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(reference.subtitle!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.micro
+                            .copyWith(color: AuraSurface.muted)),
+                  ],
                 ],
               ),
             ),

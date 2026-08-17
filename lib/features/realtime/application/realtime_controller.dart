@@ -117,6 +117,14 @@ class RealtimeController extends StateNotifier<RealtimeState>
   String? _resumeSessionId;
   bool _awaitingReconnectRejoin = false;
 
+  /// Consecutive fully-exhausted join cycles (each = 3 attempts inside
+  /// _performJoinWithRetry). BOUNDED FAILURE SEMANTICS (founder directive
+  /// 2026-08-17 §4): after [_maxSilentTransportCycles] cycles the UI must
+  /// tell the truth — the real reason, a Retry affordance — instead of an
+  /// endless "Connecting…" spinner. Auto-recovery stays armed regardless.
+  int _transportFailureStreak = 0;
+  static const int _maxSilentTransportCycles = 2;
+
   String get _managedSessionId =>
       (state.sessionId ?? state.session?.id ?? '').trim();
 
@@ -542,6 +550,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // RealtimeSocketService for why having more than one caller decide
       // to (re)connect was the actual root defect.
       await _performJoinWithRetry(trimmed);
+      _transportFailureStreak = 0;
     } catch (error) {
       if (_terminating) return;
 
@@ -570,11 +579,25 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // the join automatically instead of leaving the user stranded.
       if (_isRetryableConnectionError(error)) {
         _awaitingReconnectRejoin = true;
-        state = state.copyWith(
-          connectionStatus: RealtimeConnectionStatus.reconnecting,
-          infoMessage: 'Connecting…',
-          clearErrorMessage: true,
-        );
+        _transportFailureStreak++;
+        if (_transportFailureStreak <= _maxSilentTransportCycles) {
+          state = state.copyWith(
+            connectionStatus: RealtimeConnectionStatus.reconnecting,
+            infoMessage: 'Connecting…',
+            clearErrorMessage: true,
+          );
+        } else {
+          // Truth over hope: repeated full retry cycles have failed. Show
+          // the REAL reason and a usable retry state; keep auto-rejoin
+          // armed so a recovered socket still completes the join.
+          state = state.copyWith(
+            connectionStatus: RealtimeConnectionStatus.error,
+            joinState: RealtimeJoinState.idle,
+            clearInfoMessage: true,
+            errorMessage:
+                'Live connection could not be established. ${_safeJoinErrorMessage(error)}',
+          );
+        }
         return; // Do not rethrow — 'socket:connected' will retry.
       }
 
@@ -615,6 +638,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // here would be redundant now, not harmful, but this repair's whole
       // point is exactly one owner per concern.
       await _performJoinWithRetry(trimmed);
+      _transportFailureStreak = 0;
     } catch (error) {
       if (_terminating) return;
       if (_isRetryableConnectionError(error)) {

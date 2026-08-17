@@ -17,6 +17,7 @@ class ConversationParty {
     required this.institutionId,
     required this.leftAt,
     this.displayName,
+    this.avatarUrl,
   });
 
   final String kind; // PERSON | INSTITUTION
@@ -24,6 +25,10 @@ class ConversationParty {
   final String? institutionId;
   final DateTime? leftAt;
   final String? displayName;
+
+  /// Real identity image (person avatar / institution logo) from the
+  /// canonical identity projection — never a synthesized placeholder.
+  final String? avatarUrl;
 
   bool get isActive => leftAt == null;
   bool get isPerson => kind == 'PERSON';
@@ -35,6 +40,7 @@ class ConversationParty {
       institutionId: _ns(json['institutionId']),
       leftAt: _date(json['leftAt']),
       displayName: _ns(json['displayName']),
+      avatarUrl: _ns(json['avatarUrl']),
     );
   }
 }
@@ -89,6 +95,7 @@ class ConversationMessage {
     this.media = const [],
     this.replyTo,
     this.linkPreview,
+    this.internalRef,
   });
 
   final String id;
@@ -111,6 +118,10 @@ class ConversationMessage {
   /// READY external link preview from the canonical link-intelligence
   /// pipeline (same LinkPreview rows Posts/Announcements consume).
   final LinkPreviewRef? linkPreview;
+
+  /// READY internal Aura reference, resolved viewer-scoped at read time
+  /// by the owning object's authority (Item 14).
+  final InternalRef? internalRef;
 
   bool get isSystem => systemKind != null;
 
@@ -141,8 +152,34 @@ class ConversationMessage {
           ? LinkPreviewRef.fromJson(
               json['linkPreview'] as Map<String, dynamic>)
           : null,
+      internalRef: json['internalRef'] is Map<String, dynamic>
+          ? InternalRef.fromJson(json['internalRef'] as Map<String, dynamic>)
+          : null,
     );
   }
+}
+
+class InternalRef {
+  const InternalRef({
+    required this.kind,
+    required this.route,
+    this.title,
+    this.subtitle,
+    this.imageUrl,
+  });
+  final String kind;
+  final String route;
+  final String? title;
+  final String? subtitle;
+  final String? imageUrl;
+
+  factory InternalRef.fromJson(Map<String, dynamic> json) => InternalRef(
+        kind: _s(json['kind']),
+        route: _s(json['route']),
+        title: _ns(json['title']),
+        subtitle: _ns(json['subtitle']),
+        imageUrl: _ns(json['imageUrl']),
+      );
 }
 
 class ReplyRef {
