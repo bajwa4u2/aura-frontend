@@ -372,45 +372,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
   }
 
-  /// GO LIVE: explicit human boundary crossing (founder doctrine): the
-  /// conversation stays private; only what is transmitted into the Live
-  /// session becomes public.
-  Future<void> _goLive() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Go Live — public broadcast'),
-        content: const Text(
-            'This starts a PUBLIC Live broadcast. Your conversation stays '
-            'private — viewers see only what you transmit in the Live '
-            'session, never your messages, attachments, or history. '
-            'Ending the Live returns you here.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Go Live')),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      final sessionId = await ref
-          .read(conversationsRepositoryProvider)
-          .startBroadcast(widget.conversationId);
-      if (sessionId.isEmpty) throw Exception('no session');
-      if (mounted) {
-        context.push(NavigationAuthority.realtimeSessionRoute(sessionId));
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not go live — try again.')));
-      }
-    }
-  }
+  // GO LIVE was removed from the conversation menu (founder charter
+  // 2026-08-17): "LIVE IS NOT SOMETHING A USER CREATES. LIVE IS SOMETHING
+  // AN EXISTING REALTIME HUMAN INTERACTION DELIBERATELY BECOMES."
+  // NO ACTIVE REALTIME INTERACTION = NO GO LIVE ORIGINATION. The only
+  // origination door lives inside the active call (realtime room, More
+  // panel), where it escalates the CURRENT session's lifecycle state.
 
   Future<void> _attachDocument() async {
     final result = await FilePicker.platform
@@ -718,12 +685,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         context, ref, widget.conversationId),
                   ),
                   PopupMenuButton<String>(
-                    onSelected: (a) =>
-                        a == 'golive' ? _goLive() : _menu(a, c),
+                    onSelected: (a) => _menu(a, c),
                     itemBuilder: (_) => [
-                      const PopupMenuItem(
-                          value: 'golive',
-                          child: Text('Go Live — public broadcast')),
                       const PopupMenuItem(
                           value: 'rename', child: Text('Name')),
                       PopupMenuItem(

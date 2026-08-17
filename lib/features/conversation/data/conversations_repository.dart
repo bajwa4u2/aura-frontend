@@ -370,17 +370,9 @@ class ConversationsRepository {
     return _s(session['id']);
   }
 
-  /// GO LIVE (founder doctrine 2026-08-16): intentionally originate a
-  /// PUBLIC Live broadcast from this private conversation. The
-  /// conversation itself never becomes public.
-  Future<String> startBroadcast(String id, {String kind = 'VIDEO'}) async {
-    final path = kind == 'AUDIO' ? 'audio' : 'video';
-    final res = await _dio
-        .post<dynamic>('/conversations/$id/live/broadcast/$path/start');
-    final session =
-        _unwrap(res.data)['session'] as Map<String, dynamic>? ?? const {};
-    return _s(session['id']);
-  }
+  // startBroadcast was retired (founder charter 2026-08-17): a session is
+  // never BORN public. Go Live escalates the CURRENT active call session
+  // — see RealtimeRepository.goLive / endLive.
 
   /// Render-ready delivery URL for an attachment (visibility-checked
   /// server-side by the canonical Media authority).

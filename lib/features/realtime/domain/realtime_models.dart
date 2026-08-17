@@ -192,6 +192,7 @@ class RealtimeSession {
     required this.status,
     required this.kind,
     this.accessMode = '',
+    this.liveState = '',
     required this.isActive,
     required this.isLocked,
     required this.waitingRoomEnabled,
@@ -215,10 +216,16 @@ class RealtimeSession {
   final String status;
   final String kind;
 
-  /// Server RealtimeAccessMode, uppercased ('' when absent). PUBLIC_STAGE
-  /// marks an intentional Go Live broadcast (viewers admitted as
-  /// observers; nothing from the originating Conversation is exposed).
+  /// Server RealtimeAccessMode, uppercased ('' when absent) —
+  /// participation policy ("who may enter, what may they do").
   final String accessMode;
+
+  /// FD-5 Live lifecycle truth, uppercased ('' when absent): NORMAL /
+  /// LIVE_PREPARING / LIVE / ENDING. Deliberately distinct from
+  /// accessMode — never collapsed.
+  final String liveState;
+
+  bool get isLive => liveState == 'LIVE';
   final bool isActive;
   final bool isLocked;
   final bool waitingRoomEnabled;
@@ -292,6 +299,7 @@ class RealtimeSession {
       status: (json['status'] ?? '').toString().trim().toUpperCase(),
       kind: (json['kind'] ?? '').toString().trim().toUpperCase(),
       accessMode: (json['accessMode'] ?? '').toString().trim().toUpperCase(),
+      liveState: (json['liveState'] ?? '').toString().trim().toUpperCase(),
       isActive: _readBool(
         json['isActive'],
         fallback: (json['status'] ?? '').toString().trim().toUpperCase() != 'ENDED' &&

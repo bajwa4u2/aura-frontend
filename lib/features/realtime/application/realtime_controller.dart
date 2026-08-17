@@ -1650,18 +1650,30 @@ class RealtimeController extends StateNotifier<RealtimeState>
         refreshTurnCredentials: refreshTurnCredentials,
       );
 
-      // GO LIVE viewer path (task #172): in a PUBLIC_STAGE session only
-      // the broadcaster publishes. Everyone else is a receive-only
-      // observer — no capture, no permission prompt, no published
-      // tracks; remote broadcast media still renders (answering an offer
-      // needs no local stream, same as audio-only screen-share peers).
+      // LIVE viewer (founder charter 2026-08-17): receive-only is a
+      // ROLE fact, never derived from who started the session — in an
+      // escalated call EVERY existing participant keeps publishing; only
+      // OBSERVER-role rows (public viewers admitted while the session is
+      // in the LIVE lifecycle state) are receive-only: no capture, no
+      // permission prompt, no published tracks. Remote media still
+      // renders (answering an offer needs no local stream, same as
+      // audio-only screen-share peers). The roster is hydrated by the
+      // REST join before media setup, so my own row is present here.
       var receiveOnly = false;
-      if ((state.session?.accessMode ?? '') == 'PUBLIC_STAGE') {
+      final liveOrStage =
+          (state.session?.liveState ?? '') == 'LIVE' ||
+          (state.session?.accessMode ?? '') == 'PUBLIC_STAGE';
+      if (liveOrStage) {
         final myId = (await (_readMyUserId?.call() ?? Future.value('')))
             .trim();
-        final broadcasterId = (state.session?.startedByUserId ?? '').trim();
-        receiveOnly =
-            myId.isEmpty || broadcasterId.isEmpty || myId != broadcasterId;
+        if (myId.isNotEmpty) {
+          for (final p in state.participants) {
+            if (p.userId == myId) {
+              receiveOnly = p.role == RealtimeParticipantRole.observer;
+              break;
+            }
+          }
+        }
       }
 
       final wantsAudio = !receiveOnly && (state.policy?.audioAllowed ?? true);

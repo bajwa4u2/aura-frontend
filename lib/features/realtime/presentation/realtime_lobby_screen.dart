@@ -10,79 +10,114 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../application/realtime_providers.dart';
+import '../domain/realtime_models.dart';
 
-class RealtimeLobbyScreen extends ConsumerStatefulWidget {
+/// LIVE DIRECTORY — founder charter 2026-08-17.
+///
+/// "LIVE IS NOT SOMETHING A USER CREATES. LIVE IS SOMETHING AN EXISTING
+///  REALTIME HUMAN INTERACTION DELIBERATELY BECOMES."
+/// "ORIGINATION IS CONTEXTUAL. DISCOVERY IS GLOBAL."
+///
+/// This surface answers exactly one question: WHAT IS LIVE ON AURA RIGHT
+/// NOW? It is a watch/discovery surface — it never creates Live. The
+/// previous incarnation of this screen was the retired legacy individual
+/// broadcast console ("Start live" → STANDALONE sessions); no creation
+/// CTA of any kind may return here, including in the empty state.
+class RealtimeLobbyScreen extends ConsumerWidget {
   const RealtimeLobbyScreen({super.key});
 
   @override
-  ConsumerState<RealtimeLobbyScreen> createState() =>
-      _RealtimeLobbyScreenState();
-}
-
-class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
-  String _kind = 'AUDIO';
-
-  Future<void> _startLive() async {
-    final router = GoRouter.of(context);
-    final controller = ref.read(realtimeControllerProvider.notifier);
-    final id = await controller.createSession(
-      surfaceType: 'STANDALONE',
-      surfaceId: '',
-      kind: _kind,
-    );
-    if (!context.mounted) return;
-    router.go('/realtime/$id?action=join');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final realtime = ref.watch(realtimeControllerProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
     final authStatus = ref.watch(authStatusProvider);
+    final broadcasts = ref.watch(publicBroadcastsProvider);
 
     return AuraScaffold(
       title: 'Live',
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s20,
-              AuraSpace.s32,
-              AuraSpace.s20,
-              AuraSpace.s32,
-            ),
-            children: [
-              const _LiveHeader(),
-              const SizedBox(height: AuraSpace.s32),
-              if (authStatus != AuthStatus.authed)
-                const _LobbyAuthGate()
-              else ...[
-                _KindSelector(
-                  selected: _kind,
-                  onChanged: (v) => setState(() => _kind = v),
-                ),
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(publicBroadcastsProvider);
+              await ref.read(publicBroadcastsProvider.future).catchError(
+                    (_) => <RealtimeSession>[],
+                  );
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s20,
+                AuraSpace.s32,
+                AuraSpace.s20,
+                AuraSpace.s32,
+              ),
+              children: [
+                const _DirectoryHeader(),
                 const SizedBox(height: AuraSpace.s24),
-                SizedBox(
-                  width: double.infinity,
-                  child: AuraPrimaryButton(
-                    label: realtime.isBusy ? 'Starting…' : 'Start live',
-                    onPressed: realtime.isBusy ? null : _startLive,
-                    icon: realtime.isBusy ? null : Icons.sensors_rounded,
+                if (authStatus != AuthStatus.authed)
+                  Text(
+                    'Sign in to watch live sessions on Aura.',
+                    style: AuraText.body.copyWith(color: AuraSurface.muted),
+                  )
+                else
+                  broadcasts.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: AuraSpace.s32),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (_, __) => Text(
+                      'Could not load live sessions — pull to retry.',
+                      style: AuraText.body.copyWith(color: AuraSurface.muted),
+                    ),
+                    data: (sessions) => sessions.isEmpty
+                        // Honest empty state — never a creation CTA.
+                        ? Container(
+                            padding: const EdgeInsets.all(AuraSpace.s24),
+                            decoration: BoxDecoration(
+                              color: AuraSurface.card,
+                              borderRadius:
+                                  BorderRadius.circular(AuraRadius.card),
+                              border:
+                                  Border.all(color: AuraSurface.divider),
+                            ),
+                            child: Column(
+                              children: [
+                                const Icon(
+                                  Icons.sensors_off_rounded,
+                                  size: 32,
+                                  color: AuraSurface.muted,
+                                ),
+                                const SizedBox(height: AuraSpace.s12),
+                                Text(
+                                  'Nothing is live right now',
+                                  style: AuraText.body.copyWith(
+                                    color: AuraSurface.ink,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: AuraSpace.s4),
+                                Text(
+                                  'When someone opens a call to the '
+                                  'public, it appears here.',
+                                  textAlign: TextAlign.center,
+                                  style: AuraText.small.copyWith(
+                                    color: AuraSurface.muted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Column(
+                            children: [
+                              for (final s in sessions) ...[
+                                _LiveRow(session: s),
+                                const SizedBox(height: AuraSpace.s12),
+                              ],
+                            ],
+                          ),
                   ),
-                ),
               ],
-              if ((realtime.errorMessage ?? '').isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s16),
-                _StatusBanner(
-                  message: realtime.errorMessage ?? '',
-                  isError: true,
-                ),
-              ],
-              if ((realtime.infoMessage ?? '').isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s16),
-                _StatusBanner(message: realtime.infoMessage ?? ''),
-              ],
-            ],
+            ),
           ),
         ),
       ),
@@ -90,10 +125,8 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LiveHeader extends StatelessWidget {
-  const _LiveHeader();
+class _DirectoryHeader extends StatelessWidget {
+  const _DirectoryHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -120,10 +153,10 @@ class _LiveHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Start live', style: AuraText.headline),
+              const Text('Live on Aura', style: AuraText.headline),
               const SizedBox(height: AuraSpace.s4),
               Text(
-                'Start a live session instantly.',
+                'Public live sessions happening right now.',
                 style: AuraText.body.copyWith(
                   color: AuraSurface.muted,
                   height: 1.4,
@@ -137,188 +170,61 @@ class _LiveHeader extends StatelessWidget {
   }
 }
 
-class _KindSelector extends StatelessWidget {
-  const _KindSelector({required this.selected, required this.onChanged});
+class _LiveRow extends StatelessWidget {
+  const _LiveRow({required this.session});
 
-  final String selected;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _KindOption(
-          label: 'Audio',
-          icon: Icons.mic_none_rounded,
-          selected: selected == 'AUDIO',
-          onTap: () => onChanged('AUDIO'),
-        ),
-        const SizedBox(width: AuraSpace.s12),
-        _KindOption(
-          label: 'Video',
-          icon: Icons.videocam_outlined,
-          selected: selected == 'VIDEO',
-          onTap: () => onChanged('VIDEO'),
-        ),
-      ],
-    );
-  }
-}
-
-class _KindOption extends StatelessWidget {
-  const _KindOption({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
+  final RealtimeSession session;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s16,
-              vertical: AuraSpace.s14,
-            ),
-            decoration: BoxDecoration(
-              color: selected ? AuraSurface.accentSoft : AuraSurface.card,
-              borderRadius: BorderRadius.circular(AuraRadius.card),
-              border: Border.all(
-                color: selected
-                    ? AuraSurface.accent.withValues(alpha: 0.5)
-                    : AuraSurface.divider,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+    final label = (session.title ?? session.contextName ?? 'Live session')
+        .trim();
+    final isVideo = session.kind == 'VIDEO';
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(
+          color: AuraSurface.coRose.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isVideo ? Icons.videocam_rounded : Icons.graphic_eq_rounded,
+            size: 20,
+            color: AuraSurface.coRose,
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  icon,
-                  size: 18,
-                  color:
-                      selected ? AuraSurface.accentText : AuraSurface.muted,
-                ),
-                const SizedBox(width: AuraSpace.s8),
                 Text(
-                  label,
-                  style: AuraText.small.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color:
-                        selected ? AuraSurface.accentText : AuraSurface.muted,
+                  label.isEmpty ? 'Live session' : label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body.copyWith(
+                    color: AuraSurface.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'LIVE now',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.coRose,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LobbyAuthGate extends StatelessWidget {
-  const _LobbyAuthGate();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AuraSurface.coSun.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(AuraRadius.r10),
-                  border: Border.all(
-                    color: AuraSurface.coSun.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.lock_outline_rounded,
-                  size: 18,
-                  color: AuraSurface.coSun,
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              const Expanded(
-                child: Text('Sign in required', style: AuraText.subtitle),
-              ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Text(
-            'You need an active session to start live.',
-            style: AuraText.body.copyWith(
-              color: AuraSurface.muted,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusBanner extends StatelessWidget {
-  const _StatusBanner({required this.message, this.isError = false});
-
-  final String message;
-  final bool isError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s16,
-        vertical: AuraSpace.s14,
-      ),
-      decoration: BoxDecoration(
-        color: isError ? AuraSurface.coRose.withValues(alpha: 0.16) : AuraSurface.subtle,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(
-          color: isError
-              ? AuraSurface.coRose.withValues(alpha: 0.35)
-              : AuraSurface.divider,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            isError ? Icons.error_outline_rounded : Icons.info_outline_rounded,
-            size: 18,
-            color: isError ? AuraSurface.coRose : AuraSurface.muted,
-          ),
-          const SizedBox(width: AuraSpace.s10),
-          Expanded(
-            child: Text(
-              message,
-              style: AuraText.body.copyWith(
-                color: isError ? AuraSurface.coRose : AuraSurface.ink,
-                height: 1.45,
-              ),
-            ),
+          const SizedBox(width: AuraSpace.s12),
+          AuraPrimaryButton(
+            label: 'Watch',
+            onPressed: () =>
+                context.push('/realtime/${session.id}?action=join'),
           ),
         ],
       ),

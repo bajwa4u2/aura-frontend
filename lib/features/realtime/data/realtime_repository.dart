@@ -251,10 +251,43 @@ class RealtimeRepository {
     return _asList(list).map((m) => RealtimeSession.fromJson(m)).toList();
   }
 
-  /// GO LIVE viewer path (task #172): ACTIVE PUBLIC_STAGE broadcasts,
-  /// listable by any authenticated user. The broadcaster's canonical
-  /// display name is folded into the session title so every existing
-  /// session-labeling surface renders it without a new code path.
+  /// GO LIVE (founder charter 2026-08-17): escalate the CURRENT active
+  /// conversation call session into the LIVE lifecycle state. Same
+  /// session id in, same session id out — never a second session.
+  Future<RealtimeSession?> goLive({
+    required String conversationId,
+    required String sessionId,
+  }) async {
+    final res = await _dio.post(
+      '/conversations/$conversationId/live/$sessionId/go-live',
+    );
+    final raw = _unwrapData(res.data);
+    final session = raw is Map ? raw['session'] : null;
+    return session is Map
+        ? RealtimeSession.fromJson(Map<String, dynamic>.from(session))
+        : null;
+  }
+
+  /// END LIVE ≠ END CALL: closes the public boundary; the same session
+  /// stays active and the private call continues.
+  Future<RealtimeSession?> endLive({
+    required String conversationId,
+    required String sessionId,
+  }) async {
+    final res = await _dio.post(
+      '/conversations/$conversationId/live/$sessionId/end-live',
+    );
+    final raw = _unwrapData(res.data);
+    final session = raw is Map ? raw['session'] : null;
+    return session is Map
+        ? RealtimeSession.fromJson(Map<String, dynamic>.from(session))
+        : null;
+  }
+
+  /// Live discovery ("what is live on Aura right now"), listable by any
+  /// authenticated user. The broadcaster's canonical display name is
+  /// folded into the session title so every existing session-labeling
+  /// surface renders it without a new code path.
   Future<List<RealtimeSession>> listPublicBroadcasts() async {
     final res = await _dio.get('/realtime/live/broadcasts');
     final raw = _unwrapData(res.data);

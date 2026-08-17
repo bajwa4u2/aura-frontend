@@ -332,6 +332,19 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
   }
 
+  /// LIVE role truth: am I an OBSERVER-role (receive-only public viewer)
+  /// participant of the current session? Stage participants — including
+  /// every original caller of an escalated call — are never observers.
+  bool _amObserver(RealtimeState state, String myUserId) {
+    if (myUserId.isEmpty) return false;
+    for (final p in state.participants) {
+      if (p.userId == myUserId) {
+        return p.role == RealtimeParticipantRole.observer;
+      }
+    }
+    return false;
+  }
+
   void _togglePanel(String panelId, bool wide) {
     if (wide) {
       setState(() {
@@ -726,7 +739,22 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     title: _callTitle(state.session, state.isVideoMode),
                     contextLabel: _contextLabel(state.session),
                     duration: callDuration,
-                    participantCount: state.participants.length,
+                    // Stage/private participants only — the watching
+                    // audience is a separate truth (charter §26 O).
+                    participantCount: state.participants
+                        .where(
+                          (p) =>
+                              p.role != RealtimeParticipantRole.observer,
+                        )
+                        .length,
+                    isPubliclyLive: state.session?.isLive == true,
+                    viewerCount: state.participants
+                        .where(
+                          (p) =>
+                              p.role == RealtimeParticipantRole.observer &&
+                              p.joinState.toUpperCase() == 'ACTIVE',
+                        )
+                        .length,
                     isConnecting: isConnecting,
                     hasIssue: showConnectionIssue,
                     // ACCEPTED/JOINING: the invited party's ACCEPT has been
@@ -832,14 +860,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             isVideoMode: state.isVideoMode,
                             activePanel: _activePanel,
                             pendingRequests: canModerate ? joinRequestCount : 0,
-                            // GO LIVE viewer (task #172): a PUBLIC_STAGE
-                            // observer never publishes — publish controls
-                            // would be lies; only Participants/More/Leave
-                            // remain.
-                            showPublishControls: !(
-                              (state.session?.accessMode ?? '') ==
-                                  'PUBLIC_STAGE' &&
-                              !isHost
+                            // LIVE viewer (charter 2026-08-17): publishing
+                            // is a ROLE fact — every stage participant in
+                            // an escalated call keeps their controls; only
+                            // OBSERVER-role viewers are receive-only
+                            // (publish controls would be lies for them).
+                            showPublishControls: !_amObserver(
+                              state,
+                              myUserId,
                             ),
                             onToggleMic: controller.toggleMicrophone,
                             onToggleCamera: controller.toggleCamera,
@@ -1653,6 +1681,8 @@ class _CallTopBar extends StatelessWidget {
     this.onMinimize,
     this.sessionTypeChip,
     this.trustLine,
+    this.isPubliclyLive = false,
+    this.viewerCount = 0,
   });
 
   final String title;
@@ -1661,6 +1691,12 @@ class _CallTopBar extends StatelessWidget {
   final int participantCount;
   final bool isConnecting;
   final bool hasIssue;
+
+  /// LIVE lifecycle truth (charter §26 O): a publicly-live call shows a
+  /// LIVE chip, and the watching audience is its OWN count — never mixed
+  /// into the stage/participant count.
+  final bool isPubliclyLive;
+  final int viewerCount;
   final String? waitingLabel;
   final bool isRinging;
 
@@ -1822,6 +1858,42 @@ class _CallTopBar extends StatelessWidget {
               ],
             ),
           ),
+
+          // Publicly LIVE: explicit chip + the audience as its own count.
+          if (isPubliclyLive) ...[
+            const SizedBox(width: AuraSpace.s8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s8,
+                vertical: 3,
+              ),
+              decoration: BoxDecoration(
+                color: AuraSurface.coRose.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                border: Border.all(
+                  color: AuraSurface.coRose.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.sensors_rounded,
+                    size: AuraIconSize.xs,
+                    color: AuraSurface.coRose,
+                  ),
+                  const SizedBox(width: AuraSpace.s4),
+                  Text(
+                    viewerCount > 0 ? 'LIVE · $viewerCount watching' : 'LIVE',
+                    style: AuraText.label.copyWith(
+                      color: AuraSurface.coRose,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // Minimize button — navigates to previous route with PiP overlay
           if (onMinimize != null) ...[
@@ -3028,6 +3100,27 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
         ),
         const SizedBox(height: AuraSpace.s12),
 
+        // GO LIVE (founder charter 2026-08-17): the ONLY origination door
+        // in Aura — contextual, inside the active realtime interaction.
+        // "We are talking. Let's open this to the public." Escalates the
+        // CURRENT session's lifecycle state; never creates a session.
+        // Hidden for observers (a viewer cannot take a session live) and
+        // outside Conversation calls.
+        if (_liveControlsEligible(state)) ...[
+          if (state.session?.isLive == true)
+            AuraSecondaryButton(
+              label: 'End Live — return to private call',
+              onPressed: () => unawaited(_endLive(state, ctrl)),
+            )
+          else
+            AuraPrimaryButton(
+              label: 'Go Live — open this call to the public',
+              icon: Icons.sensors_rounded,
+              onPressed: () => unawaited(_goLive(state, ctrl)),
+            ),
+          const SizedBox(height: AuraSpace.s12),
+        ],
+
         AuraSecondaryButton(
           label: 'Refresh session',
           onPressed: () => ctrl.hydrateSession(widget.sessionId),
@@ -3035,6 +3128,101 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
         const SizedBox(height: AuraSpace.s4),
       ],
     );
+  }
+
+  bool _liveControlsEligible(RealtimeState state) {
+    if (state.session?.surfaceType != RealtimeSurfaceType.conversation) {
+      return false;
+    }
+    if (!state.isJoined) return false;
+    final ls = state.session?.liveState ?? '';
+    if (ls != 'LIVE' && ls != 'NORMAL' && ls.isNotEmpty) return false;
+    for (final p in state.participants) {
+      if (p.userId == widget.myUserId) {
+        return p.role != RealtimeParticipantRole.observer;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _goLive(RealtimeState state, RealtimeController ctrl) async {
+    final session = state.session;
+    final conversationId = (session?.surfaceId ?? '').trim();
+    final sessionId = (session?.id ?? widget.sessionId).trim();
+    if (conversationId.isEmpty || sessionId.isEmpty) return;
+    final stageCount = state.participants
+        .where((p) => p.role != RealtimeParticipantRole.observer)
+        .length;
+    // FD-5 governed ritual: the public boundary is made explicit before
+    // anything changes — visibility, recording state, stage setup.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Go Live'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This call is about to become PUBLICLY observable. Anyone on '
+              'Aura can watch.',
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            Text('Stage: the $stageCount '
+                '${stageCount == 1 ? 'person' : 'people'} in this call now.'),
+            const Text('Recording: off.'),
+            const SizedBox(height: AuraSpace.s12),
+            const Text(
+              'Your conversation stays private — viewers see and hear only '
+              'this live call, never your messages, attachments, or '
+              'history. Ending the Live returns the call to private.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Start Live'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(realtimeRepositoryProvider)
+          .goLive(conversationId: conversationId, sessionId: sessionId);
+      await ctrl.hydrateSession(sessionId);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not go live — try again.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _endLive(RealtimeState state, RealtimeController ctrl) async {
+    final session = state.session;
+    final conversationId = (session?.surfaceId ?? '').trim();
+    final sessionId = (session?.id ?? widget.sessionId).trim();
+    if (conversationId.isEmpty || sessionId.isEmpty) return;
+    try {
+      await ref
+          .read(realtimeRepositoryProvider)
+          .endLive(conversationId: conversationId, sessionId: sessionId);
+      await ctrl.hydrateSession(sessionId);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not end the live — try again.')),
+        );
+      }
+    }
   }
 }
 
