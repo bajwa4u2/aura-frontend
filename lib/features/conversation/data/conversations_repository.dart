@@ -17,6 +17,8 @@ class ConversationParty {
     required this.institutionId,
     required this.leftAt,
     this.joinedAt,
+    this.firstJoinedAt,
+    this.enteredByInvitation = false,
     this.displayName,
     this.avatarUrl,
   });
@@ -26,10 +28,18 @@ class ConversationParty {
   final String? institutionId;
   final DateTime? leftAt;
 
-  /// When this party entered the conversation — the conversation's own
-  /// human history, used to order identity deterministically instead of
-  /// whatever order the database/DTO happened to return.
+  /// Most recent entry. MUTABLE — rewritten on re-entry, so it must never
+  /// be used as formation truth (F055 founder ruling).
   final DateTime? joinedAt;
+
+  /// IMMUTABLE admission chronology: the first time this party entered the
+  /// conversation. Leaving and rejoining does not rewrite it.
+  final DateTime? firstJoinedAt;
+
+  /// False for the founding parties, true for everyone admitted later
+  /// through an invitation — how the conversation grew, not when a row
+  /// happened to be written.
+  final bool enteredByInvitation;
   final String? displayName;
 
   /// Real identity image (person avatar / institution logo) from the
@@ -46,6 +56,8 @@ class ConversationParty {
       institutionId: _ns(json['institutionId']),
       leftAt: _date(json['leftAt']),
       joinedAt: _date(json['joinedAt']),
+      firstJoinedAt: _date(json['firstJoinedAt']) ?? _date(json['joinedAt']),
+      enteredByInvitation: json['enteredByInvitation'] == true,
       displayName: _ns(json['displayName']),
       avatarUrl: _ns(json['avatarUrl']),
     );

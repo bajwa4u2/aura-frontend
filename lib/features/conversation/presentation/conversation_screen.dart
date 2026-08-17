@@ -30,6 +30,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/conversations_repository.dart';
 import 'add_people_sheet.dart';
+import 'conversation_avatar.dart';
 import 'conversation_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
 
@@ -670,14 +671,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         ? context.pop()
                         : context.go(NavigationAuthority.messagesRoute),
                   ),
-                  AuraAvatar(
-                      name: conversationDisplayName(c, myUserId),
-                      // Canonical: a 1:1 shows the counterpart's real
-                      // avatar; a group shows a letter tile, never one
-                      // arbitrary member's photo standing in for the
-                      // group (founder-observed "odd" group avatar).
-                      imageUrl: conversationDisplayAvatarUrl(c, myUserId),
-                      size: 34),
+                  // F056: counterpart avatar for 1:1, bounded composite of
+                  // canonical participant identities for a group.
+                  ConversationAvatar(
+                      conversation: c, myUserId: myUserId, size: 34),
                   const SizedBox(width: AuraSpace.s10),
                   Expanded(
                     child: Text(

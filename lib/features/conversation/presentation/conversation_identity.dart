@@ -18,28 +18,40 @@ final myUserIdProvider = Provider<String>((ref) {
 /// active parties' names ("Amina", "Amina & Tariq", "Amina, Tariq +1").
 /// Canonical ordering of the other parties in a conversation.
 ///
-/// FROZEN RULE (founder): identity order comes from the human
-/// conversation relationship — never database order, DTO order, legacy
-/// slot order, or socket arrival order. Implemented as the
-/// conversation's own history: who entered it first, with a stable
-/// display-name tiebreak so the name can never flap between loads for
-/// parties that share a timestamp (or predate the field).
+/// FOUNDER RULING (2026-08-17, F055) — identity order must express how the
+/// human conversation actually formed:
+///   • 1:1 — the counterpart is primary;
+///   • a group grown from a pair — the FOUNDING conversational counterpart
+///     comes first, then people follow in their original admission
+///     chronology;
+///   • leaving and rejoining must NOT rewrite someone's semantic position;
+///   • the current user is implicit ("You"), never the derived counterpart;
+///   • deterministic canonical ordering resolves genuinely simultaneous
+///     ties only.
 ///
-/// JUDGMENT CALL, flagged for founder ruling: "conversation entry order"
-/// is this doc's reading of the human relationship. The alternative
-/// reading — alphabetical by canonical display name — is deterministic
-/// too but carries no relationship meaning. Change here, in one place,
-/// if the founder rules otherwise.
+/// Implementation: founding parties (no entry invitation) sort ahead of
+/// admitted ones, then `firstJoinedAt` — the IMMUTABLE admission
+/// chronology — orders each band. Mutable `joinedAt` is deliberately NOT
+/// consulted: it is rewritten on re-entry and would let a returning
+/// founder sort behind people admitted years later. `directKey` is
+/// likewise unusable, as the backend clears it permanently once topology
+/// grows beyond the founding pair.
 List<ConversationParty> orderedOtherParties(Conversation c, String myUserId) {
   final others = c.parties
       .where((p) => p.isActive && !(p.isPerson && p.userId == myUserId))
       .toList();
   others.sort((a, b) {
-    final aj = a.joinedAt;
-    final bj = b.joinedAt;
-    if (aj != null && bj != null && aj != bj) return aj.compareTo(bj);
-    if (aj != null && bj == null) return -1;
-    if (aj == null && bj != null) return 1;
+    // Founding band first — how the conversation began.
+    if (a.enteredByInvitation != b.enteredByInvitation) {
+      return a.enteredByInvitation ? 1 : -1;
+    }
+    final af = a.firstJoinedAt;
+    final bf = b.firstJoinedAt;
+    if (af != null && bf != null && af != bf) return af.compareTo(bf);
+    if (af != null && bf == null) return -1;
+    if (af == null && bf != null) return 1;
+    // Genuinely simultaneous (founding pair written in one transaction):
+    // deterministic canonical tiebreak so the label can never flap.
     return _partyName(a).toLowerCase().compareTo(_partyName(b).toLowerCase());
   });
   return others;
@@ -67,14 +79,53 @@ String _partyName(ConversationParty p) {
   return p.isPerson ? 'Aura member' : 'Institution';
 }
 
-/// Canonical avatar for a conversation row (2026-08-17, addendum §4:
-/// Conversation identity == realtime identity — no per-surface dialects).
-/// 1:1 → the counterpart's canonical avatarUrl; groups → null for now (a
-/// letter tile until the group-avatar treatment is ruled on), never one
-/// arbitrary member's photo masquerading as the group.
+/// Canonical avatar for a 1:1 conversation — the counterpart's real image.
+/// Returns null for groups: a group's visual identity is a COMPOSITE of its
+/// people (see [conversationAvatarIdentities] / `ConversationAvatar`), never
+/// one arbitrary member's photo standing in for everyone.
 String? conversationDisplayAvatarUrl(Conversation c, String myUserId) {
   final others = orderedOtherParties(c, myUserId);
   if (others.length != 1) return null;
   final url = (others.first.avatarUrl ?? '').trim();
   return url.isEmpty ? null : url;
+}
+
+/// One identity inside a conversation's visual identity.
+class ConversationAvatarIdentity {
+  const ConversationAvatarIdentity({required this.name, this.imageUrl});
+  final String name;
+  final String? imageUrl;
+}
+
+/// FOUNDER RULING (2026-08-17, F056): a generic letter tile is not Aura's
+/// group identity. A group is presented as a compact composite of its
+/// canonical participant identities, in the F055 formation order, with the
+/// current user excluded; canonical initials appear only for a participant
+/// who genuinely has no usable avatar. A custom conversation name controls
+/// TEXTUAL identity but never erases the human visual identity underneath.
+///
+/// Returns at most [max] identities; callers render "+N" for the remainder
+/// using [conversationAvatarOverflow].
+List<ConversationAvatarIdentity> conversationAvatarIdentities(
+  Conversation c,
+  String myUserId, {
+  int max = 3,
+}) {
+  final others = orderedOtherParties(c, myUserId);
+  return others
+      .take(max)
+      .map(
+        (p) => ConversationAvatarIdentity(
+          name: _partyName(p),
+          imageUrl: (p.avatarUrl ?? '').trim().isEmpty
+              ? null
+              : p.avatarUrl!.trim(),
+        ),
+      )
+      .toList();
+}
+
+int conversationAvatarOverflow(Conversation c, String myUserId, {int max = 3}) {
+  final total = orderedOtherParties(c, myUserId).length;
+  return total > max ? total - max : 0;
 }

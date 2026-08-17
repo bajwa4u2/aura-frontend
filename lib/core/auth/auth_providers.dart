@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'session_hint.dart';
+
 /// Canonical TokenStore used across the app.
 /// Must be Listenable (ChangeNotifier) because go_router uses it as refreshListenable.
 ///
@@ -148,6 +150,27 @@ class TokenStore extends ChangeNotifier {
   }) async {
     _accessToken = (accessToken?.trim().isEmpty ?? true) ? null : accessToken!.trim();
 
+    // RC1 / F065 — "AUTHENTICATION UNKNOWN/RESTORING IS NOT UNAUTHENTICATED".
+    // The session hint gates the cold-load /auth/refresh that restores a
+    // session after a browser refresh. It used to be written by only two
+    // call sites (password login, code verification) while sessions are in
+    // fact established by many paths — institution sign-in, guest/booker
+    // auth, bootstrap refresh, silent re-auth after a 401. Sessions born on
+    // those paths left the hint unwritten, so the NEXT reload skipped the
+    // refresh, the app declared the person unauthenticated, and the router
+    // discarded their destination.
+    //
+    // The hint is therefore now a CONSEQUENCE of holding a member session,
+    // written at the single choke point every path funnels through, so no
+    // future authentication path can forget it. Guest tokens deliberately
+    // do not set it: a meeting guest has no member refresh cookie, and
+    // claiming otherwise would make every later cold load ask blindly.
+    // Fire-and-forget — hint bookkeeping must never delay or fail auth.
+    final token = _accessToken;
+    if (token != null && _jwtType(token) != 'guest') {
+      unawaited(setSessionHint(true));
+    }
+
     if (kIsWeb) {
       _refreshToken = null;
       notifyListeners();
@@ -178,6 +201,12 @@ class TokenStore extends ChangeNotifier {
   Future<void> clearTokens() async {
     _accessToken = null;
     _refreshToken = null;
+
+    // Symmetry with setSession: losing the session loses the hint, so the
+    // next cold load stays silent instead of asking for a cookie that is
+    // gone. (Explicit logout paths also call this — the duplicate write is
+    // harmless and keeps the invariant true even for paths that don't.)
+    unawaited(setSessionHint(false));
 
     if (kIsWeb) {
       notifyListeners();

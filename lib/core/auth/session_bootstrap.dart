@@ -3,66 +3,17 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config.dart';
 import '../net/platform_http_adapter.dart';
 import 'auth_providers.dart';
+import 'session_hint.dart';
 
-/// Persistent flag that records "this device has had a successful login."
-/// Set by `auth_controller.login` / `verifyLoginCode` on successful session
-/// establishment, cleared by `auth_controller.logout`. The web bootstrap
-/// reads this before firing `/auth/refresh` so a fresh-tab visitor on a
-/// public route never produces a `401 Missing refresh token` console line.
-const String kSessionHintPrefKey = 'aura_session_hint';
-
-/// Companion timestamp of when the hint was last set. The web bootstrap
-/// uses this to skip `/auth/refresh` when the hint is older than the
-/// refresh-cookie max-age window — by then the cookie has expired and
-/// retrying just produces a guaranteed 401. Stored as ISO-8601 millis.
-const String kSessionHintAtPrefKey = 'aura_session_hint_at';
-
-/// Refresh-cookie max-age set by the backend (`auth.controller.ts`):
-/// 60 * 60 * 24 * 30 seconds = 30 days. We treat any hint older than this
-/// as expired locally so the bootstrap stays silent.
-const Duration kSessionHintMaxAge = Duration(days: 30);
-
-Future<bool> _hasSessionHint() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final flag = prefs.getBool(kSessionHintPrefKey) ?? false;
-    if (!flag) return false;
-    // Honor the timestamp gate when present. Older entries (set before this
-    // upgrade) carry no timestamp; treat them as valid so existing users do
-    // not get logged out. The next successful login refreshes the timestamp.
-    final at = prefs.getInt(kSessionHintAtPrefKey);
-    if (at == null) return true;
-    final age = DateTime.now().millisecondsSinceEpoch - at;
-    if (age < 0 || age > kSessionHintMaxAge.inMilliseconds) return false;
-    return true;
-  } catch (_) {
-    // SharedPreferences can throw in private-browsing mode; assume no hint.
-    return false;
-  }
-}
-
-Future<void> setSessionHint(bool value) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    if (value) {
-      await prefs.setBool(kSessionHintPrefKey, true);
-      await prefs.setInt(
-        kSessionHintAtPrefKey,
-        DateTime.now().millisecondsSinceEpoch,
-      );
-    } else {
-      await prefs.remove(kSessionHintPrefKey);
-      await prefs.remove(kSessionHintAtPrefKey);
-    }
-  } catch (_) {
-    // best-effort
-  }
-}
+// Session-hint primitives now live in session_hint.dart so BOTH the token
+// store (the universal session choke point) and this bootstrap can depend
+// on them without an import cycle — see that library for the RC1/F065
+// doctrine. Re-exported so existing importers keep working unchanged.
+export 'session_hint.dart';
 
 /// Bootstraps session at app start.
 ///
@@ -196,7 +147,7 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
         // and the bootstrap had to ask blindly. The hint flag closes that
         // gap for users who have never authenticated on this browser; users
         // who have signed in keep the cookie-based silent refresh.
-        final hasHint = await _hasSessionHint();
+        final hasHint = await hasSessionHint();
         if (!hasHint) return;
 
         final res = await bootstrapDio.post(
