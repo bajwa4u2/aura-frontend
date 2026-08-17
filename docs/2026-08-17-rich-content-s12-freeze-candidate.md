@@ -1,6 +1,7 @@
-# §12 FINAL RICH CONTENT & INTERACTION CONTRACT — FREEZE CANDIDATE
+# FINAL §12 RICH CONTENT & INTERACTION CONTRACT — READY FOR FOUNDER FREEZE
 
-**Status:** FREEZE CANDIDATE — awaiting founder freeze + Phase C authorization.
+**Status:** READY FOR FOUNDER FREEZE. F138 empirically resolved (§2); no
+outstanding decisions; no unresolved contradiction.
 **Date:** 2026-08-17
 **Supersedes:** the §12 PROPOSED contract (same date), which remains the record of
 the reasoning this document ratifies.
@@ -33,12 +34,76 @@ and the founder rulings of 2026-08-17.
 
 ---
 
-## 2. ARCHITECTURAL CONTRADICTION DISCOVERED
+## 2. F138 — CONFIRMED SECURITY ARCHITECTURE DEFECT
 
-Ruling 6 forced a question the audit had recorded but not yet confronted, and the
-answer is serious.
+**Empirically established 2026-08-17 against production. Not inferred from code.**
 
-### F138 — storage-level public readability may undercut visibility enforcement
+### 2.1 Production storage topology (evidence)
+
+| Fact | Evidence |
+|---|---|
+| Delivery domain | `https://uploads.auraplatform.org` — an R2 **custom domain**, `server: cloudflare` |
+| Bucket | `aura-uploads` (account `4aaf8b85…`), single bucket |
+| Key scheme | `users/<userId>/<timestamp>-<uuid>.<ext>` — flat, **no visibility segregation** |
+| Upload path | presigned PUT to `…r2.cloudflarestorage.com/aura-uploads/<key>` |
+| Delivery path | permanent `https://uploads.auraplatform.org/<key>` |
+
+Presign returns `url`, `originalUrl`, `displayUrl`, `thumbnailUrl` and `thumbUrl`
+as **the identical full-resolution object** — F136 confirmed live in production.
+
+### 2.2 The test performed
+
+A harmless 70-byte 1×1 PNG was presigned and PUT as the review account, then
+**never confirmed, never attached, never promoted to READY**, and fetched with
+no credentials. No sensitive production content was accessed or reproduced.
+
+| Probe | Result |
+|---|---|
+| Unauthenticated GET of a known PUBLIC object | **200**, 976 KB, `image/png` |
+| Unauthenticated GET of a non-existent key | **404** — *not* 401/403 |
+| **Unauthenticated GET of the unconfirmed probe object** | **200, 70 bytes returned** |
+| Authenticated delivery endpoint for the same media | refused — not READY |
+
+### 2.3 What this proves
+
+The **404 on a missing key is the decisive signal**: an authorization-gated route
+refuses; this route reported *absence*. It resolved the key directly against the
+bucket. Combined with the third probe — bytes served for an object with no
+product existence whatsoever — the conclusion is unambiguous:
+
+> **`uploads.auraplatform.org` performs no authorization of any kind. Media row
+> state — `status`, `visibility`, attachment, ownership — is entirely invisible
+> to the storage/delivery boundary.**
+
+Therefore **PUBLIC, RESTRICTED and PRIVATE objects are physically
+indistinguishable at the delivery boundary**, and a RESTRICTED Conversation
+attachment *is* retrievable by anyone possessing its key. This required no
+RESTRICTED object to demonstrate: the storage layer never consults the column
+that would distinguish one, so the result holds for every object by construction.
+
+Setting `visibility = RESTRICTED` changes **only whether Aura hands out the
+URL**. It does not change storage-level accessibility. Signed URLs are therefore
+**not currently security-bearing** — the underlying object URL remains
+permanently fetchable.
+
+### 2.4 Consequence for F126
+
+**F126 = APPLICATION-LEVEL DISCLOSURE CLOSED, STORAGE-LEVEL CONFIDENTIALITY NOT
+YET GUARANTEED.**
+
+The Phase A correction was correct and necessary — it closed the path that
+*handed out* permanent URLs to any caller, which was the live, trivially
+exploitable exposure. It is not sufficient. **F126 must not be marked
+LIVE_CERTIFIED**, and the governed-delivery correction moves ahead of
+presentation work.
+
+**Required invariant (frozen):**
+
+> RESTRICTED / PRIVATE BYTES MUST NOT BE RETRIEVABLE MERELY BY POSSESSION OF
+> THEIR STORAGE KEY OR HISTORICAL DELIVERY URL. Aura authorization must remain
+> load-bearing. PUBLIC is a governance state, not an irreversible storage ACL.
+
+### 2.5 Original framing (retained for the record)
 
 **There is one R2 bucket, and every object — PUBLIC, RESTRICTED and PRIVATE
 alike — is written to the same public prefix via `buildPublicUrl`.** "Private" is
@@ -62,12 +127,10 @@ Ruling 6 cannot be satisfied without resolving this: Aura cannot claim revocable
 governed delivery for PUBLIC content while RESTRICTED content is reachable at a
 permanent public URL.
 
-**This requires an operational fact I cannot read from code: whether the R2
-bucket currently allows public read.** It is registered as **F138**, and its
-resolution is a **freeze-blocking prerequisite for the delivery model in §6** —
-the only such item in this document.
+**This has now been empirically resolved — see §2.1–2.4. The bucket IS publicly
+readable through the custom domain, so the pessimistic branch is the real one.**
 
-**Resolution direction (contingent on that fact):** all object access moves
+**Resolution direction (now confirmed necessary):** all object access moves
 behind Aura-controlled delivery; the bucket becomes non-public; PUBLIC media is
 served through a cacheable Aura delivery route (CDN beneath Aura's authority,
 per ruling 6) rather than a raw storage URL. Staged so Posts never break — see
@@ -468,8 +531,8 @@ No presentation stage ships on an ungoverned ingestion path.
 | **C2** | Reference index + verifier registry + reconciler + retention rewrite + backfill (F131) | — |
 | **C3** | Access context at ingestion; restricted branches for POST/REPLY (F126 generalized) | C1 |
 | **C4** | Canonical ingestion convergence — Correspondence, Articles, uploads (F129) | C1, C2 |
-| **C5** | Canonical delivery route; **F138 resolution**; PUBLIC delivery migration steps 1–3 | C1 |
-| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136) | C1 |
+| **C5** | **PROMOTED — SECURITY STAGE.** Canonical governed delivery for all visibility classes; retire raw storage URLs; remove bucket public read; F138 closure and F126 storage-level completion | C1, C3 |
+| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136) | C1, **C5** |
 | **D2** | Video posters, audio duration/waveform, PDF preview, document identity | D1 |
 | **D3** | Broad format families + transcode-dependent formats (HEIC etc.) + external preview cache (F135) | D1 |
 | **E1** | Shared client primitives: intake, upload (progress/cancel/retry), players with seek, viewers, cards, accessibility | C1 |
@@ -492,19 +555,19 @@ declares its class before work begins.
 
 ---
 
-## 18. REMAINING FOUNDER DECISION REQUIRED BEFORE FREEZE
+## 18. REMAINING FOUNDER DECISIONS BEFORE FREEZE
 
-**Exactly one, and it is a fact rather than a preference:**
+**None.**
 
-**F138 — does the production R2 bucket currently allow public read?**
+F138 was the sole freeze blocker and has been resolved **empirically, not by
+ruling** (§2). The answer was the pessimistic branch: the bucket is publicly
+readable through the custom domain, RESTRICTED bytes are retrievable by key, and
+**C5 is therefore promoted ahead of D1 as a security stage** (§16).
 
-- **If NO:** RESTRICTED media was never storage-reachable, F126's fix is
-  complete as delivered, and §6 proceeds as a straightforward improvement.
-- **If YES:** RESTRICTED media is reachable at a permanent URL by anyone who
-  learns the key, F126 is only partially mitigated, and **C5 must be promoted
-  ahead of D1** as a security stage rather than a delivery improvement.
+All eight previously-open decisions were resolved by founder ruling and are
+recorded above. No new architectural contradiction arose: the confirmed defect
+**validates** Ruling 6's target architecture rather than conflicting with it —
+governed delivery was already the destination, and the evidence only determined
+its sequencing.
 
-Every other ruling integrates without contradiction. All eight of the previously
-open decisions are now resolved by founder ruling and recorded above.
-
-**With F138 answered, §12 is ready for freeze and Phase C authorization.**
+**§12 IS READY FOR FOUNDER FREEZE AND PHASE C AUTHORIZATION.**
