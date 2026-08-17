@@ -1540,11 +1540,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   Duration? _callDuration(RealtimeSession? session, DateTime now) {
     if (session == null) return null;
-    final start =
-        session.answeredAt ??
-        session.firstJoinedAt ??
-        session.startedAt ??
-        session.createdAt;
+    // FOUNDER RULING (2026-08-17): CALL DURATION BEGINS WHEN THE REALTIME
+    // COMMUNICATION SESSION ACTUALLY ESTABLISHES. Ringing / Ready-to-join /
+    // Connecting time is not call duration — never fall back to startedAt/
+    // createdAt (session-creation time), which made the clock count a call
+    // that had not connected.
+    final start = session.answeredAt ?? session.firstJoinedAt;
     if (start == null) return null;
     if (session.endedAt != null) return session.endedAt!.difference(start);
     final d = now.difference(start);
