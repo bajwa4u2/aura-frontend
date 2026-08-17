@@ -124,6 +124,36 @@ void main() {
       }
     });
 
+    test('Spaces are PUBLIC discovery/read destinations '
+        '(founder ruling 2026-08-17)', () {
+      for (final path in const ['/spaces', '/spaces/civic', '/spaces/climate']) {
+        expect(classifyRoute(path), RouteClass.public, reason: path);
+        expect(routeAllowsUnauthenticatedEntry(path), isTrue, reason: path);
+        expect(isMemberShellPath(path), isFalse, reason: path);
+      }
+    });
+
+    test('CLASSIFICATION IS NOT AUTHORIZATION — an open class describes '
+        'what may RENDER to a signed-out visitor, never what they may DO', () {
+      // Both open classes exist to let a legitimate public destination
+      // render. Neither confers participation authority: acting inside a
+      // Space, or being admitted to a meeting, is decided by canonical
+      // identity / relationship / capability / meeting authority — which
+      // lives outside this file entirely. This test exists so a future
+      // change cannot quietly turn a routing decision into an
+      // authorization decision.
+      expect(classifyRoute('/spaces/civic'), RouteClass.public);
+      expect(classifyRoute('/meetings/abc123/room'), RouteClass.guestReachable);
+
+      // The classification authority exposes NO capability/permission
+      // surface — it answers reachability only.
+      expect(routeAllowsUnauthenticatedEntry('/spaces/civic'), isTrue);
+      expect(routeAllowsUnauthenticatedEntry('/meetings/abc123/room'), isTrue);
+
+      // ...while member surfaces remain closed to unauthenticated entry.
+      expect(routeAllowsUnauthenticatedEntry('/messages'), isFalse);
+    });
+
     test('member surfaces still require authentication', () {
       for (final path in const [
         '/home',

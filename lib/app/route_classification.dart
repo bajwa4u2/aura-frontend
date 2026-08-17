@@ -122,6 +122,15 @@ bool isPublicPath(String path) {
       path == '/supporters' ||
       path == '/search' ||
       path == '/discover' ||
+      // SPACES — public subject-based discovery and participation
+      // contexts (founder ruling 2026-08-17). A signed-out visitor may
+      // browse the directory, open a Space, consume its legitimate public
+      // content and understand its subject. PARTICIPATION remains governed
+      // independently: route classification describes what may RENDER, it
+      // never grants authority to act. See the classification-is-not-
+      // authorization invariant in the F069 gate.
+      path == '/spaces' ||
+      path.startsWith('/spaces/') ||
       path.startsWith('/posts/') ||
       path.startsWith('/u/') ||
       path.startsWith('/author/') ||
@@ -238,8 +247,6 @@ bool isMemberShellPath(String path) {
       isAdminShellPath(path) ||
       path == '/thread' ||
       path.startsWith('/thread/') ||
-      path == '/spaces' ||
-      path.startsWith('/spaces/') ||
       path == '/aura/participation' ||
       path == '/discover/people' ||
       path == '/devices' ||
