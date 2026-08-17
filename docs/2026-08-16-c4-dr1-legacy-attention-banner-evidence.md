@@ -100,6 +100,24 @@ through `:405` → `:407` → `_showForegroundNotification` → "… started a c
 - **Dead code:** `aura_platform_components.dart:1075` — `AuraCallBanner`,
   zero call sites.
 
+## Addendum (2026-08-16, later same day): stale-ACTIVE session feed confirmed
+
+During live certification the strip became PERSISTENT over the conversation
+composer in the Zakria session (blocking composition — independently
+reproducing the founder's /articles/write observation). Production data
+inspection found **five RealtimeSession rows stuck ACTIVE since
+2026-08-12** on the legacy THREAD surface `cmsp7euhf00soqw0cjcrzh2d1`
+(Bajwa↔Zakria direct thread; four started by cmm69u97n…, one by
+cmsp7aos4…; all `answeredAt` set, `endedAt` NULL): `cmsps0jiw0059qk0c…`,
+`cmspp1r1m01glnz0c…`, `cmspiuyp6023mpb0c…`, `cmsphxazx01v0pb0c…`,
+`cmsphvdbe01t7pb0c…`. These orphans predate the Realtime Architecture
+Correction closure and continuously feed the legacy attention layer.
+
+Per founder instruction, NOTHING was patched or deleted — the stale rows
+are themselves C4 evidence (lifecycle-convergence failure class) and the
+retirement must handle both the presentation AND the orphaned-session
+reconciliation under the canonical Attention/lifecycle authorities.
+
 ## Disposition
 
 Held for C4 resume: this generic global banner/overlay is explicitly part of
