@@ -672,7 +672,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   ),
                   AuraAvatar(
                       name: conversationDisplayName(c, myUserId),
-                      imageUrl: _counterpartAvatarUrl(c, myUserId),
+                      // Canonical: a 1:1 shows the counterpart's real
+                      // avatar; a group shows a letter tile, never one
+                      // arbitrary member's photo standing in for the
+                      // group (founder-observed "odd" group avatar).
+                      imageUrl: conversationDisplayAvatarUrl(c, myUserId),
                       size: 34),
                   const SizedBox(width: AuraSpace.s10),
                   Expanded(
@@ -1682,15 +1686,10 @@ class _LinkPreviewCard extends StatelessWidget {
 
 /// The direct counterpart's real identity image (person avatar or
 /// institution logo) for header/list presentation.
-String? _counterpartAvatarUrl(Conversation c, String? myUserId) {
-  for (final p in c.parties) {
-    if (p.isActive && !(p.isPerson && p.userId == myUserId)) {
-      final url = (p.avatarUrl ?? '').trim();
-      if (url.isNotEmpty) return url;
-    }
-  }
-  return null;
-}
+// _counterpartAvatarUrl retired 2026-08-17 — it returned the first party
+// with any avatar, so a group thread wore one member's photo. Canonical
+// rule now lives in conversation_identity.dart
+// (conversationDisplayAvatarUrl), shared with the Messages list.
 
 /// Internal Aura reference card — the same visual grade as an external
 /// preview, sourced from the object's OWN authority (real content, not

@@ -2177,15 +2177,49 @@ class _VideoGrid extends StatelessWidget {
   final String myUserId;
   final bool micOn;
 
-  String _nameForUserId(String userId) {
-    if (userId == myUserId) return 'You';
+  static String _rawSocket(String value) {
+    final v = value.trim();
+    return v.startsWith('socket:') ? v.substring(7) : v;
+  }
+
+  String _nameOf(RealtimeParticipant p) {
+    if (p.userId == myUserId) return 'You';
+    final name = (p.displayName ?? '').trim();
+    if (name.isNotEmpty) return name;
+    final handle = (p.handle ?? '').trim();
+    if (handle.isNotEmpty) return '@$handle';
+    return 'Participant';
+  }
+
+  /// CANONICAL TILE IDENTITY (founder finding 2026-08-17: every remote
+  /// video tile read "Participant").
+  ///
+  /// `remoteRenderers` is keyed by PEER KEY — the peer's SOCKET id — but
+  /// this resolver previously compared that key against `participant
+  /// .userId`, which can never match, so every remote tile fell through
+  /// to the generic label even though canonical identity was present in
+  /// the roster all along. Resolve through `runtimeDeviceId` (the
+  /// participant's socket), with a defensive userId match and a
+  /// 1:1-inference fallback so a tile is only ever generic when the
+  /// roster genuinely cannot name it.
+  String _labelForPeerKey(String peerKey) {
+    final raw = _rawSocket(peerKey);
+    if (raw.isEmpty) return 'Participant';
+
     for (final p in participants) {
-      if (p.userId != userId) continue;
-      final name = (p.displayName ?? '').trim();
-      if (name.isNotEmpty) return name;
-      final handle = (p.handle ?? '').trim();
-      if (handle.isNotEmpty) return '@$handle';
-      return 'Participant';
+      if (_rawSocket(p.runtimeDeviceId ?? '') == raw) return _nameOf(p);
+    }
+    for (final p in participants) {
+      if (p.userId.trim() == raw) return _nameOf(p);
+    }
+
+    // Exactly one other person on the roster and one remote stream: the
+    // mapping is unambiguous even if the socket id has since rotated.
+    final others = participants
+        .where((p) => p.userId.isNotEmpty && p.userId != myUserId)
+        .toList();
+    if (others.length == 1 && remoteRenderers.length == 1) {
+      return _nameOf(others.first);
     }
     return 'Participant';
   }
@@ -2197,7 +2231,7 @@ class _VideoGrid extends StatelessWidget {
       entries.add(('You', localRenderer!, true));
     }
     for (final entry in remoteRenderers.entries) {
-      entries.add((_nameForUserId(entry.key), entry.value, false));
+      entries.add((_labelForPeerKey(entry.key), entry.value, false));
     }
 
     return LayoutBuilder(

@@ -16,6 +16,7 @@ class ConversationParty {
     required this.userId,
     required this.institutionId,
     required this.leftAt,
+    this.joinedAt,
     this.displayName,
     this.avatarUrl,
   });
@@ -24,6 +25,11 @@ class ConversationParty {
   final String? userId;
   final String? institutionId;
   final DateTime? leftAt;
+
+  /// When this party entered the conversation — the conversation's own
+  /// human history, used to order identity deterministically instead of
+  /// whatever order the database/DTO happened to return.
+  final DateTime? joinedAt;
   final String? displayName;
 
   /// Real identity image (person avatar / institution logo) from the
@@ -39,6 +45,7 @@ class ConversationParty {
       userId: _ns(json['userId']),
       institutionId: _ns(json['institutionId']),
       leftAt: _date(json['leftAt']),
+      joinedAt: _date(json['joinedAt']),
       displayName: _ns(json['displayName']),
       avatarUrl: _ns(json['avatarUrl']),
     );
