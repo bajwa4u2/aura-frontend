@@ -181,10 +181,20 @@ class RealtimeSocketService {
     // 15s connect timeouts), while a raw WebSocket to the same engine
     // connected instantly. Identity/auth ride the socket.io auth payload,
     // which the backend handshake parser reads.
+    // MULTIPLEX OVER THE PROVEN ENGINE (three-party correction, step 2):
+    // with forceNew:true a FRESH Manager was built per establishment and
+    // its socket.connect() silently created no transport at all (observed
+    // live on two bundles: zero WebSocket constructions, zero polling XHR,
+    // clean 15s/20s timeouts) — while the boot-time messages Manager on
+    // the same origin connects reliably. socket.io namespaces exist
+    // precisely so one engine carries many namespaces: acquire /realtime
+    // as a namespace socket on the cached origin Manager instead of
+    // forcing a doomed second engine. Per-namespace auth still rides the
+    // CONNECT packet via `auth`.
     final socket = io.io('$origin/realtime', <String, dynamic>{
       'transports': <String>['websocket'],
       'autoConnect': false,
-      'forceNew': true,
+      'forceNew': false,
       'auth': auth,
       'extraHeaders': extraHeaders,
     });
