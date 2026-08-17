@@ -376,7 +376,11 @@ class RealtimeRepository {
       // 2026-08-17 §3): the conversation-scoped join carries the surface's
       // own presence/notification semantics — never the generic fallback.
       final joinPath = '/conversations/$surfaceId/live/$id/join';
+      // ignore: avoid_print
+      print('[rtc-diag] REST join → $joinPath');
       await _dio.post(joinPath);
+      // ignore: avoid_print
+      print('[rtc-diag] REST join OK');
       return loadSessionBundle(id, forceRefresh: true);
     }
 

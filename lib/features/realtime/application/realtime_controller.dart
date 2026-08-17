@@ -722,6 +722,8 @@ class RealtimeController extends StateNotifier<RealtimeState>
         }
         lastError = error;
         lastStack = stack;
+        // ignore: avoid_print
+        print('[rtc-diag] join attempt ${attempt + 1} failed: $error');
 
         final retryable =
             error is TimeoutException || _isRetryableConnectionError(error);
@@ -770,7 +772,12 @@ class RealtimeController extends StateNotifier<RealtimeState>
   }
 
   Future<void> _performJoin(String sessionId, int epoch) async {
+    // ignore: avoid_print
+    print('[rtc-diag] performJoin start session=$sessionId');
     await hydrateSession(sessionId);
+    // ignore: avoid_print
+    print('[rtc-diag] hydrated surface=${state.session?.surfaceType.name}'
+        ' active=${state.session?.isActive}');
 
     final session = state.session;
     if (session == null) {

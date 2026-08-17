@@ -96,6 +96,12 @@ class RealtimeSocketService {
       );
     } catch (error) {
       debugPrint('[transport-diag] ensureConnected FAILED error=$error');
+      // TEMPORARY release-visible diagnostic (founder stop-order 2026-08-17):
+      // debugPrint is stripped in release web builds; the production three-
+      // party failure produces zero observable client evidence. Remove once
+      // the transport root cause is certified fixed.
+      // ignore: avoid_print
+      print('[rtc-diag] ensureConnected FAILED: $error');
       rethrow;
     }
   }
@@ -169,7 +175,11 @@ class RealtimeSocketService {
     _wireCoreEvents(socket);
     _socket = socket;
     debugPrint('[transport-diag] new socket object created, calling connect()');
+    // ignore: avoid_print
+    print('[rtc-diag] socket created for $origin/realtime; invoking connect()');
     socket.connect();
+    // ignore: avoid_print
+    print('[rtc-diag] connect() invoked; connected=${socket.connected}');
 
     await _waitForServerRecognizedId(socket);
     debugPrint(
@@ -250,6 +260,8 @@ class RealtimeSocketService {
 
     onConnectError = (dynamic error) {
       debugPrint('[transport-diag] connect_error fired: $error');
+      // ignore: avoid_print
+      print('[rtc-diag] connect_error: $error');
       if (!completer.isCompleted) {
         cleanup();
         completer.completeError(
@@ -274,6 +286,8 @@ class RealtimeSocketService {
 
     onDisconnect = (dynamic reason) {
       debugPrint('[transport-diag] disconnect event fired before connect completed: $reason');
+      // ignore: avoid_print
+      print('[rtc-diag] pre-connect disconnect: $reason');
       if (!completer.isCompleted) {
         cleanup();
         completer.completeError(
