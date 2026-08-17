@@ -23,8 +23,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
     this._socketService,
     this._mediaService,
     this._tokenStore,
-    this._readClientIdentity,
-  ) : super(RealtimeState.initial()) {
+    this._readClientIdentity, {
+    Future<String> Function()? readMyUserId,
+  }) : _readMyUserId = readMyUserId,
+       super(RealtimeState.initial()) {
     _subscription = _socketService.events.listen(_handleSocketEvent);
     _mediaSubscription = _mediaService.snapshots.listen(_handleMediaSnapshot);
     _peerHealthSubscription =
@@ -39,6 +41,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
   final RealtimeSocketService _socketService;
   final RealtimeMediaService _mediaService;
   final TokenStore _tokenStore;
+
+  /// GO LIVE viewer path (task #172): resolves the signed-in user id so
+  /// media capture can distinguish the broadcaster (publishes) from a
+  /// PUBLIC_STAGE viewer (receive-only). Null in tests that don't care.
+  final Future<String> Function()? _readMyUserId;
   // Awaits the client identity FutureProvider so the realtime handshake
   // always carries identity headers even on a very-early reconnect (e.g.
   // immediately after sign-in before any HTTP request has run). Resolves
@@ -1643,11 +1650,27 @@ class RealtimeController extends StateNotifier<RealtimeState>
         refreshTurnCredentials: refreshTurnCredentials,
       );
 
-      final wantsAudio = state.policy?.audioAllowed ?? true;
-      final wantsVideo =
-          state.isVideoMode && (state.policy?.videoAllowed ?? true);
+      // GO LIVE viewer path (task #172): in a PUBLIC_STAGE session only
+      // the broadcaster publishes. Everyone else is a receive-only
+      // observer — no capture, no permission prompt, no published
+      // tracks; remote broadcast media still renders (answering an offer
+      // needs no local stream, same as audio-only screen-share peers).
+      var receiveOnly = false;
+      if ((state.session?.accessMode ?? '') == 'PUBLIC_STAGE') {
+        final myId = (await (_readMyUserId?.call() ?? Future.value('')))
+            .trim();
+        final broadcasterId = (state.session?.startedByUserId ?? '').trim();
+        receiveOnly =
+            myId.isEmpty || broadcasterId.isEmpty || myId != broadcasterId;
+      }
 
-      if (!state.isMediaReady) {
+      final wantsAudio = !receiveOnly && (state.policy?.audioAllowed ?? true);
+      final wantsVideo =
+          !receiveOnly &&
+          state.isVideoMode &&
+          (state.policy?.videoAllowed ?? true);
+
+      if (!state.isMediaReady && !receiveOnly) {
         await _mediaService.ensureLocalMedia(
           audio: wantsAudio,
           video: wantsVideo,

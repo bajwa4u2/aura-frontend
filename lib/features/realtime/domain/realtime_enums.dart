@@ -69,5 +69,9 @@ enum RealtimeParticipantRole {
   moderator,
   participant,
   guest,
+
+  /// GO LIVE viewer (task #172): admitted to a PUBLIC_STAGE session as a
+  /// receive-only observer — never a Conversation party, never publishes.
+  observer,
   unknown,
 }

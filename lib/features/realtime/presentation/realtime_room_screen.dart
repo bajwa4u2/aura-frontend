@@ -146,6 +146,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   String? _lastKnownSurfaceId;
   String? _lastKnownInstitutionId;
   Timer? _durationTimer;
+  Timer? _preJoinTruthTimer;
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
   String? _activePanel;
@@ -214,12 +215,32 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       if (!mounted) return;
       setState(() => _now = DateTime.now());
     });
+
+    // Pre-join session-end truth (2026-08-17 addendum §7): a user parked
+    // on Ready-to-join has no socket subscription, so a session that ends
+    // (host end, auto-expiry, convergence sweep) previously left them
+    // staring at an actionable join for a session that no longer exists.
+    // While NOT joined, periodically re-hydrate canonical session state —
+    // the existing ended-session auto-navigation then reconciles the
+    // screen the moment the session is terminal. No-op once joined (the
+    // socket carries terminal truth live).
+    _preJoinTruthTimer ??= Timer.periodic(const Duration(seconds: 12), (_) {
+      if (!mounted) return;
+      final current = ref.read(realtimeControllerProvider);
+      if (current.isJoined) return;
+      final id = widget.sessionId.trim();
+      if (id.isEmpty) return;
+      unawaited(
+        ref.read(realtimeControllerProvider.notifier).hydrateSession(id),
+      );
+    });
   }
 
 
   @override
   void dispose() {
     _durationTimer?.cancel();
+    _preJoinTruthTimer?.cancel();
 
     // A4: clear the visibility flag as the room screen unmounts so the
     // PiP becomes visible right after the room widget tree is removed.
@@ -811,6 +832,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             isVideoMode: state.isVideoMode,
                             activePanel: _activePanel,
                             pendingRequests: canModerate ? joinRequestCount : 0,
+                            // GO LIVE viewer (task #172): a PUBLIC_STAGE
+                            // observer never publishes — publish controls
+                            // would be lies; only Participants/More/Leave
+                            // remain.
+                            showPublishControls: !(
+                              (state.session?.accessMode ?? '') ==
+                                  'PUBLIC_STAGE' &&
+                              !isHost
+                            ),
                             onToggleMic: controller.toggleMicrophone,
                             onToggleCamera: controller.toggleCamera,
                             isScreenSharing: state.isScreenSharing,
@@ -1592,7 +1622,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // Connecting time is not call duration — never fall back to startedAt/
     // createdAt (session-creation time), which made the clock count a call
     // that had not connected.
-    final start = session.answeredAt ?? session.firstJoinedAt;
+    // answeredAt ONLY (2026-08-17 addendum §6): firstJoinedAt equals the
+    // host's REST join at session CREATION for conversation calls, so the
+    // Ready-to-join screen was still counting from creation through that
+    // fallback. Before canonical establishment there is NO call-duration
+    // clock at all.
+    final start = session.answeredAt;
     if (start == null) return null;
     if (session.endedAt != null) return session.endedAt!.difference(start);
     final d = now.difference(start);
@@ -2391,6 +2426,7 @@ class _CallControlDock extends StatelessWidget {
     this.isScreenSharing = false,
     this.isTogglingScreenShare = false,
     this.onToggleScreenShare,
+    this.showPublishControls = true,
   });
 
   final bool micOn;
@@ -2414,6 +2450,11 @@ class _CallControlDock extends StatelessWidget {
   final bool isScreenSharing;
   final bool isTogglingScreenShare;
   final VoidCallback? onToggleScreenShare;
+
+  /// False for PUBLIC_STAGE observers: mic/camera/share controls are
+  /// hidden entirely (a viewer never publishes; showing the toggles
+  /// would be presentation lying about capability).
+  final bool showPublishControls;
 
   /// 2026-08-14 repair — Thread/DM speaker/output-route control. Only shown
   /// on platforms where the toggle actually does something (mobile-native).
@@ -2446,17 +2487,19 @@ class _CallControlDock extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Mic
-            _DockButton(
-              icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-              label: micOn ? 'Mute' : 'Unmute',
-              active: micOn,
-              warning: !micOn,
-              onPressed: onToggleMic,
-            ),
-            const SizedBox(width: AuraSpace.s8),
+            if (showPublishControls) ...[
+              _DockButton(
+                icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+                label: micOn ? 'Mute' : 'Unmute',
+                active: micOn,
+                warning: !micOn,
+                onPressed: onToggleMic,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+            ],
 
             // Camera (video calls only)
-            if (isVideoMode) ...[
+            if (showPublishControls && isVideoMode) ...[
               _DockButton(
                 icon: cameraOn
                     ? Icons.videocam_rounded
@@ -2472,7 +2515,7 @@ class _CallControlDock extends StatelessWidget {
             // Screen share — audio AND video calls (the shared media
             // service adds the track with renegotiation on audio-only
             // peers, so audio calls genuinely support it).
-            if (onToggleScreenShare != null) ...[
+            if (showPublishControls && onToggleScreenShare != null) ...[
               _DockButton(
                 icon: isScreenSharing
                     ? Icons.stop_screen_share_rounded

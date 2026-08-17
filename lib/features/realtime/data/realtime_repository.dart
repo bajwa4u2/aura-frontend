@@ -251,6 +251,26 @@ class RealtimeRepository {
     return _asList(list).map((m) => RealtimeSession.fromJson(m)).toList();
   }
 
+  /// GO LIVE viewer path (task #172): ACTIVE PUBLIC_STAGE broadcasts,
+  /// listable by any authenticated user. The broadcaster's canonical
+  /// display name is folded into the session title so every existing
+  /// session-labeling surface renders it without a new code path.
+  Future<List<RealtimeSession>> listPublicBroadcasts() async {
+    final res = await _dio.get('/realtime/live/broadcasts');
+    final raw = _unwrapData(res.data);
+    final list = raw is List ? raw : (raw is Map && raw.containsKey('items') ? raw['items'] : []);
+    return _asList(list).map((m) {
+      final map = Map<String, dynamic>.from(m);
+      final broadcaster = map['broadcaster'];
+      final title = (map['title'] ?? '').toString().trim();
+      if (title.isEmpty && broadcaster is Map) {
+        final name = (broadcaster['displayName'] ?? '').toString().trim();
+        if (name.isNotEmpty) map['title'] = '$name — Live';
+      }
+      return RealtimeSession.fromJson(map);
+    }).toList();
+  }
+
   /// Lightweight resolution check for app-resume reconciliation. Returns
   /// whether the bridge should drop the ringing card for [sessionId]:
   ///   - session 404 / ENDED / CANCELLED → drop

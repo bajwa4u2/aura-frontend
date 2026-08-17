@@ -205,7 +205,17 @@ class _HeaderLiveBtn extends ConsumerWidget {
     final sessions = ref
         .watch(discoverableLiveSessionsProvider)
         .maybeWhen(data: (s) => s, orElse: () => <RealtimeSession>[]);
-    final hasLive = sessions.isNotEmpty;
+    // GO LIVE viewer path (task #172): public broadcasts are listed for
+    // EVERYONE — this is how a non-party discovers and watches a Live.
+    final broadcastsRaw = ref
+        .watch(publicBroadcastsProvider)
+        .maybeWhen(data: (s) => s, orElse: () => <RealtimeSession>[]);
+    final sessionIds = sessions.map((s) => s.id).toSet();
+    final broadcasts = broadcastsRaw
+        .where((b) => b.id.isNotEmpty && !sessionIds.contains(b.id))
+        .take(3)
+        .toList();
+    final hasLive = sessions.isNotEmpty || broadcasts.isNotEmpty;
 
     return PopupMenuButton<String>(
       tooltip: 'Live',
@@ -217,7 +227,7 @@ class _HeaderLiveBtn extends ConsumerWidget {
         side: const BorderSide(color: AuraSurface.divider),
       ),
       itemBuilder: (_) {
-        if (sessions.isEmpty) {
+        if (sessions.isEmpty && broadcasts.isEmpty) {
           return [
             PopupMenuItem<String>(
               enabled: false,
@@ -233,6 +243,18 @@ class _HeaderLiveBtn extends ConsumerWidget {
             (s) => PopupMenuItem<String>(
               value: s.id,
               child: _LiveSessionMenuTile(label: _sessionLabel(s), kind: s.kind),
+            ),
+          ),
+          // Public broadcasts — joining routes through the same
+          // /realtime/:id?action=join entry; the backend admits
+          // non-parties as receive-only observers.
+          ...broadcasts.map(
+            (b) => PopupMenuItem<String>(
+              value: '__watch:${b.id}',
+              child: _LiveSessionMenuTile(
+                label: b.title ?? b.contextName ?? 'Live broadcast',
+                kind: b.kind,
+              ),
             ),
           ),
           const PopupMenuDivider(),
@@ -255,6 +277,9 @@ class _HeaderLiveBtn extends ConsumerWidget {
       onSelected: (value) {
         if (value == '__open') {
           context.push('/realtime');
+        } else if (value.startsWith('__watch:')) {
+          final id = value.substring('__watch:'.length);
+          context.push('/realtime/$id?action=join');
         } else {
           context.go('/realtime/$value');
         }

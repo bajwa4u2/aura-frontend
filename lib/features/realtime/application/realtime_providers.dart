@@ -57,6 +57,14 @@ final realtimeControllerProvider =
         mediaService,
         tokenStore,
         () => ref.read(clientIdentityProvider.future),
+        readMyUserId: () async {
+          try {
+            final me = await ref.read(authMeDataProvider.future);
+            return (me['id'] ?? '').toString();
+          } catch (_) {
+            return '';
+          }
+        },
       );
       ref.listen(tokenStoreProvider, (_, next) {
         socketService.updateAccessToken(next.accessToken ?? '');
@@ -104,6 +112,23 @@ const _kLiveDiscoverableTypes = {
   RealtimeSurfaceType.space,
   RealtimeSurfaceType.institution,
 };
+
+/// GO LIVE viewer path (task #172): ACTIVE PUBLIC_STAGE broadcasts for the
+/// header Live surface — visible to every authenticated user, party or
+/// not. Session-scoped facts only. Refreshes on the same isJoined toggles
+/// as liveSessionsProvider so a broadcast the viewer just left/joined
+/// re-lists promptly; otherwise consumers refresh it on open.
+final publicBroadcastsProvider = FutureProvider<List<RealtimeSession>>((
+  ref,
+) async {
+  await ref.watch(sessionBootstrapProvider.future);
+  final authStatus = ref.watch(authStatusProvider);
+  if (authStatus != AuthStatus.authed) return [];
+  if (ref.watch(isGuestSessionProvider)) return [];
+  ref.watch(realtimeControllerProvider.select((s) => s.isJoined));
+  final repo = ref.watch(realtimeRepositoryProvider);
+  return repo.listPublicBroadcasts();
+});
 
 final discoverableLiveSessionsProvider = FutureProvider<List<RealtimeSession>>((
   ref,

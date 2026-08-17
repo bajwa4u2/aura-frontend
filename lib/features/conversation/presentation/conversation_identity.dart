@@ -39,3 +39,17 @@ String _partyName(ConversationParty p) {
   if (n.isNotEmpty) return n;
   return p.isPerson ? 'Aura member' : 'Institution';
 }
+
+/// Canonical avatar for a conversation row (2026-08-17, addendum §4:
+/// Conversation identity == realtime identity — no per-surface dialects).
+/// 1:1 → the counterpart's canonical avatarUrl; groups → null for now (a
+/// letter tile until the group-avatar treatment is ruled on), never one
+/// arbitrary member's photo masquerading as the group.
+String? conversationDisplayAvatarUrl(Conversation c, String myUserId) {
+  final others = c.parties
+      .where((p) => p.isActive && !(p.isPerson && p.userId == myUserId))
+      .toList();
+  if (others.length != 1) return null;
+  final url = (others.first.avatarUrl ?? '').trim();
+  return url.isEmpty ? null : url;
+}

@@ -108,6 +108,9 @@ RealtimeParticipantRole _readRole(dynamic value) {
       return RealtimeParticipantRole.participant;
     case 'guest':
       return RealtimeParticipantRole.guest;
+    case 'observer':
+    case 'listener':
+      return RealtimeParticipantRole.observer;
     default:
       return RealtimeParticipantRole.unknown;
   }
@@ -188,6 +191,7 @@ class RealtimeSession {
     required this.startedByUserId,
     required this.status,
     required this.kind,
+    this.accessMode = '',
     required this.isActive,
     required this.isLocked,
     required this.waitingRoomEnabled,
@@ -210,6 +214,11 @@ class RealtimeSession {
   final String? startedByUserId;
   final String status;
   final String kind;
+
+  /// Server RealtimeAccessMode, uppercased ('' when absent). PUBLIC_STAGE
+  /// marks an intentional Go Live broadcast (viewers admitted as
+  /// observers; nothing from the originating Conversation is exposed).
+  final String accessMode;
   final bool isActive;
   final bool isLocked;
   final bool waitingRoomEnabled;
@@ -282,6 +291,7 @@ class RealtimeSession {
       startedByUserId: _readString(json['startedByUserId']),
       status: (json['status'] ?? '').toString().trim().toUpperCase(),
       kind: (json['kind'] ?? '').toString().trim().toUpperCase(),
+      accessMode: (json['accessMode'] ?? '').toString().trim().toUpperCase(),
       isActive: _readBool(
         json['isActive'],
         fallback: (json['status'] ?? '').toString().trim().toUpperCase() != 'ENDED' &&

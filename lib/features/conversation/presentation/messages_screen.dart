@@ -138,11 +138,12 @@ class _ConversationRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final name = conversationDisplayName(conversation, myUserId);
+    final avatarUrl = conversationDisplayAvatarUrl(conversation, myUserId);
     final hasUnread = conversation.unreadCount > 0;
     return ListTile(
       contentPadding:
           const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: 2),
-      leading: AuraAvatar(name: name, size: 44),
+      leading: AuraAvatar(name: name, imageUrl: avatarUrl, size: 44),
       title: Text(
         name,
         maxLines: 1,
