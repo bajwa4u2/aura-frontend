@@ -64,6 +64,16 @@ final realtimeControllerProvider =
       return controller;
     });
 
+/// Session id of the realtime room screen currently mounted, or null.
+///
+/// Set/cleared by `RealtimeRoomScreen` itself. While ANY call room is on
+/// screen the room owns call presentation entirely — app-root call
+/// banners (e.g. `OrphanedSessionBanner`) must not paint over it. This is
+/// route-truth the app-root overlay cannot otherwise see.
+final mountedRealtimeRoomSessionProvider = StateProvider<String?>(
+  (ref) => null,
+);
+
 final liveSessionsProvider = FutureProvider<List<RealtimeSession>>((ref) async {
   await ref.watch(sessionBootstrapProvider.future);
   final authStatus = ref.watch(authStatusProvider);

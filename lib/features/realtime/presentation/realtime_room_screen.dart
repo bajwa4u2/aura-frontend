@@ -172,6 +172,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     Future.microtask(() {
       if (!mounted) return;
       ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
+      // Route-truth for app-root overlays: while this room is mounted, the
+      // room owns call presentation — OrphanedSessionBanner suppresses.
+      ref.read(mountedRealtimeRoomSessionProvider.notifier).state =
+          widget.sessionId.trim();
     });
 
     // Resolve institution session metadata. Constructor query params win
@@ -234,6 +238,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           container
               .read(realtimeControllerProvider.notifier)
               .setCallRoomVisible(false);
+          // Clear route-truth only if another room instance hasn't already
+          // claimed it (room A dispose can run after room B mount).
+          final mounted = container.read(
+            mountedRealtimeRoomSessionProvider.notifier,
+          );
+          if (mounted.state == widget.sessionId.trim()) {
+            mounted.state = null;
+          }
         } catch (_) {
           // best-effort: controller may have been torn down with the app.
         }
@@ -627,9 +639,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     );
 
     final callDuration = _callDuration(state.session, _now);
+    // "Connection lost" is only true if there was a connection to lose:
+    // pre-join the status is still its boot value (disconnected), and the
+    // stage UI (Connecting… / Ready to join / the join-card error box)
+    // already tells the truth for that phase. Founder-observed 2026-08-17:
+    // the yellow ribbon painted over every call initiation and accept.
     final showConnectionIssue =
-        state.connectionStatus == RealtimeConnectionStatus.disconnected ||
-        state.connectionStatus == RealtimeConnectionStatus.error;
+        state.isJoined &&
+        (state.connectionStatus == RealtimeConnectionStatus.disconnected ||
+            state.connectionStatus == RealtimeConnectionStatus.error);
     final isConnecting =
         state.connectionStatus == RealtimeConnectionStatus.connecting ||
         state.connectionStatus == RealtimeConnectionStatus.reconnecting;

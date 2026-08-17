@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/session_providers.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -57,8 +58,25 @@ class _OrphanedSessionBannerState
 
   @override
   Widget build(BuildContext context) {
+    // While ANY call room screen is mounted, the room owns call
+    // presentation — never paint "You have an active call" on top of a
+    // call surface (founder-observed "starting mess" during initiation /
+    // accept / Ready-to-join, 2026-08-17).
+    final mountedRoom = ref.watch(mountedRealtimeRoomSessionProvider);
+    if (mountedRoom != null) {
+      return widget.child;
+    }
+
     final sessionsAsync = ref.watch(liveSessionsProvider);
     final clientState = ref.watch(realtimeControllerProvider);
+    final currentUserId = ref
+        .watch(authMeDataProvider)
+        .maybeWhen(data: (me) => (me['id'] ?? '').toString(), orElse: () => '');
+    // Identity unknown (still loading / guest): cannot verify the user was
+    // ever in a session — claim nothing rather than banner speculatively.
+    if (currentUserId.isEmpty) {
+      return widget.child;
+    }
 
     final mySessions = sessionsAsync.maybeWhen(
       data: (s) => s,
@@ -67,6 +85,7 @@ class _OrphanedSessionBannerState
     final orphaned = findOrphanedActiveSession(
       mySessions: mySessions,
       clientState: clientState,
+      currentUserId: currentUserId,
     );
 
     if (orphaned == null || _dismissed.contains(orphaned.id)) {

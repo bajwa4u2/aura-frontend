@@ -160,6 +160,26 @@ RealtimeTranscriptStatus _readTranscriptStatus(dynamic value) {
   }
 }
 
+/// Minimal per-participant truth carried on a session list row — just
+/// enough for a consumer to answer "was I ever actually IN this session,
+/// and am I still?" without a second fetch. Parsed from the same
+/// `participants` array `activeParticipantCount` already reads.
+class RealtimeSessionParticipantSummary {
+  const RealtimeSessionParticipantSummary({
+    required this.userId,
+    required this.joinState,
+    required this.joinedAt,
+  });
+
+  final String userId;
+
+  /// Server joinState, uppercased: ACTIVE / JOINING / DISCONNECTED / LEFT…
+  final String joinState;
+
+  /// Null when this participant never completed a join (invited only).
+  final DateTime? joinedAt;
+}
+
 class RealtimeSession {
   const RealtimeSession({
     required this.id,
@@ -179,6 +199,7 @@ class RealtimeSession {
     required this.createdAt,
     required this.updatedAt,
     required this.activeParticipantCount,
+    this.participantSummaries = const [],
     this.title,
     this.metadataJson,
   });
@@ -201,8 +222,23 @@ class RealtimeSession {
   final DateTime? updatedAt;
   /// Number of participants with joinState ACTIVE or JOINING.
   final int activeParticipantCount;
+
+  /// Per-participant join truth from the same `participants` payload;
+  /// empty when the API response carried no participants array.
+  final List<RealtimeSessionParticipantSummary> participantSummaries;
   final String? title;
   final Map<String, dynamic>? metadataJson;
+
+  /// This user's own participant row, or null when the user is not on the
+  /// roster (or the payload had no participants array).
+  RealtimeSessionParticipantSummary? participantOf(String userId) {
+    final id = userId.trim();
+    if (id.isEmpty) return null;
+    for (final p in participantSummaries) {
+      if (p.userId == id) return p;
+    }
+    return null;
+  }
 
   String? get contextName {
     final meta = metadataJson ?? {};
@@ -219,11 +255,22 @@ class RealtimeSession {
 
     final rawParts = json['participants'];
     int activeParts = 0;
+    final summaries = <RealtimeSessionParticipantSummary>[];
     if (rawParts is List) {
       for (final p in rawParts) {
         if (p is Map) {
           final js = (p['joinState'] ?? '').toString().toUpperCase();
           if (js == 'ACTIVE' || js == 'JOINING') activeParts++;
+          final uid = (p['userId'] ?? '').toString().trim();
+          if (uid.isNotEmpty) {
+            summaries.add(
+              RealtimeSessionParticipantSummary(
+                userId: uid,
+                joinState: js,
+                joinedAt: _readDate(p['joinedAt']),
+              ),
+            );
+          }
         }
       }
     }
@@ -253,6 +300,7 @@ class RealtimeSession {
       createdAt: _readDate(json['createdAt']),
       updatedAt: _readDate(json['updatedAt']),
       activeParticipantCount: activeParts,
+      participantSummaries: summaries,
       title: _readString(json['title']),
       metadataJson: meta,
     );
