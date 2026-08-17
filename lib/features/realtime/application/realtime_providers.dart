@@ -41,7 +41,15 @@ final realtimeControllerProvider =
       final repository = ref.watch(realtimeRepositoryProvider);
       final socketService = ref.watch(realtimeSocketServiceProvider);
       final mediaService = ref.watch(realtimeMediaServiceProvider);
-      final tokenStore = ref.watch(tokenStoreProvider);
+      // ref.read, NOT ref.watch: tokenStoreProvider is a ChangeNotifierProvider,
+      // so watching it rebuilds this controller on EVERY notifyListeners (boot
+      // token load, sign-in, silent re-auth). A rebuild disposes the live
+      // controller — destroying an active call mid-flight — and (before the
+      // ownership fix in RealtimeController.dispose) also killed the shared
+      // socket/media services for the rest of the session. Token updates reach
+      // the socket service through the ref.listen below; the controller reads
+      // the store lazily whenever it needs the current token.
+      final tokenStore = ref.read(tokenStoreProvider);
 
       final controller = RealtimeController(
         repository,

@@ -2785,8 +2785,15 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _subscription?.cancel();
     _mediaSubscription?.cancel();
     _peerHealthSubscription?.cancel();
-    _mediaService.dispose();
-    _socketService.dispose();
+    // OWNERSHIP: _mediaService and _socketService are app-lifetime singletons
+    // owned by their providers (realtimeMediaServiceProvider /
+    // realtimeSocketServiceProvider), which dispose them via ref.onDispose at
+    // container teardown. This controller must NOT dispose them: when the
+    // controller provider rebuilt (TokenStore notifyListeners → ref.watch), the
+    // outgoing controller disposed the SHARED services while their providers
+    // kept serving the same instances — permanently killing realtime transport
+    // for the rest of the app session (root cause of the production
+    // 'socket service is disposed' / silent connect no-op failure).
     super.dispose();
   }
 }
