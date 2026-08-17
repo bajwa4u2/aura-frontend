@@ -489,6 +489,34 @@ class RealtimeController extends StateNotifier<RealtimeState>
         isBusy: false,
         infoMessage: state.isJoined ? state.infoMessage : 'Live loaded.',
       );
+      // Pre-join session-end truth, controller half (founder evidence
+      // 2026-08-17: a dead session's "Ready to join" surface squatted
+      // over /messages indefinitely). A TERMINAL session hydrated while
+      // NOT joined must not keep pinning call UI anywhere: one frame is
+      // granted so a mounted room screen can run its own ended-session
+      // navigation off the hydrated state, then the session context is
+      // cleared entirely — no stale sessionId left to resurrect a call
+      // surface over any route.
+      final hydrated = state.session;
+      if (hydrated != null && !hydrated.isActive && !state.isJoined) {
+        unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 600)).then((_) {
+            final current = state;
+            final stillSame =
+                (current.sessionId ?? current.session?.id ?? '').trim() ==
+                trimmed;
+            final stillTerminal = current.session?.isActive == false;
+            if (stillSame && stillTerminal && !current.isJoined) {
+              state = current.copyWith(
+                clearSession: true,
+                clearSessionId: true,
+                clearPolicy: true,
+                infoMessage: 'This call has ended.',
+              );
+            }
+          }),
+        );
+      }
     } catch (error) {
       state = state.copyWith(
         isBusy: false,

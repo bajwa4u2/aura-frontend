@@ -31,6 +31,25 @@ import '../../../core/ui/aura_text.dart';
 import '../data/conversations_repository.dart';
 import 'add_people_sheet.dart';
 import 'conversation_identity.dart';
+import '../../realtime/application/realtime_providers.dart';
+
+/// Durable ringing/active-call truth for a conversation (founder charter
+/// 2026-08-17). A call must never be reachable ONLY through an ephemeral
+/// ring card: after a refresh, a dismissed notification, or a frozen
+/// accept, the thread itself still answers "is there a call I can join?"
+/// from the server. Re-fetched whenever local join state toggles so the
+/// ribbon appears/clears without a manual reload.
+final conversationActiveLiveProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>?, String>((ref, conversationId) async {
+  ref.watch(realtimeControllerProvider.select((s) => s.isJoined));
+  try {
+    return await ref
+        .read(conversationsRepositoryProvider)
+        .activeLiveSession(conversationId);
+  } catch (_) {
+    return null; // never let a transient failure fake "no call"
+  }
+});
 
 /// ONE Conversation screen (canon): talk immediately; CAPABILITIES ATTACH
 /// when intention reaches them — photos, videos, voice notes, and
@@ -703,6 +722,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 ],
               ),
             ),
+            // DURABLE CALL AFFORDANCE (founder charter 2026-08-17): a
+            // ringing/active call is server truth, so the thread can always
+            // offer it — after a refresh, a dismissed card, a missed
+            // notification, or a frozen accept. Never "gone to never come
+            // back".
+            _ConversationLiveRibbon(conversationId: widget.conversationId),
             Expanded(
               child: messagesAsync.when(
                 loading: () => const AuraProductState(
@@ -1050,6 +1075,88 @@ class _PendingAttachmentTile extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The thread's own durable answer to "there is a call happening here".
+/// Renders only from canonical server truth (an ACTIVE realtime session on
+/// this conversation) and only while this client is not already in it.
+class _ConversationLiveRibbon extends ConsumerWidget {
+  const _ConversationLiveRibbon({required this.conversationId});
+
+  final String conversationId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final joined = ref.watch(
+      realtimeControllerProvider.select((s) => s.isJoined),
+    );
+    if (joined) return const SizedBox.shrink();
+
+    final session = ref
+        .watch(conversationActiveLiveProvider(conversationId))
+        .maybeWhen(data: (s) => s, orElse: () => null);
+    if (session == null) return const SizedBox.shrink();
+
+    final sessionId = (session['id'] ?? '').toString().trim();
+    if (sessionId.isEmpty) return const SizedBox.shrink();
+    final status = (session['status'] ?? '').toString().toUpperCase();
+    if (status != 'ACTIVE') return const SizedBox.shrink();
+    final isVideo = (session['kind'] ?? '').toString().toUpperCase() == 'VIDEO';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s16,
+        vertical: AuraSpace.s10,
+      ),
+      decoration: const BoxDecoration(
+        color: AuraSurface.subtle,
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isVideo ? Icons.videocam_rounded : Icons.call_rounded,
+            size: 18,
+            color: AuraSurface.coVerdant,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(
+              isVideo ? 'Video call in progress' : 'Call in progress',
+              style: AuraText.small.copyWith(
+                color: AuraSurface.ink,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              // Decline is authoritative; the ribbon then clears from
+              // server truth on the next fetch.
+              try {
+                await ref
+                    .read(realtimeRepositoryProvider)
+                    .declineInvite(sessionId);
+              } catch (_) {}
+              ref.invalidate(conversationActiveLiveProvider(conversationId));
+            },
+            child: Text(
+              'Decline',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s4),
+          AuraPrimaryButton(
+            label: 'Join call',
+            onPressed: () => context.push(
+              '${NavigationAuthority.realtimeSessionRoute(sessionId)}'
+              '?action=join',
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

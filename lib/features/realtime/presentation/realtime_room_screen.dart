@@ -479,6 +479,116 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     context.go(target);
   }
 
+  /// GO LIVE eligibility (founder charter 2026-08-17). The ONLY origination
+  /// door in Aura: contextual, inside an active Conversation-owned call,
+  /// for a real stage participant. "We are talking. Let's open this to the
+  /// public."
+  bool _liveControlsEligible(RealtimeState state, String myUserId) {
+    if (state.session?.surfaceType != RealtimeSurfaceType.conversation) {
+      return false;
+    }
+    if (!state.isJoined) return false;
+    final ls = state.session?.liveState ?? '';
+    // '' = a server that predates liveState; treat as NORMAL rather than
+    // hiding the capability.
+    if (ls.isNotEmpty && ls != 'LIVE' && ls != 'NORMAL') return false;
+    if (myUserId.isEmpty) return false;
+    for (final p in state.participants) {
+      if (p.userId == myUserId) {
+        return p.role != RealtimeParticipantRole.observer;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _goLive(RealtimeState state) async {
+    final session = state.session;
+    final conversationId = (session?.surfaceId ?? '').trim();
+    final sessionId = (session?.id ?? widget.sessionId).trim();
+    if (conversationId.isEmpty || sessionId.isEmpty) return;
+    final stageCount = state.participants
+        .where((p) => p.role != RealtimeParticipantRole.observer)
+        .length;
+    // FD-5 governed ritual: the public boundary is made explicit before
+    // anything changes — visibility, recording state, stage setup.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Go Live'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This call is about to become PUBLICLY observable. Anyone on '
+              'Aura can watch.',
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            Text(
+              'Stage: the $stageCount '
+              '${stageCount == 1 ? 'person' : 'people'} in this call now.',
+            ),
+            const Text('Recording: off.'),
+            const SizedBox(height: AuraSpace.s12),
+            const Text(
+              'Your conversation stays private — viewers see and hear only '
+              'this live call, never your messages, attachments, or '
+              'history. Ending the Live returns the call to private.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Start Live'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(realtimeRepositoryProvider)
+          .goLive(conversationId: conversationId, sessionId: sessionId);
+      await ref
+          .read(realtimeControllerProvider.notifier)
+          .hydrateSession(sessionId);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not go live — try again.')),
+        );
+      }
+    }
+  }
+
+  /// END LIVE ≠ END CALL: closes the public boundary; this same call
+  /// continues privately.
+  Future<void> _endLive(RealtimeState state) async {
+    final session = state.session;
+    final conversationId = (session?.surfaceId ?? '').trim();
+    final sessionId = (session?.id ?? widget.sessionId).trim();
+    if (conversationId.isEmpty || sessionId.isEmpty) return;
+    try {
+      await ref
+          .read(realtimeRepositoryProvider)
+          .endLive(conversationId: conversationId, sessionId: sessionId);
+      await ref
+          .read(realtimeControllerProvider.notifier)
+          .hydrateSession(sessionId);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not end the live — try again.')),
+        );
+      }
+    }
+  }
+
   Future<void> _toggleScreenShare() async {
     if (_togglingScreenShare) return;
     setState(() => _togglingScreenShare = true);
@@ -510,7 +620,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final state = ref.read(realtimeControllerProvider);
     final myUserId = ref
         .read(_realtimeCurrentUserProvider)
-        .maybeWhen(data: (me) => (me['id'] ?? '').toString(), orElse: () => '');
+        .maybeWhen(data: readUserIdFromAuthMe, orElse: () => '');
     final isHost =
         myUserId.isNotEmpty && state.session?.startedByUserId == myUserId;
     final canModerate =
@@ -669,8 +779,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       return const _CallRouteRedirectingFallback();
     }
 
+    // Canonical identity (2026-08-17): /auth/me may nest the person under
+    // `user`, in which case the old `me['id']` read resolved EMPTY here —
+    // silently breaking host detection (Leave instead of End), the
+    // participant-role lookup, and the in-call Go Live control's
+    // eligibility check. One shared resolver now, everywhere.
     final myUserId = meAsync.maybeWhen(
-      data: (me) => (me['id'] ?? '').toString(),
+      data: readUserIdFromAuthMe,
       orElse: () => '',
     );
     final isMeetingSession =
@@ -875,6 +990,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             isTogglingScreenShare: _togglingScreenShare,
                             onToggleScreenShare: () =>
                                 unawaited(_toggleScreenShare()),
+                            isPubliclyLive: state.session?.isLive == true,
+                            onGoLive:
+                                _liveControlsEligible(state, myUserId)
+                                ? () => unawaited(
+                                    state.session?.isLive == true
+                                        ? _endLive(state)
+                                        : _goLive(state),
+                                  )
+                                : null,
                             showSpeakerToggle: _supportsSpeakerphoneToggle,
                             speakerOn: state.speakerphoneEnabled,
                             onToggleSpeaker: () =>
@@ -2499,6 +2623,8 @@ class _CallControlDock extends StatelessWidget {
     this.isTogglingScreenShare = false,
     this.onToggleScreenShare,
     this.showPublishControls = true,
+    this.isPubliclyLive = false,
+    this.onGoLive,
   });
 
   final bool micOn;
@@ -2522,6 +2648,13 @@ class _CallControlDock extends StatelessWidget {
   final bool isScreenSharing;
   final bool isTogglingScreenShare;
   final VoidCallback? onToggleScreenShare;
+
+  /// Live escalation — the only origination door in Aura. Null hides the
+  /// control (not eligible: non-Conversation session, observer, or a
+  /// lifecycle state that cannot transition). While live, the same
+  /// control closes the public boundary.
+  final bool isPubliclyLive;
+  final VoidCallback? onGoLive;
 
   /// False for PUBLIC_STAGE observers: mic/camera/share controls are
   /// hidden entirely (a viewer never publishes; showing the toggles
@@ -2596,6 +2729,23 @@ class _CallControlDock extends StatelessWidget {
                 active: isScreenSharing,
                 onPressed:
                     isTogglingScreenShare ? () {} : onToggleScreenShare!,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+            ],
+
+            // GO LIVE — a PRIMARY in-call act, so it sits in the dock
+            // rather than buried in a panel (founder 2026-08-17: "there is
+            // no option in running video call to make it live, i think its
+            // burried").
+            if (onGoLive != null) ...[
+              _DockButton(
+                icon: isPubliclyLive
+                    ? Icons.stop_circle_outlined
+                    : Icons.sensors_rounded,
+                label: isPubliclyLive ? 'End Live' : 'Go Live',
+                active: isPubliclyLive,
+                warning: isPubliclyLive,
+                onPressed: onGoLive!,
               ),
               const SizedBox(width: AuraSpace.s8),
             ],
@@ -3100,26 +3250,10 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
         ),
         const SizedBox(height: AuraSpace.s12),
 
-        // GO LIVE (founder charter 2026-08-17): the ONLY origination door
-        // in Aura — contextual, inside the active realtime interaction.
-        // "We are talking. Let's open this to the public." Escalates the
-        // CURRENT session's lifecycle state; never creates a session.
-        // Hidden for observers (a viewer cannot take a session live) and
-        // outside Conversation calls.
-        if (_liveControlsEligible(state)) ...[
-          if (state.session?.isLive == true)
-            AuraSecondaryButton(
-              label: 'End Live — return to private call',
-              onPressed: () => unawaited(_endLive(state, ctrl)),
-            )
-          else
-            AuraPrimaryButton(
-              label: 'Go Live — open this call to the public',
-              icon: Icons.sensors_rounded,
-              onPressed: () => unawaited(_goLive(state, ctrl)),
-            ),
-          const SizedBox(height: AuraSpace.s12),
-        ],
+        // Go Live is a PRIMARY in-call act and lives in the call dock, not
+        // buried in this panel (founder 2026-08-17: "there is no option in
+        // running video call to make it live, i think its burried").
+        // See _RealtimeRoomScreenState._goLive / _endLive.
 
         AuraSecondaryButton(
           label: 'Refresh session',
@@ -3130,100 +3264,6 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
     );
   }
 
-  bool _liveControlsEligible(RealtimeState state) {
-    if (state.session?.surfaceType != RealtimeSurfaceType.conversation) {
-      return false;
-    }
-    if (!state.isJoined) return false;
-    final ls = state.session?.liveState ?? '';
-    if (ls != 'LIVE' && ls != 'NORMAL' && ls.isNotEmpty) return false;
-    for (final p in state.participants) {
-      if (p.userId == widget.myUserId) {
-        return p.role != RealtimeParticipantRole.observer;
-      }
-    }
-    return false;
-  }
-
-  Future<void> _goLive(RealtimeState state, RealtimeController ctrl) async {
-    final session = state.session;
-    final conversationId = (session?.surfaceId ?? '').trim();
-    final sessionId = (session?.id ?? widget.sessionId).trim();
-    if (conversationId.isEmpty || sessionId.isEmpty) return;
-    final stageCount = state.participants
-        .where((p) => p.role != RealtimeParticipantRole.observer)
-        .length;
-    // FD-5 governed ritual: the public boundary is made explicit before
-    // anything changes — visibility, recording state, stage setup.
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Go Live'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'This call is about to become PUBLICLY observable. Anyone on '
-              'Aura can watch.',
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            Text('Stage: the $stageCount '
-                '${stageCount == 1 ? 'person' : 'people'} in this call now.'),
-            const Text('Recording: off.'),
-            const SizedBox(height: AuraSpace.s12),
-            const Text(
-              'Your conversation stays private — viewers see and hear only '
-              'this live call, never your messages, attachments, or '
-              'history. Ending the Live returns the call to private.',
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Start Live'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    try {
-      await ref
-          .read(realtimeRepositoryProvider)
-          .goLive(conversationId: conversationId, sessionId: sessionId);
-      await ctrl.hydrateSession(sessionId);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not go live — try again.')),
-        );
-      }
-    }
-  }
-
-  Future<void> _endLive(RealtimeState state, RealtimeController ctrl) async {
-    final session = state.session;
-    final conversationId = (session?.surfaceId ?? '').trim();
-    final sessionId = (session?.id ?? widget.sessionId).trim();
-    if (conversationId.isEmpty || sessionId.isEmpty) return;
-    try {
-      await ref
-          .read(realtimeRepositoryProvider)
-          .endLive(conversationId: conversationId, sessionId: sessionId);
-      await ctrl.hydrateSession(sessionId);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not end the live — try again.')),
-        );
-      }
-    }
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

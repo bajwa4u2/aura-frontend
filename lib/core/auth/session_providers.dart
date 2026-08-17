@@ -109,6 +109,31 @@ final authMeDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   }
 });
 
+/// CANONICAL SIGNED-IN USER ID — the one place every surface asks "who am
+/// I?" (founder evidence 2026-08-17: the call room read `me['id']` while
+/// the conversation surface read `me['user']['id']`; when /auth/me nests
+/// the person under `user`, the realtime surface silently resolved an
+/// EMPTY id. Everything keyed on identity then failed quietly — host
+/// detection said "not host" (Leave instead of End), the participant-role
+/// lookup matched nobody, and the in-call Go Live control never appeared
+/// even though it was implemented and deployed.)
+///
+/// Returns '' when unknown/unauthenticated — callers must treat empty as
+/// "identity not resolved yet", never as "not me".
+String readUserIdFromAuthMe(Map<String, dynamic> me) {
+  final user = me['user'];
+  if (user is Map) {
+    final nested = (user['id'] ?? '').toString().trim();
+    if (nested.isNotEmpty) return nested;
+  }
+  return (me['id'] ?? '').toString().trim();
+}
+
+final currentUserIdProvider = Provider<String>((ref) {
+  final me = ref.watch(authMeDataProvider).valueOrNull;
+  return me == null ? '' : readUserIdFromAuthMe(me);
+});
+
 /// Email verification / auth validity check.
 ///
 /// Returns:

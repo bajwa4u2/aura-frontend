@@ -374,6 +374,22 @@ class ConversationsRepository {
   // never BORN public. Go Live escalates the CURRENT active call session
   // — see RealtimeRepository.goLive / endLive.
 
+  /// DURABLE CALL TRUTH (founder-proven 2026-08-17: "if you refresh when
+  /// it's freezed the call is gone to never come back rather than there
+  /// as an option in thread header to accept or reject").
+  ///
+  /// A ringing call is durable server state, not an ephemeral push/socket
+  /// card: this returns the conversation's currently ACTIVE realtime
+  /// session (or null), so the thread can always reconstruct a truthful
+  /// accept/decline affordance after a refresh, a missed notification, a
+  /// dismissed card, or a frozen client.
+  Future<Map<String, dynamic>?> activeLiveSession(String id) async {
+    final res = await _dio.get<dynamic>('/conversations/$id/live');
+    final body = _unwrap(res.data);
+    final session = body['activeSession'];
+    return session is Map ? Map<String, dynamic>.from(session) : null;
+  }
+
   /// Render-ready delivery URL for an attachment (visibility-checked
   /// server-side by the canonical Media authority).
   Future<String?> mediaDeliveryUrl(String mediaId) async {

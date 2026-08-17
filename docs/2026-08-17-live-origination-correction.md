@@ -83,6 +83,42 @@ NORMAL and never ENDED with only observers detached (H/I), STANDALONE
 creation refused (L), born-public refused (M), discovery keyed on
 liveState LIVE.
 
+## FOUNDER ACCEPTANCE + INTERNET-PUBLIC REACH (resolved 2026-08-17)
+
+The origination correction is **ACCEPTED** as the long-term model. Newly
+frozen rulings:
+
+> **"INTERNET-PUBLIC LIVE ACCESS IS A 15-SECOND PREVIEW, NOT ANONYMOUS
+> PARTICIPATION."**
+> **"AFTER 15 SECONDS, CONTINUED LIVE VIEWING REQUIRES SIGN UP OR LOG
+> IN."**
+> **"PUBLIC HOME MAY SURFACE ACTIVE LIVE AS A PUBLIC-FIRST ACQUISITION
+> SURFACE."**
+> **"THE SIGNED-OUT PREVIEW GRANTS NO LIVE PARTICIPATION OR CONVERSATION
+> AUTHORITY."**
+> **"AUTHENTICATION MUST RETURN THE PERSON TO THE SAME LIVE."**
+
+- The 15-second duration is the product rule — not tunable during
+  implementation.
+- Signed-out preview: media preview only — no chat/reactions/raise-hand/
+  publication/moderation/Conversation access; never a normal OBSERVER
+  participation record unless an ephemeral delivery representation is
+  technically required and carries ZERO participation semantics.
+- Preview → Sign up/Log in → **the SAME Live** (owned by the shared
+  destination-continuity authority, not a one-off redirect).
+- Public Home Live presence consumes canonical Live/session + identity
+  truth only — no fabricated metadata, no fake/sample Live, coherent
+  without the section when nothing is live.
+- HEADER LIVE (authenticated global discovery) and PUBLIC HOME LIVE
+  (signed-out acquisition preview) are different doors into the SAME
+  governed Live state — one truth, one lifecycle authority, one identity
+  projection.
+- Live chat identity: not a founder question — reconcile FD-5 §§8–10 +
+  C2/D3 Identity doctrine first; anonymous ends at the preview boundary.
+- SFU/scale: mesh-bounded delivery accepted for product-semantics
+  certification only; an informed engineering assessment precedes any
+  architecture decision; no topology migration in this pass.
+
 ## Known truthful limits
 
 - **Scale (FD-5 §23):** every viewer is currently another peer

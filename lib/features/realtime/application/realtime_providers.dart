@@ -60,7 +60,7 @@ final realtimeControllerProvider =
         readMyUserId: () async {
           try {
             final me = await ref.read(authMeDataProvider.future);
-            return (me['id'] ?? '').toString();
+            return readUserIdFromAuthMe(me);
           } catch (_) {
             return '';
           }

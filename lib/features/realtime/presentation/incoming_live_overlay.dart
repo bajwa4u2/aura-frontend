@@ -94,6 +94,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   String? _ringTimerNotificationId;
   Timer? _joinErrorTimer;
 
+  /// Bounded-accept watchdog — see _startAcceptWatchdog.
+  Timer? _acceptWatchdog;
+
   // Pulse animation for the ringing avatar ring.
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnim;
@@ -115,6 +118,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     _cancelRingTimer();
     _joinErrorTimer?.cancel();
     _joinErrorTimer = null;
+    _acceptWatchdog?.cancel();
+    _acceptWatchdog = null;
     _pulseController.dispose();
     super.dispose();
   }
@@ -296,12 +301,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       _joinError = null;
       _joinErrorSessionId = null;
     });
+    _startAcceptWatchdog(sessionId);
 
     final id = _stringOf(item['id']);
     _dismissedSessionIds.add(sessionId);
-    // Set when we successfully navigate so the finally block does not call
-    // setState on an element that may already be inactive/disposed.
-    var navigated = false;
     try {
       await ref
           .read(threadCallLifecycleProvider.notifier)
@@ -323,7 +326,6 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       }
 
       if (!context.mounted) return;
-      navigated = true;
       final joinedSession = ref.read(realtimeControllerProvider).session;
       if (joinedSession?.surfaceType == RealtimeSurfaceType.meeting) {
         final meetingId = (joinedSession!.surfaceId ?? '').trim();
@@ -373,13 +375,51 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
         }
       }
     } finally {
-      // Skip setState if we already navigated: router.go() deactivates this
-      // element during the same frame, making setState unsafe even when
-      // mounted returns true (element is inactive but _element is non-null).
-      if (!navigated && context.mounted) {
-        setState(() => _joining = false);
-      }
+      // PERMANENT ACCEPT-FREEZE FIX (founder-proven 2026-08-17, "accept
+      // spinning freeze is there for every other call... you have to hard
+      // refresh"): this overlay is mounted in MaterialApp.router's builder
+      // — app-root, wrapping the whole routed tree — so router.go() does
+      // NOT unmount it. The old `if (!navigated)` guard therefore left
+      // _joining latched TRUE forever after the first accepted call, and
+      // `onAccept: _joining ? null : …` disabled Accept permanently for
+      // every subsequent call, with the spinner still painted. _joining is
+      // per-attempt state and must ALWAYS be released; the setState is
+      // deferred to a post-frame callback so it can never run against an
+      // element that this frame's navigation just deactivated.
+      _joining = false;
+      _cancelAcceptWatchdog();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
     }
+  }
+
+  void _cancelAcceptWatchdog() {
+    _acceptWatchdog?.cancel();
+    _acceptWatchdog = null;
+  }
+
+  /// Second, independent guarantee that an Accept can never spin forever:
+  /// whatever happens below (a stranded in-flight join future, a socket
+  /// that never acks, a future regression in the join stack), the button
+  /// returns to an actionable state within a bounded window and tells the
+  /// truth. Never cancels the underlying join — a late success still lands.
+  void _startAcceptWatchdog(String sessionId) {
+    _cancelAcceptWatchdog();
+    _acceptWatchdog = Timer(const Duration(seconds: 30), () {
+      _acceptWatchdog = null;
+      if (!mounted || !_joining) return;
+      final joined = ref.read(realtimeControllerProvider).isJoined;
+      setState(() {
+        _joining = false;
+        if (!joined) {
+          _joinError = 'Still connecting — retry, or decline the call.';
+          _joinErrorSessionId = sessionId;
+          // Re-offer the card: this session is no longer "handled".
+          _dismissedSessionIds.remove(sessionId);
+        }
+      });
+    });
   }
 
   Future<void> _retryJoin(Map<String, dynamic> item) async {
@@ -666,7 +706,14 @@ class _IncomingCallCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ringColor = isVideo ? AuraSurface.accent : AuraSurface.coVerdant;
-    return Container(
+    // Material ancestor is MANDATORY here (founder evidence 2026-08-17):
+    // this card renders in a root overlay Stack; without Material every
+    // Text that inherits any style falls back to the framework's
+    // yellow-double-underline error style — the exact "ugly confusing"
+    // ring card observed on both browser and mobile at ring start.
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
       width: 360,
       constraints: const BoxConstraints(maxWidth: 420),
       padding: const EdgeInsets.all(AuraSpace.s16),
@@ -814,6 +861,7 @@ class _IncomingCallCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
