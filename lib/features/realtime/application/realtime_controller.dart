@@ -123,7 +123,12 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// tell the truth — the real reason, a Retry affordance — instead of an
   /// endless "Connecting…" spinner. Auto-recovery stays armed regardless.
   int _transportFailureStreak = 0;
-  static const int _maxSilentTransportCycles = 2;
+  // 0 = truth after the FIRST exhausted cycle. A cycle is already three
+  // real attempts with backoff (~up to 45s of genuine trying) — hiding the
+  // reason behind further silent cycles only recreates the endless
+  // spinner the founder rejected. join() is invoked once per screen
+  // visit, so a higher threshold may never be reached at all.
+  static const int _maxSilentTransportCycles = 0;
 
   String get _managedSessionId =>
       (state.sessionId ?? state.session?.id ?? '').trim();
@@ -590,12 +595,17 @@ class RealtimeController extends StateNotifier<RealtimeState>
           // Truth over hope: repeated full retry cycles have failed. Show
           // the REAL reason and a usable retry state; keep auto-rejoin
           // armed so a recovered socket still completes the join.
+          // The RAW transport error is shown deliberately: this branch only
+          // carries connection-establishment failures (timeouts, socket
+          // exceptions) — never business data — and the exact reason is
+          // what makes the state truthful and diagnosable.
+          final reason = error.toString().replaceFirst('Exception: ', '');
           state = state.copyWith(
             connectionStatus: RealtimeConnectionStatus.error,
             joinState: RealtimeJoinState.idle,
             clearInfoMessage: true,
-            errorMessage:
-                'Live connection could not be established. ${_safeJoinErrorMessage(error)}',
+            errorMessage: 'Live connection could not be established. '
+                '($reason)',
           );
         }
         return; // Do not rethrow — 'socket:connected' will retry.
