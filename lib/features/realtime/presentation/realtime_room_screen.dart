@@ -136,6 +136,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   // those paths. Without this guard, every back-navigation tore down the
   // call and produced the "blank wrapped" UI the user reported.
   bool _intentToLeave = false;
+  // Re-entrancy guard for the dock's screen-share toggle — mirrors the
+  // Meetings room's _togglingScreenShare. getDisplayMedia opens a browser
+  // picker; a second tap while it is open must not race a second capture.
+  bool _togglingScreenShare = false;
   String? _lastConsentSyncKey;
   bool _guestAuthAttempted = false;
   RealtimeSurfaceType? _lastKnownSurfaceType;
@@ -439,6 +443,27 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       '[RTC NAV] action=go target=$target sessionId=${session?.id ?? widget.sessionId} surfaceType=${session?.surfaceType.name ?? ""} lastEvent=${ref.read(realtimeControllerProvider).lastSocketEvent ?? ""}',
     );
     context.go(target);
+  }
+
+  Future<void> _toggleScreenShare() async {
+    if (_togglingScreenShare) return;
+    setState(() => _togglingScreenShare = true);
+    try {
+      final controller = ref.read(realtimeControllerProvider.notifier);
+      final sharing = ref.read(realtimeControllerProvider).isScreenSharing;
+      if (sharing) {
+        await controller.stopScreenShare();
+      } else {
+        // Throws when the user cancels the browser's picker or the
+        // platform lacks getDisplayMedia — the catch keeps the control
+        // truthfully in its "Share" state instead of claiming a share.
+        await controller.startScreenShare();
+      }
+    } catch (error) {
+      debugPrint('[rtc] screen share toggle failed err=$error');
+    } finally {
+      if (mounted) setState(() => _togglingScreenShare = false);
+    }
   }
 
   void _minimizeCall(RealtimeSession? session) {
@@ -788,6 +813,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             pendingRequests: canModerate ? joinRequestCount : 0,
                             onToggleMic: controller.toggleMicrophone,
                             onToggleCamera: controller.toggleCamera,
+                            isScreenSharing: state.isScreenSharing,
+                            isTogglingScreenShare: _togglingScreenShare,
+                            onToggleScreenShare: () =>
+                                unawaited(_toggleScreenShare()),
                             showSpeakerToggle: _supportsSpeakerphoneToggle,
                             speakerOn: state.speakerphoneEnabled,
                             onToggleSpeaker: () =>
@@ -1857,8 +1886,18 @@ class _CallStage extends StatelessWidget {
     final hasLocalRenderer = state.localRenderer != null;
     final hasAnyRenderer = hasLocalRenderer || hasRemoteRenderers;
 
-    // Video call with renderers
-    if (state.isVideoMode && hasAnyRenderer) {
+    // Screen share escalates an AUDIO call's stage to the video grid:
+    // the shared media service adds the screen track to audio-only peers
+    // (with renegotiation), but this stage previously only rendered the
+    // grid in isVideoMode — a received screen had renderers and nowhere
+    // to draw. Keyed on screen-state TRUTH (local isScreenSharing / any
+    // participant screenOn), never on renderer presence — audio calls
+    // create renderers for audio tracks too.
+    final someoneSharingScreen =
+        state.isScreenSharing || state.participants.any((p) => p.screenOn);
+
+    // Video call (or active screen share) with renderers
+    if ((state.isVideoMode || someoneSharingScreen) && hasAnyRenderer) {
       return _VideoGrid(
         localRenderer: state.localRenderer,
         remoteRenderers: state.remoteRenderers,
@@ -2349,6 +2388,9 @@ class _CallControlDock extends StatelessWidget {
     this.showSpeakerToggle = false,
     this.speakerOn = false,
     this.onToggleSpeaker,
+    this.isScreenSharing = false,
+    this.isTogglingScreenShare = false,
+    this.onToggleScreenShare,
   });
 
   final bool micOn;
@@ -2363,6 +2405,15 @@ class _CallControlDock extends StatelessWidget {
   final VoidCallback? onLeave;
   final bool isEndCall;
   final bool isEnding;
+
+  /// Conversation-call screen share (2026-08-17) — same shared
+  /// RealtimeController.start/stopScreenShare pipeline the Meetings room
+  /// already consumes (track replace on video peers, add+renegotiate on
+  /// audio-only peers, `session:screen.set` truth signal). Null hides the
+  /// control entirely.
+  final bool isScreenSharing;
+  final bool isTogglingScreenShare;
+  final VoidCallback? onToggleScreenShare;
 
   /// 2026-08-14 repair — Thread/DM speaker/output-route control. Only shown
   /// on platforms where the toggle actually does something (mobile-native).
@@ -2414,6 +2465,22 @@ class _CallControlDock extends StatelessWidget {
                 active: cameraOn,
                 warning: !cameraOn,
                 onPressed: onToggleCamera,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+            ],
+
+            // Screen share — audio AND video calls (the shared media
+            // service adds the track with renegotiation on audio-only
+            // peers, so audio calls genuinely support it).
+            if (onToggleScreenShare != null) ...[
+              _DockButton(
+                icon: isScreenSharing
+                    ? Icons.stop_screen_share_rounded
+                    : Icons.screen_share_rounded,
+                label: isScreenSharing ? 'Stop share' : 'Share',
+                active: isScreenSharing,
+                onPressed:
+                    isTogglingScreenShare ? () {} : onToggleScreenShare!,
               ),
               const SizedBox(width: AuraSpace.s8),
             ],

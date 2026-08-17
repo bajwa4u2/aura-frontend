@@ -76,6 +76,30 @@ async function handlePush(event) {
     ' deeplink=' + deeplink +
     ' tag=' + tag);
 
+  // Cancellation pushes (2026-08-17 — founder-observed persistent ring
+  // notification). The backend already sends a SILENT cancellation push on
+  // every ring-resolving moment (accept on any device, decline, expiry,
+  // session end) with the SAME collapseKey/sessionId tag as the ring push
+  // — but this worker rendered every push as a notification, so the clear
+  // signal REPLACED the ring instead of closing it, and requireInteraction
+  // kept it on screen indefinitely. Interpret the cancel: close matching
+  // notifications, show nothing. (Chromium may occasionally surface a
+  // generic background-update notice for a push with no visible
+  // notification; closing the stale ring is strictly better than leaving
+  // a dead "X is calling" on screen.)
+  var isCancellation =
+    data.silent === true ||
+    /_CANCELLED$/.test(String(data.type || '')) ||
+    String((data.data && data.data.callState) || '').toUpperCase() === 'ENDED';
+  if (isCancellation) {
+    console.log('[SW DIAG] cancellation push — closing tag=' + tag);
+    var existing = await self.registration.getNotifications({ tag: tag });
+    for (var n = 0; n < existing.length; n++) {
+      try { existing[n].close(); } catch (_) {}
+    }
+    return;
+  }
+
   // Store the full data blob so handleNotificationClick can route correctly.
   var notificationData = {
     deeplink: deeplink,
