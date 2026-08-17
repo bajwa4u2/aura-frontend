@@ -80,7 +80,16 @@ class RealtimeSocketService {
       ' isConnected=$isConnected inFlight=${_connectFlight.isInFlight}'
       ' currentSocketId=${_socket?.id} currentConnected=${_socket?.connected}',
     );
-    if (_disposing) return;
+    if (_disposing) {
+      // NEVER a silent void: a disposed service returning normally made
+      // connect() report success, after which the join threw the generic
+      // 'Transport not ready after connect() returned' forever. If this
+      // instance is disposed, say so — the caller's error surface carries
+      // the truth instead of an unexplained not-ready loop.
+      throw RealtimeTransportException(
+        'Realtime socket service is disposed — cannot establish transport.',
+      );
+    }
     if (isConnected) return;
 
     try {

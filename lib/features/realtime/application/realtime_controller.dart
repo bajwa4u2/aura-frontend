@@ -653,11 +653,25 @@ class RealtimeController extends StateNotifier<RealtimeState>
       if (_terminating) return;
       if (_isRetryableConnectionError(error)) {
         _awaitingReconnectRejoin = true; // retry on next connect
-        state = state.copyWith(
-          connectionStatus: RealtimeConnectionStatus.reconnecting,
-          infoMessage: 'Reconnecting…',
-          clearErrorMessage: true,
-        );
+        _transportFailureStreak++;
+        if (_transportFailureStreak <= _maxSilentTransportCycles) {
+          state = state.copyWith(
+            connectionStatus: RealtimeConnectionStatus.reconnecting,
+            infoMessage: 'Reconnecting…',
+            clearErrorMessage: true,
+          );
+        } else {
+          // Same bounded-truth semantics as join(): a rejoin loop must not
+          // hide the establishment reason behind an endless banner either.
+          final reason = error.toString().replaceFirst('Exception: ', '');
+          state = state.copyWith(
+            connectionStatus: RealtimeConnectionStatus.error,
+            joinState: RealtimeJoinState.idle,
+            clearInfoMessage: true,
+            errorMessage: 'Live connection could not be re-established. '
+                '($reason)',
+          );
+        }
         return;
       }
       state = state.copyWith(
