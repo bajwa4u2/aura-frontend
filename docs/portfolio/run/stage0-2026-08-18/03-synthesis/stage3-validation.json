@@ -82,6 +82,20 @@
       "co": 17
     }
   },
+  "worldClassObligation": {
+    "TRUE": 103,
+    "FALSE": 40,
+    "UNRESOLVED": 0,
+    "ABSENT": 0
+  },
+  "obligationClassDistribution": {
+    "COMPLETED_OR_SUPERSEDED": 52,
+    "PARTIALLY_COMPLETED": 50,
+    "OUTSTANDING_CONSTRUCTION": 110,
+    "VALIDATION_OR_GATE_ONLY": 62,
+    "FOUNDER_ACTION_ONLY": 21,
+    "UNKNOWN": 4
+  },
   "checksPassed": [
     "Stage-0 baseline UNMUTATED by Stage 3",
     "Stage-1 proposals UNMUTATED by Stage 3",
@@ -97,7 +111,9 @@
     "RC-C10 ruling preserved: ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED, gates intact",
     "F137 explicitly owned by CH-12",
     "WG: 17 issued (WG001-WG017), WG018 reserved",
-    "Protected boundaries: 12/12 accounted in the chapter architecture"
+    "Protected boundaries: 12/12 accounted in the chapter architecture",
+    "worldClassObligation complete on 143 findings (true 103 / false 40 / unresolved 0), none by omission",
+    "obligationClass complete on 299/299 obligations {\"COMPLETED_OR_SUPERSEDED\":52,\"PARTIALLY_COMPLETED\":50,\"OUTSTANDING_CONSTRUCTION\":110,\"VALIDATION_OR_GATE_ONLY\":62,\"FOUNDER_ACTION_ONLY\":21,\"UNKNOWN\":4}"
   ],
   "warnings": [],
   "failures": [],

@@ -163,5 +163,36 @@
    "protected-boundary modifications"
   ],
   "ownershipRuling": "Stage 3 MUST synthesize ownership across BOTH canonical axes: 143/143 findings AND 299/299 chartered obligations, each independently provable. The CO axis may not be reduced to annotations on findings, nor findings to annotations on COs. Cross-references expected; ownership equivalence never assumed."
+ },
+ "stage3Completion": {
+  "date": "2026-08-18",
+  "status": "COMPLETE_AND_FROZEN",
+  "verdict": "PASS",
+  "accounting": {
+   "findings": "143/143",
+   "charteredObligations": "299/299",
+   "totalCanonicalUnits": "442/442",
+   "rcChaptersPreserved": "12/12",
+   "executableChapters": 17
+  },
+  "gapsCorrected": [
+   {
+    "gap": "obligationClass missing on 135 RC-C6..RC-C11 obligations",
+    "status": "CLOSED",
+    "result": "135/135 classified under the RC-C0..C5 semantics; 4 explicit UNKNOWN retained"
+   },
+   {
+    "gap": "worldClassObligation reported absent on findings",
+    "status": "WAS NOT A GAP",
+    "result": "complete on 143/143 as {value,note}; the earlier report was an extraction error in the orchestrator, corrected"
+   }
+  ],
+  "doctrinesFrozen": [
+   "AUTHORITY_ADMISSION (CH-02 first application)",
+   "RC-C5 NON-INFERENCE",
+   "DEPENDENCY_HALT_GUARD",
+   "VALIDATOR_FAIL_CLOSEDNESS"
+  ],
+  "stage4": "NOT_STARTED / NOT_AUTHORIZED"
  }
 }

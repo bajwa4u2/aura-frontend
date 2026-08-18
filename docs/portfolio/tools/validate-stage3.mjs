@@ -181,6 +181,56 @@ for (let i = 1; i <= 12; i++) { const pb = 'PB-' + String(i).padStart(2, '0'); i
 if (pbMissing.length) failures.push('protected boundary/ies not accounted in the architecture: ' + pbMissing.join(', '))
 else checks.push('Protected boundaries: 12/12 accounted in the chapter architecture')
 
+// ── FAIL-CLOSEDNESS: required fields may not be absent ─────────────────────
+// Absence is never satisfaction. A tri-state field that is missing is UNRESOLVED,
+// and unresolved-by-omission is a failure; unresolved must be stated.
+const TRISTATE_UNRESOLVED = new Set(['UNRESOLVED', 'NOT_ESTABLISHED', 'UNKNOWN'])
+
+function triState(v) {
+  if (v === undefined || v === null) return 'ABSENT'
+  const raw = (v && typeof v === 'object') ? v.value : v
+  if (raw === true || raw === 'true') return 'TRUE'
+  if (raw === false || raw === 'false') return 'FALSE'
+  if (typeof raw === 'string' && TRISTATE_UNRESOLVED.has(raw.toUpperCase())) return 'UNRESOLVED'
+  return 'ABSENT'
+}
+
+const wcCounts = { TRUE: 0, FALSE: 0, UNRESOLVED: 0, ABSENT: 0 }
+const wcAbsent = []
+for (const a of ((fOwnFile && fOwnFile.assignments) || [])) {
+  const t = triState(a.worldClassObligation)
+  wcCounts[t]++
+  if (t === 'ABSENT') wcAbsent.push(a.id)
+}
+if (wcAbsent.length) {
+  failures.push('worldClassObligation ABSENT on ' + wcAbsent.length + ' finding(s) — absence is not FALSE: ' + wcAbsent.slice(0, 20).join(', '))
+} else {
+  checks.push('worldClassObligation complete on ' + (fOwnFile ? fOwnFile.assignments.length : 0) +
+    ' findings (true ' + wcCounts.TRUE + ' / false ' + wcCounts.FALSE + ' / unresolved ' + wcCounts.UNRESOLVED + '), none by omission')
+}
+
+// Every obligation must carry an explicit classification. UNKNOWN is legitimate;
+// a missing field is not.
+const CLASS_VOCAB = new Set(['COMPLETED_OR_SUPERSEDED', 'PARTIALLY_COMPLETED', 'OUTSTANDING_CONSTRUCTION',
+  'VALIDATION_OR_GATE_ONLY', 'FOUNDER_ACTION_ONLY', 'UNKNOWN'])
+const classOf = new Map()
+for (const o of [coA, coB]) for (const a of ((o && o.assignments) || [])) {
+  if (a && a.id && a.obligationClass) classOf.set(a.id, a.obligationClass)
+}
+const extraClass = opt(join(SY, 'classification-co-b.json'))
+for (const a of ((extraClass && extraClass.classifications) || [])) {
+  if (a && a.id && a.obligationClass && !classOf.has(a.id)) classOf.set(a.id, a.obligationClass)
+}
+const unclassified = allCo.filter((id) => !classOf.has(id))
+const badClass = [...classOf.entries()].filter(([, c]) => !CLASS_VOCAB.has(c)).map(([id, c]) => id + '=' + c)
+if (unclassified.length) failures.push('obligationClass MISSING on ' + unclassified.length + ' obligation(s): ' + unclassified.slice(0, 20).join(', '))
+if (badClass.length) failures.push('obligationClass outside vocabulary: ' + badClass.slice(0, 10).join(', '))
+if (!unclassified.length && !badClass.length) {
+  const dist = {}
+  for (const [, c] of classOf) dist[c] = (dist[c] || 0) + 1
+  checks.push('obligationClass complete on ' + classOf.size + '/' + allCo.length + ' obligations ' + JSON.stringify(dist))
+}
+
 // ── portfolio health ───────────────────────────────────────────────────────
 const byChapter = {}
 for (const [, ch] of fOwner) byChapter[ch] = byChapter[ch] || { f: 0, co: 0 }, byChapter[ch].f++
@@ -202,6 +252,8 @@ const result = {
     protectedBoundaries: 12 - pbMissing.length + '/12',
   },
   perChapter: byChapter,
+  worldClassObligation: wcCounts,
+  obligationClassDistribution: Object.fromEntries([...classOf.values()].reduce((m, c) => m.set(c, (m.get(c) || 0) + 1), new Map())),
   checksPassed: checks, warnings, failures,
   verdict: failures.length ? 'FAIL' : 'PASS',
   stageStatus: {
