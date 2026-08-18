@@ -1,0 +1,622 @@
+{
+  "artifact": "protected-boundaries",
+  "stage": "STAGE 0 — EVIDENCE RECONSTRUCTION",
+  "generatedFor": "docs/portfolio/run/stage0-2026-08-18/00-evidence",
+  "date": "2026-08-18",
+  "scope": "EXISTING protection doctrine, recorded as found in the governed documents of aura_final and aura-backend and in the register/checkpoint evidence. NO new protection doctrine was created, strengthened, softened or generalised here. Where a boundary is stated in more than one place with different wording, all statements are cited rather than harmonised.",
+  "namespaceRules": {
+    "RC-C0..RC-C11": "Frontend reconstruction chapters (FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md).",
+    "RIC-C1..RIC-F1": "Rich Content & Interaction implementation stages (§12 §16).",
+    "warning": "RIC-C2 (Reference/Retention index) and RC-C2 (Identity, Presence & Profile) are unrelated. RIC-C5 (governed delivery security stage) and RC-C5 (Composition, Intake & Attachments) are unrelated and carry DIFFERENT gates."
+  },
+  "boundaries": [
+    {
+      "id": "PB-01",
+      "domain": "MEETINGS",
+      "governingDoctrine": [
+        "FD-4 — Realtime presentation convergence: SELECTED OPTION A — SHARED REALTIME PRESENTATION PRIMITIVES, MEETINGS LIFECYCLE UNTOUCHED. 'Meetings lifecycle is untouched. Booking, invitation, attendance, waiting/admission rules, prep, summary and follow-up remain exactly as certified.'",
+        "'Meetings is a PROTECTED CERTIFIED SURFACE.'",
+        "'Meetings is a protected certified surface — presentation converges slice-by-slice with regression after each slice; the lifecycle is never rewritten.'",
+        "§12 §13: 'PROTECTED — untouched by this contract: … Meetings …'",
+        "§12 Amendment 1 §D: Meetings occupy a SEPARATE STORAGE/LIFECYCLE UNIVERSE. 'MEETING is OUTSIDE the current Media/ContentReference retention universe unless a future approved architectural convergence changes that fact.' 'This is a deliberate external universe, and must never be reported as an unresolved blind spot.'",
+        "C0-8 — Meetings holds zero G5 sites; its protected debt is G3(16)/G4(14) belonging to controlled C6 review. 'Certified Meetings is not modified for foundation debt reduction.'"
+      ],
+      "whatIsProtected": [
+        "The Meetings LIFECYCLE: booking, invitation, attendance, waiting/admission rules, prep, summary, follow-up.",
+        "Meeting admission semantics (a route-classification change nearly broke guest entry via /meetings/join-error and was caught by the disjointness rule).",
+        "Meeting storage and recording retention: MeetingAsset has NO Media relationship (storageKey matched 0 Media rows; storageKey = Media.id matched 0); RealtimeSessionRecording.storageUrl does not map to Media (0 matches); Meetings already own retainedUntil / deletedAt and cascade lifecycle semantics.",
+        "The empty MEETING deriver in the ContentReference index — recorded as TRUTHFUL, not an omission.",
+        "The 8 institution-context Meetings routes (untouched through C3).",
+        "26 full-surface spinners of measured C0 debt, 14 of which are in Meetings, deliberately not migrated."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "Every C6 convergence slice: 'Slice by slice — NO wholesale Meetings rewrite. Targeted Meetings regression after each slice (currently 97/97).'",
+        "Any shared-boundary work: the route-classification change produced 'new evidence that shared-boundary work genuinely threatens Meetings guest entry'.",
+        "The ONE identified intersection in §12: 'meeting recordings already use the multipart upload path this contract generalizes. That boundary is identified here and requires explicit regression before it is touched — it is not assumed safe.'",
+        "F114 (Meetings protected) is held LIVE_CERTIFIED on the evidence that 'No Meetings file was modified in any commit this session' — i.e. the proof is file-level non-modification plus the Meetings regression set."
+      ],
+      "whatRequiresFounderApproval": [
+        "Founder checkpoint 11 — 'Meetings sign-off after each slice' (C6), rationale: 'certified surface protection'.",
+        "Any architectural convergence that would bring Meetings into the Media/ContentReference retention universe.",
+        "The Meetings validation batch (F112/F113) runs only after Conversation's shared capabilities are certified and only with explicit Meetings regression evidence."
+      ],
+      "explicitlyProhibited": [
+        "Creating a fake Media bridge · adding a Meeting deriver · modifying Meeting storage · refactoring recording retention · changing Meetings (§12 Amendment 1 §D).",
+        "Moving Meetings admission rules into the shared component (FD-4 explicitly rejects this reading).",
+        "Modifying certified Meetings for foundation debt reduction (C0-8)."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/frontend-discovery/FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN.md", "anchor": "line 4 (SELECTED OPTION A), line 12, line 94 (rejected reading)"},
+        {"source": "aura_final/docs/CURRENT_STATE.md", "anchor": "line 62"},
+        {"source": "aura_final/docs/HANDOFF.md", "anchor": "line 26"},
+        {"source": "aura_final/docs/NEXT_WORK.md", "anchor": "line 41"},
+        {"source": "aura_final/docs/frontend-discovery/C0_MIGRATION_REGISTER.md", "anchor": "line 98, line 200"},
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "C0-8 · Meetings — PRESERVED"},
+        {"source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "anchor": "line 330 (PRESERVE — do not touch); CHAPTER C6 MIGRATION/TESTING"},
+        {"source": "aura_final/docs/frontend-discovery/FRONTEND_CERTIFICATION_AND_FOUNDER_GATES.md", "anchor": "line 39 (checkpoint 11)"},
+        {"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "lines 508-513 (§13)"},
+        {"source": "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md", "anchor": "lines 254-273 (§D)"},
+        {"source": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md", "anchor": "line 108 (Boundaries table), line 148 (D-6 matrix — 'Intentional external universe. Untouched')"},
+        {"source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "anchor": "line 42 — 'Meetings: protected; its 8 institution-context routes untouched'"},
+        {"source": "~/.claude/projects/C--Users-muham-flutter-projects/3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "anchor": "line 31798 (F114 row); line 31827 §I; line 32165 §C (Meetings guest-entry regression caught)"}
+      ]
+    },
+    {
+      "id": "PB-02",
+      "domain": "REALTIME (transport, media service, session lifecycle)",
+      "governingDoctrine": [
+        "FD-3 — Realtime Product Semantics, FROZEN: 'Shared realtime infrastructure does NOT imply shared product semantics.' Frozen conceptual ownership per context (DM · THREAD · SPACE · INSTITUTION ROOM · MEETING · LIVE).",
+        "Roadmap C6 'PRESERVE — do not touch.' Realtime transport · media service · event parser · reconnect/orphan recovery (realtime_reconciliation_controller, orphaned-session handling) · session continuity across navigation.",
+        "FD-4: 'Transport, media service, event parser, reconciliation and orphan recovery are untouched — already shared and sound.'",
+        "§12 §13: 'PROTECTED — untouched by this contract: 1:1 calls, group audio/video, screenshare, Live escalation, session lifecycle/convergence, Conversation party truth, Meetings, and C4-owned attention findings.'"
+      ],
+      "whatIsProtected": [
+        "Realtime transport, media service and event parser.",
+        "Reconnect / orphan recovery (realtime_reconciliation_controller, orphaned-session handling).",
+        "Session continuity across navigation.",
+        "The distinct product semantics of each realtime context — shared components render context-supplied states and language; 'the component never owns semantic meaning'.",
+        "1:1 calls, group audio/video and screenshare as already LIVE_CERTIFIED capabilities (F006, F007, F008, F009, F010, F048, F049)."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "Any convergence of realtime PRESENTATION: FD-4 permits presentation convergence only, slice-by-slice, with regression after each slice.",
+        "Any change touching shared Flutter realtime files — prior audits explicitly record 'Shared Flutter realtime files were untouched' as the evidence that realtime was healthy.",
+        "The two recorded shared root causes must not regress: RC-A (controller disposing shared socket/media singletons on tokenStore-watch rebuild, 509230a) and RC-B (root-overlay _joining latch never unmounting, dfc9027)."
+      ],
+      "whatRequiresFounderApproval": [
+        "Founder checkpoint 10 — participation & invite interaction direction (C6).",
+        "The founder stop-order sequence governs execution order: realtime transport → identity/avatar certification → refresh-continuity contract → video/screenshare/Live.",
+        "Whether to park coordinated realtime testing until the §H batch can run in one uninterrupted session (recorded as an open founder decision)."
+      ],
+      "explicitlyProhibited": [
+        "Forcing Meeting/Room/Thread/Space/Live semantic convergence (FD-3 enforcement gate).",
+        "Another surface reimplementing the canonical realtime primitives (C6 enforcement gate).",
+        "Wholesale realtime rewrite — FD-4 forbids it in favour of slice-by-slice convergence."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/frontend-discovery/FD3_REALTIME_SEMANTICS_FROZEN.md", "anchor": "lines 1-25 — core doctrine + frozen conceptual ownership"},
+        {"source": "aura_final/docs/frontend-discovery/FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN.md", "anchor": "line 56, line 77"},
+        {"source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "anchor": "line 330; CHAPTER C6 PRESERVE / ENFORCEMENT"},
+        {"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "lines 508-513"},
+        {"source": "aura_final/docs/2026-08-08-pre-release-connected-system-health-audit.md", "anchor": "line 111, line 193"},
+        {"source": "aura_final/docs/2026-08-17-refresh-continuity-shared-causes.md", "anchor": "lines 96-99 — stop-order sequence"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 31798 (RC-A / RC-B, F036–F049 table); line 31827 §L decision 7"}
+      ]
+    },
+    {
+      "id": "PB-03",
+      "domain": "LIVE",
+      "governingDoctrine": [
+        "FD-5 — LIVE AS A GOVERNED MODE OF A THREAD OR SPACE, FROZEN. 'LIVE is NOT: a standalone generic broadcast product · another Meeting · an expanded Institution Room · a fourth disconnected realtime surface.' 'Going Live must never orphan the conversation from its source context.'",
+        "Live Origination Correction, FOUNDER-FROZEN 2026-08-17: 'LIVE IS NOT SOMETHING A USER CREATES. LIVE IS SOMETHING AN EXISTING REALTIME HUMAN INTERACTION DELIBERATELY BECOMES.' · 'ORIGINATION IS CONTEXTUAL. DISCOVERY IS GLOBAL.' · 'NO ACTIVE REALTIME INTERACTION = NO GO LIVE ORIGINATION.'",
+        "GOVERNING INVARIANT (FROZEN 2026-08-15): 'LIVE MUST NOT CREATE TEMPORARY VERSIONS OF AUTHORITIES ALREADY SCHEDULED FOR RECONSTRUCTION.'",
+        "'C3, C4 and C5 are PRODUCT dependencies of Live — not optional, and not merely later chapters.'",
+        "Internet-public reach rulings (2026-08-17): 15-second preview, not anonymous participation; after 15s sign up or log in; Public Home may surface active Live; the signed-out preview grants NO Live participation or Conversation authority; authentication must return the person to the SAME Live."
+      ],
+      "whatIsProtected": [
+        "The single origination door: inside the active call (realtime room → More panel), behind the FD-5 ritual. Available only to joined non-observer participants of a Conversation-owned session in liveState NORMAL.",
+        "liveState as lifecycle truth and accessMode as participation policy — kept in sync, NEVER collapsed into one concept.",
+        "'The existing callers become the initial stage. No second session, no re-ringing, no participant reconstruction, no broadcast object.'",
+        "'End Live ≠ End Call.' Observers detach with terminal truth; access returns to INVITE_ONLY; the SAME session stays ACTIVE.",
+        "The retired doors stay retired: STANDALONE creation refused ([live:standalone_retired]); any session born public refused ([live:cold_start_retired]); historical STANDALONE rows remain readable.",
+        "The 15-second preview duration: 'the product rule — not tunable during implementation'.",
+        "Charter §26 A–O regression pins in the backend spec ('live state escalation' block).",
+        "The recorded truthful limits: mesh-bounded scale with no invented product cap; recording/replay not implemented and the ritual says 'Recording: off' honestly."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "Charter §26 coverage: same-session escalation (B/C), no re-invites (D), durable NORMAL→LIVE_PREPARING→LIVE trail (E), observer/non-party refusals, already-live refusal, End-Live returning the same session to NORMAL and never ENDED with only observers detached (H/I), STANDALONE creation refused (L), born-public refused (M), discovery keyed on liveState LIVE.",
+        "The human lifecycle journey must pass once before ANYTHING downstream of Live can be certified (F079/F082 gate F083–F088 and the entire viewer/engagement/acquisition stack).",
+        "F088 privacy proof — viewers are OBSERVER-role session participants only, never Conversation parties, with no access to Conversation messages/history/attachments.",
+        "C10 testing: Live lifecycle · speaker/audience transitions · moderation · audience-scale load · recording/replay · attention."
+      ],
+      "whatRequiresFounderApproval": [
+        "Founder checkpoint 15 — Live architecture details where policy remains (moderation + audience scale).",
+        "Open checkpoint D — Live moderation policy. Open checkpoint E — Live audience-scale topology/provider, with provider independence preserved and deliberately not frozen.",
+        "Founder acceptance before release inclusion (C10 checkpoint).",
+        "Any SFU/topology architecture decision: 'an informed engineering assessment precedes any architecture decision; no topology migration in this pass.'",
+        "Live chat identity is explicitly declared NOT a founder question — it must first reconcile FD-5 §§8–10 with C2/D3 identity doctrine."
+      ],
+      "explicitlyProhibited": [
+        "Reinterpreting Live as a standalone broadcast product. 'Build a Live product and link it back' is a prohibited reading (FD-5 §1, rejected Option B).",
+        "C10 enforcement gates: standalone orphan Live product · local role inference · ungoverned public visibility · ring-all audience · membership mutation from speaker state · duplicate Live comment system · Meeting lifecycle reuse · Institution Room reuse · local notification delivery · peer-to-peer audience scaling.",
+        "A fourth live surface. Option B (standalone) and Option C (Institution Room) are both rejected.",
+        "Any temporary Live navigation, notification path, or composer built on surfaces already authorised for demolition."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/frontend-discovery/FD5_LIVE_THREAD_SPACE_FROZEN.md", "anchor": "lines 1-30 — core Live model; §23 scale; §§8–10 engagement authority"},
+        {"source": "aura_final/docs/2026-08-17-live-origination-correction.md", "anchor": "lines 8-20 (frozen sentences), 22-48 (model + only origination door), 50-66 (retired doors), 77-84 (regression pins), 86-120 (founder acceptance + internet-public reach), 122-134 (known truthful limits)"},
+        {"source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "anchor": "CHAPTER C10 — governing invariant, product dependencies table, BOUNDARIES, ENFORCEMENT, TESTING, EXIT (two gates)"},
+        {"source": "aura_final/docs/HANDOFF.md", "anchor": "line 25"},
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "Roadmap decision (2026-08-15) correction 1"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 31798 (Live tables F074–F111); line 31827 §C"}
+      ]
+    },
+    {
+      "id": "PB-04",
+      "domain": "CONVERSATION PARTY TRUTH",
+      "governingDoctrine": [
+        "AURA CONVERSATION SYSTEM — CONSTITUTIONAL CANON, FOUNDER-FROZEN 2026-08-16: 'CONVERSATION = Aura's durable private/interpersonal/institutional communication relationship: parties who chose to communicate with each other.' 'These concepts never collapse into one another.'",
+        "'CAPABILITIES ATTACH; THEY DO NOT FORK.' Audio, video, screen share, Live, media are contextual capabilities of Conversation and never sibling communication products.",
+        "'CONVERSATION / SPACE BOUNDARY (constitutional)' — community infrastructure is never bolted onto Conversation; private conversation never surfaces as 'Space' in any form.",
+        "'BROADCAST BOUNDARY.' One-to-many communication is publication, never Conversation.",
+        "'PARTY LEGITIMACY.' Party kinds are extensible; AI is a capability, not a Party.",
+        "§12 §13 lists 'Conversation party truth' as PROTECTED — untouched by the Rich Content contract.",
+        "Live Origination Correction: 'Viewers are OBSERVER-role session participants: receive-only media, no publish controls, NEVER Conversation parties, no access to Conversation messages/history/attachments. Viewer count is its own truth, never merged into the stage/participant count.'"
+      ],
+      "whatIsProtected": [
+        "Party membership as a durable relationship fact, distinct from realtime session participation.",
+        "Founding-pair identifiability: founding parties have entryInvitationId = null; the new immutable ConversationParty.firstJoinedAt is set once and never updated. Recorded hazard preserved: joinedAt IS overwritten on re-entry, and Conversation.directKey is PERMANENTLY cleared once topology grows.",
+        "Direct-pair identity survives naming (canon).",
+        "Origin ≠ governance: v1 exit is leave-only.",
+        "The Conversation Completion Register: audio/video/screen sharing/media/intentional Live/message reporting remain REQUIRED contextual attachments; Conversation is NOT final-certified until it is resolved, and C4 progression does not erase it."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "F088 — the privacy proof that a Live viewer never becomes a Conversation party (OBSERVER session row only).",
+        "Any change to party ordering: the earlier generic joinedAt + alphabetical-tiebreak implementation was explicitly 'the doctrine you told me not to freeze' and was replaced rather than shipped.",
+        "F126 — conversation media visibility must be RESTRICTED at attach, stamped on the SAME update that stamps the CONVERSATION parent; 'a parent stamp without a visibility stamp IS the defect', pinned seven ways in media-visibility.authority.spec.ts.",
+        "Legacy conversation surfaces are NOT yet retired; Phase 5 retirement is gated (see PB-11)."
+      ],
+      "whatRequiresFounderApproval": [
+        "Any new Party kind (canon: party kinds are extensible but a new kind must clear the legitimacy test).",
+        "Phase 5 legacy retirement authorization (explicit, after founder live observation and journey certification).",
+        "Founder checkpoint 12 — Correspondence presentation and its architectural convergence verdict (C7)."
+      ],
+      "explicitlyProhibited": [
+        "Collapsing Conversation, Space, Publication, Attention, Delivery, Identity and Authority into one another.",
+        "Bolting community infrastructure onto Conversation; surfacing a private conversation as a 'Space'.",
+        "Recreating Correspondence as a product (C7 amendment: there is ONE canonical Conversation system).",
+        "Merging viewer count into the stage/participant count."
+      ],
+      "sourceProvenance": [
+        {"source": "aura-backend/docs/2026-08-16-aura-conversation-system-canon.md", "anchor": "lines 1-40 — constitutional definitions, ten-year doctrine, boundaries"},
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "AURA CONVERSATION SYSTEM + AURA INVITATION SYSTEM (founder-frozen 2026-08-16); C7 AMENDMENT; CONVERSATION COMPLETION REGISTER"},
+        {"source": "aura_final/docs/2026-08-17-live-origination-correction.md", "anchor": "lines 37-40"},
+        {"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "lines 508-513"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 31827 §J (F055 feasibility: entryInvitationId, joinedAt overwrite, directKey cleared); line 32009 §A (firstJoinedAt shipped); line 32333/32375 (F126 producer invariant)"}
+      ]
+    },
+    {
+      "id": "PB-05",
+      "domain": "IDENTITY (canonical identity, presence, profile)",
+      "governingDoctrine": [
+        "FD-11 — Canonical Identity Presentation + Contextual Projection: 'person ≠ institution ≠ membership ≠ acting context ≠ presence'. Preserved in code as IdentityConcept (C0-1 frozen).",
+        "C0-3 — 'PERSON = canonical human identity. MEMBER = contextual membership/relationship state. A human is never canonically typed as \"Member\".'",
+        "FD-9 — Contextual Acting Authority. C1 frozen rule: 'acting authority becomes explicit when a consequential action requires attribution — NEVER because of the route the person navigated through.'",
+        "§12 Amendment 1 D-1: identity avatar, cover and institutional logo are FIRST-CLASS Aura identity assets; the model converges to identity authority → authoritative Media relationship → governed Media delivery, and away from identity authority → arbitrary URL string.",
+        "§12 §13: 'Identity remains surface-owned; Rich Content owns reference/retention MECHANICS, not identity policy.'",
+        "RC-C2 (Identity, Presence & Profile): FINAL CLOSURE DECLARED BY FOUNDER 2026-08-16."
+      ],
+      "whatIsProtected": [
+        "The canonical identity projection and its consumers — F057 proved the me['id'] vs me['user']['id'] drift was AUTHORITY-AFFECTING (host detection, role lookup, Go Live eligibility), not cosmetic.",
+        "Deployed identity consumers: 'The migration/compatibility path must be ADDITIVE. Deployed identity consumers must not be broken.' Existing URL fields may remain transitional while canonical Media identity is introduced.",
+        "The six SUPERSEDED identity assets: 'NOT authorized for deletion and must not be deleted during this chapter.' Preserve the evidence.",
+        "Verification truth: no generic 'Verified' (gate-enforced); layered verification; 'Role attested' is the public wording; official institutional speech remains authority, not verification.",
+        "Presence as correctly the person; the six-meaning overload retirement is C2-owned.",
+        "C2's closed data transitions: verification reconciled (drift 0), TRUSTED + legacy VERIFIED enum values physically retired, Follow migrated to FollowEdge+FollowConsent with 8/8 equivalence checks and legacy stores retired (d18b0bb)."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "D-1: 'This touches canonical identity. The shared boundary must be identified and affected identity consumers regression-tested. The broader identity system is NOT to be casually rewritten because C2 needs a relationship.'",
+        "F053/F116 — a full consumer audit; F116 must not be closed by fixing one consumer (hierarchy F050 ⊂ F053 ⊂ F116 recorded).",
+        "Any identity change reaching realtime surfaces must re-prove End-vs-Leave, role lookup and Go Live eligibility (F057)."
+      ],
+      "whatRequiresFounderApproval": [
+        "Founder checkpoint 3 — verification label mapping (C2 ⚑). Checkpoint 4 — presence privacy/visibility policy (C2 ⚑). Checkpoint 5 — profile visual direction (C2).",
+        "Availability Off user-facing control: doctrine frozen, control required, IMPLEMENTATION OWNER UNASSIGNED pending founder roadmap placement (recorded GAP 1)."
+      ],
+      "explicitlyProhibited": [
+        "URL equality as the constitutional identity→Media relationship. It may be used for migration/evidence discovery only: 'URLs change, expire, are external, are transformed, and represent different delivery variants.'",
+        "Route-derived acting context — resolveActorContext was deleted; 0 mechanisms remain and the ratchet prevents its return.",
+        "Deleting the six superseded identity assets during this chapter (D-2).",
+        "Giving InstitutionUnit.logoUrl a local C2 dialect — it belongs to later canonical identity convergence."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "FD-11; C0-1 IdentityConcept; C0-3 Person/Member; C2 trust/verification rulings; FOUNDER-OWNED ROADMAP GAPS — GAP 1"},
+        {"source": "aura_final/docs/frontend-discovery/FD9_ACTING_CONTEXT_FROZEN.md", "anchor": "lines 1-14"},
+        {"source": "aura_final/docs/CURRENT_STATE.md", "anchor": "line 80 (C1 frozen rule), lines 98-128 (C2), line 128 (C2 FINAL CLOSURE)"},
+        {"source": "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md", "anchor": "lines 94-131 (D-1, D-2), line 346 (§13 authority boundaries unchanged)"},
+        {"source": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md", "anchor": "line 111 (Identity system — additive only, consumers regression-tested, no casual rewrite), line 177 (C-6)"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 31798 (Identity table F050–F058); line 31827 §C"}
+      ]
+    },
+    {
+      "id": "PB-06",
+      "domain": "AUTHENTICATION / SESSION AUTHORITY",
+      "governingDoctrine": [
+        "Founder platform contract: 'REFRESH IS NOT NAVIGATION' — refresh on a legitimate destination must reconstruct that destination.",
+        "The session hint is now a CONTRACT, not a call site: it is written inside TokenStore.setSession() — the single choke point every auth path funnels through — and cleared in clearTokens(). 'No future authentication path can forget it.' Guest tokens deliberately do not set it.",
+        "Route classification is a testable authority with four frozen classes; UNKNOWN FAILS CLOSED; a ratchet reads router.dart as the source of truth.",
+        "PD-2 Authentication & Account Entry is a NEW PRODUCT DISPOSITION CHECKPOINT before C11 — it has no owning chapter in the approved roadmap and needs a product decision.",
+        "C1 G5 re-verification measured ZERO institutional authority code in both auth files; they were dispositioned to PD-2 rather than absorbed."
+      ],
+      "whatIsProtected": [
+        "The single-choke-point session-hint contract (session_hint.dart primitives; bootstrap re-exports so nothing else changed).",
+        "The guest boundary: guest tokens deliberately do not set the member session hint; guest-reachable realtime/meeting routes are an explicit boundary question, not an accident to be 'fixed' blindly.",
+        "Route classification disjointness — the classes are genuinely disjoint rather than relying on evaluation order to hide overlap (this is what prevented meeting guests being bounced into a login wall).",
+        "Destination preservation on gate exits (?redirect=) as a rule rather than per-exit.",
+        "/institution/sign-in classified AUTH_ACTION — an authentication ceremony, not a member surface."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "All 23 navigation gates green after any classification change.",
+        "The route-integrity gate must prove every authority-declared address executable against the router table — the strengthened form after the /meetings class of defect.",
+        "F069 needs a live signed-out probe; F065 needs a live refresh proof."
+      ],
+      "whatRequiresFounderApproval": [
+        "PD-2 product disposition (no owning chapter).",
+        "F069 exception policy: whether guest-reachable realtime/meeting routes are a declared named exception class (isGuestReachablePath) or remain implicitly unclassified — recorded as an open founder decision.",
+        "Whether /spaces and /spaces/:slug are publicly browsable (raised as a founder decision; a later commit cdbae96 records a Spaces PUBLIC ruling)."
+      ],
+      "explicitlyProhibited": [
+        "Writing the session hint at additional individual call sites instead of at the choke point (the defect being corrected).",
+        "Fail-open route classification.",
+        "Inventing an auth/identity policy at a gate rather than bringing it to the founder."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/2026-08-17-refresh-continuity-shared-causes.md", "anchor": "lines 1-6 (contract), 9-25 (RC1), 53-61 (RC6), 80-94 (widest-leverage corrections)"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 32009 §A/§D/§E (session-hint contract; F069 exception policy decision); line 32165 §A/§C (24 fail-open routes; Meetings guest regression; /spaces decision)"},
+        {"source": "aura_final/docs/CURRENT_STATE.md", "anchor": "lines 20-21 (PD-1/PD-2), line 88 (G5 withdrawal to PD-1/PD-2)"},
+        {"source": "aura_final/docs/NEXT_WORK.md", "anchor": "lines 62-66"}
+      ]
+    },
+    {
+      "id": "PB-07",
+      "domain": "MEDIA / STORAGE",
+      "governingDoctrine": [
+        "§12 FROZEN STORAGE INVARIANTS (F138): 'RESTRICTED OR PRIVATE BYTES MUST NEVER BE RETRIEVABLE MERELY THROUGH POSSESSION OF THEIR STORAGE KEY OR A HISTORICAL DELIVERY URL.' · 'VISIBILITY IS GOVERNANCE STATE, NOT STORAGE TOPOLOGY.' · 'KNOWING WHERE BYTES ARE STORED MUST NEVER CONSTITUTE AUTHORIZATION TO READ THEM.'",
+        "'PUBLIC CONTENT IS NOT PERMANENT UNREVOCABLE STORAGE ACCESS.' PUBLIC means Aura PRESENTLY authorizes public delivery — never that Aura has permanently surrendered governance of the bytes.",
+        "'A FILE IS NOT TRUSTED MERELY BECAUSE THE CLIENT NAMED ITS TYPE.'",
+        "§12 Amendment 1 §B FROZEN DISTINCTION: 'ACQUISITION ≠ ATTACHMENT ≠ REFERENCE ≠ RETENTION ≠ PRESENTATION. These are five distinct facts. No single field may silently collapse them.' Order of questions: 'What authoritative fact requires this content to continue to exist?' BEFORE 'May this content be destroyed?'",
+        "'Retention is a derived consequence; storage deletion is a separate, irreversible execution decision. The two must never be one step.'",
+        "'A partial model may authorize RETENTION on its own; it may never authorize DESTRUCTION.'",
+        "Freeze semantics: 'settled architecture is not reopened because implementation becomes inconvenient. If implementation uncovers a genuine contradiction, security issue, destructive migration, or product decision, work STOPS AT THAT BOUNDARY AND REPORTS.'",
+        "Frozen competitive standard: a person accustomed to WhatsApp, LinkedIn, Teams, Facebook or X must not experience Aura as technologically old or materially poorer in ordinary content interaction. '\"Works\" is not the bar.'"
+      ],
+      "whatIsProtected": [
+        "The 28-type MIME policy as the single source of PERMISSION (the content-truth authority decides what bytes ARE, never what is permitted). SVG remains blocked unconditionally.",
+        "SSRF protections in link-intelligence — 'unchanged and un-weakened' (literal-IP pre-check, per-hop re-resolution, byte/time caps, allow-listed content types).",
+        "Presign/download governance, filename sanitization, size/duration limits, storage authorization, allowlist governance.",
+        "Production data — NOT MUTATED; read-only evidence only.",
+        "MediaCleanupService / the reaper — NOT RUN; reaper authority remains outside the chapter. It is manual/admin-triggered, not cron-driven.",
+        "The 100 investigated Media objects, the six superseded identity assets, and the 71 no-reference-found rows (which must NOT be called orphans on that absence).",
+        "isRetentionEligible() asymmetry: the index may say KEEP on its own but may NEVER say DELETE on its own; every uncertainty path, including a thrown error, returns keep. 'uncertain/deletable → KEEP is allowed; protected/keep → DELETE is NOT.'",
+        "reconcile() reports divergence in both directions and REPAIRS NOTHING — pinned by a test asserting no write method is called during reconciliation."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "§15 SECURITY GATES, all nine — including 'F138 resolved before raw storage URLs are retired' and 'Access context declared at ingestion; fail-closed; PUBLIC asserted, never drifted into.'",
+        "§14 frozen retirement condition, applied to every legacy representation: NEW CONTRACT IMPLEMENTED → HISTORY MIGRATED / EQUIVALENCE PROVEN → LIVE BEHAVIOR CERTIFIED → COMPATIBILITY CONSUMERS REMOVED → LEGACY REPRESENTATION RETIRED.",
+        "D-3 tests must prove the previously blind relationships PREVENT deletion; F142 is not closable by adding conditions alone.",
+        "D-6 seven-step order before any reaper authority change, ending in 'demonstrate equivalence/coverage against production reality'.",
+        "The meeting-recordings multipart upload path intersection requires explicit regression before it is touched (see PB-01).",
+        "The §12 §17 validation gate classes must be declared per stage before work begins."
+      ],
+      "whatRequiresFounderApproval": [
+        "Any reaper authority change (D-6 step 7). 'Return before reaper authority or C5.'",
+        "The R2 public-read ratchet: 'C5's final ratchet (removing R2 public read) stops and reports before execution.' Recorded as 'Not advanced, not performed.'",
+        "Disposition of the unindexed Media population — 'the disposition of real user content is yours.'",
+        "The Cloudflare R2/uploads CORS policy application (F058) — a founder dashboard action; PutBucketCors returned AccessDenied with the backend token.",
+        "Deployment of the three committed-but-unapplied migrations.",
+        "Unblocking SVG would require future evidence of a genuinely safe sanitization architecture PLUS founder approval."
+      ],
+      "explicitlyProhibited": [
+        "§G HARD STOPS: run MediaCleanupService/the reaper · delete any of the 100 investigated objects · delete the six superseded identity assets · classify the 71 no-reference-found rows as orphans without authoritative proof · mutate production data to make the index reconcile · let ContentReference alone authorize deletion · use URL equality as permanent identity authority · use Markdown regex scanning as permanent inline-media authority · modify Meetings · advance to C5 · perform the R2 public-read ratchet · collapse F126/F138/F131/F139–F142 · silently decide any newly discovered product/architecture contradiction.",
+        "Inline-rendering or executing uploaded HTML, scripts, executables or macros because storage was permitted. SAFE TO STORE ≠ SAFE TO INSPECT ≠ SAFE TO PREVIEW ≠ SAFE TO EXECUTE.",
+        "AGPL implementations (MuPDF) in core processing; any capability without a self-hosted tier-0 default; private documents leaving Aura's governed infrastructure to obtain a preview.",
+        "Adding a reference type without a verifier AND a deriver (exhaustiveness test fails otherwise)."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "lines 1-40 (freeze semantics + storage invariants + competitive standard), 68-136 (§2 F138), 226 (§5 invariant), 246-266 (§6), 269-297 (§7), 328-353 (§8.2/8.3/8.4), 402-414 (§9.4), 492-513 (§13), 517-537 (§14), 541-553 (§15), 575-586 (§17)"},
+        {"source": "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md", "anchor": "lines 56-90 (§B), 132-149 (D-3), 237-250 (D-6), 306-318 (§F), 325-337 (§G)"},
+        {"source": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md", "anchor": "lines 104-114 (Boundaries), 14-23 (frozen distinction)"},
+        {"source": "aura_final/docs/2026-08-17-rich-content-system-audit.md", "anchor": "lines 113-124 (backend KEEP), 187-195 (CORS)"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 32753 (C2 invariants 1,2&5,6,7,8,12,15), line 32694 §E (standing C5 ratchet flag), line 32797 §E (founder-owned dispositions)"}
+      ]
+    },
+    {
+      "id": "PB-08",
+      "domain": "C4-OWNED NOTIFICATION / ATTENTION WORK",
+      "governingDoctrine": [
+        "FD-1 — One Governed Attention Hub + Actionable Attention: attention is a PROJECTION, never a new owner; domain-owned resolvable actions.",
+        "FD-2 — Obligation Badge: badge = unresolved actionable obligations; PASSIVE UNREAD NEVER CONTRIBUTES; truncation 99+.",
+        "C4 DR1 evidence record, founder instruction: 'no isolated cosmetic patch; this surface is retired comprehensively by C4 under the canonical Attention Authority.'",
+        "'The CALL is not the subject. The defect class is LEGACY ATTENTION PRESENTATION IS STILL ALIVE AND GLOBALLY OVERLAYS UNRELATED SURFACES.'",
+        "§12 §13 lists 'C4-owned attention findings' as PROTECTED — untouched by the Rich Content contract.",
+        "'Per founder instruction, NOTHING was patched or deleted — the stale rows are themselves C4 evidence.'"
+      ],
+      "whatIsProtected": [
+        "The six C4 findings F030–F035 are preserved unpatched as forensic evidence; the register records 'None fixed; forensic evidence preserved intact.'",
+        "The five stale-ACTIVE RealtimeSession rows on legacy THREAD surface cmsp7euhf00soqw0cjcrzh2d1 — preserved as C4 evidence of the lifecycle-convergence failure class.",
+        "The full mechanism trace (notification_bridge.dart:294-308 and :425-440; global key :21; aura_app.dart:306-329; snackBarTheme :441-449; text producers notification_presentation.dart:54/:58/:85; skip filter :415-420).",
+        "CONSUMERS THAT MUST SURVIVE RETIREMENT (same producers, independent surfaces): the canonical incoming-call experience (incoming_live_overlay.dart:56 AuraIncomingLiveLayer; floating_call_widget.dart:68 PiP; thread_call_lifecycle_controller eviction sites; native_call_notification_channel; aura_app.dart:129/244-267 auth-drop clear + resume reconciliation; notification_open_reconcile.dart:88/187) and every other notificationsControllerProvider consumer (activity_screen, notifications_screen, module_attention nav badges, messages_hub, correspondence_hub, since_you_were_here, the mark-read call sites, derived providers).",
+        "The pin at test/notifications/notification_presentation_test.dart:91 asserting 'Iffat started a call'."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "Retirement must not break the enumerated MUST-SURVIVE consumers — they share producers with the retired surface.",
+        "Retirement must handle BOTH the presentation AND the orphaned-session reconciliation, under the canonical Attention/lifecycle authorities.",
+        "The companion legacy global attention surfaces belong to the same retirement inventory: orphaned_session_banner.dart:32, update_gate.dart:99-133, global_live_banner_layer.dart:97, active_meeting_return_layer.dart:17; plus dead code aura_platform_components.dart:1075 (AuraCallBanner, zero call sites).",
+        "FD-12 applies: proven-dead retirement only; a naïve zero-reference gate is forbidden ('LoginScreen looks dead to grep and is not')."
+      ],
+      "whatRequiresFounderApproval": [
+        "Founder checkpoint 7 — attention interaction direction, BEFORE eight attention surfaces are retired.",
+        "Whether Attention earns primary navigation status — 'only at C4's own founder checkpoint, on product merits — navigation count is not a product requirement.'",
+        "C4 live certification and closure declaration, which is the gate on RC-C5 (see PB-11)."
+      ],
+      "explicitlyProhibited": [
+        "Any isolated cosmetic patch of the legacy banner.",
+        "Patching or deleting the C4 findings or the stale-ACTIVE rows.",
+        "Conflating Conversation/call lifecycle work with this finding — 'Conversation/call lifecycle work proceeds independently and must not be conflated with this finding.'",
+        "Letting passive unread contribute to the obligation badge (FD-2)."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/2026-08-16-c4-dr1-legacy-attention-banner-evidence.md", "anchor": "lines 1-6 (status), 7-16 (live evidence + ruling), 18-50 (mechanism), 64-86 (consumers that MUST SURVIVE), 87-101 (companion surfaces), 103-119 (addendum), 121-126 (disposition)"},
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "FD-1, FD-2, FD-12; FOUNDER-OBSERVED NAVIGATION CORRECTION (NO FIFTH DESTINATION)"},
+        {"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "lines 508-513"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 31798 (C4 table), line 31827 §K"}
+      ]
+    },
+    {
+      "id": "PB-09",
+      "domain": "SHARED NAVIGATION / ROUTING",
+      "governingDoctrine": [
+        "GOVERNING TEST (frozen): 'PRIMARY NAVIGATION MUST REPRESENT A FUNDAMENTAL, RECURRING HUMAN INTENTION IN AURA.' Importance, route count, functionality, convenience, precedent and symmetry do not qualify a destination.",
+        "AUTHENTICATED PRIMARIES — FOUR: HOME · MESSAGES · DISCOVER · CREATE. Public primaries unchanged (Home · Discover). 'NO FIFTH DESTINATION is invented or reserved.'",
+        "C3 DR4 doctrine: 'MIRRORED ROUTE ≠ OBJECT-LOCAL INSTITUTION DEPTH ≠ PATH-MANUFACTURED CONTEXT.' The institution id is OBJECT SCOPE — 'it carries no authority, no acting identity, and no shell truth.'",
+        "'Route-derived acting context RETIRED' — resolveActorContext deleted; 0 mechanisms.",
+        "'All chapters: navigate via NavigationAuthority; the literal ratchet + integrity gate enforce it.'",
+        "'/institutions/:slug remains the public durable link contract' — mutable human identity for sharing; internal id for rename-stable operational addresses.",
+        "GOVERNANCE LESSON (record, not app copy): 'ARCHITECTURE CAN PROPOSE COHERENCE. HUMAN USE VALIDATES MEANING. WHEN THEY CONFLICT, INVESTIGATE THE CONFLICT RATHER THAN PROTECTING THE ARCHITECTURE.'"
+      ],
+      "whatIsProtected": [
+        "Deep links and durable addresses — 'Demolition ≠ data deletion. Every rebuild preserves valid data, state, drafts and deep links.'",
+        "The route-integrity gate + literal ratchet (103 files / 294 sites frozen; every literal validated against the declared table — it caught 2 real defects on first run).",
+        "Shell classification as destination identity, pinned as NEVER authority; alias-aware shell hardening.",
+        "The institutional-inbox quartet's route disposition, held for C7.",
+        "34 canonical institution-depth routes + 4 C7-held; 0 mirrors remaining.",
+        "Meetings' 8 institution-context routes."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "The strengthened route-integrity gate must prove every authority-declared address (primaries, object builders, global actions) EXECUTABLE against the declared route table. The prior gate tested registry self-consistency only, which let a declared primary ship with no executable route.",
+        "All 23 navigation gates plus the literal ratchet after any routing change.",
+        "Classification classes must be genuinely disjoint, not ordered — the ordering shortcut would have bounced meeting guests into a login wall."
+      ],
+      "whatRequiresFounderApproval": [
+        "Founder checkpoint 6 — exact primary navigation destinations (C3 ⚑), 'deliberately not frozen; derived here'.",
+        "Any change to the four authenticated primaries — the current set is a founder-observed amendment to the earlier five-primary freeze.",
+        "Articles' rendering in the live experience: canonically declared but NOT rendered until truthful reading capability exists (founder visibility ruling — 'no dead \"coming soon\" tenancy')."
+      ],
+      "explicitlyProhibited": [
+        "Path-manufactured acting context of any kind.",
+        "A bare /meetings destination or a manufactured personal meetings landing.",
+        "Verification as relevance ranking in Discover — 'verification is never relevance ranking'.",
+        "Reintroducing mirrored routes (gate-pinned unbuildable).",
+        "Opportunistic route changes: 'conversations_screen.dart is unreachable and approved for retirement — in C4, not opportunistically.'"
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "FOUNDER-OBSERVED NAVIGATION CORRECTION (2026-08-16) — governing test, four primaries, Discover rulings, header layers, governance lesson, certification correction; C3 — DR4 Final Architecture"},
+        {"source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "anchor": "line 42 (chapter handoffs incl. Meetings), line 56 (founder amendment + certification gap)"},
+        {"source": "aura_final/docs/CURRENT_STATE.md", "anchor": "line 130 (C3 closeout), line 143 (navigation correction executed)"},
+        {"source": "aura_final/docs/HANDOFF.md", "anchor": "line 27 (Demolition ≠ data deletion), line 35-36 (conversations_screen; LoginScreen)"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 32165 §A (24 unclassified routes; disjointness; Meetings guest recovery)"}
+      ]
+    },
+    {
+      "id": "PB-10",
+      "domain": "CERTIFIED SURFACES / CERTIFICATION AUTHORITY",
+      "governingDoctrine": [
+        "Certification layers — never flattened: Architecture · Implementation · Product-Behavior · Cross-System · Real-Boundary · Founder Product Acceptance · Item 17/Release Gate. 'A lower layer passing never implies a higher one. No chapter may claim Real-Boundary or Item 17 locally.'",
+        "FD-13 — Enforcement ships with the authority it protects; hard failure, narrow exceptions, no end-stage enforcement chapter. 17-point definition of done. 'A chapter is not complete because code compiles.'",
+        "'Nothing may begin without explicit founder authorisation. Roadmap approval ≠ chapter authorisation.' C1 closure is not authorisation for C2.",
+        "'Enforce the invariant, not the filename. A gate that cannot be trusted becomes a recorded obligation — NEVER a downgraded warning.'",
+        "The adopted non-shrinking rule: 'an item leaves only at LIVE_CERTIFIED, SUPERSEDED_BY_FOUNDER_RULING, or EXPLICITLY_RETIRED — implementation, green tests, and deployment do not remove it.'",
+        "'Architectural confidence is never converted into certification. Every stage declares its class before work begins.'"
+      ],
+      "whatIsProtected": [
+        "Recorded certification states must be preserved verbatim; no agent may promote a state.",
+        "The C0 anti-drift gate (test/product/c0_anti_drift_gate_test.dart) as a hard build failure — 11 zero-tolerance rules + 5 ratchets + 2 baseline-honesty gates, with the frozen baseline at test/product/c0_drift_baseline.txt. Each rule was verified to actually fail via a deliberate violation.",
+        "The frozen measured debt baselines (24 local elapsed-time sites · 47 toLocal() · 26 full-surface spinners · 181 direct state-primitive constructions · 17 screen-declared time formatters) — carried as ENFORCED debt, not silently absorbed.",
+        "G5 ownership: 181/181 assigned, zero unassigned; 'a J assignment is reasoned, not immutable product truth' and the owning chapter re-verifies before migrating.",
+        "The 9 items explicitly downgraded from 'fixed & deployed' to IMPLEMENTED_NOT_LIVE_CERTIFIED (F040, F043, F044, F045, F046, F047, F051, F054, F057) — a precedent that deployment is not certification."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "FD-13 items 13 and 14 — targeted regression AND cross-system regression, per chapter.",
+        "Certified suites must not be destabilised to manufacture coverage — the F126 case records choosing a new named authority + spec over extending a certified Conversation fixture whose Prisma fake had no media surface.",
+        "Every gate must be demonstrated to fail on a real violation before it counts as enforcement."
+      ],
+      "whatRequiresFounderApproval": [
+        "Chapter authorisation (each chapter, individually).",
+        "Every founder checkpoint 1–16; Founder Product Acceptance per checkpoint, consolidated at C11.",
+        "Chapter closure declarations — C2 and C3 were each CLOSED by explicit founder declaration, not by the implementer.",
+        "Item 17 / Release Gate — C11 only."
+      ],
+      "explicitlyProhibited": [
+        "Promoting a finding to LIVE_CERTIFIED on unit or architectural evidence.",
+        "Downgrading an untrustworthy gate to a warning.",
+        "A standalone enforcement chapter.",
+        "Claiming Real-Boundary or Item 17 locally.",
+        "Removing an item from the register for being implemented, green, or deployed."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/frontend-discovery/FRONTEND_CERTIFICATION_AND_FOUNDER_GATES.md", "anchor": "lines 5-23 (layers + FD-13 definition of done), lines 27-44 (checkpoints)"},
+        {"source": "aura_final/docs/HANDOFF.md", "anchor": "lines 21-24"},
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "FD-13; C0-9 Enforcement pattern — the FD-13 precedent"},
+        {"source": "aura_final/docs/CURRENT_STATE.md", "anchor": "lines 60-62 (gate + measured debt), line 68 (G5)"},
+        {"source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "anchor": "CHAPTER C11 — certification layers kept explicit"},
+        {"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "lines 583-586 (§17 closing)"},
+        {"source": "~/.claude/projects/.../3a68d78f-...jsonl", "anchor": "line 31798 §G ('Previously called \"fixed & deployed\" that I cannot honestly call LIVE_CERTIFIED (9)') and 'Adopted' paragraph"}
+      ]
+    },
+    {
+      "id": "PB-11",
+      "domain": "FOUNDER-OBSERVED DEPLOYMENT / AUTHORIZATION BOUNDARIES",
+      "governingDoctrine": [
+        "C5 HARD GATE (frozen transition rule): 'C5 remains CLOSED until C4 is implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed. C4 LOCAL CERTIFICATION ≠ C5 AUTHORIZATION.'",
+        "Conversation Phase 5 retirement gate: 'additive deploy → migration → founder live observation → journey certification → explicit authorization.'",
+        "'Release authorized: commit + push both repos; founder observes deployment; migration + PublicSpace seed run through the authorized deployment path.'",
+        "Rich Content: 'Return before reaper authority or C5.' and 'C5's final ratchet (removing R2 public read) stops and reports before execution.'",
+        "'Do not invent founder policy. Open checkpoints are listed in NEXT_WORK.md; bring them forward rather than deciding them.'"
+      ],
+      "whatIsProtected": [
+        "The founder's observation step as a required link in the chain — a healthy observed deploy is what authorised the C2 Follow legacy-store retirement (d18b0bb), which is the recorded precedent shape.",
+        "Legacy conversation surfaces, still live and not retired; the legacy hub parked at /messages/legacy-hub.",
+        "The three committed-but-unapplied media migrations and the un-run reaper.",
+        "Production data as read-only territory for the current chapters."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "Journey certification after migration, before retirement authorization (Conversation Phase 5).",
+        "Post-deployment read-only reconciliation reporting five separate cohorts (see validation-debt VD-054) before any retention/reaper claim.",
+        "Migration proofs: all three media migrations were proven on a disposable Postgres 16 across success path, refusal path and idempotency — and explicitly 'never against production'."
+      ],
+      "whatRequiresFounderApproval": [
+        "Deployment itself (the founder observes deployment; the migration and seed run through the authorized deployment path).",
+        "C4 certified/closed declaration, which alone unlocks RC-C5.",
+        "Explicit authorization of Phase 5 legacy retirement.",
+        "Reaper authority change and the R2 public-read ratchet.",
+        "The Cloudflare R2 CORS dashboard action (F058) and the app-store release that F071 depends on."
+      ],
+      "explicitlyProhibited": [
+        "Treating local certification as deployment authorization, or deployment as certification.",
+        "Advancing to C5 (either axis) ahead of its gate.",
+        "Running the reaper or the R2 ratchet without returning first."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "C5 HARD GATE (frozen transition rule); AURA CONVERSATION SYSTEM + AURA INVITATION SYSTEM"},
+        {"source": "aura_final/docs/CURRENT_STATE.md", "anchor": "lines 165-178 — §62 FOUNDER RESOLUTION APPLIED"},
+        {"source": "aura_final/docs/frontend-discovery/C2_FINAL_CLOSEOUT.md", "anchor": "lines 10-19 — cutover, founder observation, final retirement"},
+        {"source": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md", "anchor": "lines 38-48 (Deployment state), lines 104-114 (Boundaries)"},
+        {"source": "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md", "anchor": "lines 325-337 (§G)"},
+        {"source": "aura_final/docs/HANDOFF.md", "anchor": "line 21, line 29"}
+      ]
+    },
+    {
+      "id": "PB-12",
+      "domain": "CROSS-REPOSITORY CONTRACTS",
+      "governingDoctrine": [
+        "C10 is declared a CROSS-REPOSITORY CONSTRUCTION CHAPTER, not a frontend phase: 'Backend construction must not be hidden inside it.'",
+        "Cross-System certification lands at C1 · C5 · C8 · C10 — 'client and backend agree'.",
+        "'Representation: discover conflict → founder if semantic → resolve → update both repositories → enforce. NEVER silently choose between repositories.'",
+        "Representation authority chain (C0-6, frozen): IMPLEMENTATION / PRODUCT AUTHORITY owns product facts → FOUNDER-FROZEN DECISIONS are authoritative later semantic rulings → REPRESENTATION performs canonical reconciliation/presentation within governed scope. 'Stale Representation wording does not override later founder-frozen product truth.'",
+        "'Representation is not upstream of product truth. Its own Constitution says it cannot originate a fact about a product — it can only cite one.' PRODUCT_IDENTITY_CANON is centrally authoritative for exactly four sections (Identity, Purpose, Governing Philosophy, Scope); capability and implementation stay product-owned.",
+        "§12 §4 extensibility rule: 'Every enum has a single canonical definition mirrored across backend and client by a compatibility test — the pattern already proven by media-frontend-mime-compatibility.spec.ts.'"
+      ],
+      "whatIsProtected": [
+        "The aura-backend construction baseline, FROZEN at commit 2a92a0e; Live additions are future work and must be certified where included (C11 entry condition 3).",
+        "The cross-repository MIME policy pairing (recorded as one of the ten backend duplication concerns: 'cross-repo MIME policy ×2') and the compatibility test that keeps enums mirrored.",
+        "Governed doctrine location rules: 'Canonical doctrine lives in ONE place per system (no duplication here)' — the Conversation and Invitation canons live in aura-backend/docs and are pointed to, never duplicated.",
+        "The §12 contract itself spans both repositories: it is authored in aura_final/docs while its implementation stages land in aura-backend.",
+        "Representation edits are founder-authorised and selective — 'other agents' uncommitted Representation work untouched'; no frozen status, type, features or framing directive altered; no historical text deleted."
+      ],
+      "whatRequiresExplicitRegressionProof": [
+        "Cross-System regression is FD-13 item 14 and is required in every chapter's definition of done.",
+        "Any enum or vocabulary change must keep the backend/client compatibility test green.",
+        "Backend and frontend suite evidence is reported together at each checkpoint (e.g. 505 frontend / 2200 backend at C1; 190/190 suites and 2393/2393 tests at RIC-C2)."
+      ],
+      "whatRequiresFounderApproval": [
+        "Any semantic conflict between repositories must go to the founder before resolution.",
+        "Representation reconciliation may run in parallel with implementation ONLY after the semantic wording is founder-frozen; 'it must never race ahead of unresolved product language'.",
+        "C11 entry condition 3 — backend frozen baseline intact; approved Live additions certified where included."
+      ],
+      "explicitlyProhibited": [
+        "An implementation agent silently choosing between repositories.",
+        "Hiding backend construction inside a frontend chapter.",
+        "Citing Representation as originating authority for a product fact.",
+        "Treating older institution-first wording as product truth merely because it is older (the Public-First Causal Doctrine is 'a clarification, not a pivot')."
+      ],
+      "sourceProvenance": [
+        {"source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "anchor": "CHAPTER C10 header warning; CHAPTER C11 entry conditions"},
+        {"source": "aura_final/docs/frontend-discovery/FRONTEND_CERTIFICATION_AND_FOUNDER_GATES.md", "anchor": "line 12 (Cross-System), lines 63-86 (§5 Representation alignment)"},
+        {"source": "aura_final/docs/HANDOFF.md", "anchor": "lines 19-28 (non-negotiables), line 41 (Representation not upstream), lines 49-53 (repository table)"},
+        {"source": "aura_final/docs/DECISIONS.md", "anchor": "C0-6 Representation authority chain"},
+        {"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "lines 209-212 (§4 extensibility rule + compatibility test)"},
+        {"source": "aura_final/docs/2026-08-17-rich-content-system-audit.md", "anchor": "lines 134-140 (backend duplication, cross-repo MIME policy ×2)"},
+        {"source": "aura-backend/docs/2026-08-16-aura-conversation-system-canon.md", "anchor": "lines 1-4 — 'Other documents point here; doctrine is not duplicated'"}
+      ]
+    }
+  ],
+  "crossCuttingProtections": [
+    {
+      "statement": "AUTHORITIES BEFORE SURFACES.",
+      "sourceProvenance": {"source": "aura_final/docs/HANDOFF.md", "anchor": "line 17"}
+    },
+    {
+      "statement": "Aura is PUBLIC-FIRST, not institution-first. People are the originating force; institutional identity is accountability infrastructure, not the acquisition premise. Every remaining chapter inherits the Aura Public-First Causal Doctrine.",
+      "sourceProvenance": [{"source": "aura_final/docs/HANDOFF.md", "anchor": "line 19"}, {"source": "aura_final/docs/NEXT_WORK.md", "anchor": "lines 50-52"}]
+    },
+    {
+      "statement": "Demolition ≠ data deletion. Every rebuild preserves valid data, state, drafts and deep links.",
+      "sourceProvenance": {"source": "aura_final/docs/HANDOFF.md", "anchor": "line 27"}
+    },
+    {
+      "statement": "FD-12 — Proven-dead retirement only + surface reachability principle; naïve zero-reference gate forbidden. Static reference count is not a reachability authority.",
+      "sourceProvenance": [{"source": "aura_final/docs/DECISIONS.md", "anchor": "FD-12"}, {"source": "aura_final/docs/HANDOFF.md", "anchor": "line 36"}]
+    },
+    {
+      "statement": "Provider independence preserved — every pluggable capability requires a self-hosted tier-0 default; external services may only ever be tier-1 enrichment. Applies to §12 processing capabilities and to the Live audience-scale provider decision.",
+      "sourceProvenance": [{"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "lines 328-340 (§8.2)"}, {"source": "aura_final/docs/frontend-discovery/FRONTEND_CERTIFICATION_AND_FOUNDER_GATES.md", "anchor": "line 56 (open item E)"}]
+    },
+    {
+      "statement": "COMMERCIAL GOVERNANCE MARKER: commercial taxonomy FREE + PRO frozen; final entitlement boundary NOT frozen; payment enforcement NOT to be activated or expanded during release-client reconstruction; a complete post-reconstruction product inventory + founder adjudication is required before enforcement.",
+      "sourceProvenance": {"source": "aura_final/docs/DECISIONS.md", "anchor": "C2 — Commercial Taxonomy Closeout / FUTURE COMMERCIALIZATION GOVERNANCE MARKER"}
+    },
+    {
+      "statement": "Dates are derived from the injected current date, never from surrounding document text — a single mis-dating propagated to 40 files across three repositories before it was caught.",
+      "sourceProvenance": {"source": "aura_final/docs/HANDOFF.md", "anchor": "line 44"}
+    }
+  ],
+  "gapsAndAmbiguities": [
+    {
+      "id": "PBG-1",
+      "type": "C_AXIS_AMBIGUOUS_RESOLVED",
+      "statement": "Two distinct 'C5' gates exist and are NOT the same boundary. RC-C5 (Composition, Intake & Attachments) is gated on founder-declared C4 live closure. RIC-C5 (governed delivery / storage security stage, PROMOTED ahead of D1) is gated on RIC-C1 and RIC-C3 and carries the R2 public-read stop-and-report. Sources for each were established from their own context; no source was inferred.",
+      "sourceProvenance": [{"source": "aura_final/docs/DECISIONS.md", "anchor": "C5 HARD GATE"}, {"source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "anchor": "line 565 (§16 stage C5)"}]
+    },
+    {
+      "id": "PBG-2",
+      "type": "C_AXIS_AMBIGUOUS_RESOLVED",
+      "statement": "Two distinct 'C2' bodies of work are cited across the corpus. RC-C2 = Identity, Presence & Profile (founder-closed 2026-08-16). RIC-C2 = the ContentReference reference/retention index (backend register opened 2026-08-18). The aura-backend register titles itself 'C2 RETENTION TRUTH' and self-identifies as '§12 Rich Content & Interaction → C2 completion', which establishes its axis explicitly.",
+      "sourceProvenance": [{"source": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md", "anchor": "lines 1-6 — Chapter line"}, {"source": "aura_final/docs/CURRENT_STATE.md", "anchor": "line 128"}]
+    },
+    {
+      "id": "PBG-3",
+      "type": "NOT_RECORDED",
+      "statement": "No document in either repository states a protection doctrine for the Aura Reviewer account itself, for production credential handling, or for the headless-Playwright validation harness — even though V1 validation depends on all three. Recorded as an absence, not inferred.",
+      "sourceProvenance": {"source": "corpus", "anchor": "no governed doc in aura_final/docs or aura-backend/docs states such a boundary"}
+    },
+    {
+      "id": "PBG-4",
+      "type": "UNKNOWN",
+      "statement": "The C4 DR1 evidence document names the retirement inventory and the must-survive consumers, but no document states who owns regression proof for the FOUR companion global attention surfaces (orphaned_session_banner, update_gate soft-warn overlay, global_live_banner_layer, active_meeting_return_layer) if C4 retires them. The inventory is recorded; the ownership is not.",
+      "sourceProvenance": {"source": "aura_final/docs/2026-08-16-c4-dr1-legacy-attention-banner-evidence.md", "anchor": "lines 87-101"}
+    },
+    {
+      "id": "PBG-5",
+      "type": "CONFLICTING_EVIDENCE",
+      "statement": "SupportScreen is recorded as a PRODUCT DISPOSITION CHECKPOINT with owning chapter UNDETERMINED and 'Not assigned to C9', with an explicit prohibition on deleting, modernising in isolation, or forcing it into a chapter. It therefore behaves as a protected surface without a protecting chapter. Recorded as found.",
+      "sourceProvenance": [{"source": "aura_final/docs/frontend-discovery/FRONTEND_CERTIFICATION_AND_FOUNDER_GATES.md", "anchor": "line 58 (open item F2)"}, {"source": "aura_final/docs/DECISIONS.md", "anchor": "Roadmap decision (2026-08-15) — SupportScreen"}]
+    }
+  ],
+  "stageDiscipline": {
+    "notPerformed": [
+      "No new protection doctrine was created; every clause above is quoted or closely paraphrased from a cited source.",
+      "No doctrine was merged, harmonised, retired or reinterpreted; conflicting wordings are cited side by side.",
+      "No finding state was changed and nothing here is founder-ratified.",
+      "No priority, sequencing or chapter-membership judgment was made."
+    ]
+  }
+}

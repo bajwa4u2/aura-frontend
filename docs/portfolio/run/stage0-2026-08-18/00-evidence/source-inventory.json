@@ -1,0 +1,2181 @@
+{
+  "generatedFor": "docs/portfolio/run/stage0-2026-08-18/00-evidence",
+  "sources": [
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\341c71e0-02b3-4f5a-b340-63f4cc28c2c7.jsonl",
+      "family": "session-transcript",
+      "bytes": 4726780,
+      "mtime": "2026-07-24T09:33:43.476Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\36655fca-bafe-49da-acd3-2fa808532a7a.jsonl",
+      "family": "session-transcript",
+      "bytes": 4777303,
+      "mtime": "2026-08-06T20:32:33.459Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+      "family": "session-transcript",
+      "bytes": 144787373,
+      "mtime": "2026-08-18T04:07:14.944Z",
+      "rawMatches": 2026,
+      "keptMentions": 1512
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\3aa0f45a-8ac5-4187-b5ec-e0ca9998c505.jsonl",
+      "family": "session-transcript",
+      "bytes": 19722430,
+      "mtime": "2026-08-08T02:21:44.336Z",
+      "rawMatches": 2,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\3da2f762-3073-4e87-8e02-3318d05236c7.jsonl",
+      "family": "session-transcript",
+      "bytes": 50844637,
+      "mtime": "2026-07-23T06:31:47.309Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\44ef5136-6fcf-41c7-8bda-6c7b0612767c.jsonl",
+      "family": "session-transcript",
+      "bytes": 2035,
+      "mtime": "2026-07-20T07:36:34.488Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\47deef4f-4b69-4877-a742-b32569ea2870.jsonl",
+      "family": "session-transcript",
+      "bytes": 41672995,
+      "mtime": "2026-08-07T08:58:59.566Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\524189f4-cb68-4c1a-b2ee-2a19d866303c.jsonl",
+      "family": "session-transcript",
+      "bytes": 52736253,
+      "mtime": "2026-08-12T21:40:55.881Z",
+      "rawMatches": 3,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\53bcafb3-9c94-4149-8993-885d0b1b8c95.jsonl",
+      "family": "session-transcript",
+      "bytes": 114489422,
+      "mtime": "2026-08-06T02:47:43.165Z",
+      "rawMatches": 11,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\5470dfce-e76b-4e41-a6a9-3aecfe3ee670.jsonl",
+      "family": "session-transcript",
+      "bytes": 66415372,
+      "mtime": "2026-07-30T19:31:04.822Z",
+      "rawMatches": 17,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\58456597-c152-4f6a-9f77-2a04684bc0c2.jsonl",
+      "family": "session-transcript",
+      "bytes": 2785196,
+      "mtime": "2026-08-18T10:15:37.299Z",
+      "rawMatches": 1159,
+      "keptMentions": 863
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\59ddfe78-0869-4a7c-a3d0-1640aa1ac83d.jsonl",
+      "family": "session-transcript",
+      "bytes": 25593586,
+      "mtime": "2026-07-29T16:13:42.279Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\5a5a477e-6161-4775-981c-18da123999a1.jsonl",
+      "family": "session-transcript",
+      "bytes": 79958400,
+      "mtime": "2026-08-02T21:55:30.162Z",
+      "rawMatches": 20,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\6d8096f4-59f7-42ce-a3ce-0cfcd6fa4faa.jsonl",
+      "family": "session-transcript",
+      "bytes": 7108303,
+      "mtime": "2026-07-26T01:15:06.482Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\7616ca00-2036-47eb-ad5e-80055dffa5ff.jsonl",
+      "family": "session-transcript",
+      "bytes": 38633495,
+      "mtime": "2026-07-21T00:21:08.380Z",
+      "rawMatches": 14,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\8fb4a70e-afd9-48fe-8b50-a10b637ac807.jsonl",
+      "family": "session-transcript",
+      "bytes": 5965988,
+      "mtime": "2026-07-20T02:11:12.796Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\9dc46069-242c-4c92-b2f8-013b92a7d940.jsonl",
+      "family": "session-transcript",
+      "bytes": 2035,
+      "mtime": "2026-08-02T22:42:54.400Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\a4cff72c-4560-4c0c-94d0-b0bd3886bd73.jsonl",
+      "family": "session-transcript",
+      "bytes": 4239186,
+      "mtime": "2026-07-21T04:44:29.916Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\aa7507d8-b39a-4b63-ae52-d499a17fc8b2.jsonl",
+      "family": "session-transcript",
+      "bytes": 1236601,
+      "mtime": "2026-07-26T18:32:11.398Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\aac2b941-c693-45ff-bccd-94b030919df6.jsonl",
+      "family": "session-transcript",
+      "bytes": 2035,
+      "mtime": "2026-08-08T02:22:01.287Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\d0f3743d-aeaa-4e57-adc9-8f8786cdbf35.jsonl",
+      "family": "session-transcript",
+      "bytes": 23436769,
+      "mtime": "2026-07-24T01:57:37.980Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\.claude\\projects\\C--Users-muham-flutter-projects\\d7bc05ca-018e-4e22-95f5-88bd06d1c47e.jsonl",
+      "family": "session-transcript",
+      "bytes": 10432917,
+      "mtime": "2026-07-19T22:28:01.521Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-08-canonical-flutter-thread-call-lifecycle-stage-1-blueprint.md",
+      "family": "governed-doc",
+      "bytes": 31649,
+      "mtime": "2026-08-08T23:26:13.737Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-08-correspondence-entry-flow-repair.md",
+      "family": "governed-doc",
+      "bytes": 4136,
+      "mtime": "2026-08-09T03:31:38.332Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-08-pre-release-connected-system-health-audit.md",
+      "family": "governed-doc",
+      "bytes": 12992,
+      "mtime": "2026-08-08T23:25:25.769Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-16-c4-dr1-legacy-attention-banner-evidence.md",
+      "family": "governed-doc",
+      "bytes": 7006,
+      "mtime": "2026-08-17T01:05:49.621Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-17-live-origination-correction.md",
+      "family": "governed-doc",
+      "bytes": 6714,
+      "mtime": "2026-08-17T19:25:55.788Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-17-refresh-continuity-shared-causes.md",
+      "family": "governed-doc",
+      "bytes": 5463,
+      "mtime": "2026-08-17T04:21:22.566Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+      "family": "governed-doc",
+      "bytes": 29393,
+      "mtime": "2026-08-18T00:45:34.000Z",
+      "rawMatches": 52,
+      "keptMentions": 52
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+      "family": "governed-doc",
+      "bytes": 23578,
+      "mtime": "2026-08-17T22:39:30.421Z",
+      "rawMatches": 41,
+      "keptMentions": 32
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+      "family": "governed-doc",
+      "bytes": 10866,
+      "mtime": "2026-08-17T21:55:59.614Z",
+      "rawMatches": 25,
+      "keptMentions": 25
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+      "family": "governed-doc",
+      "bytes": 17455,
+      "mtime": "2026-08-18T09:57:25.450Z",
+      "rawMatches": 29,
+      "keptMentions": 27
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\ADMIN_FRONTEND_READINESS_HANDOFF.md",
+      "family": "governed-doc",
+      "bytes": 15800,
+      "mtime": "2026-05-21T09:35:09.627Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\ADMIN_RUNTIME_GOVERNANCE.md",
+      "family": "governed-doc",
+      "bytes": 9464,
+      "mtime": "2026-05-21T09:35:09.628Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AUDIT_BASELINE.md",
+      "family": "governed-doc",
+      "bytes": 5009,
+      "mtime": "2026-06-28T00:38:22.382Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_ACCOUNTABILITY_ROUTING_AUDIT_PROPOSAL.md",
+      "family": "governed-doc",
+      "bytes": 27131,
+      "mtime": "2026-06-20T19:56:34.967Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_CALL_RINGING_LAYOUT_FIX.md",
+      "family": "governed-doc",
+      "bytes": 8082,
+      "mtime": "2026-05-21T09:35:09.628Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_COMPOSE_BEST_PRACTICE_REWORK.md",
+      "family": "governed-doc",
+      "bytes": 5441,
+      "mtime": "2026-05-21T09:35:09.628Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_COMPOSE_CONVERSATION_ARCHITECTURE.md",
+      "family": "governed-doc",
+      "bytes": 3010,
+      "mtime": "2026-05-21T09:35:09.628Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_COMPOSE_FINAL_RESPONSIVE_POLISH.md",
+      "family": "governed-doc",
+      "bytes": 3500,
+      "mtime": "2026-05-21T09:35:09.628Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_CONVERSATION_LAYOUT_RESPONSIVE_POLISH.md",
+      "family": "governed-doc",
+      "bytes": 6584,
+      "mtime": "2026-05-21T09:35:09.629Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_FRONTEND_DEVICE_REGISTRATION.md",
+      "family": "governed-doc",
+      "bytes": 6209,
+      "mtime": "2026-05-21T09:35:09.629Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_FRONTEND_MAINTAINABILITY_REFACTOR.md",
+      "family": "governed-doc",
+      "bytes": 2613,
+      "mtime": "2026-05-21T09:35:09.629Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_INSTITUTION_ONBOARDING_WIZARD.md",
+      "family": "governed-doc",
+      "bytes": 7553,
+      "mtime": "2026-05-21T09:35:09.629Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_MEETINGS_BLUEPRINT.md",
+      "family": "governed-doc",
+      "bytes": 35473,
+      "mtime": "2026-06-28T00:08:25.685Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_MEETINGS_UX_SPECIFICATION.md",
+      "family": "governed-doc",
+      "bytes": 35068,
+      "mtime": "2026-06-28T00:15:22.674Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_MESSAGES_FLAGSHIP_REDESIGN.md",
+      "family": "governed-doc",
+      "bytes": 6722,
+      "mtime": "2026-05-21T09:35:09.629Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_ME_PROFILE_REARCHITECTURE.md",
+      "family": "governed-doc",
+      "bytes": 9290,
+      "mtime": "2026-05-21T09:35:09.631Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_MULTI_SHELL_ARCHITECTURE.md",
+      "family": "governed-doc",
+      "bytes": 6732,
+      "mtime": "2026-05-21T09:35:09.631Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_PROFILE_SETTINGS_ECOSYSTEM.md",
+      "family": "governed-doc",
+      "bytes": 4114,
+      "mtime": "2026-05-21T09:35:09.631Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\AURA_REAL_PUSH_TOKEN_ACQUISITION.md",
+      "family": "governed-doc",
+      "bytes": 5906,
+      "mtime": "2026-05-21T09:35:09.632Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\business_deck\\archive\\README.md",
+      "family": "governed-doc",
+      "bytes": 241,
+      "mtime": "2026-05-21T09:35:09.633Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\business_deck\\README.md",
+      "family": "governed-doc",
+      "bytes": 1540,
+      "mtime": "2026-06-18T15:21:41.898Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\business_deck\\source\\aura_platform_business_deck_master.md",
+      "family": "governed-doc",
+      "bytes": 5363,
+      "mtime": "2026-06-18T15:26:46.219Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\CURRENT_STATE.md",
+      "family": "governed-doc",
+      "bytes": 23182,
+      "mtime": "2026-08-16T18:04:56.264Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\DATE_CORRECTION_2026-08-15.md",
+      "family": "governed-doc",
+      "bytes": 4685,
+      "mtime": "2026-08-15T21:03:20.242Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\DECISIONS.md",
+      "family": "governed-doc",
+      "bytes": 33870,
+      "mtime": "2026-08-16T18:04:56.255Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\EMAIL_COMMUNICATIONS.md",
+      "family": "governed-doc",
+      "bytes": 5342,
+      "mtime": "2026-05-21T09:35:09.632Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C0_G5_OWNERSHIP_MATRIX.md",
+      "family": "governed-doc",
+      "bytes": 16331,
+      "mtime": "2026-08-15T22:20:36.324Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C0_MIGRATION_REGISTER.md",
+      "family": "governed-doc",
+      "bytes": 9840,
+      "mtime": "2026-08-15T21:03:20.263Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C0_PRODUCT_LANGUAGE_VOCABULARY.md",
+      "family": "governed-doc",
+      "bytes": 15476,
+      "mtime": "2026-08-15T23:16:34.100Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C1_AUTHORITY_ARCHITECTURE.md",
+      "family": "governed-doc",
+      "bytes": 24056,
+      "mtime": "2026-08-15T23:07:56.227Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C1_G5_DISPOSITION_MATRIX.md",
+      "family": "governed-doc",
+      "bytes": 5544,
+      "mtime": "2026-08-16T01:04:50.135Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_CANONICAL_FOLLOW.md",
+      "family": "governed-doc",
+      "bytes": 8169,
+      "mtime": "2026-08-16T04:17:17.496Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_DISCOVERY_CONTINUED.md",
+      "family": "governed-doc",
+      "bytes": 16716,
+      "mtime": "2026-08-16T03:35:28.766Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_FINAL_CLOSEOUT.md",
+      "family": "governed-doc",
+      "bytes": 4397,
+      "mtime": "2026-08-16T07:58:49.640Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_FOLLOW_FORENSIC.md",
+      "family": "governed-doc",
+      "bytes": 17886,
+      "mtime": "2026-08-16T02:56:41.383Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_PRE_MIGRATION_CLOSEOUT.md",
+      "family": "governed-doc",
+      "bytes": 7202,
+      "mtime": "2026-08-16T07:11:14.255Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_PROFILE_CONVERGENCE.md",
+      "family": "governed-doc",
+      "bytes": 10376,
+      "mtime": "2026-08-16T03:59:37.006Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_PUBLIC_HOME_RECONSTRUCTION.md",
+      "family": "governed-doc",
+      "bytes": 7085,
+      "mtime": "2026-08-16T06:51:20.298Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_RECONSTRUCTION_DEBT_REGISTER.md",
+      "family": "governed-doc",
+      "bytes": 17781,
+      "mtime": "2026-08-16T06:51:35.071Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_REPRESENTATION_CONSISTENCY.md",
+      "family": "governed-doc",
+      "bytes": 9068,
+      "mtime": "2026-08-16T06:32:12.995Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C2_TRUST_PRESENTATION.md",
+      "family": "governed-doc",
+      "bytes": 14578,
+      "mtime": "2026-08-16T06:21:40.514Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C3_DR4_ARCHITECTURE_RECONCILIATION.md",
+      "family": "governed-doc",
+      "bytes": 12342,
+      "mtime": "2026-08-16T13:17:27.780Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C3_FINAL_CLOSEOUT.md",
+      "family": "governed-doc",
+      "bytes": 7817,
+      "mtime": "2026-08-16T15:18:04.377Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\C3_NAVIGATION_IA_RECONSTRUCTION.md",
+      "family": "governed-doc",
+      "bytes": 11132,
+      "mtime": "2026-08-16T12:33:29.667Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\CANONICAL_COMPOSITION_SYSTEM_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 7394,
+      "mtime": "2026-08-15T11:00:23.496Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\CANONICAL_IDENTITY_PRESENTATION_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 12894,
+      "mtime": "2026-08-15T11:04:40.159Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\CAPABILITY_ADAPTIVE_EXPERIENCE_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 8289,
+      "mtime": "2026-08-15T11:00:57.178Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\COMPOSER_MESSAGING_ATTACHMENT_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 8912,
+      "mtime": "2026-08-15T12:17:39.492Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\CONTENT_INTAKE_RESOLUTION_AUTHORITY_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 5709,
+      "mtime": "2026-08-15T11:22:12.999Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\CTA_TERMINOLOGY_DRIFT_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 6435,
+      "mtime": "2026-08-15T12:05:04.043Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\DEMOLITION_REBUILD_CANDIDATES.md",
+      "family": "governed-doc",
+      "bytes": 11415,
+      "mtime": "2026-08-15T12:17:39.508Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\DESIGN_PRODUCT_SYSTEM_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 6934,
+      "mtime": "2026-08-15T11:59:19.774Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\DRAFT_FRONTEND_RECONSTRUCTION_ROADMAP.md",
+      "family": "governed-doc",
+      "bytes": 21220,
+      "mtime": "2026-08-15T12:42:24.866Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD10_TERMINOLOGY_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 10666,
+      "mtime": "2026-08-15T12:04:07.676Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD12_SURFACE_DISPOSITION_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 5167,
+      "mtime": "2026-08-15T11:54:50.851Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD13_ENFORCEMENT_MECHANISMS_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 8464,
+      "mtime": "2026-08-15T11:58:33.908Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD1_ATTENTION_HUB_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 11427,
+      "mtime": "2026-08-15T10:58:25.923Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD2_ATTENTION_VOCABULARY_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 4051,
+      "mtime": "2026-08-15T11:31:43.859Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD3_REALTIME_SEMANTICS_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 6675,
+      "mtime": "2026-08-15T10:37:07.005Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 5453,
+      "mtime": "2026-08-15T11:35:16.455Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD5_LIVE_THREAD_SPACE_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 14489,
+      "mtime": "2026-08-15T12:16:32.730Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD7_ATTACHMENT_SEND_MODEL_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 5523,
+      "mtime": "2026-08-15T11:39:17.285Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD8_OFFICIAL_DESIGNATION_MOMENT_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 5784,
+      "mtime": "2026-08-15T11:44:18.206Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FD9_ACTING_CONTEXT_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 9167,
+      "mtime": "2026-08-15T10:49:36.836Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md",
+      "family": "governed-doc",
+      "bytes": 39443,
+      "mtime": "2026-08-16T01:04:39.019Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FOUNDER_DECISION_REGISTER.md",
+      "family": "governed-doc",
+      "bytes": 36959,
+      "mtime": "2026-08-15T12:50:27.135Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_AUTHORITY_CONSUMER_MATRIX.md",
+      "family": "governed-doc",
+      "bytes": 17241,
+      "mtime": "2026-08-15T12:17:39.476Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_AUTHORITY_FINAL_MAP.md",
+      "family": "governed-doc",
+      "bytes": 5103,
+      "mtime": "2026-08-15T12:39:57.190Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_CERTIFICATION_AND_FOUNDER_GATES.md",
+      "family": "governed-doc",
+      "bytes": 7253,
+      "mtime": "2026-08-15T12:48:48.842Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_PRODUCT_ARCHITECTURE_DISCOVERY.md",
+      "family": "governed-doc",
+      "bytes": 15502,
+      "mtime": "2026-08-15T12:50:27.135Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_RECONSTRUCTION_DEMOLITION_MATRIX.md",
+      "family": "governed-doc",
+      "bytes": 7716,
+      "mtime": "2026-08-15T12:48:48.841Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_RECONSTRUCTION_DEPENDENCY_GRAPH.md",
+      "family": "governed-doc",
+      "bytes": 10172,
+      "mtime": "2026-08-15T12:48:48.817Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_RECONSTRUCTION_TRACEABILITY_MATRIX.md",
+      "family": "governed-doc",
+      "bytes": 8318,
+      "mtime": "2026-08-15T12:48:48.841Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_ROADMAP_OLD_TO_NEW_RECONCILIATION.md",
+      "family": "governed-doc",
+      "bytes": 5378,
+      "mtime": "2026-08-15T12:50:27.134Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\FRONTEND_SURFACE_INVENTORY.md",
+      "family": "governed-doc",
+      "bytes": 5157,
+      "mtime": "2026-08-15T11:55:32.626Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\GLOBAL_PRODUCT_PATTERN_RESEARCH.md",
+      "family": "governed-doc",
+      "bytes": 5037,
+      "mtime": "2026-08-15T10:22:14.810Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\HUMAN_TEMPORAL_PRESENTATION_AUTHORITY_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 7937,
+      "mtime": "2026-08-15T11:55:32.640Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\INBOX_ATTENTION_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 7546,
+      "mtime": "2026-08-15T12:17:39.486Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\LIVE_THREAD_SPACE_ARCHITECTURE_OPTIONS.md",
+      "family": "governed-doc",
+      "bytes": 6563,
+      "mtime": "2026-08-15T12:17:39.461Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\NAVIGATION_IA_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 6819,
+      "mtime": "2026-08-15T11:09:22.705Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\NAVIGATION_IA_PRODUCT_LANGUAGE_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 14029,
+      "mtime": "2026-08-15T11:08:51.967Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md",
+      "family": "governed-doc",
+      "bytes": 4570,
+      "mtime": "2026-08-15T19:22:50.934Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\PROFILE_PRESENCE_IDENTITY_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 6054,
+      "mtime": "2026-08-15T12:05:04.056Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\PUBLIC_FIRST_RUNNING_PRODUCT_CONTRADICTIONS.md",
+      "family": "governed-doc",
+      "bytes": 11429,
+      "mtime": "2026-08-16T01:38:00.471Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\REALTIME_PRODUCT_MODEL_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 9390,
+      "mtime": "2026-08-15T12:17:39.466Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\REPRESENTATION_CANONICAL_FRONTEND_ALIGNMENT.md",
+      "family": "governed-doc",
+      "bytes": 18579,
+      "mtime": "2026-08-15T21:03:20.278Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\REPRESENTATION_COPY_DRIFT_REGISTER.md",
+      "family": "governed-doc",
+      "bytes": 5836,
+      "mtime": "2026-08-15T12:05:04.044Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\REPRESENTATION_FRONTEND_REDESIGN_INPUTS.md",
+      "family": "governed-doc",
+      "bytes": 9536,
+      "mtime": "2026-08-15T20:50:14.414Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\frontend-discovery\\THREADS_SPACES_PRODUCT_MODEL_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 7252,
+      "mtime": "2026-08-15T12:17:51.307Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\FRONTEND_INTEGRATION_NOTES.md",
+      "family": "governed-doc",
+      "bytes": 4690,
+      "mtime": "2026-05-21T09:35:09.632Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\GLOBAL_RESPONSIVE_HARDENING.md",
+      "family": "governed-doc",
+      "bytes": 10890,
+      "mtime": "2026-05-21T09:35:09.632Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\HANDOFF.md",
+      "family": "governed-doc",
+      "bytes": 5964,
+      "mtime": "2026-08-16T01:03:19.569Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\IOS_TESTFLIGHT_HANDOFF.md",
+      "family": "governed-doc",
+      "bytes": 13666,
+      "mtime": "2026-05-22T06:20:46.811Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\MAINTENANCE_MODE_POLICY.md",
+      "family": "governed-doc",
+      "bytes": 7641,
+      "mtime": "2026-05-21T09:35:09.632Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\NEXT_WORK.md",
+      "family": "governed-doc",
+      "bytes": 5417,
+      "mtime": "2026-08-16T01:03:19.569Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\portfolio\\AURA_DYNAMIC_RECONSTRUCTION_WORKFLOW.md",
+      "family": "governed-doc",
+      "bytes": 22875,
+      "mtime": "2026-08-18T10:06:46.745Z",
+      "rawMatches": 19,
+      "keptMentions": 19
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\PUSH_NOTIFICATION_READINESS.md",
+      "family": "governed-doc",
+      "bytes": 3445,
+      "mtime": "2026-05-21T09:35:09.633Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\strategy\\AURA_ACCOUNTABILITY_ROUTING_FRAMEWORK_ADDENDUM.md",
+      "family": "governed-doc",
+      "bytes": 39369,
+      "mtime": "2026-06-20T21:30:02.323Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\strategy\\AURA_ACCOUNTABILITY_ROUTING_IMPLEMENTATION_FRAMEWORK.md",
+      "family": "governed-doc",
+      "bytes": 25511,
+      "mtime": "2026-06-20T23:22:31.588Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\strategy\\AURA_CONTEXT_OWNERSHIP_RESOLUTION_FRAMEWORK.md",
+      "family": "governed-doc",
+      "bytes": 35232,
+      "mtime": "2026-06-20T23:22:31.668Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\strategy\\AURA_INSTITUTION_PARTICIPATION_ACTIVATION_FRAMEWORK.md",
+      "family": "governed-doc",
+      "bytes": 29181,
+      "mtime": "2026-06-20T23:22:31.826Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\strategy\\AURA_PRE_IMPLEMENTATION_LOCK.md",
+      "family": "governed-doc",
+      "bytes": 16256,
+      "mtime": "2026-06-20T23:22:31.749Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\strategy\\AURA_PROGRESSIVE_CREDIBILITY_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 17738,
+      "mtime": "2026-06-20T23:22:01.612Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\strategy\\AURA_STATE.md",
+      "family": "governed-doc",
+      "bytes": 9164,
+      "mtime": "2026-06-21T08:15:09.764Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura_final\\docs\\strategy\\PHASE_F_CLOSEOUT.md",
+      "family": "governed-doc",
+      "bytes": 5278,
+      "mtime": "2026-06-21T08:15:38.908Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-08-canonical-call-notification-normalization-design.md",
+      "family": "governed-doc",
+      "bytes": 14788,
+      "mtime": "2026-08-08T20:14:29.894Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-08-communication-continuity-presence-chapter-1-contracts.md",
+      "family": "governed-doc",
+      "bytes": 24048,
+      "mtime": "2026-08-09T19:20:21.501Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-08-communication-continuity-presence-platform-architecture.md",
+      "family": "governed-doc",
+      "bytes": 24135,
+      "mtime": "2026-08-09T19:19:17.800Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-08-correspondence-entry-flow-contract-repair.md",
+      "family": "governed-doc",
+      "bytes": 3488,
+      "mtime": "2026-08-09T03:31:39.154Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-08-device-communication-presence-phase-1-implementation.md",
+      "family": "governed-doc",
+      "bytes": 8645,
+      "mtime": "2026-08-09T02:51:08.445Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-08-multi-device-thread-call-current-state-audit.md",
+      "family": "governed-doc",
+      "bytes": 15187,
+      "mtime": "2026-08-08T20:10:23.403Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-08-released-flutter-client-call-consumption-audit.md",
+      "family": "governed-doc",
+      "bytes": 12506,
+      "mtime": "2026-08-08T20:34:36.689Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-08-thread-calling-reliability-collective-audit.md",
+      "family": "governed-doc",
+      "bytes": 22525,
+      "mtime": "2026-08-08T20:41:50.363Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-09-notification-delivery-authority-phase-1-implementation.md",
+      "family": "governed-doc",
+      "bytes": 10090,
+      "mtime": "2026-08-09T19:48:27.188Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-11-identity-foundation-phase-1-implementation.md",
+      "family": "governed-doc",
+      "bytes": 21037,
+      "mtime": "2026-08-11T14:38:55.790Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-12-communication-timeline-authority-phase1-investigation.md",
+      "family": "governed-doc",
+      "bytes": 12997,
+      "mtime": "2026-08-11T18:46:31.896Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-12-compose-link-intelligence-og-preview-phase1-implementation.md",
+      "family": "governed-doc",
+      "bytes": 25391,
+      "mtime": "2026-08-11T18:22:10.760Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-12-realtime-architecture-correction-phase3-implementation.md",
+      "family": "governed-doc",
+      "bytes": 39956,
+      "mtime": "2026-08-15T20:39:30.587Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-13-communication-timeline-authority-phase1-implementation.md",
+      "family": "governed-doc",
+      "bytes": 13282,
+      "mtime": "2026-08-11T19:50:23.617Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-13-institutional-attention-authority-proposal.md",
+      "family": "governed-doc",
+      "bytes": 22807,
+      "mtime": "2026-08-11T20:01:09.867Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-13-realtime-architecture-correction-phase4-implementation.md",
+      "family": "governed-doc",
+      "bytes": 29228,
+      "mtime": "2026-08-15T20:39:30.587Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-14-native-background-terminated-notification-certification.md",
+      "family": "governed-doc",
+      "bytes": 38798,
+      "mtime": "2026-08-12T00:15:57.097Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-14-realtime-architecture-correction-phase1-implementation.md",
+      "family": "governed-doc",
+      "bytes": 30566,
+      "mtime": "2026-08-12T20:12:20.661Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-15-realtime-architecture-correction-phase2-implementation.md",
+      "family": "governed-doc",
+      "bytes": 42975,
+      "mtime": "2026-08-12T23:36:32.973Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-16-aura-conversation-system-canon.md",
+      "family": "governed-doc",
+      "bytes": 6463,
+      "mtime": "2026-08-16T17:12:56.451Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-16-aura-invitation-system-canon.md",
+      "family": "governed-doc",
+      "bytes": 5989,
+      "mtime": "2026-08-16T17:13:25.726Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+      "family": "governed-doc",
+      "bytes": 12878,
+      "mtime": "2026-08-18T09:58:07.516Z",
+      "rawMatches": 33,
+      "keptMentions": 33
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+      "family": "governed-doc",
+      "bytes": 26802,
+      "mtime": "2026-08-18T08:30:51.580Z",
+      "rawMatches": 26,
+      "keptMentions": 25
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\EMAIL_COMMUNICATIONS.md",
+      "family": "governed-doc",
+      "bytes": 5342,
+      "mtime": "2026-05-21T09:33:38.863Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\FRONTEND_INTEGRATION_NOTES.md",
+      "family": "governed-doc",
+      "bytes": 4690,
+      "mtime": "2026-05-21T09:33:38.863Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\INSTITUTION_AUTHORITY_ROLE_CONSISTENCY.md",
+      "family": "governed-doc",
+      "bytes": 6102,
+      "mtime": "2026-08-01T02:47:45.805Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\MIGRATION_HISTORY_INTEGRITY_GAP.md",
+      "family": "governed-doc",
+      "bytes": 3785,
+      "mtime": "2026-08-02T18:15:46.995Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\prisma-migration-operations.md",
+      "family": "governed-doc",
+      "bytes": 13877,
+      "mtime": "2026-05-21T09:33:38.865Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\PRISMA_ENGINE_ARM64_WINDOWS.md",
+      "family": "governed-doc",
+      "bytes": 3606,
+      "mtime": "2026-07-31T20:05:49.877Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\PRISMA_MIGRATION_RECOVERY.md",
+      "family": "governed-doc",
+      "bytes": 3198,
+      "mtime": "2026-05-21T09:33:38.864Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\PRODUCTION_MENTION_TAG_HOTFIX.md",
+      "family": "governed-doc",
+      "bytes": 9439,
+      "mtime": "2026-08-07T06:47:56.177Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\PUBLICATION_DISCOURSE_AUTHORITY_DISCOVERY.md",
+      "family": "governed-doc",
+      "bytes": 20226,
+      "mtime": "2026-08-01T00:39:05.764Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\docs\\PUSH_NOTIFICATION_READINESS.md",
+      "family": "governed-doc",
+      "bytes": 3445,
+      "mtime": "2026-05-21T09:33:38.864Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\ACCOUNT_LIFECYCLE_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 11846,
+      "mtime": "2026-08-14T18:39:46.685Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\AURA_FRONTEND_ARCHITECTURE_COHERENCE_INVESTIGATION.md",
+      "family": "governed-doc",
+      "bytes": 36164,
+      "mtime": "2026-08-15T01:30:23.865Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\AURA_ORIGINAL_1_17_ROADMAP_RECONCILIATION.md",
+      "family": "governed-doc",
+      "bytes": 81719,
+      "mtime": "2026-08-15T20:39:30.550Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\AURA_RELEASE_CLIENT_BACKEND_SERVICEABILITY_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 81618,
+      "mtime": "2026-08-15T20:39:30.551Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\AURA_RELEASE_CLIENT_CONSOLIDATED_ROADMAP.md",
+      "family": "governed-doc",
+      "bytes": 128747,
+      "mtime": "2026-08-15T20:39:30.553Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\AURA_ROADMAP_RECONCILIATION_AND_UPGRADED_ROADMAP.md",
+      "family": "governed-doc",
+      "bytes": 56484,
+      "mtime": "2026-08-15T20:39:30.553Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\BACKEND_ARCHITECTURE_DECISIONS_FROZEN.md",
+      "family": "governed-doc",
+      "bytes": 12505,
+      "mtime": "2026-08-15T08:01:17.814Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\BACKEND_IMPLEMENTATION_OBLIGATION_REGISTER.md",
+      "family": "governed-doc",
+      "bytes": 14392,
+      "mtime": "2026-08-15T06:25:19.267Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\CAPABILITY_AUTHORITY.md",
+      "family": "governed-doc",
+      "bytes": 5769,
+      "mtime": "2026-08-16T01:04:16.159Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\CIS_CLASS_CALIBRATION_DECISION.md",
+      "family": "governed-doc",
+      "bytes": 10478,
+      "mtime": "2026-08-15T08:40:38.342Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_INTEGRITY_SYSTEM_ANNOUNCEMENT_INTEGRATION_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 35962,
+      "mtime": "2026-08-01T00:02:01.156Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_INTEGRITY_SYSTEM_ANNOUNCEMENT_PUBLICATION_AUTHORITY.md",
+      "family": "governed-doc",
+      "bytes": 10588,
+      "mtime": "2026-08-01T02:47:32.713Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_INTEGRITY_SYSTEM_ARCHITECTURE.md",
+      "family": "governed-doc",
+      "bytes": 21775,
+      "mtime": "2026-07-31T18:40:32.932Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_INTEGRITY_SYSTEM_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 11830,
+      "mtime": "2026-07-31T18:41:17.666Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_INTEGRITY_SYSTEM_EDITOR_RECONNECTION.md",
+      "family": "governed-doc",
+      "bytes": 19883,
+      "mtime": "2026-07-31T20:49:59.924Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_INTEGRITY_SYSTEM_MIGRATION_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 6953,
+      "mtime": "2026-07-31T18:38:19.799Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_INTEGRITY_SYSTEM_RUNTIME_CERTIFICATION_REPORT.md",
+      "family": "governed-doc",
+      "bytes": 13788,
+      "mtime": "2026-07-31T20:09:42.578Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_INTEGRITY_SYSTEM_RUNTIME_VERIFICATION_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 5558,
+      "mtime": "2026-07-31T18:38:53.436Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\COMMUNICATION_PUBLICATION_FAILURES_AND_MULTILINGUAL_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 35845,
+      "mtime": "2026-08-03T20:55:00.463Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\CONVERSATION_CONTINUITY_SYSTEM_IMPLEMENTATION.md",
+      "family": "governed-doc",
+      "bytes": 10594,
+      "mtime": "2026-08-01T04:03:43.060Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\DISCOURSE_QUALITY_SYSTEM_IMPLEMENTATION.md",
+      "family": "governed-doc",
+      "bytes": 9220,
+      "mtime": "2026-08-01T03:16:00.196Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\FINAL_BACKEND_CONSTRUCTION_PASS.md",
+      "family": "governed-doc",
+      "bytes": 17259,
+      "mtime": "2026-08-15T08:42:54.257Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\FOUNDER_ACCEPTANCE_REGISTER.md",
+      "family": "governed-doc",
+      "bytes": 103391,
+      "mtime": "2026-08-15T20:39:30.556Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\INSTITUTION_OWNERSHIP_CONTINUITY_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 24618,
+      "mtime": "2026-08-14T23:00:13.178Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\INSTITUTION_POSTS_GOVERNANCE_INTEGRATION_IMPLEMENTATION.md",
+      "family": "governed-doc",
+      "bytes": 28373,
+      "mtime": "2026-08-01T06:31:51.968Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\INSTITUTION_SPACE_MEMBERSHIP_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 3366,
+      "mtime": "2026-08-15T20:39:30.556Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\LAYERED_CERTIFICATION_GOVERNANCE.md",
+      "family": "governed-doc",
+      "bytes": 4955,
+      "mtime": "2026-08-15T20:39:30.556Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\MANDATORY_DISCOVERY_AND_IMPROVEMENT_REPORTING_GOVERNANCE.md",
+      "family": "governed-doc",
+      "bytes": 7720,
+      "mtime": "2026-08-15T20:39:30.558Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\NOTIFICATION_ROUTING_AND_ATTENTION_MATRIX.md",
+      "family": "governed-doc",
+      "bytes": 37671,
+      "mtime": "2026-08-02T07:47:47.464Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\PUBLIC_COMMUNICATION_GOVERNANCE_COMPLETION_CERTIFICATION.md",
+      "family": "governed-doc",
+      "bytes": 17722,
+      "mtime": "2026-08-01T07:27:41.246Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\PUBLIC_COMMUNICATION_GOVERNANCE_MODEL.md",
+      "family": "governed-doc",
+      "bytes": 17055,
+      "mtime": "2026-08-01T04:03:20.800Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\REALTIME_ARCHITECTURE_CORRECTION_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 87221,
+      "mtime": "2026-08-15T20:39:31.228Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\REALTIME_ARCHITECTURE_CORRECTION_PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md",
+      "family": "governed-doc",
+      "bytes": 17355,
+      "mtime": "2026-08-15T20:39:30.574Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\RELEASE_CLIENT_CROSS_SYSTEM_QUALITY_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 15479,
+      "mtime": "2026-08-15T20:39:30.574Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\aura-backend\\capability\\SECTION_C_READJUDICATION.md",
+      "family": "governed-doc",
+      "bytes": 13722,
+      "mtime": "2026-08-15T08:40:38.342Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\architecture\\AURA_REALTIME_LONG_TERM_ARCHITECTURE_AND_MIGRATION_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 904,
+      "mtime": "2026-08-12T19:43:59.718Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\architecture\\BACKEND_API_CONTRACT.md",
+      "family": "governed-doc",
+      "bytes": 10988,
+      "mtime": "2026-04-25T16:16:46.470Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\architecture\\FULL_PRODUCT_ARCHITECTURE_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 14998,
+      "mtime": "2026-04-26T00:20:13.145Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\architecture\\PHASE_0_COMPATIBILITY_MIGRATION_CONTRACT.md",
+      "family": "governed-doc",
+      "bytes": 746,
+      "mtime": "2026-08-12T18:51:31.291Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\AURA_COMMUNICATION_MODEL.md",
+      "family": "governed-doc",
+      "bytes": 12384,
+      "mtime": "2026-08-05T02:25:54.437Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\COMMUNICATION_CONTINUITY_AND_RESOLUTION_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 22880,
+      "mtime": "2026-08-05T02:26:09.741Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\COMMUNICATION_INTENT_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 14494,
+      "mtime": "2026-08-05T02:25:58.877Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\COMMUNICATION_LIFECYCLE_MODELS.md",
+      "family": "governed-doc",
+      "bytes": 8274,
+      "mtime": "2026-08-05T02:26:06.207Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\COMMUNICATION_OUTCOME_AND_GOVERNANCE_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 16240,
+      "mtime": "2026-08-05T02:26:02.388Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\COMMUNICATION_WORKSPACE_IMPLEMENTATION_ROADMAP.md",
+      "family": "governed-doc",
+      "bytes": 15849,
+      "mtime": "2026-08-05T02:26:42.676Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\COMMUNICATION_WORKSPACE_INFORMATION_ARCHITECTURE.md",
+      "family": "governed-doc",
+      "bytes": 27485,
+      "mtime": "2026-08-05T02:26:32.811Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\COMMUNICATION_WORKSPACE_V2_UX_PROPOSAL.md",
+      "family": "governed-doc",
+      "bytes": 17405,
+      "mtime": "2026-08-05T02:26:21.751Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\PHASE10_COMMUNICATION_PRODUCT_READINESS.md",
+      "family": "governed-doc",
+      "bytes": 5275,
+      "mtime": "2026-04-25T22:41:53.698Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\TOPIC_CLASSIFICATION_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 5976,
+      "mtime": "2026-08-04T22:49:57.998Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\communication\\TOPIC_RELATIONSHIP_PROPOSAL.md",
+      "family": "governed-doc",
+      "bytes": 10682,
+      "mtime": "2026-08-04T22:49:53.823Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\ACCOUNT_AND_PUBLICATION_ELIGIBILITY_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 7275,
+      "mtime": "2026-08-05T17:39:47.133Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\ACCOUNT_AND_PUBLICATION_ELIGIBILITY_POLICY.md",
+      "family": "governed-doc",
+      "bytes": 5458,
+      "mtime": "2026-08-05T17:37:56.669Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\ATTACHMENT_ONLY_MESSAGES_FIX.md",
+      "family": "governed-doc",
+      "bytes": 1767,
+      "mtime": "2026-04-25T22:16:15.491Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\AURA_GOVERNED_EVENT_AND_ATTENTION_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 14022,
+      "mtime": "2026-08-05T08:15:02.084Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\BUILD_FIXES.md",
+      "family": "governed-doc",
+      "bytes": 4265,
+      "mtime": "2026-04-25T15:51:51.579Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\CURRENT_NOTIFICATION_AND_ATTENTION_INVENTORY.md",
+      "family": "governed-doc",
+      "bytes": 28014,
+      "mtime": "2026-08-05T07:27:30.999Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\ELIGIBILITY_AND_ONBOARDING_CURRENT_STATE_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 13806,
+      "mtime": "2026-08-05T15:57:19.535Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\ELIGIBILITY_AND_ONBOARDING_IMPLEMENTATION_PROPOSAL.md",
+      "family": "governed-doc",
+      "bytes": 24438,
+      "mtime": "2026-08-05T17:40:30.347Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\ELIGIBILITY_IDENTITY_AND_INSTITUTION_ONBOARDING_GOVERNANCE_INDEX.md",
+      "family": "governed-doc",
+      "bytes": 11569,
+      "mtime": "2026-08-05T17:52:31.016Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\FLUTTER_ANALYZE_BACKLOG.md",
+      "family": "governed-doc",
+      "bytes": 2692,
+      "mtime": "2026-04-25T21:50:51.653Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\FRONTEND_API_ALIGNMENT.md",
+      "family": "governed-doc",
+      "bytes": 6643,
+      "mtime": "2026-04-25T16:16:46.663Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\GOVERNED_EVENT_AND_ATTENTION_DOCTRINE_APPLICATION.md",
+      "family": "governed-doc",
+      "bytes": 32293,
+      "mtime": "2026-08-05T07:59:23.947Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\GOVERNED_EVENT_JOURNEY_FOUNDER_MATRIX.md",
+      "family": "governed-doc",
+      "bytes": 59195,
+      "mtime": "2026-08-05T07:48:12.118Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\IDENTITY_AND_INSTITUTION_ONBOARDING_DOCTRINE.md",
+      "family": "governed-doc",
+      "bytes": 8521,
+      "mtime": "2026-08-05T17:40:03.172Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\IDENTITY_VERIFICATION_POLICY.md",
+      "family": "governed-doc",
+      "bytes": 4531,
+      "mtime": "2026-08-05T17:38:16.977Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\INSTITUTION_ONBOARDING_POLICY.md",
+      "family": "governed-doc",
+      "bytes": 9242,
+      "mtime": "2026-08-05T17:38:49.990Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\MIGRATION_POLICY.md",
+      "family": "governed-doc",
+      "bytes": 9667,
+      "mtime": "2026-08-05T17:41:20.937Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\engineering\\NOTIFICATION_ATTENTION_AND_DELIVERY_FINAL_CERTIFICATION.md",
+      "family": "governed-doc",
+      "bytes": 16857,
+      "mtime": "2026-08-05T15:36:19.605Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\frontend\\AURA_FINAL_COVERAGE_EXECUTION_MAP.md",
+      "family": "governed-doc",
+      "bytes": 4488,
+      "mtime": "2026-04-26T03:05:54.269Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\frontend\\AURA_FULL_FRONTEND_REDESIGN_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 5751,
+      "mtime": "2026-04-26T01:22:22.568Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\frontend\\AURA_FULL_FRONTEND_REDESIGN_REPORT.md",
+      "family": "governed-doc",
+      "bytes": 5825,
+      "mtime": "2026-04-26T02:00:31.188Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\frontend\\AURA_HERO_SURFACES_REBUILD_MAP.md",
+      "family": "governed-doc",
+      "bytes": 3768,
+      "mtime": "2026-04-26T03:22:13.383Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\frontend\\AURA_HERO_SURFACES_REBUILD_REPORT.md",
+      "family": "governed-doc",
+      "bytes": 5804,
+      "mtime": "2026-04-26T03:26:21.261Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\frontend\\AURA_TOTAL_FRONTEND_COVERAGE_REPORT.md",
+      "family": "governed-doc",
+      "bytes": 5088,
+      "mtime": "2026-04-26T03:09:36.390Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\frontend\\AURA_VISIBLE_TRANSFORMATION_EXECUTION_MAP.md",
+      "family": "governed-doc",
+      "bytes": 6308,
+      "mtime": "2026-04-26T02:52:19.622Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\frontend\\AURA_VISIBLE_TRANSFORMATION_REPORT.md",
+      "family": "governed-doc",
+      "bytes": 6559,
+      "mtime": "2026-04-26T02:55:12.469Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\governance\\AI_GOVERNANCE_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 4587,
+      "mtime": "2026-04-25T16:49:21.118Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\governance\\board\\AURA_ELIGIBILITY_IDENTITY_INSTITUTION_ONBOARDING_BOARD_GOVERNANCE_PROPOSAL.md",
+      "family": "governed-doc",
+      "bytes": 29482,
+      "mtime": "2026-08-07T01:21:44.963Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\governance\\board\\EXECUTIVE_ONE_PAGE_BRIEFING.md",
+      "family": "governed-doc",
+      "bytes": 2963,
+      "mtime": "2026-08-05T17:58:21.636Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\governance\\INSTITUTION_GOVERNANCE_V1.md",
+      "family": "governed-doc",
+      "bytes": 7589,
+      "mtime": "2026-07-08T04:02:57.638Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\governance\\PRODUCT_GOVERNANCE_HARDENING.md",
+      "family": "governed-doc",
+      "bytes": 2934,
+      "mtime": "2026-04-25T17:18:46.304Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\governance\\SECURITY_HARDENING.md",
+      "family": "governed-doc",
+      "bytes": 5890,
+      "mtime": "2026-04-25T16:35:08.835Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\AURA_MEETINGS_COMPLETION_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 59612,
+      "mtime": "2026-06-30T11:38:30.463Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\LIVE_ROOM_CONTROLS_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 5167,
+      "mtime": "2026-06-30T21:35:00.070Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\LIVE_ROOM_MATURITY_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 5310,
+      "mtime": "2026-06-30T21:34:32.043Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\MEETINGS_CAPABILITY_GAP_ANALYSIS.md",
+      "family": "governed-doc",
+      "bytes": 9270,
+      "mtime": "2026-06-30T21:38:08.004Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\MEETINGS_DESIGN_SYSTEM_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 11931,
+      "mtime": "2026-06-30T21:36:04.732Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\MEETINGS_LANGUAGE_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 6794,
+      "mtime": "2026-06-30T21:36:40.289Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\MEETINGS_POST_J_COMPLETION_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 13225,
+      "mtime": "2026-06-30T21:39:24.729Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\MEETINGS_PRODUCTION_VALIDATION_REPORT.md",
+      "family": "governed-doc",
+      "bytes": 19476,
+      "mtime": "2026-06-30T21:19:42.685Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\MEETINGS_WORKSPACE_COHERENCE_AUDIT.md",
+      "family": "governed-doc",
+      "bytes": 7978,
+      "mtime": "2026-06-30T21:37:22.756Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\meetings\\REALTIME_STABILIZATION.md",
+      "family": "governed-doc",
+      "bytes": 4837,
+      "mtime": "2026-04-25T17:09:36.318Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\misc\\CODEX_PHASE0_PROMPT.md",
+      "family": "governed-doc",
+      "bytes": 1196,
+      "mtime": "2026-04-25T15:29:18.133Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\CONTROLLED_PRODUCT_READINESS_PLAN.md",
+      "family": "governed-doc",
+      "bytes": 5163,
+      "mtime": "2026-04-25T15:29:18.122Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\FEATURE_OPERATIONAL_READINESS.md",
+      "family": "governed-doc",
+      "bytes": 16472,
+      "mtime": "2026-04-25T18:07:28.762Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\FEATURE_PROMISE_MATRIX.md",
+      "family": "governed-doc",
+      "bytes": 12892,
+      "mtime": "2026-04-26T00:20:13.399Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\FINAL_LAUNCH_READINESS_DECISION.md",
+      "family": "governed-doc",
+      "bytes": 2124,
+      "mtime": "2026-04-26T00:44:26.547Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\FINAL_PHASE_EXECUTION_MAP.md",
+      "family": "governed-doc",
+      "bytes": 4617,
+      "mtime": "2026-04-26T00:30:28.790Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\FINAL_PRODUCT_SPINE_INTEGRATION_REPORT.md",
+      "family": "governed-doc",
+      "bytes": 6682,
+      "mtime": "2026-04-26T00:45:18.613Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\LAUNCH_GRADE_ROADMAP.md",
+      "family": "governed-doc",
+      "bytes": 7527,
+      "mtime": "2026-04-26T00:20:13.671Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\RELEASE_READINESS_AUDIT_2026-05-10.md",
+      "family": "governed-doc",
+      "bytes": 47389,
+      "mtime": "2026-05-11T01:33:19.163Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    },
+    {
+      "path": "C:\\Users\\muham\\flutter_projects\\aura\\docs\\readiness\\REMOVAL_REPORT.md",
+      "family": "governed-doc",
+      "bytes": 6835,
+      "mtime": "2026-04-25T16:00:29.854Z",
+      "rawMatches": 0,
+      "keptMentions": 0
+    }
+  ]
+}

@@ -1,0 +1,2844 @@
+[
+ {
+  "id": "F097",
+  "title": "Public Home surfaces real Live",
+  "problemStatement": "Public Home does not surface real Live sessions to signed-out visitors. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F098",
+  "title": "Real bounded preview",
+  "problemStatement": "No real bounded preview of a Live session exists for signed-out visitors. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F099",
+  "title": "15s frozen preview bound",
+  "problemStatement": "The founder-frozen 15-second signed-out preview bound is not implemented. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F100",
+  "title": "Auth wall after 15s",
+  "problemStatement": "The Sign up / Log in wall that must follow the 15-second preview is not implemented. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F101",
+  "title": "Zero participation authority during preview",
+  "problemStatement": "A signed-out preview must grant zero participation authority; nothing enforces this because nothing is built. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F102",
+  "title": "Zero Conversation authority during preview",
+  "problemStatement": "A signed-out preview must grant zero Conversation authority; nothing enforces this because nothing is built. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F103",
+  "title": "Auth returns to the SAME Live",
+  "problemStatement": "After authenticating from a preview, the visitor must return to the SAME Live session; not implemented. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\" Recorded dependency: \"F103/F104 must be owned by the shared continuity authority (ties to F059-F070)\" and \"F065 (RC1 auth hint) -> gates F059, F061, F062, F063, F064, F103, F104 ... including the founder-frozen Live auth-return\".",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223]. Recorded dependency: \"F103/F104 must be owned by the shared continuity authority (ties to F059-F070)\" and \"F065 (RC1 auth hint) -> gates F059, F061, F062, F063, F064, F103, F104 ... including the founder-frozen Live auth-return\".",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F104",
+  "title": "Sign-up preserves intent",
+  "problemStatement": "Sign-up initiated from a Live preview must preserve the visitor's original intent; not implemented. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\" Recorded dependency: \"F103/F104 must be owned by the shared continuity authority (ties to F059-F070)\" and \"F065 (RC1 auth hint) -> gates F059, F061, F062, F063, F064, F103, F104 ... including the founder-frozen Live auth-return\".",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223]. Recorded dependency: \"F103/F104 must be owned by the shared continuity authority (ties to F059-F070)\" and \"F065 (RC1 auth hint) -> gates F059, F061, F062, F063, F064, F103, F104 ... including the founder-frozen Live auth-return\".",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F105",
+  "title": "Refresh cannot reset the preview",
+  "problemStatement": "Refreshing must not reset or re-grant the bounded signed-out preview; not implemented. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F106",
+  "title": "Truthful ended state during preview",
+  "problemStatement": "A Live session that has ended must be shown truthfully during a signed-out preview; not implemented. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F107",
+  "title": "One canonical Live truth for both doors",
+  "problemStatement": "Signed-out and signed-in doors must consume one canonical Live truth; not implemented. Recorded verbatim in the master register as part of \"Live - public acquisition (F097-F107) - all OPEN ... Nothing built.\"",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "\"## Live - public acquisition (F097-F107) - all **OPEN** ... *Nothing built.*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\"): the whole public-preview stack F097-F107 is V1 - \"a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder ruling recorded (internet-public reach): 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Live - public acquisition",
+   "public-preview stack",
+   "15-second preview",
+   "internet-public reach ruling"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (no dated artifact; evidence is the F001-F120 master-register audit and its reorganization, session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl lines 31798/31827)",
+  "notes": "Recorded priority in the master-register priority table: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also recorded as \"compressed under a broader item\": \"F097-F107 (eleven preview obligations as '15-second preview not built')\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F108",
+  "title": "Mesh bounded",
+  "problemStatement": "Mesh topology is bounded; the bound is recorded in doctrine but the ceiling was never measured.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "PARTIALLY_VALIDATED",
+  "stateHistory": [
+   {
+    "state": "PARTIALLY_VALIDATED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master register \"Live - scale (F108-F111)\" table: | F108 Mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "Live - scale",
+   "topology (F108-F111)"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798)",
+  "notes": "Recorded remains text: \"Recorded in doctrine doc; **ceiling never measured**\". Recorded priority: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]."
+ },
+ {
+  "id": "F109",
+  "title": "Mesh is not the long-term architecture",
+  "problemStatement": "Mesh is recorded as not the long-term architecture, in doc and memory, with no enforcement.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "PARTIALLY_VALIDATED",
+  "stateHistory": [
+   {
+    "state": "PARTIALLY_VALIDATED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master register \"Live - scale (F108-F111)\" table: | F109 Mesh is not the long-term architecture | PV | Recorded in doc + memory; no enforcement |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "Live - scale",
+   "topology (F108-F111)"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798)",
+  "notes": "Recorded remains text: \"Recorded in doc + memory; no enforcement\". Recorded priority: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]."
+ },
+ {
+  "id": "F110",
+  "title": "SFU assessment",
+  "problemStatement": "An SFU assessment is owed and has not been written.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master register \"Live - scale (F108-F111)\" table: | F110 SFU assessment | OPEN | Not written |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "Live - scale",
+   "topology (F108-F111)"
+  ],
+  "contradictionFlags": [
+   "Also listed under \"Genuinely forgotten: ... F110-F114 (assessment + Meetings obligations)\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798] - a reporting-loss note, not a state change."
+  ],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798)",
+  "notes": "Recorded remains text: \"Not written\". Recorded priority: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]."
+ },
+ {
+  "id": "F111",
+  "title": "Assessment scope",
+  "problemStatement": "The scope of the topology assessment is owed and has not been written.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master register \"Live - scale (F108-F111)\" table: | F111 Assessment scope | OPEN | Not written |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "Live - scale",
+   "topology (F108-F111)"
+  ],
+  "contradictionFlags": [
+   "Also listed under \"Genuinely forgotten: ... F110-F114 (assessment + Meetings obligations)\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798] - a reporting-loss note, not a state change."
+  ],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798)",
+  "notes": "Recorded remains text: \"Not written\". Recorded priority: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]."
+ },
+ {
+  "id": "F112",
+  "title": "Meetings equivalent validation",
+  "problemStatement": "Meetings owes the equivalent validation that Conversation/Live receive; the obligation is recorded as intact and unstarted.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "| F112 Meetings equivalent validation | OPEN | Obligation intact, unstarted |"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833
+    },
+    "note": "\"No Meetings implementation during this wave. F064, F112 and F113 remain active obligations.\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223
+    },
+    "note": "\"Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112-F114)\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31833
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31771
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Meetings is a protected boundary: \"Do NOT modify Meetings during this reconciliation. But do not lose its obligations either. F112-F114 must remain visible\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31771]. New evidence recorded: \"F112/F114 (Meetings) -> new evidence that shared-boundary work genuinely threatens Meetings guest entry; the disjointness rule and gate now protect it\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32165].",
+  "validationRequirement": "Recorded validation class V4 (\"3+ participants\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Meetings batch \"runs only after Conversation's shared capabilities are certified, with explicit Meetings regression evidence\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder protection ruling: Meetings parked and protected; protection is explicitly \"not permission to erase future validation obligations\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31771].",
+  "aliases": [
+   "Meetings equivalent validation",
+   "Meetings batch"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript; latest mention 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223 parked list)",
+  "notes": "Recorded priority P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also listed under \"Genuinely forgotten: ... F110-F114\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F113",
+  "title": "Meetings refresh continuity",
+  "problemStatement": "Meetings must survive refresh (continuity); recorded as the same obligation as F064 and deliberately kept as a separate row with an explicit duplication note.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31771
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "| F113 Meetings refresh continuity | OPEN | **Duplicate of F064** - keep one row, cross-referenced |"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833
+    },
+    "note": "\"F064, F112 and F113 remain active obligations.\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31771
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Inside the Meetings protected boundary (F112-F114 must remain visible; no Meetings file modified) [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31771], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31833].",
+  "validationRequirement": "Recorded validation class V4 (\"3+ participants\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]; runs in the separate later Meetings batch [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Register-integrity ruling recorded: \"no renumbering, no merges, no hidden rows; F064/F113 remain separate with an explicit duplication note\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Claude's challenge \"F113 duplicates F064 - same obligation. Keep F064, cross-reference\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798] was not executed as a merge.",
+  "aliases": [
+   "Meetings refresh continuity",
+   "(= F113)",
+   "Duplicate of F064"
+  ],
+  "contradictionFlags": [
+   "Recorded as a duplicate of F064 while simultaneously ruled to remain a separate row; the duplication is annotated, not resolved. Stage 0 does not resolve it."
+  ],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827)",
+  "notes": "The F064 row in the continuity table reads \"| F064 | Meetings refresh continuity | OPEN | shared | (= F113) |\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F114",
+  "title": "Meetings protected",
+  "problemStatement": "Meetings must remain unmodified while unrelated shared work proceeds; the protection itself is the tracked obligation.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31771
+  },
+  "currentState": "LIVE_CERTIFIED",
+  "stateHistory": [
+   {
+    "state": "LIVE_CERTIFIED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "| F114 Meetings protected | LC | No Meetings file modified in any commit this session |"
+   },
+   {
+    "state": "LIVE_CERTIFIED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827
+    },
+    "note": "\"**No Meetings file was modified in any commit this session** (F114 remains LIVE_CERTIFIED).\""
+   },
+   {
+    "state": "LIVE_CERTIFIED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833
+    },
+    "note": "\"F114 protection remains terminal/certified.\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31771
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31833
+   }
+  ],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "This finding IS the Meetings protected boundary. Later evidence: \"F112/F114 (Meetings) -> new evidence that shared-boundary work genuinely threatens Meetings guest entry; the disjointness rule and gate now protect it\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32165].",
+  "validationRequirement": "Evidenced per session by the absence of any Meetings file modification in commits [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder: \"Do NOT modify Meetings during this reconciliation ... That protection is not permission to erase future validation obligations\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31771].",
+  "aliases": [
+   "Meetings protected",
+   "LC",
+   "terminal/certified"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32165)",
+  "notes": "Counted as terminal in the register (marked with the terminal glyph in domain E, 24 LIVE_CERTIFIED total) [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]."
+ },
+ {
+  "id": "F115",
+  "title": "Non-shrinking register",
+  "problemStatement": "The findings register must not shrink; an item leaves only at a terminal state.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master-register governance table: | F115 Non-shrinking register | OPEN | This audit establishes it |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Adopted rule recorded: \"The non-shrinking rule stands: an item leaves only at LIVE_CERTIFIED, SUPERSEDED_BY_FOUNDER_RULING or EXPLICITLY_RETIRED\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]; \"Implemented/deployed/test-green is not terminal\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Non-shrinking register",
+   "non-shrinking completion register"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798/31827)",
+  "notes": "Recorded remains text: \"This audit establishes it\". Recorded priority: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Recorded relationship: \"F115/F119/F120 are three angles of one governance obligation - I'd keep all three but treat them as a single closure gate\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F116",
+  "title": "Identity as a shared-consumption problem",
+  "problemStatement": "Canonical identity is not consumed consistently across the product; multiple consumers were fixed but no systematic audit exists. Recorded systemic framing: \"THE CANONICAL IDENTITY SYSTEM IS NOT BEING CONSUMED CONSISTENTLY ACROSS THE PRODUCT\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31771]; \"F050 is an instance of F053; F116 is the systemic statement of F050-F058 - hierarchy, not duplication; worth marking so F116 can't be closed by fixing one consumer\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798].",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "PARTIALLY_VALIDATED",
+  "stateHistory": [
+   {
+    "state": "PARTIALLY_VALIDATED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master-register governance table: | F116 Identity as a shared-consumption problem | PV | Multiple consumers fixed; no systematic audit |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31771
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31833
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32009
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32009
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder instruction: \"Do not reduce Identity to F055/F056 ... preserve the systemic obligation F053/F116 - canonical Identity consumption across the product. If you discover another ad-hoc name/avatar/user-shape resolver ... MARK IT ... Record it against F053/F116 or create F121+ if it is a distinct concrete defect\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31833].",
+  "aliases": [
+   "Identity as a shared-consumption problem",
+   "identity as shared-consumption problem",
+   "F053/F116"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798/31827)",
+  "notes": "Recorded remains text: \"Multiple consumers fixed; no systematic audit\". Recorded priority: P2 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Later checkpoint evidence, explicitly NOT a state promotion: \"F053/F116 -> no new ad-hoc identity resolver found while touching these surfaces; `AuraAvatar` is being consumed consistently\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32009]. Hierarchy recorded as \"F050 subset F053 subset F116 ... recorded as hierarchy, not compression\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Also named as an absorbing/interacting authority for the Rich Content platform system [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32054]."
+ },
+ {
+  "id": "F117",
+  "title": "Refresh as a platform contract",
+  "problemStatement": "Refresh/continuity is a platform contract rather than per-screen behaviour; the RC1-RC9 audit exists but execution has not started.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "PARTIALLY_VALIDATED",
+  "stateHistory": [
+   {
+    "state": "PARTIALLY_VALIDATED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master-register governance table: | F117 Refresh as a platform contract | PV | RC1-RC9 audit exists; execution not started |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "Refresh as a platform contract",
+   "refresh as platform contract",
+   "RC1-RC9 audit"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798/31827)",
+  "notes": "Recorded remains text: \"RC1-RC9 audit exists; execution not started\". Recorded priority: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Hierarchy recorded: \"F059-F070 subset F117 recorded as hierarchy, not compression\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. AXIS CAUTION: the \"RC1-RC9\" codes cited here are refresh root-cause codes (e.g. \"RC1 - highest leverage\" session/auth hint, \"RC4 (8 sites)\", \"RC7/RC8\"), NOT the RC-C0..RC-C11 reconstruction chapters [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F118",
+  "title": "C4 findings preserved",
+  "problemStatement": "C4-owned findings must be preserved rather than patched away; register maintained, no C4 finding patched.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "LIVE_CERTIFIED",
+  "stateHistory": [
+   {
+    "state": "LIVE_CERTIFIED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master-register governance table: | F118 C4 findings preserved | LC | No C4 finding patched; register maintained |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31827
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   }
+  ],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "This finding IS the C4 protected boundary: \"DO NOT START C4\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31804]; \"J. C4 PROTECTION\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31771]; \"Parked: ... C4 (#162)\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223]. AXIS NOTE: \"C4\" here is the Attention/C4 chapter on the frontend reconstruction axis - the register groups it as \"H. Attention / C4 (6) - F030, F031, F032, F033, F034, F035\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827] and the state vocabulary carries C4_OWNED_OPEN - it is NOT the Rich Content stage C4 (canonical ingestion convergence).",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "C4 findings preserved",
+   "C4 findings preserved",
+   "C4_OWNED_OPEN"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "WEAK",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798/31827)",
+  "notes": "Recorded remains text: \"No C4 finding patched; register maintained\"."
+ },
+ {
+  "id": "F119",
+  "title": "Implemented capabilities must not vanish from reporting",
+  "problemStatement": "Capabilities that were implemented (some live-certified) disappeared from later reporting. Evidence of the loss recorded in the same audit: \"Completed earlier, then disappeared: F020 mentions, F021 replies, F022 translation, F029 article revision, F018 external hydration - all live-certified in earlier sessions and absent from recent reports\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798].",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master-register governance table: | F119 Implemented capabilities must not vanish from reporting | OPEN | This audit is the correction |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31771
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "Implemented capabilities must not vanish from reporting"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798/31827)",
+  "notes": "Recorded remains text: \"This audit is the correction\". Recorded priority: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Recorded relationship: \"F115/F119/F120 are three angles of one governance obligation ... a single closure gate\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798]."
+ },
+ {
+  "id": "F120",
+  "title": "Every item reaches a terminal state",
+  "problemStatement": "Every register item must reach an explicit terminal state; implemented/deployed/test-green is not terminal.",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 31798
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798
+    },
+    "note": "Master-register governance table: | F120 Every item reaches a terminal state | OPEN | Register now enforces it |"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31798
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31771
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31804
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 31833
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32223
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Recorded validation class V1 (\"I validate alone\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827].",
+  "founderDecisions": "Founder reconciliation instruction defining terminal discipline and commissioning the F001-F120 audit [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31771], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31804]; release/closure conditions enumerated (\"6. F001-F120 register is updated. 7. Any F121+ discoveries are recorded. 8. WG register is updated...\") [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31833]; \"Non-shrinking F001-F120 register: full reconciliation audit with strict terminal states (LIVE_CERTIFIED / SUPERSEDED_BY_FOUNDER_RULING / EXPLICITLY_RETIRED only). 'Implemented/deployed/test-green is not terminal.'\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32223].",
+  "aliases": [
+   "Every item reaches a terminal state",
+   "every item reaches terminal state",
+   "strict terminal states"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "NOT_RECORDED (session transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798/31827)",
+  "notes": "Recorded remains text: \"Register now enforces it\". Recorded priority: P1 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Register counts recorded at this audit: LIVE_CERTIFIED 24, IMPLEMENTED_NOT_LIVE_CERTIFIED 24, PARTIALLY_VALIDATED 20, OPEN 42, BLOCKED 2, C4_OWNED_OPEN 6, SUPERSEDED_BY_FOUNDER_RULING 0, EXPLICITLY_RETIRED 2 (total 120) [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31827]. Classification rule for later discoveries recorded: new concrete defect -> F121 onward; prospective capability -> WG018 onward [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31833]."
+ },
+ {
+  "id": "F121",
+  "title": "Article image insertion bakes an expiring signed URL into durable markdown",
+  "problemStatement": "\"Article image insertion writes the **resolved, expiring signed URL** into durable markdown body text (`article_editor_screen.dart:129`). A published article's images will 404 once the signature expires. Distinct from F025 (which is about raw markdown as UX); this is durability/correctness.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32206], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:94]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 92
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 92
+    },
+    "note": "Issued under \"## NEW CONCRETE DEFECTS FOUND (registered F121-F125)\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 82
+    },
+    "note": "Still referenced as an open lineage neighbour on 2026-08-18: \"*Adjacent to F121; not merged*\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 92
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 94
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32206
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-F1 (source wording: §12 stage \"F1 | Propagation: Articles (F121, F025-F027), Posts, Announcements, Institution Posts, Correspondence\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570 region], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Recorded migration disposition: \"article markdown with baked signed URLs | rewrite to media references (F121)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:443], [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:532]. Lineage protection: F141 \"distinct from but adjacent to F121 ... F121 is a *delivery/representation* defect; F141 is the *retention* consequence. Not merged\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:288].",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "Recorded founder sequencing that this band is not to be implemented before the §12 contract is frozen [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335].",
+  "aliases": [
+   "baked signed URLs in article markdown",
+   "Article image insertion"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:82, lineage note); issued 2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:92)",
+  "notes": "Explicitly distinguished from F025 at issuance. AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters."
+ },
+ {
+  "id": "F122",
+  "title": "Wire-kind inconsistency between canonical wireKind and conversation_screen",
+  "problemStatement": "\"Wire-kind inconsistency: canonical `wireKind(AttachmentKind.document)` returns `'IMAGE'`, while `conversation_screen` sends `'DOCUMENT'` for the same file class. Two messaging surfaces report different kinds for identical content.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32206], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:99]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 92
+  },
+  "currentState": "CONFLICTING_CURRENT_STATE",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 92
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS FOUND (registered F121-F125)\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   },
+   {
+    "state": "CANDIDATE: IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 240
+    },
+    "note": "Frozen stage C1 declares \"**Closes:** F127, F128, F130, F122\" and stage scope \"C1 | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:561]; C1 was implemented and pushed as `62b39bf` [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511]"
+   },
+   {
+    "state": "CANDIDATE: OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 511
+    },
+    "note": "The C1 implementation checkpoint enumerates only \"F127/F128/F130 implemented-not-live-certified\" - F122 is not named"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 92
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 99
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32206
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32384
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32529
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 511
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C1 (source wording: §12 stage \"C1 | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:561]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Recorded retirement path: \"`wireKind(AttachmentKind.document) == 'IMAGE'` legacy quirk (see F122)\" listed under RETIRE (with explicit path) [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:68], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32206]; \"| `wireKind(document) === 'IMAGE'` | retire with the wire vocabulary (F122) |\" [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:441].",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "wire-kind inconsistency",
+   "one wire vocabulary",
+   "wireKind(document)==='IMAGE'"
+  ],
+  "contradictionFlags": [
+   "CONFLICT: stage C1 (implemented + pushed, `62b39bf`) is documented as closing F122, but the implementation checkpoint that records C1's outcome names only F127/F128/F130 as implemented-not-live-certified and omits F122 [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511]. Stage 0 does not resolve which is current.",
+   "Scope note visible in evidence: the C1 work described is backend (NestJS presign/DTO/content truth) while half of F122 is a client-side `conversation_screen` wire value - no evidence in this dossier shows the client half changed."
+  ],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511 C1 implementation checkpoint, which does not name F122)",
+  "notes": "C1 task record: \"C1 - Content Truth authority + presign validation (F127/F128/F130/F122)\", todo #174 [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32529], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32577]."
+ },
+ {
+  "id": "F123",
+  "title": "Falsified content provenance - every conversation attachment labelled GALLERY",
+  "problemStatement": "\"Falsified content provenance: conversation labels every attachment `source: 'GALLERY'`, including clipboard pastes and desktop drops, despite `AttachmentSource` supporting `paste`/`upload`.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32206], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:103]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 92
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 92
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS FOUND (registered F121-F125)\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 92
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 103
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32206
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md",
+    "line": 125
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-E2 (source wording: §12 stage \"E2 | **Conversation as FIRST COMPLETE REFERENCE** (F011-F019, F123-F125, WG001/2/4/5/6/9)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "Recorded in the same stage-E2 grouping as WG001, WG002, WG004, WG005, WG006, WG009 [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570].",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "falsified content provenance",
+   "hardcoded GALLERY source"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570 stage assignment)",
+  "notes": "Contract intent recorded: \"`MediaSource` (CAMERA|GALLERY|PASTE|RECORDING|UPLOAD) is retained and finally **told the truth** - F123 exists because Conversation hardcodes `GALLERY`. Source becomes provenance metadata, never a presentation input\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384], [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:125] - contract text, not implementation."
+ },
+ {
+  "id": "F124",
+  "title": "Empty-text sends transmit a literal ellipsis sentinel as the message body",
+  "problemStatement": "\"Empty-text sends transmit a literal `'...'` sentinel as the message body, and rendering special-cases it away. Message body truth is being used as a UI flag.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32206], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:106]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 92
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 92
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS FOUND (registered F121-F125)\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 92
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 106
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32206
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-E2 (source wording: §12 stage \"E2 | Conversation as FIRST COMPLETE REFERENCE (F011-F019, F123-F125, ...)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "Recorded in the same stage-E2 grouping as WG001/2/4/5/6/9 [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570].",
+  "protectedBoundaryImplications": "Recorded retirement disposition: \"| `'...'` empty-body sentinel | remove; body truth is not a UI flag (F124) |\" [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:442], [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:532].",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "the '...' sentinel",
+   "empty-body sentinel"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:532 retirement list)",
+  "notes": "The sentinel appears in sources as a single ellipsis character; transcribed here as '...' to avoid encoding drift."
+ },
+ {
+  "id": "F125",
+  "title": "Conversation images have no viewer and no save",
+  "problemStatement": "\"Conversation images have **no viewer and no save**: not tappable, no fullscreen, no save affordance - while every other surface routes through `AuraMediaViewer`/`MediaSaveService`.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32206], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:109]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 92
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 92
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS FOUND (registered F121-F125)\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 92
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 109
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32206
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32224
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-E2 (source wording: §12 stage \"E2 | Conversation as FIRST COMPLETE REFERENCE (F011-F019, F123-F125, ...)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "Recorded in the same stage-E2 grouping as WG001/2/4/5/6/9 [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570].",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "no viewer and no save",
+   "Conversation image interaction gap"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:570 stage assignment)",
+  "notes": "Adjacent recorded evidence in the same audit: \"There is **no CORS handling in the image path at all** - a CORS rejection is indistinguishable...\" (F058 interaction) [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32206]. Also recorded: no timeline, scrubbing, duration, elapsed time, waveform or speed control anywhere in the product [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32206]."
+ },
+ {
+  "id": "F126",
+  "title": "Conversation media visibility is never set - private DM attachments stay PUBLIC",
+  "problemStatement": "\"F126 (P0, privacy) - **Conversation media visibility is never set**, so private DM attachments stay `PUBLIC`. `GET /media/:id/url` then returns a permanent public URL **to any caller**, and the `CONVERSATION` branch of `canAccessRestricted` is unreachable in production. Posts/announcements/institution posts/messages all set visibility; **the most private surface is the least protected.**\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 141
+    },
+    "note": "Issued under \"## NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P0 privacy"
+   },
+   {
+    "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32335
+    },
+    "note": "Founder-recorded sequence: \"F126 SURGICAL PRIVACY CORRECTION - COMPLETE / awaiting live certification\""
+   },
+   {
+    "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED (application-level only)",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 122
+    },
+    "note": "\"**F126 = APPLICATION-LEVEL DISCLOSURE CLOSED, STORAGE-LEVEL CONFIDENTIALITY NOT ...\" and \"This does not mean F126 was wrongly fixed - the fix closed the path that ...\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:151]"
+   },
+   {
+    "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 100
+    },
+    "note": "2026-08-18 C2 chapter: \"Untouched and uncollapsed: **F126**, **F138**. No R2 ratchet performed.\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 141
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+    "line": 39
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32335
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+    "line": 151
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C3 for the generalization (source wording: \"C3 | Access context at ingestion; restricted branches for POST/REPLY (F126 generalized)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:563], [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:460]) and RIC-C5 for the remaining storage-level half (\"C5 | **PROMOTED - SECURITY STAGE.** Canonical governed delivery for all visibility classes; retire raw storage URLs; remove bucket public read; F138 closure and F126 storage-level completion\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:565]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Founder instruction: \"F126 and F138 remain separately visible\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509]. 2026-08-18 chapter discipline: \"Untouched and uncollapsed: F126, F138. No R2 ratchet performed\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:100]; prohibited actions list includes \"the R2 public-read ratchet - collapse F126/F138/F131/F139-F142\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:333].",
+  "validationRequirement": "Recorded gate: \"**TWO-ACCOUNT / TWO-BROWSER REQUIRED** | F126 live journey, cross-party render parity, access denial, sender-vs-receiver truth\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:581], [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:479].",
+  "founderDecisions": "Founder-authorized sequence: \"AUDIT - COMPLETE -> F126 SURGICAL PRIVACY CORRECTION - COMPLETE / awaiting live certification -> §12 CONTRACT DESIGN - AUTHORIZED NOW -> FOUNDER REVIEW -> FREEZE -> FOUNDATIONAL IMPLEMENTATION -> CONVERSATION...\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]; \"F126 and F138 remain separately visible\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509].",
+  "aliases": [
+   "Conversation media visibility never set",
+   "F126 surgical privacy correction",
+   "F126 correction"
+  ],
+  "contradictionFlags": [
+   "Scope split is recorded, not contradictory: the application-level disclosure path is closed while storage-level confidentiality is explicitly NOT closed and is deferred to stage C5. Do not read \"COMPLETE\" as terminal."
+  ],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:100)",
+  "notes": "Highest external mention count in this batch (150 mentions, 20 in governed docs). Evidence base named for the freeze candidate: \"`2026-08-17-rich-content-system-audit.md`, the F126 correction, ...\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:39]."
+ },
+ {
+  "id": "F127",
+  "title": "No magic-byte/signature validation anywhere",
+  "problemStatement": "\"F127 (P0, security) - **No magic-byte/signature validation anywhere.** The client-declared `contentType` at presign is the only check; R2 stores whatever bytes are PUT. `confirmUpload` already calls `headObject()` which *returns* the stored content type - and discards it.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:150]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 141
+    },
+    "note": "Issued under \"## NEW CONCRETE DEFECTS - BACKEND (F126-F137)\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   },
+   {
+    "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 511
+    },
+    "note": "\"| C1 Content Truth (`62b39bf`) | Implemented + pushed; F127/F128/F130 implemented-not-live-certified |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 150
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32529
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 511
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C1 (source wording: §12 stage \"C1 | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:561], [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:458]; commit `62b39bf`). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "C1 explicitly preserves existing governance: \"**Preserved unchanged:** the 28-type allowlist, unconditional SVG block, per-kind size/duration limits, sanitized filenames, presigned upload/download governance, SSRF protections, storage authorization\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384].",
+  "validationRequirement": "Recorded as implemented-not-live-certified; live certification still owed [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511]. Register discipline: \"Do not mark IMPLEMENTED as LIVE_CERTIFIED\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509].",
+  "founderDecisions": "Founder sequencing: broad F121-F137 implementation held until §12 freeze [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]; \"Existing F121-F138 must be reconciled against implementation as work progresses\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509].",
+  "aliases": [
+   "C1 Content Truth",
+   "content truth authority"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511)",
+  "notes": "C1 task text recorded: layered content truth \"declared -> transport -> signature -> container -> structural -> resolved\", verdicts CONFIRMED/CORRECTED/REJECTED/UNVERIFIABLE, never collapsed [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32529]; stage C1 documented as \"**Closes:** F127, F128, F130, F122\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:240]."
+ },
+ {
+  "id": "F128",
+  "title": "Size limits are advisory - over-limit objects reconciled, not rejected",
+  "problemStatement": "\"F128 (P1, security) - Size limits are advisory: the presigned PUT carries no `content-length-range`, and `confirmUpload` reconciles the real size but never rejects an over-limit object.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:162]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 141
+    },
+    "note": "Issued under \"## NEW CONCRETE DEFECTS - BACKEND (F126-F137)\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   },
+   {
+    "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 511
+    },
+    "note": "\"| C1 Content Truth (`62b39bf`) | Implemented + pushed; F127/F128/F130 implemented-not-live-certified |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 162
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32529
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 511
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C1 (source wording: §12 stage \"C1 | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:561], [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:458]; commit `62b39bf`). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "C1 explicitly preserves existing governance: \"**Preserved unchanged:** the 28-type allowlist, unconditional SVG block, per-kind size/duration limits, sanitized filenames, presigned upload/download governance, SSRF protections, storage authorization\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384].",
+  "validationRequirement": "Recorded as implemented-not-live-certified; live certification still owed [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511]. Register discipline: \"Do not mark IMPLEMENTED as LIVE_CERTIFIED\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509].",
+  "founderDecisions": "Founder sequencing: broad F121-F137 implementation held until §12 freeze [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]; \"Existing F121-F138 must be reconciled against implementation as work progresses\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509].",
+  "aliases": [
+   "C1 Content Truth",
+   "content truth authority"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511)",
+  "notes": "C1 task text recorded: layered content truth \"declared -> transport -> signature -> container -> structural -> resolved\", verdicts CONFIRMED/CORRECTED/REJECTED/UNVERIFIABLE, never collapsed [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32529]; stage C1 documented as \"**Closes:** F127, F128, F130, F122\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:240]. Specific C1 requirement recorded: \"confirmUpload must REJECT over-limit objects, not reconcile them (F128)\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32529]."
+ },
+ {
+  "id": "F129",
+  "title": "Correspondence-messages path bypasses /media/presign entirely",
+  "problemStatement": "\"F129 (P0, security) - The correspondence-messages path **bypasses `/media/presign` entirely**: the client supplies a raw `storageKey`, so there is no MIME check, no size check, and no proof the caller owns that key. Creates `Media` at `status=READY` with no HEAD verification.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 141
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P0 security"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 140
+    },
+    "note": "2026-08-18: \"| Correspondence | no | **yes** (mints from `storageKey`) | `MessageMedia` + legacy `MessageAttachment` | **yes** - in the existing tx | **YES - F143 root cause** | Wired. Duplication NOT fixed here |\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 138
+    },
+    "note": "\"| Institution Posts | ... | Wired. Legacy row-minting remains (F129) |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 141
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 140
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C4 (source wording: §12 stage \"C4 | Canonical ingestion convergence - Correspondence, Articles, uploads (F129)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:564]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Explicit boundary respected by the C2 chapter: legacy `/uploads/*` \"Mapped to the §14 **F129** multiple-Media-writers retirement lineage. Not a new finding. NOT rewritten - retirement is F129's call, not C2's\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:176]. Contract rule: \"Correspondence must consume the canonical lifecycle rather than gaining three checks around a raw storage key - the directive is explicit that patching the bypass in place is not acceptable\" [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:445], [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:535].",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "Founder directive recorded that patching the bypass in place is not acceptable; convergence onto the canonical lifecycle is required [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:445], [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:535].",
+  "aliases": [
+   "4x Media-row writers",
+   "multiple-Media-writers retirement lineage",
+   "correspondence storageKey bypass"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:140, aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:176)",
+  "notes": "Named as the cause behind F143: \"correspondence mints a duplicate Media row per `storageKey` (§14 F129 convergence)\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:84]."
+ },
+ {
+  "id": "F130",
+  "title": "Presign body is an unvalidated TS type; the validated PresignDto is dead code",
+  "problemStatement": "\"F130 (P1, security) - The presign body is a bare TS `type`, so the global `ValidationPipe` skips it entirely; no runtime validation on any presign field. A validated `PresignDto` class exists but is dead code.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:165]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 141
+    },
+    "note": "Issued under \"## NEW CONCRETE DEFECTS - BACKEND (F126-F137)\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   },
+   {
+    "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 511
+    },
+    "note": "\"| C1 Content Truth (`62b39bf`) | Implemented + pushed; F127/F128/F130 implemented-not-live-certified |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 165
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32529
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32574
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32576
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 511
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C1 (source wording: §12 stage \"C1 | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:561], [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:458]; commit `62b39bf`). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "C1 explicitly preserves existing governance: \"**Preserved unchanged:** the 28-type allowlist, unconditional SVG block, per-kind size/duration limits, sanitized filenames, presigned upload/download governance, SSRF protections, storage authorization\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384].",
+  "validationRequirement": "Recorded as implemented-not-live-certified; live certification still owed [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511]. Register discipline: \"Do not mark IMPLEMENTED as LIVE_CERTIFIED\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509].",
+  "founderDecisions": "Founder sequencing: broad F121-F137 implementation held until §12 freeze [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]; \"Existing F121-F138 must be reconciled against implementation as work progresses\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509].",
+  "aliases": [
+   "C1 Content Truth",
+   "content truth authority"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:511)",
+  "notes": "C1 task text recorded: layered content truth \"declared -> transport -> signature -> container -> structural -> resolved\", verdicts CONFIRMED/CORRECTED/REJECTED/UNVERIFIABLE, never collapsed [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32529]; stage C1 documented as \"**Closes:** F127, F128, F130, F122\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:240]. Implementation diff evidence shows the validated PresignDto being adopted with class-validator decorators, plus \"DOCUMENT was missing from the inline type despite MediaKind supporting it, so document uploads were validated against the IMAGE size bucket\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32574], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32576]."
+ },
+ {
+  "id": "F131",
+  "title": "Article cover media is unrelated, unstamped, and deleted by the cleanup reaper",
+  "problemStatement": "\"F131 (P0, data loss) - `Article.coverMediaId` is a bare string with no Prisma relation, no `READY` check, no MIME check and **no `attachedTo` stamp** - so `MediaCleanupService` treats a published article's cover as an orphan and deletes it.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214]. Later generalized: \"Generalized retention failure - exception-list and incomplete-authority problem\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:285].",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 141
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P0 data loss"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 368
+    },
+    "note": "\"F131 remains **OPEN**. Nothing here closes it; this investigation enlarged it.\""
+   },
+   {
+    "state": "OPEN, enlarged",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 79
+    },
+    "note": "\"| **F131** | whole chapter | OPEN, enlarged | §10 prerequisites of the investigation doc; still unexercised - production has zero article covers |\""
+   },
+   {
+    "state": "OPEN, enlarged",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 285
+    },
+    "note": "\"**OPEN, enlarged.** Still unexercised by real data: production has zero article covers\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 141
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 440
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 514
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 122
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C2 (source wording: §12 stage \"C2 | Reference index + verifier registry + reconciler + retention rewrite + backfill (F131)\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406]); protective work landed in the C2 chapter's sub-stage D-3 (`942d5a1`) [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:122]. AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Kept separate by ruling: \"Findings are kept **separate**. F131 is the systemic defect; F139-F142 are ...\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:74], [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:279]; prohibited: \"collapse F126/F138/F131/F139-F142\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:333].",
+  "validationRequirement": "Recorded blocker to exercise: \"still unexercised - production has zero article covers\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:79], [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:285]; prerequisites enumerated in §10 of the investigation doc [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:514].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "generalized retention failure",
+   "systemic retention defect",
+   "exception-list and incomplete-authority problem"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:79)",
+  "notes": "Related structural gap recorded: \"`ArticleRevision` begins snapshotting the cover (F131, plus the versioning gap)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:297]. D-3 commit note: \"F142/F131/F140 authorities covered\" - authorities covered, finding not closed [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:122]."
+ },
+ {
+  "id": "F132",
+  "title": "No EXIF stripping - GPS coordinates published to public R2 verbatim",
+  "problemStatement": "\"F132 (P1, privacy) - No EXIF stripping: GPS coordinates in uploaded photos are published to public R2 verbatim.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:168]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 141
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P1 privacy"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 566
+    },
+    "note": "Still carried as stage D1 scope in the freeze candidate: \"| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136) | C1, **C5** |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 168
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-D1 (source wording: §12 stage \"D1 | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136)\", gated on C1 and C5 [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:566], [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:462]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "Ruling 5 recorded as frozen in the contract: \"**Delivered derivatives strip privacy-sensitive metadata by default**, GPS especially ... Closes **F132**\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406], [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:353] - contract text, not implementation. An unresolved decision was also recorded: \"5. **EXIF policy (F132).** Strip everywhere, or strip from derivatives while preserving the original for the uploader?\" [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:502].",
+  "aliases": [
+   "EXIF stripping",
+   "privacy metadata"
+  ],
+  "contradictionFlags": [
+   "\"Closes F132\" appears in contract/ruling text describing the target architecture; no implementation or certification evidence for F132 appears in this dossier."
+  ],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:566, aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:353)",
+  "notes": "AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters."
+ },
+ {
+  "id": "F133",
+  "title": "Duration unit mismatch - Media.duration is ms, MessageAttachment.durationSec is seconds",
+  "problemStatement": "\"F133 (P1) - Duration unit mismatch: `Media.duration` is milliseconds (presign compares it to `*_DURATION_MS`), while `MessageAttachment.durationSec` is seconds - and `messages.service` copies one straight into the other.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:172]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 141
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P1 correctness"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32574
+    },
+    "note": "C1 implementation deliberately preserves and annotates the mismatch rather than closing it: \"/** Milliseconds. `MessageAttachment.durationSec` is SECONDS - the unit mismatch tracked as F133. Do not conflate them here. */\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 172
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32215
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32574
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32576
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED as a §12 lettered stage; recorded instead under §14 migration/retirement: \"| `MessageAttachment` (dual-written, different field names, **seconds vs ms**) | retire onto canonical Media after backfill (F133) |\" [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:432], [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:527]. AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Frozen retirement condition recorded: \"NEW CONTRACT IMPLEMENTED -> HISTORY MIGRATED / EQUIVALENCE PROVEN -> LIVE BEHAVIOR CERTIFIED -> COMPATIBILITY CONSUMERS REMOVED -> LEGACY REPRESENTATION RETIRED\", applying to `MessageAttachment` incl. the seconds-vs-ms mismatch [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406].",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "Unresolved decision recorded: \"7. `MessageAttachment` retirement timing - now, or after Conversation lands?\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384].",
+  "aliases": [
+   "seconds vs ms",
+   "duration unit mismatch"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (C1 implementation diff annotating F133, 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32574)",
+  "notes": "C1 touched the surrounding DTO but explicitly did not conflate the units, so no state promotion is evidenced."
+ },
+ {
+  "id": "F134",
+  "title": "Media.aiFlags is client-writable and read by nothing",
+  "problemStatement": "\"F134 (P2) - `Media.aiFlags` is client-writable through `PATCH /media/:id` (not worker-gated) and read by nothing.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:178]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 178
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P2"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 178
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32215
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "aiFlags client-writable"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "MODERATE",
+  "lastEvidencedUpdate": "2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:178)",
+  "notes": "Only three external mentions; no stage assignment recorded in any evidence in this dossier. AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters."
+ },
+ {
+  "id": "F135",
+  "title": "Link-preview images are hotlinked third-party URLs, leaking viewer IPs",
+  "problemStatement": "\"F135 (P2, privacy) - Link-preview images are hotlinked third-party URLs, never mirrored into R2, leaking viewer IP addresses to external hosts at render time.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:180]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 180
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P2 privacy"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 568
+    },
+    "note": "Carried as stage D3 scope: \"| **D3** | Broad format families + transcode-dependent formats (HEIC etc.) + external preview cache (F135) | D1 |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 180
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-D3 (source wording: §12 stage \"D3 | ... + external preview cache (F135)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:568]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Recorded scope guard: \"external previews keep the existing SSRF-safe fetcher **unchanged**; internal references keep delegating to owning domain authorities **unchanged** - the audit found both to be correct\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384].",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "Unresolved decision recorded: \"4. **OG image mirroring (F135).** Mirroring stops leaking viewer IPs to third parties but stores third-party imagery. Privacy gain vs storage/copyright\" [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:500], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384]. Contract text later states the cached-preview model \"Closes **F135** (viewer IP leakage to third parties) and the disappearing/hotlink-rejecting asset problem\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:487], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406] - contract text, not implementation.",
+  "aliases": [
+   "OG image mirroring",
+   "external preview cache",
+   "hotlinked preview images"
+  ],
+  "contradictionFlags": [
+   "\"Closes F135\" appears in frozen contract text describing the target model; no implementation or certification evidence appears in this dossier."
+  ],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:568, aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:487)",
+  "notes": "Rights/retention model for the cache recorded: cached \"as a transient rendering aid at preview scale, not an asset claim; purged when the preview is purged\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406]."
+ },
+ {
+  "id": "F136",
+  "title": "No thumbnail generation - thumbUrl is the full-resolution original",
+  "problemStatement": "\"F136 (P1) - No thumbnail generation. For images `thumbUrl` is set to the **full-resolution original** (a thumbnail in name only); for video/audio/document it is null - which is why video tiles have nothing to show.\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:175]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 175
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P1"
+   },
+   {
+    "state": "OPEN (defect CONFIRMED LIVE IN PRODUCTION)",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 83
+    },
+    "note": "\"Presign returns `url`, `originalUrl`, `displayUrl`, `thumbnailUrl` and `thumbUrl` as **the identical full-resolution object** - F136 confirmed live in production.\" Corroborated at [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32471], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32485], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32498], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32506]"
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 175
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-D1 (source wording: §12 stage \"D1 | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:566], [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:462]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "Defect confirmation was obtained live in production against presign output; the fix has no implementation or certification evidence in this dossier.",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "thumbnail in name only",
+   "no thumbnail generation",
+   "F136 confirmed live"
+  ],
+  "contradictionFlags": [
+   "\"F136 confirmed live in production\" confirms the DEFECT, not a fix - do not read the confirmation as a state promotion."
+  ],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:83, freeze candidate) / incidental confirmation recorded in the same session [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32506]",
+  "notes": "Recorded as an \"*Incidental confirmation*\" alongside the F138 probe [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32506]."
+ },
+ {
+  "id": "F137",
+  "title": "No moderation or scanning of uploaded media of any kind",
+  "problemStatement": "\"F137 (P2, governance) - No moderation or scanning of uploaded media of any kind: the moderation service is text-only; there is no AV scan, no N[SFW]...\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32214], [aura/aura_final/docs/2026-08-17-rich-content-system-audit.md:183]",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+   "line": 141
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+     "line": 183
+    },
+    "note": "Issued under \"NEW CONCRETE DEFECTS - BACKEND (F126-F137)\" as P2 governance"
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244
+    },
+    "note": "Checkpoint statement covering the whole band: \"I have not begun it, and I have not touched any of F121-F137\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32244]; founder sequencing: \"Do NOT begin broad implementation of F121-F137 yet\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32335]."
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-system-audit.md",
+    "line": 183
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32214
+   },
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32215
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "NOT_RECORDED",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "NOT_RECORDED",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "Unresolved decision recorded and explicitly reserved to the founder: \"8. **Media moderation (F137).** Currently zero scanning of uploaded media. Scope and timing is a governance decision, not an engineering one\" [aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:508], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32384].",
+  "aliases": [
+   "media moderation",
+   "no AV scan"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-17 (aura/aura_final/docs/2026-08-17-rich-content-s12-proposed-contract.md:508)",
+  "notes": "Band-level prerequisite question recorded: \"25. What security/privacy/moderation gaps from F121-F137 must be prerequisites to particular stages?\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32247]. AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters."
+ },
+ {
+  "id": "F138",
+  "title": "Storage-level public readability undercuts visibility enforcement",
+  "problemStatement": "\"F138 - storage-level public readability may undercut visibility enforcement. **There is one R2 bucket, and every object - PUBLIC, RESTRICTED and PRIVATE alike - is written to the same public prefix via `buildPublicUrl`.** 'Private' is enforced by *withholding the URL* from DTOs (`media-redaction.ts` ...)\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406]. Later: \"## 2. F138 - CONFIRMED SECURITY ARCHITECTURE DEFECT\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:68].",
+  "originalIssuanceEvidence": {
+   "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+   "line": 32406
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406
+    },
+    "note": "Issued as \"ARCHITECTURAL CONTRADICTION DISCOVERED\" during §12 contract work"
+   },
+   {
+    "state": "OPEN (CONFIRMED)",
+    "evidence": {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32506
+    },
+    "note": "\"(F138 OPEN->OPEN, now CONFIRMED with evidence rather than hypothesised; no state promotions)\" - register at 138 items"
+   },
+   {
+    "state": "OPEN (CONFIRMED)",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 68
+    },
+    "note": "\"## 2. F138 - CONFIRMED SECURITY ARCHITECTURE DEFECT\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 446
+    },
+    "note": "2026-08-18: \"**F138 - reinforced.** All 100 unindexed rows are `visibility = PUBLIC`, including all 12 ...\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 100
+    },
+    "note": "2026-08-18: \"Untouched and uncollapsed: **F126**, **F138**. No R2 ratchet performed.\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+    "line": 32406
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+    "line": 68
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+    "line": 18
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 446
+   }
+  ],
+  "implementationEvidenceRefs": [],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C5 (source wording: §12 stage \"C5 | **PROMOTED - SECURITY STAGE.** Canonical governed delivery for all visibility classes; retire raw storage URLs; remove bucket public read; F138 closure and F126 storage-level completion | C1, C3\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:565], edit recorded at [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32491]/[3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32492]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Sequencing invariant: \"9. **F138 resolved before raw storage URLs are retired.**\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:553], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32406]; \"Frozen storage invariants (F138)\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:18]. Founder instruction: \"F126 and F138 remain separately visible\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32509]; prohibited: \"the R2 public-read ratchet - collapse F126/F138/F131/F139-F142\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:333]; \"No R2 public-read ratchet performed\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:302].",
+  "validationRequirement": "Evidence was obtained by an explicit production probe: \"A harmless 70-byte 1x1 PNG was presigned and PUT as the review account, then **never confirmed, never attached, never promoted to READY**, and fetched with no credentials. No sensitive production content was accessed or reproduced\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32485].",
+  "founderDecisions": "Recorded: F138 blocked the §12 freeze and was \"resolved **empirically, not by** [assumption]\" as a freeze blocker; \"§12 is now READY FOR FOUNDER FREEZE with no outstanding decisions\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:593], [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32498].",
+  "aliases": [
+   "storage-level public readability",
+   "raw storage URLs",
+   "F138 probe",
+   "sole freeze blocker"
+  ],
+  "contradictionFlags": [
+   "Wording hazard: \"F138 was the sole freeze blocker and has been resolved **empirically, not by** ...\" [aura/aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md:593] refers to resolving the blocking QUESTION with evidence; the register line in the same session states \"F138 OPEN->OPEN ... no state promotions\" [3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:32506]. Do not read \"resolved\" as closure."
+  ],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:100, aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:446)",
+  "notes": "Two `f138-probe.png` Media rows in production are recorded as \"artifacts of our own F138 security [probe]\" [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:262]."
+ },
+ {
+  "id": "F139",
+  "title": "Identity media is orphaned at upload and reaper-deletable while in active identity use",
+  "problemStatement": "\"F139 - live identity media is marked orphaned at upload and is reaper-deletable.\" [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:415]; register wording: \"Identity media can become orphaned-at-upload and reaper-deletable despite active identity use\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:286].",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+   "line": 415
+  },
+  "currentState": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+  "stateHistory": [
+   {
+    "state": "NEW - OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 515
+    },
+    "note": "\"| F139 / F140 / F141 / F142 | **NEW - OPEN** |\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 286
+    },
+    "note": "\"**OPEN** - owned by D-1 (structure) + D-3 (protection)\""
+   },
+   {
+    "state": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 80
+    },
+    "note": "\"| **F139** | D-1 (structure) + D-3 (protection) | **STRUCTURALLY CLOSED, NOT LIVE-CERTIFIED** | Code + migration land; closure requires the migration applied and identity reconciled in production |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 415
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+    "line": 52
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+    "line": 286
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 32
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 124
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C2, sub-stage D-1 (source: the C2 retention-truth register - \"| **D-1** | Authoritative identity -> Media relationship, additive migration, transitional URL fields | **DONE** `4af75c5` - F139 structurally closed, migration not applied |\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:32]; \"| 2026-08-18 | `4af75c5` | **D-1** identity media authority. F139 structurally closed; URL matching confined to the write/discovery boundary |\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:124]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Kept separate from F131 by ruling: \"Findings are kept **separate**. F131 is the systemic defect; F139-F142 are [independently ...]\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:74], [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:279]; prohibited: \"collapse F126/F138/F131/F139-F142\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:333].",
+  "validationRequirement": "\"Closure requires the migration applied and identity reconciled in production\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:80].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "identity media orphaned-at-upload",
+   "D-1 identity media authority"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:80)",
+  "notes": "The investigation summary table (\"NEW - OPEN\") and the maintained C2 retention-truth register (\"STRUCTURALLY CLOSED, NOT LIVE-CERTIFIED\") are both dated 2026-08-18; the register is the maintained current-state artifact and records the later D-1 implementation checkpoint addressing F139 exactly, so it is taken as current per the freshness rule."
+ },
+ {
+  "id": "F140",
+  "title": "Legacy MessageAttachment media is invisible to the reaper and to C2",
+  "problemStatement": "\"F140 - legacy `MessageAttachment` media is invisible to both the reaper and C2.\" [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:423]; register wording: \"Legacy `MessageAttachment` media invisible to C2 and current cleanup authority\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:287].",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+   "line": 423
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "NEW - OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 515
+    },
+    "note": "\"| F139 / F140 / F141 / F142 | **NEW - OPEN** |\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 287
+    },
+    "note": "\"**OPEN** - D-3 where deterministic; §14 retirement path owns the rest\""
+   },
+   {
+    "state": "OPEN - protection landed",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 81
+    },
+    "note": "\"| **F140** | D-3 (deterministic cases) + §14 retirement | OPEN - protection landed | Representation retired per §14. See **F143**: these rows are not what they first appeared to be |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 423
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 442
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+    "line": 287
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 122
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C2, sub-stage D-3 for the deterministic cases (\"| 2026-08-18 | `942d5a1` | **D-3** protective correction. F142/F131/F140 authorities covered; **F143 discovered** and covered; stage 3 gained a reference check it never had; fail-safe added |\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:122]); the remainder is owned by the §14 retirement path. AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Gate recorded: \"| **§14 Migration/retirement** | `MessageAttachment` retirement now additionally gated on F140 coverage |\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:347]. Kept separate from F131 [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:74].",
+  "validationRequirement": "NOT_RECORDED",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "legacy MessageAttachment invisibility"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:81)",
+  "notes": "Cross-reference recorded to F143: \"these rows are not what they first appeared to be\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:81]."
+ },
+ {
+  "id": "F141",
+  "title": "Media referenced inside authored content lives outside structured retention truth",
+  "problemStatement": "\"F141 - media is referenced by URL inside authored content.\" [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:428]; register wording: \"Media referenced inside authored content can exist outside structured retention truth\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:288].",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+   "line": 428
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "NEW - OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 515
+    },
+    "note": "\"| F139 / F140 / F141 / F142 | **NEW - OPEN** |\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 288
+    },
+    "note": "\"**OPEN** - owned by D-5. Lineage note: distinct from but adjacent to **F121** ... F121 is a *delivery/representation* defect; F141 is the *retention* consequence. Not merged\""
+   },
+   {
+    "state": "OPEN - authority structural, completeness is not",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 82
+    },
+    "note": "\"The authority is now `ArticleBodyMedia`/`ArticleRevisionMedia`, but populating it still depends on a text scan because the composer emits no structured references. Closes when the forward path exists AND revision reconstruction fidelity is provable (D-5.1)\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 428
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 442
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+    "line": 288
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 33
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 142
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C2, sub-stages D-5 / D-5.1 (\"| **D-5** | Inline authored media in scope; structured reference truth, not regex as authority | **DONE** `dd025f5` - structured tables are the authority, parse is discovery. F141 stays OPEN |\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:33]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Explicitly not merged with F121 [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:288], [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:82]; kept separate from F131 [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:74]; prohibited: \"collapse F126/F138/F131/F139-F142\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:333]. Chapter scoping recorded: \"F141 belongs inside this chapter and must inform C2/C3 producer/reference design\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:169].",
+  "validationRequirement": "\"Closes when the forward path exists AND revision reconstruction fidelity is provable (D-5.1)\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:82].",
+  "founderDecisions": "Open scoping question recorded: \"| **D-5** | Are inline-content references (F141) in scope for retention at all? | Determines whether a content-derived type must be designed |\" [aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md:497].",
+  "aliases": [
+   "inline authored media references",
+   "content-derived references"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:82)",
+  "notes": "Related surfaced item: \"| **C-7** | `ArticleRevision` snapshots title and body but **not** the cover, and its `bodyMarkdown` is a second inline-reference surface. | Surfaced - belongs to D-5 / F141 |\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:178]."
+ },
+ {
+  "id": "F142",
+  "title": "Cleanup authority omits authoritative composition/reference structures",
+  "problemStatement": "\"Cleanup authority omits authoritative composition/reference structures\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:289] - the reaper's live-reference check did not consult structures that are authoritative for retention.",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+   "line": 289
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "NEW - OPEN",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 515
+    },
+    "note": "\"| F139 / F140 / F141 / F142 | **NEW - OPEN** |\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 289
+    },
+    "note": "\"**OPEN** - D-3. Not closable by adding conditions alone; coverage must be established\""
+   },
+   {
+    "state": "OPEN - conditions added",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 83
+    },
+    "note": "\"| **F142** | D-3 | OPEN - conditions added | **Coverage established** against production reality, not merely conditions added. Requires the post-deployment reconciliation |\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+    "line": 289
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+    "line": 148
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md",
+    "line": 515
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 30
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 122
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C2, sub-stage D-3 (\"| **D-3** | Protective correction to `hasLiveReference()` - cover proven-authoritative structures | **DONE** `942d5a1` - 4 authorities covered + fail-safe + stage 3. F142 **not** closed |\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:30]). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Kept separate from F131 [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:74]; prohibited: \"collapse F126/F138/F131/F139-F142\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:333].",
+  "validationRequirement": "\"**F142 is not closed merely because one function gained conditions.** Coverage [must be established]\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:148]; \"Requires the post-deployment reconciliation\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:83].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "hasLiveReference() coverage",
+   "cleanup authority omission"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:83)",
+  "notes": "AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters."
+ },
+ {
+  "id": "F143",
+  "title": "Storage-object aliasing - Media identity is not 1:1 with storage objects",
+  "problemStatement": "\"**NEW 2026-08-18.** Media identity is not 1:1 with storage objects - deleting an unreferenced row frees an object that referenced rows still address\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:290]; \"### F143 - storage-object aliasing (new, 2026-08-18)\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:86]. Detail: \"`deleteObject()` acts on a storage KEY while protection was [row-scoped]\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:292].",
+  "originalIssuanceEvidence": {
+   "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+   "line": 122
+  },
+  "currentState": "OPEN",
+  "stateHistory": [
+   {
+    "state": "OPEN (discovered)",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 122
+    },
+    "note": "\"| 2026-08-18 | `942d5a1` | **D-3** protective correction. F142/F131/F140 authorities covered; **F143 discovered** and covered; stage 3 gained a reference check it never had; fail-safe added |\""
+   },
+   {
+    "state": "OPEN - structurally prevented, cause not removed",
+    "evidence": {
+     "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+     "line": 84
+    },
+    "note": "\"Prevention: the level-2 storage gate. Cause: correspondence mints a duplicate Media row per `storageKey` (§14 F129 convergence). Closes when the cause is removed and reconciliation shows no new aliases\""
+   },
+   {
+    "state": "OPEN",
+    "evidence": {
+     "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 290
+    },
+    "note": "\"**OPEN** - protection landed in D-3. Production holds 10 duplicate/canonical pairs; the duplication itself needs a disposition under D-6\""
+   }
+  ],
+  "rootEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 86
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 157
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+    "line": 290
+   },
+   {
+    "source": "aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+    "line": 292
+   }
+  ],
+  "implementationEvidenceRefs": [
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 122
+   },
+   {
+    "source": "aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md",
+    "line": 126
+   }
+  ],
+  "certificationEvidenceRefs": [],
+  "reconstructionPhase": "NOT_RECORDED",
+  "implementationChapter": "RIC-C2, sub-stages D-3 and D-6 (\"| 2026-08-18 | *(this commit)* | **D-6** producer wiring + LEVEL-2 physical storage authority. 6 producers wired; F143 prevented structurally; `uploads/avatar` and `InstitutionUnit.logoUrl` classified |\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:126]); retention authority \"(level 2, F143)\" [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:193]. AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters.",
+  "wgRelationship": "NOT_RECORDED",
+  "protectedBoundaryImplications": "Root cause deliberately left to F129's convergence rather than patched here: \"### F143 root cause - identified, deliberately not fixed here\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:157]; \"| Correspondence | ... | **YES - F143 root cause** | Wired. Duplication NOT fixed here |\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:140].",
+  "validationRequirement": "\"Closes when the cause is removed and reconciliation shows no new aliases\" [aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:84]; production currently holds 10 duplicate/canonical pairs [aura/aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:290].",
+  "founderDecisions": "NOT_RECORDED",
+  "aliases": [
+   "storage-object aliasing",
+   "level-2 storage gate",
+   "duplicate/canonical pairs"
+  ],
+  "contradictionFlags": [],
+  "provenanceStrength": "STRONG",
+  "lastEvidencedUpdate": "2026-08-18 (aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:84, aura/aura-backend/docs/2026-08-18-c2-retention-truth-register.md:126)",
+  "notes": "Discovered during D-3 on 2026-08-18; the highest-numbered issued finding in the register (F143). AXIS NOTE: the stage letters in the Rich Content & Interaction §12 contract (C1-C5, D1-D3, E1-E2, F1) are RIC implementation stages, not the RC-C0..RC-C11 reconstruction chapters."
+ }
+]

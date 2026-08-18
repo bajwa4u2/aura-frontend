@@ -1,0 +1,2716 @@
+{
+  "batch": "findings-batch-2",
+  "stage": "stage0-semantic-reconstruction",
+  "generatedFor": "2026-08-18",
+  "idRange": "F049-F096",
+  "count": 48,
+  "primaryEvidenceSource": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+  "namespaceDeclaration": {
+    "RC-C0..RC-C11": "Original Reconstruction architecture chapters. NO finding in this batch carries an explicitly recorded RC-Cn membership; every reconstructionPhase is NOT_RECORDED.",
+    "RIC-C1, RIC-C2, ...": "Rich Content & Interaction implementation stages. NO finding in this batch carries an explicitly recorded RIC-Cn membership; every implementationChapter is NOT_RECORDED.",
+    "RC1..RC9": "DIFFERENT NAMESPACE - refresh-continuity shared-cause identifiers from docs/2026-08-17-refresh-continuity-shared-causes.md, used throughout F059-F070. These are NOT RC-C chapters and were not treated as such.",
+    "RC-A / RC-B": "DIFFERENT NAMESPACE - native accept/reject root-cause labels used in F071. Not RC-C chapters.",
+    "C4": "Where 'C4' appears in this corpus it denotes the Attention chapter owning F030-F035 (state value C4_OWNED_OPEN). No finding in F049-F096 is C4-owned.",
+    "c3_route_integrity_gate": "Names an existing test-gate pattern referenced while implementing F069; it is not a chapter assignment.",
+    "cAxisAmbiguous": "NONE. No bare 'C<n>' token in this batch's evidence required disambiguation between the RC and RIC axes."
+  },
+  "stateVocabularyMapping": {
+    "note": "The source register uses abbreviations. The expansions below are evidence-backed from the same corpus, not assumed.",
+    "LC": "LIVE_CERTIFIED (legend at line 31827: 'terminal (24 LIVE_CERTIFIED)')",
+    "INLC": "IMPLEMENTED_NOT_LIVE_CERTIFIED (expanded in prose at line 31798: 'All are IMPLEMENTED_NOT_LIVE_CERTIFIED')",
+    "PV": "PARTIALLY_VALIDATED (register-health checklist enumerates PARTIALLY_VALIDATED, line 31833)",
+    "OPEN": "OPEN",
+    "BLK": "BLOCKED (register-health checklist enumerates BLOCKED, line 31833)",
+    "RET": "EXPLICITLY_RETIRED (legend at line 31827: 'EXPLICITLY_RETIRED (2)')",
+    "terminalStatesPerFounder": "LIVE_CERTIFIED / SUPERSEDED_BY_FOUNDER_RULING / EXPLICITLY_RETIRED only; 'Implemented/deployed/test-green is not terminal.' (line 32223)"
+  },
+  "findings": [
+    {
+      "id": "F049",
+      "title": "One participant leaves, the others continue",
+      "problemStatement": "Obligation that a multi-party realtime session survives one participant's departure - the remaining participants stay connected rather than the session collapsing.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F049 | One leaves, others continue | LC | 4-party proven | -'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Evidence column: '4-party proven'; Remains column empty (em dash)"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "NOT_RECORDED",
+      "validationRequirement": "NOT_RECORDED - item is terminal in the register and therefore absent from the V1-V5 non-terminal validation matrix (line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "LC (register abbreviation for LIVE_CERTIFIED)",
+        "One leaves, others continue"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "C. Conversation realtime / calling (line 31827); marked terminal",
+      "impactClassInRegister": "NOT_RECORDED - terminal items are excluded from the P0/P1/P2 membership lists"
+    },
+    {
+      "id": "F050",
+      "title": "Thread counterpart canonical identity",
+      "problemStatement": "A conversation thread must render the counterpart's canonical name and avatar from the canonical Identity system rather than a per-surface ad-hoc resolution.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F050 | Thread counterpart canonical identity | LC | Canonical names/avatars render live in thread header | -'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Canonical names/avatars render live in thread header'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Recorded as a hierarchy member, not a duplicate: 'F050 is an instance of F053; F116 is the systemic statement of F050-F058 - hierarchy, not duplication; worth marking so F116 can't be closed by fixing one consumer' (line 31798). Register integrity note: 'F050 subset F053 subset F116 ... recorded as hierarchy, not compression' (line 31827).",
+      "validationRequirement": "NOT_RECORDED - item is terminal in the register and therefore absent from the V1-V5 non-terminal validation matrix (line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "LC",
+        "Thread counterpart canonical identity"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827); marked terminal",
+      "impactClassInRegister": "NOT_RECORDED"
+    },
+    {
+      "id": "F051",
+      "title": "Avatar missing in chat",
+      "problemStatement": "Avatars were absent from chat surfaces; the thread-header avatar is live but the Messages-list avatars, although deployed, have not been verified.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "CONFLICTING_CURRENT_STATE",
+      "currentStateCandidates": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F051 | Avatar missing in chat | PV | Thread-header avatar live; Messages-list avatars deployed (b401398) but unverified | Verify list'"
+          }
+        },
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Same report, later section: 'Previously called \"fixed & deployed\" that I cannot honestly call LIVE_CERTIFIED (9): ... Messages-list avatars (F051) ... All are IMPLEMENTED_NOT_LIVE_CERTIFIED.'"
+          }
+        }
+      ],
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F051 | Avatar missing in chat | PV | Thread-header avatar live; Messages-list avatars deployed (b401398) but unverified | Verify list'"
+          }
+        },
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Same report, later section: 'Previously called \"fixed & deployed\" that I cannot honestly call LIVE_CERTIFIED (9): ... Messages-list avatars (F051) ... All are IMPLEMENTED_NOT_LIVE_CERTIFIED.'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "commit b401398 - Messages-list avatars deployed"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Thread-header avatar live'; Messages-list avatars 'unverified'; Remains: 'Verify list'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "Shares the F058 R2 CORS blocker with WG010 (media/files gallery per conversation), line 31827",
+      "protectedBoundaryImplications": "Blocked visually by an external platform dependency: 'F058 (R2 CORS) -> blocks visual completion of F051, F052, F056, and WG010' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "PV (register abbreviation for PARTIALLY_VALIDATED)",
+        "Messages-list avatars",
+        "Avatar missing in chat"
+      ],
+      "contradictionFlags": [
+        "CONFLICTING_LABELS_WITHIN_ONE_REPORT: the register row states PV while the same report's 'previously called fixed & deployed' list states IMPLEMENTED_NOT_LIVE_CERTIFIED for F051. Both are line 31798. Not resolved at Stage 0."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F052",
+      "title": "Avatar in realtime surfaces",
+      "problemStatement": "Real participant photos must appear on realtime call surfaces. Audio tiles show real photos live; video tiles do not.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "PARTIALLY_VALIDATED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F052 | Avatar in realtime surfaces | PV | Audio-tile real photos live (Mrs Bajwa/M S Bajwa); video tiles not | Verify after F054 deploys'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Audio-tile real photos live (Mrs Bajwa/M S Bajwa)'; Remains: 'Verify after F054 deploys'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Listed in the 19-obligation REALTIME HUMAN CERTIFICATION BATCH; founder instruction at line 31804 says 'Do not run this batch now.'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Blocked visually by F058 R2 CORS (line 31827); sequenced behind F054 deployment (line 31798).",
+      "validationRequirement": "V2 - two simultaneous sessions required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "PV",
+        "Avatar in realtime surfaces",
+        "Audio/video tile avatars"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F053",
+      "title": "Canonical Identity consumed consistently across the product",
+      "problemStatement": "Founder finding as issued: 'THE CANONICAL IDENTITY SYSTEM IS NOT BEING CONSUMED CONSISTENTLY ACROSS THE PRODUCT.' Explicitly must not be reduced to 'video tiles say Participant'; must reconcile Conversation identity, avatars and call identity.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31771,
+        "note": "Founder instruction restating the finding verbatim and forbidding its reduction. This is a restatement, not necessarily the original issuance event."
+      },
+      "currentState": "PARTIALLY_VALIDATED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F053 | Canonical Identity consumed consistently | PV | Backend projection done; several consumers corrected; F057 proves drift existed | Full consumer audit'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'F057 proves drift existed' - identity drift shown to be authority-affecting, not cosmetic"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Backend projection done; several consumers corrected'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'F053/F116 -> no new ad-hoc identity resolver found while touching these surfaces; AuraAvatar is being consumed consistently.' Recorded as new evidence against the item, NOT as a state change (the checkpoint's STATE CHANGES list does not include F053)."
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "Named in the Rich Content system's F-register reconciliation as an item the new platform system 'likely interacts materially with' - 'F053/F116' (line 32054); the same passage forbids deleting or merging away these F-items.",
+      "protectedBoundaryImplications": "Parent of a hierarchy: 'F053 (canonical identity consumption) -> parent of F050, F051, F052, F054, F055, F056, F057' (line 31827); 'F116 is the systemic statement of F050-F058' (line 31798).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Founder instruction (line 31833): preserve the systemic obligation F053/F116; if another ad-hoc name/avatar/user-shape resolver is discovered while implementing, MARK IT - do not necessarily refactor immediately if outside safe scope; record it against F053/F116 or create F121+ if it is a distinct concrete defect. Also (line 31771): do not reduce this finding to 'video tiles say Participant'.",
+      "aliases": [
+        "PV",
+        "Canonical Identity consumed consistently",
+        "canonical identity consumption"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F054",
+      "title": "Video tiles say \"Participant\"",
+      "problemStatement": "Every remote video tile in a call rendered the placeholder label 'Participant' instead of the participant's canonical identity.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F054 | Video tiles say \"Participant\" | INLC | Root cause: renderer map keyed by socket id, resolver compared against userId -> never matched. Fixed f518024 - committed locally, not pushed/deployed | Deploy + prove'"
+          }
+        },
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 32009,
+            "note": "STATE CHANGES: 'F054: INLC (local only) -> INLC (now pushed/deploying)'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'renderer map keyed by socket id, resolver compared against userId -> never matched'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'remote tiles were resolved by socket-id-as-userId, which can never match, hence every tile reading \"Participant\"'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "commit f518024, initially local and unpushed"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'Also pushed the previously-local f518024 content (F054 video-tile identity)'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Deploy + prove'. Also listed among the 9 items 'previously called \"fixed & deployed\" that I cannot honestly call LIVE_CERTIFIED' (F054 - not even deployed)."
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "f518024 also carried the F055/F056 judgment call; founder ordered it held: 'f518024 remains LOCAL and UNPUSHED' (line 31804) until F055/F056 replaced the rejected approximation (closure criterion 11, line 31833).",
+      "validationRequirement": "V2 - two simultaneous sessions required (validation matrix, line 31827)",
+      "founderDecisions": "Held from shipping while bundled with F055/F056 (line 31804); released after the F055/F056 rulings were implemented (line 32009).",
+      "aliases": [
+        "INLC (register abbreviation for IMPLEMENTED_NOT_LIVE_CERTIFIED)",
+        "tile identity",
+        "Video tiles say Participant"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F055",
+      "title": "Group identity ordering",
+      "problemStatement": "The order in which group-conversation participants are presented had no product doctrine. The implementation adopted conversation entry history (joinedAt) plus a name tiebreak as a documented judgment call, flagged in code for founder ruling.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F055 | Group identity ordering | INLC | Order now from conversation entry history (joinedAt) + name tiebreak - judgment call, flagged in code for your ruling | Your ruling + deploy'"
+          }
+        },
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 32009,
+            "note": "STATE CHANGES: 'F055: INLC (rejected doctrine) -> INLC (correct model, backend + frontend pushed)'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Feasibility analysis: ConversationParty carries joinedAt, invitedByUserId and entryInvitationId; Conversation carries startedByUserId; founding parties have entryInvitationId = null, admitted parties do not - 'your semantics are achievable, with one real gap'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "commit f518024 (rejected approximation), local and unpushed"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31884,
+          "note": "Write of aura-backend/prisma/migrations/20260830000000_conversation_party_admission_chronology/migration.sql - 'IMMUTABLE ADMISSION CHRONOLOGY (founder ruling 2026-08-17, F055). Identity order must express how the human conversation formed. joinedAt is rewritten on re-entry and therefore cannot carry formation truth. Additive + guarded (migration divergence doctrine, 2026-08-15)'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31969,
+          "note": "Commit message draft: 'feat(continuity+identity): session-hint contract (F065/RC1) + F055/F056 to founder ruling'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'backend + frontend pushed'"
+        }
+      ],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Backend schema change; explicitly written as additive and guarded under the 2026-08-15 migration divergence doctrine, safe to replay against a database that already has the column (line 31884).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject generic joinedAt+alphabetical ordering; require immutable admission chronology (founding counterpart first)'. Open founder decision at line 31827 was: 'authorize the additive immutable-admission-order field, or accept approximate ordering? (I recommend the field.)' - resolved in favour of the field per the migration at line 31884. Closure criterion 11 (line 31833): 'F055/F056 replace the rejected local approximation before f518024 can ship.'",
+      "aliases": [
+        "INLC",
+        "Group identity ordering",
+        "party ordering",
+        "immutable admission chronology"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F056",
+      "title": "Group avatar treatment",
+      "problemStatement": "How a group conversation is represented visually. The implementation adopted the rule '1:1 -> counterpart avatar, group -> letter tile (never one member's photo)' as a documented judgment call awaiting founder ruling.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F056 | Group avatar treatment | INLC | Rule: 1:1 -> counterpart avatar, group -> letter tile (never one member's photo) | Your ruling + deploy'"
+          }
+        },
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 32009,
+            "note": "STATE CHANGES: 'F056: INLC (letter tile) -> INLC (composite architecture; cannot reach LIVE_CERTIFIED while F058 blocks image delivery)'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "Composite avatar in stable admission order with the current user excluded, plus '+N', with initials only for a participant who genuinely lacks an avatar; a custom conversation name changes the text but never erases the human visual identity; shared by the Messages list and the thread header - 'one authority, no per-surface dialect'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31969,
+          "note": "Commit message draft includes the composite-avatar description and the explicit note about F058"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31969,
+          "note": "'NOTE: real images still depend on the R2 CORS policy (F058, externally blocked), so F056 must not be called LIVE_CERTIFIED until uploads render reliably on web.'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "Shares the F058 blocker with WG010 (line 31827).",
+      "protectedBoundaryImplications": "Certification is externally gated by F058 (Cloudflare R2 CORS), lines 31969 and 31827.",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars now with initials fallback, or wait for F058?' - resolved as implement now, with certification withheld until F058 clears.",
+      "aliases": [
+        "INLC",
+        "Group avatar treatment",
+        "composite group avatar",
+        "letter tile (rejected)"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F057",
+      "title": "me['id'] vs me['user']['id'] - realtime identity resolution drift",
+      "problemStatement": "Realtime code resolved an empty user id because it read me['id'] where the canonical shape is me['user']['id']. This broke host detection (Leave vs End), role lookup and Go Live eligibility - identity drift that is authority-affecting, not cosmetic.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F057 | me[\"id\"] vs me[\"user\"][\"id\"] | INLC | Realtime resolved empty user id -> broke host detection (Leave vs End), role lookup, Go Live eligibility. Canonical resolver added (dfc9027) | Verify End-vs-Leave live'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Realtime resolved empty user id -> broke host detection (Leave vs End), role lookup, Go Live eligibility'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "commit dfc9027 - canonical resolver added"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Verify End-vs-Leave live'. Listed among the 9 items 'previously called fixed & deployed that I cannot honestly call LIVE_CERTIFIED ... identity resolver (F057). All are IMPLEMENTED_NOT_LIVE_CERTIFIED.'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Cited as the proof that identity drift crosses into authority: 'F057 proved the drift is authority-affecting, not cosmetic' (line 31827); founder instruction repeats it as the reason to treat Identity consumption seriously (line 31833).",
+      "validationRequirement": "V2 - two simultaneous sessions required (validation matrix, line 31827)",
+      "founderDecisions": "Cited by the founder (line 31833) as the demonstration that identity drift can break authority, not merely presentation.",
+      "aliases": [
+        "INLC",
+        "identity resolver",
+        "me['id'] vs me['user']['id']"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F058",
+      "title": "R2 / uploads CORS blocks avatars",
+      "problemStatement": "The Cloudflare R2 uploads bucket has no CORS policy permitting browser reads, so avatar and other uploaded images do not render on web. PutBucketCors returns AccessDenied with the backend token, so the fix requires a founder dashboard action. A later audit found the image path has no CORS handling at all, so a CORS rejection is indistinguishable from a 404 or an expired signature.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "BLOCKED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "BLOCKED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F058 | R2/uploads CORS blocks avatars | BLK | PutBucketCors AccessDenied with backend token; JSON handed to you | Your dashboard action'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'PutBucketCors AccessDenied with backend token'"
+        },
+        {
+          "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+          "line": 187,
+          "note": "Section heading '## CORS (F058 interaction)'"
+        },
+        {
+          "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+          "line": 192,
+          "note": "'There is no CORS handling in the image path at all - a CORS rejection is indistinguishable from a 404 or an expired signature; both render the same broken tile. The only CORS-aware code is MediaSaveService, which degrades a blocked byte-fetch to \"opened externally\". This means F058 (R2 CORS) currently manifests as an untruthful error state, not just a missing image.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "'F058 (R2 CORS) -> blocks visual completion of F051, F052, F056, and WG010' (line 31827).",
+      "protectedBoundaryImplications": "Described as a platform dependency, not an identity item: 'It is a platform dependency wearing an avatar costume' and it 'degrades Discover, Posts, Articles, Institutions equally' (line 31827). Remediation requires founder access to the Cloudflare dashboard.",
+      "validationRequirement": "V5 - external party required (validation matrix, line 31827) - specifically 'F058 (Cloudflare)'",
+      "founderDecisions": "OPEN founder action, listed as founder decision 4 (line 31827): 'F058: apply the Cloudflare R2 CORS JSON - it gates four identity items and every avatar surface.' JSON was handed to the founder (line 31798). No evidence in this dossier that it was applied.",
+      "aliases": [
+        "BLK (register abbreviation for BLOCKED)",
+        "R2/uploads CORS blocks avatars",
+        "R2 CORS"
+      ],
+      "contradictionFlags": [
+        "NOT_A_STATE_CHANGE: two Rich Content governance drafts state that a proposed contract 'closes F058's real damage' (2026-08-17-rich-content-s12-freeze-candidate.md:447 and 2026-08-17-rich-content-s12-proposed-contract.md:385). These describe distinguishing a CORS rejection from a 404 and an expired signature, i.e. removing the untruthful error state; they do not evidence that the R2 CORS policy itself was applied. F058 is therefore left BLOCKED."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "F. Identity / consumption (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F059",
+      "title": "Conversation destination lost on refresh",
+      "problemStatement": "Refreshing the browser inside a Conversation loses the destination - the user is not returned to where they were. Root causes RC1/RC2/RC3 in the refresh-continuity shared-cause audit.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31771,
+        "note": "Founder instruction enumerating the continuity surfaces and forbidding reduction to 'mid-call refresh needs manual rejoin'; 'Tell us exactly what is implemented, audited, proven and still open across F059-F070 and F113.'"
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F059 | Conversation destination lost on refresh | OPEN | RC1/RC2/RC3 | Implementation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Full audit exists (docs/2026-08-17-refresh-continuity-shared-causes.md, RC1-RC9 with file:line). Verified today: RC1 still unfixed - only session_bootstrap.dart writes the session hint; institution sign-in, guest auth and dio re-auth still don't.'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'F059/F065 -> the router's destination preservation is actually sound (_normalizeRedirectDest(currentLocation) used consistently); the destination was never the broken part - the session was. RC1 was correctly identified as the keystone.'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31977,
+          "note": "'Both repos pushed. Continuing Wave 1A - the router half (F059/F066/F067/F068/F069)'"
+        }
+      ],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "Named in the Rich Content system's F-register reconciliation as materially interacting: 'F059/F063/F070' (line 32054). Also authorized in the Quiet High-Impact Wave 1a alongside WG items (line 32223).",
+      "protectedBoundaryImplications": "Gated by F065/RC1: 'F065 (RC1 auth hint) -> gates F059, F061, F062, F063, F064, F103, F104' (line 31827). Recorded as a component of the shared Refresh Continuity contract: 'F059-F070 are manifestations/components of the shared Refresh Continuity contract. Do not collapse them to F060.' (line 31771); 'F059-F070 subset F117 recorded as hierarchy, not compression' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Founder instruction (line 31771): do not reduce the continuity finding to 'mid-call refresh needs manual rejoin'; do not collapse F059-F070 to F060. Authorized in Wave 1A of the Quiet High-Impact Wave (line 32223).",
+      "aliases": [
+        "Conversation destination lost on refresh",
+        "RC1/RC2/RC3"
+      ],
+      "contradictionFlags": [
+        "POSSIBLE_UNRECORDED_TRANSITION: the session summary lists 'Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069)' (line 32223) and an earlier checkpoint says 'then F067/F059 verification' (line 32009), implying work had begun. No explicit state transition for F059 appears in either checkpoint's STATE CHANGES list (lines 32009, 32165), so OPEN is retained.",
+        "NAMESPACE NOTE: 'RC1/RC2/RC3' here are refresh-continuity shared-cause identifiers from docs/2026-08-17-refresh-continuity-shared-causes.md. They are NOT the RC-C0..RC-C11 reconstruction-chapter axis."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F060",
+      "title": "Mid-call refresh gives no automatic re-participation",
+      "problemStatement": "Refreshing during a call preserves destination, roster and duration, but the user must manually rejoin - participation is not automatically re-attached.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "PARTIALLY_VALIDATED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F060 | Mid-call refresh no auto-participation | PV | Destination/roster/duration survive (proven live); participation manual | Auto-reattach'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Destination/roster/duration survive (proven live)'; Remains: 'Auto-reattach'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Listed in the 19-obligation REALTIME HUMAN CERTIFICATION BATCH, not yet run"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Explicitly protected from absorbing its siblings: 'F059-F070 are manifestations/components of the shared Refresh Continuity contract. Do not collapse them to F060.' (line 31771). The single-line summary 'mid-call refresh needs manual rejoin' is recorded as the compression that buried twelve obligations (line 31798).",
+      "validationRequirement": "V2 - two simultaneous sessions required (validation matrix, line 31827)",
+      "founderDecisions": "Founder instruction (line 31771): do not collapse F059-F070 into F060.",
+      "aliases": [
+        "PV",
+        "Mid-call refresh no auto-participation"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F061",
+      "title": "Personal profile edit continuity",
+      "problemStatement": "Editing a personal profile does not survive a refresh. Root causes RC4/RC8.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31771,
+        "note": "Founder instruction enumerating 'personal profile editing' among the continuity surfaces; register row at line 31798"
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F061 | Personal profile edit continuity | OPEN | RC4/RC8 | Implementation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Root cause column: RC4/RC8 (refresh-continuity shared-cause audit)"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Gated by F065/RC1 (line 31827); component of the shared Refresh Continuity contract, must not be collapsed (line 31771).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Authorized in the Quiet High-Impact Wave 1A membership (line 32223).",
+      "aliases": [
+        "Personal profile edit continuity",
+        "RC4/RC8"
+      ],
+      "contradictionFlags": [
+        "NAMESPACE NOTE: RC4/RC8 are refresh-continuity shared-cause ids, not RC-C reconstruction chapters.",
+        "STILL LISTED AS REMAINING: 'Wave 1A remaining: F059, F061, F062, F063, F067, F070' (line 32223)."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F062",
+      "title": "Institution profile edit continuity",
+      "problemStatement": "Editing an institution profile does not survive a refresh. Root causes RC2/RC4.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31771,
+        "note": "Founder instruction enumerating 'Institution profile editing' among the continuity surfaces; register row at line 31798"
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F062 | Institution profile edit continuity | OPEN | RC2/RC4 | Implementation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Root cause column: RC2/RC4"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Gated by F065/RC1 (line 31827); institution-space routes are also the subject of F066 (RC2) (line 31798).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Authorized in the Quiet High-Impact Wave 1A membership (line 32223).",
+      "aliases": [
+        "Institution profile edit continuity",
+        "RC2/RC4"
+      ],
+      "contradictionFlags": [
+        "NAMESPACE NOTE: RC2/RC4 are refresh-continuity shared-cause ids, not RC-C reconstruction chapters.",
+        "STILL LISTED AS REMAINING: 'Wave 1A remaining: F059, F061, F062, F063, F067, F070' (line 32223)."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F063",
+      "title": "Compose systems continuity",
+      "problemStatement": "Compose systems lose in-progress composition across refresh/navigation. Root causes RC7/RC8.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31771,
+        "note": "Founder instruction enumerating 'compose systems' among the continuity surfaces; register row at line 31798"
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F063 | Compose systems continuity | OPEN | RC7/RC8 | Implementation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Root cause column: RC7/RC8"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "WG006 (per-conversation draft persistence) is AUTHORIZED NOW and the founder instructed: 'Coordinate this with F063/F070. Do not create another unrelated persistence mechanism.' (line 31833). WG register row for WG006: 'Composer text dies on navigation; ties to RC7/F063' (line 31827). Also named in the Rich Content section 12 reconciliation as materially interacting: 'F059/F063/F070' (line 32054).",
+      "protectedBoundaryImplications": "Gated by F065/RC1 (line 31827); component of the shared Refresh Continuity contract (line 31771).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Authorized in Wave 1A (line 32223); WG006 must be coordinated with F063/F070 rather than duplicating persistence (line 31833).",
+      "aliases": [
+        "Compose systems continuity",
+        "RC7/RC8"
+      ],
+      "contradictionFlags": [
+        "NAMESPACE NOTE: RC7/RC8 are refresh-continuity shared-cause ids, not RC-C reconstruction chapters.",
+        "STILL LISTED AS REMAINING: 'Wave 1A remaining: F059, F061, F062, F063, F067, F070' (line 32223)."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F064",
+      "title": "Meetings refresh continuity",
+      "problemStatement": "Meetings do not preserve continuity across a refresh. Recorded as sharing the continuity root causes.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31771,
+        "note": "Founder instruction enumerating 'Meetings' among the continuity surfaces and asking for F059-F070 and F113 to be reconciled; register row at line 31798"
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F064 | Meetings refresh continuity | OPEN | shared | (= F113)'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Root cause column: 'shared'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Meetings is a protected domain: 'No Meetings file was modified in any commit this session (F114 remains LIVE_CERTIFIED)' and the Meetings batch 'runs only after Conversation's shared capabilities are certified, with explicit Meetings regression evidence' (line 31827). Gated by F065/RC1 (line 31827).",
+      "validationRequirement": "V2 - two simultaneous sessions required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED for F064 itself; the duplication with F113 was raised as an agent challenge, not a founder ruling.",
+      "aliases": [
+        "Meetings refresh continuity",
+        "(= F113)"
+      ],
+      "contradictionFlags": [
+        "DUPLICATION RECORDED, NOT RESOLVED: 'F113 duplicates F064 - same obligation. Keep F064, cross-reference.' (line 31798) and the F113 register row 'Duplicate of F064 - keep one row, cross-referenced' (line 31798). The register integrity note records the disposition actually taken: 'F064/F113 remain separate with an explicit duplication note' (line 31827). Stage 0 does not merge."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P2 (line 31827)"
+    },
+    {
+      "id": "F065",
+      "title": "UNKNOWN/RESTORING authentication treated as unauthenticated",
+      "problemStatement": "The device-local session hint gates the cold-load /auth/refresh that restores a session after a browser refresh, but it was written by only two call sites (password login and code verification) while sessions are in fact established by many paths (institution sign-in, guest/booker auth, bootstrap refresh, silent re-auth). A session in an UNKNOWN/RESTORING state was therefore treated as unauthenticated. Recorded as RC1, the highest-leverage root cause of the refresh-continuity contract.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F065 | UNKNOWN/RESTORING treated as unauthenticated | OPEN | RC1 - highest leverage | Implementation'"
+          }
+        },
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 32009,
+            "note": "STATE CHANGES: 'F065: OPEN -> IMPLEMENTED_NOT_LIVE_CERTIFIED (structural fix pushed; needs live refresh proof)'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Verified today: RC1 still unfixed - only session_bootstrap.dart writes the session hint; institution sign-in, guest auth and dio re-auth still don't.'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31861,
+          "note": "lib/core/auth/session_hint.dart header comment: 'SESSION HINT - the device-local record that \"a real member session has existed in this browser\", which gates the cold-load /auth/refresh attempt in sessionBootstrapProvider. RC1 / F065 (founder-frozen doctrine: AUTHENTICATION UNKNOWN/RESTORING IS NOT UNAUTHENTICATED).'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'the destination was never the broken part - the session was. RC1 was correctly identified as the keystone.'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31861,
+          "note": "Creation of lib/core/auth/session_hint.dart"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31936,
+          "note": "Follow-up edit; kSessionHintPrefKey = 'aura_session_hint'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31969,
+          "note": "Commit message: 'feat(continuity+identity): session-hint contract (F065/RC1) + F055/F056 to founder ruling' - WAVE 1A - F065 / RC1, the keystone of the refresh-continuity contract"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31977,
+          "note": "'Both repos pushed.'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'needs live refresh proof'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32223,
+          "note": "'Wave 1A remaining: ... (+ live proof for F065/F069)'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Keystone dependency: 'F065 (RC1 auth hint) -> gates F059, F061, F062, F063, F064, F103, F104 - every \"return me where I was\" obligation, including the founder-frozen Live auth-return. Fixing RC1 first makes seven other items cheap.' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Founder-frozen doctrine cited in the implementation: 'AUTHENTICATION UNKNOWN/RESTORING IS NOT UNAUTHENTICATED' (line 31861). Authorized as the keystone of Wave 1a (line 31827).",
+      "aliases": [
+        "RC1",
+        "auth hint",
+        "session hint",
+        "UNKNOWN/RESTORING treated as unauthenticated"
+      ],
+      "contradictionFlags": [
+        "NAMESPACE NOTE: 'RC1' is a refresh-continuity shared-cause id, not RC-C1."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F066",
+      "title": "Institution routes redirect while loading",
+      "problemStatement": "Institution routes redirect the user away while still loading. Root cause RC2.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F066 | Institution routes redirect while loading | OPEN | RC2 | Implementation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Root cause column: RC2"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31977,
+          "note": "'Continuing Wave 1A - the router half (F059/F066/F067/F068/F069)'"
+        }
+      ],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Router-boundary change; the Wave 1a plan notes 'regression risk concentrated in the router, mitigated by the existing route ratchet' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Authorized in Wave 1a (line 31827).",
+      "aliases": [
+        "Institution routes redirect while loading",
+        "RC2"
+      ],
+      "contradictionFlags": [
+        "POSSIBLE_UNRECORDED_TRANSITION: F066 is absent from the later 'Wave 1A remaining: F059, F061, F062, F063, F067, F070' list (line 32223), which may imply it was completed, but no explicit state transition for F066 appears in either checkpoint's STATE CHANGES list (lines 32009, 32165). OPEN is retained on explicit evidence only."
+      ],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F067",
+      "title": "Destination-destroying exits",
+      "problemStatement": "Eight call sites exit in a way that destroys the user's destination. Root cause RC4 (8 sites).",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F067 | Destination-destroying exits | OPEN | RC4 (8 sites) | Implementation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Root cause column: 'RC4 (8 sites)'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31977,
+          "note": "'Continuing Wave 1A - the router half (F059/F066/F067/F068/F069)'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'Wave 1A continuation: F069 (route classification), then F067/F059 verification, then F061/F062/F063.'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Router boundary; shares the Wave 1a route-ratchet mitigation (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Authorized in Wave 1a (line 31827).",
+      "aliases": [
+        "Destination-destroying exits",
+        "RC4"
+      ],
+      "contradictionFlags": [
+        "STILL LISTED AS REMAINING: 'Wave 1A remaining: F059, F061, F062, F063, F067, F070' and 'Wave 1A remaining items (F059/F061/F062/F063/F067/F070 verification)' both keep F067 outstanding (line 32223); no STATE CHANGES entry exists for it."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F068",
+      "title": "/_boot permanent spinner",
+      "problemStatement": "The /_boot route can leave the user on a permanent spinner. Root cause RC5.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F068 | `/_boot` permanent spinner | OPEN | RC5 | Implementation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Root cause column: RC5"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31977,
+          "note": "'Continuing Wave 1A - the router half (F059/F066/F067/F068/F069)'"
+        }
+      ],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Boot/router boundary; part of the Wave 1a continuity architecture (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Authorized in Wave 1a (line 31827).",
+      "aliases": [
+        "/_boot permanent spinner",
+        "RC5"
+      ],
+      "contradictionFlags": [
+        "POSSIBLE_UNRECORDED_TRANSITION: F068 is absent from the later 'Wave 1A remaining' list (line 32223) but has no explicit state transition in either checkpoint's STATE CHANGES list (lines 32009, 32165). OPEN retained."
+      ],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F069",
+      "title": "Unclassified routes (route classification fails open)",
+      "problemStatement": "lib/app/route_classification.dart is a hand-maintained fail-OPEN allowlist; roughly 16 (later enumerated as 24) routes appear nowhere in it, including /admin, /articles/* and /realtime/*. requiresAuth('/articles/write') therefore returns false, so a signed-out visitor - or one whose session did not restore - is not redirected to login-with-destination; the screen simply renders unauthenticated. Root cause RC6.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F069 | Unclassified routes | OPEN | RC6 (~16 routes) | Implementation'"
+          }
+        },
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 32165,
+            "note": "STATE CHANGES: 'F069: OPEN -> IMPLEMENTED_NOT_LIVE_CERTIFIED (contract + ratchet pushed; needs a live signed-o[ut probe])'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'lib/app/route_classification.dart is a hand-maintained fail-OPEN allowlist. Verified: /articles/* and /realtime/* appear nowhere in it.'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32165,
+          "note": "'24 concrete unclassified routes enumerated, /admin included; contract + ratchet now prevent recurrence.'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32072,
+          "note": "Frozen-invariant tests: 'F069 - frozen invariants unknown paths fail CLOSED, never public'; 'article READING is public but AUTHORING is member (the F069 evidence case)'; 'guest-reachable meeting entry is its OWN class, not PUBLIC'; 'Meetings guest behavior is preserved: no guest-reachable meeting path is member-gated'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32186,
+          "note": "Commit cdbae96 pushed: 'fix(routing): Spaces are PUBLIC discovery destinations (F069 founder ruling)', 2 files changed, 4bafb1a..cdbae96 main -> main, flutter analyze clean, timestamp 2026-08-17T21:53:05Z"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32165,
+          "note": "'needs a live signed-out' probe"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32223,
+          "note": "'F069 needs a live signed-out probe'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Meetings guest entry is an explicitly protected boundary: the frozen invariants assert 'guest-reachable meeting entry is its OWN class, not PUBLIC' and 'Meetings guest behavior is preserved: no guest-reachable meeting path is member-gated' (line 32072). The checkpoint also records 'F112/F114 (Meetings) -> new evidence that shared-boundary work genuinely threatens Meetings guest entry; the disjointness rule and gate now protect it' (line 32165). The ratchet extends the existing c3_route_integrity_gate pattern (line 32009).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "TWO RULINGS. (1) Route classification contract (line 32223): 'explicit route classification contract - UNKNOWN IS NOT PUBLIC; classes PUBLIC/MEMBER/AUTH_ACTION/GUEST_REACHABLE'. This resolved the open decision posed at line 32009 ('should guest-reachable realtime/meeting routes be declared as an explicit named exception class (isGuestReachablePath) ... or remain implicitly unclassified?'). (2) Follow-up SPACES ruling (line 32232): 'F069 FOLLOW-UP FOUNDER RULING - SPACES Proceed. /spaces and /spaces/:slug are PUBLIC discovery/read destinations. This follows Aura's frozen Discover/public-participation model'.",
+      "aliases": [
+        "Unclassified routes",
+        "RC6",
+        "route classification fail-open",
+        "UNKNOWN IS NOT PUBLIC"
+      ],
+      "contradictionFlags": [
+        "EVIDENCE DRIFT IN COUNT: the register root-cause column says 'RC6 (~16 routes)' (line 31798) while the later checkpoint says '24 concrete unclassified routes enumerated' (line 32165). Recorded, not reconciled.",
+        "NAMESPACE NOTE: 'c3_route_integrity_gate' (line 32009) names an existing test-gate pattern on the RC-C3 axis; it is not a chapter assignment for F069. No RC-Cn or RIC-Cn membership is recorded for this finding."
+      ],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F070",
+      "title": "Draft identity absent from URL",
+      "problemStatement": "A draft has no identity in the URL, so a refresh cannot restore the specific draft being composed. Root cause RC7. Recorded as one of two independent root causes of 'article draft lost on refresh' (F027).",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31771,
+        "note": "Founder instruction enumerating 'draft identity' among the continuity surfaces; register row at line 31798"
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F070 | Draft identity absent from URL | OPEN | RC7 | Implementation'"
+          }
+        },
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 32165,
+            "note": "'F027 -> confirmed second root cause (/articles/write unclassified) now fixed; the durable-draft-identity half (RC7/F070) remains open, so F027 stays OPEN.' - explicit re-affirmation of OPEN"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Root cause column: RC7"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 32009,
+          "note": "'F027 -> that same gap is a second, independent root cause of \"article draft lost on refresh\", distinct from RC7 (no draft id in the URL). Both must be fixed for F027 to be honest.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "WG006 (per-conversation draft persistence, AUTHORIZED NOW) must be coordinated with F063/F070 - 'Do not create another unrelated persistence mechanism' (line 31833). Named in the Rich Content section 12 reconciliation as materially interacting: 'F059/F063/F070' (line 32054).",
+      "protectedBoundaryImplications": "Gated by F065/RC1 (line 31827); blocks honest closure of F027 (line 32165).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "Authorized in Wave 1a (line 31827); WG006 coordination instruction (line 31833).",
+      "aliases": [
+        "Draft identity absent from URL",
+        "RC7",
+        "durable-draft-identity half"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "G. Refresh / destination / continuity (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F071",
+      "title": "Native accept/reject defect",
+      "problemStatement": "Accept/reject of an incoming call is defective on the released native binaries. The shared code was fixed, but the released binaries predate both fixes, so only a founder-triggered store release can clear it.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "BLOCKED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "BLOCKED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F071 | Native accept/reject defect | BLK | Shared code fixed (509230a RC-A, dfc9027 RC-B); released binaries predate both | Founder-triggered store release'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'F045 and F071 do not share a root cause. F045 = the overlay `_joining` latch (shared code, web-observed). F071 = disposed shared singletons (RC-A). Native binaries predate both.'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "commits 509230a (RC-A) and dfc9027 (RC-B)"
+        }
+      ],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Release/store boundary: clearance requires a founder-triggered store release (line 31798).",
+      "validationRequirement": "V5 - external party required (validation matrix, line 31827) - specifically 'F071 (store release)'",
+      "founderDecisions": "OPEN founder action: 'Founder-triggered store release' (line 31798).",
+      "aliases": [
+        "BLK",
+        "Native accept/reject defect",
+        "RC-A",
+        "RC-B"
+      ],
+      "contradictionFlags": [
+        "EXPLICIT ANTI-MERGE CHALLENGE: F045 and F071 were challenged as NOT sharing a root cause (line 31798), against an earlier founder framing (line 31771) that contemplated 'F045 web accept freeze and F071 native accept freeze' being 'the same shared-code defect with different deployment/certification states'. Both readings preserved; not resolved at Stage 0.",
+        "NAMESPACE NOTE: 'RC-A' / 'RC-B' here are native-defect root-cause labels, not RC-C reconstruction chapters."
+      ],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "K. Native (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F072",
+      "title": "Native ring shows individual, not group",
+      "problemStatement": "On native, an incoming group call rings as if it were an individual call. Recorded from founder observation.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus. Evidence column records the origin as 'Founder observation'."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F072 | Native ring shows individual not group | OPEN | Founder observation | Implementation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Evidence column: 'Founder observation'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "NOT_RECORDED",
+      "validationRequirement": "V3 - human/device judgment required (validation matrix, line 31827) - F072 is the sole member of V3",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "Native ring shows individual not group"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "K. Native (line 31827)",
+      "impactClassInRegister": "P2 (line 31827)"
+    },
+    {
+      "id": "F073",
+      "title": "Late or missing fourth video frame",
+      "problemStatement": "In a four-party call the fourth video frame arrives late or not at all. It converged live, but the root cause is unknown. Originally categorised as a native defect; corrected - it was observed in the browser too.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "PARTIALLY_VALIDATED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F073 | Late/missing 4th video frame | PV | Converged live; correction: observed in your browser too, not native-only | Root cause unknown'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains column: 'Root cause unknown'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Converged live'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Included in the deferred REALTIME HUMAN CERTIFICATION BATCH ('plus F073 and the F074/F081 surfaces')"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "NOT_RECORDED",
+      "validationRequirement": "V4 - three or more participants required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "PV",
+        "Late/missing 4th video frame"
+      ],
+      "contradictionFlags": [
+        "CATEGORISATION CHALLENGED, NOT MOVED: 'F073 is miscategorised as native - the late fourth frame was observed in your browser too' (line 31798), yet the domain census still lists F073 under 'K. Native (3) - F071, F072, F073' (line 31827). Stage 0 does not reassign domains."
+      ],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "K. Native (line 31827) - challenged as miscategorised",
+      "impactClassInRegister": "P2 (line 31827)"
+    },
+    {
+      "id": "F074",
+      "title": "Go Live looked like an ordinary call",
+      "problemStatement": "Going Live was visually indistinguishable from an ordinary call. A LIVE chip, a separate viewer count and a dock control were deployed, but the broadcaster stage is still call chrome.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "PARTIALLY_VALIDATED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F074 | Go Live looked like an ordinary call | PV | LIVE chip + separate viewer count + dock control deployed | Broadcaster stage still call chrome'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'LIVE chip + separate viewer count + dock control deployed'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Included in the deferred REALTIME HUMAN CERTIFICATION BATCH as one of 'the F074/F081 surfaces'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "PV",
+        "Go Live looked like an ordinary call"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F075",
+      "title": "Live was a parallel-broadcast workaround",
+      "problemStatement": "Live had been built as a parallel broadcast alongside the call rather than as a state escalation of the same session. Corrected to state escalation.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F075 | Live was a parallel-broadcast workaround | INLC | Corrected to state escalation (88179ee/2c0fbe7) | Human lifecycle proof'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "commits 88179ee and 2c0fbe7"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Human lifecycle proof'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223, founder closure criterion 14 at line 31833).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "Live was a parallel-broadcast workaround",
+        "state escalation"
+      ],
+      "contradictionFlags": [
+        "INVALIDATES EARLIER PROOF: because the model changed, prior live proofs obtained under the old model no longer certify downstream items - see F083 ('earlier live proof was the *old* model') and F084 ('Proven live under old model ... Proof under new model'), line 31798."
+      ],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F076",
+      "title": "Header lobby exposed standalone Live origination",
+      "problemStatement": "The header lobby exposed a way to originate a standalone Live session, contradicting the escalation-only model. The behaviour was removed by founder ruling and the backend now fences it.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "EXPLICITLY_RETIRED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "EXPLICITLY_RETIRED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F076 | Header lobby exposed standalone origination | RET | Behavior removed by ruling; backend fence live-verified: STANDALONE create -> 400 | Lobby-as-directory UI unobserved'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Behavior removed by ruling'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'backend fence live-verified: STANDALONE create -> 400'; Remains: 'Lobby-as-directory UI unobserved'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "NOT_RECORDED",
+      "validationRequirement": "NOT_RECORDED - item is terminal in the register and therefore absent from the V1-V5 non-terminal validation matrix (line 31827)",
+      "founderDecisions": "Retired by founder ruling: 'Behavior removed by ruling' (line 31798).",
+      "aliases": [
+        "RET (register abbreviation)",
+        "EXPLICITLY_RETIRED (legend expansion, line 31827)",
+        "Header lobby exposed standalone origination"
+      ],
+      "contradictionFlags": [
+        "RESIDUAL UNPROVEN ASPECT ON A TERMINAL ROW: the row is EXPLICITLY_RETIRED yet still carries a Remains value, 'Lobby-as-directory UI unobserved' (line 31798). Recorded, not resolved."
+      ],
+      "provenanceStrength": "WEAK",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state; marked terminal and retired in the census as 'F076 (terminal, EXPLICITLY_RETIRED)' (line 31827)",
+      "impactClassInRegister": "NOT_RECORDED - retired items are excluded from the P0/P1/P2 membership lists"
+    },
+    {
+      "id": "F077",
+      "title": "Conversation-menu Go Live duplicated origination",
+      "problemStatement": "A Go Live entry in the conversation menu duplicated Live origination. The menu item and its route were removed.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "EXPLICITLY_RETIRED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "EXPLICITLY_RETIRED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F077 | Conversation-menu Go Live duplicated it | RET | Menu item + route removed; retired route live-verified: 404 | UI unobserved'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Menu item + route removed'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'retired route live-verified: 404'; Remains: 'UI unobserved'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "NOT_RECORDED",
+      "validationRequirement": "NOT_RECORDED - item is terminal in the register and therefore absent from the V1-V5 non-terminal validation matrix (line 31827)",
+      "founderDecisions": "Removed as part of the Live origination ruling (line 31798).",
+      "aliases": [
+        "RET",
+        "EXPLICITLY_RETIRED",
+        "Conversation-menu Go Live duplicated it"
+      ],
+      "contradictionFlags": [
+        "RESIDUAL UNPROVEN ASPECT ON A TERMINAL ROW: Remains column reads 'UI unobserved' despite the EXPLICITLY_RETIRED state (line 31798)."
+      ],
+      "provenanceStrength": "WEAK",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state; marked terminal and retired (line 31827)",
+      "impactClassInRegister": "NOT_RECORDED - retired items are excluded from the P0/P1/P2 membership lists"
+    },
+    {
+      "id": "F078",
+      "title": "A group call can deliberately become Live",
+      "problemStatement": "The obligation that an existing group call can be deliberately escalated to Live via /go-live.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F078 | Group call can deliberately become Live | INLC | `/go-live` implemented + unit-pinned | Human proof'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'/go-live implemented + unit-pinned'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Human proof'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "Group call can deliberately become Live",
+        "/go-live"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F079",
+      "title": "Same-session Live transitions, never a parallel session",
+      "problemStatement": "Going Live must be a transition of the same realtime session, never the creation of a parallel one. Pinned by Charter section 26 B/C.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F079 | Same session transitions (no parallel) | INLC | Charter section 26 B/C pins green | Human proof'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Charter section 26 B/C pins green'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Human proof'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Member of the deferred 19-obligation REALTIME HUMAN CERTIFICATION BATCH"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Gating dependency: 'F079/F082 (same-session escalation + return to private) -> gate F083, F084, F085, F086, F087, F088 and the entire viewer/engagement/acquisition stack. Nothing downstream of Live can be certified until the lifecycle journey passes once.' (line 31827).",
+      "validationRequirement": "V2 - two simultaneous sessions required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "Same session transitions (no parallel)",
+        "Charter section 26 B/C"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F080",
+      "title": "No active interaction means no Live origination",
+      "problemStatement": "A Live session may not be born public - origination requires an active interaction to escalate. Born-public create is fenced at the backend.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "PARTIALLY_VALIDATED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F080 | No active interaction = no origination | PV | Born-public create -> 400 live-verified; menu removed but unobserved | UI proof'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'menu removed'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Born-public create -> 400 live-verified'; Remains: 'UI proof'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "NOT_RECORDED",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "PV",
+        "No active interaction = no origination",
+        "born-public create -> 400"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F081",
+      "title": "Header Live surface is discovery, not origination",
+      "problemStatement": "The header Live surface must act as a discovery directory of existing Live sessions, not as a place to originate one.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "PARTIALLY_VALIDATED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F081 | Header Live = discovery, not origination | PV | Reviewer discovered \"M S Bajwa - Live\" live | Directory UI proof'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Reviewer discovered \"M S Bajwa - Live\" live'; Remains: 'Directory UI proof'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Included in the deferred REALTIME HUMAN CERTIFICATION BATCH as one of 'the F074/F081 surfaces'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "NOT_RECORDED",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "PV",
+        "Header Live = discovery, not origination"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F082",
+      "title": "Ending Live returns to the private call",
+      "problemStatement": "When Live ends, the underlying private call must continue - the session returns to private rather than terminating. Pinned by Charter section 26 H/I. Recorded as 'the decisive proof' still outstanding.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F082 | End Live returns to private call | INLC | Implemented + pinned (section 26 H/I) | **The decisive proof**'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Implemented + pinned (section 26 H/I)'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'The decisive proof'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Member of the deferred 19-obligation REALTIME HUMAN CERTIFICATION BATCH; sequence ends '... End Live -> private call continues -> leave -> end -> convergence check'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Gating dependency with F079: 'F079/F082 ... gate F083, F084, F085, F086, F087, F088 and the entire viewer/engagement/acquisition stack' (line 31827).",
+      "validationRequirement": "V4 - three or more participants required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "End Live returns to private call",
+        "Charter section 26 H/I"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F083",
+      "title": "No re-ringing when a call goes public",
+      "problemStatement": "Escalating a call to Live must not re-ring the existing participants. Pinned section 26 D; the earlier live proof was obtained under the old (parallel-broadcast) model and therefore does not carry.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F083 | No re-ringing on going public | INLC | Pinned section 26 D; earlier live proof was the *old* model | Proof under new model'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Pinned section 26 D'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Proof under new model' - prior live proof explicitly invalidated by the F075 model change"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Gated by F079/F082 (line 31827).",
+      "validationRequirement": "V4 - three or more participants required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "No re-ringing on going public",
+        "Charter section 26 D"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F084",
+      "title": "No auto-die for \"no answer\"",
+      "problemStatement": "A session must not automatically terminate because nobody answered. Proven live under the old model (survived past 90 seconds); requires re-proof under the new escalation model.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "PARTIALLY_VALIDATED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "PARTIALLY_VALIDATED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F084 | No auto-die for \"no answer\" | PV | Proven live under old model (survived past 90s) | Proof under new model'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Proven live under old model (survived past 90s)'; Remains: 'Proof under new model'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Gated by F079/F082 (line 31827).",
+      "validationRequirement": "V4 - three or more participants required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "PV",
+        "No auto-die for no answer"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - origination/state (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F085",
+      "title": "Legitimate viewer blocked by the view guard",
+      "problemStatement": "A legitimate Live viewer was rejected by the view guard with 'User cannot view this realtime session'. Root-caused live and fixed, but no viewer has actually got in since the fix.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F085 | Legitimate viewer blocked by view guard | INLC | Root-caused live (\"User cannot view this realtime session\"), fixed d3981e5 | **Viewer never actually got in after fix**'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Root-caused live (\"User cannot view this realtime session\")'"
+        }
+      ],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "commit d3981e5"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Viewer never actually got in after fix'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Gated by F079/F082 (line 31827).",
+      "validationRequirement": "V4 - three or more participants required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "Legitimate viewer blocked by view guard"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - viewer (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F086",
+      "title": "Viewer authority derives from the OBSERVER role",
+      "problemStatement": "Viewer authority must be role-based (OBSERVER) rather than inferred by heuristic. The heuristic was removed.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F086 | Viewer authority from OBSERVER role | INLC | Role-based (heuristic removed) | Proof'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Role-based (heuristic removed)'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Proof'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Authority boundary (role-derived, not heuristic); gated by F079/F082 (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "Viewer authority from OBSERVER role"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - viewer (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F087",
+      "title": "Viewer count and stage count kept separate",
+      "problemStatement": "The Live viewer count must be presented separately from the on-stage participant count. Implemented in the top bar.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F087 | Viewer vs stage counts separate | INLC | Implemented in top bar | Proof'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Implemented in top bar'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Proof'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Gated by F079/F082 (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "Viewer vs stage counts separate"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - viewer (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F088",
+      "title": "Live viewers are never Conversation parties",
+      "problemStatement": "A Live viewer must never become a party to the underlying private Conversation - they exist only as an OBSERVER session row. This is the Live privacy boundary.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "Register row: 'F088 | Viewers never Conversation parties | INLC | OBSERVER session row only; never a party | **Privacy proof required**'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [],
+      "implementationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'OBSERVER session row only; never a party'"
+        }
+      ],
+      "certificationEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "Remains: 'Privacy proof required'"
+        },
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31827,
+          "note": "Certification batch sequence includes an explicit 'viewer privacy probe'"
+        }
+      ],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "PRIVACY BOUNDARY. Viewers must never cross into Conversation party membership; the remaining obligation is explicitly a 'Privacy proof' (line 31798) exercised as a 'viewer privacy probe' in the deferred certification batch (line 31827). Gated by F079/F082 (line 31827).",
+      "validationRequirement": "V4 - three or more participants required (validation matrix, line 31827)",
+      "founderDecisions": "NOT_RECORDED",
+      "aliases": [
+        "INLC",
+        "Viewers never Conversation parties"
+      ],
+      "contradictionFlags": [],
+      "provenanceStrength": "STRONG",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - viewer (line 31827)",
+      "impactClassInRegister": "P0 (line 31827)"
+    },
+    {
+      "id": "F089",
+      "title": "Watch-oriented viewer experience",
+      "problemStatement": "A Live viewer needs a watch-oriented experience rather than call chrome.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Grouped issuance block: '## Live - engagement (F089-F096) - all OPEN' followed by a one-line statement per id. Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "'## Live - engagement (F089-F096) - all **OPEN**' - entry 'F089 Watch-oriented viewer experience'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Authority exists (FD-5 sections 8-10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833). Gated by F079/F082 - 'Nothing downstream of Live can be certified until the lifecycle journey passes once' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827) (F089-F107 are all V1)",
+      "founderDecisions": "Founder instruction (line 31833): 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+      "aliases": [
+        "Watch-oriented viewer experience"
+      ],
+      "contradictionFlags": [
+        "COMPRESSION ON RECORD: 'Compressed under a broader item: ... F089-F096 (eight engagement obligations as \"Live viewer experience\")' (line 31798). The eight ids are preserved separately here."
+      ],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - engagement (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F090",
+      "title": "Live chat",
+      "problemStatement": "Live sessions have no chat capability for viewers.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Grouped issuance block: '## Live - engagement (F089-F096) - all OPEN' followed by a one-line statement per id. Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "'## Live - engagement (F089-F096) - all **OPEN**' - entry 'F090 Live chat'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Authority exists (FD-5 sections 8-10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833). Gated by F079/F082 - 'Nothing downstream of Live can be certified until the lifecycle journey passes once' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827) (F089-F107 are all V1)",
+      "founderDecisions": "Founder instruction (line 31833): 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+      "aliases": [
+        "Live chat"
+      ],
+      "contradictionFlags": [
+        "COMPRESSION ON RECORD: 'Compressed under a broader item: ... F089-F096 (eight engagement obligations as \"Live viewer experience\")' (line 31798). The eight ids are preserved separately here."
+      ],
+      "provenanceStrength": "WEAK",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - engagement (line 31827)",
+      "impactClassInRegister": "P1 (line 31827)"
+    },
+    {
+      "id": "F091",
+      "title": "Reactions",
+      "problemStatement": "Live sessions have no viewer reactions.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Grouped issuance block: '## Live - engagement (F089-F096) - all OPEN' followed by a one-line statement per id. Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "'## Live - engagement (F089-F096) - all **OPEN**' - entry 'F091 Reactions'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Authority exists (FD-5 sections 8-10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "WG008 (message reactions) is recorded as 'Distinct from Live reactions (F091)' (line 31827).",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833). Gated by F079/F082 - 'Nothing downstream of Live can be certified until the lifecycle journey passes once' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827) (F089-F107 are all V1)",
+      "founderDecisions": "Founder instruction (line 31833): 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+      "aliases": [
+        "Reactions"
+      ],
+      "contradictionFlags": [
+        "COMPRESSION ON RECORD: 'Compressed under a broader item: ... F089-F096 (eight engagement obligations as \"Live viewer experience\")' (line 31798). The eight ids are preserved separately here."
+      ],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - engagement (line 31827)",
+      "impactClassInRegister": "P2 (line 31827)"
+    },
+    {
+      "id": "F092",
+      "title": "Raise hand",
+      "problemStatement": "Live sessions have no raise-hand affordance for viewers.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Grouped issuance block: '## Live - engagement (F089-F096) - all OPEN' followed by a one-line statement per id. Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "'## Live - engagement (F089-F096) - all **OPEN**' - entry 'F092 Raise hand'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Authority exists (FD-5 sections 8-10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833). Gated by F079/F082 - 'Nothing downstream of Live can be certified until the lifecycle journey passes once' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827) (F089-F107 are all V1)",
+      "founderDecisions": "Founder instruction (line 31833): 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+      "aliases": [
+        "Raise hand"
+      ],
+      "contradictionFlags": [
+        "COMPRESSION ON RECORD: 'Compressed under a broader item: ... F089-F096 (eight engagement obligations as \"Live viewer experience\")' (line 31798). The eight ids are preserved separately here."
+      ],
+      "provenanceStrength": "WEAK",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - engagement (line 31827)",
+      "impactClassInRegister": "P2 (line 31827)"
+    },
+    {
+      "id": "F093",
+      "title": "Stage promotion / demotion",
+      "problemStatement": "There is no mechanism to promote a viewer onto the stage or demote a speaker back to viewer.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Grouped issuance block: '## Live - engagement (F089-F096) - all OPEN' followed by a one-line statement per id. Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "'## Live - engagement (F089-F096) - all **OPEN**' - entry 'F093 Stage promotion / demotion'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Authority exists (FD-5 sections 8-10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833). Gated by F079/F082 - 'Nothing downstream of Live can be certified until the lifecycle journey passes once' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827) (F089-F107 are all V1)",
+      "founderDecisions": "Founder instruction (line 31833): 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+      "aliases": [
+        "Stage promotion / demotion"
+      ],
+      "contradictionFlags": [
+        "COMPRESSION ON RECORD: 'Compressed under a broader item: ... F089-F096 (eight engagement obligations as \"Live viewer experience\")' (line 31798). The eight ids are preserved separately here."
+      ],
+      "provenanceStrength": "WEAK",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - engagement (line 31827)",
+      "impactClassInRegister": "P2 (line 31827)"
+    },
+    {
+      "id": "F094",
+      "title": "Viewer presence atmosphere",
+      "problemStatement": "Live sessions convey no sense of viewer presence or atmosphere.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Grouped issuance block: '## Live - engagement (F089-F096) - all OPEN' followed by a one-line statement per id. Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "'## Live - engagement (F089-F096) - all **OPEN**' - entry 'F094 Viewer presence atmosphere'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Authority exists (FD-5 sections 8-10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833). Gated by F079/F082 - 'Nothing downstream of Live can be certified until the lifecycle journey passes once' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827) (F089-F107 are all V1)",
+      "founderDecisions": "Founder instruction (line 31833): 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+      "aliases": [
+        "Viewer presence atmosphere"
+      ],
+      "contradictionFlags": [
+        "COMPRESSION ON RECORD: 'Compressed under a broader item: ... F089-F096 (eight engagement obligations as \"Live viewer experience\")' (line 31798). The eight ids are preserved separately here."
+      ],
+      "provenanceStrength": "WEAK",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - engagement (line 31827)",
+      "impactClassInRegister": "P2 (line 31827)"
+    },
+    {
+      "id": "F095",
+      "title": "Live moderation",
+      "problemStatement": "Live sessions have no moderation capability.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Grouped issuance block: '## Live - engagement (F089-F096) - all OPEN' followed by a one-line statement per id. Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "'## Live - engagement (F089-F096) - all **OPEN**' - entry 'F095 Live moderation'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Authority exists (FD-5 sections 8-10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833). Gated by F079/F082 - 'Nothing downstream of Live can be certified until the lifecycle journey passes once' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827) (F089-F107 are all V1)",
+      "founderDecisions": "Founder instruction (line 31833): 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+      "aliases": [
+        "Live moderation"
+      ],
+      "contradictionFlags": [
+        "COMPRESSION ON RECORD: 'Compressed under a broader item: ... F089-F096 (eight engagement obligations as \"Live viewer experience\")' (line 31798). The eight ids are preserved separately here."
+      ],
+      "provenanceStrength": "WEAK",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - engagement (line 31827)",
+      "impactClassInRegister": "P2 (line 31827)"
+    },
+    {
+      "id": "F096",
+      "title": "Recover FD-5 sections 8-10 rather than reinvent",
+      "problemStatement": "The engagement obligations must be recovered from the existing authority FD-5 sections 8-10 rather than reinvented.",
+      "originalIssuanceEvidence": {
+        "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+        "line": 31798,
+        "note": "Grouped issuance block: '## Live - engagement (F089-F096) - all OPEN' followed by a one-line statement per id. Earliest evidence available in this dossier is a row of the non-shrinking F001-F120 register reconciliation (line 31798), which is a re-statement of an earlier issuance, not the original issuance event. Original issuance not present in the extracted corpus."
+      },
+      "currentState": "OPEN",
+      "currentStateCandidates": "NOT_APPLICABLE",
+      "stateHistory": [
+        {
+          "state": "OPEN",
+          "evidence": {
+            "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+            "line": 31798,
+            "note": "'## Live - engagement (F089-F096) - all **OPEN**' - entry 'F096 Recover FD-5 sections 8-10 rather than reinvent'"
+          }
+        }
+      ],
+      "rootEvidenceRefs": [
+        {
+          "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+          "line": 31798,
+          "note": "'Authority exists (FD-5 sections 8-10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.'"
+        }
+      ],
+      "implementationEvidenceRefs": [],
+      "certificationEvidenceRefs": [],
+      "reconstructionPhase": "NOT_RECORDED",
+      "implementationChapter": "NOT_RECORDED",
+      "wgRelationship": "NOT_RECORDED",
+      "protectedBoundaryImplications": "Live downstream work is explicitly parked (line 32223; founder closure criterion 14 at line 31833). Gated by F079/F082 - 'Nothing downstream of Live can be certified until the lifecycle journey passes once' (line 31827).",
+      "validationRequirement": "V1 - validatable by the agent alone (validation matrix, line 31827) (F089-F107 are all V1)",
+      "founderDecisions": "Founder instruction (line 31833): 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+      "aliases": [
+        "Recover FD-5 sections 8-10 rather than reinvent"
+      ],
+      "contradictionFlags": [
+        "COMPRESSION ON RECORD: 'Compressed under a broader item: ... F089-F096 (eight engagement obligations as \"Live viewer experience\")' (line 31798). The eight ids are preserved separately here."
+      ],
+      "provenanceStrength": "MODERATE",
+      "lastEvidencedUpdate": "2026-08-17",
+      "domainInRegister": "D. Live - engagement (line 31827)",
+      "impactClassInRegister": "P2 (line 31827)"
+    }
+  ]
+}

@@ -1,0 +1,911 @@
+{
+  "artifact": "doctrine-index",
+  "stage": "STAGE 0 — EVIDENCE RECONSTRUCTION",
+  "producedBy": "S0-B Doctrine & Roadmap agent",
+  "date": "2026-08-18",
+  "scope": "INDEX ONLY. Frozen doctrines and later implementation chapters that materially govern reconstruction. No portfolio is synthesised; nothing is merged, renumbered, promoted, demoted or founder-ratified.",
+  "pathConvention": "Paths are relative to C:/Users/muham/flutter_projects/aura/ unless prefixed 'transcript:' (relative to C:/Users/muham/.claude/projects/C--Users-muham-flutter-projects/) or 'representation:' (a repository not read at Stage 0 — cited as the documents themselves cite it).",
+  "namespaceRule": {
+    "RC": "RC-C0..RC-C11 = the original Reconstruction architecture chapters (see rc-map.json).",
+    "RIC": "RIC-C1..RIC-C5, RIC-D1..RIC-D3, RIC-E1, RIC-E2, RIC-F1 = Rich Content & Interaction implementation stages defined by §16 of the FROZEN §12 contract.",
+    "other": "FD-n = Founder Decision Register entries. PD-n = product disposition checkpoints with no owning chapter. GAP-n = founder-owned roadmap gaps. These are neither RC nor RIC and are indexed with their own prefixes rather than being forced into either namespace.",
+    "warning": "RC and RIC are DIFFERENT AXES. RIC-C2 (ContentReference retention index) is unrelated to RC-C2 (Identity, Presence & Profile). Where a source's bare 'C2'/'C5' cannot be resolved by evidence, the record carries C_AXIS_AMBIGUOUS."
+  },
+  "statusVocabulary": {
+    "FROZEN": "Founder-frozen doctrine or contract; not reopened for convenience.",
+    "PROPOSED": "Written, evidenced, not yet founder-frozen.",
+    "IMPLEMENTED": "Code/behaviour landed and evidenced.",
+    "IMPLEMENTED_NOT_LIVE_CERTIFIED": "Code landed; the project's own live-certification bar not met or not claimed.",
+    "note": "Additional project states encountered and preserved verbatim where they appear: STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED, C4_OWNED_OPEN, EXPLICITLY_RETIRED, RECORDED_DEFERRED, STANDING_CONSTRAINT, CLASSIFIED, DONE_BOUNDED, NOT_APPLIED."
+  },
+  "records": [
+    {
+      "normalizedIdentifier": "DOCTRINE-FOUNDER-RECONSTRUCTION",
+      "title": "Founder Reconstruction Doctrine",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 239-247)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "RECONSTRUCTION IS COMPLETE ONLY WHEN CANONICAL PRODUCT TRUTH IS ADOPTED BY THE RUNTIME/RELEASE CLIENT AND LEGACY IMPLEMENTATION HAS AN EXPLICIT RETIREMENT PATH. VISIBLE PRODUCT OUTCOME IS A REQUIRED CLOSEOUT DIMENSION. Every chapter demonstrates CANONICAL ARCHITECTURE -> RUNTIME ADOPTION -> VISIBLE PRODUCT OUTCOME -> LEGACY RETIREMENT.",
+      "dependencies": ["FD-13 (definition of done)"],
+      "protectedBoundaries": ["Correctness constraints are not relaxed: product truth, data integrity, privacy/security, frozen doctrine, certified shared surfaces", "Compatibility layers are transitional only — each must carry a reason, canonical destination, retirement condition and path"],
+      "knownRelationshipToRC": "Applies to ALL RC chapters. Applied register is C2_RECONSTRUCTION_DEBT_REGISTER.md, which carries the chapter-level completeness table for RC-C0, RC-C1, RC-C2.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "DOCTRINE-PUBLIC-FIRST",
+      "title": "Aura Public-First Causal Doctrine",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 177-215); canonical source cited as representation:inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md; per-chapter inheritance in FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 30-43)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "Aura is public-first, not institution-first. People and their communication needs are the originating force; institutional identity is accountability infrastructure inside a public environment whose value already exists — not the acquisition premise. It is a product-interpretation rule, a clarification not a pivot.",
+      "dependencies": ["Frozen surface classes: GENERAL AURA SURFACE / PERSON-SOCIAL COMMUNICATION SURFACE / INSTITUTION-SPECIFIC SURFACE"],
+      "protectedBoundaries": [
+        "Does NOT make Aura a consumer social network",
+        "Does NOT weaken institution-specific surfaces — do not dilute them to prove alignment",
+        "Does NOT invert commercialization",
+        "Does NOT override implementation truth",
+        "ROADMAP ORDERING IS UNCHANGED BY THIS DOCTRINE — it is an interpretive lens, not a resequencing instruction"
+      ],
+      "knownRelationshipToRC": "Explicitly inherited by every RC chapter; per-chapter inheritance banners appear at RC-C2, RC-C3, RC-C4, RC-C5, RC-C6, RC-C7, RC-C8, RC-C10 in the roadmap.",
+      "knownRelationshipToFindingsOrWg": "Four running-product contradictions C-1..C-4 recorded in PUBLIC_FIRST_RUNNING_PRODUCT_CONTRADICTIONS.md, all RESOLVED by narrow copy reconciliation; enforced by test/doctrine/public_first_causal_gate_test.dart. These are C-ids, not F-ids."
+    },
+    {
+      "normalizedIdentifier": "DOCTRINE-AUTHORITIES-BEFORE-SURFACES",
+      "title": "Roadmap thesis and governing rule",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 13-25)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "The frontend's fault was never too many capabilities — it was too many implementations of too few defined concepts, with nothing preventing the next divergence. Ordering: PRODUCT AUTHORITY -> DEPENDENCY -> RECONSTRUCTION -> CONSUMER MIGRATION -> ANTI-DRIFT ENFORCEMENT -> REGRESSION -> CERTIFICATION -> FOUNDER REVIEW, under one rule: AUTHORITIES BEFORE SURFACES.",
+      "dependencies": [],
+      "protectedBoundaries": ["Twelve chapters — not forty micro-phases, not one 'frontend rebuild'", "Roadmap approval is not authorisation to begin a chapter"],
+      "knownRelationshipToRC": "Defines RC-C0..RC-C11.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "DOCTRINE-REPRESENTATION-AUTHORITY-CHAIN",
+      "title": "C0-6 Representation authority chain",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 93-101); aura_final/docs/HANDOFF.md (lines 41-42)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "IMPLEMENTATION / PRODUCT AUTHORITY owns product facts -> FOUNDER-FROZEN DECISIONS are authoritative later semantic rulings -> REPRESENTATION performs canonical reconciliation/presentation within governed scope. Stale Representation wording does not override later founder-frozen product truth.",
+      "dependencies": ["C0-5 (Discovery framing superseded) is the worked example"],
+      "protectedBoundaries": ["Representation cannot originate a fact about a product — it can only cite one", "PRODUCT_IDENTITY_CANON is centrally authoritative for exactly four sections (Identity, Purpose, Governing Philosophy, Scope); capability and implementation stay product-owned", "Never silently choose between repositories — discover conflict -> founder if semantic -> resolve -> update both -> enforce"],
+      "knownRelationshipToRC": "Later chapters CONSUME REPRESENTATION_CANONICAL_FRONTEND_ALIGNMENT.md and REPRESENTATION_FRONTEND_REDESIGN_INPUTS.md rather than rediscovering the hierarchy. Exercised at RC-C2 §12 (Representation consistency).",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FD-13",
+      "title": "Enforcement: gates ship with the authority they protect",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD13_ENFORCEMENT_MECHANISMS_FROZEN.md (lines 3-22); precedent recorded at aura_final/docs/DECISIONS.md (lines 113-115)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "AUTHORITY + CONSUMER MIGRATION + ANTI-DRIFT ENFORCEMENT + REGRESSION/CERTIFICATION = COMPLETE RECONSTRUCTION OF THAT AUTHORITY. Gates protecting frozen invariants hard-fail the relevant build/test/certification path. A shared authority is not complete merely because it exists.",
+      "dependencies": [],
+      "protectedBoundaries": ["No standalone enforcement chapter", "No warning-only structural governance", "Enforce the invariant, not the filename", "A gate that cannot be trusted becomes a recorded obligation — never a downgraded warning"],
+      "knownRelationshipToRC": "Definition of done for every RC chapter. The C0-9 precedent (11 zero-tolerance rules + 5 ratchets + 2 baseline-honesty gates) is the working pattern every later chapter follows.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FD-12",
+      "title": "Proven-dead retirement only + surface reachability",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD12_SURFACE_DISPOSITION_FROZEN.md (lines 3-22)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "Retire only what is proven dead; adjudicate low-reference surfaces in their owning chapters. conversations_screen.dart (~1,033 lines, zero router references, confirmed unreachable) is the one confirmed dead surface approved for retirement. Authorization != implementation: do not delete frontend code during adjudication.",
+      "dependencies": [],
+      "protectedBoundaries": ["LOW REFERENCE != DEAD", "Naive zero-reference gate FORBIDDEN (§8)", "LoginScreen looks dead to grep and is not"],
+      "knownRelationshipToRC": "RC-C4 retires conversations_screen.dart. RC-C2 dispositions PresenceScreen (§5). RC-C7 dispositions InstitutionCorrespondenceScreen (§4). RC-C3 owns the declared surface/route registry (§8).",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FD-10",
+      "title": "Terminology: canonical semantic vocabulary",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD10_TERMINOLOGY_FROZEN.md (lines 3-22); final vocabulary at aura_final/docs/DECISIONS.md (lines 65-91)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "SEMANTIC TRUTH FIRST. VOCABULARY SECOND. A word survives only when the underlying product concept survives. Correspondence distinct · Post canonical · Presence retained · Follow != Connect · layered verification · RETRY · four CTA families.",
+      "dependencies": ["Canonical Product Language Authority defines the METHOD; FD-10 supplies the rulings"],
+      "protectedBoundaries": ["Cancel/Dismiss/Close/Discard are FOUR DISTINCT FAMILIES, not synonyms — the original brief's premise was wrong and the correction is preserved", "Connect · Works · generic Verified are not to be introduced without their own governed decision and implementation requirement (gate-enforced absent)"],
+      "knownRelationshipToRC": "Built at RC-C0. Downstream obligations: RC-C2 verification labels, RC-C5 official-designation vocabulary, RC-C7 Correspondence rename, RC-C10 Live plural form.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FREEZE-NAV-IA-PRODUCT-LANGUAGE",
+      "title": "Task/Domain-Oriented Adaptive Navigation + Contextual Depth + Canonical Product Language Authority",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/NAVIGATION_IA_PRODUCT_LANGUAGE_FROZEN.md (lines 3-17)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "Named cross-product freeze spanning navigation/IA (which had no register entry) and the Canonical Product Language Authority (which GOVERNS but does NOT resolve FD-10). Acting context must not duplicate the IA.",
+      "dependencies": ["FD-9 — complies with, does not supersede"],
+      "protectedBoundaries": ["Do NOT read this as resolving FD-10; the vocabulary decisions themselves are still owed", "No new FD number was invented"],
+      "knownRelationshipToRC": "Consumed by RC-C0 (language authority) and RC-C3 (navigation/IA).",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FREEZE-HUMAN-TEMPORAL-PRESENTATION",
+      "title": "Human Temporal Presentation Authority",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/HUMAN_TEMPORAL_PRESENTATION_AUTHORITY_FROZEN.md (lines 3-22)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "Cross-product obligation covering semantic event type, canonical timestamp selection, relative vs absolute, locale/timezone, humanized formatting, exact-time access, sorting semantics and aging/refresh. Founder-surfaced — the original discovery audit missed temporal presentation and sorting entirely.",
+      "dependencies": [],
+      "protectedBoundaries": ["No pre-existing FD entry; no new FD number invented"],
+      "knownRelationshipToRC": "Built at RC-C0 (temporal.dart). Consumed by RC-C4 for attention ordering. Meetings' temporal debt (G3/G4) is deferred to controlled RC-C6 review.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FREEZE-CAPABILITY-ADAPTIVE-EXPERIENCE",
+      "title": "Capability-Adaptive Experience",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/CAPABILITY_ADAPTIVE_EXPERIENCE_FROZEN.md (lines 3-25)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "ONE COHERENT PRODUCT -> CONTEXT REVEALS RELEVANT CAPABILITY -> AUTHORITY REVEALS AVAILABLE ACTIONS -> CURRENT STATE DETERMINES WHAT MATTERS NOW -> COMPLEXITY APPEARS ONLY WHEN NEEDED. Roles change available capability, not the product.",
+      "dependencies": [],
+      "protectedBoundaries": ["Not a single-decision entry — a governing principle constraining EVERY remaining frontend decision and every reconstruction chapter", "Explicitly not wanted: admin interface with member features bolted on, separate products per role, giant control panels, permanent exposure of administrative machinery, local 'if admin' UI sprawl"],
+      "knownRelationshipToRC": "Consumed by RC-C1, RC-C2, RC-C3, RC-C4, RC-C5, RC-C6, RC-C7, RC-C8, RC-C9, RC-C10.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FREEZE-THREADS-SPACES-MODEL",
+      "title": "Threads / Spaces Product Model — distinct but composable",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/THREADS_SPACES_PRODUCT_MODEL_FROZEN.md (lines 3-18)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "THREAD = FOCUSED CONVERSATION CONTINUITY. SPACE = PERSISTENT SHARED CONTEXT / COMMUNITY. Technical infrastructure may converge; product semantics remain distinct.",
+      "dependencies": ["FD-3 — complies with, does not supersede"],
+      "protectedBoundaries": ["Do NOT reduce both to generic containers, merge them, treat a Space as a large group chat, treat a Thread as a message list, or force every Thread to belong to a Space", "No pre-existing FD entry; no new FD number invented"],
+      "knownRelationshipToRC": "Consumed by RC-C7 (primary) and RC-C10 (Live is a state of a Thread or Space).",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED",
+      "notedTension": "The Aura Conversation System canon (2026-08-16) redefines SPACE as 'a place people join around subject/community/context' and CONVERSATION as the durable communication relationship; whether this amends or merely complements the Threads/Spaces freeze is NOT_RECORDED."
+    },
+    {
+      "normalizedIdentifier": "FREEZE-CONTENT-INTAKE-RESOLUTION",
+      "title": "Content Intake & Resolution Authority",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/CONTENT_INTAKE_RESOLUTION_AUTHORITY_FROZEN.md (lines 3-26)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "Cross-product obligation for rich paste, image/file paste, drag-and-drop, mixed content, governed link previews, and visible recoverable failure for unsupported input. Founder-surfaced: the audit measured composer capability but never tested intake quality.",
+      "dependencies": ["FD-6 (adjacent, no new FD number invented)"],
+      "protectedBoundaries": ["Applies across DM · Threads · Spaces · Posts · Correspondence · institutional communication · future composition surfaces — NOT a Thread/Space-specific problem", "Preserve richness, do not invent richness"],
+      "knownRelationshipToRC": "RC-C5 owns it; drag/drop is jointly owned RC-C5 + RC-C9.",
+      "knownRelationshipToFindingsOrWg": "Measured baseline (25 Clipboard files, 25 paste, 0 drag-and-drop) is superseded for Conversation by F012 (drag/drop present at conversation_screen:960, IMPLEMENTED_NOT_LIVE_CERTIFIED) and F013 (clipboard image paste, IMPLEMENTED_NOT_LIVE_CERTIFIED). Source: transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl line 31798."
+    },
+    {
+      "normalizedIdentifier": "FD-1",
+      "title": "One Governed Attention Hub + Actionable Attention",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD1_ATTENTION_HUB_FROZEN.md (lines 3-30)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "ONE GOVERNED ATTENTION HUB answering 'What needs my attention?' without flattening the distinct product domains that generated that attention. Attention is a projection, never a new owner; actions are domain-owned and resolvable.",
+      "dependencies": ["FD-2 (badge vocabulary)", "Human Temporal Presentation (ordering)"],
+      "protectedBoundaries": ["The canonical identity of this decision is its NAME — never restate as 'FD-1 Option A/B/C'", "Original Option B ('one giant chronological notification feed') is EXPLICITLY REJECTED", "Original Option C's premise (no governed cross-domain projection) is rejected"],
+      "knownRelationshipToRC": "RC-C4 owns it; also consumed by RC-C7, RC-C8, RC-C10.",
+      "knownRelationshipToFindingsOrWg": "F030-F035 are the six C4_OWNED_OPEN attention findings; F118 records that no C4 finding was patched. Source: transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl line 31798."
+    },
+    {
+      "normalizedIdentifier": "FD-2",
+      "title": "Attention vocabulary: Obligation Badge",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD2_ATTENTION_VOCABULARY_FROZEN.md (lines 3-27)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "PRIMARY ATTENTION BADGE = UNRESOLVED ACTIONABLE OBLIGATIONS. Contributing: ACTION_REQUIRED, INVITED, MISSED while unresolved, plus mentions conditionally where they constitute unresolved attention. Truncation 99+.",
+      "dependencies": ["FD-1"],
+      "protectedBoundaries": ["PASSIVE UNREAD NEVER CONTRIBUTES", "Mentions are not blanket-counted and clear through the owning domain's own resolution behaviour, not a separate mention-clearing mechanism", "This is the register's own FD-2 (Attention vocabulary) — NOT the composition decision a founder instruction once labelled 'FD-2', which is registered as FD-6"],
+      "knownRelationshipToRC": "RC-C4 owns it.",
+      "knownRelationshipToFindingsOrWg": "F032 (unread persists after viewing) is C4_OWNED_OPEN with 'C4 read-truth' as its remaining work. Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "OBLIGATION-NOTIFICATION-PREFERENCE-AUTHORITY",
+      "title": "Notification Preference Authority — roadmap obligation",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md (lines 3-27)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION. Preferences control delivery and/or interruption — never whether the domain event or obligation exists. Disabling email or push must never erase the underlying governed Attention item.",
+      "dependencies": ["FD-1", "FD-2"],
+      "protectedBoundaries": ["PRIMARY OWNER: RC-C4. Not implemented during C0; C0 scope is unchanged by this addition", "Not an Account Settings visual concern"],
+      "knownRelationshipToRC": "RC-C4 primary owner. Intersects the uncharted Settings gap (GAP-1).",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FD-3",
+      "title": "Realtime product semantics",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD3_REALTIME_SEMANTICS_FROZEN.md (lines 3-24)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "SHARED REALTIME INFRASTRUCTURE DOES NOT IMPLY SHARED PRODUCT SEMANTICS. Frozen conceptual ownership for DM · THREAD · SPACE · INSTITUTION ROOM · MEETING · LIVE.",
+      "dependencies": [],
+      "protectedBoundaries": ["LIVE is NOT another Meeting merely because both use realtime media", "MEETING keeps its own Meeting lifecycle", "INSTITUTION ROOM has governed participation", "Supersedes the open question recorded as Finding R3 in REALTIME_PRODUCT_MODEL_AUDIT.md"],
+      "knownRelationshipToRC": "RC-C6 (convergence beneath these semantics), RC-C7, RC-C8, RC-C10. RC-C2 consumes FD-3 §6 (People & Participation).",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FD-4",
+      "title": "Realtime presentation convergence — shared primitives, Meetings lifecycle untouched",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN.md (lines 3-26)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "Converge the PRESENTATION of participant list · host controls · admission/join-requests · consent onto a shared component family. ONE SHARED COMPONENT FAMILY MAY RENDER DIFFERENT CONTEXT-SPECIFIC STATES AND LANGUAGE SUPPLIED BY THE OWNING DOMAIN; THE SHARED COMPONENT DOES NOT OWN SEMANTIC MEANING.",
+      "dependencies": ["FD-3 (this is its client-side expression)"],
+      "protectedBoundaries": ["MEETINGS LIFECYCLE IS UNTOUCHED — booking, invitation, attendance, waiting/admission, prep, summary, follow-up remain exactly as certified", "No wholesale rewrite; slice-by-slice with regression after each slice"],
+      "knownRelationshipToRC": "RC-C6 owns it; RC-C8 and RC-C10 consume the resulting primitives.",
+      "knownRelationshipToFindingsOrWg": "F114 (Meetings protected) LIVE_CERTIFIED — 'No Meetings file modified in any commit this session'. F112 (Meetings equivalent validation) OPEN. Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "FD-5",
+      "title": "Live as a governed mode of a Thread or Space",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD5_LIVE_THREAD_SPACE_FROZEN.md (lines 3-29)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "LIVE IS a governed public/stage participation STATE of an appropriate owning Thread or Space: THREAD/SPACE -> AUTHORIZED GO LIVE -> LIVE STATE -> AUDIENCE/PARTICIPATION -> LIVE ENDS -> CONTINUITY REMAINS WITH THREAD/SPACE. Eight rulings. Closes the Founder Decision Register (register closure is not roadmap approval).",
+      "dependencies": ["FD-3", "FD-4", "Threads/Spaces Product Model", "RC-C3, RC-C4, RC-C5 as PRODUCT dependencies"],
+      "protectedBoundaries": ["LIVE is NOT a standalone generic broadcast product, another Meeting, an expanded Institution Room, or a fourth disconnected realtime surface", "Going Live must never orphan the conversation from its source context", "PUBLIC_STAGE and participant roles already exist but PUBLIC_STAGE was declared and not operationally consumed — 'the vocabulary exists; the mechanism does not'"],
+      "knownRelationshipToRC": "RC-C10 owns it. FD-5 §29 staging is frozen: realtime convergence first (RC-C6), owning contexts reconstructed (RC-C7, RC-C8).",
+      "knownRelationshipToFindingsOrWg": "F074-F088 (Live architecture correction), F089-F096 (engagement, all OPEN, with the note 'Authority exists — FD-5 §§8-10 ... Nothing implemented'), F096 explicitly 'recover FD-5 §§8-10 rather than reinvent'. Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "DOCTRINE-LIVE-ORIGINATION-CORRECTION",
+      "title": "Live Origination Correction — state escalation, not broadcast creation",
+      "sourceArtifact": "aura_final/docs/2026-08-17-live-origination-correction.md (lines 1-45)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-17",
+      "governingPurpose": "LIVE IS NOT SOMETHING A USER CREATES. LIVE IS SOMETHING AN EXISTING REALTIME HUMAN INTERACTION DELIBERATELY BECOMES. ORIGINATION IS CONTEXTUAL. DISCOVERY IS GLOBAL. NO ACTIVE REALTIME INTERACTION = NO GO LIVE ORIGINATION. Records FD-5's enforcement; FD-5 remains the design authority.",
+      "dependencies": ["FD-5"],
+      "protectedBoundaries": [
+        "Supersedes the 2026-08-16/17 conversation-menu Go Live implementation and the legacy standalone Live lobby",
+        "'Build a Live product and link it back' is a PROHIBITED reading (FD-5 §1, rejected Option B)",
+        "End Live != End Call — the SAME session stays ACTIVE and the private call continues",
+        "Viewers are OBSERVER-role session participants: receive-only media, never Conversation parties, no access to Conversation messages/history/attachments; viewer count is its own truth, never merged into stage/participant count",
+        "liveState is lifecycle truth; accessMode is participation policy — never collapsed into one concept"
+      ],
+      "knownRelationshipToRC": "Subject matter is RC-C10's charter. No governed document records this as an RC-C10 chapter event — see rc-map.json RC-C10 CONFLICTING_CURRENT_STATE.",
+      "knownRelationshipToFindingsOrWg": "F074-F088. F076 and F077 are EXPLICITLY_RETIRED by this correction (standalone lobby origination; conversation-menu Go Live). Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "FD-6",
+      "title": "Canonical Composition System + Context-Governed Experience",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/CANONICAL_COMPOSITION_SYSTEM_FROZEN.md (lines 3-26)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "One composition authority with per-surface policy. COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION.",
+      "dependencies": ["FD-7 (constrained by §6 but not resolved by it)"],
+      "protectedBoundaries": ["NUMBERING HAZARD RECORDED: the founder instruction that froze this called it 'FD-2', but register FD-2 is Attention vocabulary and remained OPEN at that time. Do not read 'FD-2 resolved' as attention vocabulary being frozen. This decision is authoritative BY NAME."],
+      "knownRelationshipToRC": "RC-C5 owns it; RC-C7 consumes it.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FD-7",
+      "title": "Attachment send model: upload on selection",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD7_ATTACHMENT_SEND_MODEL_FROZEN.md (lines 3-30)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "SELECT / PASTE / DROP -> VALIDATE -> PREVIEW -> UPLOAD -> PROGRESS -> READY -> SEND / PUBLISH. UPLOADING AN ATTACHMENT NEVER MEANS THE MESSAGE / POST / PUBLICATION HAS BEEN SENT OR PUBLISHED.",
+      "dependencies": ["FD-6"],
+      "protectedBoundaries": ["An uploaded-but-uncommitted attachment belongs to the COMPOSITION/DRAFT state, not to a final communication object", "Explicit discard -> deterministic immediate release", "No silent queued-send; no hybrid size/type timing"],
+      "knownRelationshipToRC": "RC-C5 owns it. The orphan-cleanup-window vs draft-lifetime checkpoint is RC-C5's open founder checkpoint.",
+      "knownRelationshipToFindingsOrWg": "Adjacent to the RIC retention work: Amendment 1 establishes that ATTACHMENT != REFERENCE != RETENTION and that orphanedAt currently conflates them. Not merged with FD-7 by any source."
+    },
+    {
+      "normalizedIdentifier": "FD-8",
+      "title": "Official designation: pre-publication only",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD8_OFFICIAL_DESIGNATION_MOMENT_FROZEN.md (lines 3-29)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "Official designation may only be expressed BEFORE publication, as part of the publication commitment/publish flow: COMPOSE -> CONTENT READY -> PUBLISH FLOW -> CONFIRM ACTING/PUBLISHING AUTHORITY -> OFFICIAL DESIGNATION WHERE AUTHORIZED -> REQUIRED INSTITUTIONAL APPROVAL -> PUBLISH.",
+      "dependencies": ["FD-6"],
+      "protectedBoundaries": ["NO post-publication elevation (Options B and C rejected) — it would let content acquire official status without passing the pre-publication institutional approval floor", "Withdrawal is different and remains legitimate", "Do not place permanent official-designation machinery into the writing experience merely because the capability exists", "Content change invalidates approval"],
+      "knownRelationshipToRC": "RC-C5 owns it, including the official-designation and institutional-approval vocabulary handed forward from RC-C0.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FD-9",
+      "title": "Contextual Acting Authority",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FD9_ACTING_CONTEXT_FROZEN.md (lines 3-28)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "ONE RELEASE CLIENT + ONE COHERENT NAVIGATION ARCHITECTURE + FIRST-CLASS CONTEXTUAL ACTING AUTHORITY. Person is the default actor; backend defines eligibility.",
+      "dependencies": [],
+      "protectedBoundaries": ["Original Option C (separate institution shell) is REJECTED — do not restate this decision as 'FD-9 Option C'", "Do not preserve mirrored personal/institution route trees merely because historical implementation created them", "Do not make a permanent global Personal/Institution toggle the organising principle"],
+      "knownRelationshipToRC": "RC-C1 owns it; RC-C3 (DR4 mirrored routes), RC-C7 and RC-C8 consume it. It gates all institutional work.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "FD-11",
+      "title": "Canonical Identity Presentation + Contextual Projection",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/CANONICAL_IDENTITY_PRESENTATION_FROZEN.md (lines 3-25)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "One canonical identity presentation with contextual projection. Person, Institution, Membership, Acting Context and Presence are semantically distinct and are made coherent WITHOUT destroying the distinctions.",
+      "dependencies": ["FD-10 (constrained, still open at freeze time: verification must not be flattened to boolean)"],
+      "protectedBoundaries": ["Do not preserve separate personal/member/institution profile architectures", "Do not collapse the five identity concepts into one universal Profile object", "Resolves FD-11 Profile hierarchy and substantially widens it to the whole identity/presence/relationship model"],
+      "knownRelationshipToRC": "RC-C2 owns it; RC-C1 consumes the boundary; RC-C6 and RC-C10 consume identity for participants.",
+      "knownRelationshipToFindingsOrWg": "F050-F058 identity cluster and F116 ('Identity as shared-consumption problem', PARTIALLY_VALIDATED, systemic statement of F050-F058) are subject-adjacent. No governed document attributes them to FD-11 or RC-C2. Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "C1-ATTRIBUTION-RULES",
+      "title": "C1-1 / C1-2 acting attribution and personal-alternative rules",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 137-157)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-15",
+      "governingPurpose": "ACTING AUTHORITY BECOMES EXPLICIT WHEN A CONSEQUENTIAL ACTION REQUIRES ATTRIBUTION — NOT BECAUSE OF THE ROUTE THE PERSON NAVIGATED THROUGH. WHETHER A PERSONAL ACTING ALTERNATIVE EXISTS IS A PROPERTY OF THE SURFACE / ACTION CONTEXT. NO CHOICE WITHOUT A REAL CONSEQUENCE. Presence is the person.",
+      "dependencies": ["FD-9", "FD-11"],
+      "protectedBoundaries": ["No global acting mode", "No route-derived sender", "Institutional acting context always person-backed", "Unavailable actions absent rather than disabled", "Governance is never a delegable capability", "A control that appears to change acting identity but cannot change the resulting action is prohibited"],
+      "knownRelationshipToRC": "Produced by RC-C1; enforced through RC-C3 (0 route-derived mechanisms) and owed by RC-C7 (no route-derived sender may survive C7 closure).",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "C2-TRUST-PRESENTATION-DOCTRINE",
+      "title": "Trust presentation doctrine (frozen by implementation)",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 253-259); aura_final/docs/frontend-discovery/C2_TRUST_PRESENTATION.md",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "Layered, never collapsed: one mark per governed class (IDENTITY / INSTITUTION_AFFILIATION / ROLE_OR_CREDENTIAL). 'Verified person' does not exist as a product concept. Absence renders nothing — absence is not suspicion. VERIFICATION IS NOT AUTHORITY. Revoked/expired first-class. Unknown wire classes are dropped, never guessed at.",
+      "dependencies": ["FD-10", "FD-11"],
+      "protectedBoundaries": ["No user-facing mark may say bare 'Verified' except the institution compact mark adjacent to the institution name it describes", "Official institutional speech is never presented from a verification fact", "ROLE_OR_CREDENTIAL presents as an Aura record, not a portable credential"],
+      "knownRelationshipToRC": "RC-C2 owns it; discharges the RC-C0 verification-label obligation.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "C2-MONETIZATION-VERIFICATION-DECOUPLING",
+      "title": "Monetization x Verification Decoupling",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 262-273)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "Verification is not purchasable. A commercial tier does not establish verification. Trust is not a purchasable Aura status. TRUSTED is rejected as a commercial product concept. Verification authority and commercial entitlement are separate structurally and visually.",
+      "dependencies": ["C2-TRUST-PRESENTATION-DOCTRINE"],
+      "protectedBoundaries": ["Payment never writes Institution.isVerified; downgrade never erases it", "The only writer is approveVerificationRequest, which writes verification fields ONLY", "No capabilities.isVerified anywhere", "'Role attested' is the public wording; model limitation recorded — role vs credential-like facts are not publicly distinguishable today"],
+      "knownRelationshipToRC": "RC-C2.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "C2-COMMERCIAL-TAXONOMY-CLOSEOUT",
+      "title": "Commercial Taxonomy Closeout + Future Commercialization Governance Marker",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 276-294)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "Active commercial taxonomy = FREE + PRO. The legacy VERIFIED middle tier is retired, not renamed. TRUSTED permanently rejected. No final Free/Pro entitlement boundary decided now. No new payment enforcement during release-client reconstruction.",
+      "dependencies": ["C2-MONETIZATION-VERIFICATION-DECOUPLING"],
+      "protectedBoundaries": ["FINAL COMMERCIAL ENTITLEMENT BOUNDARY: NOT YET FROZEN", "PAYMENT ENFORCEMENT: NOT TO BE ACTIVATED/EXPANDED DURING RELEASE-CLIENT RECONSTRUCTION", "A future agent must NOT infer that Free/Pro entitlements were decided during C2 — official-publishing gating, credit metering and env member limits are current behavior preserved, not adjudicated policy", "Required before enforcement: complete post-reconstruction product inventory + founder adjudication"],
+      "knownRelationshipToRC": "RC-C2 executed it; the marker is explicitly written to survive handoff into later chapters and RC-C11.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "C2-D1-FEED-SEMANTIC",
+      "title": "D1 — frozen feed semantic (Person->Person Follow)",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 249-251)",
+      "status": "FROZEN + IMPLEMENTED",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "An established Person->Person Follow makes eligible public participation from the followed Person available to the member feed's existing visibility/ranking rules.",
+      "dependencies": ["C2 R1-R10 Follow adjudication"],
+      "protectedBoundaries": ["Does NOT guarantee delivery, bypass ranking/visibility/moderation/blocks, expose restricted content, or become Subscribe"],
+      "knownRelationshipToRC": "RC-C2 owns it; FOLLOW != SUBSCRIBE vocabulary ownership is explicitly handed to RC-C4 (ruling R4).",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "C3-DR4-FINAL-ARCHITECTURE",
+      "title": "DR4 final architecture — mirrored route vs object-local depth vs path-manufactured context",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 297-305); aura_final/docs/frontend-discovery/C3_DR4_ARCHITECTURE_RECONCILIATION.md",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "MIRRORED ROUTE != OBJECT-LOCAL INSTITUTION DEPTH != PATH-MANUFACTURED CONTEXT. /institution/:id/... (34 routes) is the single canonical address space of institution-owned operations; the id is OBJECT SCOPE and carries no authority, no acting identity, no shell truth. /institutions/:slug remains the public durable link contract.",
+      "dependencies": ["FD-9", "FD-12 §8"],
+      "protectedBoundaries": ["Path-manufactured context is structurally impossible — resolveActorContext deleted (0 mechanisms), shell classification pinned never-authority, route-integrity gate + literal ratchet prevent regression", "The Phase-1 phrasing 'the :institutionId prefix is what dies' is SUPERSEDED as over-broad; the per-route DR4 test is the governing wording", "The institutional-inbox quartet (4 routes) finalizes with RC-C7"],
+      "knownRelationshipToRC": "RC-C3 produced it; RC-C7 inherits the quartet; RC-C8 inherits live-rooms internals; PD-1 inherits admin internals; Meetings' 8 institution-context routes are protected and untouched.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "C3-FOUNDER-OBSERVED-NAVIGATION-CORRECTION",
+      "title": "Founder-observed navigation correction (amends the five-primary freeze)",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 315-331); aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md (lines 54-56)",
+      "status": "FROZEN + IMPLEMENTED",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "GOVERNING TEST: PRIMARY NAVIGATION MUST REPRESENT A FUNDAMENTAL, RECURRING HUMAN INTENTION IN AURA. AUTHENTICATED PRIMARIES — FOUR: HOME · MESSAGES · DISCOVER · CREATE. ME removed (identity/avatar chrome). MEETINGS removed (institutional domain; no bare /meetings destination). CREATE restored; global and contextual create are complementary.",
+      "dependencies": ["C3-DR4-FINAL-ARCHITECTURE", "FD-9", "Capability-Adaptive Experience"],
+      "protectedBoundaries": [
+        "NO FIFTH DESTINATION is invented or reserved; Attention may earn primary status only at RC-C4's own founder checkpoint",
+        "Articles are canonically declared but NOT rendered until truthful reading capability exists — no dead 'coming soon' tenancy",
+        "Verification is never relevance ranking",
+        "Header invite icon RETIRED",
+        "GOVERNANCE LESSON: ARCHITECTURE CAN PROPOSE COHERENCE. HUMAN USE VALIDATES MEANING. WHEN THEY CONFLICT, INVESTIGATE THE CONFLICT RATHER THAN PROTECTING THE ARCHITECTURE. A locally certified architecture can be product-wrong; founder observation is evidence with amending authority."
+      ],
+      "knownRelationshipToRC": "Amends RC-C3's own closeout; constrains RC-C4 (primary-status question), RC-C6/RC-C8 (Meetings as institutional domain), and any future Long-Form Publishing placement.",
+      "knownRelationshipToFindingsOrWg": "F002 ('Create legacy creation model', PARTIALLY_VALIDATED — 'Discover taxonomy (People·Institutions·Spaces·Articles) + 4 primaries observed live'), F001/F003/F004 Discover/Institution entry. Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "CANON-AURA-CONVERSATION-SYSTEM",
+      "title": "Aura Conversation System — constitutional canon",
+      "sourceArtifact": "aura-backend/docs/2026-08-16-aura-conversation-system-canon.md (lines 3-25); pointer at aura_final/docs/DECISIONS.md (lines 334-353)",
+      "status": "FROZEN + IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "CONVERSATION = Aura's durable private/interpersonal/institutional communication relationship: parties who chose to communicate. MESSAGES = where Conversations live. Conversation is defined by durable human truths — parties, speech, attribution, consent, perspective, continuity — never by feature set, storage, realtime technology, or today's frontend.",
+      "dependencies": ["CANON-AURA-INVITATION-SYSTEM (Conversation consumes Invitation first)"],
+      "protectedBoundaries": [
+        "CONVERSATION / SPACE / PUBLICATION / ATTENTION / DELIVERY / IDENTITY / AUTHORITY never collapse into one another",
+        "Ten-year doctrine: capabilities attach, never fork",
+        "Origin != governance (v1 = leave-only); direct-pair identity survives naming; AI = capability, not Party",
+        "ATTENTION = projection of what presently needs the Person (C4) — zero conversation truth lives there",
+        "The clean-sheet implementation replaces the DirectThread and Space-as-conversation stacks; MESSAGES is one conversation list"
+      ],
+      "knownRelationshipToRC": "Explicitly names RC-C4 as the owner of Attention. RC-C7 is amended to consume canonical Conversation. Occupies subject matter the roadmap assigned to RC-C7's demolition list; no governed document records that reassignment as an RC state change.",
+      "knownRelationshipToFindingsOrWg": "F005-F023 Conversation core/capability findings; WG001/WG002/WG004/WG005/WG006/WG009 are staged for RIC-E2 ('Conversation as FIRST COMPLETE REFERENCE'). Source: aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md line 570; transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "CANON-AURA-INVITATION-SYSTEM",
+      "title": "Aura Invitation System — constitutional canon",
+      "sourceArtifact": "aura-backend/docs/2026-08-16-aura-invitation-system-canon.md (lines 3-22)",
+      "status": "FROZEN + IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "INVITATION = Aura's governed journey into purposeful participation. INVITATION OWNS THE JOURNEY INTO PARTICIPATION; THE DESTINATION OWNS PARTICIPATION AFTER ENTRY.",
+      "dependencies": ["Identity establishes the recipient", "Destination-side Authority determines whether the invitation may be issued"],
+      "protectedBoundaries": [
+        "Invitation is NOT a Conversation sub-feature, A C7 FEATURE, a notification, a Create domain, an email mechanism, or a permissions engine",
+        "ATTENTION (C4) PROJECTS WHAT NEEDS ACTION — zero invitation truth lives there",
+        "DELIVERY TRANSPORTS — delivery attempts never live in the invitation record",
+        "Address-verified invitation binding; external claim journey is /i/:token"
+      ],
+      "knownRelationshipToRC": "Explicitly removes Invitation ownership from RC-C7 while RC-C7's original charter placed membership/join/invite flows inside it. Names RC-C4 as Attention owner. Institution, Space, Meeting and future collaboration consume the same foundation as their invitation work is reconstructed.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "RC-C7-AMENDMENT",
+      "title": "C7 Amendment — Institutional Conversation & Desk",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 355-361)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "C7 = INSTITUTIONAL CONVERSATION & DESK. C7 consumes canonical Conversation and foundational Invitation; owns the institution-side Conversation/Desk experience and appropriate institutional participation/membership-entry reconstruction.",
+      "dependencies": ["CANON-AURA-CONVERSATION-SYSTEM", "CANON-AURA-INVITATION-SYSTEM"],
+      "protectedBoundaries": ["C7 does NOT recreate Correspondence as a product", "C7 does NOT own Invitation", "There is ONE canonical Conversation system"],
+      "knownRelationshipToRC": "Directly amends RC-C7's chartered scope. Does not change RC-C7's not-started state.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "OBLIGATION-CONVERSATION-COMPLETION-REGISTER",
+      "title": "Conversation Completion Register",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 369-375)",
+      "status": "FROZEN (obligation)",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "Audio call · video call · screen sharing · media/attachments · intentional Live · message reporting/moderation remain REQUIRED contextual attachments of canonical Conversation, to be built against the CONVERSATION realtime surface.",
+      "dependencies": ["CANON-AURA-CONVERSATION-SYSTEM"],
+      "protectedBoundaries": ["NO FAKE UI SHIPS MEANWHILE", "Conversation is NOT final-certified until this register is resolved", "C4 PROGRESSION DOES NOT ERASE IT"],
+      "knownRelationshipToRC": "Overlaps RC-C5 (media/attachments), RC-C6 (realtime) and RC-C10 (intentional Live) subject matter while all three are not-started or hard-gated.",
+      "knownRelationshipToFindingsOrWg": "F006-F023 map onto these capabilities (F006 1:1 audio LC, F007 group audio LC, F008 video LC, F010 screen share LC, F011 attachments PV, F023 report/moderation INLC). Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "FREEZE-CREATE-INTENT-VOCABULARY",
+      "title": "Create intent vocabulary (founder §5)",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 363-367)",
+      "status": "FROZEN + IMPLEMENTED",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "MESSAGE · POST · ARTICLE (when real) · contextual ANNOUNCEMENT. 'Message' is the human intention; 'Conversation' is the durable object underneath.",
+      "dependencies": ["C3-FOUNDER-OBSERVED-NAVIGATION-CORRECTION", "FD-10 / Product Language Authority"],
+      "protectedBoundaries": ["No 'Write' umbrella", "No Invitation/Institution/Article tenants until real", "Pinned by test/create/create_hub_domains_test.dart"],
+      "knownRelationshipToRC": "RC-C3 (Create as primary), RC-C0 (product language), RC-C5 (composition entry points).",
+      "knownRelationshipToFindingsOrWg": "F002 Create legacy creation model, PARTIALLY_VALIDATED. Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "GATE-C5-HARD-GATE",
+      "title": "C5 hard gate (frozen transition rule)",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 382-385)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "C5 remains CLOSED until C4 is implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed.",
+      "dependencies": ["RC-C4"],
+      "protectedBoundaries": ["C4 LOCAL CERTIFICATION != C5 AUTHORIZATION"],
+      "knownRelationshipToRC": "Sets RC-C5 to BLOCKED and, through the declared sequence, transitively stalls RC-C7, RC-C9, RC-C10 and RC-C11.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED",
+      "notedTension": "The bare 'C5' here is RC-C5 (resolved by its adjacency to 'C4 live closure' and the roadmap sequence), NOT RIC-C5 governed delivery. Both exist in the corpus."
+    },
+    {
+      "normalizedIdentifier": "DOCTRINE-DISCOVER-PEOPLE",
+      "title": "Discover -> People (frozen doctrine)",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 349-353)",
+      "status": "FROZEN + IMPLEMENTED",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "Personalized human discovery, with search always available, using legitimate, explainable, privacy-safe signals.",
+      "dependencies": ["C3-FOUNDER-OBSERVED-NAVIGATION-CORRECTION"],
+      "protectedBoundaries": ["The v1 signal weighting (PEOPLE_DISCOVERY_WEIGHTS) is a TUNABLE IMPLEMENTATION HEURISTIC, not product doctrine", "'Not interested' feedback is a recorded future enhancement triggered by observed need — NOT DEBT"],
+      "knownRelationshipToRC": "RC-C3 subject matter.",
+      "knownRelationshipToFindingsOrWg": "F001 ('People surface institution residue', IMPLEMENTED_NOT_LIVE_CERTIFIED — 'People list contents never exercised live'). Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "POLICY-INVITATION-ABUSE",
+      "title": "Invitation abuse policy (founder §3)",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (lines 377-380)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-16",
+      "governingPurpose": "No numerical issuance caps/cooldowns for this release; hooks + block/authority/safety protections stand; numbers come from evidence later.",
+      "dependencies": ["CANON-AURA-INVITATION-SYSTEM"],
+      "protectedBoundaries": ["NOT RELEASE-BLOCKING DEBT"],
+      "knownRelationshipToRC": "NOT_RECORDED",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "RIC-CONTRACT",
+      "title": "§12 RICH CONTENT & INTERACTION CONTRACT",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (whole document; frozen banner lines 1-10; commit cc56195)",
+      "status": "FROZEN",
+      "frozenOn": "2026-08-17",
+      "governingPurpose": "The governing implementation contract for the Rich Content & Interaction chapter. Frozen dependency graph: INGESTION TRUTH -> CONTENT VERIFICATION -> REFERENCE/RETENTION INTEGRITY -> GOVERNED DELIVERY -> PROCESSING/DERIVATIVES -> RICH PRESENTATION. Canonical lifecycle: ACQUIRE -> NORMALIZE -> INSPECT -> VALIDATE -> POLICY/INSPECTION -> SECURE -> STORE -> PROCESS -> ENRICH -> PERSIST -> HYDRATE -> PRESENT -> INTERACT -> GOVERN -> RETAIN/DELETE.",
+      "dependencies": ["17 incorporated founder rulings (§1)", "Evidence base: 2026-08-17-rich-content-system-audit.md, the F126 correction, and the founder rulings of 2026-08-17"],
+      "protectedBoundaries": [
+        "Freeze semantics: settled architecture is not reopened because implementation becomes inconvenient; work STOPS AT THE BOUNDARY AND REPORTS on a genuine contradiction, security issue, destructive migration, or product decision",
+        "Frozen storage invariants (F138): RESTRICTED OR PRIVATE BYTES MUST NEVER BE RETRIEVABLE MERELY THROUGH POSSESSION OF THEIR STORAGE KEY OR A HISTORICAL DELIVERY URL. VISIBILITY IS GOVERNANCE STATE, NOT STORAGE TOPOLOGY",
+        "Frozen competitive standard: a person accustomed to WhatsApp, LinkedIn, Teams, Facebook or X must not experience Aura as technologically old, awkward, or materially poorer in ordinary content interaction. 'Works' is not the bar",
+        "F126 and F138 remain SEPARATELY VISIBLE findings and must not be merged",
+        "PROTECTED — untouched by this contract: 1:1 calls, group audio/video, screenshare, Live escalation, session lifecycle/convergence, Conversation party truth, Meetings, and C4-OWNED ATTENTION FINDINGS",
+        "One real intersection identified: meeting recordings already use the multipart upload path this contract generalizes — requires explicit regression before it is touched, not assumed safe",
+        "Generalize capability. Never centralize domain authority into media (§13)",
+        "Provider independence (§8.2): every capability requires a SELF-HOSTED TIER-0 DEFAULT; external services may only ever be tier-1 enrichment; private documents must not leave Aura's governed infrastructure to obtain a preview",
+        "Licensing (§8.3): AGPL implementations (MuPDF) excluded from core; permissive licensing is a standing selection constraint",
+        "SVG remains blocked (§9.4); SAFE TO STORE != SAFE TO INSPECT != SAFE TO PREVIEW != SAFE TO EXECUTE",
+        "Validation gates (§17): architectural confidence is never converted into certification; every stage declares its class before work begins"
+      ],
+      "knownRelationshipToRC": "C_AXIS_AMBIGUOUS BY CONSTRUCTION — this chapter runs on the RIC axis and its stage names collide with RC chapter names. It explicitly PROTECTS RC-C4-owned attention findings and Meetings (RC-C6 territory). Its subject matter overlaps RC-C5's charter; no governed document reconciles them.",
+      "knownRelationshipToFindingsOrWg": "Names F011-F019, F025-F027, F058, F121-F143 and WG001/2/4/5/6/9 across its §14 retirement list and §16 stage table."
+    },
+    {
+      "normalizedIdentifier": "RIC-C1",
+      "title": "Content-truth authority, capability registry, presign validation, size rejection",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§5 lines 220-243; §16 stage row line 561); implementation commit 62b39bf (aura-backend)",
+      "status": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "statusEvidence": [
+        { "source": "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md", "lines": "8", "quote": "Chain: C1 62b39bf · C2 4f20b62 · production reconciliation 8960e4b · investigation db41d5b" },
+        { "source": "git log aura-backend", "quote": "62b39bf feat(media): C1 Content Truth authority — bytes decide, not claims (F127/F128/F130)" }
+      ],
+      "governingPurpose": "Six non-collapsed content-truth layers — declared -> transport -> signature -> container -> structural -> resolved — producing a TruthDisposition verdict plus a ResolvedTypeClass. Invariant: A FILE IS NOT TRUSTED MERELY BECAUSE THE CLIENT NAMED ITS TYPE.",
+      "dependencies": [],
+      "protectedBoundaries": [
+        "Container inspection is its own layer (DOCX/PPTX/XLSX/ODF and plain ZIP share signature 50 4B 03 04)",
+        "Formats with no signature resolve UNVERIFIABLE and are governed by policy — never served with an HTML-capable content type",
+        "Policy/inspection stage sits after validation, before delivery eligibility; QUARANTINED is the one new terminal state; no redundant vocabulary",
+        "Preserves allowlist governance, size/duration limits, filename sanitization, presign/download governance, SSRF protection, storage authorization"
+      ],
+      "knownRelationshipToRC": "RIC AXIS — NOT RC-C1 (Acting Context & Capability Projection). No relationship.",
+      "knownRelationshipToFindingsOrWg": "Declared to close F127, F128, F130, F122. Stage 0 does NOT promote those states — the register checkpoint at the F138 confirmation recorded 'no state promotions'."
+    },
+    {
+      "normalizedIdentifier": "RIC-C2",
+      "title": "Reference index + verifier registry + reconciler + retention rewrite + backfill",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§7 lines 269-298; §16 stage row line 562); aura-backend/docs/2026-08-18-c2-retention-truth-register.md (whole document); implementation commits 4f20b62, 942d5a1, 2b0d042, 4af75c5, dd025f5, d4d6ec1",
+      "status": "IMPLEMENTED_NOT_LIVE_CERTIFIED — 'stopped at its authorised boundary'; three migrations COMMITTED AND NOT APPLIED",
+      "statusEvidence": [
+        { "source": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md", "lines": "40-48", "quote": "Three migrations are committed and NOT applied. No production DDL has been executed and the reaper has not been run." },
+        { "source": "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md", "lines": "219-222", "quote": "Implementation status — recorded, NOT executed. C2 is stopped at its authorised boundary and was not reopened to satisfy this ruling." }
+      ],
+      "governingPurpose": "THE REFERENCE GRAPH IS AN INDEX, NOT AN ASSERTION. Surface composition tables remain the source of truth; ContentReference is a derived, verifiable index over them. When the two disagree, THE INDEX IS WRONG AND IS REBUILT. Release is soft (releasedAt); deletion requires zero live references AND grace elapsed AND a fresh reconciler pass — three independent conditions.",
+      "dependencies": ["RIC-C1"],
+      "protectedBoundaries": [
+        "Only the shared attachContent() helper may create references; a closed enum governs referenceType; no verifier, no type",
+        "Reference writes/releases occur in the SAME TRANSACTION as the owning row's write",
+        "The reconciler reports divergence in both directions as an operational signal, NOT A SILENT REPAIR",
+        "MEETINGS ARE A DELIBERATE EXTERNAL UNIVERSE — MeetingAsset has no Media relation, recordings own retainedUntil; the empty MEETING deriver is truthful and must never be reported as an unresolved blind spot",
+        "MediaCleanupService / the reaper is NOT RUN and remains outside this chapter's authorization",
+        "Production data NOT MUTATED — read-only evidence only",
+        "Identity system is a shared boundary: additive only, consumers regression-tested, no casual rewrite"
+      ],
+      "knownRelationshipToRC": "RIC AXIS — NOT RC-C2 (Identity, Presence & Profile). The register's own header states 'Chapter: §12 Rich Content & Interaction -> C2 completion (retention truth)'. It does touch canonical identity (D-1) as a shared boundary, which is the only real intersection with RC-C2's subject matter and is explicitly bounded.",
+      "knownRelationshipToFindingsOrWg": "F131 (OPEN, enlarged), F139 (STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED), F140 (OPEN), F141 (OPEN — authority structural, completeness is not), F142 (OPEN — conditions added, coverage not established), F143 (NEW, OPEN — structurally prevented, cause not removed). F126 and F138 carried forward unmerged."
+    },
+    {
+      "normalizedIdentifier": "RIC-AMENDMENT-1",
+      "title": "§12 Amendment 1 — Retention Truth (rulings D-1 … D-6, D-5.1)",
+      "sourceArtifact": "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md (whole document; commits 005318a, 310d09e)",
+      "status": "FROZEN (founder-ruled; amends the frozen §12 without reopening it)",
+      "frozenOn": "2026-08-18",
+      "governingPurpose": "NEW FROZEN ARCHITECTURAL DISTINCTION: ACQUISITION != ATTACHMENT != REFERENCE != RETENTION != PRESENTATION — five distinct facts, no single field may silently collapse them. Governing question order: 'What authoritative fact requires this content to continue to exist?' asked and answered BEFORE 'May this content be destroyed?'",
+      "dependencies": ["RIC-CONTRACT (§7 design upheld, authoritative source set extended)", "Evidence: aura-backend/docs/2026-08-18-c2-unindexed-media-provenance-investigation.md (db41d5b)"],
+      "protectedBoundaries": [
+        "Acquisition provenance never implies retention",
+        "orphanedAt is not authoritative evidence of abandonment and must stop conflating ATTACHMENT with RETENTION",
+        "Presentation history is not retention authority (D-2)",
+        "Retention is a derived consequence; storage deletion is a separate, irreversible execution decision — never one step",
+        "HARD STOPS: do not run the reaper · do not delete any of the 100 investigated objects · do not delete the six superseded identity assets · do not classify the 71 no-reference-found rows as orphans without authoritative proof · do not mutate production data to make the index reconcile · do not let ContentReference alone authorize deletion · do not use URL equality as permanent identity authority · do not use Markdown regex scanning as permanent inline-media authority · DO NOT MODIFY MEETINGS · DO NOT ADVANCE TO C5 · do not perform the R2 public-read ratchet · do not collapse F126/F138/F131/F139-F142",
+        "R&D evidence recorded: internal consistency of a derived model is not proof it corresponds to complete authoritative reality; a partial model may authorize RETENTION on its own, never DESTRUCTION"
+      ],
+      "rulings": [
+        { "id": "D-1", "text": "IDENTITY MEDIA RELATIONSHIP — YES, establish real authority. identity authority -> authoritative Media relationship -> governed Media delivery. URL equality may be used for migration/evidence discovery, never as the constitutional relationship. Migration must be additive.", "status": "DONE 4af75c5 — F139 structurally closed, migration NOT APPLIED" },
+        { "id": "D-2", "text": "SUPERSEDED IDENTITY MEDIA IN NOTIFICATIONS — no automatic retention right. The six superseded identity assets are NOT authorized for deletion this chapter. Preserve the evidence.", "status": "STANDING CONSTRAINT — honoured" },
+        { "id": "D-3", "text": "hasLiveReference() / reaper blind spots — AUTHORIZED IMMEDIATELY. Monotonically protective: uncertain/deletable -> KEEP allowed; protected/keep -> DELETE NOT. Do not run the reaper after the correction. F142 is not closed merely because one function gained conditions.", "status": "DONE 942d5a1 — 4 authorities covered + fail-safe + stage 3; F142 NOT closed" },
+        { "id": "D-4", "text": "REPLY REFERENCE TYPE — RETIRE. Replies are Post rows composing media through PostMedia; no separate REPLY retention authority for enum symmetry.", "status": "DONE 2b0d042 — migration proven on both paths, NOT APPLIED" },
+        { "id": "D-5", "text": "INLINE AUTHORED MEDIA — IN SCOPE. Permanent retention authority must NOT depend on regex-scanning Markdown URLs; future rich composition must produce explicit structured Media reference truth.", "status": "DONE dd025f5 — structured tables are the authority, parse is discovery; F141 stays OPEN" },
+        { "id": "D-5.1", "text": "ARTICLE REVISION MEDIA RETENTION — a retained ArticleRevision DOES confer retention on the Media required to faithfully reconstruct it. A durable authored revision must remain FAITHFULLY RECONSTRUCTABLE for the duration of its authoritative retention. Does NOT collapse D-2: arbitrary historical URLs gain no permanent retention.", "status": "RECORDED, DEFERRED — C2 not reopened; obligation owned by the portfolio layer" },
+        { "id": "D-6", "text": "PRODUCER WIRING — AUTHORIZED, SEQUENCED in seven steps ending 'only then propose any reaper authority change'. THE REAPER REMAINS OUTSIDE THIS AUTHORIZATION.", "status": "DONE (bounded) — 6 producers wired, level-2 physical storage gate added" }
+      ],
+      "knownRelationshipToRC": "RIC axis. Touches RC-C2's canonical identity as a bounded shared boundary (D-1). Re-affirms the Meetings protection that RC-C6 owns.",
+      "knownRelationshipToFindingsOrWg": "F131 enlarged; F139, F140, F141, F142 owned; F143 newly opened. F126 and F138 carried forward unmerged. Explicit FINDINGS DISCIPLINE section: 'F131 is the systemic retention defect. F139-F142 are independently actionable manifestations/boundaries. They intersect F131; that is not a reason to merge them.'"
+    },
+    {
+      "normalizedIdentifier": "RIC-C3",
+      "title": "Access context at ingestion; restricted branches for POST/REPLY (fail-closed ingestion)",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§15 gate 4 line 548; §16 stage row line 563)",
+      "status": "PROPOSED (declared stage inside the FROZEN contract; no implementation evidence found at Stage 0)",
+      "governingPurpose": "Access context declared at ingestion; fail-closed; PUBLIC asserted, never drifted into. Generalizes the F126 correction.",
+      "dependencies": ["RIC-C1"],
+      "protectedBoundaries": ["No presentation stage ships on an ungoverned ingestion path (§15)"],
+      "knownRelationshipToRC": "RIC AXIS — NOT RC-C3 (Navigation & IA). No relationship.",
+      "knownRelationshipToFindingsOrWg": "F126 generalized. F126's own state is recorded as APPLICATION-LEVEL DISCLOSURE CLOSED, STORAGE-LEVEL CONFIDENTIALITY NOT YET GUARANTEED — 'F126 must not be marked LIVE_CERTIFIED'. Phase A commits 7fc0e1e and 252f39e."
+    },
+    {
+      "normalizedIdentifier": "RIC-C4",
+      "title": "Canonical ingestion convergence — Correspondence, Articles, uploads",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§14 line 537; §16 stage row line 564)",
+      "status": "PROPOSED (declared stage; not implemented)",
+      "governingPurpose": "Converge Correspondence onto the canonical lifecycle (F129). It is NOT patched with three checks around a raw key — its domain authorization and semantics are preserved; only ingestion converges.",
+      "dependencies": ["RIC-C1", "RIC-C2"],
+      "protectedBoundaries": ["Correspondence domain authorization and semantics are preserved"],
+      "knownRelationshipToRC": "RIC AXIS — NOT RC-C4 (Attention). No relationship. NOTE: this is the single most dangerous collision in the corpus, because RC-C4 is heavily referenced as 'C4-owned'.",
+      "knownRelationshipToFindingsOrWg": "F129 (4x Media writers) is its named target; the four writers are enumerated in the C2 retention register (media.service.ts:260, messages.service.ts:221, institution-posts.service.ts:728, uploads.controller.ts:164). F143's root cause is deliberately left to F129's retirement work. Contradictions C-5 and C-6 are mapped into the F129 lineage."
+    },
+    {
+      "normalizedIdentifier": "RIC-C5",
+      "title": "Canonical governed delivery — PROMOTED SECURITY STAGE",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§6 lines 246-266; §16 stage row line 565; §18 lines 589-604)",
+      "status": "PROPOSED (declared stage; explicitly NOT ADVANCED — 'do not advance to C5')",
+      "governingPurpose": "PUBLIC CONTENT IS NOT PERMANENT UNREVOCABLE STORAGE ACCESS. Canonical delivery is an Aura-authored route for every visibility class; cache/CDN efficiency sits BENEATH that authority, never in place of it. Retire raw storage URLs; remove bucket public read; close F138 and complete F126 at storage level.",
+      "dependencies": ["RIC-C1", "RIC-C3"],
+      "protectedBoundaries": [
+        "Staged migration — POSTS MUST NOT BREAK: (1) introduce canonical delivery route, both paths valid; (2) move clients; (3) add cache/CDN beneath Aura's authority; (4) contingent on F138, remove bucket public read and retire raw storage URLs",
+        "Step 4 is where ruling 6 actually becomes true; steps 1-3 are safe regardless",
+        "F138 must be resolved before raw storage URLs are retired (§15 gate 9)",
+        "Amendment 1 hard stop: DO NOT ADVANCE TO C5; DO NOT PERFORM THE R2 PUBLIC-READ RATCHET; RETURN BEFORE REAPER AUTHORITY OR C5"
+      ],
+      "knownRelationshipToRC": "RIC AXIS — NOT RC-C5 (Composition, Content Intake & Attachments). The §12 dependency-graph line 'GOVERNED DELIVERY (C5)' refers to THIS record.",
+      "knownRelationshipToFindingsOrWg": "F138 (CONFIRMED security architecture defect — uploads.auraplatform.org performs no authorization of any kind; PUBLIC/RESTRICTED/PRIVATE physically indistinguishable at the delivery boundary; signed URLs not currently security-bearing), F126 storage-level completion, F136 (presign returns url/originalUrl/displayUrl/thumbnailUrl/thumbUrl as the identical full-resolution object — confirmed live). C5 was PROMOTED ahead of D1 on this evidence."
+    },
+    {
+      "normalizedIdentifier": "RIC-D1",
+      "title": "MediaDerivative + worker + image pipeline + EXIF stripping",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§8 lines 301-355; §16 stage row line 566)",
+      "status": "PROPOSED (declared stage; gated behind RIC-C1 and RIC-C5)",
+      "governingPurpose": "MediaDerivative(mediaId, kind, url, mimeType, ...) unique on (mediaId, kind, pageIndex). Media.url is always the preserved original; selection is a query; A FAILED DERIVATIVE NEVER FAILS THE MEDIA. Retires the six ad-hoc URL columns behind a compatibility read.",
+      "dependencies": ["RIC-C1", "RIC-C5 (D1 now gates on C5 after the F138 promotion)"],
+      "protectedBoundaries": ["Synchronous at confirmUpload is bounded and decodes no untrusted media; image derivatives, EXIF stripping, video posters/transcodes, waveforms, document previews and captions are asynchronous behind an Aura-controlled worker authenticating with the existing MEDIA_INTERNAL_TOKEN", "Delivered derivatives strip privacy-sensitive metadata by default, GPS especially"],
+      "knownRelationshipToRC": "RIC axis; no RC counterpart (there is no RC-D chapter).",
+      "knownRelationshipToFindingsOrWg": "Closes F132 (privacy metadata) and F136."
+    },
+    {
+      "normalizedIdentifier": "RIC-D2",
+      "title": "Video posters, audio duration/waveform, PDF preview, document identity",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§16 stage row line 567)",
+      "status": "PROPOSED",
+      "governingPurpose": "Second processing tier: video posters, audio duration/waveform, PDF preview, document identity.",
+      "dependencies": ["RIC-D1"],
+      "protectedBoundaries": ["Identity-only is a legitimate CAPABILITY STATE, never the destination (ruling 1)"],
+      "knownRelationshipToRC": "RIC axis; no RC counterpart.",
+      "knownRelationshipToFindingsOrWg": "F016 ('Honest document/media formats', OPEN — 'Founder: PDFs as bare attachments, docx/pptx unsupported; whole media-kind honesty model remains'). Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "RIC-D3",
+      "title": "Broad format families + transcode-dependent formats + external preview cache",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§9 lines 357-423; §12 lines 471-489; §16 stage row line 568)",
+      "status": "PROPOSED",
+      "governingPurpose": "BROAD SUPPORT BY DEFAULT. RESTRICTION REQUIRES A REASON — 'not previously in our MIME list' is explicitly NOT a reason. Governance moves from 28 enumerated MIME strings to capability-profiled families. External OG imagery is fetched through the existing SSRF-safe boundary and served from an Aura-controlled EXTERNAL_CACHE derivative instead of being hotlinked.",
+      "dependencies": ["RIC-D1"],
+      "protectedBoundaries": ["SSRF protections unchanged and un-weakened", "Cached preview imagery is a transient rendering aid at preview scale, not an asset claim; purged when the preview is purged", "New formats enter by governed capability registration, never by editing every surface (§9.5)", "Macro-enabled Office containers require explicit analysis before acceptance; SVG remains blocked"],
+      "knownRelationshipToRC": "RIC axis; no RC counterpart.",
+      "knownRelationshipToFindingsOrWg": "Closes F135 (viewer IP leakage to third parties)."
+    },
+    {
+      "normalizedIdentifier": "RIC-E1",
+      "title": "Shared client primitives — intake, upload, players, viewers, cards, accessibility",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§10 lines 426-449; §11 lines 451-469; §16 stage row line 569)",
+      "status": "PROPOSED",
+      "governingPurpose": "Presentation resolves from (resolved type x capabilities x available derivatives x access state x role) — NEVER from the acquisition door. Degradation chain, every step a truthful state: native rich -> reduced rich -> rich identity -> generic -> explicit error. Accessibility is first-class, carried by Media.altText, MediaDerivative(CAPTIONS), Media.transcript.",
+      "dependencies": ["RIC-C1"],
+      "protectedBoundaries": ["Broad format support must NOT become hundreds of identical pills", "Failure states read distinctly — CORS, 404 and expiry are three different truths", "No automatic transcription is mandated; the requirement is canonical homes requiring no later reconstruction"],
+      "knownRelationshipToRC": "RIC axis. Subject matter overlaps RC-C5's intake/composition primitives; no governed document reconciles the two.",
+      "knownRelationshipToFindingsOrWg": "Closes F058's real damage (indistinct failure states). F058 itself is BLOCKED ('R2/uploads CORS blocks avatars; PutBucketCors AccessDenied with backend token; JSON handed to you; remains: founder dashboard action'). Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "RIC-E2",
+      "title": "Conversation as FIRST COMPLETE REFERENCE",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§16 stage row line 570)",
+      "status": "PROPOSED",
+      "governingPurpose": "Reconstruct Conversation onto the shared Rich Content authorities as the first complete reference implementation.",
+      "dependencies": ["RIC-D2", "RIC-E1"],
+      "protectedBoundaries": ["Conversation party truth is PROTECTED and untouched by the §12 contract (§13)"],
+      "knownRelationshipToRC": "RIC axis. Conversation is governed by its own founder-frozen canon; RC-C7 consumes canonical Conversation.",
+      "knownRelationshipToFindingsOrWg": "EXPLICIT: F011-F019, F123-F125, WG001/WG002/WG004/WG005/WG006/WG009. This is the only place in the governed corpus where WG ids are mapped to a stage."
+    },
+    {
+      "normalizedIdentifier": "RIC-F1",
+      "title": "Propagation — Articles, Posts, Announcements, Institution Posts, Correspondence",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (§16 stage row line 571)",
+      "status": "PROPOSED",
+      "governingPurpose": "Propagate the reconstructed Rich Content stack across the remaining publication and communication surfaces.",
+      "dependencies": ["RIC-E2"],
+      "protectedBoundaries": ["Retirement model (§14) applies: NEW CONTRACT IMPLEMENTED -> HISTORY MIGRATED / EQUIVALENCE PROVEN -> LIVE BEHAVIOR CERTIFIED -> COMPATIBILITY CONSUMERS REMOVED -> LEGACY REPRESENTATION RETIRED. Indefinite compatibility is rejected."],
+      "knownRelationshipToRC": "RIC axis. Articles have no RC chapter (see GAP-2).",
+      "knownRelationshipToFindingsOrWg": "F121 (baked signed URLs in article markdown), F025-F027 (article editor defects)."
+    },
+    {
+      "normalizedIdentifier": "DOCTRINE-REFRESH-CONTINUITY",
+      "title": "REFRESH IS NOT NAVIGATION — shared-cause audit",
+      "sourceArtifact": "aura_final/docs/2026-08-17-refresh-continuity-shared-causes.md (lines 1-80)",
+      "status": "FROZEN (founder platform contract) + AUDITED, NOT IMPLEMENTED",
+      "governingPurpose": "Founder platform contract: refresh on a legitimate destination must RECONSTRUCT that destination. Nine ranked shared root causes RC1-RC9 recorded with file:line, RC1 (web session restore gated behind a device-local hint boolean) identified as highest leverage.",
+      "dependencies": [],
+      "protectedBoundaries": ["Investigation only; corrections tracked against the stop-order sequence"],
+      "knownRelationshipToRC": "No RC chapter owns this. It cuts across RC-C3 (routing/destinations), RC-C6/RC-C10 (mid-call continuity), RC-C5 (draft/compose continuity) and RC-C9 (platform lifecycle). NOT_RECORDED as any chapter's obligation.",
+      "knownRelationshipToFindingsOrWg": "F059-F070 (twelve continuity obligations, mostly OPEN), F117 ('Refresh as platform contract', PARTIALLY_VALIDATED — 'RC1-RC9 audit exists; execution not started'), F064/F113 (Meetings refresh continuity, duplicate pair kept separate with an explicit note). Source: transcript line 31798.",
+      "namespaceCaution": "RC1-RC9 here are ROOT-CAUSE ids in a refresh audit. They are NOT RC-C1..RC-C9 reconstruction chapters. This is a third, unrelated 'RC' usage in the corpus."
+    },
+    {
+      "normalizedIdentifier": "EVIDENCE-C4-DR1-LEGACY-ATTENTION-BANNER",
+      "title": "C4 DR1 — legacy global attention banner: live evidence + mechanism trace",
+      "sourceArtifact": "aura_final/docs/2026-08-16-c4-dr1-legacy-attention-banner-evidence.md (lines 1-40)",
+      "status": "EVIDENCE RECORD (no fix applied, by founder instruction)",
+      "governingPurpose": "Records that LEGACY ATTENTION PRESENTATION IS STILL ALIVE AND GLOBALLY OVERLAYS UNRELATED SURFACES, and traces the mechanism to a global floating SnackBar pushed through an app-root GlobalKey<ScaffoldMessengerState> mounted above the Router (notification_bridge.dart:294-308 and :425-440; global key :21; aura_app.dart:306-329).",
+      "dependencies": ["FD-1", "FD-2"],
+      "protectedBoundaries": ["Founder instruction: NO ISOLATED COSMETIC PATCH; this surface is retired comprehensively by RC-C4 under the canonical Attention Authority", "The CALL is not the subject — the defect class is the legacy attention presentation itself"],
+      "knownRelationshipToRC": "RC-C4 DR1.",
+      "knownRelationshipToFindingsOrWg": "F030 and F031, both C4_OWNED_OPEN, cite this document as their evidence. Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "BOUNDARY-MEETINGS-PROTECTED",
+      "title": "Meetings protection boundary",
+      "sourceArtifact": "Asserted independently at: aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (line 330); aura_final/docs/DECISIONS.md (lines 109-111); aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md (line 42); aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 508-513); aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md (lines 254-274); aura-backend/docs/2026-08-18-c2-retention-truth-register.md (line 108)",
+      "status": "FROZEN",
+      "governingPurpose": "Meetings is a protected certified surface. Its lifecycle is never rewritten; presentation converges slice-by-slice with regression after each slice; its storage/retention universe is deliberately external to the Media/ContentReference model.",
+      "dependencies": ["FD-4"],
+      "protectedBoundaries": [
+        "Meetings holds ZERO G5 sites; its protected debt is G3 (16) and G4 (14), belonging to controlled RC-C6 review",
+        "Meetings' 8 institution-context routes untouched by RC-C3",
+        "MeetingAsset has no Media relationship (storageKey matched 0 Media rows); RealtimeSessionRecording.storageUrl does not map to Media; Meetings own retainedUntil/deletedAt",
+        "The empty MEETING deriver is PRESENTLY TRUTHFUL and MUST NEVER be reported as an unresolved blind spot",
+        "Prohibited: creating a fake Media bridge, adding a Meeting deriver, modifying Meeting storage, refactoring recording retention, changing Meetings",
+        "One real intersection identified in §12: meeting recordings already use the multipart upload path that contract generalizes — explicit regression required before it is touched"
+      ],
+      "knownRelationshipToRC": "RC-C6 owns the controlled review; every other chapter treats Meetings as protected. RC-C3 removed MEETINGS from primary navigation on the ruling that MEETINGS ARE AN INSTITUTIONAL DOMAIN.",
+      "knownRelationshipToFindingsOrWg": "F114 (Meetings protected) LIVE_CERTIFIED; F112 (Meetings equivalent validation) OPEN, 'obligation intact, unstarted'; F064/F113 (Meetings refresh continuity) OPEN. Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "BOUNDARY-REALTIME-LIVE-PROTECTED-FROM-RIC",
+      "title": "Realtime / Live / session lifecycle protected from the Rich Content chapter",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 508-513)",
+      "status": "FROZEN",
+      "governingPurpose": "PROTECTED — untouched by the §12 contract: 1:1 calls, group audio/video, screenshare, Live escalation, session lifecycle/convergence, Conversation party truth, Meetings, and C4-owned attention findings.",
+      "dependencies": ["RIC-CONTRACT"],
+      "protectedBoundaries": ["The RIC axis may not absorb RC-C4-owned attention findings", "Live escalation and session lifecycle remain outside RIC scope"],
+      "knownRelationshipToRC": "Explicitly preserves RC-C4 ownership and RC-C6/RC-C10 territory from the RIC axis.",
+      "knownRelationshipToFindingsOrWg": "F030-F035 remain C4_OWNED_OPEN and are not absorbed by any RIC stage."
+    },
+    {
+      "normalizedIdentifier": "PD-1",
+      "title": "Platform Administration — product disposition checkpoint",
+      "sourceArtifact": "aura_final/docs/CURRENT_STATE.md (line 20); aura_final/docs/NEXT_WORK.md (lines 62-65); aura_final/docs/DECISIONS.md (lines 167-169)",
+      "status": "OPEN — NEW PRODUCT DISPOSITION CHECKPOINT (before C11)",
+      "openedOn": "2026-08-15",
+      "governingPurpose": "Decide the product disposition of platform administration surfaces. Opened when C1's G5 re-verification measured ZERO institutional authority code in all 11 admin files and withdrew 34 sites from C1.",
+      "dependencies": ["RC-C1 closeout"],
+      "protectedBoundaries": ["NO OWNING CHAPTER exists in the approved roadmap; it needs a product decision, not engineering judgment", "Must be resolved before RC-C11"],
+      "knownRelationshipToRC": "Sits outside RC-C0..C11. Inherits admin internals from RC-C3 and admin_institution_members from the RC-C2 People Selection classification. 34 G5 sites.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "PD-2",
+      "title": "Authentication & Account Entry — product disposition checkpoint",
+      "sourceArtifact": "aura_final/docs/CURRENT_STATE.md (line 21); aura_final/docs/NEXT_WORK.md (lines 62-65); aura_final/docs/DECISIONS.md (lines 167-169, 214)",
+      "status": "OPEN — STRUCTURAL DISPOSITION STILL OPEN (the PD-2-adjacent public-first copy drift was separately RESOLVED)",
+      "openedOn": "2026-08-15",
+      "governingPurpose": "Decide the product disposition of authentication and account-entry surfaces. Opened when C1 measured zero institutional authority code in both auth files and withdrew 3 sites.",
+      "dependencies": ["RC-C1 closeout", "DOCTRINE-PUBLIC-FIRST (copy reconciliation already applied)"],
+      "protectedBoundaries": ["NO OWNING CHAPTER exists in the approved roadmap", "Must be resolved before RC-C11", "The public-first copy fix was explicitly narrow: copy only, no auth redesign, no account architecture, no layout, no navigation, no behaviour"],
+      "knownRelationshipToRC": "Sits outside RC-C0..C11. 3 G5 sites.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "PD-SUPPORTSCREEN",
+      "title": "SupportScreen — ownership undetermined",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (line 40); aura_final/docs/NEXT_WORK.md (line 114)",
+      "status": "OPEN — product disposition checkpoint",
+      "openedOn": "2026-08-15",
+      "governingPurpose": "Determine which chapter, if any, owns SupportScreen.",
+      "dependencies": [],
+      "protectedBoundaries": ["EXPLICITLY NOT ASSIGNED TO RC-C9", "Recorded as an explicitly tracked disposition with NO INVENTED OWNERSHIP — this was one of the conditions of roadmap approval"],
+      "knownRelationshipToRC": "Sits outside RC-C0..C11.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "GAP-1",
+      "title": "Settings / Personal Controls — founder-owned roadmap gap",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (line 310)",
+      "status": "OPEN — recorded 2026-08-16 at RC-C4 opening; NOT CHAPTER WORK",
+      "governingPurpose": "The roadmap charters no Settings chapter. Prior 'C4 Settings' references were continuity shorthand, now formally reclassified. The broader personal Settings experience is UNCHARTERED.",
+      "dependencies": [],
+      "protectedBoundaries": ["The Availability Off user-facing control remains required: C2 doctrine frozen, runtime semantics canonical, control required, IMPLEMENTATION OWNER UNASSIGNED pending founder roadmap placement", "Availability doctrine is NOT reopened by this gap"],
+      "knownRelationshipToRC": "Contradicts the earlier C2 debt-register row 12 assignment of the Availability Off control to 'C4 Settings'. No RC chapter currently owns it.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    },
+    {
+      "normalizedIdentifier": "GAP-2",
+      "title": "Long-Form Publishing / Articles — founder-owned roadmap gap",
+      "sourceArtifact": "aura_final/docs/DECISIONS.md (line 312)",
+      "status": "OPEN AS GOVERNANCE — CONTRADICTED BY IMPLEMENTATION",
+      "governingPurpose": "Net-new first-class capability, NOT reconstruction debt. Frozen product distinction: POST = timely expression/discourse participation · ARTICLE = substantial authored thought/durable long-form publication · ANNOUNCEMENT = governed institutional communication. Full lifecycle eventually required.",
+      "dependencies": [],
+      "protectedBoundaries": ["NOT a Post extension", "NOT part of RC-C4", "NO CHAPTER NUMBER ASSIGNED; awaiting deliberate founder dependency placement", "Person and Institution authorship both legitimate; institutional publication inherits canonical acting-identity/authority doctrine — route/context never manufactures authorship"],
+      "knownRelationshipToRC": "No RC chapter owns it, yet it is now shipped and is a declared Discover domain under the RC-C3 navigation correction. RIC-F1 propagation names Articles. RC-C11 has no declared home for it.",
+      "knownRelationshipToFindingsOrWg": "F024 ('Article as 4th domain', LIVE_CERTIFIED — 'Discover->Articles live; article published live'), F025/F026/F027 (editor defects, OPEN), F028 (article create 500, LIVE_CERTIFIED after 388ed84), F029 (revision keeps URL + truthful history, LIVE_CERTIFIED), F121 (baked signed URLs in article markdown), F141 (inline authored media retention). Source: transcript line 31798."
+    },
+    {
+      "normalizedIdentifier": "GOVERNANCE-NON-SHRINKING-REGISTER",
+      "title": "Non-shrinking register rule",
+      "sourceArtifact": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl line 31798 (adopted); no governed markdown home found at Stage 0",
+      "status": "ADOPTED (transcript-only; NOT PRESENT IN ANY GOVERNED ARTIFACT)",
+      "governingPurpose": "An item leaves the register ONLY at LIVE_CERTIFIED, SUPERSEDED_BY_FOUNDER_RULING, or EXPLICITLY_RETIRED. Implementation, green tests, and deployment do not remove it. Every checkpoint reports new findings, state changes, terminal items, unresolved items, and register health.",
+      "dependencies": [],
+      "protectedBoundaries": ["Architectural confidence is never converted into certification (the §12 §17 restatement of the same principle)", "'Previously called fixed & deployed that I cannot honestly call LIVE_CERTIFIED (9)' is preserved as a standing honesty correction"],
+      "knownRelationshipToRC": "Applies to the whole portfolio; the closure standard RC-C11 must meet.",
+      "knownRelationshipToFindingsOrWg": "F115 (non-shrinking register), F119 (implemented capabilities must not vanish from reporting), F120 (every item reaches terminal state) — recorded as 'three angles of one governance obligation ... treat them as a single closure gate'. All OPEN."
+    },
+    {
+      "normalizedIdentifier": "GOVERNANCE-VALIDATION-CLASSES",
+      "title": "Validation gate classes (§12 §17)",
+      "sourceArtifact": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 575-585)",
+      "status": "FROZEN",
+      "governingPurpose": "LOCALLY VERIFIED · AUTHORIZED-BROWSER VERIFIED · TWO-ACCOUNT / TWO-BROWSER REQUIRED · LIVE_CERTIFIED. Every stage declares its class BEFORE work begins.",
+      "dependencies": ["RIC-CONTRACT"],
+      "protectedBoundaries": ["ARCHITECTURAL CONFIDENCE IS NEVER CONVERTED INTO CERTIFICATION", "F126 live journey, cross-party render parity, access denial and sender-vs-receiver truth REQUIRE two accounts / two browsers", "LIVE_CERTIFIED only after the above, per surface"],
+      "knownRelationshipToRC": "Parallel to, and independent of, the RC certification-layer table (Architecture / Implementation / Product-Behavior / Cross-System / Real-Boundary / Founder Acceptance / Item 17). Two certification vocabularies coexist in the corpus; no document reconciles them.",
+      "knownRelationshipToFindingsOrWg": "F126 named explicitly."
+    },
+    {
+      "normalizedIdentifier": "GOVERNANCE-RC-CERTIFICATION-LAYERS",
+      "title": "RC certification layers",
+      "sourceArtifact": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 582-594); aura_final/docs/frontend-discovery/FRONTEND_CERTIFICATION_AND_FOUNDER_GATES.md",
+      "status": "FROZEN",
+      "governingPurpose": "Architecture and Implementation land per chapter locally; Product-Behavior at each founder checkpoint; Cross-System at RC-C1, RC-C5, RC-C8, RC-C10; Real-Boundary substantially at RC-C9 and at RC-C10 for media scale; Founder Product Acceptance per checkpoint consolidated at RC-C11; Item 17 / Release Gate at RC-C11 only.",
+      "dependencies": ["FD-13"],
+      "protectedBoundaries": ["A LOWER LAYER PASSING NEVER IMPLIES A HIGHER ONE"],
+      "knownRelationshipToRC": "Defines the certification obligations of every RC chapter.",
+      "knownRelationshipToFindingsOrWg": "NOT_RECORDED"
+    }
+  ],
+  "indexLevelObservations": [
+    {
+      "id": "O1",
+      "observation": "THREE unrelated 'C-number' / 'RC' namespaces coexist in this corpus: (a) RC-C0..RC-C11 reconstruction chapters, (b) RIC-C1..RIC-F1 Rich Content implementation stages, (c) RC1..RC9 refresh-continuity root causes. A fourth near-collision exists in the C2 Follow adjudication rulings R1-R10 versus the C1 accepted-exception labels R1/R2. Every one of these appears as a bare token in at least one governed document.",
+      "sources": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md",
+        "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 557-572)",
+        "aura_final/docs/2026-08-17-refresh-continuity-shared-causes.md (lines 9-80)",
+        "aura_final/docs/DECISIONS.md (lines 218-235, 171-173)"
+      ]
+    },
+    {
+      "id": "O2",
+      "observation": "TWO certification vocabularies coexist without reconciliation: the RC layer table (Architecture / Implementation / Product-Behavior / Cross-System / Real-Boundary / Founder Acceptance / Item 17) and the §12 validation classes (LOCALLY VERIFIED / AUTHORIZED-BROWSER VERIFIED / TWO-ACCOUNT-TWO-BROWSER / LIVE_CERTIFIED). Finding states use the second vocabulary; chapter states use the first.",
+      "sources": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 582-594)",
+        "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 575-585)"
+      ]
+    },
+    {
+      "id": "O3",
+      "observation": "The doctrines that govern the 2026-08-16..18 work (Conversation canon, Invitation canon, §12 Rich Content, Live Origination Correction) each declare their own boundaries and each name RC-C4 as Attention owner — so they consistently RESPECT the RC frame at its edges while operating outside its sequencing. No governed document states whether they are inside, alongside, or superseding the RC roadmap.",
+      "sources": [
+        "aura-backend/docs/2026-08-16-aura-conversation-system-canon.md (line 14)",
+        "aura-backend/docs/2026-08-16-aura-invitation-system-canon.md (line 12)",
+        "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 508-513)"
+      ]
+    },
+    {
+      "id": "O4",
+      "observation": "Findings discipline is asserted independently in three places and must not be relaxed by any later stage: F126 and F138 must not be merged (§12 line 35); F131 and F139-F142 intersect but must not be merged (Amendment 1 §E); F064/F113 remain separate rows with an explicit duplication note and F050 ⊂ F053 ⊂ F116 plus F059-F070 ⊂ F117 are recorded as hierarchy, not compression (transcript register).",
+      "sources": [
+        "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (line 35)",
+        "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md (lines 277-298)",
+        "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl (lines 31798, 31827)"
+      ]
+    },
+    {
+      "id": "O5",
+      "observation": "WG001-WG018 exist only as prospective world-class gaps. The transcript record states 'WG prospective items: 17 (WG001-WG017), none authorized, none implemented' at one checkpoint, while the dossier index carries 18 ids (WG001-WG018). Only WG001/2/4/5/6/9 have a governed-document home (RIC-E2). The remaining twelve have no chapter, no doctrine and no recorded disposition.",
+      "sources": [
+        "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl (line 31827)",
+        "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (line 570)",
+        "aura_final/docs/portfolio/run/stage0-2026-08-18/00-evidence/dossier-index.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,672 @@
+{
+ "batch": "wg",
+ "count": 18,
+ "dossiers": [
+  {
+   "id": "WG001",
+   "totalExternalMentions": 14,
+   "inGovernedDocs": 1,
+   "distinctSources": 2,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31804,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "\\n- privacy/block/report boundaries\\n- link handling\\n- media lifecycle\\n- realtime transition between messaging/audio/video/screen share/Live\\n- continuity across refresh/device/session\\n- anything else repository evidence shows.\\n\\nIMPORTANT:\\nThese are NOT automatically authorized features.\\n\\nLabel new discoveries WG001, WG002, ... = WORLD-CLASS GAP.\\n\\nFor each tell us:\\n- why it matters;\\n- whether Aura already has a reusable authority/capability elsewhere;\\n- whether it belongs in Conversation;\\n- whether it should become shared communication infrastructure;\\n- whether you recommend NOW / LATER / REJECT.\\n\\nDo not implement W"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 570,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **E2** | **Conversation as FIRST COMPLETE REFERENCE** (F011–F019, F123–F125, WG001/2/4/5/6/9) | D2, E1 |"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "20 PV).\\n- **Actually unresolved:** 50 (42 OPEN + 2 BLOCKED + 6 C4).\\n- **Newly discovered F-items (F121+):** **none** — this reorganization surfaced no new concrete defects beyond the register; new observations landed as WG prospective gaps instead, which is the honest classification.\\n- **WG prospective items:** 17 (WG001–WG017), none authorized, none implemented.\\n- **Register integrity:** no renumbering, no merges, no hidden rows; F064/F113 remain separate with an explicit duplication note; F050⊂F053⊂F116 and F059–F070⊂F117 recorded as hierarchy, not compression.\\n\\n**No implementation, no push, no call/Live testing, no C4, no M"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31804,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "=============================================\\n\\nReturn one consolidated decision report:\\n\\nA. Executive truth\\nB. Domain grouping with every F001–F120 accounted for\\nC. Cross-domain dependency map\\nD. P0/P1/P2/P3 counts and membership\\nE. V1/V2/V3/V4/V5 counts and membership\\nF. World-class Conversation gap register WG001+\\nG. Quiet High-Impact Wave recommendation\\nH. Realtime Human Certification Batch\\nI. Meetings certification batch\\nJ. F055/F056 feasibility recommendation and status of local f518024\\nK. C4 items that currently degrade these journeys despite remaining C4-owned\\nL. Exact founder decisions required\\nM. Register re"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32009,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "24 |\\n| IMPLEMENTED_NOT_LIVE_CERTIFIED | **25** (+1: F065) |\\n| PARTIALLY_VALIDATED | 20 |\\n| OPEN | **41** (−1) |\\n| BLOCKED | 2 |\\n| C4_OWNED_OPEN | 6 (untouched, evidence preserved) |\\n| SUPERSEDED / RETIRED | 0 / 2 |\\n| **Reconciles** | 24+25+20+41+2+6+0+2 = **120 ✓** |\\n\\nWG register: 17 candidates, 6 authorized (WG001/002/004/005/006/009), none started yet. Meetings untouched. Live downstream parked. Nothing uncommitted — both repos pushed and deploying.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":1468,\"cache_read_input_tokens\":906766,\"output_toke"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32165,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "|---|\\n| Total F-items | **120** (+0) |\\n| LIVE_CERTIFIED | 24 |\\n| IMPLEMENTED_NOT_LIVE_CERTIFIED | **26** (+1: F069) |\\n| PARTIALLY_VALIDATED | 20 |\\n| OPEN | **40** (−1) |\\n| BLOCKED | 2 · **C4_OWNED_OPEN** 6 · **RETIRED** 2 |\\n| **Reconciles** | 24+26+20+40+2+6+0+2 = **120 ✓** |\\n\\nWG: 17 candidates, 6 authorized (WG001/002/004/005/006/009) — now folded into the Rich Content chapter's sequencing rather than implemented as isolated patches, per your §13. Meetings protected, C4 untouched, Live downstream parked. Nothing uncommitted.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cac"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "NDER_RULING / EXPLICITLY_RETIRED only). \\\"Implemented/deployed/test-green is not terminal.\\\"\\n- **Quiet High-Impact Wave** (authorized): Wave 1A continuity (F065, F059, F066, F067, F068, F069, F070, F061, F062, F063), 1B proof debt (F043, F044, F046), 1C composer/media (F011–F019), 1D articles (F025, F026, F027); plus WG001 (message edit), WG002 (delete/retract), WG004 (pagination), WG005 (failed-send/retry), WG006 (draft persistence), WG009 (typing indicator under \\\"TYPING IS EPHEMERAL INTERACTION STATE, NEVER ATTENTION STATE\\\").\\n- **F055/F056 rulings**: reject generic joinedAt+alphabetical ordering; require immutable admission ch"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "fer/progress/failure/retry → Conversation reference implementation → full content matrix → reconcile F011–F019 → cross-surface migration → regressions → docs.\\n- Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069).\\n- Wave 1B: F043, F044, F046 live proof.\\n- Wave 1D: F025, F026, F027.\\n- WG001, WG002, WG004, WG005, WG006, WG009 (folded into #173 sequencing).\\n- Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112–F114), consolidated realtime human certification batch.\\n\\n8. **Current Work:**\\nImmediately before this summary I applied the founder's Spaces ruling — reclassifying `/spaces` an"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "additive immutable-admission-order field, or accept approximate ordering? (I recommend the field.)\\n3. **F056:** implement composite avatars now with initials fallback, or wait for F058?\\n4. **F058:** apply the Cloudflare R2 CORS JSON — it gates four identity items and every avatar surface.\\n5. **WG authorizations:** WG001, WG002, WG004, WG005, WG006 recommended NOW — approve/deny each.\\n6. **WG009 (typing indicators):** genuine doctrine question — does it violate \\\"passive presence is not attention\\\"?\\n7. **Whether to park coordinated realtime testing** until §H can run in one uninterrupted session with your window kept open.\\n\\n#"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "tate\\n- shared root causes fixed\\n- live routes exercised\\n- regressions\\n\\nC. Wave 1B — proof debt\\n- F043/F044/F046 evidence\\n\\nD. Wave 1C — Conversation/media/composer\\n- each F-item separately\\n- shared infrastructure created/reused\\n- live proof\\n\\nE. Wave 1D — Articles\\n- each item separately\\n- live proof\\n\\nF. WG001/WG002/WG004/WG005/WG006/WG009\\n- implementation\\n- authority semantics\\n- live proof\\n- unresolved founder decisions\\n\\nG. Identity\\n- F055 final model\\n- F056 final presentation\\n- F058 status\\n- any F053/F116 discoveries\\n\\nH. Founder Findings Delta\\n- new F121+\\n- new WG018+\\n- state changes\\n- newly terminal"
+    }
+   ]
+  },
+  {
+   "id": "WG002",
+   "totalExternalMentions": 7,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31804,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "vacy/block/report boundaries\\n- link handling\\n- media lifecycle\\n- realtime transition between messaging/audio/video/screen share/Live\\n- continuity across refresh/device/session\\n- anything else repository evidence shows.\\n\\nIMPORTANT:\\nThese are NOT automatically authorized features.\\n\\nLabel new discoveries WG001, WG002, ... = WORLD-CLASS GAP.\\n\\nFor each tell us:\\n- why it matters;\\n- whether Aura already has a reusable authority/capability elsewhere;\\n- whether it belongs in Conversation;\\n- whether it should become shared communication infrastructure;\\n- whether you recommend NOW / LATER / REJECT.\\n\\nDo not implement WG items"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "gress/failure/retry → Conversation reference implementation → full content matrix → reconcile F011–F019 → cross-surface migration → regressions → docs.\\n- Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069).\\n- Wave 1B: F043, F044, F046 live proof.\\n- Wave 1D: F025, F026, F027.\\n- WG001, WG002, WG004, WG005, WG006, WG009 (folded into #173 sequencing).\\n- Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112–F114), consolidated realtime human certification batch.\\n\\n8. **Current Work:**\\nImmediately before this summary I applied the founder's Spaces ruling — reclassifying `/spaces` and `/spa"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ve immutable-admission-order field, or accept approximate ordering? (I recommend the field.)\\n3. **F056:** implement composite avatars now with initials fallback, or wait for F058?\\n4. **F058:** apply the Cloudflare R2 CORS JSON — it gates four identity items and every avatar surface.\\n5. **WG authorizations:** WG001, WG002, WG004, WG005, WG006 recommended NOW — approve/deny each.\\n6. **WG009 (typing indicators):** genuine doctrine question — does it violate \\\"passive presence is not attention\\\"?\\n7. **Whether to park coordinated realtime testing** until §H can run in one uninterrupted session with your window kept open.\\n\\n# M. REG"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "- shared root causes fixed\\n- live routes exercised\\n- regressions\\n\\nC. Wave 1B — proof debt\\n- F043/F044/F046 evidence\\n\\nD. Wave 1C — Conversation/media/composer\\n- each F-item separately\\n- shared infrastructure created/reused\\n- live proof\\n\\nE. Wave 1D — Articles\\n- each item separately\\n- live proof\\n\\nF. WG001/WG002/WG004/WG005/WG006/WG009\\n- implementation\\n- authority semantics\\n- live proof\\n- unresolved founder decisions\\n\\nG. Identity\\n- F055 final model\\n- F056 final presentation\\n- F058 status\\n- any F053/F116 discoveries\\n\\nH. Founder Findings Delta\\n- new F121+\\n- new WG018+\\n- state changes\\n- newly terminal items\\"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "LY_RETIRED only). \\\"Implemented/deployed/test-green is not terminal.\\\"\\n- **Quiet High-Impact Wave** (authorized): Wave 1A continuity (F065, F059, F066, F067, F068, F069, F070, F061, F062, F063), 1B proof debt (F043, F044, F046), 1C composer/media (F011–F019), 1D articles (F025, F026, F027); plus WG001 (message edit), WG002 (delete/retract), WG004 (pagination), WG005 (failed-send/retry), WG006 (draft persistence), WG009 (typing indicator under \\\"TYPING IS EPHEMERAL INTERACTION STATE, NEVER ATTENTION STATE\\\").\\n- **F055/F056 rulings**: reject generic joinedAt+alphabetical ordering; require immutable admission chronology (founding cou"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "TER (WG) — prospective, not authorized\\n\\n| ID | Gap | Why it matters | Existing authority to reuse | Home | Rec |\\n|---|---|---|---|---|---|\\n| WG001 | **Message edit** | `ConversationMessage.editedAt` exists in schema; no API, no UI. Baseline expectation | Message authority | Conversation, then shared | **NOW** |\\n| WG002 | **Message delete/retract** | `deletedAt`/`deletedReason` exist and are honoured in reads; nothing can create them | Moderation + message authority | Conversation → shared | **NOW** |\\n| WG003 | Per-message delivery/read truth | Only a per-human read cursor exists; no sent/delivered/read per message | `Conversat"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "=================================================\\n20. EXECUTION AUTHORIZATION\\n======================================================================\\n\\nAUTHORIZED:\\n- Quiet High-Impact Wave described above.\\n- F055 immutable admission chronology correction.\\n- F056 composite group identity architecture.\\n- WG001.\\n- WG002.\\n- WG004.\\n- WG005.\\n- WG006.\\n- WG009 under ephemeral-interaction doctrine.\\n\\nNOT AUTHORIZED:\\n- C4 implementation.\\n- Meetings redesign/refactor.\\n- Live downstream engagement/acquisition implementation.\\n- SFU implementation.\\n- other WG items.\\n- silent expansion into unrelated surfaces.\\n\\nf518024 may be a"
+    }
+   ]
+  },
+  {
+   "id": "WG003",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ditedAt` exists in schema; no API, no UI. Baseline expectation | Message authority | Conversation, then shared | **NOW** |\\n| WG002 | **Message delete/retract** | `deletedAt`/`deletedReason` exist and are honoured in reads; nothing can create them | Moderation + message authority | Conversation → shared | **NOW** |\\n| WG003 | Per-message delivery/read truth | Only a per-human read cursor exists; no sent/delivered/read per message | `ConversationHumanState` | Conversation + C4 | LATER (C4 coupling) |\\n| WG004 | **Large-history pagination** | Backend `before` cursor **exists**; frontend never calls it — no ScrollController, loads a si"
+    }
+   ]
+  },
+  {
+   "id": "WG004",
+   "totalExternalMentions": 7,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "n` exist and are honoured in reads; nothing can create them | Moderation + message authority | Conversation → shared | **NOW** |\\n| WG003 | Per-message delivery/read truth | Only a per-human read cursor exists; no sent/delivered/read per message | `ConversationHumanState` | Conversation + C4 | LATER (C4 coupling) |\\n| WG004 | **Large-history pagination** | Backend `before` cursor **exists**; frontend never calls it — no ScrollController, loads a single page forever | Existing cursor API | Conversation | **NOW** (correctness + perf) |\\n| WG005 | **Failed-send truth + retry** | Failure is a transient toast; the message is simply lost"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ailure/retry → Conversation reference implementation → full content matrix → reconcile F011–F019 → cross-surface migration → regressions → docs.\\n- Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069).\\n- Wave 1B: F043, F044, F046 live proof.\\n- Wave 1D: F025, F026, F027.\\n- WG001, WG002, WG004, WG005, WG006, WG009 (folded into #173 sequencing).\\n- Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112–F114), consolidated realtime human certification batch.\\n\\n8. **Current Work:**\\nImmediately before this summary I applied the founder's Spaces ruling — reclassifying `/spaces` and `/spaces/:sl"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "table-admission-order field, or accept approximate ordering? (I recommend the field.)\\n3. **F056:** implement composite avatars now with initials fallback, or wait for F058?\\n4. **F058:** apply the Cloudflare R2 CORS JSON — it gates four identity items and every avatar surface.\\n5. **WG authorizations:** WG001, WG002, WG004, WG005, WG006 recommended NOW — approve/deny each.\\n6. **WG009 (typing indicators):** genuine doctrine question — does it violate \\\"passive presence is not attention\\\"?\\n7. **Whether to park coordinated realtime testing** until §H can run in one uninterrupted session with your window kept open.\\n\\n# M. REGISTER R"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ed root causes fixed\\n- live routes exercised\\n- regressions\\n\\nC. Wave 1B — proof debt\\n- F043/F044/F046 evidence\\n\\nD. Wave 1C — Conversation/media/composer\\n- each F-item separately\\n- shared infrastructure created/reused\\n- live proof\\n\\nE. Wave 1D — Articles\\n- each item separately\\n- live proof\\n\\nF. WG001/WG002/WG004/WG005/WG006/WG009\\n- implementation\\n- authority semantics\\n- live proof\\n- unresolved founder decisions\\n\\nG. Identity\\n- F055 final model\\n- F056 final presentation\\n- F058 status\\n- any F053/F116 discoveries\\n\\nH. Founder Findings Delta\\n- new F121+\\n- new WG018+\\n- state changes\\n- newly terminal items\\n- new"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "1b — Proof-completion of already-built realtime truths** · F043, F044, F046\\n*Why now:* implemented but unproven; I can create/end sessions through the API and observe a single browser. Converts three INLC items to LC with no coordination.\\n\\n**Wave 1c — Composer & media completion** · F011, F014, F016, F017, F019 (+ WG004, WG005, WG006 if authorized)\\n*Why now:* this is what makes Conversation *feel* complete; all provable by sending as Reviewer and reading back. *Affects:* Conversation now, Posts/Articles later via shared intake.\\n\\n**Wave 1d — Article editor** · F025, F026, F027\\n*Why now:* self-contained, entirely V1, and curre"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "=======================================\\n20. EXECUTION AUTHORIZATION\\n======================================================================\\n\\nAUTHORIZED:\\n- Quiet High-Impact Wave described above.\\n- F055 immutable admission chronology correction.\\n- F056 composite group identity architecture.\\n- WG001.\\n- WG002.\\n- WG004.\\n- WG005.\\n- WG006.\\n- WG009 under ephemeral-interaction doctrine.\\n\\nNOT AUTHORIZED:\\n- C4 implementation.\\n- Meetings redesign/refactor.\\n- Live downstream engagement/acquisition implementation.\\n- SFU implementation.\\n- other WG items.\\n- silent expansion into unrelated surfaces.\\n\\nf518024 may be amended/rep"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "emented/deployed/test-green is not terminal.\\\"\\n- **Quiet High-Impact Wave** (authorized): Wave 1A continuity (F065, F059, F066, F067, F068, F069, F070, F061, F062, F063), 1B proof debt (F043, F044, F046), 1C composer/media (F011–F019), 1D articles (F025, F026, F027); plus WG001 (message edit), WG002 (delete/retract), WG004 (pagination), WG005 (failed-send/retry), WG006 (draft persistence), WG009 (typing indicator under \\\"TYPING IS EPHEMERAL INTERACTION STATE, NEVER ATTENTION STATE\\\").\\n- **F055/F056 rulings**: reject generic joinedAt+alphabetical ordering; require immutable admission chronology (founding counterpart first). Reject"
+    }
+   ]
+  },
+  {
+   "id": "WG005",
+   "totalExternalMentions": 7,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "vered/read per message | `ConversationHumanState` | Conversation + C4 | LATER (C4 coupling) |\\n| WG004 | **Large-history pagination** | Backend `before` cursor **exists**; frontend never calls it — no ScrollController, loads a single page forever | Existing cursor API | Conversation | **NOW** (correctness + perf) |\\n| WG005 | **Failed-send truth + retry** | Failure is a transient toast; the message is simply lost | — | Conversation → shared composer | **NOW** |\\n| WG006 | **Per-conversation draft persistence** | Composer text dies on navigation; ties to RC7/F063 | Continuity authority | Shared composer | **NOW** |\\n| WG007 | In-conv"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "retry → Conversation reference implementation → full content matrix → reconcile F011–F019 → cross-surface migration → regressions → docs.\\n- Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069).\\n- Wave 1B: F043, F044, F046 live proof.\\n- Wave 1D: F025, F026, F027.\\n- WG001, WG002, WG004, WG005, WG006, WG009 (folded into #173 sequencing).\\n- Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112–F114), consolidated realtime human certification batch.\\n\\n8. **Current Work:**\\nImmediately before this summary I applied the founder's Spaces ruling — reclassifying `/spaces` and `/spaces/:slug` as"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "roof-completion of already-built realtime truths** · F043, F044, F046\\n*Why now:* implemented but unproven; I can create/end sessions through the API and observe a single browser. Converts three INLC items to LC with no coordination.\\n\\n**Wave 1c — Composer & media completion** · F011, F014, F016, F017, F019 (+ WG004, WG005, WG006 if authorized)\\n*Why now:* this is what makes Conversation *feel* complete; all provable by sending as Reviewer and reading back. *Affects:* Conversation now, Posts/Articles later via shared intake.\\n\\n**Wave 1d — Article editor** · F025, F026, F027\\n*Why now:* self-contained, entirely V1, and currently th"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "dmission-order field, or accept approximate ordering? (I recommend the field.)\\n3. **F056:** implement composite avatars now with initials fallback, or wait for F058?\\n4. **F058:** apply the Cloudflare R2 CORS JSON — it gates four identity items and every avatar surface.\\n5. **WG authorizations:** WG001, WG002, WG004, WG005, WG006 recommended NOW — approve/deny each.\\n6. **WG009 (typing indicators):** genuine doctrine question — does it violate \\\"passive presence is not attention\\\"?\\n7. **Whether to park coordinated realtime testing** until §H can run in one uninterrupted session with your window kept open.\\n\\n# M. REGISTER RECONCIL"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "t causes fixed\\n- live routes exercised\\n- regressions\\n\\nC. Wave 1B — proof debt\\n- F043/F044/F046 evidence\\n\\nD. Wave 1C — Conversation/media/composer\\n- each F-item separately\\n- shared infrastructure created/reused\\n- live proof\\n\\nE. Wave 1D — Articles\\n- each item separately\\n- live proof\\n\\nF. WG001/WG002/WG004/WG005/WG006/WG009\\n- implementation\\n- authority semantics\\n- live proof\\n- unresolved founder decisions\\n\\nG. Identity\\n- F055 final model\\n- F056 final presentation\\n- F058 status\\n- any F053/F116 discoveries\\n\\nH. Founder Findings Delta\\n- new F121+\\n- new WG018+\\n- state changes\\n- newly terminal items\\n- new evide"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "=============================\\n20. EXECUTION AUTHORIZATION\\n======================================================================\\n\\nAUTHORIZED:\\n- Quiet High-Impact Wave described above.\\n- F055 immutable admission chronology correction.\\n- F056 composite group identity architecture.\\n- WG001.\\n- WG002.\\n- WG004.\\n- WG005.\\n- WG006.\\n- WG009 under ephemeral-interaction doctrine.\\n\\nNOT AUTHORIZED:\\n- C4 implementation.\\n- Meetings redesign/refactor.\\n- Live downstream engagement/acquisition implementation.\\n- SFU implementation.\\n- other WG items.\\n- silent expansion into unrelated surfaces.\\n\\nf518024 may be amended/replaced as r"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "t-green is not terminal.\\\"\\n- **Quiet High-Impact Wave** (authorized): Wave 1A continuity (F065, F059, F066, F067, F068, F069, F070, F061, F062, F063), 1B proof debt (F043, F044, F046), 1C composer/media (F011–F019), 1D articles (F025, F026, F027); plus WG001 (message edit), WG002 (delete/retract), WG004 (pagination), WG005 (failed-send/retry), WG006 (draft persistence), WG009 (typing indicator under \\\"TYPING IS EPHEMERAL INTERACTION STATE, NEVER ATTENTION STATE\\\").\\n- **F055/F056 rulings**: reject generic joinedAt+alphabetical ordering; require immutable admission chronology (founding counterpart first). Reject letter tile; require"
+    }
+   ]
+  },
+  {
+   "id": "WG006",
+   "totalExternalMentions": 7,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "re` cursor **exists**; frontend never calls it — no ScrollController, loads a single page forever | Existing cursor API | Conversation | **NOW** (correctness + perf) |\\n| WG005 | **Failed-send truth + retry** | Failure is a transient toast; the message is simply lost | — | Conversation → shared composer | **NOW** |\\n| WG006 | **Per-conversation draft persistence** | Composer text dies on navigation; ties to RC7/F063 | Continuity authority | Shared composer | **NOW** |\\n| WG007 | In-conversation search | No endpoint, no UI; unusable at scale | Search repository exists | Conversation | LATER |\\n| WG008 | Message reactions | Distinct f"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "Conversation reference implementation → full content matrix → reconcile F011–F019 → cross-surface migration → regressions → docs.\\n- Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069).\\n- Wave 1B: F043, F044, F046 live proof.\\n- Wave 1D: F025, F026, F027.\\n- WG001, WG002, WG004, WG005, WG006, WG009 (folded into #173 sequencing).\\n- Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112–F114), consolidated realtime human certification batch.\\n\\n8. **Current Work:**\\nImmediately before this summary I applied the founder's Spaces ruling — reclassifying `/spaces` and `/spaces/:slug` as PUBLIC"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "n-order field, or accept approximate ordering? (I recommend the field.)\\n3. **F056:** implement composite avatars now with initials fallback, or wait for F058?\\n4. **F058:** apply the Cloudflare R2 CORS JSON — it gates four identity items and every avatar surface.\\n5. **WG authorizations:** WG001, WG002, WG004, WG005, WG006 recommended NOW — approve/deny each.\\n6. **WG009 (typing indicators):** genuine doctrine question — does it violate \\\"passive presence is not attention\\\"?\\n7. **Whether to park coordinated realtime testing** until §H can run in one uninterrupted session with your window kept open.\\n\\n# M. REGISTER RECONCILIATION\\"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "es fixed\\n- live routes exercised\\n- regressions\\n\\nC. Wave 1B — proof debt\\n- F043/F044/F046 evidence\\n\\nD. Wave 1C — Conversation/media/composer\\n- each F-item separately\\n- shared infrastructure created/reused\\n- live proof\\n\\nE. Wave 1D — Articles\\n- each item separately\\n- live proof\\n\\nF. WG001/WG002/WG004/WG005/WG006/WG009\\n- implementation\\n- authority semantics\\n- live proof\\n- unresolved founder decisions\\n\\nG. Identity\\n- F055 final model\\n- F056 final presentation\\n- F058 status\\n- any F053/F116 discoveries\\n\\nH. Founder Findings Delta\\n- new F121+\\n- new WG018+\\n- state changes\\n- newly terminal items\\n- new evidence\\n\\"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "mpletion of already-built realtime truths** · F043, F044, F046\\n*Why now:* implemented but unproven; I can create/end sessions through the API and observe a single browser. Converts three INLC items to LC with no coordination.\\n\\n**Wave 1c — Composer & media completion** · F011, F014, F016, F017, F019 (+ WG004, WG005, WG006 if authorized)\\n*Why now:* this is what makes Conversation *feel* complete; all provable by sending as Reviewer and reading back. *Affects:* Conversation now, Posts/Articles later via shared intake.\\n\\n**Wave 1d — Article editor** · F025, F026, F027\\n*Why now:* self-contained, entirely V1, and currently the most"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "===================\\n20. EXECUTION AUTHORIZATION\\n======================================================================\\n\\nAUTHORIZED:\\n- Quiet High-Impact Wave described above.\\n- F055 immutable admission chronology correction.\\n- F056 composite group identity architecture.\\n- WG001.\\n- WG002.\\n- WG004.\\n- WG005.\\n- WG006.\\n- WG009 under ephemeral-interaction doctrine.\\n\\nNOT AUTHORIZED:\\n- C4 implementation.\\n- Meetings redesign/refactor.\\n- Live downstream engagement/acquisition implementation.\\n- SFU implementation.\\n- other WG items.\\n- silent expansion into unrelated surfaces.\\n\\nf518024 may be amended/replaced as required by"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "n- **Quiet High-Impact Wave** (authorized): Wave 1A continuity (F065, F059, F066, F067, F068, F069, F070, F061, F062, F063), 1B proof debt (F043, F044, F046), 1C composer/media (F011–F019), 1D articles (F025, F026, F027); plus WG001 (message edit), WG002 (delete/retract), WG004 (pagination), WG005 (failed-send/retry), WG006 (draft persistence), WG009 (typing indicator under \\\"TYPING IS EPHEMERAL INTERACTION STATE, NEVER ATTENTION STATE\\\").\\n- **F055/F056 rulings**: reject generic joinedAt+alphabetical ordering; require immutable admission chronology (founding counterpart first). Reject letter tile; require composite group avatar.\\n-"
+    }
+   ]
+  },
+  {
+   "id": "WG007",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "s + perf) |\\n| WG005 | **Failed-send truth + retry** | Failure is a transient toast; the message is simply lost | — | Conversation → shared composer | **NOW** |\\n| WG006 | **Per-conversation draft persistence** | Composer text dies on navigation; ties to RC7/F063 | Continuity authority | Shared composer | **NOW** |\\n| WG007 | In-conversation search | No endpoint, no UI; unusable at scale | Search repository exists | Conversation | LATER |\\n| WG008 | Message reactions | Distinct from Live reactions (F091); lightweight acknowledgement | — | Conversation | LATER |\\n| WG009 | Typing/presence indicators | Common expectation, but arguably"
+    }
+   ]
+  },
+  {
+   "id": "WG008",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "tion → shared composer | **NOW** |\\n| WG006 | **Per-conversation draft persistence** | Composer text dies on navigation; ties to RC7/F063 | Continuity authority | Shared composer | **NOW** |\\n| WG007 | In-conversation search | No endpoint, no UI; unusable at scale | Search repository exists | Conversation | LATER |\\n| WG008 | Message reactions | Distinct from Live reactions (F091); lightweight acknowledgement | — | Conversation | LATER |\\n| WG009 | Typing/presence indicators | Common expectation, but arguably conflicts with \\\"passive presence is not attention\\\" | Realtime presence | Conversation | **FOUNDER CALL** |\\n| WG010 | Media"
+    }
+   ]
+  },
+  {
+   "id": "WG009",
+   "totalExternalMentions": 6,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "to RC7/F063 | Continuity authority | Shared composer | **NOW** |\\n| WG007 | In-conversation search | No endpoint, no UI; unusable at scale | Search repository exists | Conversation | LATER |\\n| WG008 | Message reactions | Distinct from Live reactions (F091); lightweight acknowledgement | — | Conversation | LATER |\\n| WG009 | Typing/presence indicators | Common expectation, but arguably conflicts with \\\"passive presence is not attention\\\" | Realtime presence | Conversation | **FOUNDER CALL** |\\n| WG010 | Media/files gallery per conversation | Attachments are unrecoverable once scrolled past | Media authority | Conversation | LATER |"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "sation reference implementation → full content matrix → reconcile F011–F019 → cross-surface migration → regressions → docs.\\n- Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069).\\n- Wave 1B: F043, F044, F046 live proof.\\n- Wave 1D: F025, F026, F027.\\n- WG001, WG002, WG004, WG005, WG006, WG009 (folded into #173 sequencing).\\n- Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112–F114), consolidated realtime human certification batch.\\n\\n8. **Current Work:**\\nImmediately before this summary I applied the founder's Spaces ruling — reclassifying `/spaces` and `/spaces/:slug` as PUBLIC in `rou"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "recommend the field.)\\n3. **F056:** implement composite avatars now with initials fallback, or wait for F058?\\n4. **F058:** apply the Cloudflare R2 CORS JSON — it gates four identity items and every avatar surface.\\n5. **WG authorizations:** WG001, WG002, WG004, WG005, WG006 recommended NOW — approve/deny each.\\n6. **WG009 (typing indicators):** genuine doctrine question — does it violate \\\"passive presence is not attention\\\"?\\n7. **Whether to park coordinated realtime testing** until §H can run in one uninterrupted session with your window kept open.\\n\\n# M. REGISTER RECONCILIATION\\n\\n- **Starting F-items:** 120 — each appears exa"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "** (authorized): Wave 1A continuity (F065, F059, F066, F067, F068, F069, F070, F061, F062, F063), 1B proof debt (F043, F044, F046), 1C composer/media (F011–F019), 1D articles (F025, F026, F027); plus WG001 (message edit), WG002 (delete/retract), WG004 (pagination), WG005 (failed-send/retry), WG006 (draft persistence), WG009 (typing indicator under \\\"TYPING IS EPHEMERAL INTERACTION STATE, NEVER ATTENTION STATE\\\").\\n- **F055/F056 rulings**: reject generic joinedAt+alphabetical ordering; require immutable admission chronology (founding counterpart first). Reject letter tile; require composite group avatar.\\n- **F069 ruling**: explicit"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ed\\n- live routes exercised\\n- regressions\\n\\nC. Wave 1B — proof debt\\n- F043/F044/F046 evidence\\n\\nD. Wave 1C — Conversation/media/composer\\n- each F-item separately\\n- shared infrastructure created/reused\\n- live proof\\n\\nE. Wave 1D — Articles\\n- each item separately\\n- live proof\\n\\nF. WG001/WG002/WG004/WG005/WG006/WG009\\n- implementation\\n- authority semantics\\n- live proof\\n- unresolved founder decisions\\n\\nG. Identity\\n- F055 final model\\n- F056 final presentation\\n- F058 status\\n- any F053/F116 discoveries\\n\\nH. Founder Findings Delta\\n- new F121+\\n- new WG018+\\n- state changes\\n- newly terminal items\\n- new evidence\\n\\nI. Re"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "=========\\n20. EXECUTION AUTHORIZATION\\n======================================================================\\n\\nAUTHORIZED:\\n- Quiet High-Impact Wave described above.\\n- F055 immutable admission chronology correction.\\n- F056 composite group identity architecture.\\n- WG001.\\n- WG002.\\n- WG004.\\n- WG005.\\n- WG006.\\n- WG009 under ephemeral-interaction doctrine.\\n\\nNOT AUTHORIZED:\\n- C4 implementation.\\n- Meetings redesign/refactor.\\n- Live downstream engagement/acquisition implementation.\\n- SFU implementation.\\n- other WG items.\\n- silent expansion into unrelated surfaces.\\n\\nf518024 may be amended/replaced as required by F055/F056"
+    }
+   ]
+  },
+  {
+   "id": "WG010",
+   "totalExternalMentions": 2,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "n infrastructure = **media intake/normalization (F016)**, **link hydration (F017/F018)**, **rich text rendering (F019)** — Posts, Announcements and Articles all need these and currently duplicate or lack them.\\n\\n# C. CROSS-DOMAIN DEPENDENCY MAP\\n\\n- **F058 (R2 CORS) → blocks visual completion of F051, F052, F056, and WG010** — and degrades Discover, Posts, Articles, Institutions equally. It is a *platform* dependency wearing an avatar costume.\\n- **F065 (RC1 auth hint) → gates F059, F061, F062, F063, F064, F103, F104** — every \\\"return me where I was\\\" obligation, including the founder-frozen Live auth-return. Fixing RC1 first make"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| LATER |\\n| WG008 | Message reactions | Distinct from Live reactions (F091); lightweight acknowledgement | — | Conversation | LATER |\\n| WG009 | Typing/presence indicators | Common expectation, but arguably conflicts with \\\"passive presence is not attention\\\" | Realtime presence | Conversation | **FOUNDER CALL** |\\n| WG010 | Media/files gallery per conversation | Attachments are unrecoverable once scrolled past | Media authority | Conversation | LATER |\\n| WG011 | Forward/share message to another conversation | Internal-ref hydration already exists as the primitive | Internal reference service | Conversation | LATER |\\n| WG012 | Bl"
+    }
+   ]
+  },
+  {
+   "id": "WG011",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "9 | Typing/presence indicators | Common expectation, but arguably conflicts with \\\"passive presence is not attention\\\" | Realtime presence | Conversation | **FOUNDER CALL** |\\n| WG010 | Media/files gallery per conversation | Attachments are unrecoverable once scrolled past | Media authority | Conversation | LATER |\\n| WG011 | Forward/share message to another conversation | Internal-ref hydration already exists as the primitive | Internal reference service | Conversation | LATER |\\n| WG012 | Block boundary inside Conversation | Report exists; block/unblock semantics not surfaced here | Compliance authority | Conversation | LATER |\\n|"
+    }
+   ]
+  },
+  {
+   "id": "WG012",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "LL** |\\n| WG010 | Media/files gallery per conversation | Attachments are unrecoverable once scrolled past | Media authority | Conversation | LATER |\\n| WG011 | Forward/share message to another conversation | Internal-ref hydration already exists as the primitive | Internal reference service | Conversation | LATER |\\n| WG012 | Block boundary inside Conversation | Report exists; block/unblock semantics not surfaced here | Compliance authority | Conversation | LATER |\\n| WG013 | Offline queue + reconnect replay | Sends during a blip vanish | Realtime reconnect machinery | Shared | LATER |\\n| WG014 | Keyboard/desktop discipline (Enter v"
+    }
+   ]
+  },
+  {
+   "id": "WG013",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "G011 | Forward/share message to another conversation | Internal-ref hydration already exists as the primitive | Internal reference service | Conversation | LATER |\\n| WG012 | Block boundary inside Conversation | Report exists; block/unblock semantics not surfaced here | Compliance authority | Conversation | LATER |\\n| WG013 | Offline queue + reconnect replay | Sends during a blip vanish | Realtime reconnect machinery | Shared | LATER |\\n| WG014 | Keyboard/desktop discipline (Enter vs Shift+Enter, shortcuts) | Composer has a key handler for paste only | — | Conversation | LATER |\\n| WG015 | Accessibility pass (semantics, labels, cont"
+    }
+   ]
+  },
+  {
+   "id": "WG014",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ference service | Conversation | LATER |\\n| WG012 | Block boundary inside Conversation | Report exists; block/unblock semantics not surfaced here | Compliance authority | Conversation | LATER |\\n| WG013 | Offline queue + reconnect replay | Sends during a blip vanish | Realtime reconnect machinery | Shared | LATER |\\n| WG014 | Keyboard/desktop discipline (Enter vs Shift+Enter, shortcuts) | Composer has a key handler for paste only | — | Conversation | LATER |\\n| WG015 | Accessibility pass (semantics, labels, contrast, SR) | Never audited anywhere in this work | Design system | Platform | LATER |\\n| WG016 | Participant management beyo"
+    }
+   ]
+  },
+  {
+   "id": "WG015",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| Compliance authority | Conversation | LATER |\\n| WG013 | Offline queue + reconnect replay | Sends during a blip vanish | Realtime reconnect machinery | Shared | LATER |\\n| WG014 | Keyboard/desktop discipline (Enter vs Shift+Enter, shortcuts) | Composer has a key handler for paste only | — | Conversation | LATER |\\n| WG015 | Accessibility pass (semantics, labels, contrast, SR) | Never audited anywhere in this work | Design system | Platform | LATER |\\n| WG016 | Participant management beyond LEAVE | Schema comments say v1 exit is LEAVE only; no removal/stewardship | Invitation authority | Conversation | LATER (needs doctrine) |\\n| W"
+    }
+   ]
+  },
+  {
+   "id": "WG016",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ct machinery | Shared | LATER |\\n| WG014 | Keyboard/desktop discipline (Enter vs Shift+Enter, shortcuts) | Composer has a key handler for paste only | — | Conversation | LATER |\\n| WG015 | Accessibility pass (semantics, labels, contrast, SR) | Never audited anywhere in this work | Design system | Platform | LATER |\\n| WG016 | Participant management beyond LEAVE | Schema comments say v1 exit is LEAVE only; no removal/stewardship | Invitation authority | Conversation | LATER (needs doctrine) |\\n| WG017 | Pin/save messages | No evidence of need yet | — | — | **REJECT for now** |\\n\\n# G. QUIET HIGH-IMPACT WAVE — proposed membership (awa"
+    }
+   ]
+  },
+  {
+   "id": "WG017",
+   "totalExternalMentions": 2,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "WG015 | Accessibility pass (semantics, labels, contrast, SR) | Never audited anywhere in this work | Design system | Platform | LATER |\\n| WG016 | Participant management beyond LEAVE | Schema comments say v1 exit is LEAVE only; no removal/stewardship | Invitation authority | Conversation | LATER (needs doctrine) |\\n| WG017 | Pin/save messages | No evidence of need yet | — | — | **REJECT for now** |\\n\\n# G. QUIET HIGH-IMPACT WAVE — proposed membership (awaiting your approval)\\n\\nAll V1, no calls, no C4, no Meetings, bounded blast radius.\\n\\n**Wave 1a — Continuity contract (P0 core)** · F065 (RC1 auth hint — *the* keystone), F059, F0"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": ".\\n- **Actually unresolved:** 50 (42 OPEN + 2 BLOCKED + 6 C4).\\n- **Newly discovered F-items (F121+):** **none** — this reorganization surfaced no new concrete defects beyond the register; new observations landed as WG prospective gaps instead, which is the honest classification.\\n- **WG prospective items:** 17 (WG001–WG017), none authorized, none implemented.\\n- **Register integrity:** no renumbering, no merges, no hidden rows; F064/F113 remain separate with an explicit duplication note; F050⊂F053⊂F116 and F059–F070⊂F117 recorded as hierarchy, not compression.\\n\\n**No implementation, no push, no call/Live testing, no C4, no Meeting"
+    }
+   ]
+  },
+  {
+   "id": "WG018",
+   "totalExternalMentions": 6,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "tation/evidence point of F001–F120, attach it there.\\n\\nB. New concrete defect/obligation\\nIf genuinely new and already implied by the intended/frozen product, create F121 onward.\\n\\nC. World-class prospective capability\\nIf it is a potential enhancement/design capability rather than an already-required defect, create WG018 onward.\\n\\nD. Founder ruling\\nIf the founder makes a product/doctrine decision, record it against the affected F/WG item and governing documentation.\\n\\nE. Evidence only\\nIf the observation does not create a new obligation but strengthens/disproves an existing hypothesis, record it as evidence under that item.\\n\\"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "be judged visually in the live browser.\\n- **Permanent reporting norm**: every checkpoint must carry a FOUNDER FINDINGS DELTA (new findings / new WG candidates / new evidence / state changes / decisions required / register health). Founder observations during work must be classified (existing F evidence / new F121+ / WG018+ / founder ruling / evidence only), never silently deferred.\\n\\n**Security/operational constraints stated by the founder (must persist):** do NOT run production Conversation migration scripts (`scripts/migrate-conversations.js`, `scripts/seed-public-spaces.js` — HELD); do NOT run Phase 5 destructive retirement; *"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ues.\\n\\n============================================================\\n2. REPORT-BACK NORM\\n============================================================\\n\\nEvery meaningful checkpoint/report from now on must contain a small:\\n\\nFOUNDER FINDINGS DELTA\\n\\nwith:\\n\\nNEW FINDINGS:\\n- F121... or NONE\\n\\nNEW WG CANDIDATES:\\n- WG018... or NONE\\n\\nNEW EVIDENCE AGAINST EXISTING ITEMS:\\n- Fx → evidence\\n- or NONE\\n\\nSTATE CHANGES:\\n- Fx: previous state → new state, with reason/evidence\\n\\nFOUNDER DECISIONS REQUIRED:\\n- explicit list\\n- or NONE\\n\\nREGISTER HEALTH:\\n- total F-items\\n- terminal\\n- built/proof-incomplete\\n- unresolved\\n- C4-owned\\n"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32054,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "this looks wrong\\\"\\n- UX reactions\\n- unexpected behavior\\n- capability requests\\n- architectural concerns\\n- comparisons\\n- questions about why something behaves a certain way\\n\\nLISTEN AND MARK THEM.\\n\\nEvery observation becomes one of:\\n\\nA. EXISTING F-ITEM EVIDENCE\\nB. NEW CONCRETE F-ITEM (F121+)\\nC. WG CANDIDATE (WG018+)\\nD. FOUNDER RULING\\nE. EVIDENCE ONLY\\n\\nDo not silently decide:\\n\\n\\\"outside scope\\\"\\n\\\"later\\\"\\n\\\"cosmetic\\\"\\n\\\"small\\\"\\n\\\"probably C4\\\"\\n\\\"already covered\\\"\\n\\\"not part of this pass.\\\"\\n\\nClassify it first.\\n\\nThen sequencing can be decided consciously.\\n\\n====================================================="
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "each item separately\\n- live proof\\n\\nF. WG001/WG002/WG004/WG005/WG006/WG009\\n- implementation\\n- authority semantics\\n- live proof\\n- unresolved founder decisions\\n\\nG. Identity\\n- F055 final model\\n- F056 final presentation\\n- F058 status\\n- any F053/F116 discoveries\\n\\nH. Founder Findings Delta\\n- new F121+\\n- new WG018+\\n- state changes\\n- newly terminal items\\n- new evidence\\n\\nI. Register health\\n- total F\\n- LIVE_CERTIFIED\\n- IMPLEMENTED_NOT_LIVE_CERTIFIED\\n- PARTIALLY_VALIDATED\\n- OPEN\\n- BLOCKED\\n- C4_OWNED_OPEN\\n- SUPERSEDED\\n- RETIRED\\n- totals must reconcile\\n\\nJ. What remains specifically for the consolidated realtime"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32054,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ELETE OR MERGE AWAY THESE F-items.\\n\\nThe register remains non-shrinking.\\n\\nInstead:\\n\\n- assign the new platform system as their shared architectural resolution where appropriate;\\n- preserve each F-item's independent proof obligation;\\n- mark additional concrete defects F121 onward;\\n- mark prospective enhancements WG018 onward.\\n\\n======================================================================\\n13. CURRENT QUIET WAVE RELATIONSHIP\\n======================================================================\\n\\nDo not abandon the Quiet High-Impact Wave.\\n\\nIntegrate this system into it.\\n\\nContinuity work remains foundational bec"
+    }
+   ]
+  }
+ ]
+}

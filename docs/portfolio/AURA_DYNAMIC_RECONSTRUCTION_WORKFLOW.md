@@ -16,7 +16,7 @@ are corrected here because the workflow cannot be designed accurately without th
 | Assumption | Evidence | Corrected fact |
 |---|---|---|
 | "C0–C8 reconstruction architecture" | `docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md` | The canonical map is **C0–C11** — twelve chapters. C9 Cross-Platform Completion, C10 Live (cross-repository) and C11 Item 17 / Release Gate exist and carry real obligations. A workflow scoped to C0–C8 would silently drop three chapters |
-| "complete F-register … at least through F143" | Corpus sweep | **No canonical F-register artifact exists in any repository.** Governed markdown contains only **27** distinct F-ids. The register survives in ~745 MB of Claude session transcripts, where **F001–F143 appear with exactly one gap: F097** → **142 evidenced findings.** Tokens above F143 (`F214`, `F332`, … `F990`) are base64 false positives, verified by inspection |
+| "complete F-register … at least through F143" | Corpus sweep | **No canonical F-register artifact exists in any repository.** Governed markdown contains only **27** distinct F-ids. The register survives in ~745 MB of Claude session transcripts, where **F001–F143 appear**. Tokens above F143 (`F214`, `F332`, … `F990`) are base64 false positives, verified by inspection. **CORRECTED 2026-08-18 by the Stage 0 run: the register is CONTIGUOUS — 143 issued, no gaps. F097 IS issued** ("Public Home surfaces real Live", first of the Live public-acquisition cluster F097–F107). The earlier gap claim was a false negative from a broken shell pipeline, and this document's own assertion of it later re-entered the corpus as self-contamination |
 | "WG register" | Same sweep | **No WG register artifact exists.** ~**WG001–WG018** appear in transcripts |
 
 **Consequence, and it is structural:** Part VII's mandatory accounting proof
@@ -30,8 +30,11 @@ different axes*:
 
 - **Frontend reconstruction chapters** C0–C11 (the roadmap).
 - **Rich Content implementation stages** C1 Content Truth, C2 Reference/Retention,
-  C3 Storage adapter, C4 Institution-post media, C5 Message media, C7 Visibility…
-  (§12's internal staging).
+  C3 Access-context, C4 Ingestion-convergence, C5 Governed-delivery…
+  (**CORRECTED 2026-08-18**: the frozen §12 §16 stage set is C1 Content-truth / C2
+  Reference-retention / C3 Access-context / C4 Ingestion-convergence / C5
+  Governed-delivery. An earlier draft of this document listed a different set —
+  a third, incompatible RIC namespace. Stage 0 flagged it as contradiction X3.)
 
 `§12 C2` and `roadmap C2 — Identity, Presence & Profile` are unrelated. Every agent
 contract below carries an explicit disambiguation clause; without it, Agent D would
@@ -190,7 +193,7 @@ Any violation **fails the run**; the portfolio is not published.
 | R6 | Certification states are preserved verbatim from Stage 0. No agent may promote a state |
 | R7 | The canonical register is **never modified** by analysis. Anomalies are reported, not repaired |
 | R8 | Every founder decision remains a decision. No agent output may present one as settled |
-| R9 | Ledger reports: duplicates, missing IDs (e.g. **F097**), malformed records, contradictory states, and items with evidence too weak to classify |
+| R9 | Ledger reports: duplicates, missing IDs, malformed records, contradictory states, and items with evidence too weak to classify. **Plus SELF-CONTAMINATION**: any identifier evidenced only by this workflow's own output must be quarantined, never counted as issued |
 
 The 42 F-ids appearing only once or twice across transcripts are pre-flagged as
 **weak-evidence candidates** for R9.
@@ -309,7 +312,7 @@ The intended long-run metric is deliberately **not** "how many F-items are OPEN"
 | # | Risk | Mitigation |
 |---|---|---|
 | 1 | **The canonical register does not exist.** The proof in R1 is unprovable until Stage 0 reconstructs it and the founder ratifies it | Stage 0 output is explicitly *proposed*, not canonical, until ratified. §N decision 1 |
-| 2 | Transcript mining is lossy — 42 F-ids have one or two mentions; F097 has none | R9 flags weak evidence; the founder adjudicates rather than the model guessing |
+| 2 | Transcript mining is lossy — 31 issued F-ids rest on WEAK provenance, and 115 of 143 exist ONLY in transcripts | R9 flags weak evidence; the founder adjudicates rather than the model guessing |
 | 3 | Workflow resume is **unverified here** — no run has ever executed on this machine | Layer-2 artifacts make resume optional, not load-bearing |
 | 4 | Max 5x interruption behaviour is **unknown** | Stage-split execution; idempotent agents; no stage depends on same-session state |
 | 5 | Quota economics are **not exposed** | Reported qualitatively; no invented numbers |

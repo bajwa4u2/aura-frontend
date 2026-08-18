@@ -1,0 +1,2901 @@
+{
+ "batch": "findings-batch-3",
+ "count": 47,
+ "dossiers": [
+  {
+   "id": "F097",
+   "totalExternalMentions": 5,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "d · F093 stage promotion/demotion · F094 viewer presence atmosphere · F095 Live moderation · F096 recover FD-5 §§8–10 rather than reinvent.\\n*Authority exists (FD-5 §§8–10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 trut"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "**V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 — external** | **2** | F058 (Cloudflare), F071 (store release) |\\n\\n**77% of open work needs nobody but me.** Note the counter-intuitive one: the entire **public-preview stack (F097–F107) is V1** — a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination, and that can be satisfied once inside the batch in §H.\\n\\n# F. WORLD-CLASS GAP REGISTER (WG) — prospective, not authorized\\n\\n| ID | Gap | Why it matters | Existing authority to reuse |"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "Live architecture correction (F074–F088), C4 inputs (F030–F035), R2 CORS, native release.\\n\\n**Compressed under a broader item:** F059–F070 (twelve distinct continuity obligations reported as one line, \\\"mid-call refresh needs manual rejoin\\\") · F089–F096 (eight engagement obligations as \\\"Live viewer experience\\\") · F097–F107 (eleven preview obligations as \\\"15-second preview not built\\\") · F011–F016 (six capability obligations as \\\"#171 media presentation\\\").\\n\\n**Completed earlier, then disappeared:** F020 mentions, F021 replies, F022 translation, F029 article revision, F018 external hydration — all live-certified in earlier ses"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "8)** — F006▪, F007▪, F008▪, F010▪, F036▪, F037, F038▪, F039▪, F040, F041▪, F042▪, F043, F044, F045, F046, F047, F048▪, F049▪\\n**D. Live (38)** — *origination/state*: F074, F075, F076▪ᴿ, F077▪ᴿ, F078, F079, F080, F081, F082, F083, F084 · *viewer*: F085, F086, F087, F088 · *engagement*: F089–F096 · *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "n| **P0** | **12** | F045, F046, F057, F059, F065, F066, F067, F068, F079, F082, F085, F088 |\\n| **P1** | **60** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F033, F037, F040, F043, F044, F047, F051–F056, F058, F060–F063, F069, F070, F071, F074, F075, F078, F080, F081, F083, F084, F086, F087, F089, F090, F097–F103, F115, F117, F119, F120 |\\n| **P2** | **22** | F034, F035, F064, F072, F073, F091–F096, F104–F113, F116 |\\n| **P3** | **0** | — nothing in the register is mere polish |\\n| Terminal | 26 | — |\\n\\n# E. VALIDATION MATRIX\\n\\n**Sessions actually reachable right now:** (1) **Aura Reviewer** via headless Playwright"
+    }
+   ]
+  },
+  {
+   "id": "F098",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "· F095 Live moderation · F096 recover FD-5 §§8–10 rather than reinvent.\\n*Authority exists (FD-5 §§8–10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for"
+    }
+   ]
+  },
+  {
+   "id": "F099",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "96 recover FD-5 §§8–10 rather than reinvent.\\n*Authority exists (FD-5 §§8–10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built"
+    }
+   ]
+  },
+  {
+   "id": "F100",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "8–10 rather than reinvent.\\n*Authority exists (FD-5 §§8–10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must b"
+    }
+   ]
+  },
+  {
+   "id": "F101",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "n*Authority exists (FD-5 §§8–10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared conti"
+    }
+   ]
+  },
+  {
+   "id": "F102",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "sion chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070)."
+    }
+   ]
+  },
+  {
+   "id": "F103",
+   "totalExternalMentions": 5,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "rsation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "d membership (awaiting your approval)\\n\\nAll V1, no calls, no C4, no Meetings, bounded blast radius.\\n\\n**Wave 1a — Continuity contract (P0 core)** · F065 (RC1 auth hint — *the* keystone), F059, F066, F067, F068, F069, F070\\n*Why now:* seven items, one architecture, and it unblocks F061–F064 plus the Live auth-return (F103/F104). *Validation:* I refresh on each route family as one signed-in session and prove destination survival. *Affects:* Conversation, Calls, Live, Meetings, Articles — all positively; regression risk concentrated in the router, mitigated by the existing route ratchet.\\n\\n**Wave 1b — Proof-completion of already-bui"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "te or lack them.\\n\\n# C. CROSS-DOMAIN DEPENDENCY MAP\\n\\n- **F058 (R2 CORS) → blocks visual completion of F051, F052, F056, and WG010** — and degrades Discover, Posts, Articles, Institutions equally. It is a *platform* dependency wearing an avatar costume.\\n- **F065 (RC1 auth hint) → gates F059, F061, F062, F063, F064, F103, F104** — every \\\"return me where I was\\\" obligation, including the founder-frozen Live auth-return. Fixing RC1 first makes seven other items cheap.\\n- **F053 (canonical identity consumption) → parent of F050, F051, F052, F054, F055, F056, F057.** F057 proved the drift is *authority-affecting*, not cosmetic.\\n- **"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "99 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory;"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "P0** | **12** | F045, F046, F057, F059, F065, F066, F067, F068, F079, F082, F085, F088 |\\n| **P1** | **60** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F033, F037, F040, F043, F044, F047, F051–F056, F058, F060–F063, F069, F070, F071, F074, F075, F078, F080, F081, F083, F084, F086, F087, F089, F090, F097–F103, F115, F117, F119, F120 |\\n| **P2** | **22** | F034, F035, F064, F072, F073, F091–F096, F104–F113, F116 |\\n| **P3** | **0** | — nothing in the register is mere polish |\\n| Terminal | 26 | — |\\n\\n# E. VALIDATION MATRIX\\n\\n**Sessions actually reachable right now:** (1) **Aura Reviewer** via headless Playwright — ful"
+    }
+   ]
+  },
+  {
+   "id": "F104",
+   "totalExternalMentions": 5,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remain"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "bership (awaiting your approval)\\n\\nAll V1, no calls, no C4, no Meetings, bounded blast radius.\\n\\n**Wave 1a — Continuity contract (P0 core)** · F065 (RC1 auth hint — *the* keystone), F059, F066, F067, F068, F069, F070\\n*Why now:* seven items, one architecture, and it unblocks F061–F064 plus the Live auth-return (F103/F104). *Validation:* I refresh on each route family as one signed-in session and prove destination survival. *Affects:* Conversation, Calls, Live, Meetings, Articles — all positively; regression risk concentrated in the router, mitigated by the existing route ratchet.\\n\\n**Wave 1b — Proof-completion of already-built re"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory; no en"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "lack them.\\n\\n# C. CROSS-DOMAIN DEPENDENCY MAP\\n\\n- **F058 (R2 CORS) → blocks visual completion of F051, F052, F056, and WG010** — and degrades Discover, Posts, Articles, Institutions equally. It is a *platform* dependency wearing an avatar costume.\\n- **F065 (RC1 auth hint) → gates F059, F061, F062, F063, F064, F103, F104** — every \\\"return me where I was\\\" obligation, including the founder-frozen Live auth-return. Fixing RC1 first makes seven other items cheap.\\n- **F053 (canonical identity consumption) → parent of F050, F051, F052, F054, F055, F056, F057.** F057 proved the drift is *authority-affecting*, not cosmetic.\\n- **F079/F"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "*P1** | **60** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F033, F037, F040, F043, F044, F047, F051–F056, F058, F060–F063, F069, F070, F071, F074, F075, F078, F080, F081, F083, F084, F086, F087, F089, F090, F097–F103, F115, F117, F119, F120 |\\n| **P2** | **22** | F034, F035, F064, F072, F073, F091–F096, F104–F113, F116 |\\n| **P3** | **0** | — nothing in the register is mere polish |\\n| Terminal | 26 | — |\\n\\n# E. VALIDATION MATRIX\\n\\n**Sessions actually reachable right now:** (1) **Aura Reviewer** via headless Playwright — fully mine, reliable, supports fake mic/camera/screen; (2) **your Chrome/Edge tabs** (M S Bajwa"
+    }
+   ]
+  },
+  {
+   "id": "F105",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "lemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh"
+    }
+   ]
+  },
+  {
+   "id": "F106",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "isition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine"
+    }
+   ]
+  },
+  {
+   "id": "F107",
+   "totalExternalMentions": 6,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "093 stage promotion/demotion · F094 viewer presence atmosphere · F095 Live moderation · F096 recover FD-5 §§8–10 rather than reinvent.\\n*Authority exists (FD-5 §§8–10, session chat primitives `session:conversation.*`, `SPEAKER`/`OBSERVER` roles, `handState`). Nothing implemented.*\\n\\n## Live — public acquisition (F097–F107) · all **OPEN**\\n\\nF097 Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "— human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 — external** | **2** | F058 (Cloudflare), F071 (store release) |\\n\\n**77% of open work needs nobody but me.** Note the counter-intuitive one: the entire **public-preview stack (F097–F107) is V1** — a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordination, and that can be satisfied once inside the batch in §H.\\n\\n# F. WORLD-CLASS GAP REGISTER (WG) — prospective, not authorized\\n\\n| ID | Gap | Why it matters | Existing authority to reuse | Home"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "Public Home surfaces real Live · F098 real bounded preview · F099 15s frozen · F100 auth wall after 15s · F101 zero participation authority · F102 zero Conversation authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "architecture correction (F074–F088), C4 inputs (F030–F035), R2 CORS, native release.\\n\\n**Compressed under a broader item:** F059–F070 (twelve distinct continuity obligations reported as one line, \\\"mid-call refresh needs manual rejoin\\\") · F089–F096 (eight engagement obligations as \\\"Live viewer experience\\\") · F097–F107 (eleven preview obligations as \\\"15-second preview not built\\\") · F011–F016 (six capability obligations as \\\"#171 media presentation\\\").\\n\\n**Completed earlier, then disappeared:** F020 mentions, F021 replies, F022 translation, F029 article revision, F018 external hydration — all live-certified in earlier sessions"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "— F006▪, F007▪, F008▪, F010▪, F036▪, F037, F038▪, F039▪, F040, F041▪, F042▪, F043, F044, F045, F046, F047, F048▪, F049▪\\n**D. Live (38)** — *origination/state*: F074, F075, F076▪ᴿ, F077▪ᴿ, F078, F079, F080, F081, F082, F083, F084 · *viewer*: F085, F086, F087, F088 · *engagement*: F089–F096 · *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4 (6)*"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ned-out browser** — trivially mine.\\n\\n| Class | Count | Membership (non-terminal) |\\n|---|---|---|\\n| **V1 — I validate alone** | **72** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F034, F043, F044, F046, F051, F053, F055, F056, F059, F061–F063, F065–F070, F074, F075, F078, F080, F081, F086, F087, F089–F107, F108–F111, F115–F117, F119, F120 |\\n| **V2 — two sessions (I can drive if your window is up)** | **11** | F035, F037, F040, F045, F047, F052, F054, F057, F060, F064, F079 |\\n| **V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n|"
+    }
+   ]
+  },
+  {
+   "id": "F108",
+   "totalExternalMentions": 4,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "authority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory; no enforcement |\\n| F110 SFU assessment | OPEN | Not written |\\n| F111 assessment scope | OPEN | Not"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "t browser** — trivially mine.\\n\\n| Class | Count | Membership (non-terminal) |\\n|---|---|---|\\n| **V1 — I validate alone** | **72** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F034, F043, F044, F046, F051, F053, F055, F056, F059, F061–F063, F065–F070, F074, F075, F078, F080, F081, F086, F087, F089–F107, F108–F111, F115–F117, F119, F120 |\\n| **V2 — two sessions (I can drive if your window is up)** | **11** | F035, F037, F040, F045, F047, F052, F054, F057, F060, F064, F079 |\\n| **V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 —"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory; no enforcement |\\n| F110 SFU assessment | OPEN | Not written |\\n| F111 assessment scope | OPEN | Not written |\\n\\n## Meetings & governance\\n\\n| ID | State | Evidence / R"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "8▪, F010▪, F036▪, F037, F038▪, F039▪, F040, F041▪, F042▪, F043, F044, F045, F046, F047, F048▪, F049▪\\n**D. Live (38)** — *origination/state*: F074, F075, F076▪ᴿ, F077▪ᴿ, F078, F079, F080, F081, F082, F083, F084 · *viewer*: F085, F086, F087, F088 · *engagement*: F089–F096 · *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F03"
+    }
+   ]
+  },
+  {
+   "id": "F109",
+   "totalExternalMentions": 1,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ew · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory; no enforcement |\\n| F110 SFU assessment | OPEN | Not written |\\n| F111 assessment scope | OPEN | Not written |\\n\\n## Meetings & governance\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F112 Meetings equivalent validation | OPEN | Obligation"
+    }
+   ]
+  },
+  {
+   "id": "F110",
+   "totalExternalMentions": 2,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory; no enforcement |\\n| F110 SFU assessment | OPEN | Not written |\\n| F111 assessment scope | OPEN | Not written |\\n\\n## Meetings & governance\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F112 Meetings equivalent validation | OPEN | Obligation intact, unstarted |\\n| F113 Meetings refresh continuity | OPEN | **Duplicate of F064** —"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "external hydration — all live-certified in earlier sessions and absent from recent reports.\\n\\n**Genuinely forgotten:** F001–F005 (Discover/Create/Institution entry) · F012 drag/drop · F013 clipboard · F015 video messages · F019 rich/selectable text · F023 reporting · F061–F064 (profile/compose/Meetings continuity) · F110–F114 (assessment + Meetings obligations).\\n\\n**Previously called \\\"fixed & deployed\\\" that I cannot honestly call LIVE_CERTIFIED (9):** accept-freeze (F045), durable ribbon (F046), ring-card presentation (F047), SW ring cancellation (F040), pre-join end truth (F044), timer refinement (F043), tile identity (F054 —"
+    }
+   ]
+  },
+  {
+   "id": "F111",
+   "totalExternalMentions": 4,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ority · F103 auth returns to SAME Live · F104 sign-up preserves intent · F105 refresh can't reset preview · F106 truthful ended state during preview · F107 one canonical Live truth for both doors.\\n*Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory; no enforcement |\\n| F110 SFU assessment | OPEN | Not written |\\n| F111 assessment scope | OPEN | Not writt"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "wser** — trivially mine.\\n\\n| Class | Count | Membership (non-terminal) |\\n|---|---|---|\\n| **V1 — I validate alone** | **72** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F034, F043, F044, F046, F051, F053, F055, F056, F059, F061–F063, F065–F070, F074, F075, F078, F080, F081, F086, F087, F089–F107, F108–F111, F115–F117, F119, F120 |\\n| **V2 — two sessions (I can drive if your window is up)** | **11** | F035, F037, F040, F045, F047, F052, F054, F057, F060, F064, F079 |\\n| **V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 — exte"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "o F059–F070).*\\n\\n## Live — scale (F108–F111)\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F108 mesh bounded | PV | Recorded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory; no enforcement |\\n| F110 SFU assessment | OPEN | Not written |\\n| F111 assessment scope | OPEN | Not written |\\n\\n## Meetings & governance\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F112 Meetings equivalent validation | OPEN | Obligation intact, unstarted |\\n| F113 Meetings refresh continuity | OPEN | **Duplicate of F064** — keep one row, cross-referenced |\\n| F114 Meet"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "010▪, F036▪, F037, F038▪, F039▪, F040, F041▪, F042▪, F043, F044, F045, F046, F047, F048▪, F049▪\\n**D. Live (38)** — *origination/state*: F074, F075, F076▪ᴿ, F077▪ᴿ, F078, F079, F080, F081, F082, F083, F084 · *viewer*: F085, F086, F087, F088 · *engagement*: F089–F096 · *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F0"
+    }
+   ]
+  },
+  {
+   "id": "F112",
+   "totalExternalMentions": 6,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "corded in doctrine doc; **ceiling never measured** |\\n| F109 mesh ≠ long-term architecture | PV | Recorded in doc + memory; no enforcement |\\n| F110 SFU assessment | OPEN | Not written |\\n| F111 assessment scope | OPEN | Not written |\\n\\n## Meetings & governance\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F112 Meetings equivalent validation | OPEN | Obligation intact, unstarted |\\n| F113 Meetings refresh continuity | OPEN | **Duplicate of F064** — keep one row, cross-referenced |\\n| F114 Meetings protected | LC | No Meetings file modified in any commit this session |\\n| F115 Non-shrinking register | OPEN | This audit es"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "→ regressions → docs.\\n- Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069).\\n- Wave 1B: F043, F044, F046 live proof.\\n- Wave 1D: F025, F026, F027.\\n- WG001, WG002, WG004, WG005, WG006, WG009 (folded into #173 sequencing).\\n- Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112–F114), consolidated realtime human certification batch.\\n\\n8. **Current Work:**\\nImmediately before this summary I applied the founder's Spaces ruling — reclassifying `/spaces` and `/spaces/:slug` as PUBLIC in `route_classification.dart`, adding a test pinning \\\"CLASSIFICATION IS NOT AUTHORIZATION — an open class"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "086, F087, F089–F107, F108–F111, F115–F117, F119, F120 |\\n| **V2 — two sessions (I can drive if your window is up)** | **11** | F035, F037, F040, F045, F047, F052, F054, F057, F060, F064, F079 |\\n| **V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 — external** | **2** | F058 (Cloudflare), F071 (store release) |\\n\\n**77% of open work needs nobody but me.** Note the counter-intuitive one: the entire **public-preview stack (F097–F107) is V1** — a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs c"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "d the same coordinated session rather than requiring separate founder sessions.\\n\\n======================================================================\\n14. MEETINGS — PARKED AND PROTECTED\\n======================================================================\\n\\nNo Meetings implementation during this wave.\\n\\nF064, F112 and F113 remain active obligations.\\nF114 protection remains terminal/certified.\\n\\nAfter Conversation/shared realtime and continuity mature, Meetings receives its own deliberate certification journey.\\n\\nShared fixes may be regression-tested against Meetings, but do not redesign or opportunistically refactor Meet"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32165,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "DENCE AGAINST EXISTING ITEMS:**\\n- **F069** → 24 concrete unclassified routes enumerated, `/admin` included; contract + ratchet now prevent recurrence.\\n- **F027** → confirmed second root cause (`/articles/write` unclassified) now fixed; the durable-draft-identity half (RC7/F070) remains open, so F027 stays OPEN.\\n- **F112/F114 (Meetings)** → new evidence that shared-boundary work genuinely threatens Meetings guest entry; the disjointness rule and gate now protect it.\\n\\n**STATE CHANGES:**\\n- **F069:** OPEN → IMPLEMENTED_NOT_LIVE_CERTIFIED (contract + ratchet pushed; needs a live signed-out probe to certify)\\n\\n**FOUNDER DECISIONS R"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "39▪, F040, F041▪, F042▪, F043, F044, F045, F046, F047, F048▪, F049▪\\n**D. Live (38)** — *origination/state*: F074, F075, F076▪ᴿ, F077▪ᴿ, F078, F079, F080, F081, F082, F083, F084 · *viewer*: F085, F086, F087, F088 · *engagement*: F089–F096 · *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F033, F034, F035\\n**I. Discove"
+    }
+   ]
+  },
+  {
+   "id": "F113",
+   "totalExternalMentions": 11,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31771,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "itution profile editing\\ncompose systems\\nMeetings\\nauthentication restoration\\ndestination preservation\\nboot behavior\\nroute classification\\ndraft identity.\\n\\nDo not reduce it to:\\n\\n\\\"mid-call refresh needs manual rejoin.\\\"\\n\\nTell us exactly what is implemented, audited, proven and still open across F059–F070 and F113.\\n\\n--------------------------------------------------\\n\\n2. IDENTITY\\n\\nThe founder finding was:\\n\\nTHE CANONICAL IDENTITY SYSTEM IS NOT BEING CONSUMED CONSISTENTLY ACROSS THE PRODUCT.\\n\\nDo not reduce this to:\\n\\n\\\"video tiles say Participant.\\\"\\n\\nReconcile:\\n\\nConversation identity\\navatars\\ncall identity\\ncur"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "e coordinated session rather than requiring separate founder sessions.\\n\\n======================================================================\\n14. MEETINGS — PARKED AND PROTECTED\\n======================================================================\\n\\nNo Meetings implementation during this wave.\\n\\nF064, F112 and F113 remain active obligations.\\nF114 protection remains terminal/certified.\\n\\nAfter Conversation/shared realtime and continuity mature, Meetings receives its own deliberate certification journey.\\n\\nShared fixes may be regression-tested against Meetings, but do not redesign or opportunistically refactor Meetings.\\n\\n"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "rchitecture | PV | Recorded in doc + memory; no enforcement |\\n| F110 SFU assessment | OPEN | Not written |\\n| F111 assessment scope | OPEN | Not written |\\n\\n## Meetings & governance\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F112 Meetings equivalent validation | OPEN | Obligation intact, unstarted |\\n| F113 Meetings refresh continuity | OPEN | **Duplicate of F064** — keep one row, cross-referenced |\\n| F114 Meetings protected | LC | No Meetings file modified in any commit this session |\\n| F115 Non-shrinking register | OPEN | This audit establishes it |\\n| F116 Identity as shared-consumption problem | PV | Multiple c"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "087, F089–F107, F108–F111, F115–F117, F119, F120 |\\n| **V2 — two sessions (I can drive if your window is up)** | **11** | F035, F037, F040, F045, F047, F052, F054, F057, F060, F064, F079 |\\n| **V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 — external** | **2** | F058 (Cloudflare), F071 (store release) |\\n\\n**77% of open work needs nobody but me.** Note the counter-intuitive one: the entire **public-preview stack (F097–F107) is V1** — a signed-out visitor is a single session; only the *existence* of a live broadcast to preview needs coordin"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "s reorganization surfaced no new concrete defects beyond the register; new observations landed as WG prospective gaps instead, which is the honest classification.\\n- **WG prospective items:** 17 (WG001–WG017), none authorized, none implemented.\\n- **Register integrity:** no renumbering, no merges, no hidden rows; F064/F113 remain separate with an explicit duplication note; F050⊂F053⊂F116 and F059–F070⊂F117 recorded as hierarchy, not compression.\\n\\n**No implementation, no push, no call/Live testing, no C4, no Meetings changes.**\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_cre"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "n manual | Auto-reattach |\\n| F061 | Personal profile edit continuity | OPEN | RC4/RC8 | Implementation |\\n| F062 | Institution profile edit continuity | OPEN | RC2/RC4 | Implementation |\\n| F063 | Compose systems continuity | OPEN | RC7/RC8 | Implementation |\\n| F064 | Meetings refresh continuity | OPEN | shared | (= F113) |\\n| F065 | UNKNOWN/RESTORING treated as unauthenticated | OPEN | **RC1 — highest leverage** | Implementation |\\n| F066 | Institution routes redirect while loading | OPEN | RC2 | Implementation |\\n| F067 | Destination-destroying exits | OPEN | RC4 (8 sites) | Implementation |\\n| F068 | `/_boot` permanent spinner"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ty check → refresh mid-call → **Go Live** → viewer enters from Live pill → viewer privacy probe → **End Live** → private call continues → leave → end → convergence check.\\n**Prerequisite:** your window stays open and unminimized throughout — today's blocker.\\n\\n# I. MEETINGS BATCH — separate, later, untouched\\n\\nF112, F113 (+F064 continuity aspect). Runs only after Conversation's shared capabilities are certified, with explicit Meetings regression evidence. **No Meetings file was modified in any commit this session** (F114 remains LIVE_CERTIFIED).\\n\\n# J. F055 / F056 FEASIBILITY — evidence-based answer\\n\\n**F055 — group order: your"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "045), durable ribbon (F046), ring-card presentation (F047), SW ring cancellation (F040), pre-join end truth (F044), timer refinement (F043), tile identity (F054 — not even deployed), Messages-list avatars (F051), identity resolver (F057). All are IMPLEMENTED_NOT_LIVE_CERTIFIED.\\n\\n# Challenges to your register\\n\\n1. **F113 duplicates F064** — same obligation. Keep F064, cross-reference.\\n2. **F073 is miscategorised as native** — the late fourth frame was observed in your *browser* too.\\n3. **F045 and F071 do not share a root cause.** F045 = the overlay `_joining` latch (shared code, web-observed). F071 = disposed shared singletons ("
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "040, F041▪, F042▪, F043, F044, F045, F046, F047, F048▪, F049▪\\n**D. Live (38)** — *origination/state*: F074, F075, F076▪ᴿ, F077▪ᴿ, F078, F079, F080, F081, F082, F083, F084 · *viewer*: F085, F086, F087, F088 · *engagement*: F089–F096 · *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F033, F034, F035\\n**I. Discover / Pe"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **60** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F033, F037, F040, F043, F044, F047, F051–F056, F058, F060–F063, F069, F070, F071, F074, F075, F078, F080, F081, F083, F084, F086, F087, F089, F090, F097–F103, F115, F117, F119, F120 |\\n| **P2** | **22** | F034, F035, F064, F072, F073, F091–F096, F104–F113, F116 |\\n| **P3** | **0** | — nothing in the register is mere polish |\\n| Terminal | 26 | — |\\n\\n# E. VALIDATION MATRIX\\n\\n**Sessions actually reachable right now:** (1) **Aura Reviewer** via headless Playwright — fully mine, reliable, supports fake mic/camera/screen; (2) **your Chrome/Edge tabs** (M S Bajwa / Mrs"
+    }
+   ]
+  },
+  {
+   "id": "F114",
+   "totalExternalMentions": 7,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31771,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": ".\\n\\nThose are distinct maturity boundaries.\\n\\n======================================================================\\nI. MEETINGS PROTECTION\\n======================================================================\\n\\nDo NOT modify Meetings during this reconciliation.\\n\\nBut do not lose its obligations either.\\n\\nF112–F114 must remain visible.\\n\\nWe intentionally protected Meetings from unrelated modification.\\n\\nThat protection is not permission to erase future validation obligations.\\n\\n======================================================================\\nJ. C4 PROTECTION\\n========================================================"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "gressions → docs.\\n- Wave 1A remaining: F059, F061, F062, F063, F067, F070 (+ live proof for F065/F069).\\n- Wave 1B: F043, F044, F046 live proof.\\n- Wave 1D: F025, F026, F027.\\n- WG001, WG002, WG004, WG005, WG006, WG009 (folded into #173 sequencing).\\n- Parked: Live downstream (#172 partial), C4 (#162), Meetings (F112–F114), consolidated realtime human certification batch.\\n\\n8. **Current Work:**\\nImmediately before this summary I applied the founder's Spaces ruling — reclassifying `/spaces` and `/spaces/:slug` as PUBLIC in `route_classification.dart`, adding a test pinning \\\"CLASSIFICATION IS NOT AUTHORIZATION — an open class descr"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ten |\\n| F111 assessment scope | OPEN | Not written |\\n\\n## Meetings & governance\\n\\n| ID | State | Evidence / Remains |\\n|---|---|---|\\n| F112 Meetings equivalent validation | OPEN | Obligation intact, unstarted |\\n| F113 Meetings refresh continuity | OPEN | **Duplicate of F064** — keep one row, cross-referenced |\\n| F114 Meetings protected | LC | No Meetings file modified in any commit this session |\\n| F115 Non-shrinking register | OPEN | This audit establishes it |\\n| F116 Identity as shared-consumption problem | PV | Multiple consumers fixed; no systematic audit |\\n| F117 Refresh as platform contract | PV | RC1–RC9 audit exists"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "rnal hydration — all live-certified in earlier sessions and absent from recent reports.\\n\\n**Genuinely forgotten:** F001–F005 (Discover/Create/Institution entry) · F012 drag/drop · F013 clipboard · F015 video messages · F019 rich/selectable text · F023 reporting · F061–F064 (profile/compose/Meetings continuity) · F110–F114 (assessment + Meetings obligations).\\n\\n**Previously called \\\"fixed & deployed\\\" that I cannot honestly call LIVE_CERTIFIED (9):** accept-freeze (F045), durable ribbon (F046), ring-card presentation (F047), SW ring cancellation (F040), pre-join end truth (F044), timer refinement (F043), tile identity (F054 — not e"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ays open and unminimized throughout — today's blocker.\\n\\n# I. MEETINGS BATCH — separate, later, untouched\\n\\nF112, F113 (+F064 continuity aspect). Runs only after Conversation's shared capabilities are certified, with explicit Meetings regression evidence. **No Meetings file was modified in any commit this session** (F114 remains LIVE_CERTIFIED).\\n\\n# J. F055 / F056 FEASIBILITY — evidence-based answer\\n\\n**F055 — group order: your semantics are achievable, with one real gap.**\\n`ConversationParty` carries `joinedAt`, `invitedByUserId`, **`entryInvitationId`**, and `Conversation` carries `startedByUserId`. The founding pair is relia"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32165,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "AGAINST EXISTING ITEMS:**\\n- **F069** → 24 concrete unclassified routes enumerated, `/admin` included; contract + ratchet now prevent recurrence.\\n- **F027** → confirmed second root cause (`/articles/write` unclassified) now fixed; the durable-draft-identity half (RC7/F070) remains open, so F027 stays OPEN.\\n- **F112/F114 (Meetings)** → new evidence that shared-boundary work genuinely threatens Meetings guest entry; the disjointness rule and gate now protect it.\\n\\n**STATE CHANGES:**\\n- **F069:** OPEN → IMPLEMENTED_NOT_LIVE_CERTIFIED (contract + ratchet pushed; needs a live signed-out probe to certify)\\n\\n**FOUNDER DECISIONS REQUIR"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "041▪, F042▪, F043, F044, F045, F046, F047, F048▪, F049▪\\n**D. Live (38)** — *origination/state*: F074, F075, F076▪ᴿ, F077▪ᴿ, F078, F079, F080, F081, F082, F083, F084 · *viewer*: F085, F086, F087, F088 · *engagement*: F089–F096 · *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F033, F034, F035\\n**I. Discover / People /"
+    }
+   ]
+  },
+  {
+   "id": "F115",
+   "totalExternalMentions": 5,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "| State | Evidence / Remains |\\n|---|---|---|\\n| F112 Meetings equivalent validation | OPEN | Obligation intact, unstarted |\\n| F113 Meetings refresh continuity | OPEN | **Duplicate of F064** — keep one row, cross-referenced |\\n| F114 Meetings protected | LC | No Meetings file modified in any commit this session |\\n| F115 Non-shrinking register | OPEN | This audit establishes it |\\n| F116 Identity as shared-consumption problem | PV | Multiple consumers fixed; no systematic audit |\\n| F117 Refresh as platform contract | PV | RC1–RC9 audit exists; execution not started |\\n| F118 C4 findings preserved | LC | No C4 finding patched; reg"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "— trivially mine.\\n\\n| Class | Count | Membership (non-terminal) |\\n|---|---|---|\\n| **V1 — I validate alone** | **72** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F034, F043, F044, F046, F051, F053, F055, F056, F059, F061–F063, F065–F070, F074, F075, F078, F080, F081, F086, F087, F089–F107, F108–F111, F115–F117, F119, F120 |\\n| **V2 — two sessions (I can drive if your window is up)** | **11** | F035, F037, F040, F045, F047, F052, F054, F057, F060, F064, F079 |\\n| **V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 — external**"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "* F045 = the overlay `_joining` latch (shared code, web-observed). F071 = disposed shared singletons (RC-A). Native binaries predate *both*.\\n4. **F050 is an instance of F053; F116 is the systemic statement of F050–F058** — hierarchy, not duplication; worth marking so F116 can't be closed by fixing one consumer.\\n5. **F115/F119/F120 are three angles of one governance obligation** — I'd keep all three but treat them as a single closure gate.\\n6. **Nothing in the register is unsupported.** Every row maps to a real observation or ruling.\\n\\n# Adopted\\n\\nThe non-shrinking rule stands: an item leaves only at LIVE_CERTIFIED, SUPERSEDED_BY"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": ", F069, F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F033, F034, F035\\n**I. Discover / People / Institution / Create (4)** — F001, F002, F003▪, F004▪\\n**J. Articles / shared compose (6)** — F024▪, F025, F026, F027, F028▪, F029▪\\n**K. Native (3)** — F071, F072, F073\\n**L. Governance / certification (4)** — F115, F118▪, F119, F120\\n\\n▪ = terminal (24 LIVE_CERTIFIED) · ᴿ = EXPLICITLY_RETIRED (2) · **Total 120 ✓, each exactly once.**\\n\\n**Shared-capability split in domain B** (your explicit request): Conversation-specific today = attachment composer UI, voice/video message capture. Should become shared communication infrast"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**12** | F045, F046, F057, F059, F065, F066, F067, F068, F079, F082, F085, F088 |\\n| **P1** | **60** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F033, F037, F040, F043, F044, F047, F051–F056, F058, F060–F063, F069, F070, F071, F074, F075, F078, F080, F081, F083, F084, F086, F087, F089, F090, F097–F103, F115, F117, F119, F120 |\\n| **P2** | **22** | F034, F035, F064, F072, F073, F091–F096, F104–F113, F116 |\\n| **P3** | **0** | — nothing in the register is mere polish |\\n| Terminal | 26 | — |\\n\\n# E. VALIDATION MATRIX\\n\\n**Sessions actually reachable right now:** (1) **Aura Reviewer** via headless Playwright — fully min"
+    }
+   ]
+  },
+  {
+   "id": "F116",
+   "totalExternalMentions": 11,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "valent validation | OPEN | Obligation intact, unstarted |\\n| F113 Meetings refresh continuity | OPEN | **Duplicate of F064** — keep one row, cross-referenced |\\n| F114 Meetings protected | LC | No Meetings file modified in any commit this session |\\n| F115 Non-shrinking register | OPEN | This audit establishes it |\\n| F116 Identity as shared-consumption problem | PV | Multiple consumers fixed; no systematic audit |\\n| F117 Refresh as platform contract | PV | RC1–RC9 audit exists; execution not started |\\n| F118 C4 findings preserved | LC | No C4 finding patched; register maintained |\\n| F119 Implemented capabilities must not vanish"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32054,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "==========\\n12. CURRENT F-REGISTER RECONCILIATION\\n======================================================================\\n\\nThis system directly absorbs/reframes several existing obligations including:\\n\\nF011\\nF012\\nF013\\nF014\\nF015\\nF016\\nF017\\nF019\\n\\nand likely interacts materially with:\\n\\nF025\\nF026\\nF027\\nF053/F116\\nF059/F063/F070\\nWG001\\nWG002\\nWG004\\nWG005\\nWG006\\nand future approved communication capabilities.\\n\\nDO NOT DELETE OR MERGE AWAY THESE F-items.\\n\\nThe register remains non-shrinking.\\n\\nInstead:\\n\\n- assign the new platform system as their shared architectural resolution where appropriate;\\n- preserve each F-ite"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "evant web surfaces.\\n\\n======================================================================\\n11. IDENTITY DURING THIS WAVE\\n======================================================================\\n\\nDo not reduce Identity to F055/F056.\\n\\nWhile touching Conversation identity, preserve the systemic obligation:\\n\\nF053/F116 — canonical Identity consumption across the product.\\n\\nIf you discover another ad-hoc name/avatar/user-shape resolver while implementing this wave:\\n\\nMARK IT.\\n\\nDo not necessarily refactor it immediately if outside safe scope.\\n\\nRecord it against F053/F116 or create F121+ if it is a distinct concrete defect.\\n"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "sation identity, preserve the systemic obligation:\\n\\nF053/F116 — canonical Identity consumption across the product.\\n\\nIf you discover another ad-hoc name/avatar/user-shape resolver while implementing this wave:\\n\\nMARK IT.\\n\\nDo not necessarily refactor it immediately if outside safe scope.\\n\\nRecord it against F053/F116 or create F121+ if it is a distinct concrete defect.\\n\\nF057 already demonstrated that identity drift can break authority, not merely presentation.\\n\\nTreat Identity consumption accordingly.\\n\\n======================================================================\\n12. LIVE — HOLD IMPLEMENTATION FOR NOW\\n========="
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "**F073 is miscategorised as native** — the late fourth frame was observed in your *browser* too.\\n3. **F045 and F071 do not share a root cause.** F045 = the overlay `_joining` latch (shared code, web-observed). F071 = disposed shared singletons (RC-A). Native binaries predate *both*.\\n4. **F050 is an instance of F053; F116 is the systemic statement of F050–F058** — hierarchy, not duplication; worth marking so F116 can't be closed by fixing one consumer.\\n5. **F115/F119/F120 are three angles of one governance obligation** — I'd keep all three but treat them as a single closure gate.\\n6. **Nothing in the register is unsupported.** Eve"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "oo.\\n3. **F045 and F071 do not share a root cause.** F045 = the overlay `_joining` latch (shared code, web-observed). F071 = disposed shared singletons (RC-A). Native binaries predate *both*.\\n4. **F050 is an instance of F053; F116 is the systemic statement of F050–F058** — hierarchy, not duplication; worth marking so F116 can't be closed by fixing one consumer.\\n5. **F115/F119/F120 are three angles of one governance obligation** — I'd keep all three but treat them as a single closure gate.\\n6. **Nothing in the register is unsupported.** Every row maps to a real observation or ruling.\\n\\n# Adopted\\n\\nThe non-shrinking rule stands: a"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ter; new observations landed as WG prospective gaps instead, which is the honest classification.\\n- **WG prospective items:** 17 (WG001–WG017), none authorized, none implemented.\\n- **Register integrity:** no renumbering, no merges, no hidden rows; F064/F113 remain separate with an explicit duplication note; F050⊂F053⊂F116 and F059–F070⊂F117 recorded as hierarchy, not compression.\\n\\n**No implementation, no push, no call/Live testing, no C4, no Meetings changes.**\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":689,\"cache_read_input_tokens\":833681,\"output_t"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "structure created/reused\\n- live proof\\n\\nE. Wave 1D — Articles\\n- each item separately\\n- live proof\\n\\nF. WG001/WG002/WG004/WG005/WG006/WG009\\n- implementation\\n- authority semantics\\n- live proof\\n- unresolved founder decisions\\n\\nG. Identity\\n- F055 final model\\n- F056 final presentation\\n- F058 status\\n- any F053/F116 discoveries\\n\\nH. Founder Findings Delta\\n- new F121+\\n- new WG018+\\n- state changes\\n- newly terminal items\\n- new evidence\\n\\nI. Register health\\n- total F\\n- LIVE_CERTIFIED\\n- IMPLEMENTED_NOT_LIVE_CERTIFIED\\n- PARTIALLY_VALIDATED\\n- OPEN\\n- BLOCKED\\n- C4_OWNED_OPEN\\n- SUPERSEDED\\n- RETIRED\\n- totals must reconc"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32009,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "raft id in the URL). Both must be fixed for F027 to be honest.\\n- **F059/F065** → the router's destination preservation is actually sound (`_normalizeRedirectDest(currentLocation)` used consistently); the destination was never the broken part — the *session* was. RC1 was correctly identified as the keystone.\\n- **F053/F116** → no new ad-hoc identity resolver found while touching these surfaces; `AuraAvatar` is being consumed consistently.\\n\\n**STATE CHANGES:**\\n- **F065:** OPEN → IMPLEMENTED_NOT_LIVE_CERTIFIED (structural fix pushed; needs live refresh proof)\\n- **F055:** INLC (rejected doctrine) → INLC (**correct model**, backend +"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "74, F075, F076▪ᴿ, F077▪ᴿ, F078, F079, F080, F081, F082, F083, F084 · *viewer*: F085, F086, F087, F088 · *engagement*: F089–F096 · *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F033, F034, F035\\n**I. Discover / People / Institution / Create (4)** — F001, F002, F003▪, F004▪\\n**J. Articles / shared compose (6)** — F024"
+    }
+   ]
+  },
+  {
+   "id": "F117",
+   "totalExternalMentions": 5,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "**Duplicate of F064** — keep one row, cross-referenced |\\n| F114 Meetings protected | LC | No Meetings file modified in any commit this session |\\n| F115 Non-shrinking register | OPEN | This audit establishes it |\\n| F116 Identity as shared-consumption problem | PV | Multiple consumers fixed; no systematic audit |\\n| F117 Refresh as platform contract | PV | RC1–RC9 audit exists; execution not started |\\n| F118 C4 findings preserved | LC | No C4 finding patched; register maintained |\\n| F119 Implemented capabilities must not vanish from reporting | OPEN | This audit is the correction |\\n| F120 Every item reaches terminal state | OPE"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ns landed as WG prospective gaps instead, which is the honest classification.\\n- **WG prospective items:** 17 (WG001–WG017), none authorized, none implemented.\\n- **Register integrity:** no renumbering, no merges, no hidden rows; F064/F113 remain separate with an explicit duplication note; F050⊂F053⊂F116 and F059–F070⊂F117 recorded as hierarchy, not compression.\\n\\n**No implementation, no push, no call/Live testing, no C4, no Meetings changes.**\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":689,\"cache_read_input_tokens\":833681,\"output_tokens\":15005,\"serve"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "* | F045, F046, F057, F059, F065, F066, F067, F068, F079, F082, F085, F088 |\\n| **P1** | **60** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F033, F037, F040, F043, F044, F047, F051–F056, F058, F060–F063, F069, F070, F071, F074, F075, F078, F080, F081, F083, F084, F086, F087, F089, F090, F097–F103, F115, F117, F119, F120 |\\n| **P2** | **22** | F034, F035, F064, F072, F073, F091–F096, F104–F113, F116 |\\n| **P3** | **0** | — nothing in the register is mere polish |\\n| Terminal | 26 | — |\\n\\n# E. VALIDATION MATRIX\\n\\n**Sessions actually reachable right now:** (1) **Aura Reviewer** via headless Playwright — fully mine, rel"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ivially mine.\\n\\n| Class | Count | Membership (non-terminal) |\\n|---|---|---|\\n| **V1 — I validate alone** | **72** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F034, F043, F044, F046, F051, F053, F055, F056, F059, F061–F063, F065–F070, F074, F075, F078, F080, F081, F086, F087, F089–F107, F108–F111, F115–F117, F119, F120 |\\n| **V2 — two sessions (I can drive if your window is up)** | **11** | F035, F037, F040, F045, F047, F052, F054, F057, F060, F064, F079 |\\n| **V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 — external** | **"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "· *public acquisition*: F097–F107 · *topology*: F108–F111\\n**E. Meetings (3)** — F112, F113, F114▪\\n**F. Identity / consumption (10)** — F050▪, F051, F052, F053, F054, F055, F056, F057, F058, F116\\n**G. Refresh / destination / continuity (13)** — F059, F060, F061, F062, F063, F064, F065, F066, F067, F068, F069, F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F033, F034, F035\\n**I. Discover / People / Institution / Create (4)** — F001, F002, F003▪, F004▪\\n**J. Articles / shared compose (6)** — F024▪, F025, F026, F027, F028▪, F029▪\\n**K. Native (3)** — F071, F072, F073\\n**L. Governance / certification (4)** — F115, F118▪, F"
+    }
+   ]
+  },
+  {
+   "id": "F118",
+   "totalExternalMentions": 2,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "WEAK",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "| No Meetings file modified in any commit this session |\\n| F115 Non-shrinking register | OPEN | This audit establishes it |\\n| F116 Identity as shared-consumption problem | PV | Multiple consumers fixed; no systematic audit |\\n| F117 Refresh as platform contract | PV | RC1–RC9 audit exists; execution not started |\\n| F118 C4 findings preserved | LC | No C4 finding patched; register maintained |\\n| F119 Implemented capabilities must not vanish from reporting | OPEN | This audit is the correction |\\n| F120 Every item reaches terminal state | OPEN | Register now enforces it |\\n\\n# COUNTS\\n\\n| State | Count |\\n|---|---|\\n| LIVE_CERTIFI"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": ", F070, F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F033, F034, F035\\n**I. Discover / People / Institution / Create (4)** — F001, F002, F003▪, F004▪\\n**J. Articles / shared compose (6)** — F024▪, F025, F026, F027, F028▪, F029▪\\n**K. Native (3)** — F071, F072, F073\\n**L. Governance / certification (4)** — F115, F118▪, F119, F120\\n\\n▪ = terminal (24 LIVE_CERTIFIED) · ᴿ = EXPLICITLY_RETIRED (2) · **Total 120 ✓, each exactly once.**\\n\\n**Shared-capability split in domain B** (your explicit request): Conversation-specific today = attachment composer UI, voice/video message capture. Should become shared communication infrastructur"
+    }
+   ]
+  },
+  {
+   "id": "F119",
+   "totalExternalMentions": 5,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "ister | OPEN | This audit establishes it |\\n| F116 Identity as shared-consumption problem | PV | Multiple consumers fixed; no systematic audit |\\n| F117 Refresh as platform contract | PV | RC1–RC9 audit exists; execution not started |\\n| F118 C4 findings preserved | LC | No C4 finding patched; register maintained |\\n| F119 Implemented capabilities must not vanish from reporting | OPEN | This audit is the correction |\\n| F120 Every item reaches terminal state | OPEN | Register now enforces it |\\n\\n# COUNTS\\n\\n| State | Count |\\n|---|---|\\n| LIVE_CERTIFIED | **24** |\\n| IMPLEMENTED_NOT_LIVE_CERTIFIED | **24** |\\n| PARTIALLY_VALIDATED"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "y mine.\\n\\n| Class | Count | Membership (non-terminal) |\\n|---|---|---|\\n| **V1 — I validate alone** | **72** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F034, F043, F044, F046, F051, F053, F055, F056, F059, F061–F063, F065–F070, F074, F075, F078, F080, F081, F086, F087, F089–F107, F108–F111, F115–F117, F119, F120 |\\n| **V2 — two sessions (I can drive if your window is up)** | **11** | F035, F037, F040, F045, F047, F052, F054, F057, F060, F064, F079 |\\n| **V3 — human/device judgment** | **1** | F072 |\\n| **V4 — 3+ participants** | **8** | F073, F082, F083, F084, F085, F088, F112, F113 |\\n| **V5 — external** | **2** |"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "5 = the overlay `_joining` latch (shared code, web-observed). F071 = disposed shared singletons (RC-A). Native binaries predate *both*.\\n4. **F050 is an instance of F053; F116 is the systemic statement of F050–F058** — hierarchy, not duplication; worth marking so F116 can't be closed by fixing one consumer.\\n5. **F115/F119/F120 are three angles of one governance obligation** — I'd keep all three but treat them as a single closure gate.\\n6. **Nothing in the register is unsupported.** Every row maps to a real observation or ruling.\\n\\n# Adopted\\n\\nThe non-shrinking rule stands: an item leaves only at LIVE_CERTIFIED, SUPERSEDED_BY_FOUN"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "45, F046, F057, F059, F065, F066, F067, F068, F079, F082, F085, F088 |\\n| **P1** | **60** | F001, F002, F005, F011–F017, F019, F023, F025–F027, F030–F033, F037, F040, F043, F044, F047, F051–F056, F058, F060–F063, F069, F070, F071, F074, F075, F078, F080, F081, F083, F084, F086, F087, F089, F090, F097–F103, F115, F117, F119, F120 |\\n| **P2** | **22** | F034, F035, F064, F072, F073, F091–F096, F104–F113, F116 |\\n| **P3** | **0** | — nothing in the register is mere polish |\\n| Terminal | 26 | — |\\n\\n# E. VALIDATION MATRIX\\n\\n**Sessions actually reachable right now:** (1) **Aura Reviewer** via headless Playwright — fully mine, reliable,"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "F117\\n**H. Attention / C4 (6)** — F030, F031, F032, F033, F034, F035\\n**I. Discover / People / Institution / Create (4)** — F001, F002, F003▪, F004▪\\n**J. Articles / shared compose (6)** — F024▪, F025, F026, F027, F028▪, F029▪\\n**K. Native (3)** — F071, F072, F073\\n**L. Governance / certification (4)** — F115, F118▪, F119, F120\\n\\n▪ = terminal (24 LIVE_CERTIFIED) · ᴿ = EXPLICITLY_RETIRED (2) · **Total 120 ✓, each exactly once.**\\n\\n**Shared-capability split in domain B** (your explicit request): Conversation-specific today = attachment composer UI, voice/video message capture. Should become shared communication infrastructure = **m"
+    }
+   ]
+  },
+  {
+   "id": "F120",
+   "totalExternalMentions": 21,
+   "inGovernedDocs": 0,
+   "distinctSources": 1,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31771,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "which were compressed under another item;\\n- which were completed earlier but disappeared from subsequent reporting;\\n- which were genuinely forgotten;\\n- which were superseded by later architecture;\\n- which you previously called fixed/deployed but cannot honestly call LIVE_CERTIFIED;\\n- whether any item in this F001–F120 register is wrong, duplicated, or unsupported by actual history/evidence.\\n\\nIf you believe our reconstructed register overstates or duplicates something, challenge it.\\n\\nDO NOT silently accept our list for politeness.\\n\\nWe want the technically correct register.\\n\\n==============================================="
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "option in running video call to make it live, i think its burried or not implemented yet\\\"\\n- \\\"not an inturuption but when you next report back mid task or on task completion list all the findings which i have raised during C4\\\"\\n- \\\"CLAUDE — FOUNDER FINDINGS RECONCILIATION / NON-SHRINKING COMPLETION REGISTER\\\" (F001–F120 audit request)\\n- \\\"CLAUDE — MASTER REGISTER REORGANIZATION + EXECUTION-SEQUENCING TASK\\\"\\n- \\\"CLAUDE — AUTHORIZED QUIET HIGH-IMPACT WAVE + PERMANENT REPORTING DISCIPLINE\\\"\\n- \\\"commit push earlier working too so everything not become unresolved uncommited debt along\\\"\\n- \\\"F069 FOUNDER RULING — APPROVED\\\" (guest-"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "ce.\\n\\n**Disclosure first:** one commit (`f518024` — video-tile identity, party ordering, group avatar) was finished *before* your instruction arrived; I committed it so nothing was left half-applied, but I have **not pushed or deployed it**. Nothing else was implemented after your message.\\n\\n# MASTER REGISTER — F001–F120\\n\\n**Legend:** LC = LIVE_CERTIFIED · INLC = IMPLEMENTED_NOT_LIVE_CERTIFIED · PV = PARTIALLY_VALIDATED · OPEN · BLK = BLOCKED · C4 = C4_OWNED_OPEN · RET = EXPLICITLY_RETIRED\\n\\n## Discover / Create / Institution entry\\n\\n| ID | Finding | State | Evidence | Remains | Cert req'd |\\n|---|---|---|---|---|---|\\n| F001 |"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "e consumers fixed; no systematic audit |\\n| F117 Refresh as platform contract | PV | RC1–RC9 audit exists; execution not started |\\n| F118 C4 findings preserved | LC | No C4 finding patched; register maintained |\\n| F119 Implemented capabilities must not vanish from reporting | OPEN | This audit is the correction |\\n| F120 Every item reaches terminal state | OPEN | Register now enforces it |\\n\\n# COUNTS\\n\\n| State | Count |\\n|---|---|\\n| LIVE_CERTIFIED | **24** |\\n| IMPLEMENTED_NOT_LIVE_CERTIFIED | **24** |\\n| PARTIALLY_VALIDATED | **20** |\\n| OPEN | **42** |\\n| BLOCKED | **2** |\\n| C4_OWNED_OPEN | **6** |\\n| SUPERSEDED_BY_FOUNDER_R"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "ide this pass\\\";\\n- \\\"later\\\";\\n- \\\"small\\\";\\n- \\\"probably C4\\\";\\n- \\\"already covered\\\";\\n- \\\"not relevant to what I am testing.\\\"\\n\\nMARK THEM.\\n\\nEvery founder observation must be reconciled against the living register.\\n\\nUse:\\n\\nA. Existing F-item\\nIf the observation is another manifestation/evidence point of F001–F120, attach it there.\\n\\nB. New concrete defect/obligation\\nIf genuinely new and already implied by the intended/frozen product, create F121 onward.\\n\\nC. World-class prospective capability\\nIf it is a potential enhancement/design capability rather than an already-required defect, create WG018 onward.\\n\\nD. Founder ru"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31804,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "C4 items that currently degrade these journeys despite remaining C4-owned\\nL. Exact founder decisions required\\nM. Register reconciliation:\\n - 120 starting F-items\\n - terminal\\n - implemented/proof incomplete\\n - unresolved\\n - newly discovered F-items\\n - WG prospective items\\n - proof that every F001–F120 appears exactly once as canonical owner\\n\\nDO NOT IMPLEMENT.\\nDO NOT PUSH f518024.\\nDO NOT START CALL/LIVE TESTING.\\nDO NOT START C4.\\nDO NOT TOUCH MEETINGS.\\n\\nWe are using this checkpoint to decide whether to temporarily park coordinated realtime testing, clear the small/high-impact/self-validatable work first,"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31798,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "he overlay `_joining` latch (shared code, web-observed). F071 = disposed shared singletons (RC-A). Native binaries predate *both*.\\n4. **F050 is an instance of F053; F116 is the systemic statement of F050–F058** — hierarchy, not duplication; worth marking so F116 can't be closed by fixing one consumer.\\n5. **F115/F119/F120 are three angles of one governance obligation** — I'd keep all three but treat them as a single closure gate.\\n6. **Nothing in the register is unsupported.** Every row maps to a real observation or ruling.\\n\\n# Adopted\\n\\nThe non-shrinking rule stands: an item leaves only at LIVE_CERTIFIED, SUPERSEDED_BY_FOUNDER_R"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "nly when:\\n\\n1. Authorized implementation is complete.\\n2. Appropriate local regression is green.\\n3. Shared-system regressions are explicitly checked.\\n4. Every V1-capable implemented item has been live-validated where live validation is meaningful.\\n5. Anything not honestly certifiable remains non-terminal.\\n6. F001–F120 register is updated.\\n7. Any F121+ discoveries are recorded.\\n8. WG register is updated.\\n9. Governing decisions are documented.\\n10. CURRENT_STATE / continuity handoff is updated.\\n11. F055/F056 replace the rejected local approximation before f518024 can ship.\\n12. C4 evidence remains preserved.\\n13. Meetings rem"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32223,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ALONE lobby, conversation-menu cold-start). Live = state escalation of the SAME session; End Live ≠ End Call.\\n- **Internet-public reach ruling**: 15-second signed-out Live preview, then Sign up/Log in; preview grants zero participation/Conversation authority; auth must return to the SAME Live.\\n- **Non-shrinking F001–F120 register**: full reconciliation audit with strict terminal states (LIVE_CERTIFIED / SUPERSEDED_BY_FOUNDER_RULING / EXPLICITLY_RETIRED only). \\\"Implemented/deployed/test-green is not terminal.\\\"\\n- **Quiet High-Impact Wave** (authorized): Wave 1A continuity (F065, F059, F066, F067, F068, F069, F070, F061, F062, F06"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31804,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "e register around the PRODUCT/DOMAIN we are actually building, determine dependencies and validation requirements, and then choose a short high-impact implementation wave that can be completed largely by you without consuming our two-account/founder realtime validation sessions.\\n\\nThe purpose is to stop treating F001–F120 as a flat backlog.\\n\\nWe are currently deep inside Conversation/Thread reconstruction. Conversation is intended to become Aura's dominant human communication surface, with capabilities embedded contextually rather than exposing old Threads/Spaces/etc. as competing frontend concepts. Therefore anything that can mat"
+    }
+   ]
+  },
+  {
+   "id": "F121",
+   "totalExternalMentions": 31,
+   "inGovernedDocs": 7,
+   "distinctSources": 6,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31827,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "ach appears exactly once as canonical owner across domains A–L (verified: 7+8+18+38+3+10+13+6+4+6+3+4 = 120).\\n- **Terminal:** 26 (24 LIVE_CERTIFIED + 2 EXPLICITLY_RETIRED).\\n- **Built, proof incomplete:** 44 (24 INLC + 20 PV).\\n- **Actually unresolved:** 50 (42 OPEN + 2 BLOCKED + 6 C4).\\n- **Newly discovered F-items (F121+):** **none** — this reorganization surfaced no new concrete defects beyond the register; new observations landed as WG prospective gaps instead, which is the honest classification.\\n- **WG prospective items:** 17 (WG001–WG017), none authorized, none implemented.\\n- **Register integrity:** no renumbering, no merge"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 82,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "— authority structural, completeness is not** | The authority is now `ArticleBodyMedia`/`ArticleRevisionMedia`, but populating it still depends on a text scan because the composer emits no structured references. Closes when the forward path exists AND revision reconstruction fidelity is provable (D-5.1). *Adjacent to F121; not merged* |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 288,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "| **F141** | Media referenced inside authored content can exist outside structured retention truth | **OPEN** — owned by D-5. Lineage note: distinct from but adjacent to **F121** (baked signed URLs in article markdown, §14). F121 is a *delivery/representation* defect; F141 is the *retention* consequence. Not merged |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 94,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "- **F121** — Article image insertion writes the **resolved, expiring signed"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 571,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **F1** | Propagation: Articles (F121, F025–F027), Posts, Announcements, Institution Posts, Correspondence | E2 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 443,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| article markdown with baked signed URLs | rewrite to media references (F121) |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 532,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "the `'…'` sentinel (F124) · baked signed URLs in article markdown (F121) ·"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 92,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "## NEW CONCRETE DEFECTS FOUND (registered F121–F125)"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 31833,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "K THEM.\\n\\nEvery founder observation must be reconciled against the living register.\\n\\nUse:\\n\\nA. Existing F-item\\nIf the observation is another manifestation/evidence point of F001–F120, attach it there.\\n\\nB. New concrete defect/obligation\\nIf genuinely new and already implied by the intended/frozen product, create F121 onward.\\n\\nC. World-class prospective capability\\nIf it is a potential enhancement/design capability rather than an already-required defect, create WG018 onward.\\n\\nD. Founder ruling\\nIf the founder makes a product/doctrine decision, record it against the affected F/WG item and governing documentation.\\n\\nE. Evide"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32509,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "he F-register honestly.\\n\\nDo not inflate one root cause into many findings.\\nDo not merge genuinely independent defects merely to make the register shrink.\\nDo not mark IMPLEMENTED as LIVE_CERTIFIED.\\nDo not bury founder findings under implementation commentary.\\n\\nF126 and F138 remain separately visible.\\n\\nExisting F121–F138 must be reconciled against implementation as work progresses.\\n\\nAny newly discovered defect must be classified as:\\n- new finding,\\n- new evidence for an existing finding,\\n- duplicate,\\n- contradiction,\\n- or working-group/product-improvement candidate.\\n\\n==================================================="
+    }
+   ]
+  },
+  {
+   "id": "F122",
+   "totalExternalMentions": 21,
+   "inGovernedDocs": 7,
+   "distinctSources": 4,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32206,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "EPLACE\\n- `_PendingAttachment` (conversation-local) → canonical `Attachment`.\\n- Conversation's local link/internal-ref cards → canonical cards.\\n- Conversation's bespoke paste path → `RichPasteField` + image intake.\\n\\n### RETIRE (with explicit path)\\n- `wireKind(AttachmentKind.document) == 'IMAGE'` legacy quirk (see F122).\\n\\n## DUPLICATION MAP (16 concerns implemented more than once)\\n\\nStaged-attachment model · MIME inference/kind derivation · delivery-URL\\nresolution · link-preview card · internal-reference card · URL\\ndetection/debounce · body rich spans · rich paste · fullscreen viewer ·\\nvideo playback · audio playback · voi"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 99,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F122** — Wire-kind inconsistency: canonical"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 169,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "replace the dead inline `type` with the existing validated class), F122"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 561,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C1** | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122) | — |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 531,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "conversation-local duplicates · `wireKind(document)==='IMAGE'` (F122) ·"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 441,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| `wireKind(document) === 'IMAGE'` | retire with the wire vocabulary (F122) |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 68,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- `wireKind(AttachmentKind.document) == 'IMAGE'` legacy quirk (see F122)."
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 240,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**Closes:** F127, F128, F130, F122."
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "D` · `CORRECTED` (declared wrong, actual\\nallowed → canonical type replaced) · `REJECTED` (actual not permitted) ·\\n`UNVERIFIABLE` (no signature possible; policy decides).\\n\\n**Closes:** F127 (no magic-byte validation), F130 (unvalidated presign DTO —\\nreplace the dead inline `type` with the existing validated class), F122\\n(wire-kind inconsistency: one resolved type, one wire vocabulary).\\n\\n**Preserved unchanged:** the 28-type allowlist, unconditional SVG block, per-kind\\nsize/duration limits, sanitized filenames, presigned upload/download governance,\\nSSRF protections, storage authorization.\\n\\n**Also closed here:** F128 — `confi"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32529,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "P signature alone. text/plain + CSV honestly UNVERIFIABLE. Adopt the dead validated PresignDto class and delete the inline unvalidated TS type (F130). confirmUpload must REJECT over-limit objects, not reconcile them (F128); it already HEADs the object and discards the returned content type (F127). One wire vocabulary (F122). Preserve and strengthen the existing 28-type MIME matrix — do not narrow it.\",\"activeForm\":\"Building the Content Truth authority\"},\"caller\":{\"type\":\"direct\"}}],\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":2613,\"cache_read_input_tokens\":"
+    }
+   ]
+  },
+  {
+   "id": "F123",
+   "totalExternalMentions": 7,
+   "inGovernedDocs": 3,
+   "distinctSources": 4,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32206,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "out raw markdown as UX); this is durability/\\n correctness.\\n- **F122** — Wire-kind inconsistency: canonical\\n `wireKind(AttachmentKind.document)` returns `'IMAGE'`, while\\n `conversation_screen` sends `'DOCUMENT'` for the same file class. Two\\n messaging surfaces report different kinds for identical content.\\n- **F123** — Falsified content provenance: conversation labels every\\n attachment `source: 'GALLERY'`, including clipboard pastes and desktop\\n drops, despite `AttachmentSource` supporting `paste`/`upload`.\\n- **F124** — Empty-text sends transmit a literal `'…'` sentinel as the\\n message body, and rendering special-case"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 103,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F123** — Falsified content provenance: conversation labels every"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 570,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **E2** | **Conversation as FIRST COMPLETE REFERENCE** (F011–F019, F123–F125, WG001/2/4/5/6/9) | D2, E1 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 125,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**told the truth** — F123 exists because Conversation hardcodes `GALLERY`."
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "Derivative` + worker + image pipeline + EXIF (F132, F136) | C1 |\\n| **D2** | Video posters, audio duration/waveform, document previews | D1 |\\n| **E1** | Shared client primitives: intake, upload (cancel/retry/progress), players, viewers, cards | C1 |\\n| **E2** | **Conversation as FIRST COMPLETE REFERENCE** (F011–F019, F123–F125, WG001/2/4/5/6/9) | D2, E1 |\\n| **F1** | Propagation: Articles (F121, F025–F027), Posts, Announcements, Institution Posts, Correspondence | E2 |\\n\\nC1–C3 are prerequisites because they are security and data-integrity work; no\\npresentation stage should ship on top of an ungoverned ingestion path.\\n\\n---\\n\\n##"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "|\\n| **D3** | Broad format families + transcode-dependent formats (HEIC etc.) + external preview cache (F135) | D1 |\\n| **E1** | Shared client primitives: intake, upload (progress/cancel/retry), players with seek, viewers, cards, accessibility | C1 |\\n| **E2** | **Conversation as FIRST COMPLETE REFERENCE** (F011–F019, F123–F125, WG001/2/4/5/6/9) | D2, E1 |\\n| **F1** | Propagation: Articles (F121, F025–F027), Posts, Announcements, Institution Posts, Correspondence | E2 |\\n\\n---\\n\\n## 17. VALIDATION GATES\\n\\n| Class | Applies to |\\n|---|---|\\n| LOCALLY VERIFIED | truth verdicts, capability matrix, reference integrity + reconciler, vis"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "camera,\\nmicrophone, voice/video message capture — converge on a single client\\n`ContentIntake` producing a normalized `StagedContent` before anything is\\nuploaded. Downstream code never re-asks which door was used.\\n\\n`MediaSource` (CAMERA|GALLERY|PASTE|RECORDING|UPLOAD) is retained and finally\\n**told the truth** — F123 exists because Conversation hardcodes `GALLERY`.\\nSource becomes provenance metadata, never a presentation input.\\n\\n---\\n\\n## 3. CONTENT TRUTH / SECURITY ARCHITECTURE (question B)\\n\\n**Invariant: A FILE IS NOT TRUSTED MERELY BECAUSE THE CLIENT NAMED ITS TYPE.**\\n\\nSix distinct layers, never collapsed:\\n\\n| # | La"
+    }
+   ]
+  },
+  {
+   "id": "F124",
+   "totalExternalMentions": 6,
+   "inGovernedDocs": 3,
+   "distinctSources": 4,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32206,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "UMENT'` for the same file class. Two\\n messaging surfaces report different kinds for identical content.\\n- **F123** — Falsified content provenance: conversation labels every\\n attachment `source: 'GALLERY'`, including clipboard pastes and desktop\\n drops, despite `AttachmentSource` supporting `paste`/`upload`.\\n- **F124** — Empty-text sends transmit a literal `'…'` sentinel as the\\n message body, and rendering special-cases it away. Message body truth is\\n being used as a UI flag.\\n- **F125** — Conversation images have **no viewer and no save**: not\\n tappable, no fullscreen, no save affordance — while every other surface\\n r"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 106,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F124** — Empty-text sends transmit a literal `'…'` sentinel as the"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 532,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "the `'…'` sentinel (F124) · baked signed URLs in article markdown (F121) ·"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 442,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| `'…'` empty-body sentinel | remove; body truth is not a UI flag (F124) |"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "nvelope projection |\\n| 2× signed-URL issuers | one delivery authority |\\n| conversation-local `_PendingAttachment`, cards, paste, players | replaced by shared primitives |\\n| `wireKind(document) === 'IMAGE'` | retire with the wire vocabulary (F122) |\\n| `'…'` empty-body sentinel | remove; body truth is not a UI flag (F124) |\\n| article markdown with baked signed URLs | rewrite to media references (F121) |\\n\\n**F129 specifically:** Correspondence must consume the canonical lifecycle rather\\nthan gaining three checks around a raw storage key — the directive is explicit\\nthat patching the bypass in place is not acceptable. Corresponde"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": ") ·\\n`thumbUrl`/`thumbnailUrl` duplication · the dead `presign.dto.ts` versus the\\ninline unvalidated type (F130) · 3× MIME mappers · 4× Media writers (F129) ·\\n5× stamp writers · 4× wire projections · 2× signed-URL issuers ·\\nconversation-local duplicates · `wireKind(document)==='IMAGE'` (F122) ·\\nthe `'…'` sentinel (F124) · baked signed URLs in article markdown (F121) ·\\nraw storage URLs (F138, contingent).\\n\\n**F129 specifically:** Correspondence converges onto the canonical lifecycle. It\\nis not patched with three checks around a raw key — its domain authorization and\\nsemantics are preserved; only ingestion converges.\\n\\n---\\n\\"
+    }
+   ]
+  },
+  {
+   "id": "F125",
+   "totalExternalMentions": 8,
+   "inGovernedDocs": 3,
+   "distinctSources": 3,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32206,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ly | opaque \\\"Voice note\\\" pill |\\n| Thread | **no playback** — launches the browser | **no playback** — launches the browser |\\n| Feed/Posts | still image only | — |\\n\\nNo timeline, scrubbing, duration, elapsed time, waveform or speed control\\nanywhere in the product.\\n\\n## NEW CONCRETE DEFECTS FOUND (registered F121–F125)\\n\\n- **F121** — Article image insertion writes the **resolved, expiring signed\\n URL** into durable markdown body text (`article_editor_screen.dart:129`).\\n A published article's images will 404 once the signature expires. Distinct\\n from F025 (which is about raw markdown as UX); this is durability/\\n correct"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 109,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F125** — Conversation images have **no viewer and no save**: not"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 570,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **E2** | **Conversation as FIRST COMPLETE REFERENCE** (F011–F019, F123–F125, WG001/2/4/5/6/9) | D2, E1 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 92,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "## NEW CONCRETE DEFECTS FOUND (registered F121–F125)"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**D3** | Broad format families + transcode-dependent formats (HEIC etc.) + external preview cache (F135) | D1 |\\n| **E1** | Shared client primitives: intake, upload (progress/cancel/retry), players with seek, viewers, cards, accessibility | C1 |\\n| **E2** | **Conversation as FIRST COMPLETE REFERENCE** (F011–F019, F123–F125, WG001/2/4/5/6/9) | D2, E1 |\\n| **F1** | Propagation: Articles (F121, F025–F027), Posts, Announcements, Institution Posts, Correspondence | E2 |\\n\\n---\\n\\n## 17. VALIDATION GATES\\n\\n| Class | Applies to |\\n|---|---|\\n| LOCALLY VERIFIED | truth verdicts, capability matrix, reference integrity + reconciler, visibili"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32206,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "attachment `source: 'GALLERY'`, including clipboard pastes and desktop\\n drops, despite `AttachmentSource` supporting `paste`/`upload`.\\n- **F124** — Empty-text sends transmit a literal `'…'` sentinel as the\\n message body, and rendering special-cases it away. Message body truth is\\n being used as a UI flag.\\n- **F125** — Conversation images have **no viewer and no save**: not\\n tappable, no fullscreen, no save affordance — while every other surface\\n routes through `AuraMediaViewer`/`MediaSaveService`.\\n\\n## CORS (F058 interaction)\\n\\nThere is **no CORS handling in the image path at all** — a CORS rejection is\\nindistinguish"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32224,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "attachment `source: 'GALLERY'`, including clipboard pastes and desktop\\n drops, despite `AttachmentSource` supporting `paste`/`upload`.\\n- **F124** — Empty-text sends transmit a literal `'…'` sentinel as the\\n message body, and rendering special-cases it away. Message body truth is\\n being used as a UI flag.\\n- **F125** — Conversation images have **no viewer and no save**: not\\n tappable, no fullscreen, no save affordance — while every other surface\\n routes through `AuraMediaViewer`/`MediaSaveService`.\\n\\n## BACKEND AUDIT — what exists\\n\\n**KEEP (genuinely single-source):** `src/media/mime-policy.ts` (28 permitted\\nMIME type"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ative` + worker + image pipeline + EXIF (F132, F136) | C1 |\\n| **D2** | Video posters, audio duration/waveform, document previews | D1 |\\n| **E1** | Shared client primitives: intake, upload (cancel/retry/progress), players, viewers, cards | C1 |\\n| **E2** | **Conversation as FIRST COMPLETE REFERENCE** (F011–F019, F123–F125, WG001/2/4/5/6/9) | D2, E1 |\\n| **F1** | Propagation: Articles (F121, F025–F027), Posts, Announcements, Institution Posts, Correspondence | E2 |\\n\\nC1–C3 are prerequisites because they are security and data-integrity work; no\\npresentation stage should ship on top of an ungoverned ingestion path.\\n\\n---\\n\\n## 14."
+    }
+   ]
+  },
+  {
+   "id": "F126",
+   "totalExternalMentions": 150,
+   "inGovernedDocs": 20,
+   "distinctSources": 6,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "n ×4 (each with a\\ndifferent URL-preference chain) · signed-URL issuance ×2 (different candidate\\norders) · attachment metadata ×2 tables with different units · presign DTO ×2\\n(the validated one is dead code) · TTL clamp ×2 · cross-repo MIME policy ×2 ·\\nvisibility derivation ×2.\\n\\n## NEW CONCRETE DEFECTS — BACKEND (F126–F137)\\n\\n**Security / privacy — highest severity:**\\n- **F126 (P0, privacy)** — **Conversation media visibility is never set**, so\\n private DM attachments stay `PUBLIC`. `GET /media/:id/url` then returns a\\n permanent public URL **to any caller**, and the `CONVERSATION` branch of\\n `canAccessRestricted` is unr"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 100,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "Untouched and uncollapsed: **F126**, **F138**. No R2 ratchet performed."
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 122,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "**F126 = APPLICATION-LEVEL DISCLOSURE CLOSED, STORAGE-LEVEL CONFIDENTIALITY NOT"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 151,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "This does not mean F126 was wrongly fixed — the fix closed the path that"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 565,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C5** | **PROMOTED — SECURITY STAGE.** Canonical governed delivery for all visibility classes; retire raw storage URLs; remove bucket public read; F138 closure and F126 storage-level completion | C1, C3 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 581,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **TWO-ACCOUNT / TWO-BROWSER REQUIRED** | F126 live journey, cross-party render parity, access denial, sender-vs-receiver truth |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 479,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **TWO-ACCOUNT / TWO-BROWSER REQUIRED** | F126 live journey, cross-party render parity, sender-vs-receiver truth, access denial |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 39,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**Evidence base:** `2026-08-17-rich-content-system-audit.md`, the F126 correction,"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 563,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C3** | Access context at ingestion; restricted branches for POST/REPLY (F126 generalized) | C1 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 460,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C3** | Access context at ingestion; restricted branches for POST/REPLY (F126 generalization) | C1 |"
+    }
+   ]
+  },
+  {
+   "id": "F127",
+   "totalExternalMentions": 33,
+   "inGovernedDocs": 6,
+   "distinctSources": 5,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ments stay `PUBLIC`. `GET /media/:id/url` then returns a\\n permanent public URL **to any caller**, and the `CONVERSATION` branch of\\n `canAccessRestricted` is unreachable in production. Posts/announcements/\\n institution posts/messages all set visibility; **the most private surface is\\n the least protected.**\\n- **F127 (P0, security)** — **No magic-byte/signature validation anywhere.**\\n The client-declared `contentType` at presign is the only check; R2 stores\\n whatever bytes are PUT. `confirmUpload` already calls `headObject()` which\\n *returns* the stored content type — and discards it.\\n- **F129 (P0, security)** — The cor"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 511,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| C1 Content Truth (`62b39bf`) | Implemented + pushed; F127/F128/F130 implemented-not-live-certified |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 561,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C1** | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122) | — |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 458,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C1** | Content-truth authority + presign validation + size enforcement (F127/F128/F130) | — |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 168,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**Closes:** F127 (no magic-byte validation), F130 (unvalidated presign DTO —"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 150,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F127 (P0, security)** — **No magic-byte/signature validation anywhere.**"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 240,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**Closes:** F127, F128, F130, F122."
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ever served with an HTML-capable content type). This\\nlimitation is stated rather than hidden.\\n\\n**Verdict dispositions:** `CONFIRMED` · `CORRECTED` (declared wrong, actual\\nallowed → canonical type replaced) · `REJECTED` (actual not permitted) ·\\n`UNVERIFIABLE` (no signature possible; policy decides).\\n\\n**Closes:** F127 (no magic-byte validation), F130 (unvalidated presign DTO —\\nreplace the dead inline `type` with the existing validated class), F122\\n(wire-kind inconsistency: one resolved type, one wire vocabulary).\\n\\n**Preserved unchanged:** the 28-type allowlist, unconditional SVG block, per-kind\\nsize/duration limits, saniti"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ng 8):** after validation, before delivery\\neligibility. States converge with `ProcessingState` and the existing\\n`MediaStatus` rather than adding a parallel enum; `QUARANTINED` is the one new\\nterminal state required, and `REJECTED` maps to the existing `FAILED` with a\\nreason. No redundant vocabulary.\\n\\n**Closes:** F127, F128, F130, F122.\\n**Preserves:** allowlist governance, size/duration limits, filename\\nsanitization, presign/download governance, SSRF protection, storage authorization.\\n\\n---\\n\\n## 6. FINAL DELIVERY MODEL (ruling 6)\\n\\n**Frozen principle: PUBLIC CONTENT IS NOT PERMANENT UNREVOCABLE STORAGE ACCESS.**\\n\\nAura re"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "rough the safe boundary.\\n8. Privacy metadata stripped from delivered derivatives.\\n9. **F138 resolved before raw storage URLs are retired.**\\n\\n---\\n\\n## 16. IMPLEMENTATION STAGES\\n\\n| Stage | Content | Gate |\\n|---|---|---|\\n| **C1** | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122) | — |\\n| **C2** | Reference index + verifier registry + reconciler + retention rewrite + backfill (F131) | — |\\n| **C3** | Access context at ingestion; restricted branches for POST/REPLY (F126 generalized) | C1 |\\n| **C4** | Canonical ingestion convergence — Correspondence, Articles, uploads (F129)"
+    }
+   ]
+  },
+  {
+   "id": "F128",
+   "totalExternalMentions": 32,
+   "inGovernedDocs": 6,
+   "distinctSources": 5,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "ates `Media` at `status=READY` with no HEAD verification.\\n- **F131 (P0, data loss)** — `Article.coverMediaId` is a bare string with no\\n Prisma relation, no `READY` check, no MIME check and **no `attachedTo`\\n stamp** — so `MediaCleanupService` treats a published article's cover as an\\n orphan and deletes it.\\n- **F128 (P1, security)** — Size limits are advisory: the presigned PUT carries\\n no `content-length-range`, and `confirmUpload` reconciles the real size but\\n never rejects an over-limit object.\\n- **F130 (P1, security)** — The presign body is a bare TS `type`, so the global\\n `ValidationPipe` skips it entirely; no run"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 511,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| C1 Content Truth (`62b39bf`) | Implemented + pushed; F127/F128/F130 implemented-not-live-certified |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 176,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "**Also closed here:** F128 — `confirmUpload` already HEADs the object and receives"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 561,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C1** | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122) | — |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 458,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C1** | Content-truth authority + presign validation + size enforcement (F127/F128/F130) | — |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 162,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F128 (P1, security)** — Size limits are advisory: the presigned PUT carries"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 240,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**Closes:** F127, F128, F130, F122."
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32529,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "1871-493d-9154-31645ef7d4d5\",\"isSidechain\":false,\"message\":{\"model\":\"claude-opus-5\",\"id\":\"msg_011Ce9Hp2xRaTFmjXq5h6e8e\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"id\":\"toolu_01NGqStUXm78tKf9T9uE7Kta\",\"name\":\"TaskCreate\",\"input\":{\"subject\":\"C1 — Content Truth authority + presign validation (F127/F128/F130/F122)\",\"description\":\"§12 FROZEN stage C1, first security/data-integrity stage. Layered content truth: declared → transport → signature → container → structural → resolved, verdicts CONFIRMED/CORRECTED/REJECTED/UNVERIFIABLE, never collapsed. DOCX/PPTX/XLSX distinguished by archive directory (word/, ppt/, xl/)"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32529,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "RIFIABLE, never collapsed. DOCX/PPTX/XLSX distinguished by archive directory (word/, ppt/, xl/), not ZIP signature alone. text/plain + CSV honestly UNVERIFIABLE. Adopt the dead validated PresignDto class and delete the inline unvalidated TS type (F130). confirmUpload must REJECT over-limit objects, not reconcile them (F128); it already HEADs the object and discards the returned content type (F127). One wire vocabulary (F122). Preserve and strengthen the existing 28-type MIME matrix — do not narrow it.\",\"activeForm\":\"Building the Content Truth authority\"},\"caller\":{\"type\":\"direct\"}}],\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"sto"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32577,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "sible and must not be merged. Competitive standard frozen: must not feel technologically older or materially poorer than WhatsApp/LinkedIn/Teams/Facebook/X in ordinary content interaction.\",\"status\":\"in_progress\",\"blocks\":[],\"blockedBy\":[]},{\"id\":\"174\",\"subject\":\"C1 — Content Truth authority + presign validation (F127/F128/F130/F122)\",\"description\":\"§12 FROZEN stage C1, first security/data-integrity stage. Layered content truth: declared → transport → signature → container → structural → resolved, verdicts CONFIRMED/CORRECTED/REJECTED/UNVERIFIABLE, never collapsed. DOCX/PPTX/XLSX distinguished by archive directory (word/, ppt/, xl/)"
+    }
+   ]
+  },
+  {
+   "id": "F129",
+   "totalExternalMentions": 38,
+   "inGovernedDocs": 12,
+   "distinctSources": 5,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "n the least protected.**\\n- **F127 (P0, security)** — **No magic-byte/signature validation anywhere.**\\n The client-declared `contentType` at presign is the only check; R2 stores\\n whatever bytes are PUT. `confirmUpload` already calls `headObject()` which\\n *returns* the stored content type — and discards it.\\n- **F129 (P0, security)** — The correspondence-messages path **bypasses\\n `/media/presign` entirely**: the client supplies a raw `storageKey`, so there\\n is no MIME check, no size check, and no proof the caller owns that key.\\n Creates `Media` at `status=READY` with no HEAD verification.\\n- **F131 (P0, data loss)** — `A"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 176,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "/uploads/*` at all — it uses `/media/presign`. Production confirms it: all 12 identity URLs resolve to Media rows. So it is **reachable-but-unconsumed legacy**, not an active bypass. | **Classified.** Mapped to the §14 **F129** multiple-Media-writers retirement lineage. Not a new finding. NOT rewritten — retirement is F129's call, not C2's |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 176,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "achable behind `JwtAuthGuard + VerifiedEmailGuard`, but the released Flutter client does not call `/uploads/*` at all — it uses `/media/presign`. Production confirms it: all 12 identity URLs resolve to Media rows. So it is **reachable-but-unconsumed legacy**, not an active bypass. | **Classified.** Mapped to the §14 **F129** multiple-Media-writers retirement lineage. Not a new finding. NOT rewritten — retirement is F129's call, not C2's |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 84,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F143** | **NEW** — D-3 + D-6 | **OPEN — structurally prevented, cause not removed** | Prevention: the level-2 storage gate. Cause: correspondence mints a duplicate Media row per `storageKey` (§14 F129 convergence). Closes when the cause is removed and reconciliation shows no new aliases |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 138,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| Institution Posts | no | **yes** (legacy `mediaUrl`) | `InstitutionPostMedia` | **yes** — link + index in one tx | **yes** | Wired. Legacy row-minting remains (F129) |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 535,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**F129 specifically:** Correspondence converges onto the canonical lifecycle. It"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 564,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C4** | Canonical ingestion convergence — Correspondence, Articles, uploads (F129) | C1, C2 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 445,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**F129 specifically:** Correspondence must consume the canonical lifecycle rather"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 529,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "inline unvalidated type (F130) · 3× MIME mappers · 4× Media writers (F129) ·"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 436,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| 4× Media-row writers | one governed ingestion path (F129) |"
+    }
+   ]
+  },
+  {
+   "id": "F130",
+   "totalExternalMentions": 41,
+   "inGovernedDocs": 8,
+   "distinctSources": 5,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ttachedTo`\\n stamp** — so `MediaCleanupService` treats a published article's cover as an\\n orphan and deletes it.\\n- **F128 (P1, security)** — Size limits are advisory: the presigned PUT carries\\n no `content-length-range`, and `confirmUpload` reconciles the real size but\\n never rejects an over-limit object.\\n- **F130 (P1, security)** — The presign body is a bare TS `type`, so the global\\n `ValidationPipe` skips it entirely; no runtime validation on any presign\\n field. A validated `PresignDto` class exists but is dead code.\\n- **F132 (P1, privacy)** — No EXIF stripping: GPS coordinates in uploaded\\n photos are published to"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 511,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| C1 Content Truth (`62b39bf`) | Implemented + pushed; F127/F128/F130 implemented-not-live-certified |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 434,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| dead `presign.dto.ts` class vs inline unvalidated `type` | adopt the validated class, delete the inline type (F130) |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 561,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C1** | Content-truth authority, capability registry, presign validation, size rejection (F127/F128/F130/F122) | — |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 458,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C1** | Content-truth authority + presign validation + size enforcement (F127/F128/F130) | — |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 529,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "inline unvalidated type (F130) · 3× MIME mappers · 4× Media writers (F129) ·"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 168,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**Closes:** F127 (no magic-byte validation), F130 (unvalidated presign DTO —"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 165,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F130 (P1, security)** — The presign body is a bare TS `type`, so the global"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 240,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**Closes:** F127, F128, F130, F122."
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "content type). This\\nlimitation is stated rather than hidden.\\n\\n**Verdict dispositions:** `CONFIRMED` · `CORRECTED` (declared wrong, actual\\nallowed → canonical type replaced) · `REJECTED` (actual not permitted) ·\\n`UNVERIFIABLE` (no signature possible; policy decides).\\n\\n**Closes:** F127 (no magic-byte validation), F130 (unvalidated presign DTO —\\nreplace the dead inline `type` with the existing validated class), F122\\n(wire-kind inconsistency: one resolved type, one wire vocabulary).\\n\\n**Preserved unchanged:** the 28-type allowlist, unconditional SVG block, per-kind\\nsize/duration limits, sanitized filenames, presigned upload/d"
+    }
+   ]
+  },
+  {
+   "id": "F131",
+   "totalExternalMentions": 88,
+   "inGovernedDocs": 23,
+   "distinctSources": 7,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "pe — and discards it.\\n- **F129 (P0, security)** — The correspondence-messages path **bypasses\\n `/media/presign` entirely**: the client supplies a raw `storageKey`, so there\\n is no MIME check, no size check, and no proof the caller owns that key.\\n Creates `Media` at `status=READY` with no HEAD verification.\\n- **F131 (P0, data loss)** — `Article.coverMediaId` is a bare string with no\\n Prisma relation, no `READY` check, no MIME check and **no `attachedTo`\\n stamp** — so `MediaCleanupService` treats a published article's cover as an\\n orphan and deletes it.\\n- **F128 (P1, security)** — Size limits are advisory: the presigned"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 514,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| F131 | **OPEN** — enlarged; prerequisites enumerated in §10 |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 122,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "| 2026-08-18 | `942d5a1` | **D-3** protective correction. F142/F131/F140 authorities covered; **F143 discovered** and covered; stage 3 gained a reference check it never had; fail-safe added |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 279,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "F131 is the **systemic** retention defect. F139–F142 are **independently"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 74,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "Findings are kept **separate**. F131 is the systemic defect; F139–F142 are"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 285,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F131** | Generalized retention failure — exception-list and incomplete-authority problem | **OPEN, enlarged.** Still unexercised by real data: production has zero article covers |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 79,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F131** | whole chapter | OPEN, enlarged | §10 prerequisites of the investigation doc; still unexercised — production has zero article covers |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 440,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "**F131 — enlarged, not closed.** The generalized invariant is correct and the C2 test"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 368,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "F131 remains **OPEN**. Nothing here closes it; this investigation enlarged it."
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 297,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "`ArticleRevision` begins snapshotting the cover (F131, plus the versioning gap)."
+    }
+   ]
+  },
+  {
+   "id": "F132",
+   "totalExternalMentions": 19,
+   "inGovernedDocs": 6,
+   "distinctSources": 4,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "e`, and `confirmUpload` reconciles the real size but\\n never rejects an over-limit object.\\n- **F130 (P1, security)** — The presign body is a bare TS `type`, so the global\\n `ValidationPipe` skips it entirely; no runtime validation on any presign\\n field. A validated `PresignDto` class exists but is dead code.\\n- **F132 (P1, privacy)** — No EXIF stripping: GPS coordinates in uploaded\\n photos are published to public R2 verbatim.\\n\\n**Correctness / capability:**\\n- **F133 (P1)** — Duration unit mismatch: `Media.duration` is milliseconds\\n (presign compares it to `*_DURATION_MS`), while `MessageAttachment.durationSec`\\n is secon"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 168,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F132 (P1, privacy)** — No EXIF stripping: GPS coordinates in uploaded"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 566,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136) | C1, **C5** |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 297,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "(F132), video posters and transcodes, audio duration + waveform (F136), document"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 462,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **D1** | `MediaDerivative` + worker + image pipeline + EXIF (F132, F136) | C1 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 502,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "5. **EXIF policy (F132).** Strip everywhere, or strip from derivatives while"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 353,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "access authority. Closes **F132**."
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "cision.\\n\\n### 8.4 Privacy metadata (ruling 5, frozen)\\n\\n**Delivered derivatives strip privacy-sensitive metadata by default**, GPS\\nespecially. Useful technical metadata is extracted *first* for processing and\\npresentation. Original retention stays governed by original-content policy and\\naccess authority. Closes **F132**.\\n\\n---\\n\\n## 9. FINAL FORMAT-CAPABILITY MODEL (rulings 12–17)\\n\\n**Frozen doctrine: BROAD SUPPORT BY DEFAULT. RESTRICTION REQUIRES A REASON.**\\n\\\"Not previously in our MIME list\\\" is explicitly **not** a reason.\\n\\nValid reasons: demonstrated security risk · no trustworthy content truth ·\\ndangerous active cont"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32491,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "l\":false,\"file_path\":\"C:\\\\Users\\\\muham\\\\flutter_projects\\\\aura\\\\aura_final\\\\docs\\\\2026-08-17-rich-content-s12-freeze-candidate.md\",\"old_string\":\"| **C5** | Canonical delivery route; **F138 resolution**; PUBLIC delivery migration steps 1–3 | C1 |\\n| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136) | C1 |\",\"new_string\":\"| **C5** | **PROMOTED — SECURITY STAGE.** Canonical governed delivery for all visibility classes; retire raw storage URLs; remove bucket public read; F138 closure and F126 storage-level completion | C1, C3 |\\n| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32492,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "seResult\":{\"filePath\":\"C:\\\\Users\\\\muham\\\\flutter_projects\\\\aura\\\\aura_final\\\\docs\\\\2026-08-17-rich-content-s12-freeze-candidate.md\",\"oldString\":\"| **C5** | Canonical delivery route; **F138 resolution**; PUBLIC delivery migration steps 1–3 | C1 |\\n| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136) | C1 |\",\"newString\":\"| **C5** | **PROMOTED — SECURITY STAGE.** Canonical governed delivery for all visibility classes; retire raw storage URLs; remove bucket public read; F138 closure and F126 storage-level completion | C1, C3 |\\n| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132,"
+    }
+   ]
+  },
+  {
+   "id": "F133",
+   "totalExternalMentions": 9,
+   "inGovernedDocs": 3,
+   "distinctSources": 4,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "e`, so the global\\n `ValidationPipe` skips it entirely; no runtime validation on any presign\\n field. A validated `PresignDto` class exists but is dead code.\\n- **F132 (P1, privacy)** — No EXIF stripping: GPS coordinates in uploaded\\n photos are published to public R2 verbatim.\\n\\n**Correctness / capability:**\\n- **F133 (P1)** — Duration unit mismatch: `Media.duration` is milliseconds\\n (presign compares it to `*_DURATION_MS`), while `MessageAttachment.durationSec`\\n is seconds — and `messages.service` copies one straight into the other.\\n- **F136 (P1)** — No thumbnail generation. For images `thumbUrl` is set to the\\n **full-r"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 172,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F133 (P1)** — Duration unit mismatch: `Media.duration` is milliseconds"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 432,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| `MessageAttachment` (dual-written, different field names, **seconds vs ms**) | retire onto canonical Media after backfill (F133) |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 527,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "Applies to: `MessageAttachment` (incl. the seconds-vs-ms mismatch, F133) ·"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "y to be identified and regression-tested explicitly\\nbefore it is touched, not assumed safe.\\n\\n---\\n\\n## 12. MIGRATION / RETIREMENT STRATEGY (question P)\\n\\n| Legacy | Disposition |\\n|---|---|\\n| `MessageAttachment` (dual-written, different field names, **seconds vs ms**) | retire onto canonical Media after backfill (F133) |\\n| `thumbUrl` + `thumbnailUrl` duplicate columns | collapse into `MediaDerivative` behind compatibility read |\\n| dead `presign.dto.ts` class vs inline unvalidated `type` | adopt the validated class, delete the inline type (F130) |\\n| 3× MIME→MediaType mappers | one authority in `mime-policy.ts` |\\n| 4× Media-r"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "n)\\n\\n**Frozen retirement condition — indefinite compatibility is rejected:**\\n\\n```\\nNEW CONTRACT IMPLEMENTED → HISTORY MIGRATED / EQUIVALENCE PROVEN\\n→ LIVE BEHAVIOR CERTIFIED → COMPATIBILITY CONSUMERS REMOVED\\n→ LEGACY REPRESENTATION RETIRED\\n```\\n\\nApplies to: `MessageAttachment` (incl. the seconds-vs-ms mismatch, F133) ·\\n`thumbUrl`/`thumbnailUrl` duplication · the dead `presign.dto.ts` versus the\\ninline unvalidated type (F130) · 3× MIME mappers · 4× Media writers (F129) ·\\n5× stamp writers · 4× wire projections · 2× signed-URL issuers ·\\nconversation-local duplicates · `wireKind(document)==='IMAGE'` (F122) ·\\nthe `'…'` sentin"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32215,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "bal\",\"+ `ValidationPipe` skips it entirely; no runtime validation on any presign\",\"+ field. A validated `PresignDto` class exists but is dead code.\",\"+- **F132 (P1, privacy)** — No EXIF stripping: GPS coordinates in uploaded\",\"+ photos are published to public R2 verbatim.\",\"+\",\"+**Correctness / capability:**\",\"+- **F133 (P1)** — Duration unit mismatch: `Media.duration` is milliseconds\",\"+ (presign compares it to `*_DURATION_MS`), while `MessageAttachment.durationSec`\",\"+ is seconds — and `messages.service` copies one straight into the other.\",\"+- **F136 (P1)** — No thumbnail generation. For images `thumbUrl` is set to the\",\"+"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32574,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "the client cannot be trusted to report it honestly. */\\n @IsInt()\\n @IsPositive()\\n bytes!: number\\n\\n @IsOptional()\\n @IsInt()\\n width?: number | null\\n\\n @IsOptional()\\n @IsInt()\\n height?: number | null\\n\\n /** Milliseconds. `MessageAttachment.durationSec` is SECONDS — the unit\\n * mismatch tracked as F133. Do not conflate them here. */\\n @IsOptional()\\n @IsInt()\\n duration?: number | null\\n\\n /** DOCUMENT was missing from the inline type despite MediaKind supporting it,\\n * so document uploads were validated against the IMAGE size bucket. */\\n @IsOptional()\\n @IsIn(PRESIGN_KINDS as unknown as string[])\\n"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32576,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "mber;\",\"-}\",\"\\\\ No newline at end of file\",\"+ @IsPositive()\",\"+ bytes!: number\",\"+\",\"+ @IsOptional()\",\"+ @IsInt()\",\"+ width?: number | null\",\"+\",\"+ @IsOptional()\",\"+ @IsInt()\",\"+ height?: number | null\",\"+\",\"+ /** Milliseconds. `MessageAttachment.durationSec` is SECONDS — the unit\",\"+ * mismatch tracked as F133. Do not conflate them here. */\",\"+ @IsOptional()\",\"+ @IsInt()\",\"+ duration?: number | null\",\"+\",\"+ /** DOCUMENT was missing from the inline type despite MediaKind supporting it,\",\"+ * so document uploads were validated against the IMAGE size bucket. */\",\"+ @IsOptional()\",\"+ @IsIn(PRESIGN_KINDS as unknown"
+    }
+   ]
+  },
+  {
+   "id": "F134",
+   "totalExternalMentions": 3,
+   "inGovernedDocs": 1,
+   "distinctSources": 2,
+   "provenanceStrength": "MODERATE",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "rationSec`\\n is seconds — and `messages.service` copies one straight into the other.\\n- **F136 (P1)** — No thumbnail generation. For images `thumbUrl` is set to the\\n **full-resolution original** (a thumbnail in name only); for video/audio/\\n document it is null — which is why video tiles have nothing to show.\\n- **F134 (P2)** — `Media.aiFlags` is client-writable through `PATCH /media/:id`\\n (not worker-gated) and read by nothing.\\n- **F135 (P2, privacy)** — Link-preview images are hotlinked third-party URLs,\\n never mirrored into R2, leaking viewer IP addresses to external hosts at\\n render time.\\n- **F137 (P2, governance)**"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 178,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F134 (P2)** — `Media.aiFlags` is client-writable through `PATCH /media/:id`"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32215,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "\",\"+ is seconds — and `messages.service` copies one straight into the other.\",\"+- **F136 (P1)** — No thumbnail generation. For images `thumbUrl` is set to the\",\"+ **full-resolution original** (a thumbnail in name only); for video/audio/\",\"+ document it is null — which is why video tiles have nothing to show.\",\"+- **F134 (P2)** — `Media.aiFlags` is client-writable through `PATCH /media/:id`\",\"+ (not worker-gated) and read by nothing.\",\"+- **F135 (P2, privacy)** — Link-preview images are hotlinked third-party URLs,\",\"+ never mirrored into R2, leaking viewer IP addresses to external hosts at\",\"+ render time.\",\"+- **F137 (P2, gove"
+    }
+   ]
+  },
+  {
+   "id": "F135",
+   "totalExternalMentions": 12,
+   "inGovernedDocs": 5,
+   "distinctSources": 4,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "tion. For images `thumbUrl` is set to the\\n **full-resolution original** (a thumbnail in name only); for video/audio/\\n document it is null — which is why video tiles have nothing to show.\\n- **F134 (P2)** — `Media.aiFlags` is client-writable through `PATCH /media/:id`\\n (not worker-gated) and read by nothing.\\n- **F135 (P2, privacy)** — Link-preview images are hotlinked third-party URLs,\\n never mirrored into R2, leaking viewer IP addresses to external hosts at\\n render time.\\n- **F137 (P2, governance)** — No moderation or scanning of uploaded media of\\n any kind: the moderation service is text-only; there is no AV scan, no N"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 180,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F135 (P2, privacy)** — Link-preview images are hotlinked third-party URLs,"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 568,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **D3** | Broad format families + transcode-dependent formats (HEIC etc.) + external preview cache (F135) | D1 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 487,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "Closes **F135** (viewer IP leakage to third parties) and the disappearing/"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 350,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "optional OG-image mirroring (F135, privacy — see unresolved decisions)."
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 500,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "4. **OG image mirroring (F135).** Mirroring stops leaking viewer IPs to third"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "l previews keep the existing SSRF-safe fetcher\\n**unchanged**; internal references keep delegating to owning domain authorities\\n**unchanged** — the audit found both to be correct. The only additions proposed\\nare batching/caching (internal refs re-resolve on every message list fetch) and\\noptional OG-image mirroring (F135, privacy — see unresolved decisions).\\n\\n**Interaction (question H).** Shared primitives keyed to *content capability*:\\nselect · copy · paste · drag · drop · attach · open · expand · play · seek ·\\nsave · download · retry · reply · share · translate. A surface enables the set\\nits domain permits; it does not re-i"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "hazard.** MuPDF is AGPL; PDFium is\\n BSD-ish. This choice has licensing consequences for Aura and must be a\\n deliberate ruling, not an npm install.\\n3. **Processing runtime and cost.** A separate Railway worker service with\\n `ffmpeg`/`sharp` — sizing, cold-start and cost implications.\\n4. **OG image mirroring (F135).** Mirroring stops leaking viewer IPs to third\\n parties but stores third-party imagery. Privacy gain vs storage/copyright.\\n5. **EXIF policy (F132).** Strip everywhere, or strip from derivatives while\\n preserving the original for the uploader?\\n6. **PUBLIC permanence.** Should PUBLIC media also move to sign"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "esh.\\n- **Rights:** cached as a transient rendering aid at preview scale, not an asset\\n claim; purged when the preview is purged. Aura does not claim arbitrary web\\n assets.\\n- **Failure fallback:** preview renders without imagery — never a broken tile.\\n- **Retention:** released with its `LinkPreview`.\\n\\nCloses **F135** (viewer IP leakage to third parties) and the disappearing/\\nhotlink-rejecting asset problem.\\n\\n---\\n\\n## 13. FINAL AUTHORITY BOUNDARIES\\n\\n| Shared (Rich Content system) | Owned by surface |\\n|---|---|\\n| acquisition/intake normalization | who may compose |\\n| content truth + format capabilities | who may read"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "elivery migration steps 1–3 | C1 |\\n| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136) | C1 |\\n| **D2** | Video posters, audio duration/waveform, PDF preview, document identity | D1 |\\n| **D3** | Broad format families + transcode-dependent formats (HEIC etc.) + external preview cache (F135) | D1 |\\n| **E1** | Shared client primitives: intake, upload (progress/cancel/retry), players with seek, viewers, cards, accessibility | C1 |\\n| **E2** | **Conversation as FIRST COMPLETE REFERENCE** (F011–F019, F123–F125, WG001/2/4/5/6/9) | D2, E1 |\\n| **F1** | Propagation: Articles (F121, F025–F027), Posts, Annou"
+    }
+   ]
+  },
+  {
+   "id": "F136",
+   "totalExternalMentions": 22,
+   "inGovernedDocs": 5,
+   "distinctSources": 4,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "\\n photos are published to public R2 verbatim.\\n\\n**Correctness / capability:**\\n- **F133 (P1)** — Duration unit mismatch: `Media.duration` is milliseconds\\n (presign compares it to `*_DURATION_MS`), while `MessageAttachment.durationSec`\\n is seconds — and `messages.service` copies one straight into the other.\\n- **F136 (P1)** — No thumbnail generation. For images `thumbUrl` is set to the\\n **full-resolution original** (a thumbnail in name only); for video/audio/\\n document it is null — which is why video tiles have nothing to show.\\n- **F134 (P2)** — `Media.aiFlags` is client-writable through `PATCH /media/:id`\\n (not worker-"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 175,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F136 (P1)** — No thumbnail generation. For images `thumbUrl` is set to the"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 83,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "as **the identical full-resolution object** — F136 confirmed live in production."
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 566,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **D1** | `MediaDerivative` + worker + image pipeline + EXIF stripping (F132, F136) | C1, **C5** |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 297,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "(F132), video posters and transcodes, audio duration + waveform (F136), document"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 462,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **D1** | `MediaDerivative` + worker + image pipeline + EXIF (F132, F136) | C1 |"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32498,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "n\\nStage C5 is PROMOTED ahead of D1 as a security stage: canonical governed\\ndelivery for all visibility classes, retire raw storage URLs, remove\\nbucket public read.\\n\\nAlso confirmed live in production: presign returns url, originalUrl,\\ndisplayUrl, thumbnailUrl and thumbUrl as the IDENTICAL full-resolution\\nobject (F136).\\n\\nNo new architectural contradiction: the confirmed defect VALIDATES\\nRuling 6's target architecture rather than conflicting with it. Governed\\ndelivery was already the destination; the evidence only determined\\nsequencing. §12 is now READY FOR FOUNDER FREEZE with no outstanding\\ndecisions.\\n\\nCo-Authored-By: C"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32506,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "n\\nThe confirmed defect **validates** Ruling 6 rather than conflicting with it. Governed delivery was already the target; the evidence only determined sequencing.\\n\\n*Incidental confirmation: presign returns `url`, `originalUrl`, `displayUrl`, `thumbnailUrl` and `thumbUrl` as the **identical full-resolution object** — F136 confirmed live.*\\n\\n---\\n\\n**Register: 138** — 24 LIVE_CERTIFIED · 27 IMPLEMENTED_NOT_LIVE_CERTIFIED · 20 PARTIALLY_VALIDATED · 57 OPEN · 2 BLOCKED · 6 C4_OWNED_OPEN · 0 SUPERSEDED · 2 RETIRED = **138** ✓ (F138 OPEN→OPEN, now CONFIRMED with evidence rather than hypothesised; no state promotions).\\n\\nThe document i"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32471,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "sistant\",\"content\":[{\"type\":\"text\",\"text\":\"Thanks — I may take the Chrome route for the final confirmation. Let me finish this probe first, since it's nearly conclusive on its own.\\n\\nNote what presign already reveals live: `thumbUrl`, `displayUrl`, `originalUrl` and `url` are **the identical full-resolution object** (F136 confirmed in production).\"}],\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":2025,\"cache_read_input_tokens\":196332,\"output_tokens\":1694,\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creat"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32485,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "bility segregation** |\",\"+| Upload path | presigned PUT to `…r2.cloudflarestorage.com/aura-uploads/<key>` |\",\"+| Delivery path | permanent `https://uploads.auraplatform.org/<key>` |\",\"+\",\"+Presign returns `url`, `originalUrl`, `displayUrl`, `thumbnailUrl` and `thumbUrl`\",\"+as **the identical full-resolution object** — F136 confirmed live in production.\",\"+\",\"+### 2.2 The test performed\",\"+\",\"+A harmless 70-byte 1×1 PNG was presigned and PUT as the review account, then\",\"+**never confirmed, never attached, never promoted to READY**, and fetched with\",\"+no credentials. No sensitive production content was accessed or reproduced.\",\"+\",\""
+    }
+   ]
+  },
+  {
+   "id": "F137",
+   "totalExternalMentions": 17,
+   "inGovernedDocs": 3,
+   "distinctSources": 3,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32214,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "(each with a\\ndifferent URL-preference chain) · signed-URL issuance ×2 (different candidate\\norders) · attachment metadata ×2 tables with different units · presign DTO ×2\\n(the validated one is dead code) · TTL clamp ×2 · cross-repo MIME policy ×2 ·\\nvisibility derivation ×2.\\n\\n## NEW CONCRETE DEFECTS — BACKEND (F126–F137)\\n\\n**Security / privacy — highest severity:**\\n- **F126 (P0, privacy)** — **Conversation media visibility is never set**, so\\n private DM attachments stay `PUBLIC`. `GET /media/:id/url` then returns a\\n permanent public URL **to any caller**, and the `CONVERSATION` branch of\\n `canAccessRestricted` is unreacha"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 183,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- **F137 (P2, governance)** — No moderation or scanning of uploaded media of"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-proposed-contract.md",
+     "line": 508,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "8. **Media moderation (F137).** Currently zero scanning of uploaded media. Scope"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-system-audit.md",
+     "line": 141,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "## NEW CONCRETE DEFECTS — BACKEND (F126–F137)"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32247,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "ure?\\n\\n22. How will that reference subsequently propagate to Posts, Announcements, Articles, Meetings and other applicable surfaces?\\n\\n23. What migration/backfill is required?\\n\\n24. What compatibility code is temporary, and what is its explicit retirement path?\\n\\n25. What security/privacy/moderation gaps from F121–F137 must be prerequisites to particular stages?\\n\\n======================================================================\\n13. CONVERSATION = FIRST COMPLETE REFERENCE\\n======================================================================\\n\\nAfter the shared contract is frozen and foundational prerequisites are ready,"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32215,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "\",\"+different URL-preference chain) · signed-URL issuance ×2 (different candidate\",\"+orders) · attachment metadata ×2 tables with different units · presign DTO ×2\",\"+(the validated one is dead code) · TTL clamp ×2 · cross-repo MIME policy ×2 ·\",\"+visibility derivation ×2.\",\"+\",\"+## NEW CONCRETE DEFECTS — BACKEND (F126–F137)\",\"+\",\"+**Security / privacy — highest severity:**\",\"+- **F126 (P0, privacy)** — **Conversation media visibility is never set**, so\",\"+ private DM attachments stay `PUBLIC`. `GET /media/:id/url` then returns a\",\"+ permanent public URL **to any caller**, and the `CONVERSATION` branch of\",\"+ `canAccessRestricted`"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32244,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "sequence and fixed first as a standalone correction rather than waiting behind the shared contract.\\n\\n## E. NEXT COHERENT IMPLEMENTATION BOUNDARY\\n\\n§12 — freeze the shared Rich Content & Interaction contract, now that the inventory is real rather than assumed. I have not begun it, and I have not touched any of F121–F137.\\n\\nI did not fix anything during the audit. Nothing in this checkpoint changed production behaviour; the commit is evidence only.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":362,\"cache_read_input_tokens\":83069,\"output_tokens\":2424,\"s"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32335,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "=======================================\\n5. PHASE B IS NOW AUTHORIZED\\n======================================================================\\n\\nProceed immediately with:\\n\\n§12 — SHARED RICH CONTENT & INTERACTION CONTRACT.\\n\\nThis is an architecture/product-contract phase.\\n\\nDo NOT begin broad implementation of F121–F137 yet.\\n\\nDo NOT freeze §12 without returning to founder review.\\n\\nThe required sequence remains:\\n\\nAUDIT — COMPLETE\\n↓\\nF126 SURGICAL PRIVACY CORRECTION — COMPLETE / awaiting live certification\\n↓\\n§12 CONTRACT DESIGN — AUTHORIZED NOW\\n↓\\nFOUNDER REVIEW\\n↓\\nFREEZE\\n↓\\nFOUNDATIONAL IMPLEMENTATION\\n↓\\nCONVERSATION"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32384,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "inal for the uploader?\\n6. **PUBLIC permanence.** Should PUBLIC media also move to signed URLs? Today a\\n permanent public URL survives any later visibility change — relevant if\\n content is ever un-published.\\n7. **`MessageAttachment` retirement timing** — now, or after Conversation lands?\\n8. **Media moderation (F137).** Currently zero scanning of uploaded media. Scope\\n and timing is a governance decision, not an engineering one.\\n\\n---\\n\\n## 16. WHAT THIS CONTRACT DELIBERATELY DOES NOT DO\\n\\n- It does not flip the global visibility default (breaks Posts today).\\n- It does not freeze processing libraries or providers.\\n- It"
+    },
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32391,
+     "family": "session-transcript",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "C:\\\\Users\\\\muham\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-muham-flutter-projects\\\\3a68d78f-71d9-4a16-8ca0-21cd6768f744\\\\scratchpad\\\\commit_s12.txt\",\"content\":\"docs(rich-content): §12 PROPOSED shared contract — awaiting founder review\\n\\nPhase B deliverable. PROPOSED, NOT FROZEN. No production behavior\\nchanges; no F121-F137 implementation begun.\\n\\nAnswers all sixteen §9 contract questions (A-P) and carries the twelve\\nrequired sections, grounded in the completed capability audit and the\\nF126 correction.\\n\\nTHREE STRUCTURAL MOVES carry most of the value:\\n 1. Content truth becomes layered evidence, not a client claim.\\n Six non"
+    }
+   ]
+  },
+  {
+   "id": "F138",
+   "totalExternalMentions": 108,
+   "inGovernedDocs": 14,
+   "distinctSources": 5,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+     "line": 32406,
+     "family": "session-transcript",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "Preserve recognizable content identity; honest fallback | §10 |\\n| 17 | New formats enter by governed registration, not code changes everywhere | §9.5 |\\n\\n---\\n\\n## 2. ARCHITECTURAL CONTRADICTION DISCOVERED\\n\\nRuling 6 forced a question the audit had recorded but not yet confronted, and the\\nanswer is serious.\\n\\n### F138 — storage-level public readability may undercut visibility enforcement\\n\\n**There is one R2 bucket, and every object — PUBLIC, RESTRICTED and PRIVATE\\nalike — is written to the same public prefix via `buildPublicUrl`.** \\\"Private\\\" is\\nenforced by *withholding the URL* from DTOs (`media-redaction.ts`, whose own\\nh"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 446,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**F138 — reinforced.** All 100 unindexed rows are `visibility = PUBLIC`, including all 12"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 68,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "## 2. F138 — CONFIRMED SECURITY ARCHITECTURE DEFECT"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 553,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "9. **F138 resolved before raw storage URLs are retired.**"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 593,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "F138 was the sole freeze blocker and has been resolved **empirically, not by"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 18,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "**Frozen storage invariants (F138):**"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-17-rich-content-s12-freeze-candidate.md",
+     "line": 565,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C5** | **PROMOTED — SECURITY STAGE.** Canonical governed delivery for all visibility classes; retire raw storage URLs; remove bucket public read; F138 closure and F126 storage-level completion | C1, C3 |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 302,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "`visibility = PUBLIC`, consistent with F138. No R2 public-read ratchet performed."
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 333,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "the R2 public-read ratchet · collapse F126/F138/F131/F139–F142 · silently decide"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 262,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "soft-deleted. The 2 `f138-probe.png` rows are artifacts of our own F138 security"
+    }
+   ]
+  },
+  {
+   "id": "F139",
+   "totalExternalMentions": 11,
+   "inGovernedDocs": 11,
+   "distinctSources": 3,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 52,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "Accepted as a **material enlargement of F131** and as evidence for **F139–F142**."
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 515,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| F139 / F140 / F141 / F142 | **NEW — OPEN** |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 279,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "F131 is the **systemic** retention defect. F139–F142 are **independently"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 74,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "Findings are kept **separate**. F131 is the systemic defect; F139–F142 are"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 286,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F139** | Identity media can become orphaned-at-upload and reaper-deletable despite active identity use | **OPEN** — owned by D-1 (structure) + D-3 (protection) |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 32,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **D-1** | Authoritative identity → Media relationship, additive migration, transitional URL fields | **DONE** `4af75c5` — F139 structurally closed, migration not applied |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 80,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F139** | D-1 (structure) + D-3 (protection) | **STRUCTURALLY CLOSED, NOT LIVE-CERTIFIED** | Code + migration land; closure requires the migration applied and identity reconciled in production |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 124,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| 2026-08-18 | `4af75c5` | **D-1** identity media authority. F139 structurally closed; URL matching confined to the write/discovery boundary |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 333,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "the R2 public-read ratchet · collapse F126/F138/F131/F139–F142 · silently decide"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 415,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**F139 — live identity media is marked orphaned at upload and is reaper-deletable.**"
+    }
+   ]
+  },
+  {
+   "id": "F140",
+   "totalExternalMentions": 7,
+   "inGovernedDocs": 7,
+   "distinctSources": 3,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 287,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F140** | Legacy `MessageAttachment` media invisible to C2 and current cleanup authority | **OPEN** — D-3 where deterministic; §14 retirement path owns the rest |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 515,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| F139 / F140 / F141 / F142 | **NEW — OPEN** |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 122,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "| 2026-08-18 | `942d5a1` | **D-3** protective correction. F142/F131/F140 authorities covered; **F143 discovered** and covered; stage 3 gained a reference check it never had; fail-safe added |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 81,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F140** | D-3 (deterministic cases) + §14 retirement | OPEN — protection landed | Representation retired per §14. See **F143**: these rows are not what they first appeared to be |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 347,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **§14 Migration/retirement** | `MessageAttachment` retirement now additionally gated on F140 coverage |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 423,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**F140 — legacy `MessageAttachment` media is invisible to both the reaper and C2.**"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 442,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "F131 names is live on three further surfaces (F139/F140/F141), and production still has"
+    }
+   ]
+  },
+  {
+   "id": "F141",
+   "totalExternalMentions": 10,
+   "inGovernedDocs": 10,
+   "distinctSources": 3,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 169,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "- F141 belongs inside this chapter and must inform C2/C3 producer/reference design."
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 515,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| F139 / F140 / F141 / F142 | **NEW — OPEN** |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 288,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": true,
+     "context": "| **F141** | Media referenced inside authored content can exist outside structured retention truth | **OPEN** — owned by D-5. Lineage note: distinct from but adjacent to **F121** (baked signed URLs in article markdown, §14). F121 is a *delivery/representation* defect; F141 is the *retention* consequence. Not merged |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 82,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F141** | D-5 / D-5.1 | **OPEN — authority structural, completeness is not** | The authority is now `ArticleBodyMedia`/`ArticleRevisionMedia`, but populating it still depends on a text scan because the composer emits no structured references. Closes when the forward path exists AND revision reconstruction fidelity is pr"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 33,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **D-5** | Inline authored media in scope; structured reference truth, not regex as authority | **DONE** `dd025f5` — structured tables are the authority, parse is discovery. F141 stays OPEN |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 142,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| Articles — inline body | no | no | `ArticleBodyMedia` (**new**) | **yes** — attach/release in tx | low | Wired (D-5). Completeness depends on the parser — F141 |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 178,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **C-7** | `ArticleRevision` snapshots title and body but **not** the cover, and its `bodyMarkdown` is a second inline-reference surface. | Surfaced — belongs to D-5 / F141 |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 497,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| **D-5** | Are inline-content references (F141) in scope for retention at all? | Determines whether a content-derived type must be designed. |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 442,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "F131 names is live on three further surfaces (F139/F140/F141), and production still has"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 428,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**F141 — media is referenced by URL inside authored content.**"
+    }
+   ]
+  },
+  {
+   "id": "F142",
+   "totalExternalMentions": 11,
+   "inGovernedDocs": 11,
+   "distinctSources": 3,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 52,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "Accepted as a **material enlargement of F131** and as evidence for **F139–F142**."
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-unindexed-media-provenance-investigation.md",
+     "line": 515,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| F139 / F140 / F141 / F142 | **NEW — OPEN** |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 122,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "| 2026-08-18 | `942d5a1` | **D-3** protective correction. F142/F131/F140 authorities covered; **F143 discovered** and covered; stage 3 gained a reference check it never had; fail-safe added |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 279,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "F131 is the **systemic** retention defect. F139–F142 are **independently"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 74,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "Findings are kept **separate**. F131 is the systemic defect; F139–F142 are"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 289,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F142** | Cleanup authority omits authoritative composition/reference structures | **OPEN** — D-3. Not closable by adding conditions alone; coverage must be established |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 30,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **D-3** | Protective correction to `hasLiveReference()` — cover proven-authoritative structures | **DONE** `942d5a1` — 4 authorities covered + fail-safe + stage 3. F142 **not** closed |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 83,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F142** | D-3 | OPEN — conditions added | **Coverage established** against production reality, not merely conditions added. Requires the post-deployment reconciliation |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 148,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "- **F142 is not closed merely because one function gained conditions.** Coverage"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 333,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "the R2 public-read ratchet · collapse F126/F138/F131/F139–F142 · silently decide"
+    }
+   ]
+  },
+  {
+   "id": "F143",
+   "totalExternalMentions": 10,
+   "inGovernedDocs": 10,
+   "distinctSources": 2,
+   "provenanceStrength": "STRONG",
+   "evidence": [
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 193,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "retention authority (level 2, F143)"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 157,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "### F143 root cause — identified, deliberately not fixed here"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 122,
+     "family": "governed-doc",
+     "issuanceHint": true,
+     "stateHint": false,
+     "context": "| 2026-08-18 | `942d5a1` | **D-3** protective correction. F142/F131/F140 authorities covered; **F143 discovered** and covered; stage 3 gained a reference check it never had; fail-safe added |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 290,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F143** | **NEW 2026-08-18.** Media identity is not 1:1 with storage objects — deleting an unreferenced row frees an object that referenced rows still address | **OPEN** — protection landed in D-3. Production holds 10 duplicate/canonical pairs; the duplication itself needs a disposition under D-6 |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 84,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F143** | **NEW** — D-3 + D-6 | **OPEN — structurally prevented, cause not removed** | Prevention: the level-2 storage gate. Cause: correspondence mints a duplicate Media row per `storageKey` (§14 F129 convergence). Closes when the cause is removed and reconciliation shows no new aliases |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 140,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| Correspondence | no | **yes** (mints from `storageKey`) | `MessageMedia` + legacy `MessageAttachment` | **yes** — in the existing tx | **YES — F143 root cause** | Wired. Duplication NOT fixed here |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 81,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": true,
+     "context": "| **F140** | D-3 (deterministic cases) + §14 retirement | OPEN — protection landed | Representation retired per §14. See **F143**: these rows are not what they first appeared to be |"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 126,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "| 2026-08-18 | *(this commit)* | **D-6** producer wiring + LEVEL-2 physical storage authority. 6 producers wired; F143 prevented structurally; `uploads/avatar` and `InstitutionUnit.logoUrl` classified |"
+    },
+    {
+     "source": "aura/aura_final\\docs\\2026-08-18-rich-content-s12-amendment-1-retention-truth.md",
+     "line": 292,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "**F143 detail.** `deleteObject()` acts on a storage KEY while protection was"
+    },
+    {
+     "source": "aura/aura-backend\\docs\\2026-08-18-c2-retention-truth-register.md",
+     "line": 86,
+     "family": "governed-doc",
+     "issuanceHint": false,
+     "stateHint": false,
+     "context": "### F143 — storage-object aliasing (new, 2026-08-18)"
+    }
+   ]
+  }
+ ]
+}

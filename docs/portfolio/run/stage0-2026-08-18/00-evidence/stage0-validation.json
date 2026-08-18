@@ -1,0 +1,52 @@
+{
+  "generatedFor": "docs/portfolio/run/stage0-2026-08-18/00-evidence",
+  "deterministicUniverse": {
+    "issuedFindings": 143,
+    "identifierRange": "F001-F143",
+    "gapsWithinRange": [],
+    "contiguous": true,
+    "quarantinedSelfAuthoredIds": 41,
+    "issuedWG": 18
+  },
+  "reconstruction": {
+    "findingsReconstructed": 143,
+    "balancesWithIssued": true,
+    "duplicates": [],
+    "notReconstructed": [],
+    "inventedIds": [],
+    "stateCounts": {
+      "IMPLEMENTED_NOT_LIVE_CERTIFIED": 30,
+      "PARTIALLY_VALIDATED": 18,
+      "LIVE_CERTIFIED": 24,
+      "OPEN": 57,
+      "C4_OWNED_OPEN": 6,
+      "CONFLICTING_CURRENT_STATE": 3,
+      "BLOCKED": 2,
+      "EXPLICITLY_RETIRED": 2,
+      "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED": 1
+    },
+    "conflictingStateIds": [
+      "F043",
+      "F051",
+      "F122"
+    ],
+    "rowsWithoutProvenance": 0,
+    "wgReconstructed": 18,
+    "rcChaptersCovered": 12,
+    "doctrinesIndexed": 10,
+    "validationObligations": 13,
+    "protectedBoundaries": 12
+  },
+  "provenanceProfile": {
+    "STRONG": 59,
+    "MODERATE": 53,
+    "WEAK": 31
+  },
+  "warnings": [
+    "state values outside the documented vocabulary (preserve + document, do not normalise away): EXPLICITLY_RETIRED"
+  ],
+  "failures": [],
+  "verdict": "PASS",
+  "ratified": false,
+  "note": "Candidate registers. NOT founder-ratified. Stage 0 may not ratify its own output."
+}

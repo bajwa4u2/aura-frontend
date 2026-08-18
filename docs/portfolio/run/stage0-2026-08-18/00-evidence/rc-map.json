@@ -1,0 +1,1066 @@
+{
+  "artifact": "rc-map",
+  "stage": "STAGE 0 — EVIDENCE RECONSTRUCTION",
+  "producedBy": "S0-B Doctrine & Roadmap agent",
+  "date": "2026-08-18",
+  "scope": "RC-C0 .. RC-C11 — the twelve frontend reconstruction chapters defined by FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md. Nothing here is interpreted into a portfolio, reprioritised, merged, promoted or founder-ratified.",
+  "pathConvention": "All source paths are given relative to C:/Users/muham/flutter_projects/aura/ unless prefixed 'transcript:'. Transcript paths are relative to C:/Users/muham/.claude/projects/C--Users-muham-flutter-projects/.",
+  "namespaceRule": {
+    "RC": "RC-C0..RC-C11 = the original Reconstruction architecture chapters (this artifact).",
+    "RIC": "RIC-C1, RIC-C2, RIC-C3, ... = Rich Content & Interaction implementation stages (§12 contract, indexed in doctrine-index.json).",
+    "warning": "These are DIFFERENT AXES. RIC-C2 (ContentReference retention index) has nothing to do with RC-C2 (Identity, Presence & Profile). Where a source's 'C2'/'C5' cannot be resolved by evidence it is marked C_AXIS_AMBIGUOUS.",
+    "evidencedCollisionInstance": {
+      "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md",
+      "lines": "13-16",
+      "text": "INGESTION TRUTH -> CONTENT VERIFICATION -> REFERENCE/RETENTION INTEGRITY -> GOVERNED DELIVERY (C5) -> PROCESSING/DERIVATIVES -> RICH PRESENTATION",
+      "resolution": "RESOLVED BY EVIDENCE, NOT INFERENCE: the same document's §16 stage table (lines 557-572) defines its own C5 as 'Canonical governed delivery for all visibility classes'. Therefore the '(C5)' on line 15 is RIC-C5, not RC-C5 Composition/Intake/Attachments."
+    }
+  },
+  "stateVocabularyObserved": {
+    "note": "Preserved exactly as the project uses them. Source of the legend is the master register message.",
+    "values": [
+      "LIVE_CERTIFIED",
+      "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "PARTIALLY_VALIDATED",
+      "OPEN",
+      "BLOCKED",
+      "C4_OWNED_OPEN",
+      "SUPERSEDED_BY_FOUNDER_RULING",
+      "EXPLICITLY_RETIRED",
+      "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+      "CONFLICTING_CURRENT_STATE (Stage 0 marker, not a project state)"
+    ],
+    "legendProvenance": {
+      "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl",
+      "line": 31798,
+      "quote": "Legend: LC = LIVE_CERTIFIED · INLC = IMPLEMENTED_NOT_LIVE_CERTIFIED · PV = PARTIALLY_VALIDATED · OPEN · BLK = BLOCKED · C4 = C4_OWNED_OPEN · RET = EXPLICITLY_RETIRED"
+    },
+    "chapterLevelStatesObservedSeparately": [
+      "COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED",
+      "FINAL CLOSURE DECLARED BY FOUNDER",
+      "CLOSEOUT REACHED — AWAITING FOUNDER CLOSURE DECLARATION",
+      "READY / NOT STARTED / NOT YET AUTHORIZED",
+      "AUTHORIZED, NOT STARTED",
+      "OPEN, NOT STARTED",
+      "CLOSED (hard-gated)"
+    ]
+  },
+  "governingFrameProvenance": [
+    {
+      "claim": "The roadmap is twelve chapters C0-C11 and is FINAL / FOUNDER APPROVED / FROZEN 2026-08-15, and roadmap approval is not authorisation to begin a chapter.",
+      "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md",
+      "lines": "5-9, 23"
+    },
+    {
+      "claim": "FD-13 definition of done: authority + consumer migration + hard anti-drift gate + narrow reviewable exceptions + regression + certification. Code compiling is not completion. No standalone enforcement chapter.",
+      "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md",
+      "lines": "25"
+    },
+    {
+      "claim": "Every chapter inherits the Aura Public-First Causal Doctrine as an interpretive lens; roadmap ordering is unchanged by it.",
+      "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md",
+      "lines": "30-43"
+    },
+    {
+      "claim": "Certification layers table: Architecture/Implementation per chapter; Cross-System at C1, C5, C8, C10; Real-Boundary substantially at C9 and C10 media scale; Item 17 / Release Gate at C11 only; a lower layer passing never implies a higher one.",
+      "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md",
+      "lines": "582-594"
+    },
+    {
+      "claim": "FOUNDER RECONSTRUCTION DOCTRINE — reconstruction is complete only when canonical product truth is adopted by the runtime/release client and legacy implementation has an explicit retirement path; visible product outcome is a required closeout dimension.",
+      "source": "aura_final/docs/DECISIONS.md",
+      "lines": "239-247"
+    }
+  ],
+  "chapters": [
+    {
+      "id": "RC-C0",
+      "historicalName": "CROSS-CUTTING FOUNDATIONS",
+      "governingPurpose": "Build the three surface-agnostic authorities every later chapter consumes: Product Language, Product State Presentation, Human Temporal Presentation.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "52" },
+      "originalScope": {
+        "build": [
+          "Product Language Authority (canonical nouns, semantic CTA families incl. RETRY and the four distinct CANCEL/DISMISS/CLOSE/DISCARD families, state terminology) — explicitly 'Not a database of every sentence'",
+          "Product State Presentation vocabulary: loading, empty, error, retry, offline, reconnecting, expired, unavailable, revoked, deleted, sending, uploading, failed, unauthorized, success",
+          "Temporal Presentation: semantic event type, canonical timestamp selection, relative vs absolute, locale/timezone incl. DST and cross-timezone, humanized formatting, exact-time access, sorting semantics, aging/refresh"
+        ],
+        "preserve": ["AuraLoadingState / AuraErrorState / AuraEmptyState", "relative_time.dart", "local_timezone.dart"],
+        "demolishOrRetire": ["NOTHING — the chapter is additive + migratory"],
+        "declaredMigration": "83 files -> shared loading · 68 SizedBox.shrink() empty states · 52 hand-rolled .difference() · 35 direct toLocal() · 22 independent sorts",
+        "historicalItems": ["Item 6 (Communication Timeline Authority — temporal half)"],
+        "backendDependencies": "None new",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "56-89" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "C0-1", "text": "Final Product Language FROZEN — 13 nouns; 4 stop/abandon/surface intents; 25 actions; IdentityConcept preserves PERSON != INSTITUTION != MEMBERSHIP != ACTING CONTEXT != PRESENCE; Connect · Works · generic Verified not to be introduced", "source": "aura_final/docs/DECISIONS.md", "lines": "65-75" },
+        { "id": "C0-2", "text": "Membership actions FROZEN — addMember / invitePerson / manageInvites remain semantically distinct; no action label itself grants authority", "source": "aura_final/docs/DECISIONS.md", "lines": "77-79" },
+        { "id": "C0-3", "text": "PERSON = canonical human identity. MEMBER = contextual membership/relationship state. A human is never canonically typed as 'Member'", "source": "aura_final/docs/DECISIONS.md", "lines": "81-83" },
+        { "id": "C0-4", "text": "Correspondence FROZEN to one canonical product meaning (governed formal/deliberate communication); the umbrella module meaning is LEGACY / ARCHITECTURAL NAMING DRIFT; C7 owns the rename/convergence but not the semantic decision", "source": "aura_final/docs/DECISIONS.md", "lines": "85-87" },
+        { "id": "C0-5", "text": "Discovery framing SUPERSEDED — the 2026-07-11 'always trusted discovery / never directory' directive is superseded; historical record preserved struck-through, not deleted", "source": "aura_final/docs/DECISIONS.md", "lines": "89-91" },
+        { "id": "C0-6", "text": "Representation authority chain FROZEN — IMPLEMENTATION/PRODUCT AUTHORITY -> FOUNDER-FROZEN DECISIONS -> REPRESENTATION. Stale Representation wording does not override later founder-frozen product truth", "source": "aura_final/docs/DECISIONS.md", "lines": "93-101" },
+        { "id": "C0-7", "text": "G5 ownership APPROVED — 181/181 assigned, zero unassigned: C1 42 · C2 21 · C3 44 · C4 26 · C5 16 · C7 26 · C8 3 · C9 3 · C6 0. A 'J' assignment is reasoned, not immutable product truth", "source": "aura_final/docs/DECISIONS.md", "lines": "103-107" },
+        { "id": "C0-8", "text": "Meetings PRESERVED — holds zero G5 sites; its protected debt is G3 (16) and G4 (14), belonging to controlled C6 review; certified Meetings is not modified for foundation debt reduction", "source": "aura_final/docs/DECISIONS.md", "lines": "109-111" },
+        { "id": "C0-9", "text": "Enforcement pattern — the FD-13 precedent: 11 zero-tolerance rules + 5 ratchets + 2 baseline-honesty gates; hard failure; no warning-only structural governance. This is the working precedent every later chapter follows", "source": "aura_final/docs/DECISIONS.md", "lines": "113-115" },
+        { "id": "C0-10", "text": "Date correction ACCEPTED — the 2026-08-16 propagation was an authoring error corrected across repositories; Estonia visa-note dates recorded UNRESOLVED FACTUAL DATE, outside C0", "source": "aura_final/docs/DECISIONS.md", "lines": "117-119" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED — closed 2026-08-15",
+        "freshnessBasis": "(1) explicit chapter state transition in the roadmap banner, corroborated by (3) maintained current-state artifacts",
+        "evidence": [
+          { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "48-50", "quote": "STATUS: COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED — closed 2026-08-15." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "16", "quote": "C0 — Cross-Cutting Foundations | COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED (2026-08-15)" },
+          { "source": "aura_final/docs/DECISIONS.md", "lines": "51-53", "quote": "C0 CLOSEOUT — FROZEN 2026-08-15" }
+        ]
+      },
+      "majorImplementationCompleted": [
+        { "item": "Three authorities exist in lib/core/product/: product_language.dart · product_state.dart + product_state_view.dart · temporal.dart", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "48-54" },
+        { "item": "Migration executed: 33 'Try again' labels across 30 files -> ProductAction.retry; relative_time.dart forwards to AuraTemporal (9 transitive consumers); local_timezone.dart reached via AuraTemporal.zoneId; CommLoadingState/CommErrorState -> AuraProductState", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "56" },
+        { "item": "Two deliberate visible changes + one real pre-existing bug corrected (future instants no longer render as 'now')", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "58" },
+        { "item": "Enforcement live: test/product/c0_anti_drift_gate_test.dart — hard build failure, 4 zero-tolerance rules + 5 ratchets (G2/G3/G4/G5/G7) frozen in test/product/c0_drift_baseline.txt; each rule verified to actually fail", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "60" },
+        { "item": "Verification: flutter analyze clean; flutter test 458 passed / 1 skipped / 0 failed (411 pre-C0, +47 new)", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "74" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Measured, enforced debt carried into later chapters: 24 local elapsed-time sites · 47 toLocal() · 26 full-surface spinners (14 in Meetings, protected) · 181 direct state-primitive constructions · 17 screen-declared time formatters", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "62" },
+        { "obligation": "G5 remainder at C2 closeout measured 168 sites / 67 files, chapter-owned per the ownership matrix (C3 44 · C4 26 · C5 16 · C7 26 · C8 3 · C9 3 · PD-1 34 · PD-2 3 · C2 view-profiles 8)", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "114" },
+        { "obligation": "Deprecated relative_time.dart shim: 11 caller files remain; burn-down owners C4 and C6; retirement = last caller converged, shim deleted", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "158" },
+        { "obligation": "Chapter-level completeness recorded as ARCHITECTURE complete / RUNTIME ADOPTION partial / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "128" },
+        { "obligation": "Obligations explicitly handed onward and NOT C0 backlog: C2 verification labels · C5 official-designation vocabulary · C7 legacy Correspondence rename/convergence · C10 Live plural/contextual language · All: measured G2/G3/G4/G5/G7 debt under ratchet", "source": "aura_final/docs/DECISIONS.md", "lines": "121-129" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["NONE — 'WHY NOW / DEPENDENCIES. None.'"],
+        "unlocks": ["RC-C1"],
+        "consumedFrozenDecisions": ["FD-10", "Canonical Product Language Authority", "Human Temporal Presentation Authority", "FD-13"],
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "54, 56, 89" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 46-89)",
+        "aura_final/docs/frontend-discovery/C0_MIGRATION_REGISTER.md",
+        "aura_final/docs/frontend-discovery/C0_G5_OWNERSHIP_MATRIX.md",
+        "aura_final/docs/frontend-discovery/C0_PRODUCT_LANGUAGE_VOCABULARY.md",
+        "aura_final/docs/frontend-discovery/REPRESENTATION_CANONICAL_FRONTEND_ALIGNMENT.md",
+        "aura_final/docs/frontend-discovery/REPRESENTATION_FRONTEND_REDESIGN_INPUTS.md",
+        "aura_final/docs/DECISIONS.md (lines 51-131)",
+        "aura_final/docs/DATE_CORRECTION_2026-08-15.md"
+      ],
+      "evidencedFindingRelationships": [
+        { "relationship": "NOT_RECORDED", "note": "No F-id or WG-id is explicitly attributed to RC-C0 in any governed document read at Stage 0. The F-register predates neither and post-dates C0 closure; no explicit mapping exists." }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "SUPERSEDED_MEASUREMENT", "text": "The roadmap's own C0 migration figures were wrong in both directions and were superseded by classification: '83 files -> shared loading' was 26 real full-surface sites; '52 hand-rolled .difference()' was 41 human-facing; '35 toLocal()' was 47 measured; '22 sorts' was 10 temporal; the '68 SizedBox.shrink()' line was never adjudicated and C0 did not convert them.", "source": "aura_final/docs/NEXT_WORK.md", "lines": "12-22" },
+        { "type": "CERTIFICATION_BOUNDARY", "text": "Roadmap plans C0 certification as 'Architecture + Implementation locally. Product-Behavior partially.' The closure banner records LOCALLY CERTIFIED. No live/real-boundary certification is claimed or evidenced for C0.", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "81" },
+        { "type": "STALE_ARTIFACT", "text": "CURRENT_STATE.md is stamped 'Last updated: 2026-08-15' at line 3 while carrying appended 2026-08-16 entries at lines 128-178. The header date is stale relative to its own content." , "source": "aura_final/docs/CURRENT_STATE.md", "lines": "3, 128-178" }
+      ]
+    },
+    {
+      "id": "RC-C1",
+      "historicalName": "ACTING CONTEXT & CAPABILITY PROJECTION",
+      "governingPurpose": "Make 'who is acting' and 'what may they do' explicit client authorities.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "97" },
+      "originalScope": {
+        "build": [
+          "Acting Context Authority — person = default actor; institutional context entered deliberately and remains attributable",
+          "Capability Projection — consumes backend effective capability; NEVER computes it"
+        ],
+        "preserve": ["Existing auth flows", "session handling", "backend contracts"],
+        "demolishOrRetire": ["Shadow governance: role comparisons in 29 files, canX derivations in 20 files"],
+        "extendedScope": ["Fail-closed auth projection", "institution capability model"],
+        "historicalItems": ["Item 4 (Identity Foundation — acting/capability half)"],
+        "declaredMigration": "Every hidden/disabled control re-derived from projected capability. Expect some controls to appear or disappear — that is a correction, and it is user-visible.",
+        "exitCondition": "No client file derives institutional authority locally.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "99-132" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "C1-1", "text": "ACTING AUTHORITY BECOMES EXPLICIT WHEN A CONSEQUENTIAL ACTION REQUIRES ATTRIBUTION — NOT BECAUSE OF THE ROUTE THE PERSON NAVIGATED THROUGH. No global acting mode, no route-derived sender, institutional acting context always person-backed, unavailable actions absent rather than disabled, governance never a delegable capability.", "source": "aura_final/docs/DECISIONS.md", "lines": "137-141" },
+        { "id": "C1-2", "text": "WHETHER A PERSONAL ACTING ALTERNATIVE EXISTS IS A PROPERTY OF THE SURFACE / ACTION CONTEXT, NOT AN INTRINSIC PROPERTY OF THE CONSEQUENTIAL ACT. resolve(act, offerPersonalAlternative: ...) is the governed contract. NO CHOICE WITHOUT A REAL CONSEQUENCE.", "source": "aura_final/docs/DECISIONS.md", "lines": "143-149" },
+        { "id": "C1-3", "text": "ProductAction.switchIdentity added as a governed C0 Product Language extension discovered through C1 implementation — not C0 remediation; four competing phrasings gate-prohibited.", "source": "aura_final/docs/DECISIONS.md", "lines": "151-153" },
+        { "id": "C1-4", "text": "Presence is the person. It never inherits institutional identity from affiliation, navigation or membership.", "source": "aura_final/docs/DECISIONS.md", "lines": "155-157" },
+        { "id": "C1-5", "text": "Backend converged — institutions.service.ts delegates to InstitutionAuthorityService; every membership now carries its own effective capabilities.", "source": "aura_final/docs/DECISIONS.md", "lines": "159-161" },
+        { "id": "C1-6", "text": "The six-token client capability injection was proven UNREACHABLE DEAD CODE; no backend correction warranted; no alternate authority path created.", "source": "aura_final/docs/DECISIONS.md", "lines": "163-165" },
+        { "id": "C1-7", "text": "G5 ownership correction — 38 of 42 C1 sites withdrawn on measured evidence to PD-1 Platform Administration (34) and PD-2 Authentication & Account Entry (3); C1 retains 4 on R basis; 181 sites still traceable.", "source": "aura_final/docs/DECISIONS.md", "lines": "167-169" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED — closed 2026-08-15",
+        "freshnessBasis": "(1) explicit chapter state transition; corroborated by (3) maintained current-state artifacts",
+        "evidence": [
+          { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "95", "quote": "STATUS: COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED — closed 2026-08-15." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "17" },
+          { "source": "aura_final/docs/DECISIONS.md", "lines": "133-135", "quote": "C1 CLOSEOUT — FROZEN 2026-08-15" }
+        ]
+      },
+      "majorImplementationCompleted": [
+        { "item": "Two authorities in lib/core/authority/: acting_context.dart and capability_projection.dart, plus authority_providers.dart and the founder-approved Option A attribution component acting_attribution.dart", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "78" },
+        { "item": "Four real defects corrected: presence heartbeat published as the institution for anyone merely affiliated; 'tap Message' started threads as the institution purely from the URL; six capability tokens fabricated client-side (proven dead code); /institutions/me returned capabilities for the arbitrarily-oldest membership", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "82" },
+        { "item": "Option A certified on a representative surface (institution post composer); 4 widget tests", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "92" },
+        { "item": "Verification: analyze clean; 505 frontend / 2200 backend tests passing", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "96" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Accepted exceptions, none blocking closeout: R1 (25 files / 85 role-derived booleans, ratcheted) · R2 (3 files / 6 role-literal comparisons, classified) · resolveActorContext 3 consumers -> C3/C7 · platform-admin flattening -> PD-1 · further attribution consumers -> owning chapters", "source": "aura_final/docs/DECISIONS.md", "lines": "171-173" },
+        { "obligation": "Two product disposition checkpoints opened before C11: PD-1 Platform Administration (11 files / 34 G5 sites), PD-2 Authentication & Account Entry (2 files / 3 sites). Neither has an owning chapter in the approved roadmap; both need a product decision", "source": "aura_final/docs/NEXT_WORK.md", "lines": "62-65" },
+        { "obligation": "Debt register rows 2, 3, 4 remain TRANSITIONAL with named owners: actor_context.dart resolveActorContext (retire at C3+C7); member_shell.dart:267 admin count gating (backend-coupled, retire with backend role->capability gating + C3 shell reconstruction); institution_correspondence_screen.dart isAdmin gate (C7-owned)", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "110-112" },
+        { "obligation": "Chapter-level completeness recorded as ARCHITECTURE complete / RUNTIME ADOPTION near-complete (4 residual named-owner sites) / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial (resolveActorContext awaiting C3/C7)", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "129" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C0"],
+        "unlocks": ["RC-C2", "RC-C3 (parallel)"],
+        "gates": "This chapter gates all institutional work (FD-9 forbids reconstructing mirrored routes before acting context exists; FD-11 requires person identity != acting context).",
+        "consumedFrozenDecisions": ["FD-9", "Capability-Adaptive Experience", "FD-13", "FD-11 (boundary only)"],
+        "certificationLayers": "Architecture + Implementation + Cross-System (client/backend authority agreement)",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "99, 101, 124, 132" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 93-132)",
+        "aura_final/docs/frontend-discovery/C1_AUTHORITY_ARCHITECTURE.md",
+        "aura_final/docs/frontend-discovery/C1_G5_DISPOSITION_MATRIX.md",
+        "aura_final/docs/DECISIONS.md (lines 133-174)"
+      ],
+      "evidencedFindingRelationships": [
+        { "relationship": "NOT_RECORDED", "note": "No F-id or WG-id explicitly attributed to RC-C1 in the governed documents read at Stage 0." }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "DISCOVERY_BASELINE_WRONG_IN_BOTH_DIRECTIONS", "text": "The roadmap's demolition targets were measured wrong: role-literal comparisons 29 files -> 5 files / 6 sites (3 not authorization at all); canX 20 files -> 38 files / 73 sites (most not authorization). 'The real vector was never named: 86 isOwner/isAdmin sites.'", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "86" },
+        { "type": "OWNERSHIP_VOID", "text": "PD-1 and PD-2 exist because the approved roadmap names no owner for platform admin, institution admin, public directory, search/saves/updates or auth surfaces. 107 of 181 G5 sites were assigned from labelled judgment rather than roadmap text.", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "68" },
+        { "type": "OPEN_DISPOSITION", "text": "PD-2 STRUCTURAL DISPOSITION remains OPEN even though the PD-2-adjacent public-first copy drift was resolved.", "source": "aura_final/docs/DECISIONS.md", "lines": "214" }
+      ]
+    },
+    {
+      "id": "RC-C2",
+      "historicalName": "IDENTITY, PRESENCE & PROFILE",
+      "governingPurpose": "One canonical identity presentation with contextual projection — and the rebuilt profile surfaces that consume it.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "141" },
+      "originalScope": {
+        "publicFirstInheritance": "Person is the originating human identity. Institutional identity remains a separate accountability identity, never a prerequisite for human identity or public participation. Person / Institution / Membership / Acting Context / Availability / Authority stay distinct.",
+        "build": [
+          "Identity Projection (Person/Institution)",
+          "Relationship Projection",
+          "Presence Projection (permitted human-facing only)",
+          "Verification Projection — LAYERED, NEVER BOOLEAN",
+          "Action Projection (backend-authorised)",
+          "People & Participation Selection primitive (backend-resolved eligibility; no local inference)",
+          "Rebuilt profile surfaces: IDENTITY FIRST · CONTEXT SECOND · ACTIONS THIRD · METADATA ON DEMAND"
+        ],
+        "demolishOrRebuild": ["DR5 — three profile implementations (profile/, me/, institutions/profile/; ~4,100 lines of parallel edit screens)", "Retire the six-meaning overload of 'presence'", "Disposition PresenceScreen here (FD-12 §5 — never on reference count)"],
+        "preserve": ["Canonical identity data", "relationships", "public content", "institution relationships", "verification data", "privacy controls", "follow state", "backend contracts", "conceptually-correct deep links"],
+        "extendedScope": ["Canonical person identity projection", "layered verification", "account lifecycle states"],
+        "historicalItems": ["Item 4 (Identity Foundation)"],
+        "backendDependencies": "Frozen: PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT, layered verification (IDENTITY / INSTITUTION_AFFILIATION / ROLE_OR_CREDENTIAL), account retention lifecycle",
+        "founderCheckpoints": ["Verification label mapping (class -> human meaning -> user value -> label -> context)", "Presence privacy/visibility policy", "Profile visual direction"],
+        "exitCondition": "One identity presentation; three verification layers independently expressible; no local presence inference.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "136-176" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "C2-R1..R10", "text": "Founder adjudication R1-R10 on Follow: R1 BLOCKING OUTRANKS FOLLOW/RELATIONSHIP/MESSAGING ELIGIBILITY (use the canonical blocking authority, do not create a second one) · R2 FOLLOW is a governed relationship between an acting Person or Institution and another Person or Institution subject to the target's consent rules · R3 InteractionFollow's current schema is NOT a safe canonical replacement; live Follow data must NOT be migrated into it · R4 FOLLOW != SUBSCRIBE; C2 records semantics, C4 owns the vocabulary · R5 BLOCK > EXPLICIT CONSENT/REJECTION > ACTIVE FOLLOW, provenance preserved · R6 no historical relationship may silently gain a new behavioural consequence because its row moved · R7 relationship domain events are C2, attention delivery policy is C4 · R8 no zombie REQUESTED, no accepted-and-discarded request message · R9 Institution->Person must be classified, not inferred from API reach · R10 blocking prerequisite first, then complete §8-§12 discovery before destructive convergence", "source": "aura_final/docs/DECISIONS.md", "lines": "218-235" },
+        { "id": "C2-D1", "text": "D1 FROZEN FEED SEMANTIC — an established Person->Person Follow makes eligible public participation available to the member feed's existing visibility/ranking rules; it does not guarantee delivery, bypass ranking/visibility/moderation/blocks, expose restricted content, or become Subscribe", "source": "aura_final/docs/DECISIONS.md", "lines": "249-251" },
+        { "id": "C2-TRUST", "text": "Trust presentation doctrine frozen by implementation: layered never collapsed ('Verified person' does not exist as a product concept; absence renders nothing) · subject-explicit wording · VERIFICATION IS NOT AUTHORITY · revoked/expired first-class · unknown wire classes dropped never guessed", "source": "aura_final/docs/DECISIONS.md", "lines": "253-259" },
+        { "id": "C2-MONETIZATION", "text": "Monetization x Verification Decoupling FROZEN — verification is not purchasable; a commercial tier does not establish verification; TRUSTED rejected as a commercial product concept; verification authority and commercial entitlement separate structurally and visually; ROLE_OR_CREDENTIAL is governed attestation not a portable credential; 'Role attested' is the public wording", "source": "aura_final/docs/DECISIONS.md", "lines": "262-273" },
+        { "id": "C2-COMMERCIAL", "text": "Commercial Taxonomy Closeout FROZEN — active taxonomy = FREE + PRO; the legacy VERIFIED middle tier is retired, not renamed; TRUSTED permanently rejected; NO final Free/Pro entitlement boundary decided; no new payment enforcement during release-client reconstruction. FUTURE COMMERCIALIZATION GOVERNANCE MARKER recorded to survive handoff", "source": "aura_final/docs/DECISIONS.md", "lines": "276-294" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "FINAL CLOSURE DECLARED BY FOUNDER — 2026-08-16",
+        "freshnessBasis": "(1) explicit later state transition (founder closure declaration) which overrides the stale 'READY / NOT STARTED / NOT YET AUTHORIZED' row at CURRENT_STATE.md:18",
+        "evidence": [
+          { "source": "aura_final/docs/frontend-discovery/C2_FINAL_CLOSEOUT.md", "lines": "24", "quote": "C2 FINAL CLOSURE DECLARED BY FOUNDER — 2026-08-16. C3 is AUTHORIZED and deliberately NOT STARTED (founder paused the effort at closure)." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "128", "quote": "C2: FINAL CLOSURE DECLARED BY FOUNDER 2026-08-16." }
+        ],
+        "supersededCandidate": { "state": "READY / NOT STARTED / NOT YET AUTHORIZED", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "18", "note": "This row is stale, not authoritative — the same file records final closure at line 128. Recorded, not silently dropped." }
+      },
+      "majorImplementationCompleted": [
+        { "item": "§6 Follow forensic complete — eight defects, four new, incl. D2 blocking does not stop DMs (safety) and D7 FOLLOW_REQUEST/FOLLOW_ACCEPTED fully plumbed but never emitted", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "100-102" },
+        { "item": "R1 blocking defect RESOLVED and CERTIFIED — canMessage consults the canonical UserBlock/BlocksService authority; backend 173 suites / 2207 tests green", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "108" },
+        { "item": "§9 edit-profile convergence complete — shared ProfileMediaPipeline (8 duplicated flows -> 1), institution gate corrected from isAdmin to MANAGE_BRANDING, 4 G5 sites eliminated (181->177)", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "112" },
+        { "item": "Canonical Follow complete — CanonicalFollowService the single relationship authority; consent partition frozen as product truth; D3 consent bypass CLOSED; R9 institution->person refused at both writers; D4 counts emitted; legacy writers retired", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "114" },
+        { "item": "Follow ADOPTED in the release client 2026-08-16 — D1 feed activation live, nine Follow G5 sites consumed (G5 177->168), cooldown visible, counts real, request/accept notifications live", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "116" },
+        { "item": "Verification & Trust Experience EXECUTED — canonical trust layer core/trust/verification.dart + trust_marks.dart; person profile wire gap closed; Person Verification Authority exposed to admins; 13 institution sites migrated; generic 'Verified' literals 16->8", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "118" },
+        { "item": "§12 Representation consistency EXECUTED — new inventory/AURA_IDENTITY_RELATIONSHIP_TRUST_CANON.md plus dated supersession banners; two client-behind-authority defects corrected", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "120" },
+        { "item": "Public Home reconstruction EXECUTED — institution-first hero on / replaced with public-first entry copy; verification glyph decoupled from 8 accountability motifs; public-first gate extended to cover both home surfaces", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "122" },
+        { "item": "Data transitions executed: deterministic verification reconciliation (drift 1 -> 0); commercial dispositions (InstitutionPlan physically FREE|PRO via self-guarding enum migration 20260816123000); physical Follow migration (FollowEdge + FollowConsent, 8/8 equivalence checks PASS, cutover AURA_FOLLOW_STORE=canonical)", "source": "aura_final/docs/frontend-discovery/C2_FINAL_CLOSEOUT.md", "lines": "7-11" },
+        { "item": "Final retirement EXECUTED (d18b0bb) — Follow/FollowRequest tables dropped, AURA_FOLLOW_STORE flag and every legacy branch deleted, zombie InteractionFollowStatus values dropped; 2272 tests green; ZERO client changes required", "source": "aura_final/docs/frontend-discovery/C2_FINAL_CLOSEOUT.md", "lines": "19-22" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Entitlement boundary deliberately NOT frozen; final Free/Pro commercial entitlement boundary NOT YET FROZEN; payment enforcement not to be activated/expanded during release-client reconstruction", "source": "aura_final/docs/frontend-discovery/C2_FINAL_CLOSEOUT.md", "lines": "36" },
+        { "obligation": "Availability Off user-facing control — C2 doctrine frozen, runtime semantics canonical, control required, IMPLEMENTATION OWNER UNASSIGNED pending founder roadmap placement (recorded as FOUNDER-OWNED ROADMAP GAP 1)", "source": "aura_final/docs/DECISIONS.md", "lines": "310" },
+        { "obligation": "Debt register row 12 records the Availability Off control as 'LEGITIMATELY FUTURE-OWNED (C4 Settings — adjudicated ownership split)' — which GAP 1 later reclassifies as continuity shorthand", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "120" },
+        { "obligation": "PresenceScreen disposition (FD-12 §5) is listed as a C2-owned open implementation checkpoint", "source": "aura_final/docs/NEXT_WORK.md", "lines": "113" },
+        { "obligation": "People Selection — 6 local person-shaped extraction sites classified with future owners (conversations_screen C4-retired; correspondence_hub/space/invite_member C7; member_home C3; admin_institution_members PD-1)", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "118" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C1"],
+        "unlocks": ["RC-C4", "RC-C5", "RC-C6"],
+        "parallelWith": ["RC-C3 (route ownership held by C3)"],
+        "feeds": ["attention", "composition", "realtime participants", "people selection"],
+        "consumedFrozenDecisions": ["FD-11", "FD-10 (Presence/verification rulings)", "Capability-Adaptive Experience", "FD-3 §6 (People & Participation)", "FD-13"],
+        "contractsInheritedByC3": "Canonical Follow storage ACTIVE (FollowEdge+FollowConsent), commercial enum physically FREE|PRO, verification truth = status lifecycle (drift 0), entitlement boundary deliberately NOT frozen — C3 must not reopen them without new founder adjudication",
+        "provenance": [
+          { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "143, 145, 172, 176" },
+          { "source": "aura_final/docs/frontend-discovery/C2_FINAL_CLOSEOUT.md", "lines": "24, 34-36" }
+        ]
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 136-176)",
+        "aura_final/docs/frontend-discovery/C2_FINAL_CLOSEOUT.md",
+        "aura_final/docs/frontend-discovery/C2_PRE_MIGRATION_CLOSEOUT.md",
+        "aura_final/docs/frontend-discovery/C2_FOLLOW_FORENSIC.md",
+        "aura_final/docs/frontend-discovery/C2_CANONICAL_FOLLOW.md",
+        "aura_final/docs/frontend-discovery/C2_PROFILE_CONVERGENCE.md",
+        "aura_final/docs/frontend-discovery/C2_TRUST_PRESENTATION.md",
+        "aura_final/docs/frontend-discovery/C2_REPRESENTATION_CONSISTENCY.md",
+        "aura_final/docs/frontend-discovery/C2_PUBLIC_HOME_RECONSTRUCTION.md",
+        "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md",
+        "aura_final/docs/frontend-discovery/C2_DISCOVERY_CONTINUED.md",
+        "aura_final/docs/DECISIONS.md (lines 218-294)"
+      ],
+      "evidencedFindingRelationships": [
+        { "relationship": "C_AXIS_AMBIGUOUS_RESOLVED", "note": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md is titled 'C2 RETENTION TRUTH' and refers throughout to RIC-C2 (§12 Rich Content reference/retention stage), NOT RC-C2. Its own header line 3 says 'Chapter: §12 Rich Content & Interaction -> C2 completion (retention truth)'. Findings F131/F139-F143 belong to the RIC axis, not to RC-C2.", "source": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md", "lines": "3" },
+        { "relationship": "NOT_RECORDED", "note": "No F-id from the F001-F143 register is explicitly attributed to RC-C2 in the governed documents read at Stage 0." }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "STALE_STATE_ROW", "text": "CURRENT_STATE.md:18-19 still show C2 as 'READY / NOT STARTED / NOT YET AUTHORIZED' and 'Frontend implementation (C2-C11) NOT STARTED' while lines 100-128 of the same file record C2 execution and founder final closure.", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "18-19, 128" },
+        { "type": "STALE_STATE_ROW", "text": "CURRENT_STATE.md:136 'What has NOT been touched — No routes · no screens redesigned · Meetings untouched · no backend · no Representation. Nothing committed.' is contradicted by lines 118-126 of the same file (backend commits, Representation edits) and by line 141's explicit supersession note.", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "136, 141" },
+        { "type": "INCIDENT_RECORDED", "text": "Initial C2 deploy crash-looped: FeedModule missing PresenceModule import — DI wiring invisible to unit tests. Fixed (79de236) with a permanent guard src/app-boot.spec.ts compiling the full AppModule graph in every certification run.", "source": "aura_final/docs/frontend-discovery/C2_FINAL_CLOSEOUT.md", "lines": "26-28" },
+        { "type": "UNRESOLVED_DISPOSITION", "text": "Founder decisions still required at the time of the debt register: institution->person residue disposition at migration step 3 (only if production rows exist) and authorization of the physical migration execution window. Both were subsequently overtaken by C2_FINAL_CLOSEOUT (I->P residue = 0), but the register text itself was not updated.", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "146-147" }
+      ]
+    },
+    {
+      "id": "RC-C3",
+      "historicalName": "NAVIGATION & INFORMATION ARCHITECTURE",
+      "governingPurpose": "One coherent IA where people navigate to objects and intentions, not backend modules.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "185" },
+      "originalScope": {
+        "publicFirstInheritance": "Do NOT organise general Aura as institution-first. Institution discovery is a legitimate capability, not the master product model or the primary public journey.",
+        "build": ["Navigation/Surface Authority", "canonical navigation actions", "declared surface/route registry (FD-12 §8 — architecture-aware; naive zero-reference gate FORBIDDEN)", "object-local contextual depth", "responsive IA (conceptual before visual)", "room for universal Find/Go-To that SUPPLEMENTS IA, never patches it"],
+        "demolishOrRebuild": ["DR4 — 40 mirrored /institution/:institutionId/... routes, per-route test", "module-oriented destinations", "redundant destinations", "27 corrective redirects", "literal route strings scattered across features"],
+        "preserve": ["Four shells where product-correct", "session continuity (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host)", "ALL existing deep links must continue to resolve", "redirects as a temporary compatibility layer"],
+        "historicalItems": ["Item 11 (Legacy global runtime overlay cleanup)"],
+        "founderCheckpoint": "Exact primary destinations — deliberately NOT frozen; derived and reviewed here",
+        "exitCondition": "One destination tree; acting context carried by identity, not path; every surface has an auditable reachability/ownership path.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "180-219" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "C3-DR4", "text": "MIRRORED ROUTE != OBJECT-LOCAL INSTITUTION DEPTH != PATH-MANUFACTURED CONTEXT. 2 mirrored routes existed and were retired to gate-pinned unbuildable aliases; 34 routes are canonical object-local institution depth; path-manufactured context is structurally impossible (resolveActorContext deleted, 0 mechanisms); the institutional-inbox quartet (4 routes) carries the explicit-context contract and finalizes with C7; the Phase-1 phrasing 'the :institutionId prefix is what dies' is SUPERSEDED as over-broad.", "source": "aura_final/docs/DECISIONS.md", "lines": "297-305" },
+        { "id": "C3-NAV-CORRECTION", "text": "FOUNDER-OBSERVED NAVIGATION CORRECTION (amends the five-primary freeze). GOVERNING TEST FROZEN: PRIMARY NAVIGATION MUST REPRESENT A FUNDAMENTAL, RECURRING HUMAN INTENTION IN AURA. AUTHENTICATED PRIMARIES — FOUR: HOME · MESSAGES · DISCOVER · CREATE. ME removed (CLOSED). MEETINGS removed (CLOSED) — MEETINGS ARE AN INSTITUTIONAL DOMAIN, deliberately NO bare /meetings destination. CREATE restored as primary; global and contextual create are complementary. NO FIFTH DESTINATION invented or reserved; Attention may earn primary status only at C4's own founder checkpoint.", "source": "aura_final/docs/DECISIONS.md", "lines": "315-324" },
+        { "id": "C3-DISCOVER", "text": "DISCOVER = extensible discovery framework; immediate domains PEOPLE · INSTITUTIONS · SPACES · ARTICLES. Verification is never relevance ranking — one activity-ordered list truthfully labeled 'recent activity'. Articles canonically declared but NOT rendered until truthful reading capability exists (no dead 'coming soon' tenancy).", "source": "aura_final/docs/DECISIONS.md", "lines": "326" },
+        { "id": "C3-HEADER", "text": "Header semantic layers frozen: primaries (rail/bottom bar only) · identity/account (avatar) · attention (bell, until C4) · institution acquisition (lifecycle-gated) · Live (justified global) · invite icon RETIRED.", "source": "aura_final/docs/DECISIONS.md", "lines": "327" },
+        { "id": "C3-GOVERNANCE-LESSON", "text": "ARCHITECTURE CAN PROPOSE COHERENCE. HUMAN USE VALIDATES MEANING. WHEN THEY CONFLICT, INVESTIGATE THE CONFLICT RATHER THAN PROTECTING THE ARCHITECTURE. A locally certified architecture can be product-wrong; founder observation is evidence with amending authority.", "source": "aura_final/docs/DECISIONS.md", "lines": "329" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "FINAL CLOSURE DECLARED BY FOUNDER; pushed + deployed (70ec625..4aa3035); subsequently AMENDED by the founder-observed navigation correction executed 2026-08-16",
+        "freshnessBasis": "(1) explicit later state transition, then (2) a later implementation/certification checkpoint addressing the same chapter (the navigation correction)",
+        "evidence": [
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "141", "quote": "C3: FINAL CLOSURE DECLARED BY FOUNDER; pushed + deployed (70ec625..4aa3035). The stale 'not pushed / nothing committed' lines above predate that push and are superseded by this entry." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "143", "quote": "FOUNDER-OBSERVED NAVIGATION CORRECTION EXECUTED 2026-08-16" },
+          { "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "54-56", "quote": "FOUNDER-OBSERVED CORRECTION (2026-08-16, post-deployment — AMENDS THIS CLOSEOUT)" }
+        ],
+        "supersededCandidate": { "state": "CLOSEOUT REACHED — AWAITING FOUNDER CLOSURE DECLARATION", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "3", "note": "'Awaiting founder closure declaration' at line 3 is superseded by CURRENT_STATE.md:141." }
+      },
+      "majorImplementationCompleted": [
+        { "item": "NavigationAuthority (core/navigation/) owns frozen primary sets, path->destination identity (primaryOf), presentation-shell classification (contextOf, pinned as never-acting-authority), canonical object route builders, legacyAliasTarget", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "11" },
+        { "item": "DR4 executed per route: 2 pure duplicates retired to alias redirects (gate-enforced unbuildable), 34 genuinely institution-owned contextual depth, 4 institutional-inbox quartet preserved with explicit institutionContextId until C7", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "15" },
+        { "item": "Acting-identity safety: resolveActorContext deleted; Follow-as explicit; institutional inbox context explicit-by-builder; shell classification pinned non-authority; zero path-shape->actor mechanisms on re-run", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "19" },
+        { "item": "Enforcement live: test/navigation/ — 13 gate tests incl. route-integrity gate (caught 2 real defects on first run) and literal ratchet (c3_route_literal_baseline.txt: 103 files / 294 literal sites frozen)", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "23" },
+        { "item": "Measurements before -> after: declared routes 171 -> 172; mirror routes with builders 40 -> 38; route-derived acting-context mechanisms 3 consumers + resolver -> 0; feature literals 266 -> 261 all validated; shell-by-prefix as authority -> authority-owned destination classification", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "27-34" },
+        { "item": "Navigation correction executed: primaries amended to four; Discover four-domain framework; institutions directory de-contaminated and verification-as-ranking retired end-to-end (backend keyset cursor + transitional cohort arrays); Spaces taxonomy broadened to 10; Messages gained persistent 'New conversation'; header invite icon retired", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "143" },
+        { "item": "Certification gap closed: the route-integrity gate now proves every authority-declared address executable against the router table", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "56" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Contracts inherited by later chapters — C4: settings/attention internals, Me-depth placement fixed. C7: membership/invite/join lifecycles + correspondence sender experience MUST consume institutionContextId + correspondAsInstitution; no route-derived sender may survive C7 closure; the institutional-inbox trio's route disposition finalizes with it. C8: live-rooms internals (DR2). PD-1: admin internals. Meetings: protected, its 8 institution-context routes untouched.", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "42" },
+        { "obligation": "Remaining C3-owned debt: NONE unexplained — every remainder carries owner + retirement condition (literal baseline per-surface owners; C7 trio; alias retirement gated on link-traffic evidence at a future observed window; G5 C3-owned sites burn with their surfaces)", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "44-46" },
+        { "obligation": "LoginScreen disposition is listed as a C3-owned open implementation checkpoint", "source": "aura_final/docs/NEXT_WORK.md", "lines": "113" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C1 (acting context)", "RC-C0 (language)"],
+        "unlocks": ["RC-C4", "RC-C5", "RC-C6"],
+        "parallelWith": ["RC-C2"],
+        "blocks": "Attention deep-routing and composition entry points",
+        "consumedFrozenDecisions": ["Task/Domain-Oriented Adaptive Navigation + Canonical Product Language Authority", "FD-9", "FD-12", "Capability-Adaptive Experience", "FD-13"],
+        "certificationLayers": "Architecture + Implementation + Product-Behavior",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "187, 189, 211, 219" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 180-219)",
+        "aura_final/docs/frontend-discovery/C3_NAVIGATION_IA_RECONSTRUCTION.md",
+        "aura_final/docs/frontend-discovery/C3_DR4_ARCHITECTURE_RECONCILIATION.md",
+        "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md",
+        "aura_final/docs/DECISIONS.md (lines 297-331)"
+      ],
+      "evidencedFindingRelationships": [
+        { "finding": "F069", "relationship": "EXPLICIT — route classification", "state": "OPEN", "note": "Register: 'F069 Unclassified routes | OPEN | RC6 (~16 routes) | Implementation'. Commits 4bafb1a 'feat(routing): explicit route-classification contract, fail-closed (F069)' and cdbae96 'fix(routing): Spaces are PUBLIC discovery destinations (F069 founder ruling)' post-date the register row; Stage 0 does NOT promote the state.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F059-F070", "relationship": "ADJACENT — refresh/destination continuity, audited not implemented; RC1-RC9 root causes; NOT explicitly attributed to RC-C3 in any governed document", "state": "OPEN / PARTIALLY_VALIDATED per register", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "CERTIFIED_BUT_PRODUCT_WRONG", "text": "C3's five-primary model was locally certified and internally coherent and still product-wrong in observed use — a dead /meetings primary, an orphaned Create hub, Me duplication. The route-integrity gate tested registry self-consistency, not registry -> router executability.", "source": "aura_final/docs/DECISIONS.md", "lines": "329-331" },
+        { "type": "SUPERSEDED_COUNT", "text": "The C3 closeout body states '35 canonical institution depth' at line 15 and '34 canonical depth' after the DR4 reconciliation at line 51; CURRENT_STATE.md:130 carries both figures. The reconciliation is the later record.", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "15, 51" },
+        { "type": "OPEN_FOUNDER_GAP", "text": "GAP 1 — Settings / Personal Controls: the roadmap charters no Settings chapter; prior 'C4 Settings' references were continuity shorthand, now formally reclassified. The broader personal Settings experience is UNCHARTERED.", "source": "aura_final/docs/DECISIONS.md", "lines": "310" },
+        { "type": "OPEN_FOUNDER_GAP", "text": "GAP 2 — Long-Form Publishing / Articles: net-new first-class capability, NOT reconstruction debt, NOT a Post extension, NOT part of C4, NO CHAPTER NUMBER ASSIGNED; awaiting deliberate founder dependency placement.", "source": "aura_final/docs/DECISIONS.md", "lines": "312" }
+      ]
+    },
+    {
+      "id": "RC-C4",
+      "historicalName": "ATTENTION",
+      "governingPurpose": "One governed Attention Hub answering 'what needs my attention?' as a PROJECTION, never a new owner.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "228" },
+      "originalScope": {
+        "publicFirstInheritance": "Attention serves human obligations and communication, not institutional broadcast volume.",
+        "build": [
+          "Attention Authority (projection · semantic type · owning domain · destination · state · available actions · priority · aggregation)",
+          "Semantic views: Conversations · Activity · Invitations · Actions",
+          "Domain-owned resolvable actions (ATTENTION -> CONTEXT -> ACTION -> RESOLUTION -> CONTINUITY)",
+          "Obligation badge (ACTION_REQUIRED + INVITED + MISSED + qualifying mentions; passive unread NEVER contributes; truncation 99+)",
+          "Owning-domain clearing semantics",
+          "Deterministic reconciliation (no dead CTAs)",
+          "Cross-device read state",
+          "Noise reduction"
+        ],
+        "demolishOrRebuild": ["DR1 — eight attention surfaces: messages hub · notifications · activity · direct inbox · communications centre · correspondence hub · module attention · conversations_screen.dart (1,033 lines, unreachable) RETIRED here per FD-12"],
+        "preserve": ["Read/unread data where valid", "invitation state", "notification delivery capability", "notification preferences", "updates/module_attention + notifications_controller as the authority seed"],
+        "historicalItems": ["Item 3 (Notification Delivery Authority — client half)", "Item 6 (Timeline)"],
+        "backendDependencies": "Frozen: notification delivery authority, delivery attempts, acknowledgement, attention records, timeline",
+        "migrationConstraint": "Read/attention state preserved — NO WALL OF FALSE UNREADS. Notification destinations re-pointed to canonical routes.",
+        "enforcement": "Gates against parallel attention hubs · unread-as-universal-attention · independent badge semantics · dead CTA projections · competing reconciliation · mirrored institutional inbox · generic 'Calls' domain",
+        "certification": "Architecture + Implementation + Product-Behavior; Real-Boundary partially (native delivery lands in C9)",
+        "founderCheckpoint": "Attention interaction direction BEFORE the eight surfaces are retired",
+        "exitCondition": "One Hub; one badge semantic; eight surfaces retired; no dead CTAs.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "223-262" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "FD-1", "text": "One Governed Attention Hub + Actionable Attention — attention is a projection, never a new owner; domain-owned resolvable actions. Explicitly NOT original Option B ('one giant chronological notification feed' is rejected); partially subsumes Option A's separation as semantic views inside one hub; rejects Option C's premise.", "source": "aura_final/docs/frontend-discovery/FD1_ATTENTION_HUB_FROZEN.md", "lines": "3, 17-22, 28-30" },
+        { "id": "FD-2", "text": "PRIMARY ATTENTION BADGE = UNRESOLVED ACTIONABLE OBLIGATIONS. Contributing: ACTION_REQUIRED, INVITED, MISSED while unresolved, and mentions conditionally where they represent unresolved attention. Mentions are not blanket-counted.", "source": "aura_final/docs/frontend-discovery/FD2_ATTENTION_VOCABULARY_FROZEN.md", "lines": "12-27" },
+        { "id": "C4-NOTIF-PREF", "text": "Notification Preference Authority — PRIMARY OWNER: C4. Governing distinction frozen: ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION. Disabling email or push must never erase the underlying governed Attention item.", "source": "aura_final/docs/frontend-discovery/NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md", "lines": "5, 14-27" },
+        { "id": "C4-SUBSCRIBE-VOCAB", "text": "R4 — FOLLOW != SUBSCRIBE is frozen; C2 records the semantics and C4 OWNS THE VOCABULARY. Subscribe stays physically in InteractionFollow thread/space rows until C4 names its product surface.", "source": "aura_final/docs/DECISIONS.md", "lines": "227" },
+        { "id": "C4-PRIMARY-NAV", "text": "NO FIFTH DESTINATION is invented or reserved. Attention may earn primary status only at C4's own founder checkpoint, on product merits — navigation count is not a product requirement. Until C4, attention lives in the header bell.", "source": "aura_final/docs/DECISIONS.md", "lines": "324, 327" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "OPEN — FORENSIC EVIDENCE BASE COMPLETE, IMPLEMENTATION NOT STARTED, HELD PER FOUNDER SEQUENCING",
+        "freshnessBasis": "(3) maintained current-state artifact dated 2026-08-16, the latest explicit record of C4's state",
+        "evidence": [
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "143", "quote": "C4 (ATTENTION) forensic evidence base complete; C4 implementation NOT started, held per founder sequencing." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "163", "quote": "C4 held; C5 hard-gated." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "177-178", "quote": "C4 next after founder live certification; C5 hard-gated on C4 live closure." },
+          { "source": "aura_final/docs/frontend-discovery/NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md", "lines": "5", "quote": "PRIMARY OWNER: C4 — ATTENTION. Not implemented during C0. C4 is not started." }
+        ]
+      },
+      "majorImplementationCompleted": [
+        { "item": "NONE claimed for the chapter itself. What exists is an evidence record: the C4 DR1 legacy attention banner live evidence + full mechanism trace, explicitly with NO FIX APPLIED.", "source": "aura_final/docs/2026-08-16-c4-dr1-legacy-attention-banner-evidence.md", "lines": "3-5" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "All of DR1 — eight attention surfaces retired, including conversations_screen.dart", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "238" },
+        { "obligation": "Retire the legacy global attention presentation comprehensively — founder instruction: no isolated cosmetic patch. Mechanism traced to a global floating SnackBar pushed through an app-root GlobalKey<ScaffoldMessengerState> (notification_bridge.dart:294-308 and :425-440; global key :21; mounted at aura_app.dart:306-329)", "source": "aura_final/docs/2026-08-16-c4-dr1-legacy-attention-banner-evidence.md", "lines": "3-5, 17-34" },
+        { "obligation": "Notification Preference Authority scope", "source": "aura_final/docs/frontend-discovery/NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md", "lines": "29-30" },
+        { "obligation": "Name the Subscribe product surface / vocabulary (inherited from C2 R4)", "source": "aura_final/docs/DECISIONS.md", "lines": "227" },
+        { "obligation": "26 G5 state-primitive sites assigned to C4", "source": "aura_final/docs/DECISIONS.md", "lines": "105" },
+        { "obligation": "Settings/attention internals and Me-depth placement inherited from C3", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "42" },
+        { "obligation": "Founder checkpoint on attention interaction direction BEFORE the eight surfaces are retired", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "256" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C2 (identity for people/institutions)", "RC-C3 (navigation for exact-context routing)", "RC-C0 (temporal for ordering)", "RC-C1 (capability for actions)"],
+        "unlocks": ["RC-C9"],
+        "parallelWith": ["RC-C5", "RC-C6"],
+        "hardGateIssued": "C5 remains CLOSED until C4 is implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed. C4 LOCAL CERTIFICATION != C5 AUTHORIZATION.",
+        "hardGateProvenance": { "source": "aura_final/docs/DECISIONS.md", "lines": "382-385" },
+        "consumedFrozenDecisions": ["FD-1", "FD-2", "FD-12", "Human Temporal Presentation", "Capability-Adaptive Experience", "FD-13"],
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "230, 232, 258, 262" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 223-262)",
+        "aura_final/docs/frontend-discovery/FD1_ATTENTION_HUB_FROZEN.md",
+        "aura_final/docs/frontend-discovery/FD2_ATTENTION_VOCABULARY_FROZEN.md",
+        "aura_final/docs/frontend-discovery/NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md",
+        "aura_final/docs/frontend-discovery/INBOX_ATTENTION_AUDIT.md",
+        "aura_final/docs/2026-08-16-c4-dr1-legacy-attention-banner-evidence.md"
+      ],
+      "evidencedFindingRelationships": [
+        { "finding": "F030", "title": "Legacy global 'started a call' banner", "state": "C4_OWNED_OPEN", "remains": "C4 retirement", "certRequired": true, "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F031", "title": "Banner overlaps composer/surfaces", "state": "C4_OWNED_OPEN", "remains": "C4", "certRequired": true, "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F032", "title": "Unread persists after viewing", "state": "C4_OWNED_OPEN", "remains": "C4 read-truth", "certRequired": true, "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F033", "title": "Call facts rendered as 'interacted with your content'", "state": "C4_OWNED_OPEN", "remains": "C4 projection", "certRequired": true, "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F034", "title": "Self-actor notifications", "state": "C4_OWNED_OPEN", "remains": "C4", "certRequired": true, "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F035", "title": "Roster vs actually-connected count", "state": "C4_OWNED_OPEN", "remains": "C4 + domain truth", "note": "Presentation half shipped (observers excluded, viewers separate) — media-connected truth untouched", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F118", "title": "C4 findings preserved", "state": "LIVE_CERTIFIED", "note": "'No C4 finding patched; register maintained.' Explicit protection rule: do not fix F030-F035 or other C4-owned findings during reconciliation merely to improve appearances.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "lines": "31771, 31798" },
+        { "finding": "conversations_screen.dart", "relationship": "C4-RETIRED (People Selection extraction site classification)", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "118" }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "COUNT_DISCREPANCY", "text": "The transcript register counts exactly 6 C4_OWNED_OPEN items, and lists exactly 6 (F030-F035). No governed markdown document carries this count; it exists only in transcript evidence.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "type": "OWNERSHIP_RECLASSIFIED", "text": "Earlier records placed 'Settings' inside C4 ('LEGITIMATELY FUTURE-OWNED (C4 Settings)'). GAP 1 formally reclassifies those references as continuity shorthand and declares the broader personal Settings experience UNCHARTERED with the Availability Off control owner UNASSIGNED.", "sources": [ { "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "120" }, { "source": "aura_final/docs/DECISIONS.md", "lines": "310" } ] },
+        { "type": "SEQUENCING_TENSION", "text": "The CONVERSATION COMPLETION REGISTER (frozen 2026-08-16) requires audio call · video call · screen sharing · media/attachments · intentional Live · message reporting/moderation as REQUIRED contextual attachments of canonical Conversation, and states 'C4 progression does not erase it'. Substantial work in those areas landed while C4 remained not-started.", "source": "aura_final/docs/DECISIONS.md", "lines": "369-375" }
+      ]
+    },
+    {
+      "id": "RC-C5",
+      "historicalName": "COMPOSITION, CONTENT INTAKE & ATTACHMENTS",
+      "governingPurpose": "One canonical composition system, one attachment lifecycle, one governed content-intake layer.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "271" },
+      "originalScope": {
+        "publicFirstInheritance": "Personal/public communication and institutional communication are distinct but equally first-class. Neither is the default that the other decorates.",
+        "build": [
+          "Composition Authority: content state · drafts · autosave · mentions · links · formatting · validation · readiness · keyboard · accessibility. COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION",
+          "Attachment Lifecycle: SELECT/PASTE/DROP -> VALIDATE -> PREVIEW -> UPLOAD -> PROGRESS -> READY -> SEND/PUBLISH; upload on selection; uncommitted attachments belong to the DRAFT; explicit discard -> immediate release; abandonment -> backend cleanup; attachment readiness is part of composition readiness; NO SILENT QUEUED-SEND; no hybrid size/type timing",
+          "Content Intake & Resolution: rich paste (preserve richness, do not invent richness) · image/file paste · drag-and-drop (currently 0 implementations) · mixed content · governed link previews (consume backend link intelligence; do not fetch client-side) · unsupported input fails visibly and recoverably, never silently",
+          "Official designation in the publish flow only (FD-8): no post-publication elevation; consequence legible BEFORE commitment; withdrawal object-local; content change invalidates approval"
+        ],
+        "demolishOrRebuild": ["DR3 — six composers (hashtags in 1 of 6; upload progress in 1 of 6)", "eleven upload pipelines", "per-composer paste/clipboard handling (25 files)", "voice implied by route"],
+        "preserve": ["Backend contracts", "supported content behaviour", "attachment/media capabilities", "DRAFTS AND DRAFT DATA", "proven validation", "accessibility behaviour", "legitimate context differences", "working media rendering"],
+        "historicalItems": ["Item 5 (Compose Link Intelligence/OG)", "Item 10 (Selection/Clipboard/Rich Paste)", "Item 13 (External Link/OG)", "Item 14 (Internal Link Hydration)", "Item 15 (Rich-Text Composition)", "Item 16 (Content-Length Expansion)"],
+        "extendedScope": ["E_OFFICIAL designation representation", "institutional approval workflow language"],
+        "backendDependencies": "Frozen: canonical MIME policy · SSRF-safe link fetching · internal link hydration · CIS classes · E_OFFICIAL designation + institutional approval floor · media cleanup service",
+        "openCheckpoint": "Orphan-cleanup windows vs canonical draft lifetime — reviewed here. Backend policy is not changed unilaterally; conflicts are brought forward.",
+        "certification": "Architecture + Implementation + Product-Behavior + Cross-System",
+        "exitCondition": "One composition system, one attachment lifecycle, one intake layer; six composers and eleven pipelines retired; drag/drop exists.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "266-312" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "FD-6", "text": "Canonical Composition System + Context-Governed Experience — COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION. Note the recorded numbering hazard: the founder instruction that froze this called it 'FD-2', but register FD-2 is Attention vocabulary; this decision is authoritative BY NAME.", "source": "aura_final/docs/frontend-discovery/CANONICAL_COMPOSITION_SYSTEM_FROZEN.md", "lines": "3, 9-17" },
+        { "id": "FD-7", "text": "Upload on selection. UPLOADING AN ATTACHMENT NEVER MEANS THE MESSAGE / POST / PUBLICATION HAS BEEN SENT OR PUBLISHED. An uploaded-but-uncommitted attachment belongs to the composition/draft state.", "source": "aura_final/docs/frontend-discovery/FD7_ATTACHMENT_SEND_MODEL_FROZEN.md", "lines": "10-22" },
+        { "id": "FD-8", "text": "Official designation may only be expressed BEFORE publication, as part of the publication commitment/publish flow. No post-publication elevation (Options B and C rejected). Withdrawal remains legitimate and is different.", "source": "aura_final/docs/frontend-discovery/FD8_OFFICIAL_DESIGNATION_MOMENT_FROZEN.md", "lines": "10-27" },
+        { "id": "CONTENT-INTAKE", "text": "Content Intake & Resolution Authority — founder-surfaced cross-product obligation, NOT identified by the original discovery audit. Measured: 25 files touching Clipboard, 25 with paste handling, 0 implementing drag-and-drop.", "source": "aura_final/docs/frontend-discovery/CONTENT_INTAKE_RESOLUTION_AUTHORITY_FROZEN.md", "lines": "3-6, 12-20" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "BLOCKED — CLOSED BY EXPLICIT FROZEN HARD GATE",
+        "freshnessBasis": "(1) latest explicit state transition — the C5 HARD GATE frozen 2026-08-16",
+        "evidence": [
+          { "source": "aura_final/docs/DECISIONS.md", "lines": "382-385", "quote": "C5 HARD GATE (frozen transition rule): C5 remains CLOSED until C4 is implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed. C4 LOCAL CERTIFICATION != C5 AUTHORIZATION." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "163", "quote": "C4 held; C5 hard-gated." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "178", "quote": "C5 hard-gated on C4 live closure." }
+        ]
+      },
+      "majorImplementationCompleted": [
+        { "item": "NONE under RC-C5 authority. Stage 0 records, without reclassifying it, that a separate founder-frozen chapter (§12 Rich Content & Interaction) and the Conversation System work occupy overlapping subject matter — see contradictionsOrGaps.", "source": "aura_final/docs/DECISIONS.md", "lines": "382-385" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Entire chapter — DR3 six composers, eleven upload pipelines, 25-file paste handling, drag/drop, official designation in the publish flow", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "282-288" },
+        { "obligation": "Official-designation and institutional-approval vocabulary, deliberately not pre-empted by C0", "source": "aura_final/docs/DECISIONS.md", "lines": "127" },
+        { "obligation": "Open checkpoint: orphan-cleanup windows vs draft lifetime", "source": "aura_final/docs/NEXT_WORK.md", "lines": "108" },
+        { "obligation": "16 G5 state-primitive sites assigned to C5", "source": "aura_final/docs/DECISIONS.md", "lines": "105" },
+        { "obligation": "Drag/drop (0 implementations) is jointly owned C5 + C9", "source": "aura_final/docs/NEXT_WORK.md", "lines": "117" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C2 (identity for mentions/recipients)", "RC-C3 (contextual entry)", "RC-C1 (acting context / representation)", "RC-C0 (product state and temporal)"],
+        "unlocks": ["RC-C7", "RC-C9"],
+        "parallelWith": ["RC-C4", "RC-C6"],
+        "isProductDependencyOf": ["RC-C10 — 'Governed questions, continuing discussion, replay/content relationships and surrounding communication must not be built on composers already authorised for demolition.'"],
+        "consumedFrozenDecisions": ["FD-6", "FD-7", "FD-8", "Content Intake & Resolution Authority", "FD-10", "Capability-Adaptive Experience", "FD-13"],
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "273, 275, 308, 312, 511" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 266-312)",
+        "aura_final/docs/frontend-discovery/CANONICAL_COMPOSITION_SYSTEM_FROZEN.md",
+        "aura_final/docs/frontend-discovery/FD7_ATTACHMENT_SEND_MODEL_FROZEN.md",
+        "aura_final/docs/frontend-discovery/FD8_OFFICIAL_DESIGNATION_MOMENT_FROZEN.md",
+        "aura_final/docs/frontend-discovery/CONTENT_INTAKE_RESOLUTION_AUTHORITY_FROZEN.md",
+        "aura_final/docs/frontend-discovery/COMPOSER_MESSAGING_ATTACHMENT_AUDIT.md"
+      ],
+      "evidencedFindingRelationships": [
+        { "relationship": "NOT_RECORDED_AS_RC-C5", "note": "Composition/intake/attachment findings (F011-F019, F121-F143) are explicitly staged under the §12 Rich Content contract's OWN stage table (RIC axis), not under RC-C5. No governed document assigns any F-id to RC-C5.", "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "lines": "557-572" }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "OVERLAPPING_WORK_OUTSIDE_THE_CHAPTER", "text": "RC-C5 is explicitly CLOSED by hard gate, yet a separate founder-frozen chapter — §12 RICH CONTENT & INTERACTION (frozen 2026-08-17) — governs acquisition/intake normalization, attachment/upload primitives, drag/drop, paste, link previews and delivery, which is substantially RC-C5's originalScope. Stage 0 records the overlap and does not resolve it.", "sources": [ { "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "lines": "1-16, 557-572" }, { "source": "aura_final/docs/DECISIONS.md", "lines": "382-385" } ] },
+        { "type": "OVERLAPPING_WORK_OUTSIDE_THE_CHAPTER", "text": "The CONVERSATION COMPLETION REGISTER frozen 2026-08-16 makes media/attachments a REQUIRED contextual attachment of canonical Conversation, to be built against the CONVERSATION realtime surface, while RC-C5 is hard-gated closed.", "source": "aura_final/docs/DECISIONS.md", "lines": "369-375" },
+        { "type": "NAMESPACE_HAZARD", "text": "The §12 contract's dependency graph line reads '... -> GOVERNED DELIVERY (C5) -> ...'. That C5 is RIC-C5 (its own §16 stage), NOT RC-C5. Any later reader equating them would produce a confidently wrong mapping.", "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "lines": "13-16, 557-572" },
+        { "type": "MEASUREMENT_SUPERSEDED", "text": "The roadmap records '0 drag-and-drop implementations'; the register records F012 'Drag/drop | INLC | DropTarget/onDragDone present (conversation_screen:960) | Never exercised live'. The zero-implementation premise no longer holds for Conversation.", "sources": [ { "source": "aura_final/docs/frontend-discovery/CONTENT_INTAKE_RESOLUTION_AUTHORITY_FROZEN.md", "lines": "16-18" }, { "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 } ] }
+      ]
+    },
+    {
+      "id": "RC-C6",
+      "historicalName": "REALTIME PRESENTATION CONVERGENCE",
+      "governingPurpose": "Converge realtime PRESENTATION beneath distinct product semantics — and finally expose frozen multi-device capability.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "321" },
+      "originalScope": {
+        "publicFirstInheritance": "Human communication and collaboration are first-class; realtime audio/video is part of meaningful collaboration, not an isolated calling feature.",
+        "build": ["Shared presentation family — participant list · host controls · admission/join-requests · consent — rendering context-supplied states and language; the component never owns semantic meaning", "Modern invite/add flows consuming the People & Participation primitive", "Device transfer UI (offer/accept/relinquish/failed)", "Preferred-device behaviour made visible"],
+        "preserveDoNotTouch": ["Realtime transport", "media service", "event parser", "reconnect/orphan recovery (realtime_reconciliation_controller, orphaned-session handling)", "session continuity across navigation", "MEETINGS LIFECYCLE (booking, invitation, attendance, waiting/admission, prep, summary, follow-up)"],
+        "demolishOrConverge": ["Duplicated presentation: Meetings reimplements participant grid, spotlight and remote tiles across 3,890 lines while using 0 of 5 shared realtime widgets"],
+        "historicalItems": ["Item 1 (Runtime Lifecycle)", "Item 2 (Device Presence)", "Item 7 (Realtime Architecture Correction)", "Item 9 (Lifecycle Phase 2)", "Item 12 (Advanced Device Preference / Transfer)"],
+        "extendedScope": ["Multi-device authority", "preferred-first ring + stagger + fallback", "durable media ownership", "D2 transfer handshake"],
+        "backendDependencies": "Frozen: D1 routing, D2 transfer handshake, D6 durable media ownership, WNS/APNs/FCM delivery",
+        "migrationConstraint": "SLICE BY SLICE — NO WHOLESALE MEETINGS REWRITE. Targeted Meetings regression after each slice (currently 97/97).",
+        "enforcement": "Gates against another surface reimplementing canonical primitives. Must not force Meeting/Room/Thread/Space/Live semantic convergence (FD-3).",
+        "founderCheckpoints": ["Participation/invite interaction direction", "Sign-off after EACH Meetings slice"],
+        "exitCondition": "One presentation family; Meetings lifecycle intact and green; transfer and preferred-device visible.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "316-356" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "FD-3", "text": "Shared realtime infrastructure does NOT imply shared product semantics. Frozen conceptual ownership: DM · THREAD · SPACE · INSTITUTION ROOM · MEETING · LIVE, each with its own frozen meaning. LIVE is NOT another Meeting merely because both use realtime media.", "source": "aura_final/docs/frontend-discovery/FD3_REALTIME_SEMANTICS_FROZEN.md", "lines": "11-24" },
+        { "id": "FD-4", "text": "Converge the PRESENTATION of participant list · host controls · admission/join-requests · consent onto a shared component family. MEETINGS LIFECYCLE IS UNTOUCHED. THE SHARED COMPONENT DOES NOT OWN SEMANTIC MEANING. Evidence: five shared realtime widgets consumed by realtime_room_screen and ZERO times by meeting_live_room_screen (3,890 lines).", "source": "aura_final/docs/frontend-discovery/FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN.md", "lines": "10-26" },
+        { "id": "C6-G5", "text": "C6 holds ZERO G5 sites. Meetings' protected debt is G3 (16) and G4 (14), belonging to controlled C6 review.", "source": "aura_final/docs/DECISIONS.md", "lines": "105, 109-111" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "OPEN — NOT STARTED",
+        "freshnessBasis": "(4) issuance evidence only: no later explicit state transition, no implementation checkpoint addressing this chapter's own scope, and no maintained artifact records C6 as begun.",
+        "evidence": [
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "19", "quote": "Frontend implementation (C2–C11) | NOT STARTED" },
+          { "source": "aura_final/docs/NEXT_WORK.md", "lines": "97", "quote": "C6 Realtime Presentation Convergence | blocked until C2" }
+        ],
+        "caveat": "NOT_RECORDED — no document dated after 2026-08-15 states RC-C6's chapter state either way. See contradictionsOrGaps: substantial realtime engineering landed between 2026-08-16 and 2026-08-17 without any record of C6 authorization."
+      },
+      "majorImplementationCompleted": [
+        { "item": "NONE recorded as RC-C6 chapter work in any governed document." }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Entire chapter: shared presentation family, device transfer UI, preferred-device visibility, slice-by-slice Meetings presentation convergence with regression and founder sign-off after each slice", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "334, 342, 350" },
+        { "obligation": "Meetings G3 (16) and G4 (14) protected debt belongs to controlled C6 review", "source": "aura_final/docs/DECISIONS.md", "lines": "111" },
+        { "obligation": "relative_time.dart shim burn-down: C6 is a named owner (thread surfaces)", "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "158" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C2"],
+        "unlocks": ["RC-C7", "RC-C8", "and with C7+C8, RC-C10"],
+        "parallelWith": ["RC-C4", "RC-C5"],
+        "blocks": "Institution Room, Threads/Spaces realtime and Live",
+        "consumedFrozenDecisions": ["FD-3", "FD-4", "FD-11", "Capability-Adaptive Experience", "FD-13"],
+        "certificationLayers": "Architecture + Implementation + Product-Behavior; Real-Boundary partially (device testing in C9)",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "323, 325, 348, 356" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 316-356)",
+        "aura_final/docs/frontend-discovery/FD3_REALTIME_SEMANTICS_FROZEN.md",
+        "aura_final/docs/frontend-discovery/FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN.md",
+        "aura_final/docs/frontend-discovery/REALTIME_PRODUCT_MODEL_AUDIT.md"
+      ],
+      "evidencedFindingRelationships": [
+        { "finding": "F114", "title": "Meetings protected", "state": "LIVE_CERTIFIED", "note": "'No Meetings file modified in any commit this session' — evidence that the C6/Meetings protection boundary held during the out-of-chapter realtime work.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F112", "title": "Meetings equivalent validation", "state": "OPEN", "note": "'Obligation intact, unstarted.' Not explicitly attributed to RC-C6 by any governed document.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F036-F049", "title": "Realtime failure / session lifecycle cluster", "relationship": "ADJACENT, NOT EXPLICITLY C6-ATTRIBUTED", "note": "Repaired outside any declared chapter; shared root causes RC-A (509230a) and RC-B (dfc9027).", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "WORK_OUTSIDE_THE_CHAPTER_FRAME", "text": "Between 2026-08-16 and 2026-08-17, extensive realtime engineering landed in aura_final (3876573 'Conversation is a first-class realtime surface', b38e4d1 transport websocket-only, 509230a shared-transport disposal fix, dfc9027 permanent accept-freeze fix, 726831c screen share) with no governed record authorizing or closing RC-C6. Stage 0 records this without classifying it as C6 progress or as a violation.", "source": "git log aura_final (commits 3876573, b38e4d1, 509230a, dfc9027, 726381c/726381 range)" },
+        { "type": "SCOPE_UNADDRESSED", "text": "The chapter's actual demolition target — Meetings' 3,890 lines of duplicated presentation using 0 of 5 shared widgets — has no evidence of being touched, and F114 affirmatively records that no Meetings file was modified.", "sources": [ { "source": "aura_final/docs/frontend-discovery/FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN.md", "lines": "14" }, { "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 } ] },
+        { "type": "PROTECTED_BOUNDARY_REAFFIRMED", "text": "The §12 Rich Content contract and its Amendment 1 both re-declare Meetings/realtime/Live as PROTECTED and outside their scope, keeping the C6 boundary intact from the RIC axis.", "sources": [ { "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "lines": "508-513" }, { "source": "aura-backend/docs/2026-08-18-c2-retention-truth-register.md", "lines": "108" } ] }
+      ]
+    },
+    {
+      "id": "RC-C7",
+      "historicalName": "THREADS, SPACES & CORRESPONDENCE",
+      "amendedName": "C7 = INSTITUTIONAL CONVERSATION & DESK (founder-approved and frozen 2026-08-16)",
+      "governingPurpose": "Reconstruct the conversation surfaces on frozen semantics — and resolve the Correspondence architecture question. AMENDED: consume canonical Conversation and foundational Invitation; own the institution-side Conversation/Desk experience and appropriate institutional participation/membership-entry reconstruction.",
+      "governingPurposeProvenance": [
+        { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "367" },
+        { "source": "aura_final/docs/DECISIONS.md", "lines": "355-361" }
+      ],
+      "originalScope": {
+        "publicFirstInheritance": "Threads and Spaces are purposeful communication contexts — social, working and creative — not institution-only collaboration containers.",
+        "addedObligation": "'Correspondence' now has exactly ONE canonical product meaning — the governed formal/deliberate communication form. The legacy umbrella sense (Spaces + Threads + Messages + Direct Threads) is architectural naming drift. C7 determines the correct umbrella/internal name and migrates safely, preserving compatibility and history. Filesystem/package naming may retain the legacy sense until this chapter runs; documentation and the Product Language Authority may not.",
+        "build": ["Thread surfaces (focused conversation continuity)", "Space surfaces (persistent shared context; NO EIGHT-TAB INTERFACE)", "membership/join/invite flows (never expose role enums or permission machinery)", "object-local management", "Correspondence as a distinct governed communication form — sharing infrastructure but not semantics"],
+        "demolishOrConverge": ["Three thread_screen implementations (correspondence/, public/, direct_threads/)", "duplicated conversation mechanics", "four institution messaging entry points", "disposition InstitutionCorrespondenceScreen here (FD-12 §4)"],
+        "preserve": ["Communication histories", "membership/relationship data", "Thread/Space content", "deep links", "Meetings boundary"],
+        "governingRule": "THE SURVIVING WORD DOES NOT PROTECT THE ARCHITECTURE. If the current Correspondence implementation is merely duplicate messaging, converge/rebuild the mechanics while preserving the semantics.",
+        "backendDependencies": "Frozen: correspondence orchestrator, thread/space models, institution capability",
+        "founderCheckpoint": "Correspondence presentation and its architectural convergence verdict",
+        "exitCondition": "One thread surface family; Space surfaces coherent; Correspondence distinct in semantics and non-duplicated in mechanics.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "360-401" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "THREADS-SPACES", "text": "THREAD = FOCUSED CONVERSATION CONTINUITY; SPACE = PERSISTENT SHARED CONTEXT / COMMUNITY. Do NOT reduce both to generic containers, merge them, treat a Space as a large group chat, treat a Thread as a message list, or force every Thread to belong to a Space.", "source": "aura_final/docs/frontend-discovery/THREADS_SPACES_PRODUCT_MODEL_FROZEN.md", "lines": "11-18" },
+        { "id": "C0-4/C7", "text": "Correspondence = one canonical product meaning; C7 owns the eventual path/module rename or convergence — the semantic decision is NOT reopened there.", "source": "aura_final/docs/DECISIONS.md", "lines": "85-87" },
+        { "id": "C7-AMENDMENT", "text": "C7 = INSTITUTIONAL CONVERSATION & DESK. C7 does NOT recreate Correspondence as a product, does NOT own Invitation, and there is ONE canonical Conversation system.", "source": "aura_final/docs/DECISIONS.md", "lines": "355-361" },
+        { "id": "C7-EXPLICIT-CONTEXT-CONTRACT", "text": "C7 MUST consume the explicit-context contract (institutionContextId + correspondAsInstitution); no route-derived sender may survive C7 closure; the institutional-inbox quartet's route disposition finalizes with it.", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "42" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "OPEN — NOT STARTED AS A CHAPTER; SCOPE AMENDED AND FROZEN 2026-08-16",
+        "freshnessBasis": "(1) a later explicit scope transition (the C7 amendment) with no accompanying start/closure transition",
+        "evidence": [
+          { "source": "aura_final/docs/DECISIONS.md", "lines": "355-361", "quote": "C7 AMENDMENT — FOUNDER-APPROVED AND FROZEN (2026-08-16): C7 = INSTITUTIONAL CONVERSATION & DESK." },
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "165-166", "quote": "§62 FOUNDER RESOLUTION APPLIED (2026-08-16): C7 amendment FROZEN (Institutional Conversation & Desk)" },
+          { "source": "aura_final/docs/NEXT_WORK.md", "lines": "98", "quote": "C7 Threads, Spaces & Correspondence | blocked until C4 + C5 + C6" }
+        ]
+      },
+      "majorImplementationCompleted": [
+        { "item": "NONE as RC-C7 chapter work. Adjacent and explicitly recorded: the clean-sheet Aura Conversation System + Aura Invitation System were built 2026-08-16 (backend AuraInvitation + Conversation* schema, additive migration, InvitationAuthority + ConversationAuthority + adapter registry, People Discovery; frontend lib/features/conversation/ with MessagesScreen at /messages, ConversationScreen /messages/c/:id, picker /messages/new, /i/:token claim landing).", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "146-163" },
+        { "item": "Two named personal spaces individually inspected and MIGRATE-ruled with human-chosen names preserved as Conversation presentation.", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "165-172" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Phase 5 legacy retirement NOT AUTHORIZED — gate: additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization. Legacy conversation surfaces NOT yet retired; legacy hub parked at /messages/legacy-hub.", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "161-163, 176-177" },
+        { "obligation": "CONVERSATION COMPLETION REGISTER (frozen obligation): audio call · video call · screen sharing · media/attachments · intentional Live · message reporting/moderation remain REQUIRED contextual attachments of canonical Conversation. Conversation is NOT final-certified until this register is resolved; C4 progression does not erase it.", "source": "aura_final/docs/DECISIONS.md", "lines": "369-375" },
+        { "obligation": "Correspondence umbrella rename/migration — choose the correct internal name, migrate safely, preserve compatibility and history. Paths may lag; documentation may not.", "source": "aura_final/docs/NEXT_WORK.md", "lines": "34" },
+        { "obligation": "InstitutionCorrespondenceScreen disposition (FD-12 §4)", "source": "aura_final/docs/NEXT_WORK.md", "lines": "113" },
+        { "obligation": "26 G5 state-primitive sites assigned to C7; debt register rows 4, 10, 11 are C7-owned", "sources": [ { "source": "aura_final/docs/DECISIONS.md", "lines": "105" }, { "source": "aura_final/docs/frontend-discovery/C2_RECONSTRUCTION_DEBT_REGISTER.md", "lines": "112, 118, 119" } ] },
+        { "obligation": "Retire resolveActorContext residue and the institutional-inbox quartet route disposition", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "42" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C5 (composition)", "RC-C4 (attention)", "RC-C6 (realtime)", "RC-C2 (identity)", "RC-C3 (navigation)"],
+        "unlocks": ["RC-C10"],
+        "parallelWith": ["RC-C8"],
+        "consumedFrozenDecisions": ["Threads/Spaces Product Model", "FD-10 (Correspondence ruling)", "FD-3", "FD-6", "FD-1", "FD-9", "Capability-Adaptive Experience", "FD-13"],
+        "externalCanonConsumed": ["aura-backend/docs/2026-08-16-aura-conversation-system-canon.md", "aura-backend/docs/2026-08-16-aura-invitation-system-canon.md"],
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "369, 371, 397, 401" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 360-401)",
+        "aura_final/docs/frontend-discovery/THREADS_SPACES_PRODUCT_MODEL_FROZEN.md",
+        "aura-backend/docs/2026-08-16-aura-conversation-system-canon.md",
+        "aura-backend/docs/2026-08-16-aura-invitation-system-canon.md",
+        "aura_final/docs/DECISIONS.md (lines 334-385)"
+      ],
+      "evidencedFindingRelationships": [
+        { "relationship": "NOT_RECORDED", "note": "No F-id explicitly attributed to RC-C7. The Conversation capability findings F005-F023 and WG001/2/4/5/6/9 are staged under the §12 contract's own RIC-E2 stage ('Conversation as FIRST COMPLETE REFERENCE'), not under RC-C7.", "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "lines": "570" }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "DEPENDENCY_ORDER_INVERTED_IN_PRACTICE", "text": "C7's declared prerequisites are C4 + C5 + C6, all of which are not-started or hard-gated closed; yet the clean-sheet Conversation System that 'replaces the DirectThread and Space-as-conversation stacks' was built and released in 2026-08-16, occupying territory the roadmap assigns to C7's demolition list (three thread_screen implementations, four institution messaging entry points).", "sources": [ { "source": "aura_final/docs/NEXT_WORK.md", "lines": "98" }, { "source": "aura_final/docs/DECISIONS.md", "lines": "334-347" }, { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "375" } ] },
+        { "type": "OWNERSHIP_REASSIGNED", "text": "The Invitation System canon states explicitly that 'Invitation is NOT ... a C7 feature', reassigning an obligation that the original C7 charter placed inside membership/join/invite flows.", "sources": [ { "source": "aura-backend/docs/2026-08-16-aura-invitation-system-canon.md", "lines": "17-21" }, { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "377" } ] },
+        { "type": "UNRESOLVED", "text": "The Correspondence architectural convergence verdict — the chapter's named founder checkpoint — has no recorded outcome.", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "395" }
+      ]
+    },
+    {
+      "id": "RC-C8",
+      "historicalName": "INSTITUTION ROOM",
+      "governingPurpose": "Build the client for the frozen D5 Institution Room authority.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "410" },
+      "originalScope": {
+        "publicFirstInheritance": "LEGITIMATELY INSTITUTION-OWNED. Public-first does not erase institutional ownership; do not dilute this surface to prove alignment.",
+        "build": ["Room ownership", "invitations", "participant states", "ring policy (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS)", "lifecycle", "contextual realtime", "attention", "modern participant selection"],
+        "demolishAndRebuild": ["DR2 — institution_live_rooms_screen (1,078 lines): imports neither realtime nor meetings, consumes untyped Map<String,dynamic>, and lists realtime sessions rather than InstitutionRoom. DO NOT RETROFIT."],
+        "preserve": ["'See what is live now' for an institution; card layout only"],
+        "governingRule": "ENTITLEMENT != INTERRUPTION. Membership never becomes a ring list.",
+        "extendedScope": ["Institution Room (backend D5)"],
+        "backendDependencies": "Frozen D5: InstitutionRoom, participants, invitation lifecycle, governed ring resolution, canonical delivery",
+        "migration": "No user-visible behaviour worth preserving beyond 'what is live now'; NO DATA MIGRATION — the old screen has no canonical model.",
+        "testing": "Room lifecycle/ring-policy suites; LARGE-INSTITUTION INVARIANT (10,000 members -> zero recipients absent invitation)",
+        "certification": "Architecture + Implementation + Product-Behavior + Cross-System",
+        "exitCondition": "Institution Room reachable, governed, and consuming canonical contracts.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "405-445" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "FD-3/INSTITUTION-ROOM", "text": "INSTITUTION ROOM = institution-owned persistent/drop-in communication room with GOVERNED PARTICIPATION — a distinct realtime product semantic that shared infrastructure may not erase.", "source": "aura_final/docs/frontend-discovery/FD3_REALTIME_SEMANTICS_FROZEN.md", "lines": "22" },
+        { "id": "C8-BOUNDARY", "text": "Live is explicitly NOT an Institution Room — 'Option C rejected' — so C8 and C10 remain separate constructions.", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "536" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "OPEN — NOT STARTED",
+        "freshnessBasis": "(4) issuance evidence only; no later explicit transition exists",
+        "evidence": [
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "19", "quote": "Frontend implementation (C2–C11) | NOT STARTED" },
+          { "source": "aura_final/docs/NEXT_WORK.md", "lines": "99", "quote": "C8 Institution Room | blocked until C6" },
+          { "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "42", "quote": "C8: live-rooms internals (DR2)." }
+        ]
+      },
+      "majorImplementationCompleted": [
+        { "item": "NONE recorded. One adjacent C2-era correction is recorded: the live-rooms startLive gate was converged onto C1 capability projection during the C2 pre-migration closeout (R1 burn-down), which touches the surface without reconstructing it.", "source": "aura_final/docs/CURRENT_STATE.md", "lines": "124" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Entire chapter, including DR2 demolition of institution_live_rooms_screen", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "419-421" },
+        { "obligation": "Live-rooms internals inherited from C3", "source": "aura_final/docs/frontend-discovery/C3_FINAL_CLOSEOUT.md", "lines": "42" },
+        { "obligation": "3 G5 state-primitive sites assigned to C8", "source": "aura_final/docs/DECISIONS.md", "lines": "105" },
+        { "obligation": "Large-institution invariant test: 10,000 members -> zero recipients absent invitation", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "435" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C6 (converged realtime)", "RC-C2 (identity/people selection)", "RC-C4 (attention)"],
+        "unlocks": ["RC-C10"],
+        "parallelWith": ["RC-C7"],
+        "consumedFrozenDecisions": ["FD-3", "FD-4", "FD-9", "FD-1", "Capability-Adaptive Experience", "FD-13"],
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "412, 414, 441, 445" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 405-445)",
+        "aura_final/docs/frontend-discovery/FD3_REALTIME_SEMANTICS_FROZEN.md",
+        "aura_final/docs/frontend-discovery/LIVE_THREAD_SPACE_ARCHITECTURE_OPTIONS.md"
+      ],
+      "evidencedFindingRelationships": [
+        { "relationship": "NOT_RECORDED", "note": "No F-id or WG-id explicitly attributed to RC-C8." }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "COUNT_INCONSISTENCY", "text": "The roadmap's known-territory list cites '3 live-room implementations' while C8 names one screen (institution_live_rooms_screen, 1,078 lines) as DR2. The other two implementations have no recorded owner.", "sources": [ { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "44" }, { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "419" } ] },
+        { "type": "BOUNDARY_PRESSURE", "text": "Live viewer/discovery work (F076, F081 — 'Header Live = discovery, not origination', lobby-as-directory) touches the same 'see what is live now' territory C8 is chartered to own, while C8 remains not-started.", "sources": [ { "source": "aura_final/docs/2026-08-17-live-origination-correction.md", "lines": "13-15" }, { "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 } ] }
+      ]
+    },
+    {
+      "id": "RC-C9",
+      "historicalName": "CROSS-PLATFORM COMPLETION (MSIX / MOBILE / WEB)",
+      "governingPurpose": "Make the Release Client genuinely first-class on each supported platform.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "451" },
+      "originalScope": {
+        "build": ["Native Windows notifications (WNS)", "desktop lifecycle", "drag/drop", "clipboard", "file handling", "keyboard", "hover/context affordances", "window sizing/responsiveness", "background/foreground", "active realtime continuity", "deep links", "installation/launch context", "iOS/Android native notification presentation"],
+        "governingRule": "DESKTOP IS NOT WEB WITH A WIDER VIEWPORT.",
+        "preserve": ["Existing device registration", "notification preferences", "session continuity"],
+        "historicalItems": ["Item 7 (device/native pass)", "Item 8 (iOS Firebase/APNs)"],
+        "extendedScope": ["Windows/MSIX native push (WNS)", "desktop obligations"],
+        "backendDependencies": "Frozen: WNS adapter, APNs, FCM, Web Push, delivery authority, device registry",
+        "migration": "Device registrations preserved; notification destinations aligned to canonical routes",
+        "enforcement": "Gates against per-platform forks of shared product semantics",
+        "testing": "Per-platform suites; REAL-DEVICE TESTING; notification delivery verification",
+        "certification": "Implementation + Product-Behavior + REAL-BOUNDARY (first chapter where real-boundary substantially lands)",
+        "founderCheckpoint": "Desktop experience direction",
+        "exitCondition": "All three platforms behave coherently with warranted platform-specific behaviour.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "449-486" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "C9/C10-OVERLAP", "text": "C9/C10 overlap rule (a founder correction applied at roadmap approval): C10 CONSTRUCTION ENTRY requires C0-C8 authorities stable; C10 CROSS-PLATFORM COMPLETION/CERTIFICATION requires the relevant C9 platform contracts proven. C9 may overlap C10 construction.", "source": "aura_final/docs/DECISIONS.md", "lines": "38" },
+        { "id": "SUPPORTSCREEN", "text": "SupportScreen — ownership undetermined -> product disposition checkpoint. EXPLICITLY NOT ASSIGNED TO C9.", "source": "aura_final/docs/DECISIONS.md", "lines": "40" },
+        { "id": "REAL-BOUNDARY", "text": "Real-Boundary certification lands substantially at C9 (and at C10 for media scale). A lower layer passing never implies a higher one.", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "590, 594" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "OPEN — NOT STARTED",
+        "freshnessBasis": "(4) issuance evidence only; no later explicit transition exists",
+        "evidence": [
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "19", "quote": "Frontend implementation (C2–C11) | NOT STARTED" },
+          { "source": "aura_final/docs/NEXT_WORK.md", "lines": "100", "quote": "C9 Cross-Platform | blocked until C4 + C5 (may overlap C10)" }
+        ]
+      },
+      "majorImplementationCompleted": [
+        { "item": "NONE recorded as RC-C9 chapter work." }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Entire chapter: WNS native Windows notifications, desktop lifecycle, drag/drop, clipboard, file handling, keyboard, windowing, background/foreground, active realtime continuity, deep links, iOS/Android native notification presentation", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "462" },
+        { "obligation": "Drag/drop is jointly owned C5 + C9", "source": "aura_final/docs/NEXT_WORK.md", "lines": "117" },
+        { "obligation": "3 G5 state-primitive sites assigned to C9", "source": "aura_final/docs/DECISIONS.md", "lines": "105" },
+        { "obligation": "C4 certification is only partial for Real-Boundary because native delivery lands in C9", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "254" },
+        { "obligation": "C6 certification is only partial for Real-Boundary because device testing lands in C9", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "348" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C4 (native notification presentation)", "RC-C5 (content intake / drag-drop)"],
+        "unlocks": ["RC-C11 (with the rest)"],
+        "overlapRule": "Platform branches parallel after shared semantics are frozen. C9 may overlap C10 construction — but C10 cross-platform completion/certification requires the relevant C9 contracts proven.",
+        "consumedFrozenDecisions": ["Capability-Adaptive Experience", "Content Intake", "FD-1/FD-2", "FD-13"],
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "453, 455, 482, 486" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 449-486)",
+        "aura_final/docs/frontend-discovery/CAPABILITY_ADAPTIVE_EXPERIENCE_FROZEN.md",
+        "aura_final/docs/frontend-discovery/CONTENT_INTAKE_RESOLUTION_AUTHORITY_FROZEN.md"
+      ],
+      "evidencedFindingRelationships": [
+        { "finding": "F071", "title": "Native accept/reject defect", "state": "BLOCKED", "note": "'Shared code fixed (509230a RC-A, dfc9027 RC-B); released binaries predate both. Remains: Founder-triggered store release.' Not explicitly attributed to RC-C9 by any governed document, but it is a native/platform obligation.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F072", "title": "Native ring shows individual not group", "state": "OPEN", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F073", "title": "Late/missing 4th video frame", "state": "PARTIALLY_VALIDATED", "note": "Explicitly corrected: observed in browser too, NOT native-only; root cause unknown.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F012", "title": "Drag/drop", "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "note": "DropTarget/onDragDone present at conversation_screen:960, never exercised live. Relates to the C5+C9 joint drag/drop obligation.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "UNASSIGNED_SURFACE", "text": "SupportScreen was deliberately NOT assigned to C9 and remains an ownership-undetermined product disposition checkpoint.", "sources": [ { "source": "aura_final/docs/DECISIONS.md", "lines": "40" }, { "source": "aura_final/docs/NEXT_WORK.md", "lines": "114" } ] },
+        { "type": "ENVIRONMENTAL_CONSTRAINT", "text": "The AppModule smoke boot cannot run on Windows/ARM64 (no Prisma engine) — documented as environmental, not a regression. Relevant to any platform certification claim made from this machine.", "source": "aura_final/docs/HANDOFF.md", "lines": "45" },
+        { "type": "PRECONDITION_UNMET", "text": "C9's own dependencies (C4 and C5) are respectively not-started and hard-gated closed, so no part of C9 can currently enter under the declared sequencing.", "source": "aura_final/docs/NEXT_WORK.md", "lines": "100" }
+      ]
+    },
+    {
+      "id": "RC-C10",
+      "historicalName": "LIVE (CROSS-REPOSITORY)",
+      "governingPurpose": "Build Live as a governed MODE/STATE of an owning Thread or Space. THIS IS A CROSS-REPOSITORY CONSTRUCTION CHAPTER — NOT A FRONTEND PHASE. Backend construction must not be hidden inside it.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "495-498" },
+      "originalScope": {
+        "publicFirstInheritance": "A public communication context first; institutional official participation follows its own governed authority. Do not treat Live as a separate generic broadcast product, and do not market future capability as current.",
+        "governingInvariant": "LIVE MUST NOT CREATE TEMPORARY VERSIONS OF AUTHORITIES ALREADY SCHEDULED FOR RECONSTRUCTION. (FROZEN 2026-08-15)",
+        "productDependencies": {
+          "C3 Navigation/IA": "Live is a governed state of its owning Thread/Space — it consumes canonical navigation, contextual ownership, deep links, surface ownership and acting-context navigation. NO TEMPORARY LIVE NAVIGATION.",
+          "C4 Attention": "FD-5 freezes Live attention: audience eligibility does not ring · invited speakers may be interrupted · actionable invitations resolve · attention belongs to the originating Thread/Space · NO GENERIC CALLS/LIVE INBOX. NO TEMPORARY LIVE NOTIFICATION PATH.",
+          "C5 Composition/Intake": "Governed questions, continuing discussion, replay/content relationships and surrounding communication MUST NOT be built on composers already authorised for demolition."
+        },
+        "backendConstructionRequired": [
+          { "concern": "Role/stage vocabulary (PUBLIC_STAGE, HOST/CO_HOST/MODERATOR/SPEAKER/PARTICIPANT/LISTENER/OBSERVER, hand-raise, per-track publish)", "state": "already modelled" },
+          { "concern": "PUBLIC_STAGE consumption", "state": "declared but unconsumed" },
+          { "concern": "Go-live authority", "state": "missing" },
+          { "concern": "Public observation (distinct from active media participation)", "state": "missing" },
+          { "concern": "Audience scale (SFU/broadcast topology)", "state": "missing" },
+          { "concern": "Live attention/interaction", "state": "missing" },
+          { "concern": "Replay-as-product", "state": "missing" }
+        ],
+        "clientConstruction": "Go Live flow (GO LIVE -> CONFIRM VISIBILITY/PARTICIPATION -> CONFIRM RECORDING -> CONFIRM HOST/SPEAKER SETUP -> START) · visibility · speaker/audience state · hand raise · host/moderator controls (progressive, never in a listener's UI) · questions · reactions · recording state · replay · attention · post-live continuity",
+        "boundaries": "Not a Meeting · not an Institution Room (Option C rejected) · not a standalone product (Option B rejected) · NO FOURTH LIVE SURFACE",
+        "twoExitGates": {
+          "constructionExit": "Live works end-to-end from a governed Thread/Space with continuity preserved after it ends, consuming canonical navigation, attention and composition — NO TEMPORARY AUTHORITIES ANYWHERE.",
+          "crossPlatformCompletion": "Required C9 platform contracts proven (MSIX native notifications · desktop lifecycle · realtime foreground/background continuity · responsive presentation · deep links · platform media behaviour · semantic mobile/web/MSIX parity · real-device behaviour)."
+        },
+        "openCheckpoints": ["Live moderation policy", "audience-scale topology/provider (provider independence preserved; not frozen)", "Thread vs Space Live differences if material"],
+        "certification": "Architecture + Implementation + Product-Behavior + Cross-System + Real-Boundary (media scale) + Founder Acceptance",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "490-556" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "FD-5", "text": "LIVE IS a governed public/stage participation STATE of an appropriate owning Thread or Space. LIVE is NOT a standalone generic broadcast product, another Meeting, an expanded Institution Room, or a fourth disconnected realtime surface. Going Live must never orphan the conversation from its source context.", "source": "aura_final/docs/frontend-discovery/FD5_LIVE_THREAD_SPACE_FROZEN.md", "lines": "12-23" },
+        { "id": "FD-5-BACKEND-CORRECTION", "text": "Discovery correction preserved: PUBLIC_STAGE, participant roles, hand-raise and per-track publish state already exist; PUBLIC_STAGE is declared but NOT operationally consumed. 'The vocabulary exists; the mechanism does not.' The earlier claim that the backend had no speaker/audience model is WITHDRAWN.", "sources": [ { "source": "aura_final/docs/frontend-discovery/FD5_LIVE_THREAD_SPACE_FROZEN.md", "lines": "26-29" }, { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "530" } ] },
+        { "id": "LIVE-ORIGINATION-CORRECTION", "text": "FOUNDER-FROZEN 2026-08-17: LIVE IS NOT SOMETHING A USER CREATES. LIVE IS SOMETHING AN EXISTING REALTIME HUMAN INTERACTION DELIBERATELY BECOMES. ORIGINATION IS CONTEXTUAL. DISCOVERY IS GLOBAL. NO ACTIVE REALTIME INTERACTION = NO GO LIVE ORIGINATION. Supersedes the 2026-08-16/17 conversation-menu Go Live implementation and the legacy standalone Live lobby. End Live != End Call; viewers are OBSERVER-role session participants, never Conversation parties.", "source": "aura_final/docs/2026-08-17-live-origination-correction.md", "lines": "1-6, 10-19, 22-40" },
+        { "id": "LIVE-STATE-MODEL", "text": "Stored as RealtimeSession.liveState: NORMAL -> LIVE_PREPARING -> LIVE -> ENDING -> NORMAL. liveState is lifecycle truth; accessMode is participation policy (kept in sync — PUBLIC_STAGE while LIVE — never collapsed into one concept).", "source": "aura_final/docs/2026-08-17-live-origination-correction.md", "lines": "26-31" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "CONFLICTING_CURRENT_STATE",
+        "note": "Stage 0 does not resolve this. Two evidenced readings coexist and neither is dismissible.",
+        "candidates": [
+          {
+            "candidate": "OPEN — NOT STARTED as a governed chapter",
+            "evidence": [
+              { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "19", "quote": "Frontend implementation (C2–C11) | NOT STARTED" },
+              { "source": "aura_final/docs/NEXT_WORK.md", "lines": "101", "quote": "C10 LIVE (cross-repository) | blocked until C0–C8 all stable" },
+              { "source": "aura_final/docs/NEXT_WORK.md", "lines": "121", "quote": "Explicitly NOT next: Live (C10) · Item 17 (C11) · any demolition · any route change" }
+            ]
+          },
+          {
+            "candidate": "SUBSTANTIALLY CONSTRUCTED OUTSIDE THE CHAPTER FRAME — Live origination, viewer path, role authority, counts and state model are implemented, founder-frozen and partly live-verified, while C0-C8 are not all stable",
+            "evidence": [
+              { "source": "aura_final/docs/2026-08-17-live-origination-correction.md", "lines": "1-6", "quote": "Date: 2026-08-17 · Status: FOUNDER-FROZEN · Supersedes: the 2026-08-16/17 conversation-menu Go Live implementation and the legacy standalone Live lobby." },
+              { "source": "git log aura-backend", "quote": "88179ee feat(realtime): Live is a state an interaction becomes — never a creation; d3981e5 fix(realtime): PUBLIC_STAGE broadcasts are viewable by any authenticated user; fb9bfa1 feat(realtime): GO LIVE public viewer path — admission + discovery (task #172)" },
+              { "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798, "quote": "Live — architecture correction: F074 PV · F075 INLC · F076 RET · F077 RET · F078 INLC · F079 INLC · F080 PV · F081 PV · F082 INLC · F083 INLC · F084 PV · F085 INLC · F086 INLC · F087 INLC · F088 INLC" }
+            ]
+          }
+        ],
+        "stage0Position": "Recorded as conflicting. Resolution requires founder authority (whether Live construction was authorised outside C10 sequencing, or whether C10 must be re-entered). Stage 0 may not promote, demote or reconcile it."
+      },
+      "majorImplementationCompleted": [
+        { "item": "Live origination corrected to in-call state escalation only, with the single origination door inside the active call (realtime room -> More panel), behind the FD-5 ritual", "source": "aura_final/docs/2026-08-17-live-origination-correction.md", "lines": "42-45" },
+        { "item": "Backend fence live-verified: STANDALONE create -> 400; retired conversation-menu Go Live route live-verified 404 (F076, F077 both EXPLICITLY_RETIRED)", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "item": "PUBLIC_STAGE consumption exists in production paths (d3981e5), contradicting the roadmap's 'declared but unconsumed' state row", "source": "git log aura-backend (d3981e5)" }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "Live engagement F089-F096 — watch-oriented viewer experience · Live chat · reactions · raise hand · stage promotion/demotion · viewer presence atmosphere · Live moderation · recover FD-5 §§8-10 rather than reinvent. 'Authority exists ... Nothing implemented.'", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "obligation": "Live public acquisition F097-F107 — public home surfaces real Live, bounded preview, auth wall, one canonical Live truth for both doors. 'Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059-F070).'", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "obligation": "Live scale F108-F111 — mesh bounded (ceiling NEVER MEASURED), mesh != long-term architecture (no enforcement), SFU assessment not written, assessment scope not written", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "obligation": "Open founder checkpoints: Live moderation policy · audience-scale topology/provider · Thread vs Space Live differences if material", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "542" },
+        { "obligation": "Whether Live ever needs a plural/contextual form (C0 language obligation handed to C10)", "source": "aura_final/docs/DECISIONS.md", "lines": "128" },
+        { "obligation": "Replay-as-product, go-live authority formalization, and Live attention/interaction all recorded as backend-missing", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "524-528" },
+        { "obligation": "Cross-platform completion gate: required C9 platform contracts proven", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "554" }
+      ],
+      "relationshipsAndDependencies": {
+        "constructionEntry": "All Live-consumed authorities stable — C0, C1, C2, C3, C4, C5, C6, C7, C8",
+        "crossPlatformCompletion": "Additionally requires the relevant C9 platform contracts proven; C9 may overlap C10 construction where its own dependencies permit",
+        "unlocks": ["RC-C11"],
+        "consumedFrozenDecisions": ["FD-5 (all eight rulings)", "Threads/Spaces", "FD-3", "FD-4", "FD-1", "FD-11", "Capability-Adaptive Experience", "FD-13"],
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "513-516, 556" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 490-556)",
+        "aura_final/docs/frontend-discovery/FD5_LIVE_THREAD_SPACE_FROZEN.md",
+        "aura_final/docs/frontend-discovery/LIVE_THREAD_SPACE_ARCHITECTURE_OPTIONS.md",
+        "aura_final/docs/2026-08-17-live-origination-correction.md"
+      ],
+      "evidencedFindingRelationships": [
+        { "findingRange": "F074-F088", "title": "Live — architecture correction", "states": { "F074": "PARTIALLY_VALIDATED", "F075": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "F076": "EXPLICITLY_RETIRED", "F077": "EXPLICITLY_RETIRED", "F078": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "F079": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "F080": "PARTIALLY_VALIDATED", "F081": "PARTIALLY_VALIDATED", "F082": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "F083": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "F084": "PARTIALLY_VALIDATED", "F085": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "F086": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "F087": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "F088": "IMPLEMENTED_NOT_LIVE_CERTIFIED" }, "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "findingRange": "F089-F096", "title": "Live — engagement", "state": "ALL OPEN", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "findingRange": "F097-F107", "title": "Live — public acquisition", "state": "ALL OPEN", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "findingRange": "F108-F111", "title": "Live — scale", "states": { "F108": "PARTIALLY_VALIDATED", "F109": "PARTIALLY_VALIDATED", "F110": "OPEN", "F111": "OPEN" }, "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "note": "These attributions are to the LIVE SUBJECT MATTER, which is C10's chartered domain. No governed document states 'F074 is owned by C10'. The relationship is subject-matter-evidenced, not ownership-declared." }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "GOVERNING_INVARIANT_UNDER_PRESSURE", "text": "The frozen invariant 'LIVE MUST NOT CREATE TEMPORARY VERSIONS OF AUTHORITIES ALREADY SCHEDULED FOR RECONSTRUCTION' coexists with implemented Live navigation/discovery, viewer admission and Live counts built while C3's successor obligations, C4 and C5 are respectively amended, not-started and hard-gated. Stage 0 records the tension; it does not adjudicate whether any temporary authority was created.", "sources": [ { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "502-511" }, { "source": "aura_final/docs/2026-08-17-live-origination-correction.md", "lines": "1-19" } ] },
+        { "type": "SUPERSEDED_BACKEND_STATE_ROW", "text": "The roadmap records 'PUBLIC_STAGE consumption — declared but unconsumed' and 'Go-live authority — missing'. Backend commits fb9bfa1, d3981e5 and 88179ee evidence both being consumed/built.", "sources": [ { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "523-524" }, { "source": "git log aura-backend" } ] },
+        { "type": "UNMEASURED_RISK", "text": "F108 'mesh bounded' is PARTIALLY_VALIDATED with the ceiling NEVER MEASURED, and F109 'mesh != long-term architecture' has no enforcement — while the roadmap lists 'Audience scale (SFU/broadcast topology)' as missing backend construction and gates against peer-to-peer audience scaling.", "sources": [ { "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 }, { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "526, 544" } ] },
+        { "type": "UNRECORDED_IN_GOVERNED_DOCS", "text": "Neither CURRENT_STATE.md nor DECISIONS.md records the 2026-08-17 Live origination correction as a chapter-state event for C10. The only governed home for it is the standalone dated document.", "source": "aura_final/docs/2026-08-17-live-origination-correction.md", "lines": "1-6" }
+      ]
+    },
+    {
+      "id": "RC-C11",
+      "historicalName": "ITEM 17: INTEGRATED RELEASE-CLIENT CERTIFICATION",
+      "governingPurpose": "The integrated Release Client certification / release gate. Item 17 is unchanged, undiminished, and NOT a construction dumping ground.",
+      "governingPurposeProvenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "560-564" },
+      "originalScope": {
+        "entryConditionsAllMustBeTrue": [
+          "C0-C9 complete to their FD-13 definition of done (authority + migration + gate + regression + certification)",
+          "C10 complete OR explicitly excluded from this release candidate by founder decision",
+          "Backend frozen baseline intact; approved Live additions certified where included",
+          "Cross-platform behaviour verified on mobile, web and MSIX",
+          "Real-device / native testing complete",
+          "Integrated end-to-end journeys pass",
+          "Real-Boundary certification complete",
+          "Founder Product Acceptance readiness",
+          "A Release Client candidate exists"
+        ],
+        "prohibition": "DO NOT START until entry conditions hold. DO NOT REDEFINE.",
+        "certificationOwnership": "Item 17 / Release Gate lands at C11 ONLY. Founder Product Acceptance is per checkpoint, consolidated at C11.",
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "560-594" }
+      },
+      "keyFrozenOutcomes": [
+        { "id": "C11-1", "text": "Item 17 is a certification/release gate, not a construction chapter, and must not be redefined.", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "562, 578" },
+        { "id": "C11-2", "text": "PD-1 Platform Administration and PD-2 Authentication & Account Entry are product disposition checkpoints that must be resolved BEFORE C11.", "sources": [ { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "20-21" }, { "source": "aura_final/docs/NEXT_WORK.md", "lines": "62-65" } ] },
+        { "id": "C11-3", "text": "A lower certification layer passing never implies a higher one.", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "594" }
+      ],
+      "currentEvidencedStatus": {
+        "state": "OPEN, NOT STARTED",
+        "freshnessBasis": "(3) maintained current-state artifact; consistent with (4) issuance evidence",
+        "evidence": [
+          { "source": "aura_final/docs/CURRENT_STATE.md", "lines": "22", "quote": "Item 17 — Release Gate | OPEN, NOT STARTED" },
+          { "source": "aura_final/docs/NEXT_WORK.md", "lines": "102, 121", "quote": "C11 Item 17 | blocked until all chapters. Explicitly NOT next: ... Item 17 (C11)" }
+        ]
+      },
+      "majorImplementationCompleted": [
+        { "item": "NONE, and none is expected — the chapter is a gate, not construction." }
+      ],
+      "explicitlyRemainingObligations": [
+        { "obligation": "All nine entry conditions", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "566-576" },
+        { "obligation": "PD-1 Platform Administration disposition (11 files / 34 G5 sites) — no owning chapter in the approved roadmap", "source": "aura_final/docs/NEXT_WORK.md", "lines": "62-65" },
+        { "obligation": "PD-2 Authentication & Account Entry disposition (2 files / 3 sites) — STRUCTURAL DISPOSITION STILL OPEN", "sources": [ { "source": "aura_final/docs/NEXT_WORK.md", "lines": "62-65" }, { "source": "aura_final/docs/DECISIONS.md", "lines": "214" } ] },
+        { "obligation": "SupportScreen ownership disposition", "source": "aura_final/docs/DECISIONS.md", "lines": "40" },
+        { "obligation": "Consolidated Founder Product Acceptance", "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "591" }
+      ],
+      "relationshipsAndDependencies": {
+        "dependsOn": ["RC-C0 through RC-C9 complete to FD-13", "RC-C10 complete or founder-excluded", "PD-1", "PD-2"],
+        "unlocks": ["Release"],
+        "provenance": { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "566-576" }
+      },
+      "canonicalDocuments": [
+        "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 560-594)",
+        "aura_final/docs/frontend-discovery/FRONTEND_CERTIFICATION_AND_FOUNDER_GATES.md"
+      ],
+      "evidencedFindingRelationships": [
+        { "finding": "F115", "title": "Non-shrinking register", "state": "OPEN", "note": "'This audit establishes it.'", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F119", "title": "Implemented capabilities must not vanish from reporting", "state": "OPEN", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "finding": "F120", "title": "Every item reaches terminal state", "state": "OPEN", "note": "'F115/F119/F120 are three angles of one governance obligation — keep all three but treat them as a single closure gate.' They are governance-closure findings, not attributed to C11 by any governed document.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 }
+      ],
+      "contradictionsOrGaps": [
+        { "type": "ENTRY_CONDITION_UNREACHABLE_AS_SEQUENCED", "text": "Entry condition 1 requires C0-C9 complete to FD-13. C4, C6, C8 and C9 are not started; C5 is hard-gated closed; C7 is amended-but-not-started; C10 is in a conflicting state. No entry condition is currently satisfiable.", "sources": [ { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "566-576" }, { "source": "aura_final/docs/DECISIONS.md", "lines": "382-385" } ] },
+        { "type": "GOVERNANCE_RISK_RECORDED", "text": "The non-shrinking rule adopted in the register — an item leaves only at LIVE_CERTIFIED, SUPERSEDED_BY_FOUNDER_RULING, or EXPLICITLY_RETIRED; implementation, green tests and deployment do NOT remove it — is the standard any C11 accounting must meet, and it currently lives only in transcript evidence, not in a governed artifact.", "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 },
+        { "type": "UNCHARTERED_CAPABILITY_IN_THE_RELEASE", "text": "Long-Form Publishing / Articles was recorded as having NO CHAPTER NUMBER ASSIGNED and awaiting founder dependency placement, yet Articles shipped (backend 3631e3a 'Aura Articles: durable long-form publication is real'; F024 'Article as 4th domain' LIVE_CERTIFIED). A release gate that enumerates C0-C10 has no declared home for it.", "sources": [ { "source": "aura_final/docs/DECISIONS.md", "lines": "312" }, { "source": "transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl", "line": 31798 }, { "source": "git log aura-backend (3631e3a)" } ] }
+      ]
+    }
+  ],
+  "crossChapterContradictionsAndGaps": [
+    {
+      "id": "X1",
+      "type": "STALE_CURRENT_STATE_ROWS",
+      "text": "CURRENT_STATE.md carries a status table dated 2026-08-15 (lines 16-22) that is contradicted by appended 2026-08-16 entries in the same file (lines 128, 141, 143). Rows 18 and 19 in particular ('C2 READY / NOT STARTED', 'Frontend implementation (C2-C11) NOT STARTED') are stale. Preserved here rather than corrected.",
+      "source": "aura_final/docs/CURRENT_STATE.md",
+      "lines": "16-22, 128, 141, 143"
+    },
+    {
+      "id": "X2",
+      "type": "WORK_OUTSIDE_THE_CHAPTER_FRAME",
+      "text": "A large body of founder-directed work executed 2026-08-16..2026-08-18 (Conversation System, Invitation System, Articles/Long-Form Publishing, realtime transport and lifecycle repair, Live origination correction, §12 Rich Content) is governed by its own canons and stage tables rather than by the RC-C0..C11 chapter frame. The roadmap has no record of authorizing, absorbing or excluding any of it. This is the single largest structural gap Stage 0 found.",
+      "sources": [
+        { "source": "aura_final/docs/DECISIONS.md", "lines": "334-385" },
+        { "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "lines": "1-10" },
+        { "source": "aura_final/docs/2026-08-17-live-origination-correction.md", "lines": "1-6" }
+      ]
+    },
+    {
+      "id": "X3",
+      "type": "NAMESPACE_COLLISION",
+      "text": "Two design documents describe the §12 (RIC) stage set differently. The FROZEN §12 contract's own §16 defines C1 Content-truth · C2 Reference index/retention · C3 Access context at ingestion · C4 Canonical ingestion convergence · C5 Governed delivery. The later workflow design document describes '§12's C1/C2/C3 ... C3 Storage adapter, C4 Institution-post media, C5 Message media, C7 Visibility'. These do not match. Stage 0 does not resolve which naming is intended; the FROZEN contract is the one that carries freeze authority.",
+      "sources": [
+        { "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "lines": "557-572" },
+        { "source": "aura_final/docs/portfolio/AURA_DYNAMIC_RECONSTRUCTION_WORKFLOW.md", "lines": "31-33" }
+      ]
+    },
+    {
+      "id": "X4",
+      "type": "NO_CANONICAL_REGISTER_ARTIFACT",
+      "text": "No canonical F-register or WG-register artifact exists in any repository. Governed markdown contains only 27 distinct F-ids; the register survives in session transcripts, where F001-F143 appear with exactly one gap (F097 missing from governed docs but present in transcripts). Every finding-state citation in this artifact therefore rests on transcript provenance, not on a governed register.",
+      "sources": [
+        { "source": "aura_final/docs/portfolio/AURA_DYNAMIC_RECONSTRUCTION_WORKFLOW.md", "lines": "18-22" },
+        { "source": "aura_final/docs/portfolio/run/stage0-2026-08-18/00-evidence/extraction-stats.json" }
+      ]
+    },
+    {
+      "id": "X5",
+      "type": "OWNERSHIP_VOIDS",
+      "text": "Four obligations have NO owning chapter in the approved roadmap: PD-1 Platform Administration, PD-2 Authentication & Account Entry, SupportScreen, and (per the 2026-08-16 gaps) Settings/Personal Controls and Long-Form Publishing/Articles. The Availability Off control's implementation owner is explicitly UNASSIGNED.",
+      "sources": [
+        { "source": "aura_final/docs/DECISIONS.md", "lines": "40, 308-312" },
+        { "source": "aura_final/docs/NEXT_WORK.md", "lines": "62-65, 114" }
+      ]
+    },
+    {
+      "id": "X6",
+      "type": "DEPENDENCY_CHAIN_STALLED",
+      "text": "The declared sequence is C0 -> C1 -> {C2 || C3} -> {C4 || C5 || C6} -> {C7 || C8} -> C10 -> C11 with C9 overlapping. C0, C1, C2 and C3 are closed. The entire third tier (C4, C5, C6) is not-started or hard-gated, which by the declared rules leaves C7, C8, C9, C10 and C11 all unreachable. Every remaining chapter is therefore downstream of the C4 hard gate.",
+      "sources": [
+        { "source": "aura_final/docs/NEXT_WORK.md", "lines": "88-102" },
+        { "source": "aura_final/docs/DECISIONS.md", "lines": "382-385" }
+      ]
+    },
+    {
+      "id": "X7",
+      "type": "MEETINGS_PROTECTION_HELD",
+      "text": "Meetings protection is asserted consistently across four independent authorities (roadmap C6 PRESERVE list, C0-8, C3 closeout, §12 §13 and Amendment 1 §D) and is affirmatively evidenced by F114 LIVE_CERTIFIED ('No Meetings file modified in any commit this session'). This is recorded as a preserved boundary, not a gap.",
+      "sources": [
+        { "source": "aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md", "lines": "330" },
+        { "source": "aura_final/docs/DECISIONS.md", "lines": "109-111" },
+        { "source": "aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md", "lines": "508-513" },
+        { "source": "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md", "lines": "254-274" }
+      ]
+    }
+  ],
+  "openQuestionsForLaterStages": [
+    "Whether the 2026-08-16..18 out-of-chapter work (Conversation, Invitation, Articles, Live, Rich Content) is inside, alongside, or superseding the RC-C0..C11 frame is UNKNOWN and requires founder authority. Stage 0 records both readings.",
+    "Whether the C4 hard gate on C5 was intended to also gate the §12 Rich Content chapter's composition/intake-adjacent stages is NOT_RECORDED.",
+    "Whether RC-C6's Meetings presentation convergence obligation is affected by the Conversation realtime surface becoming first-class is NOT_RECORDED.",
+    "Whether the Long-Form Publishing capability now shipped acquires a chapter number, or is certified under C11 without one, is NOT_RECORDED.",
+    "F097 is absent from the governed-document corpus and present only in transcripts; whether it is a real finding or a numbering artefact is UNKNOWN at Stage 0."
+  ]
+}
