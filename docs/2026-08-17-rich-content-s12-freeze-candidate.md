@@ -1,7 +1,38 @@
-# FINAL §12 RICH CONTENT & INTERACTION CONTRACT — READY FOR FOUNDER FREEZE
+# §12 RICH CONTENT & INTERACTION CONTRACT — **FROZEN**
 
-**Status:** READY FOR FOUNDER FREEZE. F138 empirically resolved (§2); no
-outstanding decisions; no unresolved contradiction.
+**Status:** ⛔ **FROZEN BY FOUNDER RULING 2026-08-17.** This is the governing
+implementation contract for the Rich Content & Interaction chapter.
+
+**Freeze semantics:** settled architecture is not reopened because implementation
+becomes inconvenient. If implementation uncovers a genuine contradiction,
+security issue, destructive migration, or product decision, work **stops at that
+boundary and reports** rather than silently changing doctrine.
+
+**Frozen dependency graph:**
+
+```
+INGESTION TRUTH → CONTENT VERIFICATION → REFERENCE/RETENTION INTEGRITY
+→ GOVERNED DELIVERY (C5) → PROCESSING/DERIVATIVES → RICH PRESENTATION
+```
+
+**Frozen storage invariants (F138):**
+
+> RESTRICTED OR PRIVATE BYTES MUST NEVER BE RETRIEVABLE MERELY THROUGH
+> POSSESSION OF THEIR STORAGE KEY OR A HISTORICAL DELIVERY URL.
+>
+> VISIBILITY IS GOVERNANCE STATE, NOT STORAGE TOPOLOGY.
+>
+> KNOWING WHERE BYTES ARE STORED MUST NEVER CONSTITUTE AUTHORIZATION TO READ THEM.
+
+PUBLIC means Aura *presently authorizes* public delivery — never that Aura has
+permanently surrendered governance of the bytes.
+
+**Frozen competitive standard:** a person or institution accustomed to WhatsApp,
+LinkedIn, Teams, Facebook or X must not experience Aura as technologically old,
+awkward, or materially poorer in ordinary content interaction. "Works" is not the
+bar, and minimizing code change is not a reason to miss it.
+
+**F126 and F138 remain separately visible findings and must not be merged.**
 **Date:** 2026-08-17
 **Supersedes:** the §12 PROPOSED contract (same date), which remains the record of
 the reasoning this document ratifies.
