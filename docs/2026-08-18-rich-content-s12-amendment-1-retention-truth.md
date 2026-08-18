@@ -168,6 +168,72 @@ documents, embedded Media, and future rich composition structures.
   reference truth** through the shared Rich Content lifecycle.
 - F141 belongs inside this chapter and must inform C2/C3 producer/reference design.
 
+### D-5.1 — ARTICLE REVISION MEDIA RETENTION · **RULED 2026-08-18**
+
+Resolves the open policy question D-5 deliberately refused to settle in code.
+
+> **A retained `ArticleRevision` DOES confer retention on the Media required
+> to faithfully reconstruct that revision.**
+
+**Governing doctrine (frozen):**
+
+> A durable authored revision must remain **faithfully reconstructable** for
+> the duration of that revision's authoritative retention.
+
+Therefore:
+
+```
+ArticleRevision
+  → owns/records the authored state at that historical point
+  → that state INCLUDES the Media necessary to reconstruct it
+  → those Media relationships remain retained while the revision remains authoritative
+  → when the revision is legitimately released/deleted per its OWN lifecycle,
+    its media references may release
+  → physical storage deletion still independently passes the storage-object
+    retention authority (level 2, F143)
+```
+
+**The distinction this does NOT collapse.** Arbitrary historical URLs do not
+gain permanent retention. Presentation history is still not retention
+authority (D-2 stands unchanged — a delivered notification depicting an old
+avatar confers nothing). What confers retention here is a **durable
+authored record Aura deliberately preserves**, not the incidental survival of
+a URL in a payload.
+
+**Legacy content:** parsing/scanning remains permitted for discovery,
+migration, reconciliation and backfill, and remains prohibited as permanent
+constitutional retention authority. Unchanged from D-5.
+
+**Forward architecture:**
+
+```
+revision creation
+  → authored-state snapshot
+  → STRUCTURED Media-reference snapshot
+  → authoritative revision retention
+```
+
+A historical revision preserves **both** the authored content and the
+structured reference set needed to reconstruct that authored state.
+
+**Implementation status — recorded, NOT executed.** C2 is stopped at its
+authorised boundary and was not reopened to satisfy this ruling. What already
+exists (`dd025f5`): `ArticleRevisionMedia` captures the structured reference
+snapshot at revision creation, and the retention gate honours it as a
+fail-safe KEEP — so nothing is at risk in the interim. What this ruling now
+**obliges and defers**:
+
+1. Revision references become first-class in `ContentReference` (they were
+   deliberately withheld pending exactly this decision), with a reference
+   type/role that is derivable and reconcilable.
+2. Release of revision media follows the **revision's** lifecycle, not the
+   article's.
+3. Reconstruction fidelity — not mere non-deletion — becomes the stated
+   completion test.
+
+This ruling is **canonical input to subsequent implementation planning** and
+is owned by the portfolio layer, not by a resumed C2.
+
 ### D-6 — PRODUCER WIRING · **AUTHORIZED, SEQUENCED**
 
 Not blind immediate wiring. Required order:
