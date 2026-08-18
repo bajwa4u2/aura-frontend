@@ -112,7 +112,16 @@ for (const [n, v] of [['doctrine-index.json', doctrine], ['validation-debt.json'
   if (!v) failures.push(`${n} missing`)
 }
 
-const count = (v) => (Array.isArray(v) ? v.length : v ? Object.keys(v).length : 0)
+// Artifacts wrap their payload under differing keys; count the payload ARRAY
+// rather than the wrapper's key count, which silently under-reports.
+const count = (v) => {
+  if (!v) return 0
+  if (Array.isArray(v)) return v.length
+  for (const k of ['records', 'items', 'obligations', 'doctrines', 'boundaries', 'index']) {
+    if (Array.isArray(v[k])) return v[k].length
+  }
+  return 0
+}
 
 const result = {
   generatedFor: dir,
@@ -135,9 +144,9 @@ const result = {
     rowsWithoutProvenance: missingProvenance,
     wgReconstructed: wgReconstructed.length,
     rcChaptersCovered: rcCovered.length,
-    doctrinesIndexed: count(doctrine && (doctrine.items || doctrine.doctrines || doctrine)),
-    validationObligations: count(validation && (validation.items || validation.obligations || validation)),
-    protectedBoundaries: count(boundaries && (boundaries.items || boundaries.boundaries || boundaries)),
+    doctrinesIndexed: count(doctrine),
+    validationObligations: count(validation),
+    protectedBoundaries: count(boundaries),
   },
   provenanceProfile: accounting.findings.byProvenanceStrength,
   warnings,
