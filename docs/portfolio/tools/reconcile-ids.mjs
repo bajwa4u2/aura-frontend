@@ -26,6 +26,12 @@ if (!dir) { console.error('usage: node reconcile-ids.mjs <evidenceDir> <selfSess
 const recs = readFileSync(join(dir, 'mentions.jsonl'), 'utf8')
   .split(/\r?\n/).filter(Boolean).map((l) => JSON.parse(l))
 
+// FOUNDER RULINGS (2026-08-18 Stage 0 closeout). Consumed rather than hand-edited
+// into artifacts, so ratification stays auditable and re-derivable from evidence.
+let RULINGS = { wg: { reservedUnissued: [] } }
+try { RULINGS = JSON.parse(readFileSync(join(dir, 'stage0-rulings.json'), 'utf8')) } catch {}
+const RESERVED = new Set(((RULINGS.wg && RULINGS.wg.reservedUnissued) || []).map((r) => r.id))
+
 // Sources authored BY this workflow-design effort, which cannot testify about
 // what the project historically issued.
 const isSelfAuthored = (r) =>
@@ -60,6 +66,10 @@ const rows = [...byId.values()].map((e) => ({
   issuanceHintMentions: e.issueHints,
   classification:
     e.external === 0 ? 'QUARANTINED_SELF_AUTHORED_ONLY'
+    // Founder ruling: the identifier appears in the corpus but no proposition
+    // was ever issued under it. It stays VISIBLE so its historical appearance
+    // is explained, and is excluded from every issued total.
+    : RESERVED.has(e.id) ? 'RESERVED_UNISSUED'
     : e.external <= 2 ? 'ISSUED_WEAK_EVIDENCE'
     : 'ISSUED',
   provenanceStrength:
@@ -72,14 +82,15 @@ const rows = [...byId.values()].map((e) => ({
 const fRows = rows.filter((r) => r.id.startsWith('F'))
 const wgRows = rows.filter((r) => r.id.startsWith('WG'))
 
-const issuedF = fRows.filter((r) => r.classification !== 'QUARANTINED_SELF_AUTHORED_ONLY')
+const NOT_ISSUED = new Set(['QUARANTINED_SELF_AUTHORED_ONLY', 'RESERVED_UNISSUED'])
+const issuedF = fRows.filter((r) => !NOT_ISSUED.has(r.classification))
 const quarantinedF = fRows.filter((r) => r.classification === 'QUARANTINED_SELF_AUTHORED_ONLY')
 const issuedNums = issuedF.map((r) => parseInt(r.id.slice(1), 10)).sort((a, b) => a - b)
 const maxIssued = issuedNums.length ? issuedNums[issuedNums.length - 1] : 0
 const gaps = []
 for (let i = 1; i <= maxIssued; i++) if (!issuedNums.includes(i)) gaps.push(`F${String(i).padStart(3, '0')}`)
 
-const issuedWg = wgRows.filter((r) => r.classification !== 'QUARANTINED_SELF_AUTHORED_ONLY')
+const issuedWg = wgRows.filter((r) => !NOT_ISSUED.has(r.classification))
 const wgNums = issuedWg.map((r) => parseInt(r.id.slice(2), 10)).sort((a, b) => a - b)
 const wgMax = wgNums.length ? wgNums[wgNums.length - 1] : 0
 const wgGaps = []
@@ -110,6 +121,8 @@ const out = {
     evidencedOnlyInTranscripts: issuedF.filter((r) => r.inGovernedDocs === 0).length,
   },
   wg: {
+    identifierSpaceObservedThrough: wgRows.length ? wgRows[wgRows.length - 1].id : null,
+    reservedUnissued: wgRows.filter((r) => r.classification === 'RESERVED_UNISSUED').map((r) => r.id),
     issuedCount: issuedWg.length,
     highestIssuedId: wgMax ? `WG${String(wgMax).padStart(3, '0')}` : null,
     gapsWithinRange: wgGaps,
@@ -128,4 +141,7 @@ console.log(`gaps within range                  : ${gaps.length ? gaps.join(', '
 console.log(`provenance STRONG/MODERATE/WEAK    : ${out.findings.byProvenanceStrength.STRONG}/${out.findings.byProvenanceStrength.MODERATE}/${out.findings.byProvenanceStrength.WEAK}`)
 console.log(`evidenced in governed docs         : ${out.findings.evidencedInGovernedDocs}`)
 console.log(`evidenced ONLY in transcripts      : ${out.findings.evidencedOnlyInTranscripts}`)
-console.log(`\nISSUED WG                          : ${out.wg.issuedCount} (max ${out.wg.highestIssuedId}, gaps: ${wgGaps.length ? wgGaps.join(', ') : 'none'})`)
+console.log(`
+WG identifier space observed to    : ${out.wg.identifierSpaceObservedThrough}`)
+console.log(`WG RESERVED / UNISSUED             : ${out.wg.reservedUnissued.join(', ') || 'none'}`)
+console.log(`ISSUED WG                          : ${out.wg.issuedCount} (WG001-${out.wg.highestIssuedId})`)

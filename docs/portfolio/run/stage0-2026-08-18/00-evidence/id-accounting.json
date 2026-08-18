@@ -97,8 +97,12 @@
     "evidencedOnlyInTranscripts": 115
   },
   "wg": {
-    "issuedCount": 18,
-    "highestIssuedId": "WG018",
+    "identifierSpaceObservedThrough": "WG018",
+    "reservedUnissued": [
+      "WG018"
+    ],
+    "issuedCount": 17,
+    "highestIssuedId": "WG017",
     "gapsWithinRange": [],
     "weakEvidenceIds": [
       "WG003",
@@ -2738,7 +2742,7 @@
       "distinctExternalSources": 1,
       "stateHintMentions": 5,
       "issuanceHintMentions": 1,
-      "classification": "ISSUED",
+      "classification": "RESERVED_UNISSUED",
       "provenanceStrength": "MODERATE"
     }
   ]

@@ -23,12 +23,17 @@ const read = (p) => JSON.parse(readFileSync(join(dir, p), 'utf8'))
 const maybe = (p) => (existsSync(join(dir, p)) ? read(p) : null)
 
 const accounting = read('id-accounting.json')
+const rulings = maybe('stage0-rulings.json') || {}
 const failures = []
 const warnings = []
+const ratifications = []
+
 
 // ── expected universe, from the deterministic pass ──────────────────────────
-const issuedF = accounting.rows.filter((r) => r.id.startsWith('F') && r.classification !== 'QUARANTINED_SELF_AUTHORED_ONLY').map((r) => r.id)
-const issuedWG = accounting.rows.filter((r) => r.id.startsWith('WG') && r.classification !== 'QUARANTINED_SELF_AUTHORED_ONLY').map((r) => r.id)
+const NOT_ISSUED = new Set(['QUARANTINED_SELF_AUTHORED_ONLY', 'RESERVED_UNISSUED'])
+const issuedF = accounting.rows.filter((r) => r.id.startsWith('F') && !NOT_ISSUED.has(r.classification)).map((r) => r.id)
+const issuedWG = accounting.rows.filter((r) => r.id.startsWith('WG') && !NOT_ISSUED.has(r.classification)).map((r) => r.id)
+const reservedWG = accounting.rows.filter((r) => r.id.startsWith('WG') && r.classification === 'RESERVED_UNISSUED').map((r) => r.id)
 
 // ── reconstructed findings ──────────────────────────────────────────────────
 const batches = [1, 2, 3].map((n) => maybe(`findings-batch-${n}.json`))
@@ -93,6 +98,50 @@ else {
   if (wgMissing.length) failures.push(`WG COVERAGE VIOLATED — not reconstructed: ${wgMissing.join(', ')}`)
 }
 
+// ── FOUNDER RATIFICATION ASSERTIONS (2026-08-18 closeout) ───────────────────
+// These prove the ratified baseline rather than restating it.
+
+// F097 is ISSUED. Its prior apparent absence was a false negative and is
+// permanently superseded by the recovered issuance evidence.
+if (!issuedF.includes('F097')) failures.push('RATIFICATION VIOLATED — F097 must be ISSUED')
+else ratifications.push('F097 = ISSUED')
+if (!reconstructed.has('F097')) failures.push('RATIFICATION VIOLATED — F097 must be reconstructed')
+
+// The issued universe is exactly F001..F143, contiguous.
+if (issuedF.length !== 143) failures.push(`RATIFICATION VIOLATED — issued findings ${issuedF.length}, expected 143`)
+if (!accounting.findings.contiguous) failures.push('RATIFICATION VIOLATED — issued range must be contiguous')
+if (accounting.findings.gapsWithinRange.length) failures.push(`RATIFICATION VIOLATED — unexpected gaps: ${accounting.findings.gapsWithinRange.join(', ')}`)
+ratifications.push(`findings = ${issuedF.length}, range ${accounting.findings.identifierRange}, contiguous`)
+
+// WG018 is RESERVED / UNISSUED: visible in the evidence layer, excluded from
+// every issued total.
+if (issuedWG.length !== 17) failures.push(`RATIFICATION VIOLATED — issued WG ${issuedWG.length}, expected 17`)
+if (!reservedWG.includes('WG018')) failures.push('RATIFICATION VIOLATED — WG018 must be RESERVED_UNISSUED')
+if (issuedWG.includes('WG018')) failures.push('RATIFICATION VIOLATED — WG018 must not count as issued')
+if (!wgReconstructed.includes('WG018')) warnings.push('WG018 should remain VISIBLE in the WG artifact so its historical appearance is explained')
+ratifications.push(`WG issued = ${issuedWG.length} (WG001-WG017); reserved = ${reservedWG.join(', ')}`)
+
+// F064 and F113 remain two separate canonical findings. Duplicate evidence is an
+// annotation, never deletion authority.
+for (const id of ['F064', 'F113']) {
+  if (!reconstructed.has(id)) failures.push(`RATIFICATION VIOLATED — ${id} must remain a separate canonical finding`)
+}
+ratifications.push('F064 and F113 both present and independently reconciled')
+
+// The four contested states stay contested. Ratification preserves the
+// contradiction; it does not adjudicate it.
+for (const id of ['F043', 'F051', 'F122']) {
+  const row = seen.get(id)
+  if (row && row.currentState !== 'CONFLICTING_CURRENT_STATE') {
+    failures.push(`RATIFICATION VIOLATED — ${id} must remain CONFLICTING_CURRENT_STATE, found ${row.currentState}`)
+  }
+}
+ratifications.push('F043/F051/F122 remain CONFLICTING_CURRENT_STATE; F139 dual reading preserved')
+
+// Stage 0 does NOT require Implementation Chapter ownership. The Stage-4
+// exactly-one-owner invariant must never be applied here by accident.
+ratifications.push('Stage-4 ownership invariant deliberately NOT applied at Stage 0')
+
 // ── RC map ──────────────────────────────────────────────────────────────────
 const rcArt = maybe('rc-map.json')
 const RC_ALL = Array.from({ length: 12 }, (_, i) => `RC-C${i}`)
@@ -142,6 +191,7 @@ const result = {
     stateCounts,
     conflictingStateIds: conflicting,
     rowsWithoutProvenance: missingProvenance,
+    rowsWithProvenance: reconstructed.size - missingProvenance,
     wgReconstructed: wgReconstructed.length,
     rcChaptersCovered: rcCovered.length,
     doctrinesIndexed: count(doctrine),
@@ -151,9 +201,24 @@ const result = {
   provenanceProfile: accounting.findings.byProvenanceStrength,
   warnings,
   failures,
+  ratificationAssertions: ratifications,
+  wg: { issued: issuedWG.length, issuedRange: 'WG001-WG017', reservedUnissued: reservedWG, identifierSpaceObservedThrough: accounting.wg.identifierSpaceObservedThrough },
   verdict: failures.length ? 'FAIL' : 'PASS',
-  ratified: false,
-  note: 'Candidate registers. NOT founder-ratified. Stage 0 may not ratify its own output.',
+  ratified: !failures.length,
+  ratificationDate: '2026-08-18',
+  baseline: failures.length ? 'NOT_RATIFIED' : 'FOUNDER_RATIFIED_CANONICAL_BASELINE',
+  canonicalMeans: [
+    'accepted evidence universe', 'accepted provenance', 'accepted historical reconstruction axis',
+    'accepted unresolved contradictions', 'accepted validation-debt index',
+    'accepted protected-boundary index', 'accepted WG issuance universe',
+  ],
+  canonicalDoesNotMean: [
+    'all findings are correct in every historical description', 'all states are resolved',
+    'all findings are prioritised', 'all findings have Implementation Chapter ownership',
+    'all WG candidates are authorised', 'all RC dependencies remain architecturally optimal',
+    'implementation is authorised', 'certification is granted',
+  ],
+  stageStatus: { stage0: 'COMPLETE_AND_FOUNDER_RATIFIED', stage1: 'NOT_STARTED_REQUIRES_SEPARATE_AUTHORIZATION' },
 }
 
 writeFileSync(join(dir, 'stage0-validation.json'), JSON.stringify(result, null, 2))
@@ -166,5 +231,9 @@ console.log(`CONFLICTING_CURRENT_STATE: ${conflicting.length}`)
 console.log(`state counts             : ${JSON.stringify(stateCounts)}`)
 for (const w of warnings) console.log(`WARN  ${w}`)
 for (const f of failures) console.log(`FAIL  ${f}`)
-console.log(`\nVERDICT: ${result.verdict}   (ratified: false)\n`)
+for (const r of ratifications) console.log(`RATIFIED  ${r}`)
+console.log(`
+VERDICT: ${result.verdict}   baseline: ${result.baseline}`)
+console.log(`STAGE 0: ${result.stageStatus.stage0}   STAGE 1: ${result.stageStatus.stage1}
+`)
 process.exit(failures.length ? 1 : 0)

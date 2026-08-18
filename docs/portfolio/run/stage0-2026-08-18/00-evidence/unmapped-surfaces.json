@@ -1,0 +1,36 @@
+{
+  "artifact": "STAGE_0_UNMAPPED_SURFACES",
+  "date": "2026-08-18",
+  "status": "FOUNDER_RATIFIED_AS_CANONICAL_EVIDENCE",
+  "ruling": "UNMAPPED_TO_RC",
+  "doNotForceAssign": true,
+  "note": "Recorded as canonical evidence for Stage 1. This is NOT automatically an architectural defect. Later analysis determines whether each belongs to an existing RC chapter, a later Implementation Chapter, a genuinely missing reconstruction responsibility, or is intentionally orthogonal to the RC roadmap.",
+  "surfaces": [
+    {
+      "id": "PD-1",
+      "name": "Platform Administration",
+      "rcOwnership": "UNMAPPED_TO_RC"
+    },
+    {
+      "id": "PD-2",
+      "name": "Authentication & Account Entry",
+      "rcOwnership": "UNMAPPED_TO_RC"
+    },
+    {
+      "id": "SupportScreen",
+      "name": "Support surface",
+      "rcOwnership": "UNMAPPED_TO_RC"
+    },
+    {
+      "id": "GAP-1",
+      "name": "Settings / Personal Controls (Availability Off control owner explicitly UNASSIGNED)",
+      "rcOwnership": "UNMAPPED_TO_RC"
+    },
+    {
+      "id": "GAP-2",
+      "name": "Long-Form Publishing (Articles)",
+      "rcOwnership": "UNMAPPED_TO_RC",
+      "contradictionNote": "DECISIONS.md records NO CHAPTER NUMBER ASSIGNED awaiting founder dependency placement, yet Articles shipped and F024 'Article as 4th domain' is LIVE_CERTIFIED. Preserved, not resolved."
+    }
+  ]
+}

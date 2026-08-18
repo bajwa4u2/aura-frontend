@@ -6,7 +6,7 @@
     "gapsWithinRange": [],
     "contiguous": true,
     "quarantinedSelfAuthoredIds": 41,
-    "issuedWG": 18
+    "issuedWG": 17
   },
   "reconstruction": {
     "findingsReconstructed": 143,
@@ -31,6 +31,7 @@
       "F122"
     ],
     "rowsWithoutProvenance": 0,
+    "rowsWithProvenance": 143,
     "wgReconstructed": 18,
     "rcChaptersCovered": 12,
     "doctrinesIndexed": 64,
@@ -46,7 +47,47 @@
     "state values outside the documented vocabulary (preserve + document, do not normalise away): EXPLICITLY_RETIRED"
   ],
   "failures": [],
+  "ratificationAssertions": [
+    "F097 = ISSUED",
+    "findings = 143, range F001-F143, contiguous",
+    "WG issued = 17 (WG001-WG017); reserved = WG018",
+    "F064 and F113 both present and independently reconciled",
+    "F043/F051/F122 remain CONFLICTING_CURRENT_STATE; F139 dual reading preserved",
+    "Stage-4 ownership invariant deliberately NOT applied at Stage 0"
+  ],
+  "wg": {
+    "issued": 17,
+    "issuedRange": "WG001-WG017",
+    "reservedUnissued": [
+      "WG018"
+    ],
+    "identifierSpaceObservedThrough": "WG018"
+  },
   "verdict": "PASS",
-  "ratified": false,
-  "note": "Candidate registers. NOT founder-ratified. Stage 0 may not ratify its own output."
+  "ratified": true,
+  "ratificationDate": "2026-08-18",
+  "baseline": "FOUNDER_RATIFIED_CANONICAL_BASELINE",
+  "canonicalMeans": [
+    "accepted evidence universe",
+    "accepted provenance",
+    "accepted historical reconstruction axis",
+    "accepted unresolved contradictions",
+    "accepted validation-debt index",
+    "accepted protected-boundary index",
+    "accepted WG issuance universe"
+  ],
+  "canonicalDoesNotMean": [
+    "all findings are correct in every historical description",
+    "all states are resolved",
+    "all findings are prioritised",
+    "all findings have Implementation Chapter ownership",
+    "all WG candidates are authorised",
+    "all RC dependencies remain architecturally optimal",
+    "implementation is authorised",
+    "certification is granted"
+  ],
+  "stageStatus": {
+    "stage0": "COMPLETE_AND_FOUNDER_RATIFIED",
+    "stage1": "NOT_STARTED_REQUIRES_SEPARATE_AUTHORIZATION"
+  }
 }

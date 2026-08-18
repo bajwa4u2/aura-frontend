@@ -1,6 +1,7 @@
 # AURA DYNAMIC RECONSTRUCTION WORKFLOW — DESIGN
 
-**Status:** DESIGN ONLY. Not executed. Requires explicit founder authorization to run.
+**Status:** Stage 0 EXECUTED and **FOUNDER-RATIFIED** 2026-08-18 — see `STAGE0_RATIFIED_BASELINE.md`.
+Stages 1–4 NOT started; each requires explicit founder authorization.
 **Date:** 2026-08-18
 **Purpose:** Produce a governed **implementation portfolio** above the F-register and the
 C0–C11 reconstruction map — not a bug queue.
@@ -337,3 +338,43 @@ The workflow is an **execution and analysis mechanism, not an authority mechanis
 founder ruling / frozen doctrine → governing architecture → portfolio →
 implementation chapter → orchestrator → agents → evidence → implementation → validation
 ```
+
+---
+
+## 11. FROZEN EVIDENCE-PROCESSING INVARIANT (added after the Stage-0 run)
+
+> ### ANALYSIS OUTPUT IS NOT HISTORICAL ISSUANCE EVIDENCE MERELY BECAUSE IT LATER APPEARS IN THE SEARCHABLE CORPUS.
+
+Stage 0 proved this empirically rather than theoretically. This document printed
+candidate and missing identifier lists; that output was written to the session
+transcript; the transcript is inside the corpus; re-reading it manufactured
+issuance evidence for **41 identifiers that were never issued**.
+
+Every evidence reconstruction MUST distinguish: original issuance · later status
+report · summary · workflow hypothesis · generated example · analysis artifact ·
+self-reference · quoted historical evidence.
+
+**A generated identifier in workflow or design discussion cannot create a finding
+or a WG item.** The quarantine in `tools/reconcile-ids.mjs` is a permanent
+requirement for every future re-run, not an optimisation.
+
+Never classify by token shape alone: `RC-A`, `RC-B`, `RC1`, `RC7` are root-cause
+labels, not Reconstruction Chapters.
+
+## 12. STAGE-0 EMPIRICAL ECONOMY (first real run)
+
+```
+corpus              703 MB · 272 files · 178,004 lines
+deterministic pass  ONE scan → 2,588 deduplicated mentions
+normalised input    ~665 KB provenanced dossiers
+execution           6 agents · peak concurrency 3 · 0 errors
+                    ~35.5 min · ~1.21 M subagent tokens · 204 tool uses
+resume              DESIGNED_NOT_EMPIRICALLY_PROVEN — no interruption occurred
+```
+
+These are empirical observations from one run, **not a quota forecast**.
+
+**Frozen operating lesson:**
+**LARGE RAW CORPUS → DETERMINISTIC EXTRACTION ONCE → SMALL PROVENANCED DOSSIERS →
+MODEL REASONING.** Later stages consume the canonical normalized evidence package
+and must not casually rescan the corpus.

@@ -1,0 +1,53 @@
+{
+  "artifact": "STAGE_0_FOUNDER_RULINGS",
+  "date": "2026-08-18",
+  "authority": "FOUNDER",
+  "note": "Machine-readable founder rulings consumed by the deterministic tools, so ratification is auditable rather than hand-edited into artifacts.",
+  "findings": {
+    "issuedRange": "F001-F143",
+    "issuedCount": 143,
+    "contiguous": true,
+    "confirmedIssued": [
+      { "id": "F097", "ruling": "ISSUED", "supersedes": "prior unissued-gap hypothesis", "cause": "false negative from a broken shell pipeline whose empty output was read as zero", "evidence": "Live public-acquisition cluster F097-F107, 'Public Home surfaces real Live'" }
+    ],
+    "statesDeliberatelyUnresolved": [
+      { "id": "F043", "state": "CONFLICTING_CURRENT_STATE", "ruling": "PRESERVE - do not adjudicate for cleaner counts" },
+      { "id": "F051", "state": "CONFLICTING_CURRENT_STATE", "ruling": "PRESERVE - do not adjudicate for cleaner counts" },
+      { "id": "F122", "state": "CONFLICTING_CURRENT_STATE", "ruling": "PRESERVE - do not adjudicate for cleaner counts" },
+      { "id": "F139", "ruling": "PRESERVE BOTH READINGS", "candidates": ["STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED", "OPEN"], "openQuestion": "genuinely contradictory current states, or different dimensions of completion/certification?" }
+    ],
+    "separateNotMerged": [
+      { "ids": ["F064", "F113"], "ruling": "TWO SEPARATE CANONICAL FINDINGS", "duplicateEvidence": "PRESERVED AS ANNOTATION, NOT DELETION AUTHORITY", "note": "A later chapter may own both and cross-reference them. 'Duplicate' may mean shared root cause or shared chapter; it never means erase a historical finding." }
+    ]
+  },
+  "wg": {
+    "identifierSpaceObservedThrough": "WG018",
+    "issuedCount": 17,
+    "issuedRange": "WG001-WG017",
+    "reservedUnissued": [
+      { "id": "WG018", "ruling": "RESERVED_UNISSUED", "evidence": "every occurrence is a forward-reference / numbering instruction; no WG proposition was issued under that identifier", "visibility": "MUST remain visible in the evidence/accounting layer so its historical appearance is explained", "excludedFrom": ["issued WG total", "WG portfolio ownership", "authorization totals", "implementation totals"] }
+    ]
+  },
+  "unmappedSurfaces": {
+    "ruling": "UNMAPPED_TO_RC",
+    "doNotForceAssign": true,
+    "note": "Canonical evidence for Stage 1. NOT automatically an architectural defect.",
+    "surfaces": ["PD-1", "PD-2", "SupportScreen", "GAP-1 Settings", "GAP-2 Long-Form Publishing"]
+  },
+  "reconstructionAxis": {
+    "ruling": "RATIFIED AS THE COMPLETE HISTORICAL AXIS CURRENTLY EVIDENCED",
+    "chapters": "RC-C0..RC-C11",
+    "dependencyChain": { "ruling": "PRESERVE THE STALLED CHAIN AS EVIDENCE", "doNotStart": "RC-C4", "doNotUnblock": "RC-C5 frozen hard gate", "doNotInfer": "that RC-C7..RC-C11 should be abandoned", "note": "Frozen gates are not removed for portfolio convenience." }
+  },
+  "registerTotals": {
+    "lastHistoricalReconciledCheckpoint": 138,
+    "stage0ReconstructedUniverse": 143,
+    "ruling": "PRESERVE BOTH FACTS. The absence of a 143-total checkpoint is provenance history, not evidence that the five later findings are invalid."
+  },
+  "selfContamination": {
+    "ruling": "FROZEN INVARIANT",
+    "statement": "ANALYSIS OUTPUT IS NOT HISTORICAL ISSUANCE EVIDENCE MERELY BECAUSE IT LATER APPEARS IN THE SEARCHABLE CORPUS.",
+    "quarantinedCount": 41,
+    "mechanismMustPersist": true
+  }
+}

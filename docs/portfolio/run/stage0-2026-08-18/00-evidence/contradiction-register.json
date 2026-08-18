@@ -1,0 +1,366 @@
+{
+  "artifact": "STAGE_0_CONTRADICTION_REGISTER",
+  "date": "2026-08-18",
+  "status": "FOUNDER_RATIFIED_AS_CANONICAL_EVIDENCE",
+  "principle": "Ratification means this is the canonical record of what the evidence currently says. It does NOT mean every conflict is resolved. Only contradictions directly adjudicated by the 2026-08-18 closeout are marked resolved.",
+  "resolvedByCloseout": [
+    {
+      "id": "CR-R1",
+      "statement": "F097 hypothesised as an unissued identifier gap",
+      "resolution": "FALSE. F097 is ISSUED (Live public-acquisition cluster F097-F107). Prior absence was a false negative from a broken shell pipeline.",
+      "resolvedBy": "FOUNDER_RULING 2026-08-18"
+    },
+    {
+      "id": "CR-R2",
+      "statement": "WG018 counted as an issued WG candidate by mechanical accounting, while semantic evidence showed only a forward-reference/numbering instruction",
+      "resolution": "WG018 = RESERVED_UNISSUED. Remains visible in the evidence/accounting layer; excluded from issued, ownership, authorization and implementation totals. Issued WG = 17.",
+      "resolvedBy": "FOUNDER_RULING 2026-08-18"
+    },
+    {
+      "id": "CR-R3",
+      "statement": "F064/F113 recorded both as duplicates and as rows to keep separate",
+      "resolution": "BOTH remain separate canonical findings. Duplicate evidence is preserved as an annotation/relationship, never as deletion authority. A later chapter may own both and cross-reference them.",
+      "resolvedBy": "FOUNDER_RULING 2026-08-18"
+    },
+    {
+      "id": "CR-R4",
+      "statement": "Five surfaces (PD-1, PD-2, SupportScreen, GAP-1 Settings, GAP-2 Long-Form Publishing) have no owning RC chapter",
+      "resolution": "Normalised as UNMAPPED_TO_RC. NOT force-assigned and NOT automatically an architectural defect. Canonical evidence input for Stage 1.",
+      "resolvedBy": "FOUNDER_RULING 2026-08-18"
+    },
+    {
+      "id": "CR-R5",
+      "statement": "RC dependency chain stalled: RC-C4 not started and RC-C5 hard-gate BLOCKED leaves RC-C7..RC-C11 unreachable",
+      "resolution": "PRESERVED AS EVIDENCE. Gate not removed, RC-C4 not started, no inference that RC-C7..C11 are abandoned. Frozen gates are not removed for portfolio convenience.",
+      "resolvedBy": "FOUNDER_RULING 2026-08-18"
+    },
+    {
+      "id": "CR-R6",
+      "statement": "Last historically reconciled register total is 138, but the reconstructed universe is 143",
+      "resolution": "BOTH FACTS PRESERVED. The five later findings were issued after/beyond the last consolidated arithmetic checkpoint. Absence of a 143-total checkpoint is provenance history, not evidence of invalidity.",
+      "resolvedBy": "FOUNDER_RULING 2026-08-18"
+    }
+  ],
+  "stillOpen": [
+    {
+      "id": "CR-O1",
+      "subject": "F043",
+      "statement": "Master register row records PARTIALLY_VALIDATED while the same message lists it among items that cannot honestly be called LIVE_CERTIFIED.",
+      "state": "CONFLICTING_CURRENT_STATE",
+      "ruling": "PRESERVE - not adjudicated"
+    },
+    {
+      "id": "CR-O2",
+      "subject": "F051",
+      "statement": "Register row PARTIALLY_VALIDATED vs the same report's 'previously called fixed & deployed' list.",
+      "state": "CONFLICTING_CURRENT_STATE",
+      "ruling": "PRESERVE - not adjudicated"
+    },
+    {
+      "id": "CR-O3",
+      "subject": "F122",
+      "statement": "Frozen RIC stage C1 documented as closing F122, but the C1 implementation checkpoint names only F127/F128/F130.",
+      "state": "CONFLICTING_CURRENT_STATE",
+      "ruling": "PRESERVE - not adjudicated"
+    },
+    {
+      "id": "CR-O4",
+      "subject": "F139",
+      "statement": "Recorded the SAME DAY as STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED (backend register) and as OPEN (frontend amendment). Equal recency; neither supersedes.",
+      "state": "DUAL_READING_PRESERVED",
+      "ruling": "PRESERVE. Later analysis must determine whether these are contradictory current states or different dimensions of completion/certification."
+    },
+    {
+      "id": "CR-O5",
+      "subject": "RC-C10",
+      "statement": "Reconstruction chapter RC-C10 (Live, cross-repository) carries CONFLICTING_CURRENT_STATE.",
+      "state": "CONFLICTING_CURRENT_STATE",
+      "ruling": "PRESERVE - not adjudicated"
+    }
+  ],
+  "agentReportedContradictions": {
+    "count": 70,
+    "items": [
+      {
+        "source": "stage0-agent",
+        "statement": "F122 CONFLICTING_CURRENT_STATE: frozen stage C1 is documented as 'Closes: F127, F128, F130, F122' and C1 was implemented+pushed as 62b39bf, but the C1 implementation checkpoint (c2-unindexed-media-provenance-investigation.md:511) names only F127/F128/F130 as implemented-not-live-certified and omits F122. Candidates recorded with provenance; not resolved."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F113 is recorded as a duplicate of F064 AND simultaneously ruled to remain a separate row ('F064/F113 remain separate with an explicit duplication note'). Duplication annotated, not resolved."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F126: 'F126 SURGICAL PRIVACY CORRECTION - COMPLETE / awaiting live certification' coexists with 'F126 = APPLICATION-LEVEL DISCLOSURE CLOSED, STORAGE-LEVEL CONFIDENTIALITY NOT [closed]'. Recorded as IMPLEMENTED_NOT_LIVE_CERTIFIED with the storage-level half explicitly deferred to stage C5; 'COMPLETE' must not be read as terminal."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F138: 'F138 was the sole freeze blocker and has been resolved empirically' (freeze-candidate:593) vs the same session's register line 'F138 OPEN->OPEN, now CONFIRMED with evidence rather than hypothesised; no state promotions'. Read as resolution of the blocking QUESTION, not closure of the defect; state kept OPEN."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F132 and F135 carry 'Closes F132'/'Closes F135' language that appears only in frozen contract/ruling text describing the target architecture; no implementation or certification evidence exists in the dossier. States kept OPEN with flags."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F136 'confirmed live in production' confirms the DEFECT (presign returns url/originalUrl/displayUrl/thumbnailUrl/thumbUrl as the identical full-resolution object), not a fix. Not a state promotion."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F110/F111 additionally appear under 'Genuinely forgotten: F110-F114' - a reporting-loss note, not a state change."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F043 CONFLICTING_CURRENT_STATE: the MASTER REGISTER table row records 'PV' (PARTIALLY_VALIDATED) while the prose of the SAME message lists 'timer refinement (F043)' among the nine items 'Previously called \"fixed & deployed\" that I cannot honestly call LIVE_CERTIFIED' and concludes 'All are IMPLEMENTED_NOT_LIVE_CERTIFIED.' Both at 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl:31798. Not resolved."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F045: explicit register challenge recorded and unresolved - 'F045 and F071 do not share a root cause. F045 = the overlay `_joining` latch (shared code, web-observed). F071 = disposed shared singletons (RC-A).' (jsonl:31798)"
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F012/F013: Wave 1C membership conflict - the proposal states 'Deliberately excluded: F012/F013 (drag-drop, clipboard...)' (jsonl:31827) while the founder authorization records Wave 1C as 'composer/media (F011-F019)' (jsonl:32223) and instructs 'Implement F012/F013/F015 completely even if final human proof cannot honestly be performed by you' (jsonl:31833)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F015 (and scope wording for F011/F014/F016/F017/F019): proposed Wave 1c membership is 'F011, F014, F016, F017, F019 (+ WG004, WG005, WG006 if authorized)' (jsonl:31827) versus authorized 'Wave 1C composer/media (F011-F019)' (jsonl:32223)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F001: provenanceStrength STRONG overstates finding-specific evidence - the top-ranked excerpts are dominated by the literal range token 'F001-F120' (register-wide references at lines 31771, 31804, 31833, 32223), not F001-specific text."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F027: two independent root causes recorded under one identifier (RC7 no-draft-id-in-URL, and the fail-OPEN router allowlist not classifying `/articles/write`); one half recorded fixed (jsonl:32165) while the finding is explicitly held OPEN. Not a state conflict, but the finding is not atomic."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "All 48 rows: no original-issuance evidence exists in this dossier corpus. The earliest issuance-bearing excerpt for every F001-F048 is the reconstructed MASTER REGISTER message itself (jsonl:31798); the founder observations that originally issued these findings are not present."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F051 CONFLICTING_CURRENT_STATE: register row says PV while the same report's 'previously called fixed & deployed' list says IMPLEMENTED_NOT_LIVE_CERTIFIED (both line 31798). Candidates recorded, not resolved."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F058: two Rich Content governance drafts claim a proposed contract 'closes F058's real damage' (s12-freeze-candidate.md:447, s12-proposed-contract.md:385), but that describes removing the untruthful error state, not applying the R2 CORS policy. Left BLOCKED."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F064/F113: 'F113 duplicates F064 - keep F064, cross-reference' (line 31798) vs the register-integrity note 'F064/F113 remain separate with an explicit duplication note' (line 31827). Not merged."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F066 and F068: absent from the later 'Wave 1A remaining' list (line 32223), implying completion, but no explicit state transition exists in either checkpoint's STATE CHANGES list. OPEN retained (explicit-evidence rule)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F059: 'F067/F059 verification' underway (32009) and still listed in 'Wave 1A remaining' (32223); no explicit transition. OPEN retained."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F069: root-cause count drifts from '~16 routes' (31798) to '24 concrete unclassified routes enumerated' (32165)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F071: F045/F071 challenged as NOT sharing a root cause (31798) against an earlier founder framing that contemplated them as one shared-code defect with different deployment states (31771)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F073: challenged as miscategorised as native (31798) but still listed under domain 'K. Native' (31827). Domain not reassigned."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F076/F077: terminal EXPLICITLY_RETIRED rows still carry unfinished 'Remains' values ('Lobby-as-directory UI unobserved', 'UI unobserved')."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "F075 model change invalidates earlier live proofs relied on by F083 and F084 ('Proof under new model')."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "ACCOUNTING_PREMISE_CONTRADICTED_BY_EVIDENCE (WG018): the task brief's deterministic accounting says 18 WG items were ISSUED (WG001..WG018, contiguous). The evidence supports 17 issued items plus one reserved-but-never-issued number. Every 'WG018' occurrence is a forward-reference numbering instruction ('create WG018 onward', 'NEW WG CANDIDATES: WG018... or NONE', 'new WG018+') or this workflow's own hedged meta-reference to the token range '~WG001-WG018'. Three explicit register-health statements (transcript lines 31827, 32009, 32165) all state 17. The one checkpoint that actually ran the WG018+ classification norm reported 'NEW WG CANDIDATES: NONE.' Both readings recorded with provenance; NOT_RESOLVED_BY_STAGE_0."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "SINGLE_SOURCE_REGISTER (all 18 rows): no WG register artifact exists in any repository. All 17 issued WG rows originate in ONE assistant message - transcript 3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl line 31827, 2026-08-17T20:43:31.692Z, section 'F. WORLD-CLASS GAP REGISTER (WG) - prospective, not authorized'. Nothing independently corroborates the issuance text. Recorded on every row; NOT_RESOLVED_BY_STAGE_0."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "C_AXIS_AMBIGUOUS (WG006): the issuance row reads 'ties to RC7/F063'. F063 is explicit and recorded. The co-token 'RC7' is written neither as RC-C7 nor RIC-C7 and is disambiguated nowhere in the recovered evidence, so its axis is not established. NOT_RESOLVED_BY_STAGE_0."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "AXIS RESOLVED BY EVIDENCE, NOT BY PREFIX (WG003): the row's Home column reads 'Conversation + C4' and its recommendation 'LATER (C4 coupling)'. Recorded as RC-C4 on two evidence strands - (a) surrounding vocabulary uses C4 as a finding-OWNING chapter ('C4_OWNED_OPEN', 'C4 evidence remains preserved', 'NOT AUTHORIZED: C4 implementation'), and (b) the RIC section-12 stage table that also contains a stage named C4 did not yet exist, being first authored ~2 hours later at 2026-08-17T22:39:30Z. Residual risk recorded on the row."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "STATE VOCABULARY MISMATCH (all rows): WG items were never carried in the F-register state vocabulary. The only state language the project applied to WG is 'prospective, not authorized', 'candidates', 'authorized', 'none started yet', plus per-item NOW / LATER / FOUNDER CALL / REJECT for now. The currentState tokens PROSPECTIVE_AUTHORIZED_NOT_STARTED and PROSPECTIVE_NOT_AUTHORIZED are a Stage 0 reconstruction of that literal language, flagged as such on every row, NOT project-canonical enum values."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "VDC-1 CONFLICTING_EVIDENCE — F064 and F113 are declared the same obligation ('Duplicate of F064 — keep one row, cross-referenced') yet carry different validation topologies in the same message: F064 is V2 (two sessions), F113 is V4 (3+ participants). Source: 3a68d78f-...jsonl:31798 vs :31827 §E."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "VDC-2 CONFLICTING_CURRENT_STATE — F139 is recorded on the SAME DAY as STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED (aura-backend/docs/2026-08-18-c2-retention-truth-register.md:80) and as OPEN (aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md:286). Equal recency; neither is a later transition. Not resolved."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "VDC-3 COUNT_DIVERGENCE — the last explicit reconciled register-health count is 138 total (24 LC / 30 INLC / 20 PV / 54 OPEN / 2 BLOCKED / 6 C4 / 0 SUPERSEDED / 2 RETIRED) at 2026-08-18T01:25Z. F139–F143 were issued afterwards. No reconciled count exists at 143; Stage 0 did not manufacture one."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "VDC-4 CONFLICTING_EVIDENCE — AURA_DYNAMIC_RECONSTRUCTION_WORKFLOW.md §0 asserts 'F001–F143 with exactly one gap: F097 → 142 evidenced findings', while this run's own id-accounting.json reports gapsWithinRange: [] and contiguous: true (143 issued), with F097 carrying 37 mentions and a MODERATE dossier."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "VDC-5 SUPERSEDED_BY_LATER_EVIDENCE — the master register (:31798) records f518024 as 'committed locally, not pushed/deployed' and F065/F069 as OPEN; later evidence (:32009, :32165) plus git (f518024 on aura_final main, main in sync with origin/main) supersedes both. Recorded per record, not silently applied."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "VDC-6 NOT_RECORDED — F119–F143 have no entry in the project's own V1–V5 validation matrix, which was authored when the register held 120 items. Their topology is this document's classification, flagged projectValidationClass: NOT_RECORDED."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "VDC-7 UNKNOWN — no evidence anywhere records an ATTEMPT at the §H coordinated realtime batch, the F126 two-account live journey, or any RIC-stage live certification after 2026-08-18T01:25Z. Absence of a later record is not evidence they were performed."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "VDC-8 METHOD_LIMIT — V2 obligations carry a standing environmental dependency (the founder's browser window open and unminimized) which the same record states 'went unreachable repeatedly today'. That is a property of the harness, not of the findings."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "PBG-5 (boundaries) CONFLICTING_EVIDENCE — SupportScreen is a PRODUCT DISPOSITION CHECKPOINT with owning chapter UNDETERMINED, explicitly 'Not assigned to C9', and explicitly protected from deletion, isolated modernisation or forced chapter assignment. It behaves as a protected surface with no protecting chapter."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "PBG-3 (boundaries) NOT_RECORDED — no governed doc in either repo states any protection doctrine for the Aura Reviewer account, production credential handling, or the headless-Playwright validation harness, even though the entire V1 class depends on all three."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "X1 STALE_CURRENT_STATE_ROWS — CURRENT_STATE.md:16-22 (dated 2026-08-15) still reads 'C2 READY / NOT STARTED' and 'Frontend implementation (C2-C11) NOT STARTED' while lines 128/141/143 of the same file record C2 and C3 founder final closure. Line 136 ('no backend, no Representation, nothing committed') is contradicted by lines 118-126 and explicitly superseded at line 141."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "X2 WORK OUTSIDE THE CHAPTER FRAME — the entire 2026-08-16..18 body of work (Aura Conversation System, Aura Invitation System, Articles/Long-Form Publishing, realtime transport+lifecycle repair, Live origination correction, §12 Rich Content) is governed by its own canons and stage tables. No governed document records the roadmap authorizing, absorbing, or excluding any of it. Largest structural gap found."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "X3 NAMESPACE COLLISION, TWO INCOMPATIBLE RIC STAGE SETS — the FROZEN §12 contract §16 defines C1 Content-truth / C2 Reference-retention / C3 Access-context / C4 Ingestion-convergence / C5 Governed-delivery, while AURA_DYNAMIC_RECONSTRUCTION_WORKFLOW.md:31-33 describes '§12's ... C3 Storage adapter, C4 Institution-post media, C5 Message media, C7 Visibility'. These do not match. Not resolved at Stage 0."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "X3b THIRD 'RC' NAMESPACE — 2026-08-17-refresh-continuity-shared-causes.md uses RC1..RC9 as refresh root-cause ids, unrelated to RC-C1..RC-C9 chapters. A fourth near-collision: C2 Follow rulings R1-R10 vs C1 accepted-exception labels R1/R2."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "X4 NO CANONICAL REGISTER ARTIFACT — no F-register or WG-register exists in any repository; governed markdown holds only 27 distinct F-ids. All finding-state citations rest on transcript provenance (3a68d78f-…jsonl line 31798 master register F001-F120; line 32506 the 138-item recount)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "X5 OWNERSHIP VOIDS — PD-1 Platform Administration, PD-2 Authentication & Account Entry, SupportScreen, GAP-1 Settings/Personal Controls (Availability Off control owner explicitly UNASSIGNED) and GAP-2 Long-Form Publishing all have NO owning RC chapter."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "X5b GAP-2 CONTRADICTED BY IMPLEMENTATION — DECISIONS.md:312 says Articles have NO CHAPTER NUMBER ASSIGNED and await founder dependency placement, yet Articles shipped (backend 3631e3a) and F024 'Article as 4th domain' is LIVE_CERTIFIED, and Articles is a declared Discover domain under the C3 navigation correction."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "X6 DEPENDENCY CHAIN STALLED — C0/C1/C2/C3 closed; the entire third tier (C4 not started, C5 BLOCKED by frozen hard gate, C6 not started) leaves C7, C8, C9, C10 and C11 all unreachable under the declared sequencing. No RC-C11 entry condition is currently satisfiable."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "RC-C10 CONFLICTING_CURRENT_STATE — candidate A: OPEN/NOT STARTED (CURRENT_STATE.md:19, NEXT_WORK.md:101/121 'Explicitly NOT next: Live (C10)'). Candidate B: substantially constructed outside the chapter frame (2026-08-17 Live Origination Correction FOUNDER-FROZEN; backend 88179ee/d3981e5/fb9bfa1; F074-F088 states INLC/PV/RETIRED). Not resolved — requires founder authority."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "RC-C10 SUPERSEDED BACKEND STATE ROWS — roadmap lines 523-524 record 'PUBLIC_STAGE consumption: declared but unconsumed' and 'Go-live authority: missing'; both are evidenced as built."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "RC-C5 OVERLAP — C5 is CLOSED by frozen hard gate (DECISIONS.md:382-385) while the §12 Rich Content chapter and the Conversation Completion Register govern acquisition/intake/attachment/upload/drag-drop/link-preview work that is substantially C5's originalScope. Also the roadmap's '0 drag-and-drop implementations' premise is superseded by F012 (DropTarget at conversation_screen:960, INLC)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "RC-C7 DEPENDENCY ORDER INVERTED — C7's prerequisites (C4+C5+C6) are all unmet, yet the clean-sheet Conversation System that 'replaces the DirectThread and Space-as-conversation stacks' shipped, occupying C7's demolition list. Separately, the Invitation canon states Invitation is 'NOT ... a C7 feature', removing an obligation C7's charter contained."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "RC-C6 SCOPE UNADDRESSED — the chapter's actual target (Meetings' 3,890 lines duplicating presentation, using 0 of 5 shared realtime widgets) shows no evidence of being touched; F114 affirmatively records no Meetings file modified. Meanwhile extensive out-of-chapter realtime engineering landed."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "RC-C3 SUPERSEDED COUNT — C3_FINAL_CLOSEOUT.md states 35 canonical institution-depth routes at line 15 and 34 after the DR4 reconciliation at line 51; both figures survive in CURRENT_STATE.md:130."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "RC-C1/RC-C0 BASELINES WRONG IN BOTH DIRECTIONS — role-literal comparisons 29 files -> 5 files/6 sites; canX 20 -> 38 files/73 sites; the real vector (86 isOwner/isAdmin sites) was never named. C0 figures likewise superseded (83->26 spinners, 52->41 .difference(), 35->47 toLocal(), 22->10 sorts, the 68 SizedBox.shrink() line never adjudicated)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "TWO UNRECONCILED CERTIFICATION VOCABULARIES — RC layer table (Architecture/Implementation/Product-Behavior/Cross-System/Real-Boundary/Founder Acceptance/Item 17) vs §12 §17 validation classes (LOCALLY VERIFIED / AUTHORIZED-BROWSER / TWO-ACCOUNT-TWO-BROWSER / LIVE_CERTIFIED). Chapter states use the first, finding states the second."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "GOVERNANCE RULE LIVES ONLY IN TRANSCRIPT — the non-shrinking register rule (an item leaves only at LIVE_CERTIFIED, SUPERSEDED_BY_FOUNDER_RULING or EXPLICITLY_RETIRED) has no governed-markdown home, yet it is the closure standard RC-C11 must meet (F115/F119/F120, all OPEN)."
+      },
+      {
+        "source": "stage0-agent",
+        "statement": "WG DISPOSITION GAP — transcript records 'WG001-WG017, none authorized, none implemented' while the dossier index carries WG001-WG018. Only WG001/2/4/5/6/9 have a governed home (RIC-E2); the other twelve have no chapter, doctrine or recorded disposition."
+      },
+      {
+        "source": "validation-debt.json",
+        "statement": "{\"id\": \"VDC-1\", \"type\": \"CONFLICTING_EVIDENCE\", \"statement\": \"F064 and F113 are declared the same obligation ('Duplicate of F064 \\u2014 keep one row, cross-referenced') yet carry different validation topologies in the same message: F064 is V2, F113 is V4.\", \"evidence\": {\"source\": \"~/.claude/projects/.../3a68d78f-...jsonl\", \"anchor\": \"line 31798 (F064/F113 rows) vs line 31827 \\u00a7E (V2 and V4 lists)\"}}"
+      },
+      {
+        "source": "validation-debt.json",
+        "statement": "{\"id\": \"VDC-2\", \"type\": \"CONFLICTING_CURRENT_STATE\", \"statement\": \"F139 is recorded on the same day as STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED (backend register) and as OPEN (the \\u00a712 amendment table). Candidates carry equal recency; neither is a later transition over the other.\", \"evidence\": [{\"source\": \"aura-backend/docs/2026-08-18-c2-retention-truth-register.md\", \"anchor\": \"line 80\"}, {\"source\": \"aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md\", \"anchor\": \"line 286\"}]}"
+      },
+      {
+        "source": "validation-debt.json",
+        "statement": "{\"id\": \"VDC-3\", \"type\": \"COUNT_DIVERGENCE\", \"statement\": \"The last explicit register-health count is 138 total (24 LC \\u00b7 30 INLC \\u00b7 20 PV \\u00b7 54 OPEN \\u00b7 2 BLOCKED \\u00b7 6 C4 \\u00b7 0 SUPERSEDED \\u00b7 2 RETIRED), recorded 2026-08-18T01:25Z. F139\\u2013F143 were issued afterwards in the amendment and the backend register, so no reconciled count exists at 143. Stage 0 does not manufacture one.\", \"evidence\": [{\"source\": \"~/.claude/projects/.../3a68d78f-...jsonl\", \"anchor\": \"line 32797 \\u00a7F\"}, {\"source\": \"aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md\", \"anchor\": \"lines 283-290 \\u2014 F139\\u2013F143 table\"}]}"
+      },
+      {
+        "source": "validation-debt.json",
+        "statement": "{\"id\": \"VDC-4\", \"type\": \"CONFLICTING_EVIDENCE\", \"statement\": \"The workflow design document asserts F001\\u2013F143 appear 'with exactly one gap: F097 \\u2192 142 evidenced findings'. The dossier id-accounting for this same run reports gapsWithinRange: [] and contiguous: true across F001\\u2013F143 (143 issued), and F097 carries 37 mentions with a MODERATE-strength dossier. Recorded, not resolved.\", \"evidence\": [{\"source\": \"aura_final/docs/portfolio/AURA_DYNAMIC_RECONSTRUCTION_WORKFLOW.md\", \"anchor\": \"\\u00a70 assumptions table\"}, {\"source\": \"docs/portfolio/run/stage0-2026-08-18/00-evidence/id-accounting.json\", \"anchor\": \"findings.gapsWithinRange / findings.contiguous\"}]}"
+      },
+      {
+        "source": "validation-debt.json",
+        "statement": "{\"id\": \"VDC-5\", \"type\": \"SUPERSEDED_BY_LATER_EVIDENCE\", \"statement\": \"The master register (line 31798) records f518024 as 'committed locally, not pushed/deployed' and the Refresh table records F065/F069 as OPEN. Later evidence supersedes both: line 32009 records f518024 pushed and F065 \\u2192 IMPLEMENTED_NOT_LIVE_CERTIFIED; line 32165 records F069 \\u2192 IMPLEMENTED_NOT_LIVE_CERTIFIED; git shows f518024 on aura_final main with main in sync with origin/main. This index uses the later evidence and says so per record.\", \"evidence\": {\"source\": \"~/.claude/projects/.../3a68d78f-...jsonl\", \"anchor\": \"lines 31798, 32009, 32165\"}}"
+      },
+      {
+        "source": "validation-debt.json",
+        "statement": "{\"id\": \"VDC-6\", \"type\": \"NOT_RECORDED\", \"statement\": \"F119\\u2013F143 have no entry in the V1\\u2013V5 validation matrix, because that matrix was produced at line 31827 when the register held 120 items. Their validation topology is therefore this document's classification from the surrounding evidence, not the project's own, and is flagged projectValidationClass: NOT_RECORDED.\", \"evidence\": {\"source\": \"~/.claude/projects/.../3a68d78f-...jsonl\", \"anchor\": \"line 31827 \\u00a7E \\u2014 matrix covers the 120-item register\"}}"
+      },
+      {
+        "source": "validation-debt.json",
+        "statement": "{\"id\": \"VDC-7\", \"type\": \"UNKNOWN\", \"statement\": \"No evidence was found establishing whether any of the coordinated realtime certification batch (\\u00a7H), the F126 two-account live journey, or any RIC-stage live certification has been attempted since 2026-08-18T01:25Z. Absence of a later record is not evidence that they were performed.\", \"evidence\": {\"source\": \"corpus\", \"anchor\": \"no source in the dossier evidence or governed docs records an attempt after 2026-08-18T01:25Z\"}}"
+      },
+      {
+        "source": "validation-debt.json",
+        "statement": "{\"id\": \"VDC-8\", \"type\": \"METHOD_LIMIT\", \"statement\": \"The V1 class asserts the agent can validate alone via the Aura Reviewer account under headless Playwright, and the V2 class depends on the founder's browser window being open and unminimized \\u2014 which the same record states 'went unreachable repeatedly today'. Any V2 obligation therefore carries a standing environmental dependency that is not a property of the finding.\", \"evidence\": {\"source\": \"~/.claude/projects/.../3a68d78f-...jsonl\", \"anchor\": \"line 31827 \\u00a7E preamble and \\u00a7H prerequisite\"}}"
+      },
+      {
+        "source": "doctrine-index.json",
+        "statement": "{\"id\": \"O1\", \"observation\": \"THREE unrelated 'C-number' / 'RC' namespaces coexist in this corpus: (a) RC-C0..RC-C11 reconstruction chapters, (b) RIC-C1..RIC-F1 Rich Content implementation stages, (c) RC1..RC9 refresh-continuity root causes. A fourth near-collision exists in the C2 Follow adjudication rulings R1-R10 versus the C1 accepted-exception labels R1/R2. Every one of these appears as a bare token in at least one governed document.\", \"sources\": [\"aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md\", \"aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 557-572)\", \"aura_final/docs/2026-08-17-refresh-continuity-shared-causes.md (lines 9-80)\", \"aura_final/docs/DECISIONS.md (lines 218-235, 171-173)\"]}"
+      },
+      {
+        "source": "doctrine-index.json",
+        "statement": "{\"id\": \"O2\", \"observation\": \"TWO certification vocabularies coexist without reconciliation: the RC layer table (Architecture / Implementation / Product-Behavior / Cross-System / Real-Boundary / Founder Acceptance / Item 17) and the \\u00a712 validation classes (LOCALLY VERIFIED / AUTHORIZED-BROWSER VERIFIED / TWO-ACCOUNT-TWO-BROWSER / LIVE_CERTIFIED). Finding states use the second vocabulary; chapter states use the first.\", \"sources\": [\"aura_final/docs/frontend-discovery/FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md (lines 582-594)\", \"aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 575-585)\"]}"
+      },
+      {
+        "source": "doctrine-index.json",
+        "statement": "{\"id\": \"O3\", \"observation\": \"The doctrines that govern the 2026-08-16..18 work (Conversation canon, Invitation canon, \\u00a712 Rich Content, Live Origination Correction) each declare their own boundaries and each name RC-C4 as Attention owner \\u2014 so they consistently RESPECT the RC frame at its edges while operating outside its sequencing. No governed document states whether they are inside, alongside, or superseding the RC roadmap.\", \"sources\": [\"aura-backend/docs/2026-08-16-aura-conversation-system-canon.md (line 14)\", \"aura-backend/docs/2026-08-16-aura-invitation-system-canon.md (line 12)\", \"aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (lines 508-513)\"]}"
+      },
+      {
+        "source": "doctrine-index.json",
+        "statement": "{\"id\": \"O4\", \"observation\": \"Findings discipline is asserted independently in three places and must not be relaxed by any later stage: F126 and F138 must not be merged (\\u00a712 line 35); F131 and F139-F142 intersect but must not be merged (Amendment 1 \\u00a7E); F064/F113 remain separate rows with an explicit duplication note and F050 \\u2282 F053 \\u2282 F116 plus F059-F070 \\u2282 F117 are recorded as hierarchy, not compression (transcript register).\", \"sources\": [\"aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (line 35)\", \"aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md (lines 277-298)\", \"transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl (lines 31798, 31827)\"]}"
+      },
+      {
+        "source": "doctrine-index.json",
+        "statement": "{\"id\": \"O5\", \"observation\": \"WG001-WG018 exist only as prospective world-class gaps. The transcript record states 'WG prospective items: 17 (WG001-WG017), none authorized, none implemented' at one checkpoint, while the dossier index carries 18 ids (WG001-WG018). Only WG001/2/4/5/6/9 have a governed-document home (RIC-E2). The remaining twelve have no chapter, no doctrine and no recorded disposition.\", \"sources\": [\"transcript:3a68d78f-71d9-4a16-8ca0-21cd6768f744.jsonl (line 31827)\", \"aura_final/docs/2026-08-17-rich-content-s12-freeze-candidate.md (line 570)\", \"aura_final/docs/portfolio/run/stage0-2026-08-18/00-evidence/dossier-index.json\"]}"
+      }
+    ]
+  }
+}
