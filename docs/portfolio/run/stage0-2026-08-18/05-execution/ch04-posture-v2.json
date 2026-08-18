@@ -1,0 +1,101 @@
+{
+ "type": "CH04_RECALCULATED_EXECUTION_POSTURE",
+ "date": "2026-08-18",
+ "founderRuling": "RULING 3 - preserve TWO separate truths for F006-F010. provenanceStrength=WEAK is a mention-count metric, NOT an evidence-quality determination.",
+ "correctionRecorded": {
+  "priorReading": "provenanceStrength WEAK was read as thin evidence, which made the five findings look like unproven claims sitting against a frozen Register.",
+  "correctedReading": "WEAK counts corpus MENTIONS (two or fewer). All five carry DIRECT FOUNDER OBSERVATION of working live capability - a strong evidence TYPE, recorded once.",
+  "effect": "The contradiction is dissolved into two coexisting truths. Neither record is wrong and neither is demoted."
+ },
+ "dimensionalMatrix": {
+  "legend": {
+   "IMPLEMENTATION": "Is there recorded implementation provenance?",
+   "LOCAL_VALIDATION": "Was a local automated proof run?",
+   "CERTIFICATION": "TRUTH A - certified in the scope actually observed",
+   "LIVE_PRODUCTION": "TRUTH A - observed working in production",
+   "CANONICAL_INTEGRATION": "TRUTH B - proven correctly attached to, integrated with and governed by the reconstructed canonical Conversation architecture"
+  },
+  "rows": [
+   {
+    "id": "F006", "capability": "1:1 audio call",
+    "IMPLEMENTATION": "NOT_RECORDED", "LOCAL_VALIDATION": "NOT_APPLICABLE",
+    "CERTIFICATION": "PROVEN", "LIVE_PRODUCTION": "PROVEN", "CANONICAL_INTEGRATION": "NOT_PROVEN",
+    "certificationEvidence": "Founder: connected, been in voice. Server audioState ON both sides.",
+    "executionClass": "EXISTING_CAPABILITY_LIVE_PROVEN + CANONICAL_INTEGRATION_VALIDATION_REQUIRED"
+   },
+   {
+    "id": "F007", "capability": "Group audio call",
+    "IMPLEMENTATION": "NOT_RECORDED", "LOCAL_VALIDATION": "NOT_APPLICABLE",
+    "CERTIFICATION": "PROVEN", "LIVE_PRODUCTION": "PROVEN", "CANONICAL_INTEGRATION": "NOT_PROVEN",
+    "certificationEvidence": "4-party call. Founder: 4 of us in call which is amazing.",
+    "executionClass": "EXISTING_CAPABILITY_LIVE_PROVEN + CANONICAL_INTEGRATION_VALIDATION_REQUIRED"
+   },
+   {
+    "id": "F008", "capability": "Video call",
+    "IMPLEMENTATION": "NOT_RECORDED", "LOCAL_VALIDATION": "NOT_APPLICABLE",
+    "CERTIFICATION": "PROVEN", "LIVE_PRODUCTION": "PROVEN", "CANONICAL_INTEGRATION": "NOT_PROVEN",
+    "certificationEvidence": "4-party video, real frames in both directions.",
+    "executionClass": "EXISTING_CAPABILITY_LIVE_PROVEN + CANONICAL_INTEGRATION_VALIDATION_REQUIRED"
+   },
+   {
+    "id": "F009", "capability": "Grow 1:1 into a group",
+    "IMPLEMENTATION": "NOT_RECORDED", "LOCAL_VALIDATION": "NOT_APPLICABLE",
+    "CERTIFICATION": "PROVEN", "LIVE_PRODUCTION": "PROVEN", "CANONICAL_INTEGRATION": "NOT_PROVEN",
+    "certificationEvidence": "Reviewer added live; invitation accepted; roster reached 4.",
+    "executionClass": "EXISTING_CAPABILITY_LIVE_PROVEN + CANONICAL_INTEGRATION_VALIDATION_REQUIRED",
+    "note": "F009 is owned by CH-06, not CH-04. Its capability is realtime; its canonical home is the Conversation. The split is preserved, not merged."
+   },
+   {
+    "id": "F010", "capability": "Screen share",
+    "IMPLEMENTATION": "NOT_RECORDED", "LOCAL_VALIDATION": "NOT_APPLICABLE",
+    "CERTIFICATION": "PROVEN", "LIVE_PRODUCTION": "PROVEN", "CANONICAL_INTEGRATION": "NOT_PROVEN",
+    "certificationEvidence": "Founder: screenshare working i have validated.",
+    "executionClass": "EXISTING_CAPABILITY_LIVE_PROVEN + CANONICAL_INTEGRATION_VALIDATION_REQUIRED"
+   }
+  ],
+  "whatIsNotInferred": "IMPLEMENTATION stays NOT_RECORDED on all five. You cannot be in a four-party video call without an implementation, but that implication is inference and is NOT promoted to a recorded state. Ruling 3 restores the CERTIFICATION and LIVE_PRODUCTION columns; it does not manufacture the IMPLEMENTATION column."
+ },
+ "chapterPosture": {
+  "priorPosture": "constructionReadiness = CONFLICTED (a single chapter-wide cell over a preserved contradiction).",
+  "newPosture": "SPLIT. CH-04 no longer has one construction state.",
+  "partitions": [
+   {
+    "class": "EXISTING_CAPABILITY_LIVE_PROVEN",
+    "units": ["F006", "F007", "F008", "F010", "F009 (CH-06-owned)"],
+    "executionObligation": "PRESERVE. Do not schedule reconstruction. Ruling 3: do not schedule wholesale reconstruction of already-working realtime capability merely because implementation provenance is missing."
+   },
+   {
+    "class": "CANONICAL_INTEGRATION_VALIDATION_REQUIRED",
+    "units": ["F006", "F007", "F008", "F010"],
+    "executionObligation": "1) establish the canonical integration/attachment contract; 2) validate the existing capability against it; 3) preserve what conforms.",
+    "boundedPrerequisite": "The attachment contract is authored by CH-06 (canonical Conversation), which is W3. Under RULING 1 CH-04 needs the BOUNDED contract, not the whole of CH-06 - but the contract does not exist yet in any form. This is why the validation cannot begin in the first wave.",
+    "sequencingConsequence": "This work is W3-adjacent, not W1. It was previously mis-scheduled into W1 as part of CH-04 PHASE 1's certification slice."
+   },
+   {
+    "class": "DELTA_CONSTRUCTION_REQUIRED_IF_VALIDATION_FAILS",
+    "units": ["contingent - unknown until the validation runs"],
+    "executionObligation": "Construct or refactor ONLY the demonstrated delta, then run targeted regression/certification over any shared or protected subsystem touched.",
+    "explicitlyNotSized": "The size of this partition is UNKNOWN and is not estimated. Estimating it would convert the validation's outcome into an assumption."
+   },
+   {
+    "class": "INDEPENDENTLY_OUTSTANDING",
+    "units": ["F045 accept-freeze root cause", "F112 Meetings equivalent validation", "18 OUTSTANDING_CONSTRUCTION obligations in CO-RC-C6-*"],
+    "executionObligation": "Untouched by Ruling 3. These were never covered by the F006-F010 contradiction and remain outstanding on their own evidence.",
+    "note": "This partition is the reason CH-04 does not become a certification-only chapter. Ruling 3 changes the reading of five findings, not of the chapter's 32 obligations."
+   }
+  ],
+  "twelveLiveCertifiedFindings": "PRESERVED at 12. Reading 2 from the pre-execution adjudication - under which the twelve would have contracted to an unknown number - is NOT adopted. Ruling 3 selects neither reading as exclusive; it holds both truths, and Truth A keeps the twelve intact."
+ },
+ "firstWaveConsequence": {
+  "verdict": "CH-04 PHASE 1 IS REFUSED FOR THE FIRST EXECUTABLE WAVE",
+  "whatRuling3Did": "Removed the CONSTRUCTION conflict. CH-04 is no longer blocked by a preserved contradiction.",
+  "whatRuling3DidNot": [
+   "It did not discharge PBCR conditions 7 and 8, which remain OWED for the historical PB-02 / RC-C6 crossing. Ruling 2 requires stopping at that boundary first.",
+   "It did not settle AD-CON-5, the founder classification of that completed crossing, which is listed OUTSTANDING in CH-04's founderActions.",
+   "It did not settle SU-5 - whether RC-C6's 'blocked until C2' blocker discharged when RC-C2 closed on 2026-08-16. No document restates it in either direction; the discharge is an analyst's inference.",
+   "It did not make VS-02 convenable. Three sequential calls within ONE page lifetime with no reload is the only condition under which the F045 root cause manifests.",
+   "It did not produce real iOS, Android or Windows MSIX devices for the device layer. That request is a LANE-W0 long lead that has not landed."
+  ],
+  "whatIsScheduledInstead": "W1-000 - the non-mutating discharge of PBCR conditions 7 and 8. It is the one CH-04-owned act that is executable today, it removes one of the three blockers, and it doubles as the attribution baseline for every CH-02 router regression in the same wave."
+ }
+}

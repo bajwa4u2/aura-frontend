@@ -1,0 +1,65 @@
+{
+ "type": "CORS_CURRENT_STATE_EVIDENCE_CAPTURE",
+ "date": "2026-08-18",
+ "founderRuling": "RULING 4 - CORS mutation is NOT AUTHORIZED. This task may perform NON-MUTATING evidence capture only.",
+ "mutationPerformed": false,
+ "operationsAttempted": [
+  {
+   "operation": "GetBucketCors",
+   "mutating": false,
+   "bucket": "aura-uploads",
+   "endpoint": "https://4aaf8b857d93a9f0999dc8fee4599970.r2.cloudflarestorage.com",
+   "credentials": "the aura-backend R2 access key from aura-backend/.env",
+   "result": "AccessDenied",
+   "httpStatus": 403
+  }
+ ],
+ "eightItemRecord": {
+  "1_currentPolicyOrConfiguration": {
+   "value": "NOT CAPTURABLE WITH AVAILABLE CREDENTIALS",
+   "evidence": "GetBucketCors returned AccessDenied (HTTP 403) against bucket aura-uploads. This is a READ operation and it was refused.",
+   "consequence": "The current CORS document is not merely unrecorded - it is unreadable from this environment. It cannot be captured by any non-mutating action available here.",
+   "whatWouldCaptureIt": "The Cloudflare dashboard, or an API token scoped to bucket configuration read. Both are founder-held."
+  },
+  "2_environment": "PRODUCTION object storage. Cloudflare R2, account 4aaf8b857d93a9f0999dc8fee4599970, bucket aura-uploads. There is no separate non-production bucket in evidence.",
+  "3_affectedRuntimeOrProductBoundary": "YES - the web delivery path for all stored media. It is the boundary F138 proves performs NO authorization of its own.",
+  "4_currentAllowedOriginsOrBehavior": {
+   "value": "UNKNOWN - NOT CAPTURABLE",
+   "observedBehaviourInstead": "F058 records that browser-origin reads of stored media fail, which is the symptom that motivated the request. The symptom is evidence that SOME policy is in force or absent; it is not evidence of WHAT the policy is.",
+   "explicitlyNotInferred": "The absence of a readable policy is NOT recorded as 'no CORS policy exists'. AccessDenied on a read is not the same fact as an empty configuration, and the two have different rollback consequences."
+  },
+  "5_securityImplications": [
+   "CORS governs cross-origin READ access to a bucket whose storage boundary performs no authorization (F138). An over-broad origin list widens exposure of objects the storage layer does not gate.",
+   "F143 is directly relevant: Media identity is not 1:1 with storage objects, and 10 production aliasing pairs are on record. An origin granted read access reaches storage objects, not Media rows, so the app-level disclosure model does not bound what a permissive policy exposes.",
+   "This item is the reason the change is classified PROTECTED_OR_SHARED_BOUNDARY_REQUIRES_AUTHORIZATION rather than as configuration housekeeping."
+  ],
+  "6_proposedChange": {
+   "operation": "PutBucketCors on aura-uploads",
+   "status": "PREPARED, NOT AUTHORIZED, NOT EXECUTED",
+   "note": "The JSON was prepared and handed over in an earlier session. It is not re-proposed or modified here."
+  },
+  "7_targetedValidation": [
+   "VD-019 and VD-026 - SINGLE_AUTHORIZED_BROWSER render proof that avatars and images load from a browser origin.",
+   "Explicit confirmation that no UNINTENDED origin gained read access - a positive check, not merely the absence of a reported problem.",
+   "Re-read of the policy after the change, to establish the post-state as capturable even if the pre-state was not."
+  ],
+  "8_deterministicRollbackProcedure": {
+   "status": "NOT ESTABLISHED - AND NOT ESTABLISHABLE FROM THIS ENVIRONMENT",
+   "reason": "Deterministic rollback means re-applying the exact prior document. That document cannot currently be read. A change made now would be irreversible in the only sense that matters: the prior state would be unknown, not merely unsaved.",
+   "requiredBeforeAnyChange": "Capture the current policy through the Cloudflare dashboard or a config-read-scoped token, and file it verbatim. Only then does PutBucketCors have a rollback."
+  }
+ },
+ "sequencingConsequence": {
+  "ruling4Test": "CORS MUST NOT block reconstruction sequencing unless canonical evidence proves it is a prerequisite for the first executable wave.",
+  "verdict": "NOT A FIRST-WAVE PREREQUISITE",
+  "evidence": "CORS gates the VISUAL half of F051/F052/F056 and WG010's premise. No unit admitted to the first executable wave depends on a rendered image: W1-F (CH-03) is partitioned so that the CODE_STATIC enumerated consumer audit proceeds and the rendered-image legs stay in W2, where they were already placed.",
+  "effect": "CORS is removed from the sequencing path and remains a LANE-W0 external founder action - now recorded as BLOCKED ON A PRIOR CAPTURE, not merely awaiting a dashboard visit."
+ },
+ "boundariesObserved": [
+  "No PutBucketCors was attempted.",
+  "No production configuration was changed.",
+  "Nothing was deployed.",
+  "No runtime behaviour was modified.",
+  "The only operation issued was a read, and it was refused."
+ ]
+}

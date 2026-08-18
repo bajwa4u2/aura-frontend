@@ -1,0 +1,193 @@
+{
+ "_schema": "Exactly 13 attributes per unit, in the order the founder specified. Any unit with a count other than 13 fails the derivation closed.",
+ "W1-000": {
+  "canonicalOwner": "CH-04 Realtime Substrate, Devices & Shared Presentation (charteredBy RC-C6). Executed as PRE-ENTRY evidence: it discharges CH-04's owed boundary conditions without entering the chapter.",
+  "canonicalUnitIds": {
+   "findings": ["F112"],
+   "obligations": [],
+   "note": "PBCR conditions 7 (targeted regression for the protected subsystem) and 8 (shared-system health report) are DOCTRINE conditions carried in PORTFOLIO_GOVERNANCE_DOCTRINE.md, not separately numbered chartered obligations. F112 (Meetings equivalent validation, OPEN) is the finding whose evidence this unit produces. No obligation is claimed closed by this unit."
+  },
+  "whyExecutableNow": "Founder Ruling 2 states that where work reaches a protected boundary, execution STOPS at that boundary and applies the protected-boundary/PBCR governance before proceeding. Conditions 7 and 8 are owed for a crossing that ALREADY HAPPENED (the historical PB-02 / RC-C6 repair). Discharging them requires running existing suites and writing a report - it constructs nothing, mutates nothing, and crosses nothing. It is the only unit in the portfolio that makes a later protected crossing admissible without performing one.",
+  "prerequisites": ["RC-A (509230a) and RC-B (dfc9027) present in the tree and not regressed", "The Meetings suite and the realtime suites runnable locally", "No concurrent change to router or realtime behaviour during the run (attribution requirement)"],
+  "prerequisitesAlreadySatisfied": ["RC-A and RC-B are committed and statically verifiable", "All suites are LOCAL_AUTOMATED and convenable today", "No chapter is executing, so attribution is clean by construction - this is why the unit is FIRST"],
+  "unresolvedPrerequisites": ["NONE"],
+  "protectedOrSharedBoundariesTouched": ["PB-01 Meetings - READ ONLY (suite execution)", "PB-02 realtime transport - READ ONLY (health observation)", "PB-12 both repositories reported together"],
+  "migrationImplications": "NONE. No schema change, no migration executed or authored.",
+  "productionDataImplications": "NONE. Local suites over local fixtures. No production read, no production write.",
+  "requiredTargetedRegressions": ["Meetings 97/97", "Realtime transport suites covering the RC-A/RC-B repair surface", "Backend and frontend suites reported TOGETHER (PB-12)"],
+  "requiredCertification": "NONE claimed. This unit produces EVIDENCE, not certification. It may not be reported as discharging AD-CON-5, which is a founder classification act.",
+  "completionEvidenceRequired": "A written shared-system health report naming every subsystem implicated by the historical crossing, its current suite result, and any divergence between repositories; plus the raw suite output. Both filed under 05-execution and referenced from the CH-04 entry record.",
+  "documentationContinuityUpdatesRequired": ["PORTFOLIO_GOVERNANCE_DOCTRINE.md - PBCR conditions 7 and 8 marked DISCHARGED with the evidence reference (conditions 1-6 and 9-10 untouched)", "CH-04 entry record in index-chapters.json annotated with the discharge", "Both repositories' CURRENT_STATE / DECISIONS continuity docs"]
+ },
+ "W1-A": {
+  "canonicalOwner": "CH-17 Governance, Certification & Release Gate - MECHANISM half only. The TERMINAL half remains W7 and is not entered.",
+  "canonicalUnitIds": {
+   "findings": ["F115", "F119", "F120"],
+   "obligations": ["CO-RC-C11-001", "CO-RC-C11-003", "CO-RC-C11-004"],
+   "note": "F118 (C4 findings preserved, LIVE_CERTIFIED) is the precedent this mechanism generalises and is NOT re-opened. CO-RC-C11-004 is engaged as the DEFINITION of the nine entry conditions, not as their discharge."
+  },
+  "whyExecutableNow": "Stage 5 records that the mechanism half has no prerequisites of any kind, constructs no product capability, and must exist BEFORE the first chapter closure of the programme. Since this wave proposes the first chapter entries, the closure machinery must be authored in the same wave or the first closure will be ungoverned. F115's non-shrinking register rule currently exists ONLY in transcript evidence - and 115 of 143 findings are evidenced only in transcripts, which is itself the risk.",
+  "prerequisites": ["Founder authorisation for the CH-17 mechanism half specifically (not the chapter)"],
+  "prerequisitesAlreadySatisfied": ["No dependency of any kind on another chapter", "The 451-unit canonical register already exists and is validated - the mechanism gives it a governed home rather than creating it"],
+  "unresolvedPrerequisites": ["NONE for the mechanism half. PD-1, PD-2, SupportScreen and GAP-2 dispositions block the TERMINAL half only and are explicitly out of scope here."],
+  "protectedOrSharedBoundariesTouched": ["PB-10, PB-11, PB-12 as certification SUBJECTS, not as crossings"],
+  "migrationImplications": "NONE.",
+  "productionDataImplications": "NONE. Documentary and test-harness work only.",
+  "requiredTargetedRegressions": ["Each authored ratchet demonstrated to FAIL on a deliberately introduced real violation before it counts as enforcement (FD-13 precedent)"],
+  "requiredCertification": "Architecture and Implementation layers for the mechanism itself. NOT release readiness - item 17 is evaluated at C11 only, and CO-RC-C11-003 forbids a lower layer implying a higher one.",
+  "completionEvidenceRequired": "The non-shrinking register and the chapter-closure template live in governed markdown in BOTH repositories; the template carries item-level reporting of the three preserved conflicts (F043, F051, F122) and of F139's TWO dimensions; each ratchet has a recorded seeded-violation failure.",
+  "documentationContinuityUpdatesRequired": ["New governed markdown register + closure template in aura_final AND aura-backend", "PORTFOLIO_GOVERNANCE_DOCTRINE.md cross-reference", "Both repositories' continuity docs"]
+ },
+ "W1-B": {
+  "canonicalOwner": "CH-01 Product Foundations & Conformance (charteredBy RC-C0 / RC-C1). Continuous in LANE-CONT.",
+  "canonicalUnitIds": {
+   "findings": [],
+   "obligations": ["CO-RC-C0-011", "CO-RC-C0-012", "CO-RC-C0-013", "CO-RC-C0-019", "CO-RC-C0-020", "CO-RC-C0-021"],
+   "note": "CH-01 owns ZERO findings and 42 obligations - it is a pure conformance chapter. The three OUTSTANDING_CONSTRUCTION items are measured foundation debt; the three VALIDATION_OR_GATE_ONLY items are preserve-and-do-not-break obligations engaged continuously."
+  },
+  "whyExecutableNow": "Its inputs closed at source on 2026-08-15 (the four C0/C1 authorities). Its own sequencePosition records that it gates nothing and is gated by nothing. Its ratchets execute INSIDE every other chapter's definition of done, so authoring them late means every earlier closure was measured by a weaker rule.",
+  "prerequisites": ["Founder authorisation for CH-01"],
+  "prerequisitesAlreadySatisfied": ["D-01 and D-08 satisfied at source - the four authorities are CLOSED and are consumed, not rebuilt"],
+  "unresolvedPrerequisites": ["NONE at entry. The 68 SizedBox.shrink() adjudication and PD-1's Platform Administration disposition are governance decisions OWNED BY CH-17 and are reported as non-blocking."],
+  "protectedOrSharedBoundariesTouched": ["PBX-05 is a PROHIBITION, not a crossing: CO-RC-C0-008 forbids modifying certified Meetings for foundation debt reduction. The 26 spinner sites inside Meetings are therefore OUT OF SCOPE and stay measured-but-unconverted."],
+  "migrationImplications": "NONE chartered.",
+  "productionDataImplications": "NONE.",
+  "requiredTargetedRegressions": ["Foundation ratchets green across both repositories, each demonstrated to fail on a seeded violation"],
+  "requiredCertification": "Architecture and Implementation earnable here. Product Behavior is PARTIAL and must be observed on a real surface - it may never be asserted from a lint count.",
+  "completionEvidenceRequired": "Ratchet suite green AND each ratchet's seeded-failure record; the G5/relative_time/local_timezone remainders carry an explicit owner and retirement condition rather than a count.",
+  "documentationContinuityUpdatesRequired": ["Conformance ratchet documentation in aura_final", "The Meetings exclusion recorded explicitly so a later reader does not read the remainder as neglect", "Continuity docs"]
+ },
+ "W1-C": {
+  "canonicalOwner": "CH-02 Continuity & Destination Authority (charteredBy RC-C3) - KEYSTONE SLICE S1.",
+  "canonicalUnitIds": {
+   "findings": ["F065"],
+   "obligations": ["CO-RC-C3-021"],
+   "note": "F065 (UNKNOWN/RESTORING authentication treated as unauthenticated, IMPLEMENTED_NOT_LIVE_CERTIFIED) is the keystone. The relation F065 -> {F059, F061, F062, F063, F064, F103, F104} is preserved as an ORDERING constraint, never as a merge - those seven remain separately owned and separately closed."
+  },
+  "whyExecutableNow": "Its only stated dependency, CH-01's loading/restoring/expired vocabulary, is FROZEN at source (D-08). It is the portfolio's highest fan-out unbuilt system - eight downstream relations including the acquisition funnel's ONLY path (F065 gates F103/F104) and the founder-frozen Live auth-return. Every dependent that starts first solves 'where was I' locally, and the register already records the shape of that failure: session state written at 2 of N call sites.",
+  "prerequisites": ["PD-2 structural disposition ratified or explicitly deferred with the consequence accepted", "Founder authorisation for CH-02", "A live authenticated session for the refresh proof"],
+  "prerequisitesAlreadySatisfied": ["CH-01 vocabulary frozen", "TokenStore.setSession() identified as the single choke point - the target is known, not to be discovered", "VS-01 is SINGLE_AUTHORIZED_BROWSER and needs no second identity, device, deploy or external action"],
+  "unresolvedPrerequisites": ["PD-2 STRUCTURAL DISPOSITION (CO-RC-C1-022, recorded OPEN, DETERMINISTIC_DERIVATION from OPEN_DISPOSITION). It is load-bearing AT ENTRY because it defines the keystone's boundary. THIS IS A FIRST-WAVE BLOCKER."],
+  "protectedOrSharedBoundariesTouched": ["PB-06 and PB-09 - this chapter's OWN chartered repair (PBX-10). The session hint IS a contract at TokenStore.setSession(); writing it at additional call sites is the defect being repaired, not a new crossing.", "PB-11 founder observation applies to any live behaviour change on authentication."],
+  "migrationImplications": "NONE. No data migration chartered.",
+  "productionDataImplications": "Changes live authentication behaviour on deploy. PB-11 requires founder observation of that deploy. No production DATA is read, written or reshaped.",
+  "requiredTargetedRegressions": ["Full authentication suite", "Guest boundary preserved - a signed-out leg proving the guest path is not captured by the session hint", "Meetings 97/97 if any router surface is touched incidentally"],
+  "requiredCertification": "F065 LIVE REFRESH PROOF is the chapter's OWN FIRST GATE. Until it passes, NO downstream continuity finding may be claimed closed. Certification remains structurally PARTIAL until W4.",
+  "completionEvidenceRequired": "A live refresh on an authenticated session that does NOT drop to the unauthenticated state, observed in a SINGLE_AUTHORIZED_BROWSER, with a static proof that session establishment is written at exactly ONE call site.",
+  "documentationContinuityUpdatesRequired": ["The single-choke-point contract published in governed markdown", "F065 state transition recorded in the register with its evidence", "Both repositories' continuity docs"]
+ },
+ "W1-D": {
+  "canonicalOwner": "CH-02 Continuity & Destination Authority - KEYSTONE SLICE S2.",
+  "canonicalUnitIds": {
+   "findings": ["F064", "F113", "F117"],
+   "obligations": ["CO-RC-C3-022", "CO-RC-C3-023"],
+   "note": "F064 and F113 (Meetings refresh continuity, both OPEN) are fixed HERE without opening Meetings. F117 (Refresh as a platform contract, PARTIALLY_VALIDATED) is the contract this slice makes enforceable. CO-RC-C3-022 (ALL EXISTING DEEP LINKS MUST CONTINUE TO RESOLVE) is the continuity guarantee this slice must not break."
+  },
+  "whyExecutableNow": "Route classification is fail-open today: /admin, /articles/* and /realtime/* are unclassified across 24 routes (DB-6). The classification is disjoint by construction and the ratchets that prove it are already specified - 23 navigation gates, a 103-file / 294-site literal ratchet, and a strengthened registry-to-router integrity gate.",
+  "prerequisites": ["PD-2 ratification (inherited from the same keystone)", "W1-000's Meetings baseline, so that the post-change 97/97 is attributable to this change alone", "Founder authorisation for CH-02"],
+  "prerequisitesAlreadySatisfied": ["The 24 unclassified routes are enumerated", "The three ratchets exist as specifications", "DB-6 records the ORDER-dependency hazard explicitly, so the known failure mode is designed against rather than discovered"],
+  "unresolvedPrerequisites": ["PD-2 (shared with W1-C). THIS IS A FIRST-WAVE BLOCKER."],
+  "protectedOrSharedBoundariesTouched": ["PB-01 Meetings guest/booker entry is REACHED but NOT OPENED. A near-miss is on record: an order-dependent fix would have bounced meeting guests into a login wall. Every router change carries a targeted Meetings regression.", "PB-10"],
+  "migrationImplications": "NONE.",
+  "productionDataImplications": "NONE directly. Changes routing/authorisation behaviour on deploy; PB-11 founder observation applies.",
+  "requiredTargetedRegressions": ["Meetings 97/97 AFTER the classification change, compared against the W1-000 baseline", "23 navigation gates green AFTER the change", "103-file / 294-site literal route ratchet green AFTER the change", "Registry-to-router integrity gate green"],
+  "requiredCertification": "A LIVE SIGNED-OUT PROBE certifying the classification contract as fail-closed. A green suite alone does not certify fail-closedness - the probe is the evidence.",
+  "completionEvidenceRequired": "Live signed-out probe result; all three ratchets green post-change; Meetings 97/97 attributable to this change; explicit confirmation that every one of the 24 previously unclassified routes now carries a classification and that the guest/booker path still resolves.",
+  "documentationContinuityUpdatesRequired": ["The route-classification contract published in governed markdown", "The DB-6 order-dependency hazard recorded as a permanent rule for future router work", "Continuity docs"]
+ },
+ "W1-E": {
+  "canonicalOwner": "CH-02 Continuity & Destination Authority - KEYSTONE SLICE S3.",
+  "canonicalUnitIds": {
+   "findings": ["F027", "F103", "F104"],
+   "obligations": ["CO-RC-C3-020"],
+   "note": "F103 (Auth returns to the SAME Live) and F104 (Sign-up preserves intent) are OPEN and are GATED BY F065 - the contract is published here, its satisfaction is later. F027 (Draft resume/continuity) is named so that the composer does not build a second draft store, which a founder ruling explicitly forbids."
+  },
+  "whyExecutableNow": "It is documentary work over CH-02's own authority and consumes nothing unbuilt. Publishing it in the same wave as S1/S2 is what prevents the four downstream chapters from each inventing a private return-destination store while CH-02 is still mid-delivery.",
+  "prerequisites": ["S1 and S2 delivered, so the contract describes what exists rather than what is hoped for", "PD-2 ratification (inherited)"],
+  "prerequisitesAlreadySatisfied": ["The four preserved shells (CO-RC-C3-020) are enumerated", "The forbidden-second-draft-store ruling already exists and is cited rather than made"],
+  "unresolvedPrerequisites": ["PD-2 (shared). THIS IS A FIRST-WAVE BLOCKER."],
+  "protectedOrSharedBoundariesTouched": ["NONE. Documentary."],
+  "migrationImplications": "NONE.",
+  "productionDataImplications": "NONE.",
+  "requiredTargetedRegressions": ["CODE_STATIC conformance of the published contract against S1 and S2 as actually delivered - the contract may not describe an intention"],
+  "requiredCertification": "Architecture layer only. It may NOT be read as certifying F103 or F104, which are gated by F065's live proof and remain OPEN.",
+  "completionEvidenceRequired": "The destination-reconstruction contract published in governed markdown, with a static check binding each clause to the S1/S2 implementation site that satisfies it.",
+  "documentationContinuityUpdatesRequired": ["The contract itself", "An explicit statement that F103/F104 remain OPEN and are not closed by publication", "Continuity docs"]
+ },
+ "W1-F": {
+  "canonicalOwner": "CH-03 Identity Consumption & Presentation Truth (charteredBy RC-C2) - the AUDIT partition only. The chapter remains W2.",
+  "canonicalUnitIds": {
+   "findings": ["F116", "F053"],
+   "obligations": ["CO-RC-C2-010"],
+   "note": "F116 (Identity as a shared-consumption problem, PARTIALLY_VALIDATED) may NOT be closed by fixing one consumer - PB-05 names an ENUMERATED consumer list as its exit condition, and this unit produces exactly that list. F053 (Canonical Identity consumed consistently, PARTIALLY_VALIDATED) is the contract the audit measures against. CO-RC-C2-010 names the six local person-shaped extraction sites. F051/F052/F056 are NOT in this unit - their rendered-image half stays blocked."
+  },
+  "whyExecutableNow": "Founder Ruling 4 removes CORS from the sequencing path unless canonical evidence proves it a prerequisite of the first wave. It is not: it gates the VISUAL half of F051/F052/F056 only. Stage 5 independently records the enumerated consumer audit as safe, non-mutating work that can begin immediately, and its parallel-work note already places it in W1 while the chapter stays in W2. Producing the enumerated list early makes the W2 conformance gate a measurement rather than a discovery.",
+  "prerequisites": ["Founder authorisation for the CH-03 AUDIT partition specifically - not for CH-03"],
+  "prerequisitesAlreadySatisfied": ["CODE_STATIC needs no account, device, deploy or external action", "The six person-shaped extraction sites are already counted, so the audit extends a known set rather than starting cold"],
+  "unresolvedPrerequisites": ["NONE for the audit. Group identity doctrine (F055 ordering, F056 group avatar treatment) and the verification-label mapping are load-bearing when ACTING on the audit in W2, not when enumerating consumers."],
+  "protectedOrSharedBoundariesTouched": ["PB-05 is APPROACHED and not crossed: the broader identity system is not rewritten because a consumer needs a relationship, and this unit changes no consumer.", "PB-07 identity media custody is not touched - the six SUPERSEDED identity assets are not authored, moved or deleted."],
+  "migrationImplications": "NONE. Explicitly: no identity-to-Media convergence is performed. DB-7 records that URL equality is permitted for migration/evidence DISCOVERY ONLY and may never be treated as the constitutional identity relationship.",
+  "productionDataImplications": "NONE. Read-only static analysis of source.",
+  "requiredTargetedRegressions": ["NONE - the unit changes no behaviour. This must be stated positively in the closure record so its absence is not read as an omission."],
+  "requiredCertification": "NONE claimed. The audit produces an artifact, not a certification. Publishing the IDENTITY CONFORMANCE GATE remains W2.",
+  "completionEvidenceRequired": "The ENUMERATED consumer list - every identity consumer in both repositories, each classified as conformant or non-conformant against F053, with the six known extraction sites reconciled into it. The list is the deliverable; a count is not.",
+  "documentationContinuityUpdatesRequired": ["The enumerated consumer list filed under CH-03's evidence", "An explicit statement that F116 is NOT closed and that the audit is its exit-condition INPUT", "Continuity docs"]
+ },
+ "W1-X1": {
+  "canonicalOwner": "CH-11 Content Truth & Ingestion Governance (charteredBy RC-C5).",
+  "canonicalUnitIds": {
+   "findings": ["F016", "F122", "F123", "F127", "F128", "F129", "F130", "F133", "F134"],
+   "obligations": ["CO-RC-C5-019", "CO-RC-C5-020"],
+   "note": "Listed for completeness. This unit is NOT admitted unconditionally."
+  },
+  "whyExecutableNow": "It has no chapter prerequisite and sits on backend ingestion, disjoint from CH-02 and CH-04 territory. Stage 5 placed it in W1 for that reason.",
+  "prerequisites": ["Founder ratification that the RC-C5 BIFURCATED ruling answers CH-11's recorded scope question, OR an explicit ruling that it does not"],
+  "prerequisitesAlreadySatisfied": ["No chapter dependency of any kind"],
+  "unresolvedPrerequisites": ["The RC-C5 scope ratification. Stage 5 sets the FAIL-CLOSED DEFAULT to TREAT AS GATED, and no ruling of 2026-08-18 addressed it. THIS IS A FIRST-WAVE BLOCKER for this unit only."],
+  "protectedOrSharedBoundariesTouched": ["The ingestion door; F138's finding that the storage boundary performs no authorisation is the standing context."],
+  "migrationImplications": "To be established at entry. None authorised here.",
+  "productionDataImplications": "None authorised here.",
+  "requiredTargetedRegressions": ["To be established at entry."],
+  "requiredCertification": "To be established at entry.",
+  "completionEvidenceRequired": "To be established at entry.",
+  "documentationContinuityUpdatesRequired": ["To be established at entry."]
+ },
+ "W1-X2": {
+  "canonicalOwner": "CH-04 Realtime Substrate, Devices & Shared Presentation (charteredBy RC-C6) - PHASE 1.",
+  "canonicalUnitIds": {
+   "findings": ["F006", "F007", "F008", "F010", "F045", "F112"],
+   "obligations": ["CO-RC-C6-004"],
+   "note": "Listed for completeness. This unit is REFUSED for the first wave. Under Ruling 3 the five capability findings retain CERTIFICATION=PROVEN and LIVE_PRODUCTION=PROVEN for the scope observed; nothing here contracts them."
+  },
+  "whyExecutableNow": "It is NOT. Ruling 3 removed the CONSTRUCTION conflict that previously blocked it, but three independent blockers survive.",
+  "prerequisites": ["W1-000 discharging PBCR conditions 7 and 8", "AD-CON-5 founder classification of the completed PB-02 / RC-C6 PRESERVE-list crossing", "SU-5 settled - whether RC-C6's 'blocked until C2' blocker discharged when RC-C2 closed 2026-08-16", "VS-02: three sequential calls within ONE page lifetime with no reload", "Real iOS, Android and Windows MSIX devices for the device layer"],
+  "prerequisitesAlreadySatisfied": ["RC-A (509230a) and RC-B (dfc9027) are present", "Ruling 3 has dissolved the F006-F010 contradiction into two preserved truths, so the chapter is no longer CONFLICTED on construction"],
+  "unresolvedPrerequisites": ["PBCR conditions 7 and 8 (OWED - Ruling 2 requires stopping at the boundary)", "AD-CON-5 (founder)", "SU-5 (an analyst's inference, not the corpus's)", "VS-02's three-sequential-call condition", "Real devices - a LANE-W0 long-lead request that has not landed"],
+  "protectedOrSharedBoundariesTouched": ["PB-02, PB-01, PB-03, PB-04, PB-10, PB-12 - the densest protected cluster in the portfolio"],
+  "migrationImplications": "NONE chartered in either phase. The irreversibility here is production usability, not data.",
+  "productionDataImplications": "None authorised.",
+  "requiredTargetedRegressions": ["Full realtime regression plus Meetings 97/97, attributable to one change at a time"],
+  "requiredCertification": "Under Ruling 3: canonical-integration validation of the five existing capabilities against the attachment contract, NOT re-certification of the capabilities themselves.",
+  "completionEvidenceRequired": "Deferred to entry.",
+  "documentationContinuityUpdatesRequired": ["Deferred to entry."]
+ },
+ "W1-X3": {
+  "canonicalOwner": "CH-02 Continuity & Destination Authority - KEYSTONE SLICE S4.",
+  "canonicalUnitIds": {
+   "findings": [],
+   "obligations": ["CO-RC-C3-006"],
+   "note": "Listed for completeness. REFUSED for the first wave."
+  },
+  "whyExecutableNow": "It is NOT. The draft identity/ownership contract consumes the identity CONFORMANCE GATE that CH-03 publishes in W2. Drafting it now would author identity ownership ahead of its owning chapter.",
+  "prerequisites": ["CH-03's published identity conformance gate", "The group identity doctrine that does not currently exist", "PD-2 ratification"],
+  "prerequisitesAlreadySatisfied": ["CH-02's own destination authority is being established by S1-S3 in this wave"],
+  "unresolvedPrerequisites": ["CH-03 conformance gate (W2)", "Group identity doctrine (founder-authored, does not exist)", "PD-2"],
+  "protectedOrSharedBoundariesTouched": ["NONE. Documentary."],
+  "migrationImplications": "NONE.",
+  "productionDataImplications": "NONE.",
+  "requiredTargetedRegressions": ["NONE."],
+  "requiredCertification": "Architecture layer, at W2.",
+  "completionEvidenceRequired": "Deferred to W2.",
+  "documentationContinuityUpdatesRequired": ["Deferred to W2."]
+ }
+}
