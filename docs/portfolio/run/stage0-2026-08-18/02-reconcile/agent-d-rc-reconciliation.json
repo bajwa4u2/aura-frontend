@@ -1,0 +1,1961 @@
+{
+ "type": "ANALYTICAL_PROPOSAL",
+ "artifact": "agent-d-rc-reconciliation",
+ "stage": "STAGE 2 - RECONCILIATION",
+ "agent": "AGENT D - RC-C0..RC-C11 RECONCILIATION",
+ "date": "2026-08-18",
+ "status": "NOT RATIFIED TRUTH. This artifact reconciles Stage-1's proposed systems against the ORIGINAL reconstruction architecture. It assigns no FINAL canonical ownership (Stage 4), prioritises nothing (Stage 3), adjudicates no conflict, and alters no Stage-0 or Stage-1 artifact.",
+ "governingPrinciple": "RC-C0..RC-C11 remains the RECONSTRUCTION MAP. The F-register remains the EVIDENCE REGISTER. NEITHER REPLACES THE OTHER. A chapter is not discharged because its findings are closed, and a finding is not closed because its chapter is closed.",
+ "namespaceDiscipline": {
+  "RC-C0..RC-C11": "historical Reconstruction chapters - the axis this artifact reconciles against.",
+  "RIC-C1..RIC-F1": "Rich Content and Interaction stages - a DIFFERENT AXIS. Never equated with RC. Where this artifact says RIC-C5 it means governed delivery; where it says RC-C5 it means Composition, Content Intake and Attachments.",
+  "RC-A / RC-B / RC1..RC9": "ROOT-CAUSE labels from the realtime and refresh audits. Not chapters.",
+  "CH-A..CH-O": "Stage-1 Agent A's candidate implementation chapters. Analytical proposals, not project-canonical identifiers.",
+  "RS-01..RS-23": "Stage-1 Agent A's root systems.",
+  "AD-*": "This artifact's own analytical labels. Analysis output, never historical issuance evidence (self-contamination invariant)."
+ },
+ "method": {
+  "test": "For each RC chapter, four questions were answered strictly from the normalised artifacts: (1) what did the chapter's own originalScope and exitCondition INTEND, quoted forward rather than restated as today's preferred architecture; (2) what does the evidence record as actually reconstructed; (3) what does the chapter's own explicitlyRemainingObligations plus the validation-debt records still owe; (4) which Stage-1 candidate systems carry any part of it.",
+  "reverseTest": "Then the reverse direction: for each of CH-A..CH-O, does it trace to (a) an RC chapter, (b) a later governed implementation chapter or canon, or (c) an explicitly recorded gap? A system belonging to NOTHING is itself a finding.",
+  "disappearanceTest": "An obligation is recorded as DISAPPEARED when it is present in the chapter's own chartered scope or remaining-obligation list and is carried by NO Stage-1 candidate system. Where the obligation survives on the validation axis (VD-xxx) that is stated, because the disappearance is then prospective - it would occur if a portfolio were built from the 15 candidate systems alone - rather than already complete.",
+  "explicitlyRejected": [
+   "Restating a chapter's intent as the architecture Stage 1 would prefer",
+   "Treating a Stage-1 system's existence as evidence that the chapter it overlaps is discharged",
+   "Treating finding count as a chartering criterion on the RC axis (the RC axis demonstrably does not use it - RC-C8 has zero findings and is a full chapter)",
+   "Classifying by token shape",
+   "Silently normalising any conflicting state"
+  ],
+  "authorityLimit": "Interpretations are offered. Adjudication is not mine. RC-C2 is not reopened. No finding or WG issuance is altered. No frozen doctrine or protected boundary is changed."
+ },
+ "baselineConsumed": {
+  "findings": "143 issued F001-F143, contiguous (F097 IS issued)",
+  "wgItems": "17 issued WG001-WG017; WG018 RESERVED/UNISSUED",
+  "rcChapters": "RC-C0..RC-C11",
+  "doctrines": 64,
+  "validationObligations": 82,
+  "protectedBoundaries": "PB-01..PB-12",
+  "quarantinedNonFindings": 41,
+  "provenance": "59 STRONG / 53 MODERATE / 31 WEAK",
+  "stage1": "Agent A 23 root systems / 15 candidate chapters CH-A..CH-O; Agent B dependency graph and the RC-C4/RC-C5 six interpretations; Agent C product lens; stage1-comparison"
+ },
+ "headlineResult": "YES - original reconstruction obligations have disappeared from current planning, and the loss is structural rather than incidental. The Stage-1 taxonomy is organised by ROOT SYSTEM (what must become correct so a finding stops recurring). The RC axis is organised by CAPABILITY UNDER CONSTRUCTION (what the product must be able to do). Any obligation that generated no finding is therefore invisible to the Stage-1 taxonomy by construction. Twenty such obligation clusters are recorded below, of which the largest are the whole of RC-C8 (Institution Room: zero findings, zero candidate systems), RC-C6's multi-device authority and device-transfer layer, RC-C7's Spaces and Correspondence obligations, RC-C4's Notification Preference Authority, and RC-C5's FD-8 official designation.",
+ "rcChapters": [
+  {
+   "id": "RC-C0",
+   "historicalName": "CROSS-CUTTING FOUNDATIONS",
+   "stage0State": "COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED - closed 2026-08-15",
+   "intent": {
+    "asChartered": "Build the three surface-agnostic authorities every later chapter consumes: Product Language, Product State Presentation, Human Temporal Presentation. The chapter is explicitly ADDITIVE AND MIGRATORY - its demolishOrRetire list reads 'NOTHING'. Product Language is explicitly 'not a database of every sentence'; it fixes canonical nouns, semantic CTA families and state terminology.",
+    "exitConditionAsWritten": "Not stated as a single exit sentence; the chapter's closure test was the declared migration (83 files -> shared loading, 68 SizedBox.shrink() empty states, 52 hand-rolled .difference(), 35 direct toLocal(), 22 independent sorts) plus FD-13's definition of done.",
+    "structuralRole": "This is the roadmap's designated home for CROSS-CUTTING concerns, and its scope named exactly three of them. That count is the chapter's most consequential design decision.",
+    "provenance": "rc-map RC-C0 governingPurpose (roadmap:52) and originalScope (roadmap:56-89)"
+   },
+   "reconstructed": [
+    "Three authorities exist in lib/core/product/: product_language.dart, product_state.dart + product_state_view.dart, temporal.dart (CURRENT_STATE:48-54)",
+    "Migration executed: 33 'Try again' labels across 30 files -> ProductAction.retry; relative_time.dart forwards to AuraTemporal; CommLoadingState/CommErrorState -> AuraProductState (CURRENT_STATE:56)",
+    "Enforcement live and verified to actually fail: test/product/c0_anti_drift_gate_test.dart, 4 zero-tolerance rules + 5 ratchets frozen in c0_drift_baseline.txt (CURRENT_STATE:60)",
+    "Ten frozen outcomes C0-1..C0-10 including the FD-13 enforcement precedent every later chapter follows (DECISIONS:65-119)",
+    "Verification: analyze clean, 458 tests passed"
+   ],
+   "remaining": [
+    "Measured enforced debt carried into later chapters: 24 local elapsed-time sites, 47 toLocal(), 26 full-surface spinners (14 in protected Meetings), 181 direct state-primitive constructions, 17 screen-declared time formatters (CURRENT_STATE:62)",
+    "G5 remainder at C2 closeout: 168 sites / 67 files, routed by the ownership matrix to C3 44, C4 26, C5 16, C7 26, C8 3, C9 3, PD-1 34, PD-2 3, C2 view-profiles 8 (C2_RECONSTRUCTION_DEBT_REGISTER:114)",
+    "Deprecated relative_time.dart shim: 11 caller files, burn-down owners C4 and C6; retirement = last caller converged, shim deleted (debt register:158)",
+    "Obligations explicitly handed onward and NOT C0 backlog: C2 verification labels (discharged), C5 official-designation vocabulary, C7 Correspondence rename, C10 Live plural/contextual language (DECISIONS:121-129)",
+    "Chapter-level completeness recorded against the Founder Reconstruction Doctrine as ARCHITECTURE complete / RUNTIME ADOPTION partial / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial (debt register:128)",
+    "VD-080: C0 is LOCALLY CERTIFIED only. Cross-System, Real-Boundary and Founder Product Acceptance remain outstanding."
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C0-1",
+     "assumption": "That the declared migration counts described the real work.",
+     "exposedBy": "The counts were wrong in BOTH directions and were superseded by classification: '83 files -> shared loading' was 26 real full-surface sites; '52 hand-rolled .difference()' was 41 human-facing; '35 toLocal()' was 47 measured; '22 sorts' was 10 temporal (NEXT_WORK:12-22).",
+     "consequence": "Discovery baselines are unreliable as scope estimates. The same failure recurred at RC-C1 and RC-C5. This is a programme-level property, not a C0 defect."
+    },
+    {
+     "id": "AD-C0-2",
+     "assumption": "STRUCTURAL, AND THE MOST CONSEQUENTIAL IN THIS ARTIFACT: that the cross-cutting set is exactly three PRESENTATION authorities - language, state vocabulary and temporal formatting.",
+     "exposedBy": "The 16-finding continuity cluster (F027, F059-F070, F103, F104, F113, F117) requires a FOURTH cross-cutting authority - session-state truth and destination reconstruction - which no chapter charters. doctrine-index DOCTRINE-REFRESH-CONTINUITY states plainly: 'No RC chapter owns this. It cuts across RC-C3, RC-C6/RC-C10, RC-C5 and RC-C9.'",
+     "consequence": "The gap is chronological rather than negligent and should be read that way: the roadmap froze 2026-08-15; the REFRESH IS NOT NAVIGATION platform contract was frozen 2026-08-17, two days later. C0 could not have chartered an authority whose governing contract did not yet exist. What follows is that the reconstruction axis has no mechanism for admitting a NEW cross-cutting authority after C0 closed."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "C0 is closed, therefore the foundations are complete.",
+     "supersededBy": "CH-A Continuity and Destination Truth",
+     "whatIsSuperseded": "The claim that the cross-cutting foundation set is complete.",
+     "whatIsNOTErased": "Every one of C0's three authorities stands, is enforced by a hard gate, and is a declared DEPENDENCY of CH-A - Agent A lists 'RC-C0 product state vocabulary (loading/restoring/expired already frozen)' as what CH-A's session states would be expressed in. CH-A extends C0's set; it does not replace any member of it."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-A",
+     "relation": "CONSUMES C0's product-state vocabulary; proposes the fourth cross-cutting authority C0's scope did not contain",
+     "coverage": "EXTENDS"
+    },
+    {
+     "system": "CH-I",
+     "relation": "Consumes the frozen Product Language / Create intent vocabulary",
+     "coverage": "CONSUMES"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries C0's ratcheted debt burn-down (G5 168 sites, 181 state primitives, 47 toLocal(), the 11-caller shim)",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C1",
+   "historicalName": "ACTING CONTEXT & CAPABILITY PROJECTION",
+   "stage0State": "COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED - closed 2026-08-15",
+   "intent": {
+    "asChartered": "Make 'who is acting' and 'what may they do' explicit client authorities. Person is the default actor; institutional context is entered deliberately and remains attributable. Capability Projection CONSUMES backend effective capability and NEVER computes it. Demolish shadow governance: role comparisons in 29 files, canX derivations in 20 files.",
+    "exitConditionAsWritten": "No client file derives institutional authority locally.",
+    "preserveInstruction": "PRESERVE: existing auth flows, session handling, backend contracts. This is an explicit NON-reconstruction instruction and it matters to the continuity question below.",
+    "provenance": "rc-map RC-C1 originalScope (roadmap:99-132)"
+   },
+   "reconstructed": [
+    "acting_context.dart and capability_projection.dart plus authority_providers.dart and the founder-approved Option A acting_attribution.dart",
+    "Four real defects corrected, including presence published as the institution for anyone merely affiliated, and 'tap Message' starting threads as the institution purely from the URL",
+    "C1-1 and C1-2 frozen: acting authority becomes explicit when a consequential action requires attribution, never because of the route navigated through; resolve(act, offerPersonalAlternative: ...) with NO CHOICE WITHOUT A REAL CONSEQUENCE",
+    "Backend converged - institutions.service.ts delegates to InstitutionAuthorityService; every membership carries its own effective capabilities",
+    "The six-token client capability injection proven UNREACHABLE DEAD CODE, with no alternate authority path created",
+    "Verification: 505 frontend / 2200 backend tests"
+   ],
+   "remaining": [
+    "Accepted exceptions, ratcheted, none blocking closeout: R1 (25 files / 85 role-derived booleans), R2 (3 files / 6 role-literal comparisons)",
+    "Debt register transitional rows with named owners: member_shell.dart:267 admin count gating (backend-coupled; retires with backend role->capability gating plus C3 shell reconstruction); institution_correspondence_screen.dart isAdmin gate (C7-owned)",
+    "PD-1 Platform Administration (11 files / 34 G5 sites) and PD-2 Authentication & Account Entry (2 files / 3 sites) opened as product disposition checkpoints with NO owning chapter",
+    "PD-2 STRUCTURAL DISPOSITION remains OPEN (DECISIONS:214)",
+    "Chapter completeness: ARCHITECTURE complete / RUNTIME ADOPTION near-complete / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial",
+    "VD-080: LOCALLY CERTIFIED only, although Cross-System certification is declared to land at C1"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C1-1",
+     "assumption": "That the demolition targets named in discovery were the real authority-derivation vectors.",
+     "exposedBy": "Measured wrong in both directions - role-literal comparisons 29 files -> 5 files / 6 sites (3 not authorization at all); canX 20 files -> 38 files / 73 sites (most not authorization). 'The real vector was never named: 86 isOwner/isAdmin sites' (CURRENT_STATE:86).",
+     "consequence": "R1's 85 ratcheted role-derived booleans exist because the chapter found a vector its charter did not name."
+    },
+    {
+     "id": "AD-C1-2",
+     "assumption": "STRUCTURAL: that capability projection has an AUTHENTICATED actor to project for.",
+     "exposedBy": "CH-H requires a zero-authority ANONYMOUS actor. Agent A records that 'there is no anonymous capability-projection concept anywhere in the product, so zero participation authority and zero Conversation authority have nothing to be expressed in' (F101/F102).",
+     "consequence": "The frozen Public-First Causal Doctrine is inherited as an interpretive lens by every chapter, yet the authority that would express a public visitor's capabilities was chartered only for members. This is an EXTENSION owed to C1's contract, not a defect in it - and RC-C1 is closed, so no chapter currently owns the extension."
+    },
+    {
+     "id": "AD-C1-3",
+     "assumption": "That session handling could be PRESERVED rather than reconstructed.",
+     "exposedBy": "RC-C1's preserve list names 'session handling' explicitly; RC-C3's preserve list names 'session continuity (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host)'; RC-C9 lists 'active realtime continuity' as a BUILD item; RC-C5 preserves 'DRAFTS AND DRAFT DATA'.",
+     "consequence": "Four chapters touch continuity, three as PRESERVATION instructions and one as a platform build item. None owns it as an authority. This is the precise mechanism by which the 16-finding continuity cluster has no chartering home - and it is visible only when the four chapters' scopes are read together, which is what this reconciliation is for."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "Acting context is solved, so identity-and-authority is done.",
+     "supersededBy": "CH-H (anonymous zero-authority projection) and CH-A (PD-2 structural half)",
+     "whatIsSuperseded": "The completeness of the actor model - it covers members and institutional acting context, not visitors, and not the session that establishes either.",
+     "whatIsNOTErased": "C1-1, C1-2, C1-4 and the exit condition 'no client file derives institutional authority locally' remain frozen product truth, are enforced by the C3 gate (0 route-derived mechanisms), and constrain any anonymous extension - a visitor case must CONSUME a backend-projected zero-authority set, never compute one client-side."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-H",
+     "relation": "Requires the anonymous case C1's projection does not have",
+     "coverage": "EXTENDS"
+    },
+    {
+     "system": "CH-A",
+     "relation": "Owns what Agent A calls PD-2's structural half - session establishment (F065) and route classification (F069)",
+     "coverage": "PARTIAL - and PD-2 is UNMAPPED_TO_RC, so this is a system serving a surface, not a chapter"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries R1's 85 ratcheted booleans, member_shell admin gating, or PD-1's 34 G5 sites",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C2",
+   "historicalName": "IDENTITY, PRESENCE & PROFILE",
+   "stage0State": "FINAL CLOSURE DECLARED BY FOUNDER - 2026-08-16. NOT REOPENED BY THIS ARTIFACT.",
+   "intent": {
+    "asChartered": "One canonical identity presentation with contextual projection - and the rebuilt profile surfaces that consume it. Build Identity, Relationship, Presence, Verification (LAYERED, NEVER BOOLEAN) and Action projections plus a People & Participation Selection primitive with backend-resolved eligibility and no local inference. Rebuild the profile surfaces IDENTITY FIRST, CONTEXT SECOND, ACTIONS THIRD, METADATA ON DEMAND. Demolish DR5 - three profile implementations, ~4,100 lines of parallel edit screens - and retire the six-meaning overload of 'presence'.",
+    "exitConditionAsWritten": "One identity presentation; three verification layers independently expressible; no local presence inference.",
+    "founderCheckpointsChartered": "Verification label mapping, presence privacy/visibility policy, profile visual direction.",
+    "provenance": "rc-map RC-C2 originalScope (roadmap:136-176)"
+   },
+   "reconstructed": [
+    "Section 6 Follow forensic complete - eight defects, four new, including D2 blocking does not stop DMs and D7 FOLLOW_REQUEST/FOLLOW_ACCEPTED plumbed but never emitted",
+    "R1 blocking defect RESOLVED and CERTIFIED against the canonical UserBlock/BlocksService authority",
+    "Section 9 edit-profile convergence - shared ProfileMediaPipeline (8 flows -> 1), institution gate corrected isAdmin -> MANAGE_BRANDING",
+    "Canonical Follow complete and ADOPTED in the release client 2026-08-16, with physical migration (FollowEdge + FollowConsent, 8/8 equivalence checks) and final retirement executed (d18b0bb, legacy tables dropped, flag deleted, 2272 tests green, ZERO client changes required)",
+    "Verification and Trust Experience EXECUTED - core/trust/verification.dart + trust_marks.dart; layered never collapsed; VERIFICATION IS NOT AUTHORITY; generic 'Verified' literals 16 -> 8",
+    "Commercial dispositions executed - InstitutionPlan physically FREE|PRO; VERIFIED middle tier retired; TRUSTED permanently rejected",
+    "Section 12 Representation consistency and the Public Home reconstruction (institution-first hero replaced with public-first entry copy)"
+   ],
+   "remaining": [
+    "Commercial entitlement boundary deliberately NOT frozen, plus the FUTURE COMMERCIALIZATION GOVERNANCE MARKER explicitly written to survive handoff (C2_FINAL_CLOSEOUT:36; DECISIONS:276-294)",
+    "Availability Off user-facing control - doctrine frozen, runtime semantics canonical, control REQUIRED, IMPLEMENTATION OWNER UNASSIGNED, recorded as FOUNDER-OWNED ROADMAP GAP 1 (DECISIONS:310)",
+    "PresenceScreen disposition (FD-12 section 5 - never on reference count) listed as a C2-owned open implementation checkpoint (NEXT_WORK:113)",
+    "People Selection - 6 local person-shaped extraction sites classified with future owners (conversations_screen C4-retired; correspondence_hub/space/invite_member C7; member_home C3; admin_institution_members PD-1)",
+    "VD-081: three standing C2 founder checkpoints (verification label mapping, presence privacy/visibility policy, profile visual direction) each gating Product-Behavior certification",
+    "VD-082: residual transitional debt whose retirement was gated on deployment observation",
+    "VD-080: LOCALLY CERTIFIED only"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C2-1",
+     "assumption": "That 'One identity presentation' as an exit condition is a property of the AUTHORITY.",
+     "exposedBy": "Nine findings in that subject matter remain non-terminal (F050-F057, F116), and F116's own recorded remains is exactly 'multiple consumers fixed; no systematic audit'. The transcript's own systemic statement is 'THE CANONICAL IDENTITY SYSTEM IS NOT BEING CONSUMED CONSISTENTLY ACROSS THE PRODUCT'.",
+     "consequence": "See mandatedItemResponses AD-M2 for the full evaluation. In short: the consumption audit is not OUTSIDE the chapter's recorded scope - the Founder Reconstruction Doctrine binds every chapter to ARCHITECTURE -> RUNTIME ADOPTION -> VISIBLE PRODUCT OUTCOME -> LEGACY RETIREMENT - but it is outside the certification LAYER at which closure was declared."
+    },
+    {
+     "id": "AD-C2-2",
+     "assumption": "That identity is Person or Institution.",
+     "exposedBy": "F055 (party ordering) and F056 (group visual representation) are group-identity questions. RC-C2's build list contains no group-identity concept, and Agent A records both as documented judgment calls flagged in code explicitly awaiting a founder ruling.",
+     "consequence": "A doctrine gap, not an implementation gap. It cannot be closed by any chapter without a founder ruling, and it is not RC-C2 remediation because RC-C2 never chartered it."
+    },
+    {
+     "id": "AD-C2-3",
+     "assumption": "That identity consumption could be audited inside this chapter's window.",
+     "exposedBy": "The named consumers are on surfaces owned by chapters that have not run: F054 realtime participant tiles (RC-C6/RC-C10 territory), F057 resolver shape affecting host detection and Go Live eligibility (RC-C8/RC-C10), F051 Messages-list avatars (the Conversation canon's surface, RC-C7-adjacent). F058 additionally blocks the visual result behind an external Cloudflare action.",
+     "consequence": "Structurally, a complete consumption audit cannot terminate before the consuming surfaces are reconstructed. This bounds CH-E: it can audit and converge what exists now, and it will re-open when each later chapter builds new consumers - which is an argument about SEQUENCING that belongs to Stage 3, not to me."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "RC-C2 is founder-closed, therefore identity is correct everywhere in the product.",
+     "supersededBy": "CH-E Identity Consumption Certification",
+     "whatIsSuperseded": "The inference from AUTHORITY closure to CONSUMER correctness. F057 shows the divergence is authority-affecting rather than cosmetic - a resolver shape mismatch broke host detection, role lookup and Go Live eligibility.",
+     "whatIsNOTErased": "Everything RC-C2 built and froze: the canonical Follow storage, the trust layering doctrine, monetization/verification decoupling, the commercial taxonomy closeout, and the C2-R1..R10 adjudications. PB-05 explicitly forbids casually rewriting the identity system, so CH-E can only be an audit-and-converge capability. The closure itself is founder authority and is not questioned here."
+    },
+    {
+     "simplisticReading": "The nine open findings mean the closure was premature.",
+     "supersededBy": "The certification-layer reading (PB-10, VD-080, B-KEY-3)",
+     "whatIsSuperseded": "The premature-closure reading.",
+     "whatIsNOTErased": "The findings. Both facts stand together without contradiction: the chapter closed at LOCALLY CERTIFIED (Architecture + Implementation + Product-Behavior), and Cross-System, Real-Boundary and Founder Product Acceptance were never claimed for it. A lower layer passing never implies a higher one."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-E",
+     "relation": "Nine findings in RC-C2's subject matter; proposes the consumption audit F116 names as its own exit",
+     "coverage": "PARTIAL - subject matter only; RC-C2 is closed and is not the proposed owner"
+    },
+    {
+     "system": "CH-O",
+     "relation": "F009 party growth touches identity of parties",
+     "coverage": "ADJACENT"
+    },
+    {
+     "system": "CH-F",
+     "relation": "F058 gates identity imagery; F132/F136 derivatives affect avatar and tile imagery",
+     "coverage": "CROSS-SYSTEM EFFECT"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries PresenceScreen disposition, the Availability Off control, the commercial entitlement boundary, or the three standing C2 founder checkpoints",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C3",
+   "historicalName": "NAVIGATION & INFORMATION ARCHITECTURE",
+   "stage0State": "FINAL CLOSURE DECLARED BY FOUNDER; pushed + deployed; subsequently AMENDED by the founder-observed navigation correction executed 2026-08-16",
+   "intent": {
+    "asChartered": "One coherent IA where people navigate to objects and intentions, not backend modules. Build a Navigation/Surface Authority, canonical navigation actions, a declared surface/route registry (architecture-aware; a naive zero-reference gate is FORBIDDEN), object-local contextual depth, responsive IA conceptual before visual, and room for a universal Find/Go-To that SUPPLEMENTS the IA and never patches it. Demolish DR4 - 40 mirrored institution routes, module-oriented and redundant destinations, 27 corrective redirects, scattered literal route strings.",
+    "exitConditionAsWritten": "One destination tree; acting context carried by identity, not path; every surface has an auditable reachability/ownership path.",
+    "preserveInstruction": "PRESERVE: four shells where product-correct, SESSION CONTINUITY (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host), ALL existing deep links must continue to resolve, redirects as a temporary compatibility layer.",
+    "provenance": "rc-map RC-C3 originalScope (roadmap:180-219)"
+   },
+   "reconstructed": [
+    "NavigationAuthority owning frozen primary sets, path->destination identity, presentation-shell classification pinned as never-acting-authority, canonical object route builders and legacyAliasTarget",
+    "DR4 executed per route: 2 pure duplicates retired to gate-enforced unbuildable aliases, 34 genuinely institution-owned contextual depth, 4 institutional-inbox quartet preserved with explicit institutionContextId until C7",
+    "Acting-identity safety: resolveActorContext DELETED; zero path-shape->actor mechanisms on re-run",
+    "Enforcement live: 13 navigation gate tests including a route-integrity gate that caught 2 real defects on first run, plus a literal ratchet baseline (103 files / 294 literal sites)",
+    "FOUNDER-OBSERVED NAVIGATION CORRECTION executed 2026-08-16: primaries amended to FOUR (HOME, MESSAGES, DISCOVER, CREATE); ME and MEETINGS removed; Discover four-domain framework; verification-as-ranking retired end-to-end; Spaces taxonomy broadened to 10; header invite icon retired",
+    "Certification gap closed: the route-integrity gate now proves every authority-declared address executable against the router table"
+   ],
+   "remaining": [
+    "LoginScreen disposition - a C3-owned open implementation checkpoint (NEXT_WORK:113)",
+    "Alias retirement gated on link-traffic evidence at a FUTURE OBSERVED WINDOW - a deferred obligation whose trigger nobody is recorded as watching for",
+    "Route-literal ratchet burn-down: 103 files / 294 sites frozen, with per-surface owners",
+    "Contracts inherited by later chapters: C4 settings/attention internals + Me-depth placement; C7 the explicit-context contract and the institutional-inbox trio's route disposition; C8 live-rooms internals (DR2); PD-1 admin internals",
+    "VD-080: LOCALLY CERTIFIED only"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C3-1",
+     "assumption": "That a locally certified, internally coherent architecture is a correct product.",
+     "exposedBy": "The five-primary model was certified and still product-wrong in observed use - a dead /meetings primary, an orphaned Create hub, Me duplication. The route-integrity gate tested registry self-consistency, not registry-to-router executability.",
+     "consequence": "The chapter itself froze the lesson as C3-GOVERNANCE-LESSON: ARCHITECTURE CAN PROPOSE COHERENCE, HUMAN USE VALIDATES MEANING. This is the strongest precedent in the corpus for why Stage 3 must not treat local certification as product truth."
+    },
+    {
+     "id": "AD-C3-2",
+     "assumption": "STRUCTURAL: that owning route SHAPE, registry and reachability discharges the navigation problem.",
+     "exposedBy": "F069 (route CLASSIFICATION - a hand-maintained fail-OPEN allowlist, ~16 routes rising to 24 unclassified in later evidence) is recorded by rc-map as an EXPLICIT RC-C3 finding relationship and is open inside the chapter's closed territory, together with F066/F067/F068 router-boundary continuity and F059 conversation destination survival.",
+     "consequence": "Route shape, route classification and destination reconstruction are three different authorities. RC-C3 chartered the first and, through the route registry, half of the second. It never chartered the third. B-KEY-3 records the same shape generally: closed chapters carry open findings in their own territory."
+    },
+    {
+     "id": "AD-C3-3",
+     "assumption": "That preserving the session-continuity widgets preserves session continuity.",
+     "exposedBy": "The preserve list names three widgets (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host) - components, not a contract. F060 mid-call refresh remains PARTIALLY_VALIDATED and F117 records the refresh contract as audited-not-implemented.",
+     "consequence": "Preserving components is not preserving a capability. Recorded as evidence for AD-C1-3, not as criticism of the chapter's scope."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "The destination tree is the navigation problem, and it is solved.",
+     "supersededBy": "CH-A Continuity and Destination Truth",
+     "whatIsSuperseded": "The scope of 'navigation'. A route can be correctly shaped, registered, reachable and gate-proven executable and still fail to be RECONSTRUCTED after a refresh, because reconstruction depends on session-state truth (KNOWN/UNKNOWN/RESTORING) that no authority owns.",
+     "whatIsNOTErased": "NavigationAuthority, DR4's per-route adjudication, the four frozen primaries, the Discover framework, the route-integrity gate and the literal ratchet. CH-A declares RC-C3's route table and route-integrity gate as its own dependency, and PB-09 protects them. The founder-observed correction also stands as an amendment authored by observation, not by this analysis."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-A",
+     "relation": "F069 route classification (rc-map records this as an EXPLICIT C3 relationship) plus F066/F067/F068/F059 router-boundary continuity",
+     "coverage": "PARTIAL - carries open findings inside C3's territory that C3 did not charter"
+    },
+    {
+     "system": "CH-I",
+     "relation": "Six findings of adoption residue from the founder-observed navigation correction (Create not migrated, People-surface residue unproven)",
+     "coverage": "PARTIAL"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries LoginScreen disposition, the alias-retirement trigger, or the 294-site literal ratchet burn-down",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C4",
+   "historicalName": "ATTENTION",
+   "stage0State": "OPEN - FORENSIC EVIDENCE BASE COMPLETE, IMPLEMENTATION NOT STARTED, HELD PER FOUNDER SEQUENCING",
+   "intent": {
+    "asChartered": "One governed Attention Hub answering 'what needs my attention?' as a PROJECTION, never a new owner. Build the Attention Authority (projection, semantic type, owning domain, destination, state, available actions, priority, aggregation); semantic views Conversations / Activity / Invitations / Actions; domain-owned resolvable actions on the ATTENTION -> CONTEXT -> ACTION -> RESOLUTION -> CONTINUITY path; the obligation badge (ACTION_REQUIRED + INVITED + MISSED + qualifying mentions, passive unread NEVER contributing, 99+ truncation); owning-domain clearing semantics; deterministic reconciliation with no dead CTAs; CROSS-DEVICE READ STATE; noise reduction. Demolish DR1 - EIGHT attention surfaces including conversations_screen.dart (1,033 lines, unreachable).",
+    "exitConditionAsWritten": "One Hub; one badge semantic; eight surfaces retired; no dead CTAs.",
+    "additionalChartered": "Notification Preference Authority - PRIMARY OWNER C4, with the frozen distinction ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION. Subscribe product surface and vocabulary, inherited from C2 ruling R4. Migration constraint: NO WALL OF FALSE UNREADS. Founder checkpoint on attention interaction direction BEFORE the eight surfaces are retired.",
+    "provenance": "rc-map RC-C4 originalScope (roadmap:223-262); NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md:5,14-27; DECISIONS:227"
+   },
+   "reconstructed": [
+    "NOTHING of the chapter. rc-map records: 'NONE claimed for the chapter itself.'",
+    "What exists is an EVIDENCE RECORD: the C4 DR1 legacy attention banner live evidence and full mechanism trace, explicitly with NO FIX APPLIED by founder instruction (notification_bridge.dart:294-308 and :425-440; global key :21; mounted at aura_app.dart:306-329)"
+   ],
+   "remaining": [
+    "The entire chapter as chartered",
+    "All of DR1 - eight attention surfaces retired, including conversations_screen.dart",
+    "Notification Preference Authority scope",
+    "Naming the Subscribe product surface and vocabulary (inherited C2 R4; Subscribe stays physically in InteractionFollow rows until C4 names it)",
+    "26 G5 state-primitive sites assigned to C4",
+    "Settings/attention internals and Me-depth placement inherited from C3",
+    "The founder checkpoint on attention interaction direction, required BEFORE retirement",
+    "VD-068: the retirement inventory GREW - five RealtimeSession rows stuck ACTIVE since 2026-08-12 on a legacy THREAD surface, continuously feeding the banner, plus four companion global attention surfaces whose regression proof has no recorded owner (PBG-4)",
+    "VD-067: the six C4-owned findings are deliberately unpatched forensic evidence, each carrying 'Cert required: Y'"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C4-1",
+     "assumption": "That attention can be projected from domains whose own truth is settled.",
+     "exposedBy": "F035 - roster vs actually-connected count. Its own evidence records that the presentation half shipped (observers excluded, viewers separate) while 'media-connected domain truth is untouched'. Agent A proposes withdrawing it to realtime on exactly this ground; PB-08 protects the C4 set from change and the proposal is not adopted.",
+     "consequence": "A projection cannot make a producer's count true. Whatever Stage 4 decides about F035's ownership, the chapter's charter assumed producers it does not own would be truthful, and at least one is not."
+    },
+    {
+     "id": "AD-C4-2",
+     "assumption": "That C4 and C5 are parallel siblings.",
+     "exposedBy": "The roadmap's relationship table lists RC-C5 parallelWith [RC-C4, RC-C6] and RC-C5 dependsOn C0/C1/C2/C3 - NOT C4. The C5 HARD GATE frozen 2026-08-16 makes RC-C5 strictly downstream of RC-C4's LIVE closure. Both are founder-frozen.",
+     "consequence": "Two founder-frozen dependency graphs disagree. Carried forward unresolved as AD-CON-1; see mandatedItemResponses AD-M4."
+    },
+    {
+     "id": "AD-C4-3",
+     "assumption": "That the eight DR1 surfaces are a fixed inventory.",
+     "exposedBy": "VD-068 records four COMPANION global attention surfaces plus orphaned-session reconciliation added to what C4 must handle, with PBG-4 recording no owner for their regression proof.",
+     "consequence": "The demolition scope grew while the chapter was held. Any sizing of RC-C4 from the roadmap's eight-surface list understates it."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "Attention is a notification list, so the fix is to stop the banner.",
+     "supersededBy": "CH-D Attention and Read-State Truth, which explicitly REFUSES to create a new chapter",
+     "whatIsSuperseded": "The cosmetic reading. CH-D's contribution is the diagnosis that five findings are one absent authority seen from five surfaces, and PB-08 forbids any isolated cosmetic patch.",
+     "whatIsNOTErased": "RC-C4's chartered scope, which is far wider than CH-D's five findings. CH-D itself states 'NO - RC-C4 already charters exactly this'. This is the clearest case in the corpus of a Stage-1 system CONFIRMING a chapter rather than replacing it - and simultaneously the clearest case of a chapter's obligations exceeding its finding pressure."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-D",
+     "relation": "F030-F034 - the projection, read-truth, badge and DR1-retirement sub-systems",
+     "coverage": "PARTIAL - five findings against a chapter whose charter has roughly a dozen distinct build obligations"
+    },
+    {
+     "system": "CH-B",
+     "relation": "F035 domain truth (proposed withdrawal, not adopted; PB-08 stands)",
+     "coverage": "DISPUTED"
+    },
+    {
+     "system": "CH-L",
+     "relation": "Native notification presentation - C4's Real-Boundary half lands in C9",
+     "coverage": "CROSS-CHAPTER"
+    },
+    {
+     "system": "NONE",
+     "relation": "Notification Preference Authority, Subscribe vocabulary, semantic views, cross-device read state, noise reduction, deterministic reconciliation, and seven of the eight DR1 surfaces carry no finding and appear in no candidate system",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C5",
+   "historicalName": "COMPOSITION, CONTENT INTAKE & ATTACHMENTS",
+   "stage0State": "BLOCKED - CLOSED BY EXPLICIT FROZEN HARD GATE",
+   "intent": {
+    "asChartered": "One canonical composition system, one attachment lifecycle, one governed content-intake layer. Composition Authority owns content state, DRAFTS, AUTOSAVE, mentions, links, formatting, validation, readiness, keyboard and accessibility, under COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION. Attachment Lifecycle SELECT/PASTE/DROP -> VALIDATE -> PREVIEW -> UPLOAD -> PROGRESS -> READY -> SEND/PUBLISH, upload on selection, uncommitted attachments belong to the DRAFT, explicit discard releases immediately, abandonment triggers backend cleanup, NO SILENT QUEUED-SEND. Content Intake and Resolution covers rich paste, image/file paste, drag-and-drop, mixed content, governed link previews consumed from backend link intelligence, and unsupported input failing VISIBLY and RECOVERABLY. Official designation expressed in the publish flow only (FD-8), consequence legible BEFORE commitment, withdrawal object-local, content change invalidates approval.",
+    "exitConditionAsWritten": "One composition system, one attachment lifecycle, one intake layer; six composers and eleven pipelines retired; drag/drop exists.",
+    "demolitionTargets": "DR3 - six composers (hashtags in 1 of 6, upload progress in 1 of 6), eleven upload pipelines, per-composer paste/clipboard handling across 25 files, voice implied by route.",
+    "certificationRole": "One of only four chapters where CROSS-SYSTEM certification lands (C1, C5, C8, C10), against frozen backend contracts: canonical MIME policy, SSRF-safe link fetching, internal link hydration, CIS classes, E_OFFICIAL designation and institutional approval floor, media cleanup service.",
+    "provenance": "rc-map RC-C5 originalScope (roadmap:266-312); GOVERNANCE-RC-CERTIFICATION-LAYERS"
+   },
+   "reconstructed": [
+    "NONE under RC-C5 authority. rc-map records: 'NONE under RC-C5 authority.'",
+    "Substantial overlapping work exists on OTHER axes and is recorded without reclassification: the frozen section 12 RIC contract (RIC-C1 and RIC-C2 IMPLEMENTED_NOT_LIVE_CERTIFIED), and the Conversation Completion Register making media/attachments a required contextual attachment of canonical Conversation"
+   ],
+   "remaining": [
+    "The entire chapter as chartered, including DR3's six composers, eleven upload pipelines and 25-file paste handling",
+    "FD-8 official designation in the publish flow, E_OFFICIAL designation representation, and institutional approval workflow language (explicitly handed forward from C0 and deliberately not pre-empted there)",
+    "Drafts and autosave as a Composition Authority concern",
+    "The open founder checkpoint: orphan-cleanup windows versus canonical draft lifetime, with backend policy not to be changed unilaterally",
+    "16 G5 state-primitive sites",
+    "Drag/drop jointly owned C5 + C9",
+    "VD-081: the composition interaction direction and designation/approval workflow language founder checkpoints"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C5-1",
+     "assumption": "That there are zero drag-and-drop implementations.",
+     "exposedBy": "F012 records DropTarget/onDragDone present at conversation_screen:960, IMPLEMENTED_NOT_LIVE_CERTIFIED. The zero-implementation premise no longer holds for Conversation.",
+     "consequence": "Part of C5's declared demolition/build premise was discharged by work outside the chapter, which is also part of what makes the gate's meaning contested."
+    },
+    {
+     "id": "AD-C5-2",
+     "assumption": "STRUCTURAL: that intake and composition sit at the TOP of the content chain.",
+     "exposedBy": "CH-F's independent decomposition places CONTENT TRUTH upstream of composition and reproduces the frozen section 12 dependency graph almost exactly: INGESTION TRUTH -> CONTENT VERIFICATION -> REFERENCE/RETENTION INTEGRITY -> GOVERNED DELIVERY -> PROCESSING/DERIVATIVES -> RICH PRESENTATION. F127 (no signature validation), F130 (validated DTO is dead code) and F129 (one ingestion path bypasses presign) mean a file is trusted because the client named its type.",
+     "consequence": "RC-C5's chartered intake layer would have been built on top of an ingestion boundary that does not know what a file is. The chapter's purpose is not wrong; its position in the chain is one link lower than the roadmap assumed."
+    },
+    {
+     "id": "AD-C5-3",
+     "assumption": "That RC-C5's frozen backend dependencies would be stable when the chapter ran.",
+     "exposedBy": "The chapter's declared frozen backend dependencies - canonical MIME policy, SSRF-safe link fetching, internal link hydration, CIS classes, media cleanup service - are precisely the contracts the RIC axis is now changing (RIC-C1 implemented, retention truth amended by RIC-AMENDMENT-1, three migrations committed and not applied, MediaCleanupService being corrected by F142).",
+     "consequence": "NEW EVIDENCE FOR THE GATE QUESTION: RC-C5 is the chapter that owes CROSS-SYSTEM certification against contracts that are being mutated while it is held closed. Recorded as evidence, not as an argument for or against the gate."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "Composition is the content system - fix the composers and content is done.",
+     "supersededBy": "CH-F Rich Content and Interaction (33 findings across seven sub-systems)",
+     "whatIsSuperseded": "The claim that composition/intake is the whole content problem, and the implicit claim that a composer convergence would produce truthful content.",
+     "whatIsNOTErased": "FD-6, FD-7 and FD-8 remain frozen and CH-F carries none of them. The DR3 convergence obligation (six composers, eleven pipelines, 25 paste files) is a duplication-retirement obligation that no finding expresses and no candidate system carries. RC-C5's Cross-System certification role is likewise uncarried. CH-F supersedes the ORDERING, not the chapter."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-F",
+     "relation": "33 findings covering ingestion, retention, delivery, derivatives, intake, presentation and link intelligence - substantially RC-C5's subject matter but staged on the RIC axis",
+     "coverage": "OVERLAPPING, DUAL-HOMED, UNRECONCILED"
+    },
+    {
+     "system": "CH-A",
+     "relation": "F027 and F070 draft/compose continuity - the durable identity of in-progress work",
+     "coverage": "PARTIAL"
+    },
+    {
+     "system": "CH-L",
+     "relation": "Drag/drop and clipboard contested between intake and platform (disagreement D-2, unresolved)",
+     "coverage": "DISPUTED"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries FD-8 official designation, E_OFFICIAL representation, institutional approval language, drafts/autosave as a Composition Authority concern, the DR3 convergence counts, or the orphan-cleanup-window checkpoint",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C6",
+   "historicalName": "REALTIME PRESENTATION CONVERGENCE",
+   "stage0State": "OPEN - NOT STARTED. Freshness basis is issuance evidence only; no document dated after 2026-08-15 states C6's chapter state either way.",
+   "intent": {
+    "asChartered": "Converge realtime PRESENTATION beneath distinct product semantics - and finally expose frozen multi-device capability. Build a shared presentation family (participant list, host controls, admission/join-requests, consent) that renders context-supplied states and language and NEVER owns semantic meaning; modern invite/add flows consuming the People and Participation primitive; DEVICE TRANSFER UI (offer/accept/relinquish/failed); and preferred-device behaviour made visible. Extended scope: MULTI-DEVICE AUTHORITY, preferred-first ring + stagger + fallback, DURABLE MEDIA OWNERSHIP, D2 TRANSFER HANDSHAKE.",
+    "exitConditionAsWritten": "One presentation family; Meetings lifecycle intact and green; transfer and preferred-device visible.",
+    "demolitionTarget": "Meetings reimplements participant grid, spotlight and remote tiles across 3,890 lines while using 0 of 5 shared realtime widgets. SLICE BY SLICE - NO WHOLESALE MEETINGS REWRITE, targeted regression after each slice (currently 97/97), founder sign-off after EACH slice.",
+    "preserveDoNotTouch": "Realtime transport, media service, event parser, reconnect/orphan recovery (realtime_reconciliation_controller, orphaned-session handling), session continuity across navigation, and the entire MEETINGS LIFECYCLE.",
+    "provenance": "rc-map RC-C6 originalScope (roadmap:316-356); FD-3; FD-4"
+   },
+   "reconstructed": [
+    "NONE recorded as RC-C6 chapter work in any governed document.",
+    "Recorded adjacent and outside the chapter frame (contradiction X2): extensive realtime engineering landed 2026-08-16..17 in aura_final - 3876573 'Conversation is a first-class realtime surface', b38e4d1 transport websocket-only, 509230a shared-transport disposal fix (RC-A), dfc9027 permanent accept-freeze fix (RC-B), 726831c screen share - with no governed record authorizing or closing RC-C6",
+    "F114 LIVE_CERTIFIED affirmatively records that no Meetings file was modified in any commit of that session - the protection held"
+   ],
+   "remaining": [
+    "The entire chapter: shared presentation family, device transfer UI, preferred-device visibility, and slice-by-slice Meetings presentation convergence with regression and founder sign-off after each slice",
+    "Multi-device authority, preferred-first ring + stagger + fallback, durable media ownership, D2 transfer handshake - backend contracts recorded as FROZEN, client side unbuilt",
+    "Meetings G3 (16) and G4 (14) protected debt belonging to controlled C6 review",
+    "relative_time.dart shim burn-down for thread surfaces (C6 is a named owner)",
+    "VD-045 Meetings equivalent validation - obligation intact and unstarted; VD-074 the per-slice regression and sign-off rule"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C6-1",
+     "assumption": "STRUCTURAL AND THE SHARPEST INVERSION IN THIS ARTIFACT: that the realtime problem is PRESENTATION duplication, and that the transport/media/lifecycle layer beneath it is sound enough to be placed on a DO-NOT-TOUCH list.",
+     "exposedBy": "The 20-finding CH-B cluster. Its two named shared causes are RC-A (a controller disposing shared singletons on a token rebuild) and RC-B (a root overlay never unmounting and latching _joining) - both inside the layer RC-C6's scope explicitly protected as 'realtime transport, media service, event parser, reconnect/orphan recovery'.",
+     "consequence": "The chapter protected the layer that broke, and chartered convergence of the layer that did not. This is not a criticism of FD-4, whose evidence (5 shared widgets consumed 0 times by a 3,890-line screen) is independently sound - it is an observation that RC-C6's scope contained no obligation that would have found RC-A or RC-B."
+    },
+    {
+     "id": "AD-C6-2",
+     "assumption": "That C6's declared blocker would still describe its state.",
+     "exposedBy": "NEXT_WORK:97 records 'C6 Realtime Presentation Convergence | blocked until C2', and RC-C2 was founder-closed 2026-08-16. Agent B records the blocker as discharged on the evidence, flagging that reading as inference from two STRONG sources rather than a corpus statement.",
+     "consequence": "RC-C6 is recorded as not-started with a blocker that no longer holds and no later state transition either way. Recorded, not promoted."
+    },
+    {
+     "id": "AD-C6-3",
+     "assumption": "That multi-device capability merely needed exposing.",
+     "exposedBy": "Zero findings in F001-F143 touch device transfer, preferred-device behaviour, multi-device authority or the D2 handshake, and zero Stage-1 candidate systems mention them.",
+     "consequence": "An entire chartered extendedScope with frozen backend contracts is invisible to the finding-driven taxonomy. See disappearedObligations AD-D-02."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "Converge the realtime widgets and realtime is done.",
+     "supersededBy": "CH-B Realtime Session and Participation Truth",
+     "whatIsSuperseded": "The claim that presentation duplication was the operative realtime deficiency, and the implicit claim that the protected layer was sound.",
+     "whatIsNOTErased": "FD-4's presentation-convergence obligation and its evidence, which CH-B does not carry at all: CH-B is a certification-and-convergence proposal over session lifecycle, and contains no obligation to make Meetings consume the five shared widgets. FD-3's frozen semantic separation (DM, THREAD, SPACE, INSTITUTION ROOM, MEETING, LIVE) also survives untouched and constrains any convergence. PB-02 continues to forbid a wholesale realtime rewrite."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-B",
+     "relation": "20 findings of session lifecycle and participation truth - subject matter RC-C6 placed on its PRESERVE list",
+     "coverage": "INVERTED - serves the protected layer, not the chartered one"
+    },
+    {
+     "system": "CH-M",
+     "relation": "F112 equivalent validation and F114 protection held",
+     "coverage": "PARTIAL - validation only; carries no convergence obligation"
+    },
+    {
+     "system": "CH-C",
+     "relation": "Topology and scale of the media layer",
+     "coverage": "ADJACENT"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries the shared presentation family, device transfer UI, preferred-device visibility, multi-device authority, D2 handshake, durable media ownership, or the 3,890-line Meetings presentation convergence",
+     "coverage": "UNCOVERED - the largest uncovered chartered scope after RC-C8"
+    }
+   ]
+  },
+  {
+   "id": "RC-C7",
+   "historicalName": "THREADS, SPACES & CORRESPONDENCE",
+   "amendedName": "C7 = INSTITUTIONAL CONVERSATION & DESK (founder-approved and frozen 2026-08-16)",
+   "stage0State": "OPEN - NOT STARTED AS A CHAPTER; SCOPE AMENDED AND FROZEN 2026-08-16",
+   "intent": {
+    "asChartered": "Reconstruct the conversation surfaces on frozen semantics and RESOLVE THE CORRESPONDENCE ARCHITECTURE QUESTION. Build Thread surfaces (focused conversation continuity), SPACE surfaces (persistent shared context - NO EIGHT-TAB INTERFACE), membership/join/invite flows that never expose role enums or permission machinery, object-local management, and Correspondence as a distinct governed communication form sharing infrastructure but not semantics. Demolish three thread_screen implementations, duplicated conversation mechanics and four institution messaging entry points. Governing rule: THE SURVIVING WORD DOES NOT PROTECT THE ARCHITECTURE.",
+    "asAmended": "C7 = INSTITUTIONAL CONVERSATION & DESK: consume canonical Conversation and foundational Invitation; own the institution-side Conversation/Desk experience and appropriate institutional participation and membership-entry reconstruction. C7 does NOT recreate Correspondence as a product and does NOT own Invitation.",
+    "exitConditionAsWritten": "One thread surface family; Space surfaces coherent; Correspondence distinct in semantics and non-duplicated in mechanics.",
+    "founderCheckpoint": "Correspondence presentation and its ARCHITECTURAL CONVERGENCE VERDICT.",
+    "provenance": "rc-map RC-C7 originalScope (roadmap:360-401); DECISIONS:355-361; THREADS_SPACES_PRODUCT_MODEL_FROZEN"
+   },
+   "reconstructed": [
+    "NONE as RC-C7 chapter work.",
+    "Recorded adjacent: the clean-sheet Aura Conversation System and Aura Invitation System were built 2026-08-16 (backend AuraInvitation + Conversation schema with additive migration, InvitationAuthority + ConversationAuthority + adapter registry, People Discovery; frontend lib/features/conversation/ with MessagesScreen at /messages, ConversationScreen at /messages/c/:id, picker at /messages/new, /i/:token claim landing)",
+    "Two named personal spaces individually inspected and MIGRATE-ruled with human-chosen names preserved as Conversation presentation"
+   ],
+   "remaining": [
+    "Phase 5 legacy retirement NOT AUTHORIZED - gate is additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization. Legacy conversation surfaces not retired; legacy hub parked at /messages/legacy-hub (VD-071)",
+    "CONVERSATION COMPLETION REGISTER (frozen): audio call, video call, screen sharing, media/attachments, intentional Live and message reporting/moderation remain REQUIRED contextual attachments of canonical Conversation. Conversation is NOT final-certified until resolved; C4 progression does not erase it; NO FAKE UI SHIPS MEANWHILE (VD-073)",
+    "Correspondence umbrella rename/migration - choose the correct internal name, migrate safely, preserve compatibility and history; documentation may not lag even where filesystem naming does",
+    "The Correspondence ARCHITECTURAL CONVERGENCE VERDICT - the chapter's named founder checkpoint, with NO RECORDED OUTCOME",
+    "Space surfaces as a product obligation (persistent shared context, no eight-tab interface), while Spaces is a live Discover domain with a taxonomy broadened to 10 by the C3 correction",
+    "InstitutionCorrespondenceScreen disposition (FD-12 section 4)",
+    "The institutional Desk experience and institutional participation / membership-entry reconstruction under the amendment",
+    "26 G5 sites; debt register rows 4, 10, 11; resolveActorContext residue; the institutional-inbox quartet route disposition; the explicit-context contract (no route-derived sender may survive C7 closure)"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C7-1",
+     "assumption": "That C7 would own invitation and that Thread/Space were the durable objects to rebuild.",
+     "exposedBy": "The Invitation canon states explicitly that 'Invitation is NOT a C7 feature', and the Conversation canon makes Conversation the canonical object that replaces the DirectThread and Space-as-conversation stacks. Both are recorded REASSIGNMENTS, not drift.",
+     "consequence": "The chapter's scope was correctly amended by founder authority. What the amendment did not do is re-home the obligations it removed the ground from: Spaces as a product surface, and the Correspondence verdict."
+    },
+    {
+     "id": "AD-C7-2",
+     "assumption": "That C7's declared prerequisites (C4 + C5 + C6) would precede work in its territory.",
+     "exposedBy": "The dependency order is inverted in practice - the clean-sheet Conversation System occupying C7's demolition list was built and released while all three prerequisites are not-started or hard-gated closed.",
+     "consequence": "Recorded as contradiction, not as violation. It is one instance of X2, the largest structural gap Stage 0 found."
+    },
+    {
+     "id": "AD-C7-3",
+     "assumption": "That SPACES would be reconstructed by the chapter that owns them.",
+     "exposedBy": "Spaces is now a live Discover domain with a 10-item taxonomy from the C3 correction, while its reconstruction obligation sits in a not-started chapter whose amendment re-pointed it at institutional Conversation and Desk. No finding in F001-F143 is about Space surfaces, and no candidate system carries them.",
+     "consequence": "See disappearedObligations AD-D-09. A surface is publicly discoverable while its reconstruction obligation is unrepresented in current planning."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "Rebuild the three thread screens and the messaging problem is solved.",
+     "supersededBy": "CANON-AURA-CONVERSATION-SYSTEM plus CH-O Conversation Party and Message Model",
+     "whatIsSuperseded": "The premise that the thread-screen implementations were the object to reconstruct. Conversation became the canonical object; party topology and message body became durable product facts under PB-04, and F124 (the ellipsis sentinel making a message body carry UI state) is the constitutional violation of that.",
+     "whatIsNOTErased": "C7's Spaces obligation, the Correspondence convergence verdict, the umbrella rename, the institutional Desk experience, the membership/join lifecycle, and the FD-10/C0-4 ruling that Correspondence has exactly one canonical product meaning while the umbrella sense is architectural naming drift. CH-O carries five findings and none of these."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-O",
+     "relation": "F009, F020, F021, F022, F124 - party topology and message-level semantics under the frozen canon",
+     "coverage": "PARTIAL"
+    },
+    {
+     "system": "CH-B",
+     "relation": "Conversation as a first-class realtime surface; the Conversation Completion Register's calling capabilities",
+     "coverage": "PARTIAL"
+    },
+    {
+     "system": "CH-F",
+     "relation": "RIC-E2 stages Conversation as the FIRST COMPLETE REFERENCE for content; the register's media/attachments obligation",
+     "coverage": "PARTIAL"
+    },
+    {
+     "system": "CH-K",
+     "relation": "F023 report/moderation is a named required attachment of canonical Conversation",
+     "coverage": "PARTIAL"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries Space surfaces, the Correspondence convergence verdict or rename, the institutional Desk experience, membership/join reconstruction, or Phase 5 retirement",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C8",
+   "historicalName": "INSTITUTION ROOM",
+   "stage0State": "OPEN - NOT STARTED. Issuance evidence only; no later transition exists.",
+   "intent": {
+    "asChartered": "Build the client for the frozen D5 Institution Room authority: room ownership, invitations, participant states, RING POLICY (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS), lifecycle, contextual realtime, attention and modern participant selection. Public-first inheritance is explicit and unusual here: 'LEGITIMATELY INSTITUTION-OWNED. Public-first does not erase institutional ownership; do not dilute this surface to prove alignment.'",
+    "exitConditionAsWritten": "Institution Room reachable, governed, and consuming canonical contracts.",
+    "governingRule": "ENTITLEMENT != INTERRUPTION. Membership never becomes a ring list.",
+    "demolitionTarget": "DR2 - institution_live_rooms_screen (1,078 lines): imports neither realtime nor meetings, consumes untyped Map<String,dynamic>, and lists realtime sessions rather than InstitutionRoom. DO NOT RETROFIT. No data migration - the old screen has no canonical model.",
+    "namedInvariantTest": "LARGE-INSTITUTION INVARIANT: 10,000 members -> ZERO recipients absent invitation.",
+    "certificationRole": "One of four chapters where Cross-System certification lands.",
+    "provenance": "rc-map RC-C8 originalScope (roadmap:405-445); FD-3"
+   },
+   "reconstructed": [
+    "NONE recorded.",
+    "One adjacent C2-era correction: the live-rooms startLive gate was converged onto C1 capability projection during the C2 pre-migration closeout (R1 burn-down) - which touches the surface without reconstructing it"
+   ],
+   "remaining": [
+    "The entire chapter, including the DR2 demolition of institution_live_rooms_screen",
+    "Live-rooms internals inherited from C3's closeout",
+    "3 G5 state-primitive sites",
+    "The large-institution invariant test",
+    "Ring policy, governed ring resolution and canonical delivery against frozen backend D5"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C8-1",
+     "assumption": "That one screen is the demolition target.",
+     "exposedBy": "The roadmap's known-territory list cites THREE live-room implementations while C8 names one (institution_live_rooms_screen, 1,078 lines) as DR2. The other two have no recorded owner.",
+     "consequence": "A count inconsistency inside the chapter's own scope, unresolved since issuance."
+    },
+    {
+     "id": "AD-C8-2",
+     "assumption": "That C8's 'see what is live now' territory would be untouched until the chapter runs.",
+     "exposedBy": "Live viewer/discovery work (F076 lobby-as-directory retired, F081 'Header Live = discovery, not origination') operates on exactly that territory while C8 is not started. Agent C's authorised client inspection additionally found features/institutions/live_rooms/global_live_discovery.dart documented to 'degrade silently to an empty list when the user is not authenticated', hitting /realtime/sessions?scope=me and explicitly 'NOT a true cross-institution global feed'.",
+     "consequence": "The institution live-rooms surface is being used as the de facto Live discovery substrate while its chartered reconstruction has not begun. This is boundary pressure recorded by Stage 0, and it now also underpins Agent C's open product ruling about whether a global Live index is intended to exist."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "There is nothing to supersede - and that is the finding.",
+     "supersededBy": "NOTHING. No Stage-1 candidate system supersedes, serves, extends, or even mentions RC-C8.",
+     "whatIsSuperseded": "Nothing.",
+     "whatIsNOTErased": "The whole chapter, which remains chartered, with a frozen backend authority (D5), a named demolition target, a governing rule (ENTITLEMENT != INTERRUPTION), a named invariant test, and a Cross-System certification obligation. RC-C8 is the clean control case for this artifact's central claim: the Stage-1 taxonomy is finding-driven, RC-C8 generated zero findings, and RC-C8 is therefore completely invisible to it."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "NONE",
+     "relation": "Zero of 143 findings and zero of 15 candidate systems touch Institution Room, ring policy, or DR2",
+     "coverage": "ZERO"
+    },
+    {
+     "system": "CH-G (boundary only)",
+     "relation": "Live discovery work touches C8's 'what is live now' territory without reconstructing it; FD-3 and the C8-BOUNDARY ruling keep Live and Institution Room separate constructions ('Option C rejected')",
+     "coverage": "BOUNDARY PRESSURE, NOT COVERAGE"
+    }
+   ]
+  },
+  {
+   "id": "RC-C9",
+   "historicalName": "CROSS-PLATFORM COMPLETION (MSIX / MOBILE / WEB)",
+   "stage0State": "OPEN - NOT STARTED. Preconditions unmet as sequenced (deps C4 and C5).",
+   "intent": {
+    "asChartered": "Make the Release Client genuinely first-class on each supported platform. Build native Windows notifications (WNS), desktop lifecycle, drag/drop, clipboard, file handling, keyboard, hover/context affordances, window sizing/responsiveness, background/foreground, ACTIVE REALTIME CONTINUITY, deep links, installation/launch context, and iOS/Android native notification presentation. Governing rule: DESKTOP IS NOT WEB WITH A WIDER VIEWPORT. Enforcement gates against per-platform forks of shared product semantics.",
+    "exitConditionAsWritten": "All three platforms behave coherently with warranted platform-specific behaviour.",
+    "certificationRole": "The FIRST chapter where REAL-BOUNDARY certification substantially lands, with per-platform suites, REAL-DEVICE TESTING and notification delivery verification.",
+    "explicitNonScope": "SupportScreen was deliberately NOT assigned to C9 and remains an ownership-undetermined product disposition checkpoint.",
+    "provenance": "rc-map RC-C9 originalScope (roadmap:449-486); DECISIONS:38,40"
+   },
+   "reconstructed": [
+    "NONE recorded as RC-C9 chapter work."
+   ],
+   "remaining": [
+    "The entire chapter (VD-069)",
+    "Drag/drop jointly owned C5 + C9",
+    "3 G5 state-primitive sites",
+    "C4's Real-Boundary half (native delivery) and C6's Real-Boundary half (device testing), both of which land here",
+    "The desktop experience direction founder checkpoint (VD-081)"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C9-1",
+     "assumption": "That platform parity is an engineering problem inside the chapter.",
+     "exposedBy": "F071 - the shared code carries both fixes (509230a RC-A, dfc9027 RC-B) and the released binaries predate them, so the defect is still live for every installed user and only a founder-triggered store release can clear it. Agent A records this as a class the register has no vocabulary for: neither OPEN nor LIVE_CERTIFIED in any engineering sense.",
+     "consequence": "The chapter's scope contains no distribution/release-channel obligation, yet the chapter cannot demonstrate parity without one."
+    },
+    {
+     "id": "AD-C9-2",
+     "assumption": "That 'active realtime continuity' is a platform lifecycle item.",
+     "exposedBy": "It is one of four continuity fragments distributed across chapters (see AD-C1-3). The shared cause set (F065 session hint, F069 route classification) is platform-independent, and F060 mid-call refresh was observed on web.",
+     "consequence": "C9 would be certifying a continuity behaviour whose authority does not exist on any platform."
+    },
+    {
+     "id": "AD-C9-3",
+     "assumption": "That C9 enters after C4 and C5.",
+     "exposedBy": "Both are not-started or hard-gated closed, so no part of C9 can currently enter under declared sequencing - while part of its own build list (drag/drop, clipboard) already exists in code from out-of-frame work.",
+     "consequence": "The chapter's entry condition and its actual code state have diverged in opposite directions simultaneously."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "Cross-platform means writing per-platform code.",
+     "supersededBy": "CH-L Cross-Platform Distribution Parity",
+     "whatIsSuperseded": "The engineering-only framing. CH-L correctly names the release channel plus the native presentation layer as the root system, and identifies that a fixed defect can remain live for users indefinitely.",
+     "whatIsNOTErased": "Roughly eleven of C9's thirteen chartered build obligations, which CH-L does not carry: WNS native push, desktop lifecycle, file handling, keyboard, hover/context affordances, window sizing/responsiveness, installation/launch context, deep links, background/foreground, per-platform suites and real-device testing. Nor does CH-L carry C9's Real-Boundary certification role, which is the single certification layer no other chapter substantially provides."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-L",
+     "relation": "F071 distribution lag and F072 native ring topology",
+     "coverage": "PARTIAL - 2 findings against a thirteen-item build list"
+    },
+    {
+     "system": "CH-F",
+     "relation": "F012/F013 drag-drop and clipboard, assigned to intake by Agent A against C9's explicit chartered build list (disagreement D-2, unresolved)",
+     "coverage": "DISPUTED"
+    },
+    {
+     "system": "CH-A",
+     "relation": "The 'active realtime continuity' and background/foreground fragments",
+     "coverage": "CROSS-CHAPTER FRAGMENT"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries WNS native push, desktop lifecycle, keyboard/hover/windowing, installation and launch context, or Real-Boundary certification",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C10",
+   "historicalName": "LIVE (CROSS-REPOSITORY)",
+   "stage0State": "CONFLICTING_CURRENT_STATE (CR-O5). CARRIED FORWARD UNRESOLVED. Two evidenced readings coexist and neither is dismissible; resolution requires founder authority.",
+   "intent": {
+    "asChartered": "Build Live as a governed MODE/STATE of an owning Thread or Space. THIS IS A CROSS-REPOSITORY CONSTRUCTION CHAPTER - NOT A FRONTEND PHASE - and backend construction must not be hidden inside it. Governing invariant, frozen 2026-08-15: LIVE MUST NOT CREATE TEMPORARY VERSIONS OF AUTHORITIES ALREADY SCHEDULED FOR RECONSTRUCTION. Client construction covers the Go Live ritual, visibility, speaker/audience state, hand raise, host/moderator controls (progressive, never in a listener's UI), questions, reactions, RECORDING STATE, REPLAY, attention and post-live continuity. Backend construction required for go-live authority, public observation, audience scale, Live attention/interaction and REPLAY-AS-PRODUCT. Boundaries: not a Meeting, not an Institution Room, not standalone, NO FOURTH LIVE SURFACE.",
+    "twoExitGates": "CONSTRUCTION EXIT - Live works end-to-end from a governed Thread/Space with continuity preserved after it ends, consuming canonical navigation, attention and composition, with NO TEMPORARY AUTHORITIES ANYWHERE. CROSS-PLATFORM COMPLETION - required C9 platform contracts proven.",
+    "openCheckpoints": "Live moderation policy; audience-scale topology/provider (provider independence preserved, deliberately not frozen); Thread vs Space Live differences if material.",
+    "provenance": "rc-map RC-C10 originalScope (roadmap:490-556); FD-5; DOCTRINE-LIVE-ORIGINATION-CORRECTION"
+   },
+   "reconstructed": [
+    "CONFLICTING. Reading A: OPEN - NOT STARTED as a governed chapter (CURRENT_STATE:19; NEXT_WORK:101 'blocked until C0-C8 all stable'; NEXT_WORK:121 'Explicitly NOT next: Live (C10)').",
+    "Reading B: SUBSTANTIALLY CONSTRUCTED OUTSIDE THE CHAPTER FRAME - Live origination corrected to in-call state escalation with a single origination door behind the FD-5 ritual (founder-frozen 2026-08-17); backend fence live-verified (STANDALONE create -> 400, retired conversation-menu route -> 404, F076/F077 EXPLICITLY_RETIRED); PUBLIC_STAGE consumption in production paths (d3981e5); liveState model NORMAL -> LIVE_PREPARING -> LIVE -> ENDING -> NORMAL with accessMode never collapsed into it; F074-F088 recorded implemented, partially validated or retired.",
+    "Both readings are preserved exactly as Stage 0 recorded them. Stage 2 may not promote, demote or reconcile them."
+   ],
+   "remaining": [
+    "Live engagement F089-F096: watch-oriented viewer experience, Live chat, reactions, raise hand, stage promotion/demotion, viewer presence atmosphere, Live moderation - 'Authority exists ... Nothing implemented', with F096 instructing RECOVERY from FD-5 sections 8-10 rather than reinvention",
+    "Live public acquisition F097-F107: public home surfaces real Live, bounded preview, auth wall, one canonical Live truth for both doors - 'Nothing built. F103/F104 must be owned by the shared continuity authority'",
+    "Live scale F108-F111: mesh bounded with the ceiling NEVER MEASURED, mesh != long-term architecture with no enforcement, SFU assessment not written, assessment scope not written",
+    "Replay-as-product, go-live authority formalization and Live attention/interaction, all recorded as backend-missing in the chapter's own scope",
+    "Recording state as a client construction item",
+    "Open founder checkpoints: Live moderation policy, audience-scale topology/provider, Thread vs Space Live differences",
+    "Whether Live ever needs a plural/contextual language form (handed forward from C0)",
+    "The cross-platform completion gate on proven C9 contracts",
+    "VD-035..VD-044: ten validation obligations, dominant class MULTI_PARTY_REALTIME, largely behind the never-convened coordinated session VD-046"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C10-1",
+     "assumption": "That Live's owning contexts are a THREAD or a SPACE.",
+     "exposedBy": "The founder-frozen origination correction escalates Live from an existing active realtime human interaction, and the implemented origination door is inside the active call (realtime room -> More panel). Meanwhile the C7 amendment and the Conversation canon made Conversation the canonical object that replaced the DirectThread and Space-as-conversation stacks.",
+     "consequence": "The two are plausibly coherent - a Conversation is what a Thread became - but NO governed document records that reconciliation. FD-5's text and the origination correction's text name different owning contexts. Recorded as an uncertainty, not as a contradiction, because neither document denies the other."
+    },
+    {
+     "id": "AD-C10-2",
+     "assumption": "That the backend state rows in the chapter's scope describe the backend.",
+     "exposedBy": "'PUBLIC_STAGE consumption - declared but unconsumed' and 'Go-live authority - missing' are contradicted by commits fb9bfa1, d3981e5 and 88179ee.",
+     "consequence": "The chapter's own construction inventory is stale in the direction of understating what exists."
+    },
+    {
+     "id": "AD-C10-3",
+     "assumption": "That the governing invariant would hold because the chapter would run last.",
+     "exposedBy": "Live navigation/discovery, viewer admission and Live counts were built while C3's successor obligations are amended, C4 is not-started and C5 is hard-gated closed. Stage 0 records the tension and explicitly does not adjudicate whether any temporary authority was created.",
+     "consequence": "Preserved as recorded. This artifact adds one observation only: the invariant's enforcement mechanism was SEQUENCING, and sequencing is exactly what the out-of-frame work did not follow."
+    },
+    {
+     "id": "AD-C10-4",
+     "assumption": "That Live is one chapter-sized capability.",
+     "exposedBy": "Stage 1 partitions its 37 findings into three systems: CH-G (24, state/origination/participation/engagement), CH-H (8, public acquisition) and CH-C (5, topology and scale). RC-C10's OWN explicitlyRemainingObligations list enumerates F089-F096, F097-F107 and F108-F111 as its own remaining obligations - so the three systems partition an obligation set the chapter already records as its own.",
+     "consequence": "The tripartition is defensible and analytically useful. Its cost is that RC-C10's TWO EXIT GATES and its cross-repository framing have no owner once the chapter is split three ways. See disappearedObligations AD-D-13."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "Live is a late frontend phase that builds a broadcast feature.",
+     "supersededBy": "DOCTRINE-LIVE-ORIGINATION-CORRECTION (founder-frozen, not this analysis) reinforced by CH-G",
+     "whatIsSuperseded": "The parallel-broadcast model. LIVE IS NOT SOMETHING A USER CREATES; it is something an existing realtime human interaction deliberately becomes. This also invalidated the earlier live proofs, which is why F083/F084 and neighbours must be re-proven under the new model.",
+     "whatIsNOTErased": "FD-5's eight rulings, the cross-repository framing, the governing invariant, both exit gates, the boundary rulings (not a Meeting, not an Institution Room, no fourth Live surface), and the backend-missing inventory including replay-as-product. CH-G carries the state model and the engagement obligations; it carries none of the gates and neither replay nor recording state."
+    },
+    {
+     "simplisticReading": "Public acquisition is a Live feature.",
+     "supersededBy": "CH-H, which argues it is a system requiring a zero-authority anonymous actor",
+     "whatIsSuperseded": "The framing of acquisition as Live UI.",
+     "whatIsNOTErased": "RC-C10's own record that F097-F107 are its remaining obligations. Agent A's argument that CH-H is deliberately NOT a sub-chapter of Live is an analytical proposal that runs against the chapter's recorded remaining-obligation list - and it is supported on two of the eight (F103/F104, recorded as belonging to the shared continuity authority) and unsupported on the rest. See mandatedItemResponses AD-M1 and systemsWithNoAxisHome."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-G",
+     "relation": "F074-F096 and F107 - state, origination, viewer authority and engagement",
+     "coverage": "SUBSTANTIAL"
+    },
+    {
+     "system": "CH-H",
+     "relation": "F097-F106 public acquisition - enumerated by RC-C10 as its own remaining obligation, proposed by Stage 1 as a separate system",
+     "coverage": "SUBSTANTIAL BUT CONTESTED IN PLACEMENT"
+    },
+    {
+     "system": "CH-C",
+     "relation": "F108-F111 plus F073 - the scale decision RC-C10 lists as backend-missing",
+     "coverage": "SUBSTANTIAL"
+    },
+    {
+     "system": "CH-A",
+     "relation": "F103/F104 auth-return, recorded as belonging to the shared continuity authority",
+     "coverage": "PARTIAL, EVIDENCE-BACKED"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries replay-as-product, recording state, the two exit gates, the cross-repository framing, the Thread-vs-Space differences checkpoint, or the plural/contextual Live language obligation",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  },
+  {
+   "id": "RC-C11",
+   "historicalName": "ITEM 17: INTEGRATED RELEASE-CLIENT CERTIFICATION",
+   "stage0State": "OPEN, NOT STARTED. No entry condition is currently satisfiable.",
+   "intent": {
+    "asChartered": "The integrated Release Client certification and release gate. Item 17 is unchanged, undiminished, and NOT A CONSTRUCTION DUMPING GROUND. Nine entry conditions must ALL be true: C0-C9 complete to FD-13's definition of done; C10 complete or explicitly excluded by founder decision; backend frozen baseline intact with approved Live additions certified where included; cross-platform behaviour verified on mobile, web and MSIX; real-device/native testing complete; integrated end-to-end journeys pass; Real-Boundary certification complete; Founder Product Acceptance readiness; a Release Client candidate exists. DO NOT START until entry conditions hold. DO NOT REDEFINE.",
+    "certificationRole": "Item 17 / Release Gate lands at C11 ONLY. Founder Product Acceptance is per checkpoint, consolidated here. A LOWER CERTIFICATION LAYER PASSING NEVER IMPLIES A HIGHER ONE.",
+    "provenance": "rc-map RC-C11 originalScope (roadmap:560-594); GOVERNANCE-RC-CERTIFICATION-LAYERS"
+   },
+   "reconstructed": [
+    "NONE, and none is expected - the chapter is a gate, not construction."
+   ],
+   "remaining": [
+    "All nine entry conditions (VD-070)",
+    "PD-1 Platform Administration disposition (11 files / 34 G5 sites) - no owning chapter",
+    "PD-2 Authentication and Account Entry disposition - STRUCTURAL DISPOSITION STILL OPEN",
+    "SupportScreen ownership disposition",
+    "Consolidated Founder Product Acceptance",
+    "VD-080: C0, C1, C2 and C3 are LOCALLY CERTIFIED only - Cross-System, Real-Boundary and Founder Product Acceptance are outstanding for every closed chapter"
+   ],
+   "incompleteAssumptions": [
+    {
+     "id": "AD-C11-1",
+     "assumption": "That enumerating C0-C10 enumerates the release.",
+     "exposedBy": "GAP-2 Long-Form Publishing shipped, is a declared Discover domain, and F024 is LIVE_CERTIFIED, while DECISIONS records NO CHAPTER NUMBER ASSIGNED. Stage 0 records this directly as 'UNCHARTERED_CAPABILITY_IN_THE_RELEASE'. GAP-1 Settings, PD-1, PD-2 and SupportScreen are similarly outside the enumeration except as pre-C11 dispositions.",
+     "consequence": "A gate that enumerates chapters cannot certify capabilities that have no chapter. Five surfaces are in that position (unmapped-surfaces.json), one of them shipped and public."
+    },
+    {
+     "id": "AD-C11-2",
+     "assumption": "That chapter closure implies finding closure.",
+     "exposedBy": "B-KEY-3: RC-C2 is founder-closed yet F061/F062 are OPEN and F050/F053/F116 are PARTIALLY_VALIDATED; RC-C3 is closed yet F069 and F066/F067/F068 are open. Confirmed independently by VD-080 and PB-10.",
+     "consequence": "C11's entry condition 1 says 'C0-C9 complete to their FD-13 definition of done'. On current evidence, four chapters are recorded closed at a LOWER certification layer than FD-13's definition of done requires, and carry open findings in their own territory. Whether that satisfies entry condition 1 is a founder question."
+    },
+    {
+     "id": "AD-C11-3",
+     "assumption": "That the register the gate reads can be trusted.",
+     "exposedBy": "GOVERNANCE-NON-SHRINKING-REGISTER is ADOPTED but transcript-only and NOT PRESENT IN ANY GOVERNED ARTIFACT, while five live-certified capabilities (F018, F020, F021, F022, F029) are evidenced to have already vanished from later reporting once (F119).",
+     "consequence": "The standard any C11 accounting must meet has no governed home. This is the sharpest self-referential risk in the corpus and Agent A names it as such."
+    }
+   ],
+   "supersededReadings": [
+    {
+     "simplisticReading": "The gate is a checklist run at the end.",
+     "supersededBy": "CH-N Register and Certification Governance",
+     "whatIsSuperseded": "The assumption that the gate can be evaluated at all. If capabilities can disappear from reporting and items need not reach a terminal state, the checklist is evaluated against a record that can lie.",
+     "whatIsNOTErased": "The nine entry conditions, the prohibition on redefinition, the consolidation of Founder Product Acceptance, and the certification-layer rule - none of which CH-N carries. CH-N is four governance findings; C11 is the gate they would protect."
+    }
+   ],
+   "servingCandidateSystems": [
+    {
+     "system": "CH-N",
+     "relation": "F115, F118, F119, F120 - the non-shrinking register, terminal-state discipline and forensic preservation, explicitly recorded as ONE closure gate",
+     "coverage": "PARTIAL - governance integrity only"
+    },
+    {
+     "system": "ALL OTHERS",
+     "relation": "Every candidate system is an input to C11's entry conditions",
+     "coverage": "INPUT"
+    },
+    {
+     "system": "NONE",
+     "relation": "No candidate system carries the nine entry conditions, integrated end-to-end journeys, Real-Boundary completeness, consolidated Founder Product Acceptance, or the four pre-C11 dispositions",
+     "coverage": "UNCOVERED"
+    }
+   ]
+  }
+ ],
+ "mandatedItemResponses": [
+  {
+   "id": "AD-M1",
+   "item": "Agent A reports that Continuity & Destination Truth (16 findings) is chartered by NO RC chapter on any axis. Is that true against rc-map, and if so what does it mean for the completeness of the reconstruction axis?",
+   "verdict": "SUBSTANTIALLY TRUE, WITH ONE CORRECTION AND ONE IMPORTANT REFINEMENT.",
+   "correction": "F069 is NOT unattributed. rc-map records it under RC-C3's evidencedFindingRelationships as 'EXPLICIT - route classification', quoting the register row and the two commits (4bafb1a explicit route-classification contract fail-closed; cdbae96 Spaces are PUBLIC discovery destinations, founder ruling). The remaining fifteen are recorded as 'ADJACENT - refresh/destination continuity, audited not implemented; RC1-RC9 root causes; NOT explicitly attributed to RC-C3 in any governed document'.",
+   "confirmation": "At CHARTERING level the claim holds exactly, and the corpus states it in its own words. doctrine-index DOCTRINE-REFRESH-CONTINUITY: 'No RC chapter owns this. It cuts across RC-C3 (routing/destinations), RC-C6/RC-C10 (mid-call continuity), RC-C5 (draft/compose continuity) and RC-C9 (platform lifecycle). NOT_RECORDED as any chapter's obligation.' Agent B reaches it independently: the shared-cause continuity contract is one of four partly independent dependency systems and 'has NO owning chapter on any axis'.",
+   "refinementThatMatters": "The obligation did not vanish - it was DISTRIBUTED, and distributed in a form that cannot accumulate into an authority. Read the four chapters' scopes together: RC-C1 PRESERVE 'existing auth flows, session handling, backend contracts'; RC-C3 PRESERVE 'session continuity (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host)'; RC-C5 PRESERVE 'DRAFTS AND DRAFT DATA'; RC-C9 BUILD 'active realtime continuity' and background/foreground. Three of the four are PRESERVATION instructions - explicit instructions NOT to reconstruct - and the fourth is a platform-lifecycle build item on a chapter whose own preconditions are unmet. A capability that every chapter is told to preserve and no chapter is told to build has no construction path by design.",
+   "meaningForTheCompletenessOfTheReconstructionAxis": [
+    "The axis is INCOMPLETE, not wrong. Its governing thesis is AUTHORITIES BEFORE SURFACES (DOCTRINE-AUTHORITIES-BEFORE-SURFACES defines RC-C0..RC-C11). It enumerated the cross-cutting authorities exactly once, at RC-C0, as three: Product Language, Product State Presentation, Human Temporal Presentation. All three are PRESENTATION authorities. Session-state truth and destination reconstruction are not presentation, and were not enumerated.",
+    "The gap is chronological and should be read without blame. The roadmap froze 2026-08-15. REFRESH IS NOT NAVIGATION was frozen as a founder platform contract on 2026-08-17 and is recorded as AUDITED, NOT IMPLEMENTED. RC-C0 closed before the contract existed.",
+    "The axis has NO RECORDED MECHANISM for admitting a new cross-cutting authority after RC-C0 closes. FD-13 states there is no standalone enforcement chapter; the roadmap states approval is not authorisation to begin a chapter; nothing states how a fourth foundation enters. That absence - not the continuity findings themselves - is the completeness defect.",
+    "The consequence is measurable and already visible: sixteen findings across six product surfaces (Conversation, personal profile, institution profile, composers, Meetings, Live auth-return) share two mechanisms (F065 session hint written at 2 of N establishment paths; F069 fail-OPEN route classification), and the register itself gates F103/F104 - the conversion moment of the entire Live acquisition thesis - on F065.",
+    "It also silently supplies the structural half of PD-2, an UNMAPPED_TO_RC surface. Agent B's independent framing is that PD-2's '3 G5 sites is a small code footprint attached to a very large authority footprint - the size measure understates it badly.'"
+   ],
+   "whatThisDoesNotSay": "It does not say a chapter should be created, where it would sit, or when. Chapter creation and sequencing are Stage 3 and Stage 4. It does not weaken PB-06: the guest boundary is a DELIBERATE non-writer of the member session hint and must not be 'fixed' blindly, and the F069 exception policy for guest-reachable realtime and meeting routes is an open founder decision (FA-14)."
+  },
+  {
+   "id": "AD-M2",
+   "item": "Agent A reports RC-C2 was FOUNDER-CLOSED while nine obligations remain open in its own root system, on the argument that RC-C2 closed the AUTHORITY but nothing audited CONSUMPTION. Evaluate against the chapter's recorded scope. RC-C2 IS NOT REOPENED.",
+   "verdict": "THE OBSERVATION IS CORRECT AND WELL-EVIDENCED. THE EXPLANATION IS ONLY HALF RIGHT, AND THE HALF THAT IS WRONG MATTERS.",
+   "whatIsCorrect": [
+    "Nine findings in RC-C2's subject matter are non-terminal: F050, F051, F052, F053, F054, F055, F056, F057, F116.",
+    "F116's own recorded remains is exactly 'multiple consumers fixed; no systematic audit', and the transcript's systemic statement is 'THE CANONICAL IDENTITY SYSTEM IS NOT BEING CONSUMED CONSISTENTLY ACROSS THE PRODUCT'.",
+    "The divergence is authority-affecting rather than cosmetic: F057 proved a resolver shape mismatch broke host detection, role lookup and Go Live eligibility.",
+    "Agent B reaches the same structural result independently and generalises it (B-KEY-3): closed chapters carry open findings in their own territory, at RC-C3 as well as RC-C2."
+   ],
+   "whereTheExplanationIsWrong": [
+    "A consumption audit is NOT outside RC-C2's recorded scope. The FOUNDER RECONSTRUCTION DOCTRINE (DECISIONS:239-247) binds EVERY chapter to demonstrate CANONICAL ARCHITECTURE -> RUNTIME ADOPTION -> VISIBLE PRODUCT OUTCOME -> LEGACY RETIREMENT, and states that reconstruction is complete only when canonical product truth is ADOPTED BY THE RUNTIME/RELEASE CLIENT. Consumption is the RUNTIME ADOPTION dimension by name.",
+    "The chapter's own applied register says so in its own words. C2_RECONSTRUCTION_DEBT_REGISTER:128-129 records chapter-level completeness for the closed chapters as ARCHITECTURE complete / RUNTIME ADOPTION partial / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial. The programme was never claiming full adoption.",
+    "So 'nothing audited consumption' overstates it. What is true is narrower and stronger: consumption was measured, recorded as PARTIAL, and closure was declared anyway - by founder authority, at a named certification layer."
+   ],
+   "thePreciseFraming": "RC-C2 closed at LOCALLY CERTIFIED. Under GOVERNANCE-RC-CERTIFICATION-LAYERS that means Architecture + Implementation + Product-Behavior. Cross-System lands at C1/C5/C8/C10, Real-Boundary at C9 and C10, Founder Product Acceptance is consolidated at C11 - and the frozen rule is A LOWER LAYER PASSING NEVER IMPLIES A HIGHER ONE. VD-080 records exactly this for C0, C1, C2 and C3. The nine open findings are therefore NOT evidence that the closure was premature or wrong; they are evidence that finding-level obligations live at certification layers RC-C2's closure never claimed. Both facts are true simultaneously and neither impeaches the other.",
+   "consequenceForCH-E": [
+    "CH-E is justified as a capability, and its justification improves under this framing: it is not remediation of a closed chapter, it is the CROSS-SYSTEM / RUNTIME-ADOPTION layer that RC-C2's closure explicitly did not claim.",
+    "But CH-E cannot be scoped as a one-time audit. Three of its nine findings name consumers on surfaces owned by chapters that have not run: F054 realtime participant tiles (RC-C6 / RC-C10), F057 host detection and Go Live eligibility (RC-C8 / RC-C10), F051 Messages-list avatars (Conversation canon). Each future chapter builds new identity consumers and re-opens the audit.",
+    "Two of the nine cannot be closed by engineering at all: F055 (party ordering) and F056 (group visual representation) are group-identity questions, RC-C2 chartered no group-identity concept, and both are documented judgment calls flagged in code awaiting a founder ruling.",
+    "One is blocked by an action no agent can perform: F058, the Cloudflare R2 CORS policy, which Agent C rates the highest visible-improvement-per-effort item in the entire register and which is not an engineering task."
+   ],
+   "boundaryRespected": "RC-C2 is not reopened. PB-05 records that the broader identity system is not to be casually rewritten. The C2 contracts inherited forward - canonical Follow storage ACTIVE, commercial enum physically FREE|PRO, verification truth as status lifecycle with drift 0, entitlement boundary deliberately NOT frozen - remain closed to reopening without new founder adjudication."
+  },
+  {
+   "id": "AD-M3",
+   "item": "Agent A's NEGATIVE RESULT that GAP-2 Long-Form Publishing is not a chapter.",
+   "verdict": "THE DISPERSAL ANALYSIS IS SOUND AND SHOULD BE PRESERVED. THE CONCLUSION DRAWN FROM IT IMPORTS A CHARTERING CRITERION THAT THE RC AXIS DEMONSTRABLY DOES NOT USE.",
+   "whatIsSound": [
+    "The dispersal is individually evidenced: F025/F026 to intake, F027/F070 to continuity, F121 to reference truth, F024 to taxonomy, F028 isolated (a dio empty-body transport behaviour), leaving F029 as genuinely publication-lifecycle. The distinction between F121 and F025 was explicitly drawn at issuance.",
+    "The anti-double-counting point is correct and valuable: eight findings that look like an orphan chapter would, if chaptered, count the same defects twice - once in the surface chapter and once in the shared authority that actually causes them.",
+    "The diagnosis behind it is the strongest part: 'Articles has been generating findings in OTHER systems because it is a NEW surface exercising shared authorities that were never finished.' That is a general property worth carrying to Stage 3 - a new surface is a probe of unfinished shared authorities, and its finding count measures those authorities rather than itself."
+   ],
+   "whereItOverreaches": [
+    "The criterion 'two findings is not a chapter' (used for CH-J and again for CH-K) is a FINDING-PRESSURE criterion. The RC axis does not charter by finding pressure and never has. RC-C8 Institution Room has ZERO findings recorded against it and is a full chapter with a frozen backend authority, a demolition target, a governing rule and a named invariant test. RC-C6's entire multi-device layer has zero findings. RC-C11 has four governance findings and is the release gate. Applying the Stage-1 criterion to the RC axis would decharter RC-C8 outright.",
+    "GAP-2's own frozen text asks for BOTH things Agent A separates. It records 'NO CHAPTER NUMBER ASSIGNED; awaiting deliberate founder dependency placement' - the charter Agent A calls for - AND 'Full lifecycle eventually required' - which is construction scope, not a charter.",
+    "Agent B's independent reading grades GAP-2 'HIGH and CONTRADICTED' on dependency weight and names concrete durability consequences that no other system will notice on its behalf: F121 (expiring signed URLs baked into durable markdown, so published images will 404) and F141 (inline authored media outside retention truth, therefore reaper-exposed). Agent C puts it more sharply: 'An unchartered capability that works is a governance issue; a published archive that silently rots is a product-thesis failure.'"
+   ],
+   "reconciledStatement": "Agent A's negative result is correct about FINDING PRESSURE and should be preserved verbatim as a warning against building a chapter that would look substantial on double-counted evidence. It is not sufficient to conclude that no chapter is warranted, because the RC axis charters by CAPABILITY and GAP-2's own governance text already asserts the capability's full lifecycle is eventually required. Both statements can stand: GAP-2 needs a founder dependency placement (a charter), and the capability it names carries construction obligations that are currently distributed across systems whose exit conditions do not include 'the published archive does not rot'.",
+   "additionalObservationFromTheRCAxis": "RC-C11's entry conditions enumerate C0-C9 plus C10. Stage 0 records the consequence directly as 'UNCHARTERED_CAPABILITY_IN_THE_RELEASE': a release gate that enumerates chapters has no declared home for a shipped, live-certified, publicly discoverable capability. Whatever Stage 3 and 4 do about the chapter question, the RELEASE-GATE question is separate and remains open.",
+   "notAdjudicated": "Whether GAP-2 becomes a chapter, a charter, or an obligation attached elsewhere is a founder decision (FA-12). Nothing here proposes a placement."
+  },
+  {
+   "id": "AD-M4",
+   "item": "Agent B's six competing RC-C4/RC-C5 gate interpretations. Do not rule. Add evidence.",
+   "stance": "NO RULING. The gate is not removed, RC-C4 is not started, and no interpretation is promoted. What follows is evidence drawn from the RECONSTRUCTION AXIS specifically, which is the axis Agent B had least occasion to mine, added against the interpretation it bears on.",
+   "newEvidenceFromTheRCAxis": [
+    {
+     "id": "AD-E10",
+     "bearsOn": "I-2 (deployment-discipline gate) and I-1 (still-valid dependency)",
+     "evidence": "THE GATE DEMANDS A CERTIFICATION LAYER THE ROADMAP DOES NOT ASSIGN TO RC-C4. RC-C4's chartered certification is 'Architecture + Implementation + Product-Behavior; Real-Boundary PARTIALLY (native delivery lands in C9)'. The hard gate requires C4 to be 'deployed, observed end-to-end on the LIVE site, live defects resolved' before C5 opens. Live end-to-end observation is a Real-Boundary-class proof, and GOVERNANCE-RC-CERTIFICATION-LAYERS places Real-Boundary substantially at RC-C9, not RC-C4.",
+     "significance": "The gate imposes on RC-C4 a standard stricter than the roadmap's own certification table requires of it. That is consistent with I-2's reading of the gate as an observation pipeline rather than a technical prerequisite - and it is equally consistent with a deliberate founder tightening. It does not distinguish between them; it does establish that the gate is not merely restating the roadmap.",
+     "provenance": "roadmap:254 (C4 certification row); roadmap:582-594 (layer table); DECISIONS:382-385 (the gate)"
+    },
+    {
+     "id": "AD-E11",
+     "bearsOn": "I-3 (obsolete sequencing) and I-4 (genuine blocker)",
+     "evidence": "RC-C5 IS ONE OF ONLY FOUR CHAPTERS WHERE CROSS-SYSTEM CERTIFICATION LANDS (C1, C5, C8, C10), and the systems it must certify against are named in its own scope as FROZEN backend dependencies: canonical MIME policy, SSRF-safe link fetching, internal link hydration, CIS classes, E_OFFICIAL designation and institutional approval floor, media cleanup service. Every one of those is being changed on the RIC axis right now - RIC-C1 implemented (62b39bf), retention truth amended by RIC-AMENDMENT-1, three migrations committed and NOT APPLIED, and MediaCleanupService explicitly the authority F142 corrects.",
+     "significance": "This is a cost of the gate that neither I-3 nor I-4 states: while RC-C5 is held closed, the contracts it owes Cross-System certification against are moving. It strengthens I-3's 'the chapter's content has moved' observation and simultaneously strengthens I-4's 'do not build on a moving foundation' - the same fact supports both readings, which is itself worth recording.",
+     "provenance": "roadmap:266-312 (RC-C5 backendDependencies); GOVERNANCE-RC-CERTIFICATION-LAYERS; doctrine-index RIC-C1, RIC-C2, RIC-AMENDMENT-1"
+    },
+    {
+     "id": "AD-E12",
+     "bearsOn": "I-1 (product coupling) - extends E3 beyond the composer overlap",
+     "evidence": "THE COUPLING IS TRANSITIVE INTO RC-C10 BY FROZEN TEXT. RC-C10's productDependencies name RC-C5 explicitly: 'Governed questions, continuing discussion, replay/content relationships and surrounding communication MUST NOT be built on composers already authorised for demolition.' RC-C10 also carries the frozen invariant LIVE MUST NOT CREATE TEMPORARY VERSIONS OF AUTHORITIES ALREADY SCHEDULED FOR RECONSTRUCTION.",
+     "significance": "The C5 gate is not a two-chapter arrangement. It pins a Live construction constraint, and Live construction has already partly proceeded (Live navigation/discovery, viewer admission, counts). Whether that constitutes creating a temporary authority is exactly what Stage 0 declined to adjudicate; the transitive coupling is nevertheless textual, not inferred.",
+     "provenance": "roadmap:502-511 (invariant), 511 (C5 product dependency)"
+    },
+    {
+     "id": "AD-E13",
+     "bearsOn": "I-6 (implementation-state vs certification-state)",
+     "evidence": "THE CORPUS CARRIES TWO CERTIFICATION VOCABULARIES AND STAGE 0 RECORDED IT INDEPENDENTLY. doctrine-index observation O2: the RC layer table (Architecture / Implementation / Product-Behavior / Cross-System / Real-Boundary / Founder Acceptance / Item 17) and the section 12 validation classes (LOCALLY VERIFIED / AUTHORIZED-BROWSER VERIFIED / TWO-ACCOUNT-TWO-BROWSER / LIVE_CERTIFIED) coexist without reconciliation - 'Finding states use the second vocabulary; chapter states use the first.'",
+     "significance": "This is direct corroboration of I-6 from an artifact produced before Agent B wrote it, and it explains the mechanism: RC-C5 BLOCKED is a chapter state in vocabulary one; 'DropTarget present at conversation_screen:960' is a finding-level implementation fact in vocabulary two. They are not contradictory readings of one variable. I-6's own stated limitation still holds - it does not dissolve F031's composer overlay coupling.",
+     "provenance": "doctrine-index indexLevelObservations O2"
+    },
+    {
+     "id": "AD-E14",
+     "bearsOn": "I-5 (namespace risk) - bounds it",
+     "evidence": "THE RC-C4/RC-C5 GATE TEXT IS NOT AMBIGUOUS, BUT ITS NEIGHBOURHOOD IS. doctrine-index GATE-C5-HARD-GATE records notedTension: 'The bare C5 here is RC-C5 (resolved by its adjacency to C4 live closure and the roadmap sequence), NOT RIC-C5 governed delivery. Both exist in the corpus.' Separately, RIC-C4 is recorded as 'the single most dangerous collision in the corpus, because RC-C4 is heavily referenced as C4-owned', and the section 12 dependency-graph line 'GOVERNED DELIVERY (C5)' was resolved by evidence to RIC-C5 rather than RC-C5.",
+     "significance": "Confirms I-5 is real for READERS and confirms Agent B's own weakness note that it does not dissolve the gate. Adds the boundary: the gate's own sentence is resolvable by evidence; the risk is in every OTHER unqualified C4/C5 sentence in the corpus.",
+     "provenance": "doctrine-index GATE-C5-HARD-GATE, RIC-C4, RIC-C5; rc-map namespaceRule evidencedCollisionInstance"
+    },
+    {
+     "id": "AD-E15",
+     "bearsOn": "All six - a structural fact none of them states",
+     "evidence": "RC-C4 IS THE ONLY RELEASE POINT IN THE ENTIRE DECLARED SEQUENCE, AND IT IS NOT AN ENGINEERING PREREQUISITE. X6 records the declared sequence C0 -> C1 -> {C2 || C3} -> {C4 || C5 || C6} -> {C7 || C8} -> C10 -> C11 with C9 overlapping, and that C4, C5 and C6 are all not-started or hard-gated, leaving C7, C8, C9, C10 and C11 unreachable. RC-C4's own declared prerequisites (C0, C1, C2, C3) are ALL closed, and rc-map records the only reason it has not begun as 'held per founder sequencing'.",
+     "significance": "Whatever the gate means, the graph's single evidenced release point is a FOUNDER AUTHORISATION, not a piece of engineering. Agent B records this as a structural fact and explicitly not a recommendation; this artifact repeats it in the same spirit. Sequencing is Stage 3; authorisation is the founder's."
+    },
+    {
+     "id": "AD-E16",
+     "bearsOn": "I-4 (genuine blocker) - qualifies its 'why C5 specifically' weakness",
+     "evidence": "RC-C4 IS THE CHAPTER WHOSE DEMOLITION INVENTORY GREW WHILE IT WAS HELD, AND THE GROWTH IS ATTENTION-ADJACENT TO COMPOSITION. VD-068 records five RealtimeSession rows stuck ACTIVE since 2026-08-12 on a legacy THREAD surface continuously feeding the banner, plus four companion global attention surfaces whose regression proof has no recorded owner (PBG-4). F031 records that the banner OVERLAPS the composer and /articles/write.",
+     "significance": "Agent B's stated weakness for I-4 is that it does not explain why C5 rather than C6/C7/C9 carries the gate. This is a partial answer from the RC axis: composition surfaces are the ones the ungoverned overlay physically covers. It does not make I-4 correct; it removes one objection to it."
+    }
+   ],
+   "whatIsStillNotRecorded": "No governed document states the gate's rationale, and Stage 0 records explicitly that whether the C4 hard gate was intended to also gate the section 12 composition/intake-adjacent stages is NOT_RECORDED. That absence, not the six interpretations, is what a founder ruling would have to fill (FA-1, FA-2, FE-8, and Agent C's question about whether the gate extends to the RIC stages)."
+  },
+  {
+   "id": "AD-M5",
+   "item": "The five UNMAPPED_TO_RC surfaces. CR-R4 forbids force-assignment; none is assigned here.",
+   "surfaces": [
+    {
+     "id": "PD-1",
+     "name": "Platform Administration",
+     "rcRelationship": "Sits outside RC-C0..C11. It INHERITS from two closed chapters without a receiving chapter: admin internals from RC-C3's closeout, and admin_institution_members from RC-C2's People Selection classification. It was opened by MEASUREMENT, not by an observed failure - RC-C1 withdrew 34 of its original 42 G5 sites after re-verification measured ZERO institutional authority code in all 11 admin files.",
+     "findingPressure": "ZERO under Agent A's root-system analysis.",
+     "reconciliationObservation": "The absence of finding pressure here is well-explained rather than mysterious: PD-1's surfaces were measured and found to contain no authority derivation, which is the property C1 was hunting. But VD-028 records that the ENTIRE /admin workspace was among the fail-open unclassified routes until the C3 gate found it - so PD-1's one recorded defect belongs to the continuity/classification cause set (F069), not to administration. Agent B rates this 'the highest-consequence instance of the F069 class'.",
+     "threeAgentViews": "A: do not create a root system; record it as a product disposition decision. B: HIGH on authorization, LOW on product chains; owned by nothing since C3's closeout. C: lowest acquisition consequence, highest operational consequence; belongs inside whatever owns institutional authority presentation. All three preserved."
+    },
+    {
+     "id": "PD-2",
+     "name": "Authentication & Account Entry",
+     "rcRelationship": "Sits outside RC-C0..C11 with STRUCTURAL DISPOSITION STILL OPEN. Its adjacency to the RC axis is the reverse of PD-1's: RC-C1 explicitly PRESERVED 'existing auth flows, session handling', so the axis touched this surface only to instruct that it not be reconstructed.",
+     "findingPressure": "ZERO issued findings ON THE SURFACE, and HIGH pressure THROUGH it - F065 (session establishment fragmented across auth paths), F069 (classification of auth-gated routes), F100 (auth wall), F103/F104 (auth return and intent preservation), and the router half of F027.",
+     "reconciliationObservation": "This is the sharpest instance of the artifact's central theme. PD-2 has zero findings by NAME and is the causal centre of the largest finding cluster in the register. Agent A: 'the register has been describing PD-2's internals for weeks under other names.' Agent B: PB-06 is entirely about this surface, and '3 G5 sites is a small code footprint attached to a very large authority footprint'. Agent C: 'FAILS THE TEST BY DEFAULT - not because it is bad, but because nobody has looked', and treats zero findings as a signal to LOOK.",
+     "openProposal": "Agent A proposes splitting it - structural half already owned by CH-A, account-entry EXPERIENCE (sign-in/sign-up, LoginScreen disposition) to CH-H's auth wall. Recorded as a proposal. Note the dependency: RC-C3's LoginScreen disposition checkpoint (AD-D-17) is the same surface, chapter-owned, and its chapter is closed.",
+     "notAssigned": "No assignment made. FA-9 and FE-10 record the founder decision."
+    },
+    {
+     "id": "SupportScreen",
+     "name": "Support surface",
+     "rcRelationship": "Deliberately NOT assigned to RC-C9 by explicit decision (DECISIONS:40) and left as a product disposition checkpoint. Agent B classifies it as PBG-5: a protected surface WITHOUT a protecting chapter - protected from deletion, isolated modernisation and forced chapter assignment.",
+     "findingPressure": "ZERO across all three analyses.",
+     "reconciliationObservation": "Its only real risk is procedural and FD-12 already names it: a naive zero-reference retirement gate would delete it, and FD-12 was frozen precisely to forbid that ('architecture-aware; naive zero-reference gate FORBIDDEN'; 'LoginScreen looks dead to grep and is not'). The one substantive new observation comes from Agent C's authorised client inspection: support surfaces are scattered across features/support/, features/monetization/presentation/support_screen.dart, screens/supporters_hub_screen.dart and screens/support_fallback_screen.dart, with a user-facing NAME COLLISION between customer help and financial supporters. A vocabulary collision on a user-facing word is the class of problem RC-C0's Product Language Authority exists to prevent, and this one is not in the frozen 13-noun set either way.",
+     "notAssigned": "No assignment. Leaving it unowned is itself defensible per Agent A; the collision is a separate, checkable observation."
+    },
+    {
+     "id": "GAP-1",
+     "name": "Settings / Personal Controls",
+     "rcRelationship": "The roadmap charters no Settings chapter, and prior 'C4 Settings' references were FORMALLY RECLASSIFIED as continuity shorthand - so the surface never had a home, it appeared to have one. It nevertheless holds a control frozen doctrine declares REQUIRED (Availability Off) with IMPLEMENTATION OWNER UNASSIGNED, and it intersects RC-C4's Notification Preference Authority.",
+     "findingPressure": "ZERO from the F-register. NON-ZERO from doctrine - two frozen obligations with nowhere to live.",
+     "reconciliationObservation": "GAP-1 and AD-D-04 are the same hole seen from two directions. The Notification Preference Authority is chartered to RC-C4 (not started) and its natural surface is unchartered; the Availability Off control is required by RC-C2 doctrine (closed) with no owner. Two closed-or-held chapters each hold half of one user-facing capability. Agent A's classification of GAP-1 as DOCTRINE-PRESSURE rather than finding-pressure is the right vocabulary and this artifact adopts it.",
+     "confidenceNote": "Agent A rates the zero-finding result MEDIUM confidence, flagging that it 'may be a measurement artefact of what the founder happened to exercise'. That caution is preserved."
+    },
+    {
+     "id": "GAP-2",
+     "name": "Long-Form Publishing (Articles)",
+     "rcRelationship": "No RC chapter owns it; RC-C11's entry conditions have no declared home for it; RIC-F1 names Articles at the LAST stage of the longest chain on the RIC axis; and RC-C3's navigation correction made Articles a declared Discover domain with the explicit ruling that it is canonically declared but NOT rendered until truthful reading capability exists ('no dead coming-soon tenancy').",
+     "findingPressure": "HIGH by count and DISPERSING under root-system analysis.",
+     "reconciliationObservation": "See AD-M3. The reconciliation-specific point is that GAP-2 is the only unmapped surface that is simultaneously SHIPPED, PUBLIC, LIVE_CERTIFIED in part, and unchartered - which is why it is the only one that appears in RC-C11's contradiction list rather than only in its disposition list.",
+     "contradictionPreserved": "DECISIONS records NO CHAPTER NUMBER ASSIGNED while Articles shipped and F024 is LIVE_CERTIFIED. Carried forward, not resolved."
+    }
+   ],
+   "crossCuttingReconciliationObservation": "Agent B's cross-cutting property is confirmed against the RC axis and can be stated more precisely from it. All five surfaces have small code footprints and large authority footprints - but the RC-axis reason is specific: four of the five entered the record as RESIDUE of a closed chapter's measurement (PD-1 and PD-2 from RC-C1's G5 withdrawal, SupportScreen from RC-C9's scoping decision, GAP-1 from a reclassification at RC-C4's opening), and only GAP-2 entered as a capability. A roadmap organised by capability produces its unmapped surfaces as the leftovers of measurement, and leftovers of measurement are sized by what was measured - which is why every size figure attached to these five understates them."
+  }
+ ],
+ "disappearedObligations": {
+  "framing": "An obligation is recorded here when it is present in an RC chapter's own chartered scope or explicitlyRemainingObligations and is carried by NO Stage-1 candidate system. Visibility is graded: PROSPECTIVE means the obligation survives in Stage-0 evidence (rc-map / validation-debt / doctrine-index) and would be lost only by a portfolio built from CH-A..CH-O alone; ALREADY_LOST means no artifact on any axis currently carries it as an actionable obligation with an owner or a trigger. Nothing here assigns ownership.",
+  "rootCause": "The Stage-1 taxonomy is organised by ROOT SYSTEM - 'what must become correct for this FINDING to stop recurring'. The RC axis is organised by CAPABILITY UNDER CONSTRUCTION - 'what must the product be able to do'. Any chartered obligation that generated no finding is therefore invisible to the Stage-1 taxonomy by construction, not by oversight. RC-C8 is the clean control case: a full chapter with a frozen backend authority, a demolition target, a governing rule and a named invariant test, which produced zero findings and appears in zero candidate systems.",
+  "items": [
+   {
+    "id": "AD-D-01",
+    "chapter": "RC-C8",
+    "obligation": "THE ENTIRE CHAPTER - Institution Room client for frozen backend D5: room ownership, invitations, participant states, ring policy (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS), lifecycle, contextual realtime, attention, modern participant selection; DR2 demolition of institution_live_rooms_screen (1,078 lines, DO NOT RETROFIT); the governing rule ENTITLEMENT != INTERRUPTION; the LARGE-INSTITUTION INVARIANT (10,000 members -> zero recipients absent invitation); Cross-System certification.",
+    "carriedBy": "NO candidate system. Zero findings.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "rc-map RC-C8 (roadmap:405-445); rc-map RC-C8 evidencedFindingRelationships 'NOT_RECORDED - No F-id or WG-id explicitly attributed to RC-C8'",
+    "consequenceIfLost": "An institution-owned realtime product surface with a frozen backend authority would have no construction plan, while its de facto substitute (institution_live_rooms_screen) is the screen the chapter exists to demolish and is currently serving Live discovery."
+   },
+   {
+    "id": "AD-D-02",
+    "chapter": "RC-C6",
+    "obligation": "Multi-device authority and the device layer: device transfer UI (offer / accept / relinquish / failed), preferred-device behaviour made visible, preferred-first ring with stagger and fallback, durable media ownership, and the D2 transfer handshake - all with backend contracts recorded FROZEN and the client side unbuilt.",
+    "carriedBy": "NO candidate system. Zero findings.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "rc-map RC-C6 originalScope build + extendedScope + backendDependencies (roadmap:316-356)",
+    "consequenceIfLost": "A frozen backend capability would remain permanently unexposed, and the chapter's exit condition ('transfer and preferred-device visible') would be unmeetable while the chapter looked served by CH-B."
+   },
+   {
+    "id": "AD-D-03",
+    "chapter": "RC-C6",
+    "obligation": "Meetings presentation convergence: 3,890 lines reimplementing participant grid, spotlight and remote tiles while consuming 0 of 5 shared realtime widgets, to be converged SLICE BY SLICE with targeted regression (97/97) and founder sign-off after each slice.",
+    "carriedBy": "PARTIAL - VD-074 preserves the per-slice regression and sign-off rule on the validation axis, and CH-M holds the protection boundary. NO candidate system carries the convergence itself.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN:10-26; rc-map RC-C6 contradictionsOrGaps SCOPE_UNADDRESSED; F114 confirming no Meetings file was modified",
+    "consequenceIfLost": "FD-4 is a frozen founder decision with measured evidence. CH-M is explicitly validation-only, so a portfolio reading CH-M as 'Meetings covered' would silently drop the demolition FD-4 froze."
+   },
+   {
+    "id": "AD-D-04",
+    "chapter": "RC-C4",
+    "obligation": "Notification Preference Authority - PRIMARY OWNER C4, with the frozen governing distinction ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION, and the rule that disabling email or push must never erase the underlying governed Attention item.",
+    "carriedBy": "NO candidate system. Zero findings. It has its own frozen obligation document.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md:5,14-27,29-30; doctrine-index OBLIGATION-NOTIFICATION-PREFERENCE-AUTHORITY 'RC-C4 primary owner. Intersects the uncharted Settings gap (GAP-1)'",
+    "consequenceIfLost": "A frozen doctrine would have no implementing plan, and its natural surface (Settings) is itself unchartered - so the obligation is doubly homeless."
+   },
+   {
+    "id": "AD-D-05",
+    "chapter": "RC-C4 (inherited from RC-C2 ruling R4)",
+    "obligation": "Name the Subscribe product surface and vocabulary. FOLLOW != SUBSCRIBE is frozen; C2 recorded the semantics and C4 OWNS THE VOCABULARY; Subscribe stays physically in InteractionFollow thread/space rows until C4 names its product surface.",
+    "carriedBy": "NO candidate system.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "DECISIONS:227; rc-map RC-C4 keyFrozenOutcomes C4-SUBSCRIBE-VOCAB",
+    "consequenceIfLost": "Live data would remain parked in a table under a name the product has never adopted, with the naming obligation forgotten."
+   },
+   {
+    "id": "AD-D-06",
+    "chapter": "RC-C4",
+    "obligation": "The DR1 inventory as an inventory: EIGHT attention surfaces retired (messages hub, notifications, activity, direct inbox, communications centre, correspondence hub, module attention, conversations_screen.dart at 1,033 lines), PLUS the four companion global attention surfaces and orphaned-session reconciliation added later, whose regression proof has no recorded owner (PBG-4). Also: semantic views (Conversations / Activity / Invitations / Actions), cross-device read state, noise reduction, deterministic reconciliation with no dead CTAs, and the NO WALL OF FALSE UNREADS migration constraint.",
+    "carriedBy": "PARTIAL - CH-D names 'DR1 retirement' as a sub-system but carries findings for only the banner and read-state slices; seven of the eight surfaces and all of the listed build items carry no finding.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "roadmap:238,244-262; VD-068; PBG-4",
+    "consequenceIfLost": "RC-C4 would be sized at five findings when its charter is roughly a dozen build obligations plus a growing demolition inventory - the single largest sizing error available to Stage 3."
+   },
+   {
+    "id": "AD-D-07",
+    "chapter": "RC-C5",
+    "obligation": "FD-8 official designation expressed in the publish flow ONLY, with consequence legible BEFORE commitment, no post-publication elevation, withdrawal object-local, content change invalidating approval; plus E_OFFICIAL designation representation and institutional approval workflow language, explicitly handed forward from C0 and deliberately not pre-empted there.",
+    "carriedBy": "NO candidate system. Zero findings.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "FD8_OFFICIAL_DESIGNATION_MOMENT_FROZEN:10-27; DECISIONS:127; rc-map RC-C5 extendedScope",
+    "consequenceIfLost": "A frozen founder decision governing how institutional publications acquire official status would have no implementing chapter, while institutional publication surfaces continue to exist."
+   },
+   {
+    "id": "AD-D-08",
+    "chapter": "RC-C5",
+    "obligation": "DR3 convergence as a duplication-retirement obligation: six composers (hashtags in 1 of 6, upload progress in 1 of 6), ELEVEN upload pipelines, per-composer paste/clipboard handling across 25 files, and voice implied by route. Plus drafts and autosave as Composition Authority concerns, and the open checkpoint on orphan-cleanup windows versus canonical draft lifetime.",
+    "carriedBy": "PARTIAL - CH-F cites the counts in prose as its rationale for RS-11, but no finding expresses the convergence and no candidate system carries it as an obligation. CH-A carries draft continuity only as durable identity of in-progress work.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "roadmap:282-288; CONTENT_INTAKE_RESOLUTION_AUTHORITY_FROZEN:12-20; NEXT_WORK:108",
+    "consequenceIfLost": "Eleven upload pipelines can each be individually 'working' while the chapter's exit condition (one lifecycle, one intake layer) is never met. Duplication debt is invisible to a finding-driven taxonomy because duplication produces no single observable defect."
+   },
+   {
+    "id": "AD-D-09",
+    "chapter": "RC-C7",
+    "obligation": "SPACE SURFACES as a product obligation - persistent shared context / community, explicitly NOT a large group chat, NO EIGHT-TAB INTERFACE, never forced to contain every Thread - together with the frozen THREAD != SPACE distinction.",
+    "carriedBy": "NO candidate system. Zero findings.",
+    "visibility": "PROSPECTIVE, AND UNUSUALLY EXPOSED",
+    "evidence": "THREADS_SPACES_PRODUCT_MODEL_FROZEN:11-18; roadmap:377; DECISIONS C3-DISCOVER (Spaces is an immediate Discover domain); CURRENT_STATE:143 (Spaces taxonomy broadened to 10)",
+    "consequenceIfLost": "Spaces is a publicly discoverable domain in the shipped navigation with a ten-item taxonomy, and its reconstruction obligation is represented in nothing. This is the sharpest mismatch between what is publicly visible and what current planning contains."
+   },
+   {
+    "id": "AD-D-10",
+    "chapter": "RC-C7",
+    "obligation": "The Correspondence ARCHITECTURAL CONVERGENCE VERDICT - the chapter's named founder checkpoint, recorded by Stage 0 as having NO RECORDED OUTCOME - plus the umbrella rename/migration (choose the correct internal name, migrate safely, preserve compatibility and history; filesystem naming may lag, documentation and the Product Language Authority may not).",
+    "carriedBy": "NO candidate system.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "roadmap:395; DECISIONS:85-87 (C0-4); NEXT_WORK:34; rc-map RC-C7 contradictionsOrGaps UNRESOLVED",
+    "consequenceIfLost": "A frozen semantic ruling (Correspondence has exactly one canonical product meaning; the umbrella sense is architectural naming drift) would remain permanently unexecuted, and the checkpoint that was to decide it would be forgotten rather than answered."
+   },
+   {
+    "id": "AD-D-11",
+    "chapter": "RC-C7 (as amended)",
+    "obligation": "The institutional Desk experience, institutional participation, and membership/join/invite lifecycle reconstruction that never exposes role enums or permission machinery - the substance of the founder-approved C7 amendment - plus InstitutionCorrespondenceScreen disposition (FD-12 section 4) and the requirement that no route-derived sender survive C7 closure.",
+    "carriedBy": "NO candidate system.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "DECISIONS:355-361; C3_FINAL_CLOSEOUT:42; NEXT_WORK:113",
+    "consequenceIfLost": "The only chapter chartered to own the institution-side conversation experience would be represented in planning solely by CH-O, which is a five-finding model-integrity system with no institutional scope."
+   },
+   {
+    "id": "AD-D-12",
+    "chapter": "RC-C10",
+    "obligation": "REPLAY-AS-PRODUCT and RECORDING STATE. Replay is recorded in the chapter's own backendConstructionRequired list as 'missing'; recording state and replay are both named client construction items; the chapter also owes post-live continuity.",
+    "carriedBy": "NO candidate system. Zero findings.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "roadmap:524-528 (backend construction required), 548 (client construction list)",
+    "consequenceIfLost": "A named backend construction item and its client surface would disappear entirely from a Live portfolio that otherwise looks comprehensive at 37 findings."
+   },
+   {
+    "id": "AD-D-13",
+    "chapter": "RC-C10",
+    "obligation": "The chapter's TWO EXIT GATES and its cross-repository framing: the construction exit (Live works end-to-end from a governed context with continuity preserved after it ends, consuming canonical navigation, attention and composition, with NO TEMPORARY AUTHORITIES ANYWHERE) and the cross-platform completion gate (required C9 platform contracts proven). Also the governing invariant, the open checkpoints (Live moderation policy, audience-scale topology/provider, Thread vs Space Live differences) and the C0-handed plural/contextual Live language question.",
+    "carriedBy": "NO candidate system. The 37 findings partition into CH-C, CH-G and CH-H; the gates belong to none of the three.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "roadmap:502-511, 542, 550-556; DECISIONS:38, 128",
+    "consequenceIfLost": "Three systems could each report themselves complete while the chapter's actual exit conditions - which are about integration, not about any one system - were never evaluated. This is the specific failure mode of decomposing a chapter into root systems."
+   },
+   {
+    "id": "AD-D-14",
+    "chapter": "RC-C9",
+    "obligation": "WNS native Windows push, desktop lifecycle, file handling, keyboard, hover/context affordances, window sizing and responsiveness, installation and launch context, deep links, background/foreground, iOS/Android native notification presentation, per-platform suites, REAL-DEVICE TESTING, and the governing rule DESKTOP IS NOT WEB WITH A WIDER VIEWPORT - plus Real-Boundary certification, which lands substantially here and nowhere else.",
+    "carriedBy": "PARTIAL - CH-L carries two findings (distribution lag, native ring topology). VD-069 preserves the chapter obligation on the validation axis.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "roadmap:449-486; VD-069; GOVERNANCE-RC-CERTIFICATION-LAYERS",
+    "consequenceIfLost": "Real-Boundary certification is a layer no other chapter substantially provides. A portfolio that reads CH-L as 'cross-platform covered' would lose the only chapter where the product is proven on real devices."
+   },
+   {
+    "id": "AD-D-15",
+    "chapter": "RC-C0 and RC-C1 (routed through the ownership matrix to C3, C4, C5, C7, C8, C9, PD-1, PD-2)",
+    "obligation": "The ratcheted debt burn-down as a structure: G5 remainder 168 sites / 67 files under the ownership matrix; 181 direct state-primitive constructions; 47 toLocal(); 24 local elapsed-time sites; 17 screen-declared time formatters; 26 full-surface spinners; the relative_time.dart shim with 11 caller files owned by C4 and C6; C1's R1 (25 files / 85 role-derived booleans) and R2; C3's route-literal ratchet (103 files / 294 sites).",
+    "carriedBy": "NO candidate system. The Stage-1 taxonomy has no burn-down structure at all, and the ownership matrix routes these to chapters the taxonomy does not preserve.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "CURRENT_STATE:62; C2_RECONSTRUCTION_DEBT_REGISTER:114,158; DECISIONS:103-107,171-173; C3_FINAL_CLOSEOUT:23",
+    "consequenceIfLost": "Every one of these is enforced by a ratchet gate that fails the build if it grows. They cannot regress silently - but they can stop shrinking forever, which is exactly what happens when the receiving structure disappears."
+   },
+   {
+    "id": "AD-D-16",
+    "chapter": "RC-C0",
+    "obligation": "The 68 SizedBox.shrink() empty states named in the chapter's declared migration.",
+    "carriedBy": "NOTHING, on any axis.",
+    "visibility": "ALREADY_LOST",
+    "evidence": "rc-map RC-C0 contradictionsOrGaps SUPERSEDED_MEASUREMENT: 'the 68 SizedBox.shrink() line was never adjudicated and C0 did not convert them'",
+    "consequenceIfLost": "Already lost. Recorded here so it re-enters visibility: it is the only item in the C0 migration list that was neither executed nor reclassified nor explicitly dropped."
+   },
+   {
+    "id": "AD-D-17",
+    "chapter": "RC-C2 and RC-C3",
+    "obligation": "PresenceScreen disposition (RC-C2, under FD-12 section 5 - to be dispositioned on architecture, NEVER on reference count) and LoginScreen disposition (RC-C3). Both are recorded as chapter-owned OPEN IMPLEMENTATION CHECKPOINTS, and both chapters are founder-closed.",
+    "carriedBy": "NO candidate system.",
+    "visibility": "PROSPECTIVE, WITH A NAMED HAZARD",
+    "evidence": "NEXT_WORK:113; FD-12; Agent B's PBG-5 note that 'LoginScreen looks dead to grep and is not'",
+    "consequenceIfLost": "FD-12 exists precisely because a naive reachability sweep would delete these surfaces. An unowned disposition checkpoint on a surface that looks dead to tooling is the exact hazard FD-12 was frozen to prevent."
+   },
+   {
+    "id": "AD-D-18",
+    "chapter": "RC-C2",
+    "obligation": "The final Free/Pro commercial entitlement boundary, deliberately NOT frozen at C2 closeout, together with the FUTURE COMMERCIALIZATION GOVERNANCE MARKER explicitly recorded to survive handoff, and the rule that no new payment enforcement is activated or expanded during release-client reconstruction.",
+    "carriedBy": "NO candidate system.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "C2_FINAL_CLOSEOUT:36; DECISIONS:276-294",
+    "consequenceIfLost": "A deliberately deferred decision with a marker written specifically to survive handoff would be lost at the first handoff after the marker was written."
+   },
+   {
+    "id": "AD-D-19",
+    "chapter": "RC-C3",
+    "obligation": "Retirement of the two gate-pinned legacy route aliases, gated on link-traffic evidence at A FUTURE OBSERVED WINDOW.",
+    "carriedBy": "NO candidate system. No artifact records who watches for the trigger condition.",
+    "visibility": "PROSPECTIVE, TRIGGER UNOWNED",
+    "evidence": "C3_FINAL_CLOSEOUT:44-46",
+    "consequenceIfLost": "A compatibility layer with a stated retirement condition becomes permanent by default, which contradicts the Founder Reconstruction Doctrine's rule that compatibility layers are transitional only and each must carry a retirement condition AND path."
+   },
+   {
+    "id": "AD-D-20",
+    "chapter": "RC-C5, RC-C6, RC-C9, RC-C10",
+    "obligation": "Chapter founder checkpoints that gate Product-Behavior certification: composition interaction direction (C5), designation/approval workflow language (C5), participation and invite interaction direction plus sign-off after EACH Meetings slice (C6), desktop experience direction (C9), Live moderation policy and audience-scale topology/provider (C10).",
+    "carriedBy": "PARTIAL - VD-081 preserves them on the validation axis and Agent C surfaces some as FE-items. NO candidate system carries them, and the C5/C6/C9 checkpoints appear in no Stage-1 artifact at all.",
+    "visibility": "PROSPECTIVE",
+    "evidence": "VD-081; roadmap:256, 350, 484, 542",
+    "consequenceIfLost": "Each is a decision that no implementation may pre-empt. Losing them does not stop work - it causes work to proceed past a decision point, which is the failure mode RC-C4's own scope guards against ('founder checkpoint BEFORE the eight surfaces are retired')."
+   }
+  ],
+  "summary": {
+   "totalItems": 20,
+   "alreadyLost": 1,
+   "prospective": 19,
+   "chaptersWithZeroCandidateSystemCoverage": [
+    "RC-C8"
+   ],
+   "chaptersWhoseUncoveredScopeExceedsTheirCoveredScope": [
+    "RC-C4",
+    "RC-C5",
+    "RC-C6",
+    "RC-C7",
+    "RC-C8",
+    "RC-C9",
+    "RC-C11"
+   ],
+   "structuralStatement": "The disappearance is not random. Every disappeared obligation shares one property: it produced no finding. Duplication debt, unbuilt-but-frozen backend capability, naming and vocabulary obligations, deferred decisions, demolition inventories, exit gates and founder checkpoints are all invisible to a taxonomy whose organising question is 'what would have to become correct for this finding to stop recurring'. Both axes are correct; neither is sufficient alone. That is the reconciliation this artifact exists to record."
+  }
+ },
+ "systemsWithNoAxisHome": {
+  "test": "For each of CH-A..CH-O: does it trace to (a) an RC chapter, (b) a later governed implementation chapter or founder-frozen canon, or (c) an explicitly recorded gap? A system belonging to NOTHING is itself a finding. Tracing is evidence of a HOME, not of ownership - Stage 4 assigns ownership.",
+  "verdictLegend": {
+   "HOMED": "traces to at least one RC chapter, canon or recorded gap with a positive statement of relationship",
+   "GAP-HOMED": "traces only to a document whose content is the statement that nothing owns it",
+   "SPLIT-HOMED": "part traces to a chapter, part traces to nothing",
+   "INVERTED-HOMED": "its subject matter appears in an RC chapter's PRESERVE / DO-NOT-TOUCH list, which is the opposite of a construction charter",
+   "NO AXIS HOME": "traces to nothing on any axis"
+  },
+  "systems": [
+   {
+    "id": "CH-A",
+    "name": "Continuity & Destination Truth",
+    "verdict": "GAP-HOMED",
+    "finding": "TRUE AS CLAIMED, WITH ONE CORRECTION. No RC chapter charters it and no RIC stage covers it. Its only home is DOCTRINE-REFRESH-CONTINUITY, whose own text is the statement that nothing owns it: 'No RC chapter owns this. It cuts across RC-C3 (routing/destinations), RC-C6/RC-C10 (mid-call continuity), RC-C5 (draft/compose continuity) and RC-C9 (platform lifecycle). NOT_RECORDED as any chapter's obligation.'",
+    "correctionToAgentA": "One of the sixteen IS explicitly attributed: rc-map records F069 under RC-C3's evidencedFindingRelationships as 'EXPLICIT - route classification'. The other fifteen are recorded as ADJACENT and 'NOT explicitly attributed to RC-C3 in any governed document'. The claim holds at chapter-chartering level; it is not true that no finding in the cluster has any recorded RC relationship.",
+    "howTheGapArose": "Four chapters touch continuity and none owns it, because three touch it as PRESERVATION and one as a platform build item: RC-C1 preserve 'session handling'; RC-C3 preserve 'session continuity (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host)'; RC-C5 preserve 'DRAFTS AND DRAFT DATA'; RC-C9 build 'active realtime continuity' and background/foreground. Preserving a thing is an instruction not to reconstruct it.",
+    "chronology": "The roadmap froze 2026-08-15. REFRESH IS NOT NAVIGATION was frozen as a founder platform contract on 2026-08-17. The reconstruction axis could not have chartered an authority whose governing contract did not yet exist - and it has no recorded mechanism for admitting a new cross-cutting authority after RC-C0 closed.",
+    "alsoSupplies": "The structural half of PD-2 Authentication & Account Entry, an UNMAPPED_TO_RC surface. Agent A rates this HIGH confidence on the ground that F065 and F069 both name authentication mechanisms explicitly; Agent B independently rates the same edge MEDIUM-HIGH inference ('identical surfaces, no stated link'). Both readings preserved.",
+    "meaningForTheReconstructionAxis": "The reconstruction axis is INCOMPLETE, not wrong. Its thesis is AUTHORITIES BEFORE SURFACES, and it enumerated the cross-cutting authorities once, at C0, as three presentation authorities. A fourth exists. The axis's completeness therefore depends on a closed chapter's enumeration having been exhaustive, and it was not. That is a property of the axis worth recording independently of what Stage 3 or 4 decides to do about it."
+   },
+   {
+    "id": "CH-B",
+    "name": "Realtime Session & Participation Truth",
+    "verdict": "INVERTED-HOMED",
+    "finding": "Its subject matter is named by RC-C6 - in the PRESERVE / DO NOT TOUCH list ('realtime transport, media service, event parser, reconnect/orphan recovery'). PB-02 protects the same layer. No RC chapter charters session-lifecycle CONSTRUCTION or CERTIFICATION; RC-C6 charters presentation convergence over it.",
+    "constructionHome": "The construction already happened, outside every chapter frame, and is recorded as contradiction X2 - 'The roadmap has no record of authorizing, absorbing or excluding any of it.'",
+    "certificationHome": "NONE. Fourteen of its twenty findings are implemented or partially validated, which is precisely the state the non-shrinking register exists to keep visible, and no chapter owes their certification.",
+    "adjacentObligation": "The Conversation Completion Register (frozen 2026-08-16) names audio call, video call, screen sharing, media/attachments, intentional Live and message reporting/moderation as REQUIRED contextual attachments of canonical Conversation and states that Conversation is NOT final-certified until resolved. That obligation is the closest thing to a home for CH-B's capability set, and it is an obligation register rather than a chapter.",
+    "cautionCarried": "Agent B records that any conclusion treating F006/F007/F008/F010 as settled inherits WEAK provenance AND conflicts with that same frozen register, which still names them as unresolved required attachments. Agent A independently warns not to build a release argument on those five rows without live re-proof."
+   },
+   {
+    "id": "CH-C",
+    "name": "Realtime Topology & Scale Decision",
+    "verdict": "HOMED",
+    "finding": "RC-C10 lists 'Audience scale (SFU/broadcast topology)' in its own backendConstructionRequired table as MISSING, and PB-03 founder checkpoint E (audience-scale topology/provider, deliberately not frozen, provider independence preserved) is the decision instrument. RC-C10's explicitlyRemainingObligations enumerates F108-F111 directly.",
+    "note": "Agent A's honest assessment that this is a founder architecture decision plus one measurement task, rather than a construction chapter, is consistent with RC-C10's own treatment of it as an open checkpoint. F073's placement here is an inference from the fourth-peer symptom, not from a recorded root cause, and Agent A flags it."
+   },
+   {
+    "id": "CH-D",
+    "name": "Attention & Read-State Truth",
+    "verdict": "HOMED",
+    "finding": "RC-C4 charters exactly this and CH-D explicitly refuses to create a new chapter. The relationship is confirmation, not replacement. The asymmetry runs the other way: RC-C4's charter substantially exceeds CH-D's five findings (see AD-D-04, AD-D-05, AD-D-06)."
+   },
+   {
+    "id": "CH-E",
+    "name": "Identity Consumption Certification",
+    "verdict": "HOMED, BUT THE HOME IS CLOSED AND THE WORK SPANS UNSTARTED CHAPTERS",
+    "finding": "Traces to RC-C2 by subject matter and to FD-11 by doctrine. RC-C2 is FINAL CLOSED by founder declaration and is not reopened here. The named consumers, however, sit on surfaces owned by chapters that have not run: F054 realtime participant tiles (RC-C6 / RC-C10), F057 resolver shape affecting host detection and Go Live eligibility (RC-C8 / RC-C10), F051 Messages-list avatars (Conversation canon surface). F058 blocks the visual result behind an external Cloudflare action no agent can perform.",
+    "structuralConsequence": "A consumption audit cannot terminate before its consumers exist. Whatever form CH-E takes, it is re-entrant by nature: each later chapter that builds a new identity consumer re-opens it. That is a sequencing property for Stage 3, and it is also the strongest argument that consumption certification belongs to a CERTIFICATION LAYER rather than to a chapter.",
+    "doctrineGapInside": "F055 and F056 are group-identity questions with no doctrine anywhere in the 64 records. They cannot be closed by engineering at all."
+   },
+   {
+    "id": "CH-F",
+    "name": "Rich Content & Interaction",
+    "verdict": "DOUBLE-HOMED AND UNRECONCILED - the opposite problem from homelessness",
+    "finding": "It has TWO homes and no document reconciles them. Home 1: the FROZEN section 12 RIC contract with its own eleven-stage table, which Agent A's independent decomposition reproduced almost exactly. Home 2: RC-C5, whose originalScope substantially covers the same subject matter and which is CLOSED by a frozen hard gate.",
+    "governedAbsence": "Stage 0 records explicitly: 'Whether the C4 hard gate on C5 was intended to also gate the section 12 Rich Content chapter's composition/intake-adjacent stages is NOT_RECORDED.' Agent B's E5 records the same absence. Agent C escalates it as a Stage-2 question because it determines whether media PRESENTATION may proceed while media TRUTH does.",
+    "risk": "RC-C5 owes CROSS-SYSTEM certification against frozen backend contracts (canonical MIME policy, SSRF-safe link fetching, internal link hydration, CIS classes, media cleanup service) that the RIC axis is currently mutating. A chapter cannot certify against a moving contract while held closed."
+   },
+   {
+    "id": "CH-G",
+    "name": "Live as a Governed Mode",
+    "verdict": "HOMED, INTO A CHAPTER WHOSE OWN STATE IS CONFLICTING",
+    "finding": "RC-C10 charters it and DOCTRINE-LIVE-ORIGINATION-CORRECTION governs the model. RC-C10 is CONFLICTING_CURRENT_STATE (CR-O5), carried forward unresolved. rc-map also records that no governed document states 'F074 is owned by C10' - the relationship is subject-matter-evidenced, not ownership-declared."
+   },
+   {
+    "id": "CH-H",
+    "name": "Public Acquisition & Anonymous Participation Boundary",
+    "verdict": "SPLIT-HOMED - and the homeless part is the load-bearing part",
+    "finding": "MATERIAL CORRECTION TO AGENT A. RC-C10's own explicitlyRemainingObligations enumerates 'Live public acquisition F097-F107 - public home surfaces real Live, bounded preview, auth wall, one canonical Live truth for both doors.' So six of the eight findings ARE recorded inside an RC chapter's remaining obligations. Agent A's position that CH-H is 'deliberately NOT a sub-chapter of Live' is an analytical proposal that runs against that record, and it is not thereby wrong - but it is not a claim of homelessness for those six.",
+    "whatIsGenuinelyHomeless": "Three things. (1) F103 and F104 - the same record states they 'must be owned by the shared continuity authority (ties to F059-F070)', and that authority has no chapter, so the two hardest obligations are homeless by the register's own statement. (2) The ANONYMOUS ZERO-AUTHORITY CAPABILITY PROJECTION concept: RC-C1 chartered projection for authenticated actors, is closed, and no chapter charters a visitor case. (3) F097 is a PUBLIC HOME obligation - RC-C2 executed the Public Home reconstruction and RC-C3 owns navigation, but neither charters an ACQUISITION FUNNEL, and no GAP record exists for one.",
+    "doctrineWithoutASurface": "DOCTRINE-PUBLIC-FIRST is inherited by every chapter as an interpretive lens and owned by none as a surface. Agent A's observation that CH-H 'is the direct product expression of the frozen Public-First Causal Doctrine, which today has doctrine but no acquisition surface' is supported by the doctrine index: the doctrine's knownRelationshipToRC is 'Explicitly inherited by every RC chapter' - inheritance, not ownership.",
+    "supportingProductEvidence": "Agent C's authorised client inspection found the global live discovery provider documented to 'degrade silently to an empty list when the user is not authenticated', over /realtime/sessions?scope=me, 'NOT a true cross-institution global feed'. Building the F097-F107 preview stack over a scope=me endpoint would yield a preview with nothing to preview. Agent C raises this as an open product ruling; it is not adjudicated here."
+   },
+   {
+    "id": "CH-I",
+    "name": "Product Taxonomy & Public Entry Adoption",
+    "verdict": "HOMED",
+    "finding": "RC-C3 plus its founder-observed navigation correction, and FREEZE-CREATE-INTENT-VOCABULARY / DOCTRINE-DISCOVER-PEOPLE. Agent A's refusal to charter it as a chapter is consistent with the RC axis, which already owns the authority; what remains is consumer migration and live proof - FD-13's definition of done unmet on specific surfaces."
+   },
+   {
+    "id": "CH-J",
+    "name": "Long-Form Publication Lifecycle",
+    "verdict": "HOMED IN AN EXPLICITLY RECORDED GAP",
+    "finding": "GAP-2 is a founder-owned roadmap gap with status 'OPEN AS GOVERNANCE - CONTRADICTED BY IMPLEMENTATION'. That is exactly category (c) of the reverse test, so CH-J is not homeless. See mandatedItemResponses AD-M3 for the evaluation of Agent A's negative result."
+   },
+   {
+    "id": "CH-K",
+    "name": "Trust, Safety & Moderation",
+    "verdict": "SPLIT-HOMED - the report journey has a home, media scanning has none",
+    "finding": "F023 (report/moderation journey) is homed: the Conversation Completion Register names 'message reporting/moderation' as a REQUIRED contextual attachment of canonical Conversation. F095 (Live moderation) is homed: RC-C10 carries 'Live moderation policy' as an open founder checkpoint, though Agent A left F095 with its FD-5 cluster in CH-G.",
+    "whatIsHomeless": "F137 - the moderation service is text-only, so NO uploaded media of any kind is scanned. There is no RC chapter, no RIC stage in the eleven-stage table, no doctrine among the 64 records, and no GAP record covering media scanning or moderation coverage. This is a security and safety obligation with zero coverage on every axis.",
+    "asymmetryWorthReporting": "Agent A's own framing is the right one and this artifact endorses reporting it rather than padding: two findings is thin evidence, and 'no uploaded media of any kind is scanned' is a disproportionate consequence. Under-evidenced does not mean low-consequence."
+   },
+   {
+    "id": "CH-L",
+    "name": "Cross-Platform Distribution Parity",
+    "verdict": "HOMED",
+    "finding": "RC-C9 charters it. CH-L carries two of roughly thirteen chartered build obligations, and contributes a class the register otherwise lacks vocabulary for (a defect fixed in shared code that remains live because the release channel has not run, closable only by founder action)."
+   },
+   {
+    "id": "CH-M",
+    "name": "Meetings Validation Under Protection",
+    "verdict": "HOMED",
+    "finding": "RC-C6 charters the controlled Meetings review and PB-01 governs the protection. CH-M's analytically important contribution is a SUBTRACTION - F064 and F113 are continuity findings whose root causes are shared, so satisfying them is CH-A work respecting PB-01 rather than a reason to open Meetings. That subtraction is consistent with rc-map, which records F064/F113 under the refresh-continuity doctrine and not under RC-C6."
+   },
+   {
+    "id": "CH-N",
+    "name": "Register & Certification Governance",
+    "verdict": "HOMED AS A GATE - BUT ITS GOVERNING RULE IS ITSELF UN-HOMED",
+    "finding": "RC-C11 is the closure gate and the evidence explicitly records F115/F119/F120 as three angles of one obligation. However GOVERNANCE-NON-SHRINKING-REGISTER is 'ADOPTED (transcript-only; NOT PRESENT IN ANY GOVERNED ARTIFACT)'.",
+    "selfReferentialRisk": "The rule that prevents obligations from disappearing has itself disappeared from every governed artifact, while five live-certified capabilities (F018, F020, F021, F022, F029) are evidenced to have already vanished from reporting once. This artifact's own disappearedObligations section is an instance of the failure mode that rule exists to prevent, which is why it is recorded at chapter granularity rather than summarised."
+   },
+   {
+    "id": "CH-O",
+    "name": "Conversation Party & Message Model",
+    "verdict": "HOMED",
+    "finding": "CANON-AURA-CONVERSATION-SYSTEM is a founder-frozen constitutional canon - category (b) - and RC-C7 was amended to consume canonical Conversation. PB-04 protects Conversation Party Truth. The five findings sit squarely inside it."
+   }
+  ],
+  "summary": {
+   "trueNoAxisHome": [],
+   "gapHomed": [
+    "CH-A"
+   ],
+   "splitHomed": [
+    "CH-H (F103/F104 plus the anonymous projection concept plus the acquisition funnel)",
+    "CH-K (F137 media scanning)"
+   ],
+   "invertedHomed": [
+    "CH-B"
+   ],
+   "doubleHomedUnreconciled": [
+    "CH-F"
+   ],
+   "statement": "No candidate system is entirely homeless, and that is a real result rather than a comfortable one. Three systems are homeless in the parts that matter most: CH-A traces only to a document whose content is 'nothing owns this'; CH-H's two hardest obligations and its enabling authority concept trace to nothing; CH-K's media-scanning half traces to nothing on any axis. CH-B is homed in the negative - its subject matter appears in a PRESERVE list. CH-F has two homes and no reconciliation between them. Those five conditions, not a count of orphans, are the reverse-direction finding."
+  }
+ },
+ "coverageMatrix": {
+  "note": "Two directions. byRcChapter answers 'is this chapter's chartered scope represented in current planning'. byCandidateSystem answers 'does this proposed system belong to anything'. Coverage classes describe REPRESENTATION, never ownership - ownership is Stage 4.",
+  "coverageClassLegend": {
+   "CONFIRMED": "a candidate system reproduces the chapter's purpose and explicitly declines to replace it",
+   "PARTIAL": "some chartered scope represented, material scope uncovered",
+   "THIN": "represented only by findings that are residue or adjacency, with most chartered scope uncovered",
+   "INVERTED": "represented only in the layer the chapter told others to preserve",
+   "ZERO": "no candidate system references it",
+   "OVERLAPPING": "represented by a system whose primary home is a different axis, with no governed reconciliation"
+  },
+  "byRcChapter": [
+   {
+    "chapter": "RC-C0",
+    "state": "CLOSED / LOCALLY CERTIFIED",
+    "servingSystems": [
+     "CH-A (extends)",
+     "CH-I (consumes)"
+    ],
+    "coverageClass": "PARTIAL",
+    "coveredScope": "The three authorities are consumed as dependencies by later systems.",
+    "uncoveredScope": [
+     "Ratcheted debt burn-down (AD-D-15)",
+     "68 SizedBox.shrink() (AD-D-16)",
+     "The absent fourth cross-cutting authority the chapter's enumeration did not contain (AD-C0-2)"
+    ],
+    "findingsInSubjectMatter": 0
+   },
+   {
+    "chapter": "RC-C1",
+    "state": "CLOSED / LOCALLY CERTIFIED",
+    "servingSystems": [
+     "CH-H (extends to an anonymous case)",
+     "CH-A (PD-2 structural half)"
+    ],
+    "coverageClass": "PARTIAL",
+    "coveredScope": "Its frozen attribution rules constrain later systems and are enforced by the C3 gate.",
+    "uncoveredScope": [
+     "R1 85 ratcheted role-derived booleans",
+     "member_shell admin count gating",
+     "PD-1 34 G5 sites",
+     "PD-2 structural disposition"
+    ],
+    "findingsInSubjectMatter": 0
+   },
+   {
+    "chapter": "RC-C2",
+    "state": "FINAL CLOSURE DECLARED BY FOUNDER",
+    "servingSystems": [
+     "CH-E (9)",
+     "CH-O (adjacent)",
+     "CH-F (F058 cross-effect)"
+    ],
+    "coverageClass": "PARTIAL",
+    "coveredScope": "Identity consumption certification - the RUNTIME ADOPTION dimension the closure recorded as partial.",
+    "uncoveredScope": [
+     "PresenceScreen disposition",
+     "Availability Off control",
+     "Commercial entitlement boundary + governance marker",
+     "Three standing founder checkpoints"
+    ],
+    "findingsInSubjectMatter": 9
+   },
+   {
+    "chapter": "RC-C3",
+    "state": "CLOSED, AMENDED BY FOUNDER OBSERVATION",
+    "servingSystems": [
+     "CH-A (F069 explicit + router-boundary continuity)",
+     "CH-I (6 adoption residue)"
+    ],
+    "coverageClass": "PARTIAL",
+    "coveredScope": "Adoption residue of the navigation correction, and the route-classification finding recorded as explicitly C3-related.",
+    "uncoveredScope": [
+     "LoginScreen disposition",
+     "Alias retirement trigger",
+     "294-site literal ratchet burn-down"
+    ],
+    "findingsInSubjectMatter": 7
+   },
+   {
+    "chapter": "RC-C4",
+    "state": "OPEN, HELD PER FOUNDER SEQUENCING",
+    "servingSystems": [
+     "CH-D (5)",
+     "CH-B (F035 disputed)",
+     "CH-L (native half)"
+    ],
+    "coverageClass": "PARTIAL",
+    "coveredScope": "Attention projection, read-state truth, obligation badge, the banner slice of DR1. CH-D explicitly declines to replace the chapter - the clearest CONFIRMED relationship in the matrix at the sub-scope level.",
+    "uncoveredScope": [
+     "Notification Preference Authority",
+     "Subscribe vocabulary",
+     "Semantic views",
+     "Cross-device read state",
+     "Noise reduction",
+     "Deterministic reconciliation",
+     "Seven of eight DR1 surfaces + four companion surfaces + orphaned-session reconciliation",
+     "The attention interaction direction checkpoint"
+    ],
+    "findingsInSubjectMatter": 6
+   },
+   {
+    "chapter": "RC-C5",
+    "state": "BLOCKED BY FROZEN HARD GATE",
+    "servingSystems": [
+     "CH-F (33, RIC axis)",
+     "CH-A (draft continuity)",
+     "CH-L (drag-drop disputed)"
+    ],
+    "coverageClass": "OVERLAPPING",
+    "coveredScope": "Intake, attachments and rich-content presentation - staged on the RIC axis, with no governed reconciliation to RC-C5.",
+    "uncoveredScope": [
+     "FD-8 official designation + E_OFFICIAL + approval language",
+     "DR3 convergence (6 composers, 11 pipelines, 25 paste files)",
+     "Drafts/autosave as Composition Authority scope",
+     "Orphan-cleanup vs draft-lifetime checkpoint",
+     "Cross-System certification role"
+    ],
+    "findingsInSubjectMatter": 33
+   },
+   {
+    "chapter": "RC-C6",
+    "state": "OPEN, NOT STARTED (declared blocker discharged on evidence)",
+    "servingSystems": [
+     "CH-B (20, inverted)",
+     "CH-M (2, validation only)",
+     "CH-C (adjacent)"
+    ],
+    "coverageClass": "INVERTED",
+    "coveredScope": "Session lifecycle truth - the layer RC-C6 placed on its DO-NOT-TOUCH list.",
+    "uncoveredScope": [
+     "Shared presentation family",
+     "Device transfer UI",
+     "Preferred-device visibility",
+     "Multi-device authority",
+     "D2 transfer handshake",
+     "Durable media ownership",
+     "Meetings 3,890-line presentation convergence",
+     "Meetings G3/G4 protected debt",
+     "Per-slice founder sign-off"
+    ],
+    "findingsInSubjectMatter": 22
+   },
+   {
+    "chapter": "RC-C7",
+    "state": "OPEN, NOT STARTED; SCOPE AMENDED AND FROZEN",
+    "servingSystems": [
+     "CH-O (5)",
+     "CH-B (partial)",
+     "CH-F (RIC-E2)",
+     "CH-K (F023)"
+    ],
+    "coverageClass": "THIN",
+    "coveredScope": "Party and message model integrity under the frozen Conversation canon.",
+    "uncoveredScope": [
+     "Space surfaces",
+     "Correspondence convergence verdict",
+     "Correspondence umbrella rename/migration",
+     "Institutional Desk experience",
+     "Membership/join/invite reconstruction",
+     "InstitutionCorrespondenceScreen disposition",
+     "Phase 5 legacy retirement",
+     "26 G5 sites"
+    ],
+    "findingsInSubjectMatter": 5
+   },
+   {
+    "chapter": "RC-C8",
+    "state": "OPEN, NOT STARTED",
+    "servingSystems": [],
+    "coverageClass": "ZERO",
+    "coveredScope": "NONE.",
+    "uncoveredScope": [
+     "The entire chapter: room ownership, invitations, participant states, ring policy, lifecycle, contextual realtime, attention, participant selection, DR2 demolition, ENTITLEMENT != INTERRUPTION, the 10,000-member invariant, Cross-System certification"
+    ],
+    "findingsInSubjectMatter": 0,
+    "note": "The control case. Zero findings, zero systems, full chapter."
+   },
+   {
+    "chapter": "RC-C9",
+    "state": "OPEN, NOT STARTED; PRECONDITIONS UNMET",
+    "servingSystems": [
+     "CH-L (2)",
+     "CH-F (drag-drop disputed)",
+     "CH-A (continuity fragment)"
+    ],
+    "coverageClass": "THIN",
+    "coveredScope": "Distribution lag and native ring presentation.",
+    "uncoveredScope": [
+     "WNS native push",
+     "Desktop lifecycle",
+     "File handling",
+     "Keyboard",
+     "Hover/context affordances",
+     "Window sizing/responsiveness",
+     "Installation/launch context",
+     "Deep links",
+     "Background/foreground",
+     "Per-platform suites",
+     "REAL-DEVICE TESTING",
+     "Real-Boundary certification",
+     "Desktop experience direction checkpoint"
+    ],
+    "findingsInSubjectMatter": 3
+   },
+   {
+    "chapter": "RC-C10",
+    "state": "CONFLICTING_CURRENT_STATE - CARRIED FORWARD UNRESOLVED",
+    "servingSystems": [
+     "CH-G (24)",
+     "CH-H (8)",
+     "CH-C (5)",
+     "CH-A (F103/F104)"
+    ],
+    "coverageClass": "PARTIAL",
+    "coveredScope": "37 findings - the largest covered scope in the matrix, matching the chapter's own remaining-obligation enumeration of F089-F111.",
+    "uncoveredScope": [
+     "Replay-as-product",
+     "Recording state",
+     "Both exit gates",
+     "Cross-repository framing",
+     "Thread vs Space Live differences checkpoint",
+     "Live plural/contextual language obligation",
+     "Post-live continuity as a named client item"
+    ],
+    "findingsInSubjectMatter": 37,
+    "note": "The only chapter where decomposition into three systems is the risk, rather than absence of systems."
+   },
+   {
+    "chapter": "RC-C11",
+    "state": "OPEN, NOT STARTED; NO ENTRY CONDITION SATISFIABLE",
+    "servingSystems": [
+     "CH-N (4)",
+     "ALL (as inputs)"
+    ],
+    "coverageClass": "THIN",
+    "coveredScope": "Register integrity and terminal-state discipline, without which the gate cannot be evaluated.",
+    "uncoveredScope": [
+     "The nine entry conditions",
+     "Integrated end-to-end journeys",
+     "Real-Boundary completeness",
+     "Consolidated Founder Product Acceptance",
+     "PD-1 / PD-2 / SupportScreen dispositions",
+     "No declared home for GAP-2"
+    ],
+    "findingsInSubjectMatter": 4
+   }
+  ],
+  "byCandidateSystem": [
+   {
+    "system": "CH-A",
+    "findings": 16,
+    "home": "DOCTRINE-REFRESH-CONTINUITY (a recorded gap statement)",
+    "rcChapters": "NONE charter it; fragments preserved in RC-C1, RC-C3, RC-C5, RC-C9",
+    "verdict": "GAP-HOMED"
+   },
+   {
+    "system": "CH-B",
+    "findings": 20,
+    "home": "Out-of-frame work (X2) + Conversation Completion Register",
+    "rcChapters": "RC-C6 PRESERVE list",
+    "verdict": "INVERTED-HOMED"
+   },
+   {
+    "system": "CH-C",
+    "findings": 5,
+    "home": "RC-C10 backendConstructionRequired + PB-03 checkpoint E",
+    "rcChapters": "RC-C10",
+    "verdict": "HOMED"
+   },
+   {
+    "system": "CH-D",
+    "findings": 5,
+    "home": "RC-C4 charter + FD-1 + FD-2",
+    "rcChapters": "RC-C4",
+    "verdict": "HOMED (CONFIRMED)"
+   },
+   {
+    "system": "CH-E",
+    "findings": 9,
+    "home": "RC-C2 (closed) + FD-11",
+    "rcChapters": "RC-C2, with consumers in RC-C6/C7/C8/C10",
+    "verdict": "HOMED, HOME CLOSED, WORK RE-ENTRANT"
+   },
+   {
+    "system": "CH-F",
+    "findings": 33,
+    "home": "FROZEN section 12 RIC contract AND RC-C5",
+    "rcChapters": "RC-C5 (blocked)",
+    "verdict": "DOUBLE-HOMED, UNRECONCILED"
+   },
+   {
+    "system": "CH-G",
+    "findings": 24,
+    "home": "RC-C10 + FD-5 + DOCTRINE-LIVE-ORIGINATION-CORRECTION",
+    "rcChapters": "RC-C10 (conflicting state)",
+    "verdict": "HOMED"
+   },
+   {
+    "system": "CH-H",
+    "findings": 8,
+    "home": "RC-C10 remaining obligations (6 of 8); nothing (F103/F104, anonymous projection, acquisition funnel)",
+    "rcChapters": "RC-C10 partially",
+    "verdict": "SPLIT-HOMED"
+   },
+   {
+    "system": "CH-I",
+    "findings": 6,
+    "home": "RC-C3 + navigation correction + FREEZE-CREATE-INTENT-VOCABULARY",
+    "rcChapters": "RC-C3",
+    "verdict": "HOMED"
+   },
+   {
+    "system": "CH-J",
+    "findings": 2,
+    "home": "GAP-2 (explicitly recorded gap)",
+    "rcChapters": "NONE",
+    "verdict": "GAP-HOMED"
+   },
+   {
+    "system": "CH-K",
+    "findings": 2,
+    "home": "Conversation Completion Register (F023); RC-C10 checkpoint (F095, held in CH-G); NOTHING (F137)",
+    "rcChapters": "RC-C7 partially",
+    "verdict": "SPLIT-HOMED"
+   },
+   {
+    "system": "CH-L",
+    "findings": 2,
+    "home": "RC-C9",
+    "rcChapters": "RC-C9",
+    "verdict": "HOMED"
+   },
+   {
+    "system": "CH-M",
+    "findings": 2,
+    "home": "RC-C6 + PB-01",
+    "rcChapters": "RC-C6",
+    "verdict": "HOMED"
+   },
+   {
+    "system": "CH-N",
+    "findings": 4,
+    "home": "RC-C11 as gate; its governing rule is transcript-only",
+    "rcChapters": "RC-C11",
+    "verdict": "HOMED, RULE UN-HOMED"
+   },
+   {
+    "system": "CH-O",
+    "findings": 5,
+    "home": "CANON-AURA-CONVERSATION-SYSTEM + PB-04",
+    "rcChapters": "RC-C7 (amended to consume it)",
+    "verdict": "HOMED"
+   }
+  ],
+  "aggregate": {
+   "rcChaptersWithZeroCoverage": 1,
+   "rcChaptersWithThinOrZeroCoverage": 4,
+   "rcChaptersWithPartialCoverage": 6,
+   "rcChaptersOverlappingAnotherAxis": 1,
+   "rcChaptersInverted": 1,
+   "candidateSystemsFullyHomed": 8,
+   "candidateSystemsGapHomed": 2,
+   "candidateSystemsSplitHomed": 2,
+   "candidateSystemsInverted": 1,
+   "candidateSystemsDoubleHomed": 1,
+   "findingsInRcSubjectMatter": "126 of 143 fall inside at least one RC chapter's subject matter; the remainder are governance (4), cross-platform distribution (2), continuity (16 - of which only F069 is explicitly RC-attributed), and 7 isolated. These overlap, so the figure is a coverage indicator, not a partition.",
+   "headline": "Coverage runs in opposite directions on the two axes. Measured by findings, the portfolio is dense where the RC axis is thinnest (RC-C10 has 37, RC-C5 has 33) and empty where the RC axis is fully chartered (RC-C8 has 0, RC-C6's device layer has 0). A portfolio built from findings alone would work hardest on the chapters that have already been most worked on."
+  }
+ },
+ "contradictions": {
+  "carriedForwardUnresolvedPerInstruction": {
+   "note": "Preserved exactly as ratified. Not normalised, not adjudicated, not merged. Each entry adds only what the RECONSTRUCTION AXIS contributes.",
+   "F043": {
+    "state": "CONFLICTING_CURRENT_STATE",
+    "preserved": "Master register row records PARTIALLY_VALIDATED while the same message lists 'timer refinement (F043)' among nine items that cannot honestly be called LIVE_CERTIFIED, concluding 'All are IMPLEMENTED_NOT_LIVE_CERTIFIED.' Both at the same transcript line.",
+    "rcAxisContribution": "F043 sits in realtime session lifecycle, whose only RC home is RC-C6's PRESERVE list. No chapter owes its certification, so nothing in the RC axis would ever have resolved this state. The conflict is a symptom of CH-B's inverted home, not of authoring carelessness."
+   },
+   "F051": {
+    "state": "CONFLICTING_CURRENT_STATE",
+    "preserved": "Register row PARTIALLY_VALIDATED versus the same report's 'previously called fixed and deployed' list. Agent A adds a third reading: the finding is NOT ATOMIC - two surfaces with two true states - and the correct action may be to record the compound structure rather than pick a label.",
+    "rcAxisContribution": "F051 is an identity-consumption finding in RC-C2's subject matter, and RC-C2 is closed. Its visual result is additionally blocked by F058, an external Cloudflare action. A finding whose truth depends on a closed chapter, an unstarted consumer surface and an external infrastructure action has three independent reasons to carry a split state."
+   },
+   "F122": {
+    "state": "CONFLICTING_CURRENT_STATE",
+    "preserved": "The frozen RIC-C1 stage is documented as 'Closes: F127, F128, F130, F122' and was implemented and pushed as 62b39bf, but the C1 implementation checkpoint names only F127/F128/F130 and omits F122. Agent A reads it as SPLIT-SURFACE: the backend half plausibly closed, the client-side wire value unevidenced.",
+    "rcAxisContribution": "The wire-vocabulary disagreement is on the RIC axis. RC-C5 is the RC chapter whose Cross-System certification would have caught a client/backend vocabulary divergence, and it is held closed. Recorded as evidence for AD-E11, not as a resolution."
+   },
+   "F139": {
+    "state": "DUAL_READING_PRESERVED",
+    "preserved": "Recorded the SAME DAY as STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED (backend register) and as OPEN (frontend amendment). Equal recency; neither supersedes. Agent A calls it the STRONGEST case for the different-dimensions reading: the D-1 authority is committed (4af75c5) while its migration is explicitly NOT APPLIED, so a structure can be closed while the production condition it corrects is still true. The two-authors-disagreeing reading is preserved alongside.",
+    "rcAxisContribution": "The same shape appears at chapter granularity throughout the RC axis, which is corroborating context rather than a resolution: doctrine-index O2 records that chapter states and finding states use two unreconciled certification vocabularies. RC-C10 carries the identical shape (built versus not-authorised), and RC-C5 carries it too (drag/drop code exists while the chapter is BLOCKED). If Stage 3 or 4 adopts the different-dimensions reading for F139, the same reading would apply to at least two chapter states - which is a reason to decide it deliberately rather than per-finding."
+   },
+   "RC-C10": {
+    "state": "CONFLICTING_CURRENT_STATE",
+    "preserved": "Reading A: OPEN - NOT STARTED as a governed chapter. Reading B: SUBSTANTIALLY CONSTRUCTED OUTSIDE THE CHAPTER FRAME. Stage 0's position stands: resolution requires founder authority, and Stage 2 may not promote, demote or reconcile it.",
+    "rcAxisContribution": "Two additions, neither resolving. (1) The conflict is not confined to RC-C10 - it is the chapter-level face of X2, and the same condition exists unnamed at RC-C6 (extensive realtime engineering landed with no record authorizing or closing the chapter) and at RC-C7 (the clean-sheet Conversation System occupies C7's demolition list while C7 is not started). RC-C10 is simply the only chapter where Stage 0 marked it. (2) rc-map records that no governed document states 'F074 is owned by C10' - the relationship throughout is subject-matter-evidenced, not ownership-declared, so even Reading B does not assert chapter ownership of the work."
+   }
+  },
+  "additionalContradictionsObservedByThisAnalysis": [
+   {
+    "id": "AD-CON-1",
+    "type": "TWO FOUNDER-FROZEN DEPENDENCY GRAPHS",
+    "statement": "The roadmap's relationship table makes RC-C4 and RC-C5 PARALLEL siblings (RC-C5 parallelWith [RC-C4, RC-C6]; RC-C5 dependsOn C0/C1/C2/C3, not C4). The C5 HARD GATE frozen 2026-08-16 makes RC-C5 strictly downstream of RC-C4's LIVE closure. Both are founder-frozen. Agent B surfaced this; it is restated here because it is a RECONSTRUCTION-AXIS contradiction, not a finding-level one.",
+    "disposition": "PRESERVED. Not normalised. No interpretation promoted."
+   },
+   {
+    "id": "AD-CON-2",
+    "type": "CHARTERING CRITERION DIVERGENCE",
+    "statement": "The RC axis charters by CAPABILITY: RC-C8 has zero findings and is a full chapter; RC-C6's multi-device layer has zero findings and is chartered scope. Stage 1 charters by FINDING PRESSURE: 'two findings is not a chapter' is applied to CH-J and CH-K, and 'six findings, four of them terminal' is applied to CH-I. The two criteria are not compatible, and applying the Stage-1 criterion to the RC axis would decharter RC-C8 outright.",
+    "disposition": "PRESERVED as a structural observation. It is the single most important thing this reconciliation found about how the two axes differ, and it is the mechanism behind every entry in disappearedObligations."
+   },
+   {
+    "id": "AD-CON-3",
+    "type": "CHAPTER CLOSURE VERSUS THE FOUNDER RECONSTRUCTION DOCTRINE",
+    "statement": "The Founder Reconstruction Doctrine states reconstruction is complete only when canonical product truth is ADOPTED by the runtime/release client and legacy implementation has an explicit retirement path, with visible product outcome a required closeout dimension. The applied register records the closed chapters as ARCHITECTURE complete / RUNTIME ADOPTION partial / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial. Four chapters are nevertheless recorded COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED.",
+    "disposition": "PRESERVED, NOT ADJUDICATED. Both records are the programme's own and both are internally consistent if 'complete' means 'complete at the LOCALLY CERTIFIED layer'. Whether RC-C11's entry condition 1 ('C0-C9 complete to their FD-13 definition of done') is satisfied by that is a founder question, not mine."
+   },
+   {
+    "id": "AD-CON-4",
+    "type": "CLOSEOUT LANGUAGE VERSUS OPEN FINDINGS IN THE SAME TERRITORY",
+    "statement": "C3_FINAL_CLOSEOUT:44-46 records 'Remaining C3-owned debt: NONE unexplained - every remainder carries owner + retirement condition', while F069, F066, F067, F068 and F059 are open in C3's routing and destination territory.",
+    "disposition": "PRESERVED. The two statements are about different objects - the closeout speaks of DEBT with named owners, the findings speak of BEHAVIOUR - and no document reconciles them. Recorded because a reader taking the closeout sentence at face value would conclude C3's territory is clear."
+   },
+   {
+    "id": "AD-CON-5",
+    "type": "PROTECTED LAYER PRODUCED THE DEFECTS AND WAS REPAIRED ANYWAY",
+    "statement": "RC-C6 places realtime transport, media service, event parser and reconnect/orphan recovery on its PRESERVE / DO NOT TOUCH list, and PB-02 protects the same layer. The two named shared causes of the twenty-finding realtime cluster (RC-A shared-singleton disposal, RC-B overlay latch) are inside that layer, and both were repaired (509230a, dfc9027) with no governed record authorizing RC-C6 or exempting the boundary.",
+    "disposition": "PRESERVED, NOT CLASSIFIED. Stage 0 recorded the same events at X2 'without classifying it as C6 progress or as a violation'. This artifact does the same. It is noted only because it is the strongest instance of a chapter's protection instruction and the programme's actual work pointing in opposite directions."
+   },
+   {
+    "id": "AD-CON-6",
+    "type": "GAP-2 ASKS FOR BOTH A CHARTER AND A LIFECYCLE",
+    "statement": "GAP-2's frozen text records 'NO CHAPTER NUMBER ASSIGNED; awaiting deliberate founder dependency placement' AND 'Full lifecycle eventually required'. Agent A's negative result concludes it 'needs a charter, not a chapter'. The frozen text asks for both.",
+    "disposition": "PRESERVED. See AD-M3."
+   },
+   {
+    "id": "AD-CON-7",
+    "type": "AN UNMAPPED SURFACE IS ALSO A CLOSED CHAPTER'S OPEN CHECKPOINT",
+    "statement": "PD-2 Authentication & Account Entry is UNMAPPED_TO_RC with STRUCTURAL DISPOSITION OPEN. LoginScreen disposition is simultaneously recorded as an RC-C3-owned open implementation checkpoint, and RC-C3 is founder-closed. The same surface is therefore both outside the RC axis and an unfinished item of a closed chapter.",
+    "disposition": "PRESERVED. Not force-assigned (CR-R4). Recorded because any disposition of PD-2 that ignores the C3 checkpoint, or vice versa, would leave half the surface unowned."
+   },
+   {
+    "id": "AD-CON-8",
+    "type": "SELF-REFERENTIAL GOVERNANCE GAP",
+    "statement": "GOVERNANCE-NON-SHRINKING-REGISTER is ADOPTED but 'NOT PRESENT IN ANY GOVERNED ARTIFACT', while five live-certified capabilities (F018, F020, F021, F022, F029) are evidenced to have vanished from reporting once already (F119).",
+    "disposition": "PRESERVED. This artifact's disappearedObligations section is itself an instance of the failure mode that rule exists to prevent, which is why each item is recorded at chapter granularity with its own evidence rather than summarised."
+   }
+  ],
+  "baselineFactsNotAltered": [
+   "143 issued findings F001-F143, contiguous, F097 IS issued",
+   "17 issued WG items WG001-WG017; WG018 RESERVED / UNISSUED",
+   "12 reconstruction chapters RC-C0..RC-C11",
+   "64 doctrines, 82 validation obligations, 12 protected boundaries",
+   "41 quarantined non-findings; provenance 59 STRONG / 53 MODERATE / 31 WEAK",
+   "No finding merged, deleted, re-issued or re-stated. No WG item touched. No frozen doctrine or protected boundary changed. No Stage-0 or Stage-1 artifact mutated."
+  ]
+ },
+ "uncertainties": [
+  {
+   "id": "AD-U-1",
+   "statement": "Whether RC-C6 is 'not started' or 'partly executed out of frame' is genuinely undecidable on the evidence. rc-map records C6 with freshness basis (4) - issuance evidence only, with the explicit caveat that no document dated after 2026-08-15 states its state either way - while substantial realtime engineering landed in its adjacent territory. I did NOT mark C6 as a second CONFLICTING_CURRENT_STATE, because Stage 0 did not, and creating a new conflicting-state marking is beyond my authority.",
+   "impact": "If RC-C6 is in the same condition as RC-C10, then two chapters rather than one are in an unrecorded state conflict, and X2's scope is larger than its current statement suggests."
+  },
+  {
+   "id": "AD-U-2",
+   "statement": "Whether FD-5's 'owning Thread or Space' and the origination correction's 'existing realtime human interaction' name the same thing after the C7 amendment made Conversation canonical. They are plausibly coherent. No governed document records the reconciliation.",
+   "impact": "Determines whether RC-C10's chartered owning-context model is intact or has been silently replaced."
+  },
+  {
+   "id": "AD-U-3",
+   "statement": "Whether the zero finding-pressure on RC-C8, GAP-1, SupportScreen and PD-1 reflects health or non-exercise. Agent A rates GAP-1's zero result MEDIUM confidence and flags it as possibly a measurement artefact of what the founder happened to exercise; Agent C argues 'zero findings' on PD-2 is a signal to LOOK. I cannot distinguish the two from normalised evidence, and the distinction changes how much of AD-D-01 through AD-D-06 is truly unbuilt versus merely unobserved.",
+   "impact": "Material to how Stage 3 sizes RC-C8 and RC-C6's device layer."
+  },
+  {
+   "id": "AD-U-4",
+   "statement": "Whether the C5 hard gate extends to the section 12 RIC stages is NOT_RECORDED, and I could not resolve it. It determines whether CH-F's 33 findings are gate-blocked or free-running, which changes the coverage class of RC-C5 from OVERLAPPING to either BLOCKED-AND-OVERRUN or LEGITIMATELY-REHOMED.",
+   "impact": "The single highest-leverage unrecorded fact for the whole coverage matrix."
+  },
+  {
+   "id": "AD-U-5",
+   "statement": "Whether the ownership matrix's routing of C0's G5 debt (C3 44, C4 26, C5 16, C7 26, C8 3, C9 3, PD-1 34, PD-2 3) survives if the portfolio is reorganised by root system. The matrix is per-chapter by construction, and no Stage-1 artifact carries it.",
+   "impact": "Determines whether AD-D-15 is a real loss or a translation problem."
+  },
+  {
+   "id": "AD-U-6",
+   "statement": "Whether F035's placement is a C4 obligation or a realtime-domain obligation. PB-08 protects the C4 set from change and Agent A's withdrawal proposal is not adopted here. I record only that RC-C4's charter assumes truthful producers and at least one producer is recorded untruthful.",
+   "impact": "Small in scope, but it is the one point where a chartered chapter's assumption and a protected boundary point in different directions."
+  },
+  {
+   "id": "AD-U-7",
+   "statement": "Whether RC-C10's obligations should remain one chapter or become three systems. I recorded the cost of the split (the two exit gates lose their owner) and the benefit (three coherent capability questions). I did not weigh them, because weighing is prioritisation.",
+   "impact": "Directly shapes Stage 3."
+  },
+  {
+   "id": "AD-U-8",
+   "statement": "Provenance quality is uneven in ways that touch several conclusions here. F001 is graded STRONG while Stage 0's own contradiction flag records that the grade reflects register-wide 'F001-F120' tokens rather than F001-specific evidence. F006/F007/F008/F010 are LIVE_CERTIFIED on WEAK rows and simultaneously named as unresolved required attachments by the frozen Conversation Completion Register. Seven of CH-H's eight rows are WEAK. Where my statements rest on those rows I have said so; my structural conclusions about CHAPTER scope rest on roadmap and DECISIONS text, which is STRONG."
+  },
+  {
+   "id": "AD-U-9",
+   "statement": "I have treated rc-map's chapter records as a faithful normalisation of the roadmap and DECISIONS. I did not re-read FINAL_FRONTEND_RECONSTRUCTION_ROADMAP.md, DECISIONS.md or any chapter closeout directly, because the source economy is frozen and rc-map is the ratified normalisation of exactly those documents. If rc-map mis-transcribed a scope line, this reconciliation inherits the error."
+  }
+ ],
+ "stage3Questions": [
+  "RC-C8 Institution Room has zero findings, zero candidate systems and a full chartered scope with a frozen backend authority (D5), a demolition target (DR2), a governing rule (ENTITLEMENT != INTERRUPTION) and a named invariant test (10,000 members -> zero recipients). Does Stage 3 carry it as a portfolio item on chapter authority alone, or does the portfolio become finding-driven and drop it? This is the decision that determines whether the portfolio is a reconstruction plan or a defect plan.",
+  "RC-C6's device layer - device transfer UI, preferred-device visibility, multi-device authority, preferred-first ring with stagger and fallback, durable media ownership, the D2 handshake - has frozen backend contracts and zero findings. Same question as RC-C8, with the added fact that the backend work is already paid for.",
+  "Does the portfolio need a DUPLICATION-RETIREMENT class? DR1 (eight attention surfaces), DR2 (one live-rooms screen), DR3 (six composers, eleven upload pipelines, 25 paste files) and RC-C6's Meetings convergence (3,890 lines, 0 of 5 shared widgets) are all chartered demolitions that produce no findings, because duplication has no single observable symptom.",
+  "Does the portfolio need a RATCHETED-DEBT BURN-DOWN structure? G5 168 sites / 67 files, 181 state primitives, 47 toLocal(), the 11-caller relative_time shim, R1's 85 role-derived booleans and C3's 294 literal sites are all gate-enforced against growth and owned per-chapter. They cannot regress; they can stop shrinking forever if the receiving structure disappears.",
+  "How does the portfolio carry RC-C10's TWO EXIT GATES if its findings are split across CH-C, CH-G and CH-H? Each system can complete without the chapter's construction exit ('no temporary authorities anywhere') or its cross-platform completion gate ever being evaluated.",
+  "Where do FOUNDER CHECKPOINTS live in the portfolio? VD-081 lists nine standing checkpoints that gate Product-Behavior certification and that no implementation may pre-empt. RC-C4's is explicitly required BEFORE the eight DR1 surfaces are retired - a sequencing constraint inside a chapter, not between chapters.",
+  "Does CH-E Identity Consumption become a CHAPTER or a CERTIFICATION LAYER? Its consumers live on surfaces owned by chapters that have not run, so as a chapter it re-opens every time a later chapter builds a new consumer; as a layer it attaches to each chapter's own definition of done. The evidence supports either and does not choose.",
+  "Does the portfolio distinguish CONSTRUCTION DEBT from VALIDATION DEBT? Agent C raises it and Agent A classifies the same items differently (D-4, unresolved). This reconciliation adds one datum: VD-041 (Live engagement), VD-042 (public preview) and the whole of RC-C4 are counted as validation obligations against capabilities the RC axis records as entirely unbuilt.",
+  "Should the RELEASE-GATE question for GAP-2 be separated from the CHAPTER question? RC-C11's entry conditions enumerate C0-C10 and have no declared home for a shipped, public, live-certified capability - and that remains true regardless of whether GAP-2 ever gets a chapter number.",
+  "How is a NEW CROSS-CUTTING AUTHORITY admitted after RC-C0 has closed? The axis's thesis is authorities before surfaces; it enumerated them once; and the continuity contract was frozen two days after the roadmap. Whatever Stage 3 decides about CH-A specifically, the admission mechanism is missing and will be needed again.",
+  "F137 - no uploaded media of any kind is scanned - has no home on any axis: no RC chapter, no RIC stage, no doctrine, no gap record. Does Stage 3 carry an unowned security obligation with two findings of evidence, or does it wait for more findings on a surface nobody is exercising?",
+  "Do the four unmapped surfaces that entered as MEASUREMENT RESIDUE (PD-1, PD-2, SupportScreen, GAP-1) get sized by their code footprint or by their authority footprint? Every recorded size figure for them is a code figure, and PD-2's 3 G5 sites sit under the causal centre of the largest finding cluster in the register."
+ ],
+ "rawSourceEscalations": [],
+ "rawSourceEscalationNote": "NONE. The ~703 MB historical corpus was not reopened. mentions.jsonl, dossiers/ and all transcripts were left unread. Every citation in this artifact resolves to one of the eight normalised inputs named in the task, and where those inputs themselves cite a transcript line or a source document, the citation is reproduced as they recorded it rather than re-verified at source. No client code was inspected; Agent C's client-inspection results are consumed as Stage-1 evidence and attributed to it.",
+ "selfContaminationDeclaration": "Every label in this artifact prefixed AD- is analysis produced by this agent on 2026-08-18. AD-C0-1, AD-D-01, AD-CON-1, AD-M1 and all their siblings are NOT historical issuance evidence, are not findings, are not WG items, and must never be treated as corpus evidence if they later appear in a searchable transcript. The same applies to the coverage classes, the verdict vocabulary in systemsWithNoAxisHome, and the phrase 'disappeared obligation' itself."
+}

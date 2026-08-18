@@ -1,0 +1,565 @@
+{
+  "type": "ANALYTICAL_PROPOSAL",
+  "artifact": "STAGE_2_ADVERSARIAL_REVIEW",
+  "stage": "STAGE 2 - RECONCILE",
+  "agent": "AGENT E - ADVERSARIAL REVIEWER",
+  "date": "2026-08-18",
+  "status": "NOT RATIFIED TRUTH. This is an attack on the proposed synthesis, not a portfolio. It assigns no ownership (Stage 4), prioritises nothing (Stage 3), adjudicates no founder-preserved conflict, and mutates no Stage-0 or Stage-1 artifact. Where it disagrees with Agent A, B, C or D, BOTH positions are recorded and neither is promoted.",
+
+  "governingPosture": "Disagreement is evidence. Nothing below was softened to fit the emerging picture, and no criticism was dropped because another agent had already answered it well. Where an attack failed, it is recorded in falseAlarms with what was checked - an unstated 'no' is not an answer.",
+
+  "baselineConsumed": {
+    "findings": "143 issued F001-F143, contiguous (F097 IS issued)",
+    "wgItems": "17 issued WG001-WG017; WG018 RESERVED / UNISSUED throughout",
+    "rcChapters": "RC-C0..RC-C11 (historical Reconstruction axis)",
+    "doctrines": 64,
+    "validationObligations": 82,
+    "protectedBoundaries": "PB-01..PB-12",
+    "quarantinedNonFindings": 41,
+    "provenance": "59 STRONG / 53 MODERATE / 31 WEAK",
+    "inputsRead": [
+      "00-evidence/id-accounting.json",
+      "00-evidence/findings-batch-1.json, findings-batch-2.json, findings-batch-3.json (all 143 merged and recounted)",
+      "00-evidence/wg-register.json",
+      "00-evidence/rc-map.json",
+      "00-evidence/doctrine-index.json",
+      "00-evidence/validation-debt.json",
+      "00-evidence/protected-boundaries.json",
+      "00-evidence/contradiction-register.json",
+      "00-evidence/unmapped-surfaces.json",
+      "00-evidence/stage0-rulings.json",
+      "00-evidence/stage0-validation.json",
+      "00-evidence/extraction-stats.json",
+      "01-analysis/agent-a-root-systems.json",
+      "01-analysis/agent-b-dependencies.json",
+      "01-analysis/agent-c-product.json",
+      "01-analysis/stage1-comparison.json",
+      "01-analysis/stage1-validation.json",
+      "02-reconcile/agent-d-rc-reconciliation.json"
+    ]
+  },
+
+  "namespaceDiscipline": {
+    "RC-C0..RC-C11": "historical Reconstruction chapters",
+    "RIC-C1..RIC-F1": "Rich Content & Interaction stages - a DIFFERENT AXIS, never equated with RC",
+    "RC-A / RC-B / RC1..RC9": "ROOT-CAUSE labels, never chapters",
+    "RS-* / CH-*": "Agent A's analytical namespace",
+    "S1..S12": "Agent C's analytical namespace - unreconciled to CH-* anywhere (see Q10)",
+    "AD-*": "Agent D's analytical namespace",
+    "E-* / EQ-*": "THIS artifact's own analytical namespace. Not corpus evidence, not findings, not WG items."
+  },
+
+  "methodOfAttack": {
+    "mechanicalRecounts": [
+      "Merged all three finding batches independently: 143 records, zero missing, zero duplicate, states recounted and matched to stage0-validation exactly (57 OPEN / 30 INLC / 24 LC / 18 PV / 6 C4_OWNED_OPEN / 3 CONFLICTING / 2 BLOCKED / 2 EXPLICITLY_RETIRED / 1 STRUCTURALLY_CLOSED).",
+      "Recounted Agent A's 15 candidate chapters: 143 chapter slots, 143 distinct ids, 0 duplicates, 0 omissions, 0 invented ids.",
+      "Cross-tabulated every chapter by root-system arity, deficiency-class arity, register state and provenance grade.",
+      "Counted WG identifier occurrences in every artifact by regex.",
+      "String-matched Agent A's CH-F rootDeficiency against doctrine-index RIC-CONTRACT.governingPurpose.",
+      "Traced originalIssuanceEvidence.source for all 33 CH-F findings.",
+      "Cross-referenced extraction-stats mentionsPerId against the WEAK provenance list."
+    ],
+    "explicitlyNotDone": [
+      "No rescan of the ~703 MB historical corpus.",
+      "No product code inspection (Agent C's authorised client reads were consumed as reported, not repeated).",
+      "No state change, merge, deletion or adjudication of any finding, WG item, doctrine or boundary."
+    ]
+  },
+
+  "questions": [
+    {
+      "id": "EQ-01",
+      "question": "1. Are findings grouped because they share WORDS rather than root causes?",
+      "verdict": "MIXED - NO at the finding level, YES at the chapter level, and the chapter-level failure is confined to CH-F and CH-G.",
+      "evidence": "POSITIVE FIRST, because the absence matters: Agent A's method explicitly rejects 'same screen', 'shared words in the title', 'same wave', 'frontend vs backend', 'same technology' and 'same register domain letter', and it demonstrably applied that. Sixteen findings changed system against their recorded domain census, each with a stated mechanism: F058 ('avatars missing in chat' - an identity word) moved to RS-09 Governed Delivery because the browser reads the bucket directly and no identity change can fix it; F121 ('Articles images 404') moved to RS-08 Retention Truth because a resolved expiring URL was stored as if it were a reference; F071 ('a native call bug') moved to RS-21 Distribution because the shared code already carries both fixes and only the released binaries are stale; F035 ('an attention defect') moved to RS-02 because presentation cannot manufacture a media-connected fact; F124 ('a composer bug') moved to RS-04 because an ellipsis sentinel is transmitted as the message body. That is the opposite of word-grouping. THE FAILURE IS AGGREGATION, NOT CLASSIFICATION. CH-F holds 33 findings spanning SEVEN root systems (RS-07..RS-13) and TEN deficiency classes (MISSING_AUTHORITY, DATA_MODEL_DEFICIENCY, ARCHITECTURE_CONTRADICTION, INCOMPLETE_IMPLEMENTATION, FRAGMENTED_AUTHORITY, LEGACY_COMPATIBILITY_DEBT, PRESENTATION_DEFICIENCY, VALIDATION_CERTIFICATION_DEBT, SHARED_DEFICIENCY_MANIFESTATION, OTHER_EVIDENCED). Its unifying token is 'content/media'; its unifying structure is a dependency CHAIN, which is a sequencing relation BETWEEN systems and therefore evidence that there are several. CH-G holds 24 across three root systems. Every other chapter (CH-A, CH-B, CH-C, CH-D, CH-E, CH-H, CH-I, CH-J, CH-K, CH-L, CH-M, CH-N, CH-O) is exactly one root system.",
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "EQ-02",
+      "question": "2. Are distinct obligations being silently merged?",
+      "verdict": "YES - in four specific places, none of them at the identifier level, all of them at the PROOF or OBLIGATION level where merges are invisible to an id count.",
+      "evidence": "(a) F064/F113. Founder ruling CR-R3: TWO SEPARATE CANONICAL FINDINGS. Agent A gives them ONE root owner and places both in CH-A, which the ruling permits. But VDC-1 records that they carry DIFFERENT validation topologies in the same message (F064 = V2 two-browser; F113 = V4 multi-party) and VD-031 therefore carries validationClass UNKNOWN. Nothing in CH-A carries two topologies. If CH-A closes on one two-browser proof, a multi-party obligation is discharged without ever being run. (b) F016 AND THE FINDINGS IT GATES ARE IN THE SAME BUCKET. The register states 'F016 (media honesty) -> gates F011, F014, F015'. All four sit inside CH-F. A gate placed inside the chapter it gates can be declared satisfied by that chapter's own completion; Agent A's own A-CON-1 records that the gate already appears to have been crossed (F016 OPEN while F011/F014 are PARTIALLY_VALIDATED and F015 is IMPLEMENTED_NOT_LIVE_CERTIFIED). (c) Agent C OPP-5 merges WG005 + WG006 + WG013 + F063 + F070 into 'one durability layer', citing the founder ruling on WG006 ('Do not create another unrelated persistence mechanism') as authority. That ruling forbids a SECOND MECHANISM; it does not declare the five obligations identical. Calling the merge 'the direct application of an existing ruling, not a new proposal' overstates the ruling. (d) Agent C OPP-8 merges WG007 + WG010 + WG017 as 'one I-cannot-find-it-again problem'. WG017's own issuance recommendation was 'REJECT for now' and Stage 0 explicitly does NOT record it as retired; folding it into a shared IA reservation with two other items quietly changes its disposition. NOTE IN FAIRNESS: Agent A explicitly refuses to merge F064/F113 as findings, Agent C explicitly says it does not propose merging them, and Agent D restates CR-R3 intact.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-03",
+      "question": "3. Has any F-item disappeared?",
+      "verdict": "NO at the identifier level - mechanically verified. YES at the OBLIGATION level, and the loss is large: 20 obligation clusters, 17 WG items and roughly 50 product-quality items.",
+      "evidence": "IDENTIFIER LEVEL, VERIFIED INDEPENDENTLY: I merged the three finding batches (143 records), rebuilt the set F001..F143, and re-derived Agent A's chapter membership. 143 chapter slots, 143 distinct identifiers, zero duplicates, zero omissions, zero invented ids, and the state distribution reproduces stage0-validation exactly. The seven 'isolated' findings all also appear exactly once in a chapter, which is correct - isolation is not exclusion. F064 and F113 both survive as separate rows. WG018 is treated as unissued in all four artifacts. OBLIGATION LEVEL: Agent D records 20 clusters carried by NO candidate system, one of which (AD-D-16, the 68 SizedBox.shrink() empty states from RC-C0's declared migration) is graded ALREADY_LOST - carried by nothing on any axis. RC-C8 is the control case: a full chapter with a frozen backend authority (D5), a demolition target (DR2), a governing rule and a named invariant test, with zero findings and zero candidate systems. WG LEVEL - THIS IS MY OWN COUNT AND IT IS WORSE THAN ANY AGENT STATES: regex over Agent A's candidateChapters gives ZERO WG references, and over its 143 finding rows also ZERO. Agent D's 184 KB artifact contains six WG occurrences, ALL SIX inside boilerplate 'baselineConsumed' / 'baselineFactsNotAltered' recitals - not one WG item appears in its coverage matrix or its disappeared-obligations list. PRODUCT LEVEL: Agent C produced CD-1..CD-15, OPP-1..OPP-8, BFI-1..BFI-15 and thirteen friction items; Agent D's artifact contains zero CD- codes, zero OPP- codes, zero BFI- codes and exactly two FE- codes (FE-8, FE-10). So of roughly 51 product-quality items, two survive into Stage 2.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "EQ-04",
+      "question": "4. Is any OPEN item treated as resolved because infrastructure now exists?",
+      "verdict": "YES - two instances, both at chapter/system level rather than finding level. Several near-misses were correctly resisted and I record those too.",
+      "evidence": "INSTANCE 1: Agent D's coverageMatrix records RC-C6's state as 'OPEN, NOT STARTED (declared blocker discharged on evidence)'. The parenthesis imports Agent B's B-KEY-2 inference, which Agent B itself grades as 'this analysis's [inference], not the corpus's'. It also contradicts Agent D's own rcChapters record for RC-C6: 'Freshness basis is issuance evidence only; no document dated after 2026-08-15 states C6's chapter state either way', and its own AD-U-1 ('genuinely undecidable on the evidence'). A chapter's blocker is treated as discharged because a prerequisite chapter closed - infrastructure existing, state inferred. INSTANCE 2: CH-B's framing, 'the residue is now overwhelmingly certification, not implementation'. CH-B contains zero OPEN findings, so the arithmetic supports it; but the frozen Conversation Completion Register (2026-08-16) still names audio call, video call, screen sharing, media/attachments and intentional Live as REQUIRED contextual attachments of canonical Conversation that are NOT resolved, and states Conversation is not final-certified until they are. Agent B records this exact conflict (B-U9) and Agent D repeats it in its CH-B 'cautionCarried'. Yet CH-B's operative framing treats calling as constructed because the code landed. CORRECTLY RESISTED (positive evidence, recorded so the absence elsewhere is credible): F126 is IMPLEMENTED_NOT_LIVE_CERTIFIED and Agent A writes 'Application-level disclosure is closed; storage-level confidentiality is explicitly NOT, and must not be read as terminal' - F138 stays OPEN. WG004 looks independent because the backend cursor exists; Agent B calls that 'a trap set by the stage ordering'. VD-060 records that F131's reconciler reads checked=0 'because there is no data, not because the fix was proven' - a green row over an empty set, correctly refused as proof. F016 looks like a self-contained frontend fix; Agent B records VD-076 that no image/video/document processing exists at all.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-05",
+      "question": "5. Are implemented-not-certified items mistaken for complete?",
+      "verdict": "MOSTLY NO - the layer distinction is held explicitly and repeatedly - with THREE exceptions where a state token is doing work it cannot support.",
+      "evidence": "THE DISCIPLINE IS REAL: Agent C states 'Message edit/delete, pagination, search, reactions, emoji and typing are NOT validation debt at all - they are unbuilt. No amount of validation closes them. This distinction must survive Stage 1.' Agent A's provenanceSensitiveConclusions warns twice against building a release argument on implemented rows. Agent D quotes GOVERNANCE-RC-CERTIFICATION-LAYERS ('A LOWER LAYER PASSING NEVER IMPLIES A HIGHER ONE') and VD-080. EXCEPTION 1: F085 'Legitimate viewer blocked by the view guard' is IMPLEMENTED_NOT_LIVE_CERTIFIED and Agent A classifies it VALIDATION_CERTIFICATION_DEBT, while CH-G's own rootDeficiency says 'the viewer authority was relocated to the OBSERVER role and NO VIEWER HAS GOT IN SINCE'. An obligation whose subject is that the path works for nobody is not awaiting proof of a working thing. EXCEPTION 2: F114 is LIVE_CERTIFIED on file-level non-modification. Agent B names the fragility precisely - 'That evidence form is fragile: it certifies nothing was touched, not that touching it is safe' - yet CH-M consumes the protection as satisfied and Agent D's matrix classes CH-M as HOMED with no caveat carried forward. EXCEPTION 3: F076 and F077 are EXPLICITLY_RETIRED, a strict terminal state under F120, and both still carry 'UI unobserved' remains values (A-CON-4, B-C13). Two terminal rows with outstanding proof weaken the terminal vocabulary the whole non-shrinking rule depends on.",
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "EQ-06",
+      "question": "6. Is legacy preserved merely because migration is inconvenient?",
+      "verdict": "NO for the destructive items - every one has a recorded authorization or irreversibility reason. YES for the DUPLICATION-RETIREMENT class, and for a worse reason than inconvenience: it is invisible rather than deferred, so nobody has yet had the chance to find it inconvenient.",
+      "evidence": "DEFENSIBLE PRESERVATION, CHECKED: Conversation Phase 5 destructive retirement is HELD pending founder authorization; the reaper is 'NOT AUTHORIZED - reaper NOT RUN' (VD-062) behind a seven-step order (D-6) ending in equivalence against production reality; three media migrations are COMMITTED AND NOT APPLIED (VD-055); the six SUPERSEDED identity assets are explicitly not authorized for deletion (PB-05); PB-07's asymmetry - isRetentionEligible() - is a deliberate safety property. None of that is convenience. THE REAL PRESERVATION IS STRUCTURAL: DR1 (eight attention surfaces plus four companion global surfaces plus orphaned-session reconciliation), DR2 (institution_live_rooms_screen, 1,078 lines, DO NOT RETROFIT), DR3 (six composers, ELEVEN upload pipelines, per-composer paste across 25 files) and FD-4's Meetings convergence (3,890 lines consuming 0 of 5 shared realtime widgets) are all chartered demolitions carried by no candidate system. Agent D names the mechanism exactly: 'Duplication debt is invisible to a finding-driven taxonomy because duplication produces no single observable defect.' The sharpest instance is DR2: institution_live_rooms_screen is simultaneously RC-C8's demolition target and, per Agent D, 'the screen the chapter exists to demolish and is currently serving Live discovery'. Legacy is not being preserved because migrating it is hard; it is being preserved because the proposed portfolio contains no place to write it down.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-07",
+      "question": "7. Is sequencing driven by engineering convenience rather than product consequence?",
+      "verdict": "YES, structurally - although no agent was asked to sequence and Agent B explicitly refuses to. The CH-*.dependsOn / .unblocks fields encode a de facto order, and that order is technical-risk ordered end to end.",
+      "evidence": "THE DECISIVE CASE: the frozen section 12 chain is INGESTION -> VERIFICATION -> REFERENCE/RETENTION -> DELIVERY -> PROCESSING -> PRESENTATION, and CH-F adopts it wholesale ('unblocks: Conversation as first complete reference; then propagation to Articles, Posts, Announcements, Institution Posts, Correspondence'). Agent B reaches the consequence independently as CHAIN-2: 'every visible Conversation content capability sits at its TAIL'. That is a correct security-first engineering order and it places every user-visible improvement last. Against it, Agent C records VD-042 - the entire public-acquisition stack, eleven obligations - as 'the single most acquisition-critical obligation in the register and also the CHEAPEST to validate once built (single browser). That asymmetry is worth Stage 2's attention: high value, low validation cost, zero implementation.' Meanwhile the only acquisition path the register describes is gated behind CH-A, a system Agent D grades GAP-HOMED - chartered by nothing on any axis - and CD-3 records that signed-out visitors are currently shown a confidently false 'live now: 0'. SECOND CASE: CH-C dependsOn CH-B 'so that a scale defect is distinguishable from a lifecycle defect'. That is a diagnostic convenience, not a product consequence; the mesh ceiling can be measured without certifying lifecycle. THIRD CASE: CH-K (moderation - 'no uploaded media of ANY kind is scanned') dependsOn CH-F content truth. Technically true; consequentially it means the safety gap waits behind a 33-finding chapter. Agent A is honest about this one and flags CH-K for escalation rather than consolidation.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-08",
+      "question": "8. Are WG / world-class improvements postponed even though reconstruction is the safest time to implement them?",
+      "verdict": "WORSE THAN POSTPONED - THEY ARE ABSENT FROM THE PROPOSED PORTFOLIO ENTIRELY. This is my single strongest criticism after EQ-16.",
+      "evidence": "MECHANICAL COUNT: zero WG identifiers appear in any of Agent A's 15 candidate chapters and zero in its 143 finding rows. Agent A records this as a deliberate abstention ('assigning root systems to unauthorized prospective items would manufacture ownership') - which is a defensible reason to abstain from OWNERSHIP and not a reason to omit them from the SYSTEMS analysis. Agent D carries none: its six WG occurrences are all boilerplate recitals. Agent B records that only WG001/002/004/005/006/009 have any governed home and the other eleven 'have no chapter, no doctrine and no recorded disposition'. Only Agent C mapped them, and Agent C's namespace connects to nothing downstream (see EQ-10). CONSEQUENCE: if Stage 3 builds from CH-A..CH-O plus Agent D's coverage matrix - which is what the two operative tables invite - all 17 issued WG items vanish, INCLUDING SIX THE FOUNDER AUTHORIZED. THE PRODUCT COST IS CONCRETE: WG005 (failed-send truth + retry) is AUTHORIZED, STRONG provenance, and its recorded deficiency is 'Failure is a transient toast; THE MESSAGE IS SIMPLY LOST' - Agent C calls it 'arguably the most severe WG item on a pure harm basis' - and it currently sits at RIC-E2, four stages downstream of a security-first chain. WG004 (pagination) is AUTHORIZED and independently corroborated in the released client (no ScrollController, no loadMore, no hasMore, no cursor call). WG015 (accessibility) has, by its nature, no single owning system - 14 Semantics() occurrences across 571 Dart files and none in Conversation, Articles, Live, Discover or any composer - which is exactly why it keeps being deferred and exactly why a reconstruction is the only moment it can be made structural. Agent C's OPP-3 supplies a proven mechanism for it (the RC-C0 ratchet with a hard-failure gate and a frozen baseline file, each rule verified to actually fail) and no artifact carries OPP-3 forward. AGENT C'S OWN STRUCTURAL FINDING, WHICH NO OTHER ARTIFACT CARRIES: 'Every one of the 17 WG rows names a capability that belongs INSIDE the reconstruction of an existing system. Not one of them is a standalone feature.'",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "EQ-09",
+      "question": "9. Are protected systems being casually exposed?",
+      "verdict": "YES - three exposures, all preventable, plus one already-completed crossing that every Stage-1 and Stage-2 artifact declines to classify.",
+      "evidence": "EXPOSURE 1 - PB-08 / F035: see EQ-17 in full. EXPOSURE 2 - PB-04 / F088 SPLIT FROM ITS PROOF. PB-04's regression requirement includes the F088 privacy proof ('a viewer must never become a Conversation party with access to messages/history/attachments', OBSERVER session row only) and PB-03 lists PRIVACY EXPOSURE as its destructive potential. Agent A places F088 in CH-G and the zero-authority anonymous actor - the thing that must satisfy that invariant for a non-member - in CH-H, arguing correctly that CH-H is not a sub-chapter of Live. The consequence is that an invariant and the new actor class that could break it now sit in two proposed chapters with no named joint regression owner, and Agent D's stage3Questions notes the same shape for RC-C10's exit gates ('Each system can complete without the chapter's construction exit... ever being evaluated'). EXPOSURE 3 - PB-01 / MEETINGS SUBTRACTION FRAMING. Agent A: moving F064/F113 to CH-A 'SUBTRACTS work from Meetings rather than opening a protected surface' and 'is not a reason to open Meetings'. Agent B, independently and on the same boundary: router and realtime-primitive contact with Meetings is 'NOT avoidable - shared-boundary work demonstrably threatened Meetings guest entry', requiring 'targeted Meetings regression after EVERY slice (currently 97/97)' and founder sign-off. BOTH POSITIONS PRESERVED: the analytical subtraction is right; read as licence to do continuity work at the router boundary without PB-01's per-slice discipline, it is exactly the failure whose near-miss is on record. ALREADY-COMPLETED CROSSING, UNCLASSIFIED: AD-CON-5 records that RC-C6's PRESERVE / DO-NOT-TOUCH layer (realtime transport, media service, event parser, reconnect/orphan recovery) and PB-02 protect the same code, that the two named shared causes of the twenty-finding realtime cluster live inside it, and that both were repaired (509230a, dfc9027) with no governed record authorizing RC-C6 or exempting the boundary. Stage 0 recorded it at X2 'without classifying it'; Agent D does the same; Agent A proposes CH-B as further work on that layer. Four artifacts have now declined to classify a completed crossing of a protected boundary. That is not preservation of a conflict - it is an unowned question aging.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-10",
+      "question": "10. Are validation requirements understated?",
+      "verdict": "YES - structurally, and in a way that no single artifact can see because the understatement lives in the gap between namespaces.",
+      "evidence": "(a) NAMESPACE BREAK - THE 82 OBLIGATIONS ARE ATTACHED TO NOTHING THE PORTFOLIO USES. The only VD-to-system mapping produced in Stage 1 is Agent C's validationTopologyByCandidateSystem, expressed in an S1..S12 namespace. Regex over Agent C's entire artifact returns ZERO occurrences of any CH- label, and Agent A/B/D never use S- labels for it. Agent D reconciled CH-* against RC-* only. Result: not one of VD-001..VD-082 is attached to any of the 15 candidate chapters, and Agent D's coverage matrix cites VD ids only sporadically (VD-069, VD-074, VD-081, VD-068). (b) CONCENTRATION UNPRICED. VD-046 holds TWENTY obligations behind ONE uninterrupted three-identity session that has never been convened; Agent C calls it 'a scheduling-and-coordination bottleneck, not an engineering one... currently blocks the largest single block of certification in the programme'. No chapter carries that as a dependency. (c) THE HARNESS ITSELF IS UNPROTECTED. 27 of 82 obligations are SINGLE_AUTHORIZED_BROWSER, and PBG-3 records that the Aura Reviewer account, production credential handling and the headless Playwright harness have NO protection doctrine anywhere. Agent B flags it (B-C14); no chapter carries it. (d) THE ENVIRONMENT IS UNRELIABLE. VDC-8: the V2 class depends on the founder's browser window being open and unminimized, which 'went unreachable repeatedly today'. Every V2 estimate inherits that. (e) TWENTY-FIVE FINDINGS HAVE NO PROJECT VALIDATION CLASS AT ALL. VDC-6: F119-F143 have no entry in the project's own V1-V5 matrix because it was built when the register held 120 items; their topology is Stage 0's classification, not the project's. That range includes CH-F's entire retention tail and CH-N's governance set. (f) THE CERTIFICATION VOCABULARY IS AMBIGUOUS BY CONSTRUCTION. B-C8 / PB-10: chapter states use the RC layer table, finding states use the section 12 section 17 classes, and 'any cross-axis is this certified? question is currently ambiguous by construction'. (g) VDC-7: no evidence establishes that ANY certification occurred after 2026-08-18T01:25Z; absence of a later record is not evidence that nothing happened, so every 'not yet certified' statement in Stage 1 and Stage 2 carries an unquantified staleness.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-11",
+      "question": "11. Are founder decisions being converted into engineering assumptions?",
+      "verdict": "YES - and the pattern is consistent enough to name: the founder question is FLAGGED in a contradictions section and ANSWERED in the operative table.",
+      "evidence": "PATTERN INSTANCE 1, THE MOST CONSEQUENTIAL. Whether the founder-frozen RC-C5 HARD GATE also gates the section 12 RIC stages is explicitly NOT_RECORDED (Agent B E5; Agent D AD-U-4 calls it 'the single highest-leverage unrecorded fact for the whole coverage matrix'). Agent A records it as A-CON-6 and calls it 'the single most consequential frame ambiguity for CH-F'. And then CH-F's operative field reads: 'newChapterJustified: NO - it exists. The FROZEN section 12 contract already charters this exact chain.' That treats section 12 as the operative charter, which is the answer to the unanswered founder question. Agent D then classes RC-C5 as OVERLAPPING with 'servingSystems: CH-F (33, RIC axis)', which operationally records a hard-gated chapter's territory as under active work by another axis. Neither agent removed the gate; both routed around it in the table a reader would build from. INSTANCE 2. GAP-2. Agent A's negative result: 'GAP-2 does not need a reconstruction chapter; it needs a charter and an owner for its publication semantics. That is a founder decision, not engineering scope.' The first clause is engineering scope being decided. Agent D's AD-CON-6 catches it: the frozen GAP-2 text records BOTH 'NO CHAPTER NUMBER ASSIGNED; awaiting deliberate founder dependency placement' AND 'Full lifecycle eventually required' - it asks for both. INSTANCE 3. RC-C6's blocker (see EQ-04, EQ-20). INSTANCE 4. F035 (see EQ-17). CORRECTLY ROUTED, AND I RECORD THESE BECAUSE THE DISCIPLINE IS OTHERWISE REAL: CH-C explicitly refuses to become a chapter - 'Recording it as a chapter would dress a decision up as work' - and routes to PB-03 checkpoint E with provider independence preserved. F071 is correctly recorded as closable only by a founder-triggered store release. CH-K is escalated rather than padded. Agent B produces SIX competing interpretations of the C4/C5 gate (I-1..I-6) and rules on none. stage1-comparison lists 40 founder decisions required. The failure is not a culture of presumption; it is that the operative tables answer questions the prose sections leave open.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-12",
+      "question": "12. Are broad chapters hiding unresolved findings?",
+      "verdict": "YES. Four of the five founder-preserved conflicts sit inside the three largest chapters, which together hold 53.8% of the register.",
+      "evidence": "CH-F (33) contains F122 (CONFLICTING_CURRENT_STATE) and F139 (dual reading preserved) - two of the five - plus F138 (recorded state 'OPEN - CONFIRMED SECURITY ARCHITECTURE DEFECT', the finding establishing that possession of a storage key or historical URL IS access), plus F058 (BLOCKED, and the external gate on CH-E's visible outcome), plus 18 further OPEN rows. CH-B (20) contains F043 (CONFLICTING_CURRENT_STATE). CH-G (24) sits beneath RC-C10, itself CONFLICTING_CURRENT_STATE at chapter level. 33 + 24 + 20 = 77 of 143 = 53.8%. THE CONCRETE HARM: a chapter-level status line for CH-F conceals two founder-preserved conflicts, one confirmed security architecture defect and one externally BLOCKED row behind a single token - which is precisely the failure mode F119 records as having already happened once ('five live-certified capabilities vanished from later reporting'). SECOND-ORDER: CH-F also holds 8 distinct register states across its 33 rows (OPEN 18, INLC 8, PV 3, LC 1, BLOCKED 1, CONFLICTING 1, STRUCTURALLY_CLOSED 1). No single state token can describe it, so any roll-up necessarily discards information the non-shrinking register rule exists to keep visible.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-13",
+      "question": "13. Are all RC-C0..RC-C11 objectives still represented?",
+      "verdict": "NO. One chapter has ZERO representation, four are THIN or ZERO, one is INVERTED, one is OVERLAPPING with no governed reconciliation, and twenty obligation clusters are carried by nothing.",
+      "evidence": "Agent D's coverage matrix, which I accept as sound on this point and reinforce: RC-C8 ZERO (entire chapter - room ownership, invitations, participant states, ring policy JOIN_ONLY/RING_INVITED/RING_INVITED_AND_PARTICIPANTS, lifecycle, contextual realtime, attention, participant selection, DR2 demolition, ENTITLEMENT != INTERRUPTION, the 10,000-member invariant, Cross-System certification). RC-C6 INVERTED - its only coverage is CH-B, over the exact layer RC-C6 placed on its PRESERVE / DO NOT TOUCH list, while its chartered device layer (device transfer UI, preferred-device visibility, multi-device authority, preferred-first ring with stagger and fallback, durable media ownership, the D2 handshake - all with FROZEN backend contracts, i.e. already paid for) has zero findings and zero systems. RC-C9 THIN with 13 uncovered scope items including REAL-DEVICE TESTING and Real-Boundary certification. RC-C11 THIN - the release gate itself, with all nine entry conditions uncovered. RC-C7 THIN - Space surfaces, the Correspondence architectural convergence VERDICT (a named founder checkpoint with NO RECORDED OUTCOME), the institutional Desk experience. RC-C5 OVERLAPPING. Agent D's own headline is the right summary and I endorse it: 'A portfolio built from findings alone would work hardest on the chapters that have already been most worked on.' ONE ARITHMETIC CAUTION I RAISE AGAINST AGENT D: the aggregate states '126 of 143 fall inside at least one RC chapter's subject matter', but 126 is the SUM of the per-chapter findingsInSubjectMatter column (0+0+9+7+6+33+22+5+0+3+37+4 = 126) over sets Agent D itself says overlap - CH-C's 5 are counted under RC-C10 while also listed as serving RC-C6; F035 is counted under RC-C4 while also inside CH-B under RC-C6. The same paragraph's remainder narrative (governance 4, cross-platform 2, continuity 16, isolated 7) sums to 29, not to 143-126 = 17. Stage 3 must not read an unhomed-findings count off that line.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "EQ-14",
+      "question": "14. Is any chapter so large that it merely recreates the 143-item dump under another name?",
+      "verdict": "YES - CH-F. CH-G is the same defect one size smaller.",
+      "evidence": "CH-F: 33 findings (23.1% of the register), 7 root systems, 10 deficiency classes, 8 register states, 2 repositories (aura_final and aura-backend, PB-12), 2 of the 5 preserved conflicts, 1 BLOCKED row, 1 confirmed security architecture defect, and a scope DOUBLE-HOMED between a BLOCKED RC chapter and a frozen contract on a different axis with no governed reconciliation (Agent D's own verdict: 'DOUBLE-HOMED, UNRECONCILED'). Its capabilityQuestion contains six verbs: 'Can content ENTER, be KNOWN, be KEPT, be DELIVERED, be PROCESSED and be PRESENTED truthfully - once, for every surface?' A chapter that answers six capability questions is six chapters with a shared preface. CH-G: 24 findings, 3 root systems, of which Agent A itself says one (RS-16 audience engagement) is 'the one genuinely unbuilt capability' while the other two are 'reconcile and certify' - two different kinds of work under one name, and Agent D records that splitting or not splitting it determines whether RC-C10's two exit gates keep an owner at all. COUNTER-EVIDENCE THAT SIZE IS NOT THE VARIABLE: CH-A carries 16 findings across six product surfaces on ONE root system, TWO named mechanisms (F065 session hint written at 2 of N establishment paths; F069 fail-OPEN route classification) and ONE testable exit condition ('no surface reconstructs its own destination'). CH-B carries 20 on one root system. The defect is arity, not headcount.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-15",
+      "question": "15. CH-F holds 33 findings - nearly a quarter of the register. Is that a coherent system or a bucket? Apply the chapter quality test.",
+      "verdict": "A COHERENT PROGRAMME, NOT A COHERENT CHAPTER. Applying Agent A's own test literally, CH-F fails it.",
+      "evidence": "THE TEST AS AGENT A STATES IT: 'What system would have to become CORRECT for this finding to stop recurring STRUCTURALLY?' and, for chartering, 'a chapter answers what capability are we reconstructing'. APPLIED TO CH-F, ITS OWN ARTIFACT ANSWERS SEVEN. The subSystems field enumerates them with counts: RS-07 Content Truth & Ingestion Governance (9), RS-08 Media Reference & Retention Truth (7), RS-09 Governed Media Delivery & Access Control (3), RS-10 Media Processing & Derivatives (2), RS-11 Composition & Content Intake (6), RS-12 Rich Presentation & Media Interaction (3), RS-13 Link Intelligence & Reference Hydration (3). Ten deficiency classes across them. The stated unifier is 'a single dependency chain with a hole in every link' - but a chain is a sequencing relation BETWEEN systems, and Agent A applied a different standard elsewhere: CH-C was refused chapter status at five findings because it is 'an assessment and a founder architecture decision, not a reconstruction capability', and CH-K was refused at two because 'two findings is not a chapter'. The criterion cannot be capability-coherence when small and dependency-coherence when large. THE CONCRETE COST OF THE BUCKET: RS-09 Governed Delivery is 3 of 33 findings - one eleventh of the chapter - and it holds F138 (the register's only CONFIRMED SECURITY ARCHITECTURE DEFECT: one bucket, one public prefix, every visibility class written to it; 'private' means withholding the URL from a DTO) and F058 (BLOCKED, and the external gate on CH-E's exit condition, on Agent C's FE-2 'highest visible-improvement-per-effort founder action', and on WG010). A security-boundary sub-system with a founder Cloudflare action and a cross-chapter gate should not be discoverable only by reading to the eleventh part of the largest chapter in the portfolio. SECOND COST: RS-11 Composition & Content Intake (6) is the sub-system sitting exactly on the RC-C5 frozen hard gate - Agent A says so itself ('My RS-11 sits exactly on this overlap. If RS-11 work is RC-C5 work, it is gate-blocked'). Burying a gate-status question inside a 33-finding chapter makes the chapter as a whole appear free-running when one seventh of it may not be. MY POSITION, PRESERVED AGAINST AGENT A'S: I do not claim the section 12 decomposition is wrong. I claim CH-F is not a chapter, it is the section 12 programme with a new letter, and that presenting it as one chapter conceals a security sub-system, a gate-status question and two founder-preserved conflicts.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "EQ-16",
+      "question": "16. Agent A claims 33 findings independently reproduce the FROZEN s12 decomposition and calls that the strongest evidence in the analysis. Genuine independent convergence, or did the frozen contract leak into the evidence the agent read?",
+      "verdict": "LEAKAGE. This is not independent convergence; it is a round trip, and it is demonstrable three ways, one of them by exact string match. The claim must be withdrawn from the evidence column.",
+      "evidence": "PROOF 1 - VERBATIM QUOTATION OF A DECLARED INPUT. Agent A's CH-F rootDeficiency contains the string 'INGESTION TRUTH -> CONTENT VERIFICATION -> REFERENCE/RETENTION INTEGRITY -> GOVERNED DELIVERY -> PROCESSING/DERIVATIVES -> RICH PRESENTATION'. doctrine-index.json record RIC-CONTRACT.governingPurpose contains the identical string, introduced by the words 'Frozen dependency graph:'. I string-matched both: exact match, both true. Agent A's own baselineConsumed.sources lists doctrine-index.json. The 'independently reproduced' decomposition is a literal copy of the input text. PROOF 2 - THE CHAPTER IS THE CONTRACT'S OWN NAME. CH-F is titled 'Rich Content & Interaction'; RIC-CONTRACT is titled 'section 12 RICH CONTENT & INTERACTION CONTRACT'. PROOF 3 - TWENTY OF THE THIRTY-THREE FINDINGS WERE ISSUED BY THE CONTRACT'S OWN EVIDENCE BASE. I traced originalIssuanceEvidence.source for all 33. Fifteen (F121, F122, F123, F125, F126, F127, F128, F129, F130, F131, F132, F133, F134, F135, F136) were issued in aura_final/docs/2026-08-17-rich-content-system-audit.md - and doctrine-index records RIC-CONTRACT's dependencies as 'Evidence base: 2026-08-17-rich-content-system-audit.md, the F126 correction, and the founder rulings of 2026-08-17'. Five more (F139, F140, F141, F142, F143) were issued in the Amendment 1 / C2 retention register documents, which ARE section 12 Amendment 1. Only thirteen of the thirty-three predate section 12's authorship (F011-F019, F025, F026, F058 from transcript line 31798, and F138 at line 32406). SO: findings minted by a document, re-sorted into that document's own structure, described in that document's own words, and reported as independent confirmation that the structure is right. WHAT THIS DOES AND DOES NOT MEAN: it does NOT mean the section 12 decomposition is wrong - it may well be the correct decomposition, and it was authored by people looking at the same real defects. It DOES mean the convergence carries no independent information, and calling it 'the strongest evidence in the analysis' inflates confidence in the largest chapter in the portfolio. CONTAMINATION PROPAGATED DOWNSTREAM: stage1-comparison.json lists it first under independentConvergence ('33 findings independently reproduce the FROZEN s12 decomposition shape'). The comparison index designed to detect contamination republished it as convergence. WHAT GENUINE INDEPENDENT SIGNAL SURVIVES, RECORDED SO THIS IS NOT A BARE DEMOLITION: Agent B's CHAIN-2 is derived from dependency structure rather than from the contract text; Agent C's CD-1 (the literal _fileChip('Attachment') worked example) and OPP-2 (the canonical Conversation consumes NONE of the existing shared rich primitives that five other surfaces do consume) come from a read of the released client's import graph, not from section 12 at all. OPP-2 in particular is a genuinely independent observation that section 12 does not contain, and it is the item Stage 2 currently drops entirely.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "EQ-17",
+      "question": "17. Agent A proposes withdrawing F035 from the C4-owned set. PB-08 protects those findings. Is the proposal a boundary violation dressed as analysis?",
+      "verdict": "NOT A VIOLATION AS WRITTEN - BUT IT IS OPERATIONALLY EXECUTED RATHER THAN MERELY PROPOSED, AND THAT IS THE REAL PROBLEM. The substantive argument is strong; its placement in the artifact is not.",
+      "evidence": "WHY IT IS NOT A VIOLATION ON ITS FACE: PB-08's explicitlyProhibited list is (i) 'Any isolated cosmetic patch of the legacy banner', (ii) 'Patching or deleting the C4 findings or the stale-ACTIVE rows', (iii) conflating Conversation/call lifecycle work with the finding, (iv) letting passive unread contribute to the badge. A proposed change of ANALYTICAL root owner is none of those. Stage 0 is unmutated: I re-read the finding record and F035 still carries currentState C4_OWNED_OPEN and reconstructionPhase RC-C4. Agent A labels it 'ANALYTICAL PROPOSAL ONLY' and records it in candidateChapterDeltas. Agent D declines to adopt it (AD-U-6). WHY IT IS STILL A PROBLEM: Agent A did not stop at proposing. In candidateChapters - the artifact's primary operative output - F035 is a member of CH-B, and CH-D's findings array and findingCount are 5, not 6. The register's DOMAIN REGISTER assigns 'all 120, canonical owner exactly once' and gives F035 exactly one owner: 'H. Attention / C4 (6)'. If Stage 3 consumes candidateChapters rather than candidateChapterDeltas - which is the natural reading of a table labelled 'candidate chapters' - the C4-owned set silently becomes five, with no founder ruling, and the reduction is invisible because the identifier accounting still balances at 143. That is exactly the class of loss F115/F119/F120 exist to prevent, executed at set level rather than at identifier level. ADDITIONAL EXPOSURE THE PROPOSAL DOES NOT CITE: doctrine BOUNDARY-REALTIME-LIVE-PROTECTED-FROM-RIC is FROZEN and states 'F030-F035 remain C4_OWNED_OPEN and are not absorbed by any RIC stage.' Moving F035 to RS-02 is not a RIC stage, so the frozen text is not breached on its face - but it establishes that the founder has already ruled once, in writing, on F035's non-absorption. An analysis proposing to move it should quote that ruling and did not. THE ARGUMENT ITSELF IS GOOD AND I DO NOT DISMISS IT: F035's own evidence says 'The presentation half shipped (observers excluded, viewers separate) but media-connected domain truth is untouched', and attention presentation genuinely cannot manufacture a media-connected count. Agent D states the tension in its sharpest form: 'RC-C4's charter assumes truthful producers and at least one producer is recorded untruthful.' BOTH POSITIONS PRESERVED. MY POSITION: the argument is a founder QUESTION, not a table edit. Agent A's own crossSystemEffects field exists for precisely this - F035 carries ['RS-05'] there while sitting in CH-B; the correct shape is the inverse (owner RS-05/CH-D, cross-system prerequisite RS-02), leaving the register's one-canonical-owner assignment intact until the founder rules.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-18",
+      "question": "18. Agent C asks whether some validation obligations are CONSTRUCTION DEBT WEARING A VALIDATION LABEL. Test it against specific obligations.",
+      "verdict": "TRUE AND CONFIRMED against named obligations - but NARROWER than Agent C's framing, and Agent C missed a second, larger distortion running the other way. Both are recorded.",
+      "evidence": "CONFIRMED, TESTED INDIVIDUALLY. VD-041 (Live engagement, F089-F096): its own obligation text reads 'Authority exists; nothing is implemented - validation follows implementation', recordedState OPEN, and it is nevertheless classed SINGLE_AUTHORIZED_BROWSER. VD-042 (public acquisition, F097-F107, eleven findings): obligation text ends 'Nothing built.', recordedState OPEN, classed SINGLE_AUTHORIZED_BROWSER, projectValidationClass 'V1 - a signed-out visitor is a single session'. VD-050 (section 12 section 17 gate): 'None of these capabilities exists yet (no seek bar, no waveform, no document preview, no upload retry/cancel anywhere in the product)', recordedState OPEN, classed SINGLE_AUTHORIZED_BROWSER. A FOURTH OF A DIFFERENT KIND, WHICH AGENT C DID NOT NAME: VD-043 - 'the ceiling was recorded in doctrine but never measured' - is a MEASUREMENT task classed MULTI_PARTY_REALTIME against a recordedState of PARTIALLY_VALIDATED. Measuring a thing for the first time is not validating it. QUANTIFIED HONESTLY: I regex-scanned all 82 obligation texts for non-existence language ('nothing built', 'not implemented', 'does not exist', 'never measured', 'unwritten'). Four matched: VD-041, VD-042, VD-043, VD-050. So 4 of 82 obligations (4.9%) are demonstrably construction debt carrying a validation class - but they cover 21 of 143 findings (14.7%), concentrated exactly in the two systems the product lens ranks most acquisition-critical. Low count, high leverage. WHERE AGENT C OVERREACHES: 'and the whole of RC-C4'. The C4 validation records do not support it. VD-067, VD-068 and VD-072 describe evidence-taking (five stale-ACTIVE RealtimeSession rows preserved as C4 evidence), retirement regression against enumerated must-survive consumers, and the C5 gate sequence - not proof of built things. RC-C4 is unbuilt, but its VALIDATION RECORDS do not misclassify it as validated. THE SECOND DISTORTION AGENT C MISSED, RUNNING THE OTHER WAY: a set of obligations is neither construction debt nor dischargeable validation debt - they are BLOCKED-ON-EXTERNAL and cannot be discharged by any amount of work by any agent. VD-055 (three migrations COMMITTED AND NOT APPLIED), VD-060 (F131 'cannot be exercised: production has zero article covers' - 'a validation gap that no amount of deployment discharges'), VD-062 (reaper NOT AUTHORIZED behind a seven-step order), VD-005 (drag/drop and clipboard explicitly EXCLUDED from the agent-validated wave as founder-experiential), VD-026 (F058 Cloudflare dashboard action), VD-032 (F071 store release). Counting these as validation debt alongside genuinely runnable proofs flatters the burn-down rate rather than readiness. NET EFFECT ON THE INDEX: the validation-debt index is not systematically wrong, but it is not homogeneous, and treating '82 obligations' as one queue understates remaining construction by 21 findings AND overstates dischargeable throughput by at least six obligations.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "EQ-19",
+      "question": "19. 31 of 143 findings rest on WEAK provenance and 115 exist only in transcripts. Which Stage-1/Stage-2 conclusions would COLLAPSE if a weak-provenance finding turned out to be misremembered?",
+      "verdict": "THREE CONCLUSIONS COLLAPSE, ONE DEGRADES, AND SEVERAL CORRECTLY SURVIVE. The sharpest exposure is CH-B, and it is worse than weak provenance because CONTRARY evidence already exists.",
+      "evidence": "BASE RATES I RE-DERIVED: 31 WEAK, 115 evidenced only in transcripts, 28 in governed docs. Twelve findings have EXACTLY ONE mention in the entire 703 MB corpus per extraction-stats: F092, F093, F094, F095, F098, F099, F100, F101, F102, F105, F106, F109. COLLAPSE 1 - CH-B'S ENTIRE FRAMING (MOST CONSEQUENTIAL). CH-B carries 9 WEAK rows of 20: F006, F007, F008, F010 (1:1 audio, group audio, video, screen share - all LIVE_CERTIFIED on WEAK single-line rows) and F038, F039, F041, F042, F048 (terminal on WEAK). Agent A grades this risk MATERIAL in its own words: 'If any of these is wrong, CH-B's certification not construction framing is wrong with it.' THIS IS NOT MERELY WEAK - IT IS CONTRADICTED: the frozen Conversation Completion Register (2026-08-16) names audio call, video call, screen sharing and media/attachments as REQUIRED contextual attachments of canonical Conversation that remain unresolved, and states Conversation is not final-certified until they are (Agent B B-U9; Agent D CH-B cautionCarried). If CH-B is a construction chapter rather than a certification chapter, then: Agent D's INVERTED-HOMED verdict changes; CH-M's dependency on CH-B changes; CH-C's dependency on CH-B changes; PB-02's 'convergence is presentation-only, slice by slice' risk framing changes; and the largest block of apparent completeness in the register evaporates. COLLAPSE 2 - CH-H'S SIZE. Seven of its eight rows are WEAK, and seven of eight have exactly ONE corpus mention (F098-F102, F105, F106); the eighth, F097, is MODERATE with 37 mentions. Agent A concedes it: 'Seven WEAK rows share a single corroborating sentence. The CONCLUSION is safe (nothing built); the per-finding DECOMPOSITION into eleven distinct obligations rests on that one sentence.' So the conclusion survives and the SIZING does not - which is fatal for Stage 3, because sizing is what Stage 3 does. COLLAPSE 3 - RS-16 LIVE AUDIENCE ENGAGEMENT (8 findings inside CH-G). Five WEAK; F092, F093, F094, F095 have one mention each. Agent A's own instruction, from F096, is that the set must be recovered from FD-5 sections 8-10 rather than reinvented, and that 'the eight obligations were once compressed into one line; their separation is a reconstruction'. Agent A's claim that this is 'the one genuinely unbuilt capability' in CH-G therefore rests on a decomposition that the evidence explicitly says should be re-derived from a document nobody re-read. DEGRADES - THE PROVENANCE PROFILE ITSELF. F001 is graded STRONG while Stage 0's own contradiction flag records that the grade reflects register-wide 'F001-F120' tokens rather than F001-specific evidence. Agent A flags it ('Treat F001 as MODERATE at best'). If that artefact affects other early identifiers, 59 STRONG is an overcount and every STRONG citation in Stage 1 and Stage 2 inherits an unmeasured discount. SURVIVE, AND I CHECKED RATHER THAN ASSUMED: CH-C's 'the mesh ceiling is unknown' rests on F109/F110 (WEAK, 1 and 2 mentions) but is a claim about the ABSENCE of measurement, which weak evidence supports adequately, and is corroborated by PB-03's open checkpoint E. CH-I's institution-placement claim rests on F003/F004 (WEAK) but is doctrine-corroborated by the C3 founder-observed navigation correction. F118 is WEAK but structurally corroborated by the intact, unpatched state of F030-F035 and by PB-08. CH-J, CH-K, CH-L and CH-N are 2-4 findings with conclusions already stated conservatively. CROSS-CUTTING RISK NOBODY STATES: 115 of 143 findings exist only in transcripts, and the non-shrinking register rule that protects all of them 'has NO governed-markdown home' (A-CON-10, B-C10). The register's durability and its governing rule have the same single point of failure.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "EQ-20",
+      "question": "20. Did any agent quietly adjudicate F043, F051, F122, F139 or RC-C10 while claiming to preserve them?",
+      "verdict": "NO OUTRIGHT ADJUDICATION - all five states survive verbatim in all four artifacts and I verified the finding records are unmutated. BUT ONE IS BEING ADJUDICATED BY ACCUMULATION, TWO CARRY A THUMB ON THE SCALE, AND ONE ADJUDICATION OCCURRED OUTSIDE THE PROTECTED FIVE.",
+      "evidence": "F139 - ADJUDICATION BY ACCUMULATION. Stage 0's ruling was 'PRESERVE BOTH READINGS' with the open question 'genuinely contradictory current states, or different dimensions of completion/certification?'. Agent A: 'THIS IS THE ONE CASE WHERE I THINK THE DIFFERENT-DIMENSIONS READING IS STRONGEST'. Agent B (B-C5): 'most consistent with an IMPLEMENTATION-STATE vs CERTIFICATION-STATE split'. Agent C (AC-4): 'THIS ONE I DO READ AS IMPLEMENTATION STATE VS CERTIFICATION STATE'. Agent D: adds that the same reading would apply to at least two chapter states and 'is a reason to decide it deliberately rather than per-finding'. Four artifacts, four leanings, one direction. The alternative reading ('two authors disagreeing about one state on the same day') is preserved as a sentence in each and ARGUED BY NOBODY. That is preservation-by-boilerplate, and it is precisely how a founder-ratified open question becomes a Stage-3 assumption without anyone deciding it. I therefore state the unargued side explicitly so it survives: the two records are the SAME DAY with EQUAL RECENCY from two repositories with no cross-reference; a plain reading is that one author had not seen the other's document, and 'different dimensions' is a reconciliation invented downstream, not a distinction either author drew. RC-C10 - THUMB ON THE SCALE. Agent D adds: 'rc-map records that no governed document states F074 is owned by C10 - the relationship throughout is subject-matter-evidenced, not ownership-declared, so even Reading B does not assert chapter ownership of the work.' That addition weakens Reading B specifically and nothing weakens Reading A. Agent C's 'Reading A is accurate about the product; Reading B is accurate about the plumbing' dissolves the conflict by re-describing it as non-conflicting. Both are labelled interpretations; both make the conflict materially harder to re-open. F051 - REPLACEMENT BY RE-DESCRIPTION. Agent A: 'the correct action is to record the compound structure, NOT to pick a label.' Adopting that removes the CONFLICTING_CURRENT_STATE marker without resolving what it marks - a conflict retired by re-typing rather than by ruling. Note also that Agent C's SECOND reading is materially different and is carried by Agent C alone: F058's CORS block means the avatars may be 'deployed' in code and still not RENDER, in which case 'deployed' and 'not working' are both literally true and the conflict is not about certification at all. That reading would require different proof and must not be lost. F043 AND F122 - CLEANLY PRESERVED, AND I SAY SO. Agent A records 'effectOnMyClassification: NONE' for both. Agent C explicitly refuses to collapse F122 into the implementation-vs-certification frame: 'the conflict is about whether the item was in the delivered scope at all, which is a different axis.' That is the correct posture and it is the one place where an agent actively resisted the convenient frame. ONE ADJUDICATION OUTSIDE THE PROTECTED FIVE: RC-C6's chapter state. Agent D's coverage matrix records 'OPEN, NOT STARTED (declared blocker discharged on evidence)' while its own rcChapters record for RC-C6 says the freshness basis is issuance evidence only and no document dated after 2026-08-15 states its state either way, and its own AD-U-1 concedes RC-C6 may be in the same unrecorded conflict as RC-C10 and declines to mark it. The parenthesis in the summary table makes the call the body of the artifact refuses to make.",
+      "severity": "HIGH"
+    }
+  ],
+
+  "survivingCriticisms": [
+    {
+      "id": "E-SC-1",
+      "criticism": "THE SECTION 12 CONVERGENCE IS A ROUND TRIP, NOT EVIDENCE. CH-F's rootDeficiency quotes the frozen dependency graph verbatim from doctrine-index (string-verified); CH-F's name is the contract's name; 20 of its 33 findings were issued by the audit and amendment documents that ARE the contract's declared evidence base. The claim must be withdrawn from the evidence column of both agent-a-root-systems.json and stage1-comparison.json's independentConvergence list. The decomposition may still be correct; it is simply not corroborated by this.",
+      "severity": "CRITICAL",
+      "affects": ["CH-F", "stage1-comparison independentConvergence", "any Stage-3 confidence weighting"]
+    },
+    {
+      "id": "E-SC-2",
+      "criticism": "ALL SEVENTEEN ISSUED WG ITEMS ARE ABSENT FROM THE PROPOSED PORTFOLIO, INCLUDING SIX THE FOUNDER AUTHORIZED. Zero WG references in Agent A's 15 chapters or 143 finding rows; Agent D's six occurrences are all boilerplate. Only Agent C mapped them, in a namespace nothing downstream uses. A portfolio built from CH-A..CH-O plus the coverage matrix contains no WG work at all.",
+      "severity": "CRITICAL",
+      "affects": ["WG001-WG017", "Stage 3 portfolio construction"]
+    },
+    {
+      "id": "E-SC-3",
+      "criticism": "CH-F IS NOT A CHAPTER. 33 findings, 7 root systems, 10 deficiency classes, 8 register states, 2 repositories, 2 of 5 preserved conflicts, 1 confirmed security architecture defect, 1 BLOCKED external gate, and a six-verb capability question. Its RS-09 delivery sub-system (3 findings, holding F138 and F058) and its RS-11 intake sub-system (6 findings, sitting on the RC-C5 frozen hard gate) are both structurally invisible at that size.",
+      "severity": "CRITICAL",
+      "affects": ["CH-F", "RC-C5 gate status", "F138", "F058"]
+    },
+    {
+      "id": "E-SC-4",
+      "criticism": "THE RECONSTRUCTION AXIS IS UNDER-REPRESENTED WHERE IT IS MOST FULLY CHARTERED. RC-C8 ZERO, RC-C6's frozen-backend device layer ZERO, RC-C9 THIN with real-device testing uncovered, RC-C11 THIN with all nine entry conditions uncovered, RC-C7 THIN with Space surfaces and the Correspondence convergence verdict uncovered. 20 obligation clusters carried by nothing; one already lost on every axis.",
+      "severity": "CRITICAL",
+      "affects": ["RC-C6", "RC-C7", "RC-C8", "RC-C9", "RC-C11"]
+    },
+    {
+      "id": "E-SC-5",
+      "criticism": "CH-B'S 'CERTIFICATION NOT CONSTRUCTION' FRAMING RESTS ON 9 WEAK ROWS AND IS DIRECTLY CONTRADICTED BY A FROZEN REGISTER. The Conversation Completion Register still names audio call, video call, screen sharing and media/attachments as unresolved required attachments. This is the single largest block of apparent completeness in the portfolio and it is the least safely evidenced.",
+      "severity": "CRITICAL",
+      "affects": ["CH-B", "CH-C", "CH-M", "F006", "F007", "F008", "F010"]
+    },
+    {
+      "id": "E-SC-6",
+      "criticism": "THE DUPLICATION-RETIREMENT CLASS HAS NO CARRIER. DR1 (8 + 4 surfaces), DR2 (1,078 lines currently serving Live discovery while being its own demolition target), DR3 (6 composers / 11 pipelines / 25 paste files), FD-4 (3,890 lines / 0 of 5 shared widgets). Duplication produces no observable defect, so a finding-driven taxonomy is structurally blind to it.",
+      "severity": "HIGH",
+      "affects": ["RC-C4", "RC-C5", "RC-C6", "RC-C8"]
+    },
+    {
+      "id": "E-SC-7",
+      "criticism": "NONE OF THE 82 VALIDATION OBLIGATIONS IS ATTACHED TO ANY OF THE 15 CANDIDATE CHAPTERS. Agent C's mapping uses an S1..S12 namespace that appears in no other artifact (verified: zero CH- occurrences in agent-c-product.json). Agent D reconciled CH-* against RC-* only. The validation axis and the proposed portfolio do not touch.",
+      "severity": "HIGH",
+      "affects": ["VD-001..VD-082", "all candidate chapters"]
+    },
+    {
+      "id": "E-SC-8",
+      "criticism": "F035 HAS OPERATIONALLY LEFT THE C4 SET WHILE BEING LABELLED A PROPOSAL. CH-D carries 5 of the 6 C4-owned findings. The register's one-canonical-owner assignment ('H. Attention / C4 (6)') is silently reduced to five, and the reduction is invisible because the identifier count still balances at 143.",
+      "severity": "HIGH",
+      "affects": ["F035", "CH-D", "PB-08", "RC-C4"]
+    },
+    {
+      "id": "E-SC-9",
+      "criticism": "THE OPERATIVE TABLES ANSWER FOUNDER QUESTIONS THAT THE PROSE SECTIONS LEAVE OPEN. CH-F's 'newChapterJustified: NO - the FROZEN section 12 contract already charters this' answers the NOT_RECORDED question of whether the RC-C5 hard gate extends to the section 12 stages, which the same artifact calls its most consequential frame ambiguity. Agent D's RC-C5 'OVERLAPPING / servingSystems CH-F (33)' records the same answer in a matrix. A reader building from the tables never sees the question.",
+      "severity": "HIGH",
+      "affects": ["RC-C5", "CH-F", "coverage matrix"]
+    },
+    {
+      "id": "E-SC-10",
+      "criticism": "F139 IS BEING ADJUDICATED BY ACCUMULATION. Four artifacts lean the same way; the alternative reading is preserved as a sentence and argued by nobody. A founder-ratified open question with unanimous unopposed leaning is not preserved in any operative sense.",
+      "severity": "HIGH",
+      "affects": ["F139", "CR-O4", "RC-C10 by analogy", "RC-C5 by analogy"]
+    },
+    {
+      "id": "E-SC-11",
+      "criticism": "FOUR OF THE FIVE PRESERVED CONFLICTS SIT INSIDE THE THREE LARGEST CHAPTERS (77 of 143 findings). Any chapter-level status roll-up conceals them, which is the exact failure F119 records as already having happened once.",
+      "severity": "HIGH",
+      "affects": ["CH-F", "CH-G", "CH-B", "F043", "F122", "F139", "RC-C10"]
+    },
+    {
+      "id": "E-SC-12",
+      "criticism": "PROOF-LEVEL MERGES ARE INVISIBLE TO IDENTIFIER ACCOUNTING. F064/F113 share one chapter with divergent V2/V4 topologies and no carrier for the divergence (VD-031 UNKNOWN). F016 sits inside the chapter it gates. Agent C's OPP-5 and OPP-8 merge five and three distinct obligations respectively on authority that does not extend that far.",
+      "severity": "HIGH",
+      "affects": ["F064", "F113", "F016", "WG005", "WG006", "WG007", "WG010", "WG013", "WG017"]
+    },
+    {
+      "id": "E-SC-13",
+      "criticism": "A COMPLETED CROSSING OF A PROTECTED BOUNDARY HAS NOW BEEN LEFT UNCLASSIFIED BY FOUR CONSECUTIVE ARTIFACTS. RC-C6's PRESERVE / DO-NOT-TOUCH layer and PB-02 protect the same code; both shared causes of the twenty-finding realtime cluster live inside it; both were repaired with no governed record authorizing the chapter or exempting the boundary (AD-CON-5). Stage 0 declined to classify, Agents A, C and D each declined in turn. It is not a preserved conflict - it is an unowned question aging.",
+      "severity": "HIGH",
+      "affects": ["PB-02", "RC-C6", "CH-B", "X2"]
+    },
+    {
+      "id": "E-SC-14",
+      "criticism": "AGENT C'S PRODUCT LENS HAS NO DOWNSTREAM CARRIER. Zero CD- codes, zero OPP- codes and zero BFI- codes survive into agent-d-rc-reconciliation.json; two FE- codes do. Roughly 51 product-quality items produced in Stage 1 reduce to 2 at Stage 2, including the only genuinely independent structural observation in the whole run (OPP-2: the canonical Conversation consumes none of the existing shared rich primitives that five other surfaces do consume).",
+      "severity": "HIGH",
+      "affects": ["CD-1..CD-15", "OPP-1..OPP-8", "BFI-1..BFI-15"]
+    },
+    {
+      "id": "E-SC-15",
+      "criticism": "THE ONLY ACQUISITION PATH IN THE REGISTER IS GATED BEHIND A CHAPTER NOTHING CHARTERS, AND SEQUENCED LAST. F103/F104 are gated on F065, which lives in CH-A (GAP-HOMED). VD-042 is recorded as the most acquisition-critical and cheapest-to-validate obligation with zero implementation. Signed-out visitors are currently shown a confidently false 'live now: 0' (CD-3, corroborated in the released client).",
+      "severity": "HIGH",
+      "affects": ["CH-A", "CH-H", "VD-042", "F097", "F103", "F104"]
+    },
+    {
+      "id": "E-SC-16",
+      "criticism": "TWO TERMINAL ROWS CARRY UNFINISHED PROOF AND ONE LIVE_CERTIFIED ROW CERTIFIES A NON-EVENT. F076/F077 are EXPLICITLY_RETIRED with 'UI unobserved' remains; F114 is LIVE_CERTIFIED on file-level non-modification, which certifies that nothing was touched rather than that touching is safe. Both weaken the terminal vocabulary that the non-shrinking register depends on, and CH-M consumes F114 as a satisfied protection.",
+      "severity": "MEDIUM",
+      "affects": ["F076", "F077", "F114", "CH-M", "F120"]
+    },
+    {
+      "id": "E-SC-17",
+      "criticism": "THE COVERAGE AGGREGATE'S '126 OF 143' IS A SUM OVER OVERLAPPING SETS PRESENTED AS A DISTINCT COUNT, AND ITS OWN REMAINDER NARRATIVE SUMS TO 29 RATHER THAN 17. Stage 3 must not read an unhomed-findings figure off that line.",
+      "severity": "MEDIUM",
+      "affects": ["agent-d coverageMatrix.aggregate"]
+    },
+    {
+      "id": "E-SC-18",
+      "criticism": "CH-B'S JUSTIFICATION TEXT STATES 'Fourteen of them are already implemented or partially validated' AGAINST A REGISTER THAT SHOWS 11 LIVE_CERTIFIED + 5 IMPLEMENTED_NOT_LIVE_CERTIFIED + 2 PARTIALLY_VALIDATED + 1 C4_OWNED_OPEN + 1 CONFLICTING AND ZERO OPEN. The figure 14 matches no combination. Small, but it is a load-bearing sentence in the chapter's chartering argument.",
+      "severity": "LOW",
+      "affects": ["CH-B"]
+    }
+  ],
+
+  "falseAlarms": [
+    {
+      "id": "E-FA-1",
+      "attack": "Findings were lost, merged or invented in the Stage-1 taxonomy.",
+      "checked": "Merged all three batches independently (143 records), rebuilt F001..F143, re-derived Agent A's chapter membership by identifier.",
+      "result": "143 chapter slots, 143 distinct ids, zero duplicates, zero omissions, zero invented ids, states reproduce stage0-validation exactly. The accusation fails cleanly at identifier level. The obligation-level loss (EQ-03) is a different and real failure and is not this one."
+    },
+    {
+      "id": "E-FA-2",
+      "attack": "Agent A grouped by screen, technology or register domain letter.",
+      "checked": "Read all 16 deeperSystemManifestations and all 143 per-finding rationales for stated mechanism.",
+      "result": "The opposite is documented, with mechanism, in every cross-domain move: F058 to delivery, F121 to retention, F071 to distribution, F035 to realtime, F124 to message model, F136/F052 to processing. Word-grouping was actively resisted at the finding level. The chapter-level aggregation failure (EQ-01, EQ-15) is real but is not word-grouping - CH-F's members genuinely share a dependency chain; the objection is that a chain is not a system."
+    },
+    {
+      "id": "E-FA-3",
+      "attack": "The five founder-preserved conflicts were adjudicated.",
+      "checked": "Read all five in all four artifacts; re-read the finding records for F043, F051, F122, F139 in the batches.",
+      "result": "All five states are unchanged everywhere; F043/F051/F122 still read CONFLICTING_CURRENT_STATE, F139 still reads STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED with the dual reading recorded, RC-C10 is untouched. Every interpretation offered is explicitly labelled as such, and Agent A records 'effectOnMyClassification: NONE' for four of five. The accumulation and thumb-on-scale effects (EQ-20) are real but are not adjudication."
+    },
+    {
+      "id": "E-FA-4",
+      "attack": "Stage-0 canonical evidence was mutated by Stage 1 or Stage 2.",
+      "checked": "Recounted state distribution, provenance profile, WG issuance, boundary count and doctrine count from 00-evidence directly and compared to stage0-validation.json.",
+      "result": "Identical on every figure. WG018 is treated as RESERVED/UNISSUED in all four artifacts. F097 is treated as issued throughout. The 41 quarantined identifiers are not counted anywhere."
+    },
+    {
+      "id": "E-FA-5",
+      "attack": "Agent A's isolatedFindings list double-counts against the chapter table.",
+      "checked": "Cross-referenced all 7 isolated ids against chapter membership.",
+      "result": "All seven appear exactly once in a chapter as well. That is correct - the list describes whether a finding shares a MECHANISM, not whether it is excluded from a chapter, and Agent A states the distinction explicitly."
+    },
+    {
+      "id": "E-FA-6",
+      "attack": "The frozen source economy was breached.",
+      "checked": "Read all nine rawSourceEscalations in stage1-comparison and both rawSourceEscalationNote fields.",
+      "result": "The 703 MB corpus was not reopened; mentions.jsonl and the dossiers were left unread. Agent C's nine client reads were explicitly authorised by its task inputs, are individually justified, and each is disclosed with its reason and result. Agent D and Agent A escalated zero times. This is the cleanest part of the run."
+    },
+    {
+      "id": "E-FA-7",
+      "attack": "CH-A is a land grab inventing a chapter over closed RC-C1 and RC-C3 territory.",
+      "checked": "Read DOCTRINE-REFRESH-CONTINUITY via Agent D's citation and RC-C1/C3/C5/C9 preserve instructions.",
+      "result": "Does not survive. The corpus states it in its own words: 'No RC chapter owns this... NOT_RECORDED as any chapter's obligation.' Agent D's one correction (F069 IS explicitly attributed to RC-C3) is fair and Agent A's claim survives it at chartering level. Agent D's mechanism explanation is the strongest thing in that artifact: three of the four touching chapters carry continuity as a PRESERVE instruction, which is an instruction not to reconstruct."
+    },
+    {
+      "id": "E-FA-8",
+      "attack": "Agent A padded small chapters to look substantial.",
+      "checked": "Read CH-C, CH-J, CH-K, CH-L, CH-M chartering fields.",
+      "result": "The opposite. CH-K explicitly discloses under-evidence ('only F023 and F137 map here directly... that asymmetry is itself worth reporting rather than padding the chapter to look substantial'); CH-C refuses chapter status; CH-J reports an IMPORTANT NEGATIVE RESULT against its own initial hypothesis; CH-M reports a SUBTRACTION. Honest under-reporting is present and should be preserved through Stage 3."
+    }
+  ],
+
+  "chaptersFailingQualityTest": [
+    {
+      "chapter": "CH-F Rich Content & Interaction",
+      "findings": 33,
+      "failureType": "ARITY + CONCEALMENT + CONTAMINATED JUSTIFICATION",
+      "evidence": "7 root systems, 10 deficiency classes, 8 register states, 2 repositories, a six-verb capability question, 2 of 5 preserved conflicts, F138 (confirmed security architecture defect) at 1/11 of the chapter, RS-11 sitting on the RC-C5 frozen hard gate, and a chartering justification that quotes its own input verbatim (EQ-16).",
+      "notARecommendation": "Whether to split it, and how, is Stage 3. This records only that it does not pass the test its own author applied to CH-C and CH-K."
+    },
+    {
+      "chapter": "CH-G Live as a Governed Mode",
+      "findings": 24,
+      "failureType": "ARITY + MIXED WORK KINDS + ORPHANED EXIT GATES",
+      "evidence": "3 root systems. Agent A's own text says RS-14/RS-15 are 'reconcile and certify' while RS-16 is 'the one genuinely unbuilt capability' - two different kinds of work under one name. Agent D records that splitting RC-C10 across CH-C/CH-G/CH-H leaves its TWO EXIT GATES ('no temporary authorities anywhere'; cross-platform completion) owned by none of the three. 7 WEAK rows, 4 of them single-mention."
+    },
+    {
+      "chapter": "CH-B Realtime Session & Participation Truth",
+      "findings": 20,
+      "failureType": "EVIDENTIARY, NOT STRUCTURAL",
+      "evidence": "Structurally clean - one root system, one coherent capability question. It fails on evidence: 9 of 20 rows WEAK, including the four core calling capabilities held LIVE_CERTIFIED on single-line WEAK rows, directly contradicted by the frozen Conversation Completion Register. Its chartering claim ('a CONVERGENCE AND CERTIFICATION chapter, not a construction one') is the most collapse-prone conclusion in the run, and its justification sentence contains an unverifiable count (EQ-05, E-SC-18)."
+    },
+    {
+      "chapter": "CH-H Public Acquisition & Anonymous Participation Boundary",
+      "findings": 8,
+      "failureType": "EVIDENTIARY - DECOMPOSITION, NOT CONCLUSION",
+      "evidence": "7 of 8 rows WEAK; 7 of 8 have exactly ONE corpus mention. Agent A concedes the eleven-obligation decomposition rests on a single corroborating sentence. The chartering argument (a zero-authority anonymous actor exists nowhere and is chartered by no chapter) is strong and independent of the weak rows; the SIZE is not, and size is what Stage 3 consumes."
+    }
+  ],
+
+  "findingsAtRiskOfDisappearing": [
+    { "id": "F035", "risk": "Operationally moved out of the C4-owned set in the primary chapter table while labelled a proposal. CH-D carries 5 of 6.", "severity": "HIGH" },
+    { "id": "F137", "risk": "No home on any axis - no RC chapter, no RIC stage, no doctrine, no gap record. Its subject is that no uploaded media of ANY kind is scanned. Carried only by CH-K, which its own author declines to charter.", "severity": "HIGH" },
+    { "id": "F016", "risk": "A gate absorbed into the chapter it gates. A-CON-1 records that the gate already appears to have been crossed (F016 OPEN while F011/F014 are PARTIALLY_VALIDATED and F015 is INLC).", "severity": "HIGH" },
+    { "id": "F113", "risk": "Its V4 multi-party proof burden has no carrier. CH-A holds F064 and F113 together with a single obligation description; VD-031 is UNKNOWN; a V2 proof would silently discharge it.", "severity": "HIGH" },
+    { "id": "F073", "risk": "Root cause explicitly UNKNOWN; recorded as miscategorised in one place and still categorised in another (A-CON-7); its placement in CH-C is an inference from a symptom. Three competing owners, none evidenced.", "severity": "MEDIUM" },
+    { "id": "F095", "risk": "Left with the FD-5 cluster in CH-G while CH-K owns moderation. Either moderation is built twice - 'the classic duplication this programme exists to prevent', in Agent A's words - or the Live moderation obligation is absorbed without a decision.", "severity": "MEDIUM" },
+    { "id": "F134", "risk": "Media.aiFlags client-writable and read by nothing; three external mentions, no stage assignment, isolated by evidence. An ungoverned write surface with no chapter interest.", "severity": "MEDIUM" },
+    { "id": "F028", "risk": "Terminal, WEAK, inside a 2-finding chapter that its own author says should not be a chapter. Nothing depends on it, which is exactly how a row stops being reported.", "severity": "LOW" },
+    { "id": "F092,F093,F094,F095,F098,F099,F100,F101,F102,F105,F106,F109", "risk": "AS A CLASS: twelve findings with exactly ONE mention each in the entire 703 MB corpus. Eleven of them constitute the bulk of CH-H and RS-16. They cannot be corroborated from the normalised evidence and no artifact proposes a mechanism for re-deriving them (F096 names FD-5 sections 8-10 for four of them and nobody has read it).", "severity": "HIGH" }
+  ],
+
+  "boundaryViolations": [
+    {
+      "id": "E-BV-1",
+      "boundary": "PB-08 C4-owned notification / attention work",
+      "assessment": "NOT A VIOLATION AS WRITTEN. PB-08 prohibits cosmetic patching and patching/deleting the C4 findings; an analytical re-owner proposal is neither, and Stage 0 is unmutated. BUT the proposal is executed in the operative table (CH-D = 5 of 6), and the frozen doctrine BOUNDARY-REALTIME-LIVE-PROTECTED-FROM-RIC states 'F030-F035 remain C4_OWNED_OPEN', which the proposal does not cite. Treat as a founder question, not a table edit.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "E-BV-2",
+      "boundary": "PB-04 Conversation party truth / F088 privacy proof",
+      "assessment": "EXPOSURE RISK, NOT A VIOLATION. F088 ('a viewer must never become a Conversation party with access to messages/history/attachments') sits in CH-G while the zero-authority anonymous actor that must satisfy it for a non-member is built in CH-H. No artifact names an owner for the joint regression proof. PB-03 lists PRIVACY EXPOSURE as its destructive potential.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "E-BV-3",
+      "boundary": "PB-01 Meetings",
+      "assessment": "FRAMING RISK. Agent A's subtraction ('not a reason to open Meetings') is analytically correct and, if read as licence, removes the per-slice targeted-regression discipline Agent B records as non-optional at the router and realtime-primitive boundary, where a near-miss on Meetings guest entry is already on record. Both positions preserved; neither agent is wrong about their own axis.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "E-BV-4",
+      "boundary": "PB-11 founder-observed deployment / RC-C5 frozen hard gate",
+      "assessment": "ROUTED AROUND IN THE OPERATIVE TABLES, NOT REMOVED. CH-F declares section 12 the operative charter for territory a founder-frozen gate holds closed; Agent D's matrix records RC-C5 as served by CH-F's 33 findings. The gate stands in prose and is bypassed in the tables. Whether it extends to the section 12 stages is NOT_RECORDED and is a founder-only question (AD-U-4).",
+      "severity": "HIGH"
+    },
+    {
+      "id": "E-BV-5",
+      "boundary": "PB-02 realtime transport / RC-C6 PRESERVE list",
+      "assessment": "A COMPLETED CROSSING, UNCLASSIFIED BY FOUR CONSECUTIVE ARTIFACTS (AD-CON-5). Both shared causes of the twenty-finding realtime cluster live inside the protected layer and both were repaired (509230a, dfc9027) with no governed record authorizing RC-C6 or exempting the boundary. CH-B proposes further work there. Not a Stage-2 violation; an unowned governance question that is now aging in plain sight.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "E-BV-6",
+      "boundary": "PB-12 cross-repository contracts",
+      "assessment": "UNADDRESSED. CH-F spans both repositories by construction (section 12 authored in aura_final/docs, implemented in aura-backend) and RC-C10 is a declared cross-repository construction chapter split across CH-C/CH-G/CH-H. FD-13 item 14 requires Cross-System regression in every chapter's definition of done. No candidate chapter carries a cross-repository certification obligation.",
+      "severity": "MEDIUM"
+    }
+  ],
+
+  "understatedValidation": [
+    { "id": "E-UV-1", "statement": "Zero of the 82 validation obligations is attached to any of the 15 candidate chapters. The only VD-to-system mapping is Agent C's, in an S1..S12 namespace with zero CH- references anywhere in its artifact.", "severity": "HIGH" },
+    { "id": "E-UV-2", "statement": "VD-046 concentrates TWENTY obligations behind one uninterrupted three-identity session that has never been convened. No chapter carries it as a dependency; Agent C alone identifies it as the largest single certification block in the programme.", "severity": "HIGH" },
+    { "id": "E-UV-3", "statement": "VD-041, VD-042 and VD-050 carry browser-validation classes against capabilities their own text says do not exist, covering 21 of 143 findings. VD-043 classifies a first-ever measurement as multi-party validation against a PARTIALLY_VALIDATED state.", "severity": "HIGH" },
+    { "id": "E-UV-4", "statement": "At least six obligations (VD-005, VD-026, VD-032, VD-055, VD-060, VD-062) are BLOCKED-ON-EXTERNAL and dischargeable by no agent under any conditions. Counting them in one queue with runnable proofs overstates throughput. VD-060 is the sharpest: F131 cannot be exercised because production has zero article covers - a validation gap no deployment discharges.", "severity": "HIGH" },
+    { "id": "E-UV-5", "statement": "F119-F143 (25 findings, including CH-F's entire retention tail and all of CH-N) have NO entry in the project's own V1-V5 matrix. Their topology is Stage 0's classification, not the project's (VDC-6).", "severity": "MEDIUM" },
+    { "id": "E-UV-6", "statement": "27 of 82 obligations - the largest class - depend on the Aura Reviewer account, production credential handling and a headless Playwright harness, none of which has any protection doctrine anywhere (PBG-3). The instrument the certification plan rests on is itself ungoverned.", "severity": "MEDIUM" },
+    { "id": "E-UV-7", "statement": "The V2 class carries a standing environmental dependency on a founder browser recorded as having 'went unreachable repeatedly today' (VDC-8). Every V2 feasibility estimate inherits it and none states it.", "severity": "MEDIUM" },
+    { "id": "E-UV-8", "statement": "Two unreconciled certification vocabularies coexist - the RC layer table and the section 12 section 17 classes - so 'is this certified?' is ambiguous by construction across axes (B-C8, PB-10). Every chapter-level completeness statement in Stage 2 inherits that ambiguity.", "severity": "MEDIUM" },
+    { "id": "E-UV-9", "statement": "VDC-7: no evidence establishes that any certification occurred after 2026-08-18T01:25Z. Every 'not yet certified' claim in Stage 1 and Stage 2 carries unquantified staleness and none of them prices it.", "severity": "LOW" }
+  ],
+
+  "weakProvenanceDependencies": [
+    { "conclusion": "CH-B is a certification chapter, not a construction chapter", "dependsOn": ["F006 WEAK", "F007 WEAK", "F008 WEAK", "F010 WEAK", "F038 WEAK", "F039 WEAK", "F041 WEAK", "F042 WEAK", "F048 WEAK"], "contraryEvidence": "The frozen Conversation Completion Register names audio call, video call, screen sharing and media/attachments as unresolved REQUIRED contextual attachments of canonical Conversation.", "ifWrong": "CH-B becomes a construction chapter; Agent D's INVERTED-HOMED verdict, CH-C's and CH-M's dependencies on it, and the largest block of apparent completeness in the register all change with it.", "severity": "CRITICAL" },
+    { "conclusion": "Public acquisition decomposes into eleven distinct obligations (CH-H sizing)", "dependsOn": ["F098 WEAK/1 mention", "F099 WEAK/1", "F100 WEAK/1", "F101 WEAK/1", "F102 WEAK/1", "F105 WEAK/1", "F106 WEAK/1"], "contraryEvidence": "None; but the sole corroboration is one register sentence covering the whole range.", "ifWrong": "The conclusion 'nothing is built' survives; the decomposition, and therefore every Stage-3 size and sequence for CH-H, does not.", "severity": "HIGH" },
+    { "conclusion": "Live audience engagement is eight distinct unbuilt capabilities (RS-16 inside CH-G)", "dependsOn": ["F090 WEAK", "F092 WEAK/1", "F093 WEAK/1", "F094 WEAK/1", "F095 WEAK/1"], "contraryEvidence": "F096 itself instructs that the set be RECOVERED from FD-5 sections 8-10 rather than reinvented, and nobody has read FD-5.", "ifWrong": "CH-G's 'one genuinely unbuilt capability' claim is a reconstruction of a compressed line, not an inventory.", "severity": "HIGH" },
+    { "conclusion": "The provenance profile itself (59 STRONG)", "dependsOn": ["F001 graded STRONG on register-wide 'F001-F120' tokens rather than F001 evidence, per Stage 0's own contradiction flag"], "ifWrong": "STRONG is an overcount and every STRONG citation in Stage 1 and Stage 2 inherits an unmeasured discount.", "severity": "MEDIUM" },
+    { "conclusion": "Live's alternate origination doors are retired (F076, F077 EXPLICITLY_RETIRED)", "dependsOn": ["F076 WEAK", "F077 WEAK"], "contraryEvidence": "Both terminal rows still carry 'UI unobserved' remains values.", "ifWrong": "Two terminal states in the register are wrong, which damages the terminal vocabulary more than it damages CH-G. Strongly corroborated by DOCTRINE-LIVE-ORIGINATION-CORRECTION and PB-03 pins, so the risk is low.", "severity": "LOW" },
+    { "conclusion": "The mesh ceiling is unknown and mesh is not the long-term architecture (CH-C)", "dependsOn": ["F109 WEAK/1 mention", "F110 WEAK/2"], "assessment": "DOES NOT COLLAPSE. A claim about the ABSENCE of measurement is adequately supported by weak evidence and is corroborated by PB-03 open checkpoint E and by F108/F111.", "severity": "LOW" },
+    { "conclusion": "Institution acquisition placement is resolved (CH-I)", "dependsOn": ["F003 WEAK", "F004 WEAK"], "assessment": "DOES NOT COLLAPSE. Doctrine corroboration (C3 founder-observed navigation correction, header semantic layers FROZEN) is stronger than the finding rows.", "severity": "LOW" },
+    { "conclusion": "The C4 findings are preserved unpatched (F118 LIVE_CERTIFIED)", "dependsOn": ["F118 WEAK"], "assessment": "DOES NOT COLLAPSE. Structurally corroborated by PB-08 and by the observed intact state of F030-F035.", "severity": "LOW" },
+    { "conclusion": "SYSTEMIC: the register's durability itself", "dependsOn": ["115 of 143 findings evidenced only in transcripts", "the non-shrinking register rule has NO governed-markdown home (A-CON-10, B-C10)", "F115/F119/F120 which would establish it are themselves OPEN"], "ifWrong": "The rule that protects 115 transcript-only findings from disappearing lives in a transcript. This is the sharpest self-referential risk in the register and it is named by two agents and carried by CH-N, whose own author says recording it as a chapter would be a category error.", "severity": "HIGH" }
+  ],
+
+  "quietAdjudications": [
+    { "id": "E-QA-1", "subject": "F139", "type": "ADJUDICATION BY ACCUMULATION", "detail": "Agents A, B, C and D all lean to the different-dimensions / implementation-vs-certification reading; the alternative (two authors disagreeing on the same day, equal recency, two repositories, no cross-reference) is preserved as a sentence in each artifact and argued by nobody. Recorded here with the unargued side stated so it survives Stage 3.", "adjudicated": false, "risk": "HIGH" },
+    { "id": "E-QA-2", "subject": "RC-C10", "type": "THUMB ON THE SCALE", "detail": "Agent D adds that 'even Reading B does not assert chapter ownership' - an addition that weakens Reading B and has no counterpart weakening Reading A. Agent C's layer split ('Reading A is accurate about the product; Reading B about the plumbing') dissolves the conflict by re-description. Both labelled interpretations; both make the conflict harder to re-open.", "adjudicated": false, "risk": "MEDIUM" },
+    { "id": "E-QA-3", "subject": "F051", "type": "REPLACEMENT BY RE-DESCRIPTION", "detail": "Agent A's 'record the compound structure, NOT pick a label' would remove the CONFLICTING_CURRENT_STATE marker without resolving what it marks. Agent C's independent second reading (F058's CORS block makes 'deployed' and 'not working' simultaneously true, so the conflict is not about certification at all) is carried by Agent C alone and would require different proof.", "adjudicated": false, "risk": "MEDIUM" },
+    { "id": "E-QA-4", "subject": "RC-C6 chapter state (OUTSIDE the protected five)", "type": "INFERENCE PROMOTED TO STATE ANNOTATION", "detail": "Agent D's coverage matrix records 'OPEN, NOT STARTED (declared blocker discharged on evidence)', importing Agent B's self-declared inference, while Agent D's own chapter record says no document after 2026-08-15 states C6's state either way and AD-U-1 concedes it may be in the same unrecorded conflict as RC-C10. The summary table makes the call the body refuses.", "adjudicated": true, "risk": "HIGH" },
+    { "id": "E-QA-5", "subject": "The RC-C5 hard gate's reach over the section 12 stages (OUTSIDE the protected five)", "type": "FOUNDER QUESTION ANSWERED IN AN OPERATIVE TABLE", "detail": "NOT_RECORDED per Stage 0 and named by Agent D as 'the single highest-leverage unrecorded fact'. CH-F's newChapterJustified answers it ('the FROZEN section 12 contract already charters this'); Agent D's matrix records the answer as RC-C5 OVERLAPPING / served by CH-F's 33. Both artifacts flag the question elsewhere.", "adjudicated": true, "risk": "HIGH" },
+    { "id": "E-QA-6", "subject": "F035 chapter membership (OUTSIDE the protected five)", "type": "PROPOSAL EXECUTED IN THE PRIMARY TABLE", "detail": "Labelled ANALYTICAL PROPOSAL ONLY in candidateChapterDeltas; enacted in candidateChapters, where CH-D carries 5 of 6 C4-owned findings.", "adjudicated": true, "risk": "HIGH" },
+    { "id": "E-QA-7", "subject": "F043 and F122", "type": "NONE - CLEANLY PRESERVED", "detail": "Recorded so the absence is credible rather than assumed. Agent A states 'effectOnMyClassification: NONE' for both. Agent C actively resists the convenient frame for F122: 'This is NOT cleanly implementation vs certification: the conflict is about whether the item was in the delivered scope at all, which is a different axis.'", "adjudicated": false, "risk": "NONE" }
+  ],
+
+  "contradictions": {
+    "founderPreservedCarriedForwardUnchanged": {
+      "note": "Preserved exactly as ratified. This artifact adds only the observation that four of the five now sit inside the three largest proposed chapters, and that one (F139) is being settled by unopposed accumulation. No state is changed, no reading is promoted.",
+      "F043": "CONFLICTING_CURRENT_STATE. Carried. Cleanly preserved by all four agents.",
+      "F051": "CONFLICTING_CURRENT_STATE. Carried. Two live interpretations (Agent A's non-atomic compound structure; Agent C's F058-CORS reading) plus the original single-state reading. Note that adopting Agent A's would retire the marker by re-description.",
+      "F122": "CONFLICTING_CURRENT_STATE. Carried. Agent C's refusal to collapse it into the implementation-vs-certification frame is the correct posture and should be preserved verbatim into Stage 3.",
+      "F139": "DUAL READING PRESERVED. Carried. AT RISK - see E-QA-1. The unargued reading is restated in EQ-20 so it is not lost by silence.",
+      "RC-C10": "CONFLICTING_CURRENT_STATE. Carried. Two downstream additions tilt against Reading B without a counterweight - see E-QA-2."
+    },
+    "newContradictionsObservedByThisReview": [
+      {
+        "id": "E-CON-1",
+        "severity": "CRITICAL",
+        "statement": "A CHAPTER'S CHARTERING JUSTIFICATION QUOTES ITS OWN INPUT. Agent A's CH-F rootDeficiency contains the frozen section 12 dependency graph verbatim (string-verified against doctrine-index RIC-CONTRACT.governingPurpose), and 20 of CH-F's 33 findings were issued by the documents that constitute section 12 - one of which doctrine-index names as the contract's own declared evidence base. stage1-comparison then republishes the result as independentConvergence.",
+        "resolution": "NOT RESOLVED. The contamination is factual; whether the section 12 decomposition is nevertheless correct is a separate question this review does not decide."
+      },
+      {
+        "id": "E-CON-2",
+        "severity": "HIGH",
+        "statement": "AGENT D CONTRADICTS ITSELF ON RC-C6. rcChapters records 'no document dated after 2026-08-15 states C6's chapter state either way'; AD-U-1 records the question as genuinely undecidable; coverageMatrix records '(declared blocker discharged on evidence)'.",
+        "resolution": "NOT RESOLVED. Preserved. The parenthesis should be withdrawn or the chapter record amended - but that is a Stage-3/founder matter, not mine."
+      },
+      {
+        "id": "E-CON-3",
+        "severity": "MEDIUM",
+        "statement": "A GATE APPEARS ALREADY CROSSED AND ITS GATE AND GATED ARE NOW IN ONE CHAPTER. The register records 'F016 gates F011, F014, F015'; F016 is OPEN while F011/F014 are PARTIALLY_VALIDATED and F015 is IMPLEMENTED_NOT_LIVE_CERTIFIED (Agent A's A-CON-1); and all four now sit inside CH-F. If gates in this register are advisory, then F065's gating of six continuity findings must be re-read as advice, which changes sequencing materially.",
+        "resolution": "NOT RESOLVED. Preserved and amplified: the structural half of the problem (gate and gated in one bucket) is new here."
+      },
+      {
+        "id": "E-CON-4",
+        "severity": "MEDIUM",
+        "statement": "A CHAPTER'S EXIT CONDITION DEPENDS ON A FINDING OWNED BY ANOTHER CHAPTER WITH NO RECORDED CROSS-CHAPTER GATE. CH-E's risk field states 'F058 will make identity imagery look broken on web regardless of what this chapter does', while F058 sits inside CH-F. Agent C independently ranks the same finding's Cloudflare action (FE-2) as the highest visible-improvement-per-effort founder action in the register. Nothing in either chapter records the dependency as a gate.",
+        "resolution": "NOT RESOLVED. Preserved."
+      },
+      {
+        "id": "E-CON-5",
+        "severity": "MEDIUM",
+        "statement": "THE COVERAGE AGGREGATE IS ARITHMETICALLY INCONSISTENT WITH ITSELF. '126 of 143 fall inside at least one RC chapter's subject matter' is the sum of the per-chapter column over sets the same artifact says overlap; the remainder narrative in the same sentence enumerates 29 findings against an implied 17.",
+        "resolution": "NOT RESOLVED. Recorded so Stage 3 does not read an unhomed count off that line."
+      },
+      {
+        "id": "E-CON-6",
+        "severity": "LOW",
+        "statement": "CH-B'S CHARTERING SENTENCE CONTAINS AN UNVERIFIABLE COUNT. 'Fourteen of them are already implemented or partially validated' against a register showing 11 LIVE_CERTIFIED, 5 IMPLEMENTED_NOT_LIVE_CERTIFIED, 2 PARTIALLY_VALIDATED, 1 C4_OWNED_OPEN, 1 CONFLICTING and zero OPEN.",
+        "resolution": "NOT RESOLVED. Minor, but it is the sentence carrying the chapter's chartering argument."
+      },
+      {
+        "id": "E-CON-7",
+        "severity": "MEDIUM",
+        "statement": "TWO CHARTERING CRITERIA ARE IN USE AND NEITHER SIDE APPLIES THE OTHER'S. Agent D names it as AD-CON-2 and I endorse it in the sharpest form: the RC axis charters by CAPABILITY (RC-C8 is a full chapter with zero findings), Stage 1 charters by FINDING PRESSURE ('two findings is not a chapter'). Applying Stage 1's criterion to the RC axis dechariters RC-C8; applying the RC criterion to Stage 1 makes CH-K and CH-J chapters. Neither artifact applies the other's test to its own output.",
+        "resolution": "NOT RESOLVED. This is the mechanism behind EQ-03's obligation loss and EQ-13's coverage failure, and it is a founder question about what kind of thing the portfolio is."
+      }
+    ]
+  },
+
+  "stage3Questions": [
+    "Does Stage 3 accept that CH-F's reproduction of the section 12 decomposition carries NO independent evidential weight (verbatim quotation of a declared input; 20 of 33 findings issued by the contract's own evidence base)? If so, what independent test would confirm or refute the decomposition - and is running that test cheaper than assuming it?",
+    "Where do the 17 issued WG items live in the portfolio? They appear in zero candidate chapters and zero coverage-matrix rows. Six are founder-AUTHORIZED. WG005 (silent loss of the user's message on the product's primary action) is authorized, STRONG, and currently four stages downstream.",
+    "Does the portfolio carry obligations that generated no finding - RC-C8 entire, RC-C6's frozen-backend device layer, DR1/DR2/DR3 duplication retirement, the ratcheted debt burn-down, FD-8 official designation, the Notification Preference Authority, Space surfaces, the Correspondence convergence verdict? That single answer decides whether this is a reconstruction plan or a defect plan.",
+    "Is CH-F one chapter or a programme? If one, what single status token can honestly describe 7 root systems, 8 register states, 2 preserved conflicts and 1 confirmed security architecture defect - and where does F138 become visible?",
+    "Does F035 stay in the C4-owned set until the founder rules? Agent A's substantive argument (attention presentation cannot manufacture a media-connected count) is strong and Agent D restates the tension precisely; it should be put as a question, not carried as a table state.",
+    "Is CH-B a certification chapter or a construction chapter? The answer turns on four WEAK single-line rows that a frozen register contradicts. What would re-proof cost, and what depends on the answer (CH-C, CH-M, Agent D's INVERTED-HOMED verdict, the largest block of apparent completeness in the portfolio)?",
+    "Does the portfolio attach validation obligations to chapters? Today VD-001..VD-082 attach to nothing the portfolio uses, VD-046 concentrates 20 obligations behind an unconvened session, and 27 obligations depend on an ungoverned harness.",
+    "Should the validation index be split three ways rather than two - RUNNABLE VALIDATION DEBT, CONSTRUCTION DEBT WEARING A VALIDATION LABEL (VD-041, VD-042, VD-043, VD-050 = 21 findings), and BLOCKED-ON-EXTERNAL (VD-005, VD-026, VD-032, VD-055, VD-060, VD-062)? Counting all three as one queue distorts readiness in two opposite directions at once.",
+    "Who owns the joint regression proof for the F088 privacy invariant once Live is split across CH-G and CH-H, and who owns RC-C10's two exit gates once its 37 findings are split three ways?",
+    "How is the F139 dual reading kept genuinely open when four artifacts lean one way and none argues the other? A preserved conflict with unopposed leaning is a decided conflict awaiting transcription.",
+    "Who classifies the completed crossing of RC-C6's PRESERVE list / PB-02 (AD-CON-5)? Four consecutive artifacts have declined. It is not a preserved conflict; it is an unowned question, and CH-B proposes more work in the same layer.",
+    "Does the portfolio carry a PRODUCT-QUALITY axis at all? Agent C's CD-1..CD-15, OPP-1..OPP-8 and BFI-1..BFI-15 have no downstream carrier; the single most independent structural observation in the run (OPP-2 - the canonical Conversation consumes none of the shared rich primitives that five other surfaces do) currently dies at Stage 1.",
+    "Is the sequencing question separable from the chapter question? The frozen section 12 chain is correct on security and places every user-visible capability last, while the register's only acquisition path is gated behind a chapter nothing charters. Those are two different decisions and the current artifacts entangle them.",
+    "How are the twelve single-mention findings re-derived before anything is sized on them? Eleven of them constitute CH-H and RS-16; F096 names FD-5 sections 8-10 as the recovery source for four, and the frozen source economy means nobody has opened it. Is a bounded, declared escalation to FD-5 warranted before Stage 3 sizes those two systems?"
+  ],
+
+  "rawSourceEscalations": [],
+  "rawSourceEscalationNote": "ZERO escalations to the ~703 MB historical corpus. Every conclusion above is derived from the normalised Stage-0 artifacts and the Stage-1/Stage-2 analysis files listed in baselineConsumed.inputsRead. No product code was read; Agent C's authorised client observations were consumed as reported and are explicitly labelled as its observations wherever cited. The mechanical recounts (finding merge, chapter cross-tabulation, WG regex, string match against doctrine-index, issuance-source trace) were performed entirely on those normalised files.",
+
+  "selfContaminationDeclaration": "Every label in this artifact prefixed E- or EQ- is analysis produced by Agent E on 2026-08-18. E-SC-*, E-CON-*, E-BV-*, E-UV-*, E-QA-*, E-FA-* and EQ-* are NOT historical issuance evidence, are not findings, are not WG items, and must never be treated as corpus evidence if they later appear in a searchable transcript. The same applies to the phrases 'round trip', 'adjudication by accumulation', 'preservation-by-boilerplate' and 'construction debt wearing a validation label' as used here - the last is Agent C's coinage, restated and tested, not a project term.",
+
+  "authorityDisclaimer": "NOT RATIFIED TRUTH. No finding or WG issuance is altered. No Stage-0 fact is changed. No conflicting state is resolved. No finding is merged or deleted. No frozen doctrine or protected boundary is changed. No Stage-0 or Stage-1 artifact is mutated. No product code is touched. No FINAL canonical ownership is assigned (Stage 4). Nothing is prioritised or sequenced (Stage 3). Stage 3 is not run."
+}

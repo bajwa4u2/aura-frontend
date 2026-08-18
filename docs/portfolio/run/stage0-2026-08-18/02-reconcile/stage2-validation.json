@@ -1,0 +1,27 @@
+{
+  "stage": "STAGE_2",
+  "type": "DETERMINISTIC_VALIDATION",
+  "date": "2026-08-18",
+  "checksPassed": [
+    "Stage-0 baseline UNMUTATED by Stage 2 (git clean)",
+    "Stage-1 proposals UNMUTATED by Stage 2 (git clean)",
+    "Agent D: all 12 chapters RC-C0..RC-C11 addressed",
+    "Agent D: disappeared-obligation question answered explicitly (undefined recorded)",
+    "Agent E: all 20 adversarial questions answered",
+    "Agent E: 18 surviving criticism(s) — the reviewer did its job",
+    "F043/F051/F122 conflicts intact in the baseline",
+    "Agent D references 90 of 143 findings (chapter-level reconciliation; full ownership is Stage 4)"
+  ],
+  "warnings": [],
+  "failures": [
+    "QUIET ADJUDICATION — Stage 2 appears to resolve carried conflict(s): F139"
+  ],
+  "verdict": "FAIL",
+  "stageStatus": {
+    "stage0": "COMPLETE_AND_FOUNDER_RATIFIED",
+    "stage1": "COMPLETE",
+    "stage2": "FAILED_VALIDATION",
+    "stage3": "NOT_STARTED"
+  },
+  "note": "Stage-2 outputs are ANALYTICAL_PROPOSAL. No canonical ownership assigned; that is Stage 4."
+}
