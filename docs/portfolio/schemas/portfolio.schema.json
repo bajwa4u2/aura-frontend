@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Aura implementation portfolio",
+  "description": "03-synthesis/portfolio.json — the machine-readable ledger behind both portfolio views. Verified by verify-portfolio.mjs; a violated invariant fails the run and the portfolio is not published.",
+  "type": "object",
+  "required": ["runLabel", "chapters"],
+  "additionalProperties": true,
+  "properties": {
+    "runLabel": { "type": "string" },
+    "generatedOn": { "type": "string", "description": "Supplied via workflow args — scripts cannot generate dates." },
+    "sourceRegisterRatified": {
+      "type": "boolean",
+      "description": "FALSE until the founder ratifies the Stage 0 reconstructed register. A portfolio built on an unratified register is provisional."
+    },
+    "chapters": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "chapter.schema.json" }
+    },
+    "explicitlyExcludedChapters": {
+      "type": "array",
+      "description": "C0..C11 chapters deliberately absent from the portfolio. Each needs evidence; silence is an R4 violation.",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason", "evidence"],
+        "properties": {
+          "id": { "type": "string" },
+          "reason": { "type": "string" },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "deferredWg": {
+      "type": "array",
+      "description": "WG items not absorbed into any chapter. Deferral must be a stated decision, never an omission.",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason"],
+        "properties": { "id": { "type": "string" }, "reason": { "type": "string" } }
+      }
+    },
+    "unresolvedDisagreements": {
+      "type": "array",
+      "description": "Agent E disagreements that synthesis could not resolve from canonical evidence. These ELEVATE to founder decisions; they may never be dropped.",
+      "items": {
+        "type": "object",
+        "required": ["question", "positions"],
+        "properties": {
+          "question": { "type": "string" },
+          "positions": { "type": "array", "items": { "type": "string" } },
+          "elevatedAs": { "type": "string", "enum": ["FOUNDER_DECISION", "ARCHITECTURAL_CONTRADICTION"] }
+        }
+      }
+    },
+    "registerAnomalies": {
+      "type": "object",
+      "description": "Reported, never repaired.",
+      "properties": {
+        "missingIds": { "type": "array", "items": { "type": "string" } },
+        "duplicateIds": { "type": "array", "items": { "type": "string" } },
+        "malformedRecords": { "type": "integer" },
+        "contradictoryStates": { "type": "array", "items": { "type": "string" } },
+        "insufficientEvidence": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

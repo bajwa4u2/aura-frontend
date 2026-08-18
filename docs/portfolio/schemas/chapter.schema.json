@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Implementation chapter",
+  "description": "A real system that can be reconstructed coherently — NOT a bug bucket. 'UI bugs', 'backend bugs', 'notifications bugs' and 'miscellaneous' are backlog categories and are invalid chapters. The worked standard is Rich Content, which resolved into Content Truth / Reference & Retention Truth / Fail-Closed Ingestion / Governed Delivery / Processing / Rich Acquisition / Rich Presentation.",
+  "type": "object",
+  "required": ["id", "name", "purpose", "rootDeficiency", "canonicalFindings", "maturity", "completionDefinition"],
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "purpose": { "type": "string", "description": "Governing purpose — what this chapter exists to make true." },
+    "rootDeficiency": { "type": "string", "description": "The architectural deficiency being corrected, not the symptom list." },
+    "cRelationship": {
+      "type": "array",
+      "description": "Which of C0..C11 this chapter serves. A chapter may supersede a simplistic reading of a C-phase WITHOUT erasing that C-phase's purpose.",
+      "items": { "type": "string", "pattern": "^C(1[01]|[0-9])$" }
+    },
+    "canonicalFindings": {
+      "type": "array",
+      "description": "Findings this chapter OWNS. Exactly one chapter may own a given finding.",
+      "items": { "type": "string", "pattern": "^F[0-9]{3}$" }
+    },
+    "crossReferencedFindings": {
+      "type": "array",
+      "description": "Findings this chapter AFFECTS but does not own. 0..N. Never a substitute for ownership.",
+      "items": { "type": "string", "pattern": "^F[0-9]{3}$" }
+    },
+    "findingStates": {
+      "type": "array",
+      "description": "State per owned finding, copied verbatim from Stage 0. Any divergence is an R6 violation.",
+      "items": {
+        "type": "object",
+        "required": ["id", "state"],
+        "properties": { "id": { "type": "string" }, "state": { "type": "string" } }
+      }
+    },
+    "wgAbsorbed": {
+      "type": "array",
+      "description": "World-class opportunities absorbed here because reconstruction is the safest time to implement them. Remain separately traceable by WG id.",
+      "items": { "type": "string" }
+    },
+    "maturity": {
+      "type": "string",
+      "enum": ["NOT_STARTED", "IN_PROGRESS", "IMPLEMENTED_NOT_CERTIFIED", "CERTIFIED", "COMPLETE", "BLOCKED"]
+    },
+    "dependsOn": { "type": "array", "items": { "type": "string" } },
+    "blocks": { "type": "array", "items": { "type": "string" } },
+    "protectedBoundaries": {
+      "type": "array",
+      "description": "Protected systems this chapter comes near. Meetings, Realtime, Live and C4-owned findings must be named explicitly wherever relevant.",
+      "items": { "type": "string" }
+    },
+    "implementationRisk": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "DESTRUCTIVE"] },
+    "validationTopology": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "static-code",
+          "local-automated",
+          "single-browser",
+          "two-account-two-browser",
+          "multi-party-realtime",
+          "native-device",
+          "production-read-only",
+          "external-infrastructure",
+          "founder-experiential"
+        ]
+      }
+    },
+    "externalDependencies": { "type": "array", "items": { "type": "string" } },
+    "founderDecisions": {
+      "type": "array",
+      "description": "Outstanding decisions. These stay decisions — converting one into an engineering assumption is an R8 violation.",
+      "items": { "type": "string" }
+    },
+    "productImpact": { "type": "string" },
+    "competitiveSignificance": { "type": "string" },
+    "sequencePosition": { "type": "integer" },
+    "completionDefinition": {
+      "type": "string",
+      "description": "What must be TRUE for this chapter to be complete — including certification, not merely implementation."
+    }
+  }
+}

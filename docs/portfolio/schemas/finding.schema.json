@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Aura canonical finding record",
+  "description": "One line of 00-evidence/findings.jsonl. Reconstructed by Stage 0 and PROPOSED until the founder ratifies it — there is no pre-existing canonical F-register artifact.",
+  "type": "object",
+  "required": ["id", "state", "provenance"],
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string", "pattern": "^F[0-9]{3}$" },
+    "title": { "type": "string" },
+    "claim": { "type": "string", "description": "What the finding actually asserts is wrong or owed." },
+    "system": { "type": "string", "description": "System the finding concerns, as recorded at the time — NOT the root-system classification, which Agent A derives separately." },
+    "state": {
+      "type": "string",
+      "enum": [
+        "OPEN",
+        "IMPLEMENTED_NOT_CERTIFIED",
+        "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+        "CLOSED",
+        "RETIRED",
+        "SUPERSEDED",
+        "BLOCKED",
+        "C4_OWNED"
+      ],
+      "description": "Copied verbatim from evidence. No agent may promote this value. Infrastructure existing is not an obligation satisfied."
+    },
+    "originChapter": { "type": "string", "description": "Chapter or investigation that raised it." },
+    "supersededBy": { "type": "string" },
+    "relatedFindings": { "type": "array", "items": { "type": "string" } },
+    "relatedWg": { "type": "array", "items": { "type": "string" } },
+    "evidenceStrength": {
+      "type": "string",
+      "enum": ["STRONG", "WEAK", "INSUFFICIENT"],
+      "description": "WEAK where the id appears only once or twice across the corpus. INSUFFICIENT items must be surfaced for founder adjudication, never guessed."
+    },
+    "provenance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["source"],
+        "properties": {
+          "source": { "type": "string", "description": "Repo-relative doc path, or transcript filename." },
+          "anchor": { "type": "string", "description": "Heading, line number, or quoted fragment." }
+        }
+      }
+    }
+  }
+}
