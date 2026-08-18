@@ -1,0 +1,77 @@
+{
+ "count": 9,
+ "cos": [
+  {
+   "id": "CO-RC-C1-021",
+   "charteredBy": "RC-C1",
+   "canonicalChapter": "CH-17",
+   "obligationClass": "FOUNDER_ACTION_ONLY",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"OWNERSHIP_VOID\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  },
+  {
+   "id": "CO-RC-C1-022",
+   "charteredBy": "RC-C1",
+   "canonicalChapter": "CH-17",
+   "obligationClass": "FOUNDER_ACTION_ONLY",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"OPEN_DISPOSITION\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  },
+  {
+   "id": "CO-RC-C2-037",
+   "charteredBy": "RC-C2",
+   "canonicalChapter": "CH-03",
+   "obligationClass": "FOUNDER_ACTION_ONLY",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"UNRESOLVED_DISPOSITION\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  },
+  {
+   "id": "CO-RC-C3-025",
+   "charteredBy": "RC-C3",
+   "canonicalChapter": "CH-05",
+   "obligationClass": "FOUNDER_ACTION_ONLY",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"OPEN_FOUNDER_GAP\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  },
+  {
+   "id": "CO-RC-C3-026",
+   "charteredBy": "RC-C3",
+   "canonicalChapter": "CH-14",
+   "obligationClass": "FOUNDER_ACTION_ONLY",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"OPEN_FOUNDER_GAP\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  },
+  {
+   "id": "CO-RC-C6-029",
+   "charteredBy": "RC-C6",
+   "canonicalChapter": "CH-04",
+   "obligationClass": "OUTSTANDING_CONSTRUCTION",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"SCOPE_UNADDRESSED\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  },
+  {
+   "id": "CO-RC-C7-025",
+   "charteredBy": "RC-C7",
+   "canonicalChapter": "CH-07",
+   "obligationClass": "FOUNDER_ACTION_ONLY",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"UNRESOLVED\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  },
+  {
+   "id": "CO-RC-C9-029",
+   "charteredBy": "RC-C9",
+   "canonicalChapter": "CH-17",
+   "obligationClass": "FOUNDER_ACTION_ONLY",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"UNASSIGNED_SURFACE\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  },
+  {
+   "id": "CO-RC-C9-030",
+   "charteredBy": "RC-C9",
+   "canonicalChapter": "CH-16",
+   "obligationClass": "VALIDATION_OR_GATE_ONLY",
+   "classificationBasis": "DETERMINISTIC_DERIVATION",
+   "classificationRationale": "Deterministically derived from the source entry type token \"PRECONDITION_UNMET\" under the v2 obligation-bearing rule. No analytical judgement applied."
+  }
+ ]
+}

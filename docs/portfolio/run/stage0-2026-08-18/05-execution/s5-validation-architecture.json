@@ -1,0 +1,931 @@
+{
+  "type": "ANALYTICAL_PROPOSAL",
+  "artifact": "s5-validation-architecture",
+  "stage": "STAGE 5 — EXECUTION ARCHITECTURE & SEQUENCING",
+  "task": "S5-C — VALIDATION & CERTIFICATION ARCHITECTURE",
+  "date": "2026-08-18",
+  "authority": "NONE. This is analysis and proposal only. It authorises no implementation, no session, no deployment, no external action, no state promotion and no chapter entry. Chapter authorisation, gate declarations and certification closure remain founder-only.",
+
+  "governingRules": {
+    "R1_STATE_SEPARATION": "IMPLEMENTED != VALIDATED != LIVE_CERTIFIED. No gate in this document may be satisfied by the existence of code, a green suite, a merged commit or a completed deploy. Every gate item names the observation that discharges it.",
+    "R2_NO_TERMINAL_DUMP": "There is no end-of-programme validation phase. Every wave candidate terminates in a gate whose evidence is produced by sessions convened INSIDE that wave. Validation that cannot be produced inside a wave is a signal that the wave boundary is wrong, not that the validation should be deferred.",
+    "R3_CLASS_PRESERVATION": "The ten Stage-0 validation classes are preserved verbatim per obligation. A lower-cost class may never silently discharge a higher-cost obligation (Agent E E-SC-12; the F064/F113 case is the worked example).",
+    "R4_LADDER_NON_IMPLICATION": "Architecture / Implementation / Product-Behavior / Cross-System / Real-Boundary / Founder-Product-Acceptance / Item-17 are seven layers. A lower layer passing never implies a higher one (PB-10). No chapter may claim Real-Boundary or Item 17 locally.",
+    "R5_CONSTRUCTION_IS_NOT_VALIDATION": "Where a validation obligation names a capability that does not exist (VD-041, VD-042, VD-050 and parts of VD-029/VD-076/VD-077), it is carried as a CONSTRUCTION obligation with a validation tail. The VD row remains visible on the validation axis and is NOT counted as dischargeable work in a validation schedule (Agent E E-UV-3).",
+    "R6_BLOCKED_IS_NOT_PENDING": "Obligations blocked on an action no agent may take (VD-005, VD-026, VD-032, VD-052, VD-055, VD-060, VD-061, VD-062) are scheduled as LONG-LEAD items placed at the START of the wave that needs them, never queued alongside runnable proofs (Agent E E-UV-4).",
+    "R7_OUTCOME_VOCABULARY": "Every session leg returns exactly one of: PASS · FAIL · NOT_DISCHARGED_BLOCKED_EXTERNAL · NOT_DISCHARGEABLE_NO_DATA · NOT_ATTEMPTED. 'Not attempted' and 'blocked' are never reported as 'no issues found'.",
+    "R8_GATE_ENFORCEMENT_PROOF": "Every ratchet or gate counts as enforcement only after it is demonstrated to FAIL on a real violation (FD-13 precedent, CH-01 and CH-17 certification requirements)."
+  },
+
+  "waveCandidateProvenance": {
+    "note": "Wave membership below is taken verbatim from each chapter's own sequencePosition field in index-chapters.json. It is a CANDIDATE grouping. S5-A/S5-B own the execution order; this artifact attaches gates to whatever waves survive. Where the gate logic constrains the order, that constraint is stated as a gate prerequisite, not as a re-sequencing.",
+    "candidateMembership": {
+      "W-CONTINUOUS": ["CH-01", "CH-17 (gate function only)"],
+      "W1": ["CH-02", "CH-04", "CH-11"],
+      "W2": ["CH-03", "CH-05", "CH-12", "CH-15"],
+      "W3": ["CH-06", "CH-13"],
+      "W4": ["CH-07", "CH-08", "CH-09"],
+      "W5": ["CH-10", "CH-14"],
+      "W6": ["CH-16", "CH-17 (terminal)"]
+    },
+    "classificationBasis": "ANALYTICAL_INFERENCE — the wave labels are the chapter index's own inferred sequencePosition strings, not a founder ruling."
+  },
+
+  "validationGatesByWaveCandidate": [
+    {
+      "gateId": "G-CONT",
+      "waveCandidate": "W-CONTINUOUS",
+      "gateName": "FOUNDATION RATCHET & REPORTING-HONESTY GATE",
+      "chapters": ["CH-01", "CH-17"],
+      "runsAs": "CONTINUOUS — evaluated at every other gate, never as a wave of its own.",
+      "terminatingEvidence": [
+        "Every foundation ratchet (state/temporal/acting-context, route classification, registry→router integrity, identity conformance) demonstrated to FAIL on a deliberately introduced real violation before it is counted as enforcement.",
+        "Backend and frontend suites reported TOGETHER for the same closure; no repository silently diverges (PB-12).",
+        "Burn-down accounting published per chapter closure; a chapter may not close with an unexplained remainder.",
+        "Item-level reporting of the three preserved conflicts (F043, F051, F122) and of F139's two dimensions at EVERY closure — a chapter-level roll-up that conceals them is the exact failure F119 records."
+      ],
+      "sessions": ["VS-16"],
+      "obligationsAtThisGate": ["VD-048", "VD-049", "VD-059", "VD-064", "VD-065", "VD-066", "VD-074", "VD-078"],
+      "classMix": {"LOCAL_AUTOMATED": 4, "CODE_STATIC": 3, "OTHER": 1},
+      "doesNotCertify": "Nothing product-facing. A green ratchet is Implementation-layer evidence only; it never reaches Product Behavior.",
+      "failureMeaning": "A ratchet that cannot be made to fail is not a gate. The chapter consuming it may not close."
+    },
+    {
+      "gateId": "G1",
+      "waveCandidate": "W1",
+      "gateName": "SUBSTRATE TRUTH GATE — destination, session and content-door",
+      "chapters": ["CH-02", "CH-04", "CH-11"],
+      "terminatingEvidence": [
+        "F065 LIVE REFRESH PROOF PASSES FIRST. It is the chapter's own first gate; until it passes no downstream continuity finding may be claimed closed. The keystone relation F065 → {F059, F061, F062, F063, F064, F103, F104} is preserved as an ORDERING constraint inside the session, never as a merge.",
+        "A live signed-out probe certifies the route-classification contract as fail-closed, with the 23 navigation gates and the literal route ratchet (103 files / 294 sites) green AFTER the classification change, and a targeted Meetings regression (97/97) executed for every router change.",
+        "A call lifecycle observed across at least THREE sequential calls within ONE page lifetime without reload — the only condition under which the F045 accept-freeze root cause manifests.",
+        "End-vs-Leave, role lookup and Go Live eligibility re-proven after any identity change reaching realtime (F057 precedent).",
+        "A deliberately violating file is REFUSED at the ingestion door with a truthful, visible, recoverable refusal; every ingestion door enumerated and proven to pass through the same validation (not sampled).",
+        "The four capability rows F006/F007/F008/F010 are RE-PROVEN LIVE on the Conversation realtime surface before any completeness claim. They are held LIVE_CERTIFIED on single-line WEAK provenance while the frozen Conversation Completion Register simultaneously names them unresolved (E-SC-5). This gate may not be described as certification-only until that contradiction is discharged."
+      ],
+      "sessions": ["VS-01", "VS-02", "VS-07 (local/static half only)", "VS-04 (long-lead founder actions initiated at wave START)"],
+      "obligationsAtThisGate": ["VD-027", "VD-028", "VD-029", "VD-012", "VD-013", "VD-014", "VD-015", "VD-016", "VD-017", "VD-018", "VD-020", "VD-022", "VD-025", "VD-030", "VD-053"],
+      "longLeadItemsToInitiateAtWaveSTART": ["VD-026 (R2 CORS founder dashboard action)", "VD-055 (founder-observed deploy of the three migrations)"],
+      "classMix": {"SINGLE_AUTHORIZED_BROWSER": 8, "TWO_ACCOUNT_TWO_BROWSER": 6, "FOUNDER_EXPERIENTIAL": 1},
+      "doesNotCertify": [
+        "Does NOT certify Meetings continuity at the F113 (MULTI_PARTY_REALTIME) bar — only the F064 single/two-browser burden.",
+        "Does NOT certify identity VISUAL completion (F051/F052/F056) while F058 is unapplied; those legs return NOT_DISCHARGED_BLOCKED_EXTERNAL, never FAIL.",
+        "Does NOT certify Live anything. Every Live leg of the historical §H batch is deliberately excluded here (see VS-09 and sequencing uncertainty U2)."
+      ],
+      "failureMeaning": "A FAIL on the keystone aborts the remainder of VS-01 by design; a FAIL on the second-call cadence leg re-opens RC-B and is a production-severity regression, not a gate remark."
+    },
+    {
+      "gateId": "G2",
+      "waveCandidate": "W2",
+      "gateName": "AUTHORITY CONSUMPTION, CUSTODY & ATTENTION-CLOSURE GATE",
+      "chapters": ["CH-03", "CH-05", "CH-12", "CH-15"],
+      "intraWaveOrderingConstraint": "CH-15's POLICY FREEZE must precede CH-12's examination implementation — the two chapters share a wave and the policy is a prerequisite of its own consumer ('a scanner needs to know what it is scanning' and 'the examination pipeline cannot be built against an undefined policy or an absent appeal route'). Within CH-05, founder checkpoint 7 must precede retirement of any of the eight DR1 surfaces.",
+      "terminatingEvidence": [
+        "An IDENTITY CONFORMANCE GATE is published with an ENUMERATED consumer list; F116 is explicitly NOT closed by fixing one consumer (PB-05). Every later chapter building a new identity consumer must pass that gate in its own definition of done — this is how a re-entrant audit terminates.",
+        "Post-deployment READ-ONLY reconciliation reported over the five cohorts SEPARATELY (A authoritative relationships · B intentional external universes · C unresolved blind producers · D logical aliases on one physical object · E unexplained rows), with the standing caveat that 'zero divergence' is meaningful only for the universe actually measured.",
+        "Every enumerated MUST-SURVIVE attention consumer proven ALIVE after retirement (incoming_live_overlay, floating_call_widget PiP, thread_call_lifecycle_controller eviction sites, native_call_notification_channel, auth-drop clear + resume reconciliation, notification_open_reconcile, activity_screen, notifications_screen, module_attention badges, messages_hub, correspondence_hub, since_you_were_here, mark-read call sites, derived providers). PROVEN-DEAD retirement only; a naive zero-reference gate is FORBIDDEN (FD-12).",
+        "The F126 four-vantage journey observed live: A sends · B renders · C refused · anonymous refused. Explicitly refused promotion on unit evidence.",
+        "The content policy, the consequence ladder and the APPEAL ROUTE are frozen as founder rulings before any automated verdict can act on content.",
+        "TERMINAL ACT OF THIS GATE: the founder DECLARES C4 certified/closed after live observation on the live site and resolution of live defects. This declaration — not any engineering claim — is what opens the RC-C5 hard gate on CH-13. It is not weakened, re-scoped or scheduled around anywhere in this document."
+      ],
+      "sessions": ["VS-03", "VS-05", "VS-06", "VS-07 (live half)"],
+      "obligationsAtThisGate": ["VD-019", "VD-021", "VD-023", "VD-024", "VD-054", "VD-056", "VD-057", "VD-058", "VD-060", "VD-063", "VD-079", "VD-067", "VD-068", "VD-072", "VD-047", "VD-051"],
+      "classMix": {"PRODUCTION_READ_ONLY": 6, "SINGLE_AUTHORIZED_BROWSER": 5, "CODE_STATIC": 1, "TWO_ACCOUNT_TWO_BROWSER": 2, "FOUNDER_EXPERIENTIAL": 1, "EXTERNAL_INFRASTRUCTURE": 1},
+      "f137Position": "F137's POLICY half is discharged HERE, at G2, as the frozen content policy plus appeal route. Its MECHANISM half is discharged at G3 (see below). F137 is ZERO_COVERAGE_SECURITY_GAP and is given an explicit position at two named gates precisely so it cannot be buried behind cosmetic sequencing.",
+      "doesNotCertify": [
+        "VD-060 (F131) CANNOT be discharged at this gate or any other by observation: production holds zero article covers. It returns NOT_DISCHARGEABLE_NO_DATA and requires a founder decision about seeded content (see U7).",
+        "Does NOT discharge the reaper authority change. D-6 step 7 is the only place that can be proposed, and only after equivalence/coverage is demonstrated against production reality (VS-17).",
+        "Does NOT permit the R2 public-read ratchet. That is VS-18 and it is deliberately NOT bundled with the CORS action even though both are Cloudflare."
+      ],
+      "failureMeaning": "A FAIL on any MUST-SURVIVE consumer is a retirement that killed the incoming-call path (DB-5) and is reverted, not annotated. A FAIL on the F126 refusal vantage is a disclosure event and is not revocable by a later fix (DB-9)."
+    },
+    {
+      "gateId": "G3",
+      "waveCandidate": "W3",
+      "gateName": "CONVERSATION AS FIRST COMPLETE REFERENCE GATE",
+      "chapters": ["CH-06", "CH-13"],
+      "entryCondition": "The founder's C4 live-closure declaration from G2 is the entry condition for CH-13's RC-C5 territory. CH-06 does not inherit that gate; it inherits the certified substrate from G1 and the custody/delivery evidence from G2.",
+      "terminatingEvidence": [
+        "The Conversation Completion Register is discharged ITEM BY ITEM with NAMED evidence — audio call · video call · screen sharing · media/attachments · intentional Live · message reporting/moderation — against the CONVERSATION realtime surface, not the legacy thread-call surface on which the prior evidence was earned. 'C4 PROGRESSION DOES NOT ERASE IT' and 'NO FAKE UI SHIPS MEANWHILE' remain binding on this chain.",
+        "One intake layer proven on EVERY door: drag/drop and clipboard-paste-including-image exercised live for the first time (they exist in code and have never been exercised), tested against REAL production screens rather than a minimal harness, with the scope boundary disclosed.",
+        "F016's cross-chapter gate honoured: F011/F014/F015 are NOT certified while F016 remains OPEN in CH-11 (A-CON-1 records the gate as already appearing crossed once).",
+        "F137 MECHANISM half: a known-malicious sample is REFUSED DELIVERY END TO END; a deliberately induced false positive is APPEALABLE and reversed through the appeal route frozen at G2; and the verdict is proven to apply to objects uploaded BEFORE the scanner existed.",
+        "The report/moderation journey is EXERCISED live end to end — report, adjudicate, resolve, notify — with one authority proven: no surface resolves a report through a second path.",
+        "Accessibility (WG015) evidence is inside this gate, not deferred — retrofitted accessibility is the failure mode already on record.",
+        "F020/F021/F022 are RE-REPORTED at closure precisely because they already vanished from reporting once (F119)."
+      ],
+      "sessions": ["VS-08", "VS-15", "VS-18 (earliest permissible position — see below)"],
+      "obligationsAtThisGate": ["VD-004", "VD-005", "VD-006", "VD-007", "VD-008", "VD-009", "VD-050", "VD-076", "VD-077", "VD-003", "VD-010", "VD-071", "VD-073"],
+      "classMix": {"SINGLE_AUTHORIZED_BROWSER": 10, "FOUNDER_EXPERIENTIAL": 2, "MULTI_PARTY_REALTIME": 1},
+      "constructionBeforeValidation": "VD-050, VD-076 and most of VD-077 name capabilities that DO NOT EXIST (no seek bar, no waveform, no document preview, no upload progress/cancel/retry, no degradation chain, no keyboard/focus, no honest media-kind model). They enter this gate as construction obligations with a validation tail. Scheduling them as validation would be a category error.",
+      "doesNotCertify": [
+        "Does NOT authorise Phase 5 legacy retirement. The gate terminates at JOURNEY CERTIFICATION; the retirement is a separate, sequential founder authorization (additive deploy → migration → founder live observation → journey certification → explicit authorization).",
+        "Does NOT certify Conversation at Cross-System or Real-Boundary layers."
+      ],
+      "failureMeaning": "A FAIL here means the product's primary surface is not final-certified, which by CH-06's own blocking relation makes CH-07 and the release gate unreachable."
+    },
+    {
+      "gateId": "G4",
+      "waveCandidate": "W4",
+      "gateName": "LIVE AS A GOVERNED MODE GATE — evaluated as ONE journey",
+      "chapters": ["CH-07", "CH-08", "CH-09"],
+      "terminatingEvidence": [
+        "The construction exit gate is evaluated as a SINGLE END-TO-END JOURNEY, not as a sum of sub-system claims: Live operates as a governed MODE/STATE of an owning Thread or Space, continuity survives the Live event, canonical reconstructed authorities are consumed, and NO temporary substitute authorities remain.",
+        "Charter §26 pins ALL green: same-session escalation · no re-invites · durable NORMAL→LIVE_PREPARING→LIVE trail · observer/non-party refusals · End-Live returning the SAME session to NORMAL with only observers detached · STANDALONE refused · born-public refused · discovery keyed on liveState LIVE.",
+        "F083 and F084 are RE-PROVEN under the corrected model. The prior 'proven live' evidence certifies the RETIRED parallel-broadcast model and is not carried forward.",
+        "A LEGITIMATE VIEWER ACTUALLY GETS IN (the register states plainly that no viewer has got in since the view-guard fix), with role-derived OBSERVER authority and separate viewer-vs-stage counts.",
+        "F088 PRIVACY PROOF: a viewer is never a Conversation party — an OBSERVER session row only, with no access to messages, history or attachments. CH-09 owns the proof; CH-10 is named CO-SIGNATORY for the anonymous case (Agent E E-BV-2 recorded it as ownerless).",
+        "F076/F077 UI observation residue completed here rather than inherited as terminal.",
+        "The 10,000-member institution invariant test EXECUTED: zero recipients absent invitation; ENTITLEMENT != INTERRUPTION demonstrated per ring policy across all three modes.",
+        "THREAD != SPACE proven behaviourally, not asserted; no route-derived sender survives closure; the Correspondence convergence verdict is RECORDED as an outcome (Stage 0 found the checkpoint has NO RECORDED OUTCOME — closing without one repeats the failure).",
+        "Mesh ceiling MEASURED and ENFORCED, not asserted; F073 may not be closed by inference from a symptom.",
+        "Meetings equivalent validation (F112) executed at the MULTI_PARTY_REALTIME bar with explicit Meetings regression evidence, after Conversation's shared capabilities are certified."
+      ],
+      "sessions": ["VS-09", "VS-10", "VS-11 (co-convened, certified separately)", "VS-12"],
+      "obligationsAtThisGate": ["VD-035", "VD-036", "VD-037", "VD-038", "VD-039", "VD-040", "VD-041", "VD-046", "VD-034", "VD-043", "VD-044", "VD-031", "VD-045"],
+      "classMix": {"MULTI_PARTY_REALTIME": 11, "SINGLE_AUTHORIZED_BROWSER": 1, "UNKNOWN": 1},
+      "doesNotCertify": [
+        "Does NOT certify the acquisition funnel — VS-11 is co-convened here for the broadcast it needs, but its certification belongs to G5.",
+        "Does NOT satisfy RC-C10's cross-platform completion, which is evaluated jointly with CH-16 at G6a.",
+        "Does NOT decide the SFU purchase — it supplies the measurement the decision needs (checkpoint E remains open, provider independence preserved)."
+      ],
+      "failureMeaning": "A FAIL on F088 is a privacy disclosure and is not revocable by a later fix. A FAIL on the End-Live-returns-to-private-call proof invalidates the entire viewer/engagement/acquisition stack downstream."
+    },
+    {
+      "gateId": "G5",
+      "waveCandidate": "W5",
+      "gateName": "ACQUISITION TRUTH & PUBLICATION DURABILITY GATE",
+      "chapters": ["CH-10", "CH-14"],
+      "terminatingEvidence": [
+        "The zero-authority grant is proven by REFUSAL EVIDENCE, not by absence: an anonymous actor is REFUSED participation, REFUSED Conversation access and REFUSED party membership — not merely shown nothing.",
+        "The preview budget survives refresh, tab restore and cold load. It is a CONTINUITY property, not a timer, and it depends on the F065 keystone proven at G1.",
+        "Auth returns to the SAME Live and sign-up preserves intent (F103/F104), owned by the shared continuity authority in CH-02, not re-implemented here.",
+        "A signed-out visitor is never shown a confidently false 'live now: 0'. Truthfulness of the public index is a CERTIFICATION item, not a polish item.",
+        "Designation is proven legible BEFORE commitment and impossible after it; a revision keeps its address and states the revised fact truthfully.",
+        "Live proof of the People surface residue removal and of the Create migration — both recorded as shipped and never exercised live."
+      ],
+      "sessions": ["VS-11", "VS-14"],
+      "obligationsAtThisGate": ["VD-042", "VD-001", "VD-002", "VD-011"],
+      "classMix": {"SINGLE_AUTHORIZED_BROWSER": 4},
+      "asymmetryWorthNoting": "VD-042 is simultaneously the most acquisition-critical obligation in the register, the CHEAPEST to validate once built (a signed-out visitor is a single browser session), and has ZERO implementation. High value · low validation cost · zero construction. Its cost is entirely construction and entirely co-convening with a real Live broadcast.",
+      "doesNotCertify": "Does not certify article DURABILITY OVER TIME. F121's failure mode — published article images returning 404 after signature expiry — is only observed by a certification that WAITS. No obligation anywhere covers it; recorded as a gap (see U12).",
+      "failureMeaning": "A FAIL here is an acquisition defect visible to every stranger who meets the product, and it is the only place the register measures that."
+    },
+    {
+      "gateId": "G6a",
+      "waveCandidate": "W6",
+      "gateName": "REAL-BOUNDARY GATE",
+      "chapters": ["CH-16", "CH-09 (cross-platform completion, jointly)"],
+      "terminatingEvidence": [
+        "NATIVE_DEVICE and EXTERNAL_INFRASTRUCTURE topologies EXECUTED FOR REAL — the register's two NATIVE_DEVICE obligations have never run once.",
+        "Per-platform suites plus the cross-platform behaviour matrix on mobile, web and MSIX; notification delivery verified on real devices, not asserted from a channel registration.",
+        "F071 re-observed ONLY after a founder-triggered store release. Until that release it is neither OPEN nor closed in an engineering sense and is reported as DISTRIBUTION-LAG DEBT.",
+        "Real-Boundary certification recorded PER CONSUMING CHAPTER; a lower layer passing never implies it (PB-10). CH-04, CH-05 and CH-08 are explicitly PARTIAL until this gate runs (CO-RC-C9-008, CO-RC-C9-007, CO-RC-C9-003)."
+      ],
+      "sessions": ["VS-13"],
+      "obligationsAtThisGate": ["VD-032", "VD-033", "VD-069"],
+      "classMix": {"NATIVE_DEVICE": 2, "EXTERNAL_INFRASTRUCTURE": 1},
+      "longLeadWarning": "The store release that makes VD-032 observable must be triggered by the founder AT THE START of the preceding wave, not at this gate. A defective binary is in the field until the next submission — which is exactly F071's condition today.",
+      "doesNotCertify": "Does not confer Founder Product Acceptance or Item 17.",
+      "failureMeaning": "A FAIL here invalidates C11 entry conditions 4 and 5 and no amount of web-side evidence substitutes."
+    },
+    {
+      "gateId": "G6b",
+      "waveCandidate": "W6 / TERMINAL",
+      "gateName": "RELEASE GATE — Item 17, founder-only",
+      "chapters": ["CH-17"],
+      "terminatingEvidence": [
+        "All nine RC-C11 entry conditions TRUE, evaluated at C11 only, not redefined: C0–C9 complete to FD-13 done · C10 complete OR explicitly excluded by founder decision · backend frozen baseline intact · cross-platform behaviour verified on mobile/web/MSIX · real-device and native testing complete · integrated end-to-end journeys pass · Real-Boundary certification complete · Founder Product Acceptance readiness · a Release Client candidate exists.",
+        "All 143 findings and all 308 chartered obligations reconciled INDEPENDENTLY; neither population inferred from the other.",
+        "Every item at a terminal state on evidence: an item leaves only at LIVE_CERTIFIED, SUPERSEDED_BY_FOUNDER_RULING or EXPLICITLY_RETIRED. Implementation, green tests and deployment never remove it (F115/F119/F120 treated as ONE closure gate held as three rows).",
+        "The three preserved conflicts and F139's two dimensions reported at ITEM level."
+      ],
+      "sessions": ["VS-17"],
+      "obligationsAtThisGate": ["VD-061", "VD-062", "VD-070", "VD-075", "VD-080", "VD-081", "VD-082"],
+      "classMix": {"FOUNDER_EXPERIENTIAL": 6, "UNKNOWN": 1},
+      "doesNotCertify": "Nothing below it. Item 17 is the only place the Release Gate layer can be earned; a lower layer passing never implies it.",
+      "failureMeaning": "Not applicable — this gate is a founder declaration, not a test result."
+    }
+  ],
+
+  "consolidatedSessions": [
+    {
+      "session": "VS-01 — CONTINUITY KEYSTONE & DESTINATION-SURVIVAL WALK",
+      "class": "SINGLE_AUTHORIZED_BROWSER (with a signed-out leg in the same browser profile)",
+      "gate": "G1",
+      "participants": "One authorised browser (Aura Reviewer) plus one signed-out profile; production API/DB reads.",
+      "obligationsDischarged": ["VD-027", "VD-028", "VD-029"],
+      "findingsTouched": ["F065", "F069", "F059", "F061", "F062", "F063", "F066", "F067", "F068", "F070", "F117", "F027 (draft-identity half)"],
+      "prerequisites": [
+        "The F065 structural fix is deployed (TokenStore.setSession() choke point; hint cleared in clearTokens(); bootstrap refresh re-stamps age).",
+        "Route classes are DISJOINT, not ordered (DB-6); the 23 navigation gates and the literal route ratchet are green before the walk begins.",
+        "A targeted Meetings regression (97/97) is available to run immediately after any classification change made during the session."
+      ],
+      "whyOneSessionSuffices": "All nine route families, the keystone and the signed-out classification probe exercise the SAME two shared causes — session-state establishment at the TokenStore choke point (RC1) and route classification in router.dart. One browser walks refresh · cold load · exit · auth-return for each family sequentially, re-using one signed-in state. Splitting them re-establishes the same preconditions nine times and, worse, permits a per-surface fix that reconstructs destination locally — the exact anti-pattern CH-02 exists to prevent.",
+      "internalOrderingConstraintPreserved": "F065 is proven FIRST inside the session. A keystone FAIL aborts the remaining legs; the legs are not merged into the keystone and each still returns its own outcome.",
+      "notConsolidatedWith": "F064/F113 Meetings continuity — the V2 leg may be co-observed here but the V4 burden is NOT discharged (see VS-12 and U1)."
+    },
+    {
+      "session": "VS-02 — TWO-IDENTITY CALL LIFECYCLE, CADENCE & AUTHORITY SESSION",
+      "class": "TWO_ACCOUNT_TWO_BROWSER (with SINGLE_AUTHORIZED_BROWSER and FOUNDER_EXPERIENTIAL legs observed in the same window)",
+      "gate": "G1",
+      "participants": "Two distinct identities in two browsers (founder + Aura Reviewer). The founder's window must remain open and unminimized throughout.",
+      "obligationsDischarged": ["VD-012", "VD-013", "VD-014", "VD-015", "VD-016", "VD-017", "VD-018", "VD-020", "VD-022", "VD-025", "VD-030"],
+      "findingsTouched": ["F037", "F040", "F043", "F044", "F045", "F046", "F047", "F052", "F054", "F057", "F060"],
+      "prerequisites": [
+        "F058 R2 CORS applied (VS-04) — otherwise the avatar/tile VISUAL legs return NOT_DISCHARGED_BLOCKED_EXTERNAL rather than PASS or FAIL.",
+        "RC-A (509230a) and RC-B (dfc9027) present and not regressed.",
+        "The session is designed as at least THREE sequential calls in one page lifetime with NO reload between them."
+      ],
+      "whyOneSessionSuffices": "Every leg is a different observation of ONE live call between two identities, and the session's mandatory shape produces most of them for free. The accept-freeze root cause only manifests on the second and later call within one page lifetime, so the session MUST run repeated calls without reload — and that same shape simultaneously yields the ready-to-join clock, the terminal-clear, the durable ribbon after refresh, the ring-card presentation, the video-tile identity match, End-vs-Leave authority, role lookup, Go Live eligibility, mid-call refresh reattach and the persistent-ring founder observation. Convening eleven separate sessions would cost eleven set-ups of the same two-identity precondition AND would destroy the second-call condition that only one of them needs.",
+      "consolidationRatio": "11 obligations · 11 findings · 1 session.",
+      "environmentalRisk": "This session inherits VDC-8: the founder's browser 'went unreachable repeatedly'. It is the single most schedule-fragile session in the programme and should be scheduled as a protected uninterrupted window, not opportunistically.",
+      "notConsolidatedWith": "Any Live leg. See U2."
+    },
+    {
+      "session": "VS-03 — IDENTITY CONSUMER AUDIT + PRESENTATION SWEEP",
+      "class": "CODE_STATIC (audit) + SINGLE_AUTHORIZED_BROWSER (sweep)",
+      "gate": "G2",
+      "obligationsDischarged": ["VD-019", "VD-021", "VD-023", "VD-024"],
+      "findingsTouched": ["F050", "F051", "F052", "F053", "F055", "F056", "F116"],
+      "prerequisites": [
+        "F058 applied for any leg whose evidence is a rendered image.",
+        "Group identity DOCTRINE supplied by the founder (F055 ordering, F056 group avatar treatment) — no doctrine exists and engineering cannot supply it."
+      ],
+      "whyOneSessionSuffices": "The static audit's deliverable IS the enumerated consumer list, and the browser sweep's job is to exercise exactly that enumeration. Running them as separate activities derives the list twice, and the second derivation is where 'closed by fixing one consumer' (the failure PB-05 explicitly prohibits) enters. Consolidating them also produces the IDENTITY CONFORMANCE GATE artifact that later chapters must pass — which is the only mechanism by which a re-entrant consumer audit terminates.",
+      "conflictPreservation": "F051's preserved conflict is REPORTED as a conflict at closure, never resolved by analytical consensus."
+    },
+    {
+      "session": "VS-04 — FOUNDER EXTERNAL-ACTION WINDOW A (non-destructive)",
+      "class": "EXTERNAL_INFRASTRUCTURE + FOUNDER",
+      "gate": "initiated at W1 START; its consequences are read at G1 and G2",
+      "obligationsDischarged": ["VD-026", "VD-055"],
+      "findingsTouched": ["F058", "F139", "F140", "F141"],
+      "prerequisites": [
+        "The CORS JSON already handed to the founder (PutBucketCors returns AccessDenied with the backend token).",
+        "The three migrations already proven on a disposable Postgres 16 across success, refusal and idempotency — never against production. Replay-from-empty is NOT production-safe."
+      ],
+      "whyOneSessionSuffices": "Both are dashboard/deploy actions only the founder may perform, neither is destructive, and each unblocks a large downstream population (CORS unblocks the visual completion of F051/F052/F056 and WG010 and degrades Discover/Posts/Articles/Institutions equally; the deploy unblocks the entire five-cohort reconciliation and six findings). Consolidating them into ONE scheduled founder window converts two independent long-lead blockers into one and removes the pattern where a whole wave stalls on a five-minute action.",
+      "whatThisDoesNotDischarge": "The ACTIONS are discharged here; the PROOFS they unblock are discharged in VS-02, VS-03 and VS-05. An applied CORS policy is not a certified avatar.",
+      "notConsolidatedWith": "VS-18 (the R2 public-read ratchet). Both are Cloudflare actions; one is safe and one is destructive. Bundling them by tool similarity is exactly how DB-3 gets executed early."
+    },
+    {
+      "session": "VS-05 — POST-DEPLOYMENT FIVE-COHORT READ-ONLY RECONCILIATION",
+      "class": "PRODUCTION_READ_ONLY (with one EXTERNAL_INFRASTRUCTURE method caveat)",
+      "gate": "G2",
+      "obligationsDischarged": ["VD-054", "VD-056", "VD-057", "VD-058", "VD-060", "VD-063", "VD-079"],
+      "findingsTouched": ["F131", "F139", "F140", "F141", "F142", "F143"],
+      "prerequisites": [
+        "VS-04's migration deploy has occurred under founder observation. The index this session measures is SEEDED by those migrations; before they apply, the session measures nothing.",
+        "A machine that can execute ContentReferenceService — the workstation is windows-arm64 and the Prisma query engine ships x64 only, which is why the last run was a SQL MIRROR of the reconciler, not the service."
+      ],
+      "whyOneSessionSuffices": "Every one of these obligations is a cohort reading of the SAME reference index over the SAME production snapshot. Running them at different times produces snapshots that cannot be compared and re-opens the standing caveat that 'zero divergence is meaningful only for the universe actually measured'. One reconciliation, five cohorts reported SEPARATELY, is both cheaper and the only form in which the evidence is coherent.",
+      "consolidationRatio": "7 obligations · 6 findings · 1 reconciliation run.",
+      "knownNonDischarge": "VD-060 returns NOT_DISCHARGEABLE_NO_DATA — F131's ARTICLE reconciler row reads checked=0 because production has zero article covers, not because the fix was proven. No deployment discharges this.",
+      "safetyInvariant": "reconcile() REPAIRS NOTHING. The isRetentionEligible() asymmetry is preserved: uncertain/deletable → KEEP is allowed; protected/keep → DELETE is not. The reaper is NOT run."
+    },
+    {
+      "session": "VS-06 — ATTENTION RETIREMENT LIVE SWEEP + STALE-SESSION PROBE",
+      "class": "SINGLE_AUTHORIZED_BROWSER + PRODUCTION_READ_ONLY, terminating in a FOUNDER_EXPERIENTIAL declaration",
+      "gate": "G2 (terminal act)",
+      "obligationsDischarged": ["VD-067", "VD-068", "VD-072"],
+      "findingsTouched": ["F030", "F031", "F032", "F033", "F034", "F035"],
+      "prerequisites": [
+        "Founder checkpoint 7 taken BEFORE any of the eight DR1 surfaces are retired — a sequencing constraint INSIDE the chapter.",
+        "The five stale-ACTIVE RealtimeSession rows (since 2026-08-12, legacy THREAD surface cmsp7euhf00soqw0cjcrzh2d1, answeredAt set, endedAt NULL) are preserved intact as C4 EVIDENCE and not patched or deleted.",
+        "The MUST-SURVIVE consumer list is enumerated before retirement, not after."
+      ],
+      "whyOneSessionSuffices": "All six attention findings are symptoms of one producer layer, and the stale-session rows are the live feed producing them. A sweep that observes the badge, the banner, the unread persistence, the call-facts-as-content mislabel and the self-actor notifications in one signed-in pass — while a read-only probe watches the rows that feed them — is the only design that can distinguish a retired SURFACE from a retired PRODUCER. Six separate observations cannot.",
+      "terminalAct": "The founder's C4 certified/closed declaration after live-site observation and live-defect resolution. This is a FOUNDER DECLARATION, not an engineering claim, and it is the sole opener of the RC-C5 hard gate on CH-13. C4 local certification != C5 authorization.",
+      "openOwnershipRisk": "F035's ownership is unresolved (PB-08 vs the substantive argument that attention presentation cannot manufacture a media-connected count). If F035 belongs to CH-04, this session cannot fully discharge VD-067 — see U9."
+    },
+    {
+      "session": "VS-07 — CONTENT-TRUTH REFUSAL & FOUR-VANTAGE DISCLOSURE SESSION",
+      "class": "TWO_ACCOUNT_TWO_BROWSER (live half) + SINGLE_AUTHORIZED_BROWSER/LOCAL_AUTOMATED (door half)",
+      "gate": "G1 (door half) → G2 (live half)",
+      "participants": "Sender A · permitted receiver B · refused third party C · one anonymous vantage (signed-out profile).",
+      "obligationsDischarged": ["VD-047", "VD-051", "VD-053"],
+      "findingsTouched": ["F126", "F127", "F128", "F130", "F122"],
+      "prerequisites": [
+        "One deliberately violating file (wrong magic bytes for its declared type) and one oversize file — a rejection is demonstrated on a REAL violating file before the gate counts as enforcement.",
+        "media-frontend-mime-compatibility.spec.ts green after any vocabulary change, with backend and frontend evidence reported TOGETHER (PB-12)."
+      ],
+      "whyOneSessionSuffices": "Refusal evidence and disclosure evidence are the SAME journey observed from four vantage points. One legitimate upload plus one violating upload, observed simultaneously by sender, permitted receiver, refused party and anonymous visitor, discharges signature verification, size rejection, DTO validation, cross-party render parity, access denial and sender-vs-receiver truth. Testing them separately produces four different uploads and loses the parity comparison entirely, which is the only thing that proves the visibility decision rather than the UI.",
+      "explicitRefusal": "F126 was explicitly refused promotion to LIVE_CERTIFIED on unit evidence. That refusal stands: the write-side unit pin (VS-16) does not substitute for this session.",
+      "notConsolidatedWith": "F138 storage-boundary closure. F126 and F138 must not be merged — F126 closes application-level disclosure, F138 is the storage boundary that performs NO authorization at all."
+    },
+    {
+      "session": "VS-08 — RICH PRESENTATION & INTAKE AUTHORIZED-BROWSER SWEEP",
+      "class": "SINGLE_AUTHORIZED_BROWSER, with two FOUNDER_EXPERIENTIAL legs",
+      "gate": "G3",
+      "obligationsDischarged": ["VD-004", "VD-005", "VD-006", "VD-007", "VD-008", "VD-009", "VD-050", "VD-076", "VD-077"],
+      "findingsTouched": ["F011", "F012", "F013", "F014", "F015", "F016", "F017", "F019", "F121", "F122", "F123", "F124", "F125", "F136", "F132"],
+      "prerequisites": [
+        "CONSTRUCTION FIRST: VD-050, VD-076 and most of VD-077 name capabilities that do not exist. This session cannot be scheduled as validation until the seek bar, waveform, document preview, upload progress/cancel/retry, degradation chain, keyboard/focus and the honest media-kind model are BUILT.",
+        "The RC-C5 hard gate is opened by the founder's C4 declaration in VS-06.",
+        "Composer features exercised against REAL production screens, never a minimal harness, with the scope boundary disclosed.",
+        "The legacy attention banner no longer overlaps the composer — a composer cannot be product-behaviour-certified while an ungoverned global overlay covers it (MEDIUM-confidence inferred edge, recorded not assumed)."
+      ],
+      "whyOneSessionSuffices": "One conversation, one composer and one attachment set exercise every media kind end to end: pick → progress → cancel → retry → send → render → play/seek → preview → select/copy → save. The media-honesty model (F016) is the gate on F011/F014/F015, so the three cannot honestly be observed apart from it; and F123's false 'GALLERY' source label, F124's ellipsis sentinel and F125's missing viewer are all observed on the same message the attachment journey produces.",
+      "founderLegsKeptFounder": "F012 drag/drop and F013 clipboard-paste-including-image remain FOUNDER_EXPERIENTIAL. The register deliberately excluded them from the agent-run wave — 'automatable only unreliably; better proven by you in seconds'. They are legs of this session's window, not automation targets."
+    },
+    {
+      "session": "VS-09 — LIVE LIFECYCLE THREE-IDENTITY JOURNEY (the §H archetype, re-scoped)",
+      "class": "MULTI_PARTY_REALTIME",
+      "gate": "G4",
+      "participants": "Three identities minimum — host, second party, viewer — plus a fourth signed-out vantage co-convened as VS-11.",
+      "obligationsDischarged": ["VD-035", "VD-036", "VD-037", "VD-038", "VD-039", "VD-040", "VD-041", "VD-046"],
+      "findingsTouched": ["F074", "F075", "F076", "F077", "F078", "F079", "F080", "F081", "F082", "F083", "F084", "F085", "F086", "F087", "F088", "F089-F096"],
+      "prerequisites": [
+        "CH-09 construction complete: engagement (F089–F096) is UNBUILT and enters as construction, not validation.",
+        "The substrate certified at G1 — Live is a state escalation of a session and cannot be certified over an uncertified substrate.",
+        "Founder checkpoint D (Live moderation policy) taken; F095 may not pre-empt it.",
+        "A protected, uninterrupted window with all identities reachable simultaneously."
+      ],
+      "whyOneSessionSuffices": "The decisive proof — End Live returns to the private call, observers detach with terminal truth, access returns to INVITE_ONLY, the SAME session stays ACTIVE — is only observable if escalation, viewer admission, the privacy probe and the detach all happen on ONE RealtimeSession in ONE session. The corrected-model re-proofs (no re-ringing when a call goes public; no auto-die for 'no answer') are properties of that same escalation and cannot be observed against a different one. The §26 pins are pins on one trail.",
+      "structuralCorrectionToTheArchetype": "VD-046 as written concentrates 20 obligations behind ONE three-identity session that has NEVER been convened — Stage 1 correctly names it the archetype consolidation, and it is also the archetype FAILURE. Its early legs (call cadence, identity, End-vs-Leave, mid-call refresh) are convenable today; its Live legs depend on construction that is STRUCTURALLY PARTIAL. Splitting it into VS-02 (now) and VS-09 (after CH-09 construction) preserves 100% of its content while removing the single point of failure that has kept it unconvened. This split is ANALYTICAL_INFERENCE and is carried as sequencing uncertainty U2.",
+      "coSignature": "F088's privacy proof is OWNED here and CO-SIGNED by CH-10 for the anonymous case."
+    },
+    {
+      "session": "VS-10 — ESCALATING-PARTICIPANT SCALE SESSION (4 → N)",
+      "class": "MULTI_PARTY_REALTIME (with one authorship obligation)",
+      "gate": "G4",
+      "obligationsDischarged": ["VD-034", "VD-043", "VD-044"],
+      "findingsTouched": ["F073", "F108", "F109", "F110", "F111"],
+      "prerequisites": [
+        "Four or more simultaneous participants — F073 cannot be reproduced below four.",
+        "Instrumentation capable of MEASURING the ceiling rather than asserting it."
+      ],
+      "whyOneSessionSuffices": "The late/missing fourth video frame and the mesh ceiling are the same escalation curve observed at different N. One session that adds participants one at a time yields the fourth-frame reproduction, the measured ceiling, and the empirical input the SFU/audience-scale assessment needs. Measuring the ceiling in a separate session would require re-convening the same expensive multi-party precondition.",
+      "classHonesty": "VD-044 (F110/F111) is an AUTHORSHIP obligation — an engineering assessment document — not an observation. It is discharged as a written assessment informed by this session's measurement, and its class remains UNKNOWN in the register rather than being upgraded to fit the session.",
+      "prohibition": "F073 may not be closed by inference from a symptom. F109's mesh≠long-term ruling currently has NO enforcement — it exists in a doc and in memory only; enforcement is construction, not validation."
+    },
+    {
+      "session": "VS-11 — SIGNED-OUT ACQUISITION VANTAGE (co-convened with VS-09, certified separately)",
+      "class": "SINGLE_AUTHORIZED_BROWSER (a signed-out visitor is a single session)",
+      "gate": "G5 (certification) — convened during G4",
+      "obligationsDischarged": ["VD-042"],
+      "findingsTouched": ["F097", "F098", "F099", "F100", "F101", "F102", "F103", "F104", "F105", "F106", "F107"],
+      "prerequisites": [
+        "CONSTRUCTION FIRST — nothing in the public-preview stack is built.",
+        "A REAL live broadcast to preview. This is the entire reason the session is co-convened: the blocker is recorded as 'the existence of a real live broadcast to preview (coordination, satisfiable once inside a batch)'.",
+        "F065 proven at G1 — F103/F104 are owned by the shared continuity authority and the visitor is otherwise lost at the exact moment of conversion.",
+        "The founder's ruling on which routes are genuinely public, reconciling DOCTRINE-PUBLIC-FIRST with the fail-CLOSED classification."
+      ],
+      "whyOneSessionSuffices": "The eleven public-acquisition findings are one continuous visitor journey — arrive → see a real Live → bounded preview → budget survives refresh/tab-restore/cold-load → auth wall → return to the SAME Live with intent preserved → truthful ended state. Observed as eleven separate checks the journey's only interesting property (that nothing is lost across the conversion boundary) is unobservable.",
+      "consolidationInsight": "This is the clearest co-convening opportunity in the register: VS-11's hard blocker is satisfied for free by VS-09's window, and VS-11 supplies VS-09's anonymous co-signatory vantage for F088. Neither session can cheaply create the other's precondition alone.",
+      "certificationSeparation": "Co-convened is NOT co-certified. VS-11 returns its own outcomes and is certified at G5 against CH-10's refusal-evidence bar."
+    },
+    {
+      "session": "VS-12 — MEETINGS EQUIVALENT-VALIDATION & CONTINUITY SESSION",
+      "class": "MULTI_PARTY_REALTIME (with the recorded V2/V4 conflict preserved)",
+      "gate": "G4",
+      "obligationsDischarged": ["VD-031", "VD-045"],
+      "findingsTouched": ["F112", "F113", "F064 (cross-referenced, not discharged here)"],
+      "prerequisites": [
+        "Conversation's shared capabilities certified (G3) — the Meetings batch runs only after, and only with explicit Meetings regression evidence.",
+        "Targeted Meetings regression 97/97 green and founder sign-off obtained after EVERY preceding convergence slice (non-optional).",
+        "PB-01 respected: presentation convergence only, slice by slice, no Meetings lifecycle work and no wholesale rewrite."
+      ],
+      "whyOneSessionSuffices": "F112's equivalent-validation obligation and F113's Meetings refresh-continuity burden both require the same expensive precondition — a real multi-party Meeting with guest/booker entry intact. One session that convenes a Meeting, exercises the equivalent capability set and then refreshes mid-meeting discharges both. Convening a multi-party Meeting twice for two adjacent obligations is pure waste.",
+      "explicitNonMerge": "F064 and F113 remain TWO findings with TWO proof burdens. A V2 proof (co-observable in VS-01/VS-02) must NOT silently discharge the V4 obligation. The topology conflict itself (VDC-1) is preserved, not resolved — see U1.",
+      "evidenceWeakness": "F114 is held LIVE_CERTIFIED on file-level non-modification. That certifies nothing was touched, NOT that touching is safe. Any slice that touches Meetings replaces that evidence with a real regression proof."
+    },
+    {
+      "session": "VS-13 — REAL-DEVICE / NATIVE BOUNDARY PASS",
+      "class": "NATIVE_DEVICE + EXTERNAL_INFRASTRUCTURE",
+      "gate": "G6a",
+      "obligationsDischarged": ["VD-032", "VD-033", "VD-069"],
+      "findingsTouched": ["F071", "F072"],
+      "prerequisites": [
+        "A FOUNDER-TRIGGERED STORE RELEASE containing both shared-code fixes (509230a RC-A, dfc9027 RC-B), which post-date the released binaries. Until it ships, F071's defect cannot even be RE-OBSERVED.",
+        "Real devices — iOS, Android and a Windows MSIX install — provided or authorised by the founder.",
+        "The preference authority from CH-05 and the intake layer from CH-13 both present in the built binary."
+      ],
+      "whyOneSessionSuffices": "The expensive inputs are the released binaries and the devices, not the assertions. One device-matrix pass exercises native ring presentation (individual vs group), accept/reject, WNS/native notification delivery, desktop lifecycle, drag/drop, clipboard, file handling, keyboard, background/foreground, active realtime continuity and deep links. Running RC-C9's per-platform obligations as separate passes multiplies the only genuinely scarce resource in the programme.",
+      "longLeadRule": "The store release must be triggered at the START of the preceding wave. Scheduling it at this gate guarantees the gate slips by a full submission cycle.",
+      "reportingRule": "Until the release ships, F071 is reported as DISTRIBUTION-LAG DEBT — neither OPEN nor closed in an engineering sense."
+    },
+    {
+      "session": "VS-14 — PUBLICATION, DISCOVERY & AUTHORING JOURNEY SWEEP",
+      "class": "SINGLE_AUTHORIZED_BROWSER",
+      "gate": "G5",
+      "obligationsDischarged": ["VD-001", "VD-002", "VD-011"],
+      "findingsTouched": ["F001", "F002", "F025", "F026", "F027", "F070", "F121"],
+      "prerequisites": [
+        "CH-13's authoring surface certified at G3 — a publication commits FROM it.",
+        "Durable canonical media references available (CH-12) so that an inserted image is not a resolved EXPIRING signed URL written into durable markdown.",
+        "Draft resume proven at G1 (F070 durable draft identity in the URL)."
+      ],
+      "whyOneSessionSuffices": "People → Discover taxonomy → each Create path → article editor → image insert → title paste → draft abandon and resume → publish → revise is ONE authoring walk. F001 and F002 are both surfaces that shipped and were never exercised; exercising them as the entry to the authoring walk costs nothing extra.",
+      "provenanceCaution": "F003, F004 and F024 are WEAK-provenance. Conclusions about them carry no structural weight and are reported as such.",
+      "durabilityGap": "F121's real failure mode — published images 404 after signature expiry — is only observable by a certification that WAITS. This session cannot discharge it; see U12."
+    },
+    {
+      "session": "VS-15 — CONVERSATION FINAL-CERTIFICATION INTEGRATION JOURNEY",
+      "class": "MULTI_PARTY_REALTIME (spans V1, V2 and V4 by the register's own statement)",
+      "gate": "G3",
+      "obligationsDischarged": ["VD-003", "VD-010", "VD-071", "VD-073"],
+      "findingsTouched": ["F005", "F023", "F006", "F007", "F008", "F010", "F011", "F009", "F020", "F021", "F022", "F124"],
+      "prerequisites": [
+        "Evidence consumed from VS-02 (realtime substrate), VS-07 (attachment governance) and VS-08 (rich presentation). This session INTEGRATES; it does not re-earn them.",
+        "The Conversation Completion Register discharged ITEM BY ITEM with NAMED evidence against the CONVERSATION realtime surface — the prior LIVE_CERTIFIED evidence for F006/F007/F008/F010 was earned on the LEGACY thread-call surface.",
+        "F137's examination mechanism live: a known-malicious sample refused end to end, a false positive appealable, and the verdict proven to apply to objects uploaded BEFORE the scanner existed."
+      ],
+      "whyOneSessionSuffices": "The Completion Register is a statement about ONE object — canonical Conversation with its required contextual attachments. Its six rows (audio · video · screen share · media/attachments · intentional Live · reporting/moderation) are only meaningful as attachments OF one certified conversation; six independent proofs certify six capabilities and leave the register itself undischarged. This is also the correct place for the report/moderation journey because a report is raised ON a message in that conversation and adjudicated by the single authority.",
+      "terminalAct": "The journey certification. The Phase 5 legacy retirement AUTHORIZATION is a separate, subsequent founder act — the gate is explicit and sequential and this session sits at step four of five, never at step five."
+    },
+    {
+      "session": "VS-16 — AUTOMATED & STATIC EVIDENCE BUNDLE (per chapter closure)",
+      "class": "LOCAL_AUTOMATED + CODE_STATIC",
+      "gate": "G-CONT (evaluated at every gate)",
+      "obligationsDischarged": ["VD-048", "VD-049", "VD-059", "VD-064", "VD-065", "VD-066", "VD-074", "VD-078"],
+      "findingsTouched": ["F126 (write-side)", "F141", "F131", "F142", "F129", "F114", "F132", "F133", "F134", "F135", "F136", "F137"],
+      "prerequisites": [
+        "Every stage declares its validation class BEFORE work begins (the §12 §17 frozen gate).",
+        "Backend and frontend suites reported together (PB-12)."
+      ],
+      "whyOneSessionSuffices": "These are the obligations discharged by running the suites and reading the code, and they must be RE-RUN at every chapter closure rather than once. Bundling them as one standing evidence package attached to each closure is what prevents 'green tests' from being mistaken for certification, because the bundle is explicitly labelled as Implementation-layer evidence that reaches no higher.",
+      "hardRule": "Architectural confidence is never converted into certification. LOCALLY VERIFIED is the LOWEST of the three §12 classes and per-surface LIVE_CERTIFIED is only reachable after all three.",
+      "perSliceObligation": "VD-074 is per-slice, not per-chapter: targeted Meetings regression (97/97) after EVERY convergence slice, with founder sign-off after each. It appears in this bundle but its cadence is finer than the bundle's."
+    },
+    {
+      "session": "VS-17 — FOUNDER DISPOSITION & GOVERNANCE ACCEPTANCE WINDOWS",
+      "class": "FOUNDER_EXPERIENTIAL",
+      "gate": "G6b (terminal), with earlier windows feeding earlier gates",
+      "obligationsDischarged": ["VD-061", "VD-062", "VD-070", "VD-075", "VD-080", "VD-081", "VD-082"],
+      "prerequisites": [
+        "For VD-062 specifically: D-6 steps 1–6 complete and equivalence/coverage DEMONSTRATED against production reality. 'The reaper remains outside this authorization' and 'Return before reaper authority or C5' are standing hard stops.",
+        "For VD-070: all nine C11 entry conditions true. DO NOT START until they hold. DO NOT REDEFINE."
+      ],
+      "whyOneSessionSuffices": "These are decisions, not observations, and the register's own rule is 'do not invent founder policy — bring them forward rather than deciding them'. Scheduling them as recurring DECISION WINDOWS attached to gate boundaries (rather than raising each ad hoc when an agent is blocked) is what stops a chapter stalling mid-execution on a checkpoint that could have been taken at the previous gate. The thirteen standing checkpoints each gate a specific chapter's Product-Behavior certification and are therefore naturally batched by gate.",
+      "batchingProposal": "Each gate carries a founder decision window for exactly the checkpoints its NEXT wave will need. Checkpoints are not consolidated across gates — that would front-load decisions the founder cannot yet make on evidence.",
+      "notDecidedHere": "Nothing in this artifact adjudicates any of these. VD-061 (disposition of 71 unreferenced Media rows that ARE NOT TO BE CALLED ORPHANED on that absence, plus 23 proven-live and 6 strongly-evidenced-superseded), VD-062, GAP-1 placement, PD-1, PD-2 and SupportScreen remain founder-owned."
+    },
+    {
+      "session": "VS-18 — R2 PUBLIC-READ RATCHET WINDOW (deliberately NOT consolidated)",
+      "class": "EXTERNAL_INFRASTRUCTURE + FOUNDER + DESTRUCTIVE",
+      "gate": "earliest permissible position is AFTER G3; it is not a wave-terminating gate",
+      "obligationsDischarged": ["VD-052"],
+      "findingsTouched": ["F138", "F126 (storage-level half)"],
+      "prerequisites": [
+        "Canonical Aura delivery exists for EVERY visibility class and NO surface still consumes raw storage URLs. Steps 1–3 of the staged migration are safe; step 4 is the ruling becoming true.",
+        "The standing stop-and-report is honoured: 'C5's final ratchet (removing R2 public read) stops and reports before execution.'"
+      ],
+      "whyThisIsNOTConsolidated": "This is the one place where consolidation is the WRONG answer and is recorded as such deliberately. It shares a tool and an operator with VS-04's CORS action, which makes bundling attractive and dangerous: removing bucket public read while any surface still consumes raw storage URLs breaks delivery product-wide, and leaving it means possession of a key or a historical URL IS access. A single-obligation window with its own stop-and-report is the correct design.",
+      "empiricalBasis": "uploads.auraplatform.org performs NO authorization — an unconfirmed, unattached, never-READY 70-byte probe object was served 200 with no credentials, and a missing key returned 404 rather than 401/403. F138 is a CONFIRMED security architecture defect, and F126 does not close it."
+    }
+  ],
+
+  "consolidationSummary": {
+    "obligations": 82,
+    "sessions": 18,
+    "highestLeverageConsolidations": [
+      "VS-02 — 11 obligations · 11 findings · ONE two-identity window, because the mandatory three-sequential-calls shape produces ten of them as by-products of the one it strictly requires.",
+      "VS-05 — 7 obligations · 6 findings · ONE reconciliation run, because they are cohort readings of one index over one snapshot and are incoherent if taken at different times.",
+      "VS-08 — 9 obligations · 15 findings · ONE authoring/attachment walk (construction-gated).",
+      "VS-09 — 8 obligations · 24 findings · ONE Live journey, because the decisive proof is a property of a single RealtimeSession.",
+      "VS-09 + VS-11 CO-CONVENING — VS-11's hard blocker (a real live broadcast) is free inside VS-09's window, and VS-11 supplies VS-09's anonymous vantage for F088. Neither can cheaply manufacture the other's precondition."
+    ],
+    "archetypeCorrection": "Stage 1's archetype — 20 obligations behind one never-convened three-identity session (VD-046) — is preserved as a consolidation PRINCIPLE and rejected as a SCHEDULE. A 20-obligation session whose environmental dependency is recorded as 'went unreachable repeatedly' is a single point of failure, and its non-convening is the empirical proof. The same content is delivered as VS-02 (convenable now) plus VS-09 (after CH-09 construction), with VS-10 taking the participant-count legs.",
+    "deliberateNonConsolidations": [
+      "VS-18 kept as a single-obligation destructive window (DB-3).",
+      "F064 (V2) and F113 (V4) kept as two proof burdens across VS-01/VS-02 and VS-12 (E-SC-12).",
+      "F126 (application disclosure) and F138 (storage boundary) never merged.",
+      "F139's two dimensions never collapsed — structural CLOSED does not discharge production remediation or live certification.",
+      "VS-04 (safe Cloudflare/Railway actions) and VS-18 (destructive Cloudflare action) never bundled by tool similarity."
+    ]
+  },
+
+  "certificationLadderByChapter": [
+    {
+      "chapter": "CH-01",
+      "layersEarnableInChapter": ["Architecture", "Implementation"],
+      "productBehavior": "Partial — state/temporal presentation observed on a REAL surface, never asserted from a lint count.",
+      "crossSystem": "Earned continuously: backend and frontend suites reported together (PB-12).",
+      "realBoundary": "CH-16 (G6a)",
+      "founderProductAcceptance": "CH-17 (G6b)",
+      "gate": "G-CONT",
+      "sessions": ["VS-16"],
+      "partialUntil": "Its ratchets are enforcement only once each is demonstrated to FAIL on a real violation.",
+      "hazard": "26 spinner sites and toLocal()/elapsed-time conversions reach into certified Meetings files; CO-RC-C0-008 forbids modifying certified Meetings for foundation debt reduction."
+    },
+    {
+      "chapter": "CH-02",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Partly here — the same destination contract proven on web AND on a native binary; the native half lands in CH-16.",
+      "realBoundary": "CH-16 (G6a)",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G1",
+      "sessions": ["VS-01", "VS-02 (F060 leg)"],
+      "firstGateInsideChapter": "F065 live refresh proof — until it passes, no downstream continuity finding may be claimed closed.",
+      "partialUntil": "F113's MULTI_PARTY Meetings burden is discharged at G4; a V2 proof does not close it."
+    },
+    {
+      "chapter": "CH-03",
+      "layersEarnableInChapter": ["Architecture", "Implementation"],
+      "productBehavior": "BLOCKED on an external action — the identity band's visual completion cannot be certified while F058 is unapplied.",
+      "crossSystem": "TWO_ACCOUNT_TWO_BROWSER proofs for F052, F054, F057 at G1/G2.",
+      "realBoundary": "CH-16 (native ring identity)",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G2",
+      "sessions": ["VS-03", "VS-02 (realtime identity legs)"],
+      "publishesAGate": "The IDENTITY CONFORMANCE GATE — every later chapter building a new identity consumer passes it in its own definition of done. This is the termination condition of a re-entrant audit.",
+      "partialUntil": "Founder group-identity doctrine exists (F055 ordering, F056 group avatar treatment)."
+    },
+    {
+      "chapter": "CH-04",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Earned at G1 across both repositories.",
+      "realBoundary": "EXPLICITLY PARTIAL until CH-16 runs (CO-RC-C9-008).",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G1 (certification slice) with scale legs at G4",
+      "sessions": ["VS-02", "VS-10", "VS-12", "VS-16 (per-slice Meetings regression)"],
+      "mayNotClaim": "'Certification-only' status until the F006/F007/F008/F010 contradiction is discharged — LIVE_CERTIFIED on WEAK single-line provenance versus the frozen Completion Register naming them unresolved (E-SC-5).",
+      "perSliceRequirement": "Targeted Meetings regression (97/97) after EVERY slice with founder sign-off after each — non-optional."
+    },
+    {
+      "chapter": "CH-05",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Attention producers span both repositories; reported together.",
+      "realBoundary": "EXPLICITLY PARTIAL — native delivery lands in CH-16 (CO-RC-C9-007).",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G2 — and this chapter HOLDS the gate on CH-13",
+      "sessions": ["VS-06"],
+      "closureIsADeclaration": "C4 live closure is a FOUNDER DECLARATION, not an engineering claim. C4 local certification != C5 authorization. Nothing in CH-13's RC-C5 territory proceeds on this chapter's behalf until the declaration is made.",
+      "internalSequencing": "Founder checkpoint 7 BEFORE the eight DR1 surfaces are retired."
+    },
+    {
+      "chapter": "CH-06",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Certified against the frozen Conversation and Invitation canons resolved from their POINTERS in aura-backend/docs, never from a frontend copy (PB-12).",
+      "realBoundary": "CH-16",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G3",
+      "sessions": ["VS-15"],
+      "registerDischarge": "The Conversation Completion Register is discharged item by item with named evidence. Conversation is NOT final-certified until it resolves, and C4 progression does not erase it.",
+      "retirementIsSeparate": "Phase 5 legacy retirement follows the only fully-executed precedent shape in the corpus (additive deploy → healthy observed deploy → 8/8 equivalence → legacy retired) and is authorised AFTER journey certification."
+    },
+    {
+      "chapter": "CH-07",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Against the frozen canons via pointers (PB-12).",
+      "realBoundary": "CH-16",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G4",
+      "sessions": ["VS-15 (substrate evidence consumed)", "a TWO_ACCOUNT institutional-attribution leg convened in the G4 window"],
+      "closureRequirement": "The Correspondence convergence verdict is RECORDED as an outcome. Stage 0 found the checkpoint has NO RECORDED OUTCOME; closing without one repeats the failure exactly.",
+      "gateNotReview": "No route-derived sender survives closure — that is a gate, not a review."
+    },
+    {
+      "chapter": "CH-08",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Against the FROZEN D5 backend authority.",
+      "realBoundary": "PARTIAL until CH-16 (CO-RC-C9-003 places Real-Boundary substantially at C9).",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G4",
+      "sessions": ["a MULTI_PARTY room-participation leg in the G4 window", "a PRODUCTION_READ_ONLY membership-scale probe"],
+      "namedTest": "The large-institution invariant is a NAMED, EXECUTED test: 10,000 members produce ZERO recipients absent invitation.",
+      "entryCondition": "Chapter authorisation — RC-C8 has never been entered and roadmap approval != chapter authorisation."
+    },
+    {
+      "chapter": "CH-09",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Declared cross-repository construction chapter; backend construction must not be hidden inside it (PB-12).",
+      "realBoundary": "media-scale Real-Boundary evaluated jointly with CH-16 at G6a.",
+      "founderProductAcceptance": "CH-17, plus founder acceptance BEFORE release inclusion.",
+      "gate": "G4",
+      "sessions": ["VS-09", "VS-10", "VS-11 (co-signatory)"],
+      "evaluationForm": "The construction exit gate is evaluated as a SINGLE end-to-end journey, not as a sum of sub-system claims.",
+      "stateDiscipline": "RC-C10 is ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. Only CO-RC-C10-013 and -014 are COMPLETED_OR_SUPERSEDED. No percentage-complete may be manufactured and no exit gate may be weakened."
+    },
+    {
+      "chapter": "CH-10",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "The zero-authority grant is an AUTHORITY spanning both repositories, not UI gating.",
+      "realBoundary": "CH-16",
+      "founderProductAcceptance": "CH-17; PD-2 disposition is an explicit pre-C11 condition.",
+      "gate": "G5 (certified) / G4 (convened)",
+      "sessions": ["VS-11"],
+      "proofForm": "REFUSAL evidence, not absence: refused participation, refused Conversation access, refused party membership.",
+      "coSignature": "Co-signs F088's privacy proof for the anonymous case; CH-09 owns it."
+    },
+    {
+      "chapter": "CH-11",
+      "layersEarnableInChapter": ["Architecture", "Implementation"],
+      "productBehavior": "A refused upload journey observed live (truthful, visible, recoverable refusal).",
+      "crossSystem": "media-frontend-mime-compatibility.spec.ts green after any vocabulary change; backend and frontend evidence reported TOGETHER.",
+      "realBoundary": "CH-16 (platform file handling)",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G1",
+      "sessions": ["VS-07 (door half)", "VS-16"],
+      "enforcementProof": "A rejection demonstrated on a REAL violating file before the gate counts as enforcement.",
+      "conflictPreservation": "F122's preserved conflict is reported as a conflict at closure; the dispute between the stage table and the implementation checkpoint is not resolved by agreement.",
+      "gateScopeQuestion": "Whether the RC-C5 hard gate covers the §12 content stages is NOT_RECORDED and founder-only; it determines whether this chapter may run at G1 at all (see U4)."
+    },
+    {
+      "chapter": "CH-12",
+      "layersEarnableInChapter": ["Architecture", "Implementation"],
+      "productBehavior": "F126's four-vantage live journey; a known-malicious sample refused end to end.",
+      "crossSystem": "Backend + frontend delivery consumers + external R2 reported together.",
+      "realBoundary": "media-scale lands with CH-16/CH-09.",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G2 (custody/reconciliation) → G3 (examination mechanism) → VS-18 (ratchet, separately positioned)",
+      "sessions": ["VS-04", "VS-05", "VS-07", "VS-18"],
+      "twoDimensionRule": "F139 is certified on BOTH dimensions SEPARATELY. Structural CLOSED does not discharge production remediation or live certification, and the founder lock forbids returning it to OPEN or promoting it without new authority or evidence.",
+      "irreversibilityDiscipline": "Reaper NOT run; no investigated object deleted; URL equality never used as identity authority; migrations proven on disposable Postgres 16 (success · refusal · idempotency) and never against production."
+    },
+    {
+      "chapter": "CH-13",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Link intelligence and upload contracts span both repositories.",
+      "realBoundary": "NATIVE_DEVICE platform intake executed with CH-16.",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G3",
+      "sessions": ["VS-08"],
+      "entryGate": "The RC-C5 hard gate — opened ONLY by the founder's C4 live-closure declaration in VS-06. Not weakened, not scheduled around.",
+      "crossChapterGate": "F011/F014/F015 may not be certified while F016 is OPEN in CH-11 (A-CON-1 records the gate as already appearing crossed).",
+      "definitionOfDone": "Accessibility (WG015) is INSIDE this chapter's definition of done, not deferred."
+    },
+    {
+      "chapter": "CH-14",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "Publication bodies reference media across both repositories.",
+      "realBoundary": "CH-16",
+      "founderProductAcceptance": "CH-17; GAP-2 must be granted a charter and placed in the C11 entry conditions.",
+      "gate": "G5",
+      "sessions": ["VS-14"],
+      "reReportingRule": "A revision keeping its address and stating the revised fact truthfully is re-reported at closure because it already vanished from reporting once (F119).",
+      "provenanceCaution": "F003, F004, F024 are WEAK — conclusions about them carry no structural weight."
+    },
+    {
+      "chapter": "CH-15",
+      "layersEarnableInChapter": ["Architecture", "Implementation", "Product Behavior"],
+      "crossSystem": "One authority proven: no surface resolves a report through a second path.",
+      "realBoundary": "CH-16",
+      "founderProductAcceptance": "CH-17",
+      "gate": "policy freeze at G2 → journey certification at G3",
+      "sessions": ["VS-15"],
+      "f137Split": "CH-15 owns the POLICY and CONSEQUENCE dependency of F137 (frozen at G2); CH-12 owns stored-object EXAMINATION (mechanism proven at G3). Neither may be assigned to a system merely because 'media' or 'moderation' appears in its name.",
+      "appealProof": "An appeal path proven on a DELIBERATELY INDUCED false positive — a verdict without an appeal route is an irreversible product harm even when the bytes survive."
+    },
+    {
+      "chapter": "CH-16",
+      "layersEarnableInChapter": ["Implementation", "Product Behavior", "Cross-System"],
+      "realBoundary": "THIS IS WHERE REAL-BOUNDARY SUBSTANTIALLY LANDS, recorded per consuming chapter.",
+      "founderProductAcceptance": "CH-17",
+      "gate": "G6a",
+      "sessions": ["VS-13"],
+      "holdsReleaseConditions": "C11 entry conditions 4 and 5.",
+      "environmentalHonesty": "The workstation is windows-arm64 with no Prisma engine and no AppModule smoke boot — constraints are STATED, not worked around silently."
+    },
+    {
+      "chapter": "CH-17",
+      "layersEarnableInChapter": ["Governance"],
+      "realBoundary": "Never claimed locally by any chapter.",
+      "founderProductAcceptance": "Consolidated HERE.",
+      "gate": "G-CONT (continuous) + G6b (terminal)",
+      "sessions": ["VS-16", "VS-17"],
+      "nonShrinkingRule": "An item leaves the register only at LIVE_CERTIFIED, SUPERSEDED_BY_FOUNDER_RULING or EXPLICITLY_RETIRED. Implementation, green tests and deployment never remove it.",
+      "itemLevelReporting": "The three preserved conflicts and F139's two dimensions are reported at ITEM level at every closure; a chapter-level roll-up that conceals them is the exact failure F119 records."
+    }
+  ],
+
+  "pbcrConditions78Timing": {
+    "status": "OWED — NOT COMPLETE. This artifact determines WHEN they should be discharged and marks nothing complete.",
+    "whatTheyAre": {
+      "condition7": "Targeted regression/certification for the protected subsystem is mandatory.",
+      "condition8": "Shared-system health must be reported before the repair is considered complete."
+    },
+    "historicalCrossing": "PB-02 / RC-C6 — the RC-A repair (509230a, controller disposing shared socket/media singletons on tokenStore-watch rebuild) and the RC-B repair (dfc9027, root-overlay _joining latch). The founder classified this on 2026-08-18 as DEFECT REPAIR, not RC-C6 chapter execution, and recorded conditions 7 and 8 as owed for the historical crossing.",
+    "proposedDischargePoint": {
+      "rule": "AT THE EXIT OF THE FIRST GATE THAT RE-ENTERS PB-02 — on the candidate wave map that is G1, because VS-02 already convenes the exact two-identity realtime window whose regression evidence conditions 7 and 8 require. The rule is 'the first PB-02 re-entry', not 'wave 1' — if S5-A/S5-B place CH-04 in a different wave, the discharge point moves with it.",
+      "condition7DischargeForm": "A targeted realtime regression executed against the RC-A/RC-B repaired code — the repeated-call cadence within one page lifetime, the shared socket/media singleton disposal path, and the root-overlay latch — PLUS the targeted Meetings regression (97/97), reported RETROSPECTIVELY and LABELLED as evidence for the HISTORICAL crossing, kept separate from any new crossing's evidence.",
+      "condition8DischargeForm": "A shared-system health report covering BOTH repositories together (PB-12): realtime transport, media service, event parser, session lifecycle and the Meetings guest/booker entry path, stating what was observed rather than what was not touched."
+    },
+    "whyNotEarlier": "Neither condition can be discharged without convening a real two-identity realtime window. Attempting them before VS-02 would produce a paper report of the kind F114 already demonstrates the weakness of — evidence that nothing was touched rather than that touching is safe.",
+    "whyNotLater": "Every additional gate that passes without discharging them establishes a precedent that a protected-boundary crossing can be classified and then left un-evidenced. The PBCR doctrine's own tenth condition — 'must never be used as a convenience bypass' — is weakened by every wave that inherits an undischarged condition 7/8. CH-04 additionally proposes further work in the same layer, and a chapter cannot honestly start while an owed condition from the previous crossing in that same layer is outstanding.",
+    "hardConstraints": [
+      "Discharging conditions 7 and 8 does NOT retroactively authorise the historical crossing — it completes the evidence the founder's own classification requires.",
+      "PBCR must never become a scheduling convenience. Identifying a needed crossing is permitted at Stage 5; authorising one is not, and this artifact authorises none.",
+      "Conditions 1–6, 9 and 10 are not addressed here and are not implied to be satisfied."
+    ],
+    "contradictionNoted": "index-chapters.json lists as an OUTSTANDING CH-04 founder action: 'CLASSIFY the completed crossing of RC-C6's PRESERVE list / PB-02 (AD-CON-5): four consecutive artifacts declined'. The founder's PROTECTED_BOUNDARY_CORRECTIVE_REPAIR ruling of 2026-08-18 APPEARS TO HAVE ALREADY MADE THAT CLASSIFICATION (DEFECT REPAIR, not chapter execution), leaving only conditions 7–8 owed. Reported, not repaired."
+  },
+
+  "obligationsAccountedFor": 82,
+
+  "obligationAssignmentIndex": {
+    "rule": "Every one of VD-001..VD-082 has exactly ONE primary session and exactly ONE primary gate. Secondary co-observation is permitted and noted in the session records; it never transfers the discharge.",
+    "byPrimarySession": {
+      "VS-01": ["VD-027", "VD-028", "VD-029"],
+      "VS-02": ["VD-012", "VD-013", "VD-014", "VD-015", "VD-016", "VD-017", "VD-018", "VD-020", "VD-022", "VD-025", "VD-030"],
+      "VS-03": ["VD-019", "VD-021", "VD-023", "VD-024"],
+      "VS-04": ["VD-026", "VD-055"],
+      "VS-05": ["VD-054", "VD-056", "VD-057", "VD-058", "VD-060", "VD-063", "VD-079"],
+      "VS-06": ["VD-067", "VD-068", "VD-072"],
+      "VS-07": ["VD-047", "VD-051", "VD-053"],
+      "VS-08": ["VD-004", "VD-005", "VD-006", "VD-007", "VD-008", "VD-009", "VD-050", "VD-076", "VD-077"],
+      "VS-09": ["VD-035", "VD-036", "VD-037", "VD-038", "VD-039", "VD-040", "VD-041", "VD-046"],
+      "VS-10": ["VD-034", "VD-043", "VD-044"],
+      "VS-11": ["VD-042"],
+      "VS-12": ["VD-031", "VD-045"],
+      "VS-13": ["VD-032", "VD-033", "VD-069"],
+      "VS-14": ["VD-001", "VD-002", "VD-011"],
+      "VS-15": ["VD-003", "VD-010", "VD-071", "VD-073"],
+      "VS-16": ["VD-048", "VD-049", "VD-059", "VD-064", "VD-065", "VD-066", "VD-074", "VD-078"],
+      "VS-17": ["VD-061", "VD-062", "VD-070", "VD-075", "VD-080", "VD-081", "VD-082"],
+      "VS-18": ["VD-052"]
+    },
+    "classPreservationCheck": {
+      "CODE_STATIC": 4,
+      "LOCAL_AUTOMATED": 5,
+      "SINGLE_AUTHORIZED_BROWSER": 27,
+      "TWO_ACCOUNT_TWO_BROWSER": 9,
+      "MULTI_PARTY_REALTIME": 10,
+      "NATIVE_DEVICE": 2,
+      "PRODUCTION_READ_ONLY": 7,
+      "EXTERNAL_INFRASTRUCTURE": 5,
+      "FOUNDER_EXPERIENTIAL": 10,
+      "UNKNOWN": 3,
+      "total": 82,
+      "note": "Stage-0 class counts are carried unchanged. No obligation was reclassified to fit a session; where a session spans classes, the escalation class is stated in the session record and the obligation keeps its own class."
+    },
+    "additionalCertificationVocabularies": {
+      "migrationProof": "Disposable Postgres 16 across success, refusal and idempotency (LOCAL_AUTOMATED, VS-16) THEN founder-observed application (EXTERNAL_INFRASTRUCTURE, VS-04). Replay-from-empty is not production-safe and the two are never conflated.",
+      "productionCertification": "PRODUCTION_READ_ONLY five-cohort reconciliation (VS-05), reported per cohort, with the 'measured universe' caveat carried.",
+      "releaseCertification": "Item 17 at G6b only (VS-17), nine entry conditions, founder-only, never redefined.",
+      "sharedSystemRegression": "Targeted Meetings regression 97/97 per slice (VS-16 cadence) plus the shared-system health report under PBCR condition 8.",
+      "twoUnreconciledVocabularies": "The RC certification-layer table and the §12 §17 class table coexist WITHOUT reconciliation (B-C8, E-UV-8). 'Is this certified?' is therefore ambiguous by construction across axes. This artifact keeps both visible and reconciles neither; reconciliation would be an adjudication no agent is authorised to make."
+    }
+  },
+
+  "sequencingUncertainties": [
+    {
+      "id": "U1",
+      "dependency": "Meetings continuity (F064 / F113) — whether its proof requires a MULTI_PARTY_REALTIME session (placing it at G4) or a two-browser session (placing it at G1).",
+      "classificationBasis": "CONFLICTING_CURRENT_STATE (recorded)",
+      "evidence": "VDC-1: the same message declares F113 a duplicate of F064 while listing F064 under V2 and F113 under V4. Stage 0 classified the merged row VD-031 as UNKNOWN and did not resolve it. CH-02's certification requirements preserve TWO burdens.",
+      "confidence": "LOW that either single reading is correct; HIGH that the conflict is real.",
+      "consequenceIfInferenceIsWrong": "If F113 is genuinely V2, VS-12's multi-party precondition is over-specified and Meetings continuity could close three gates earlier, unblocking CH-07's institutional work sooner. If F064 is genuinely V4, then discharging it in VS-01/VS-02 would be a lower-cost class silently closing a higher-cost obligation — the precise failure E-SC-12 identifies.",
+      "couldChangeExecutionOrder": true
+    },
+    {
+      "id": "U2",
+      "dependency": "The decomposition of VD-046 (the §H coordinated batch) into VS-02 and VS-09.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidence": "VD-046's own leg list ('open conversation → call → second joins → grow group → audio → video → screen share → identity check → refresh mid-call → Go Live → viewer enters → viewer privacy probe → End Live → private call continues → leave → end → convergence check') plus the founder-ruled RC-C10 state (STRUCTURALLY PARTIAL) and the record that no viewer has got in since the view-guard fix. The split is this document's judgement, not a recorded instruction.",
+      "confidence": "MEDIUM-HIGH that the Live legs cannot run today; MEDIUM that the founder intends the batch to be divisible at all.",
+      "consequenceIfInferenceIsWrong": "If the founder intends §H to remain ONE atomic session, then G1 cannot terminate without Live, every wave boundary shifts backwards, and the programme reverts to the single-point-of-failure schedule whose empirical result is that the session has never been convened. Conversely, if the split is correct but is not adopted, eleven convenable obligations stay blocked behind unbuilt Live capability.",
+      "couldChangeExecutionOrder": true
+    },
+    {
+      "id": "U3",
+      "dependency": "F058 (R2 CORS) as a hard prerequisite of the identity VISUAL legs in VS-02 and VS-03.",
+      "classificationBasis": "ANALYTICAL_INFERENCE from a recorded state",
+      "evidence": "'F056: INLC (composite architecture; cannot reach LIVE_CERTIFIED while F058 blocks image delivery)' and '§C — F058 (R2 CORS) → blocks visual completion of F051, F052, F056, and WG010'. The recorded statement is about image DELIVERY on web generally; whether every identity tile path is affected is inferred.",
+      "confidence": "HIGH for F051/F052/F056; MEDIUM for the realtime tile paths specifically.",
+      "consequenceIfInferenceIsWrong": "If some tile paths do not depend on CORS, those legs could discharge at G1 without waiting for the founder window, and VS-04's position becomes less schedule-critical. If the dependency is broader than recorded, a larger share of G2 returns NOT_DISCHARGED_BLOCKED_EXTERNAL and CH-03 cannot reach Product Behavior at all.",
+      "couldChangeExecutionOrder": true
+    },
+    {
+      "id": "U4",
+      "dependency": "Whether the RC-C5 hard gate's scope reaches the §12 content stages — which decides whether CH-11 and CH-12 may run at G1/G2 without waiting for the founder's C4 declaration.",
+      "classificationBasis": "EXPLICIT_FOUNDER_RULING (partial) over a NOT_RECORDED question",
+      "evidence": "The founder's BIFURCATED ruling states the gate governs its own chapter/deployment transition and the authorities explicitly in scope when it was frozen (2026-08-16), and does NOT retroactively govern systems frozen later — S12 Rich Content froze 2026-08-17, one day later. But CH-11's own founderActions still record 'RC-C5 hard-gate SCOPE ... Stage 0 records this as NOT_RECORDED; it is founder-only and it determines whether this chapter may run now.'",
+      "confidence": "HIGH that the bifurcation permits the §12 content stages to proceed on their own gates; MEDIUM that CH-11's specific composer-adjacent obligations (CO-RC-C5-019/020) are outside the original scope.",
+      "consequenceIfInferenceIsWrong": "If the gate does cover the §12 stages, VS-07, VS-05 and the whole backend track move behind VS-06's founder declaration, the security-first chain is deferred by two waves, and F137/F138 — a zero-coverage security gap and a confirmed security architecture defect — wait on an attention chapter. That is the outcome the bifurcation ruling exists to prevent, and it must not be produced by scheduling either.",
+      "couldChangeExecutionOrder": true
+    },
+    {
+      "id": "U5",
+      "dependency": "The currency of every 'not yet certified' claim underpinning these gates.",
+      "classificationBasis": "ANALYTICAL_INFERENCE from an explicit absence",
+      "evidence": "VDC-7: no evidence establishes that the §H batch, the F126 two-account journey or any RIC-stage live certification has been attempted since 2026-08-18T01:25Z. Absence of a later record is not evidence that they were not performed.",
+      "confidence": "MEDIUM — the corpus is complete to that timestamp and nothing later exists in it.",
+      "consequenceIfInferenceIsWrong": "If certifications occurred and were not recorded, gates are over-specified and work is repeated; more seriously, an unrecorded certification is itself a governance defect under the non-shrinking-register rule and would need to be reported, not absorbed.",
+      "couldChangeExecutionOrder": false
+    },
+    {
+      "id": "U6",
+      "dependency": "Whether VD-041, VD-042 and VD-050 can terminate their gates at all, given they classify UNBUILT capabilities as validation obligations.",
+      "classificationBasis": "ANALYTICAL_INFERENCE, corroborated by two independent analyses",
+      "evidence": "E-UV-3 (21 of 143 findings affected) and Agent C's 'construction debt wearing a validation label'. The chapters themselves already reclassify VD-041/VD-042/VD-050 as CONSTRUCTION obligations while keeping the VD row visible.",
+      "confidence": "HIGH.",
+      "consequenceIfInferenceIsWrong": "If they are treated as validation, G3, G4 and G5 each carry a gate item that cannot be attempted, and the gates will be reported as 'blocked' when they are in fact 'unbuilt' — which corrupts the burn-down accounting CH-01 and CH-17 depend on.",
+      "couldChangeExecutionOrder": false
+    },
+    {
+      "id": "U7",
+      "dependency": "VD-060 (F131) is not dischargeable by any session: production holds zero article covers.",
+      "classificationBasis": "DETERMINISTIC_DERIVATION from a production read",
+      "evidence": "'F131 also could not be exercised: production has zero articles with covers'; the reconciler row reads checked=0 because there is no data, not because the fix was proven.",
+      "confidence": "HIGH.",
+      "consequenceIfInferenceIsWrong": "If a gate requires VD-060 to PASS, that gate can never terminate. A founder decision is required about whether seeded or deliberately authored production content is acceptable evidence. This artifact does not decide it.",
+      "couldChangeExecutionOrder": true
+    },
+    {
+      "id": "U8",
+      "dependency": "The discharge point of PBCR conditions 7 and 8 moves with CH-04's position in the final sequence.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidence": "The conditions require targeted regression of the PB-02 layer and a shared-system health report; both need the two-identity realtime window that CH-04's certification slice convenes.",
+      "confidence": "HIGH for the rule; the wave number is contingent on S5-A/S5-B.",
+      "consequenceIfInferenceIsWrong": "If discharged too early, the evidence is paper-only and repeats the F114 weakness. If discharged too late, every intervening gate inherits an un-evidenced protected-boundary crossing and the PBCR doctrine's tenth condition is materially weakened.",
+      "couldChangeExecutionOrder": false
+    },
+    {
+      "id": "U9",
+      "dependency": "F035's ownership (CH-05 attention presentation vs CH-04 realtime domain truth) determines whether VS-06 can fully discharge VD-067 — and therefore whether the C4 closure declaration that opens the RC-C5 gate is reachable.",
+      "classificationBasis": "ANALYTICAL_INFERENCE over an unresolved founder question",
+      "evidence": "CH-05 founderActions: 'F035 ownership ruling (PB-08 vs Agent A's substantive argument that attention presentation cannot manufacture a media-connected count)'. E-SC-8 records that F035 has operationally left the C4 set while being labelled a proposal.",
+      "confidence": "MEDIUM.",
+      "consequenceIfInferenceIsWrong": "If F035 belongs to CH-04, VD-067 spans two chapters and two gates, and CH-05's terminal declaration would be made over an incompletely discharged obligation — which is precisely the kind of silent reduction that keeps the identifier count balanced at 143 while the content shrinks.",
+      "couldChangeExecutionOrder": true
+    },
+    {
+      "id": "U10",
+      "dependency": "Environmental reachability of the founder's browser for every TWO_ACCOUNT_TWO_BROWSER and MULTI_PARTY_REALTIME session.",
+      "classificationBasis": "DETERMINISTIC_DERIVATION from a recorded failure",
+      "evidence": "VDC-8 and the §H prerequisite: the window 'went unreachable repeatedly today'. §L decision 7 asks whether to PARK coordinated realtime testing until an uninterrupted session is available — that question is recorded as OPEN and is not answered here.",
+      "confidence": "HIGH that the dependency is real and unmitigated.",
+      "consequenceIfInferenceIsWrong": "19 of 82 obligations (the V2 and V4 populations) inherit an unpriced scheduling risk. If the founder answers §L decision 7 by parking coordinated testing, G1 and G4 cannot terminate on their candidate waves and the whole sequence must be re-derived around asynchronous alternatives.",
+      "couldChangeExecutionOrder": true
+    },
+    {
+      "id": "U11",
+      "dependency": "The validation INSTRUMENT itself — the Aura Reviewer account, production credential handling and the headless Playwright harness — has no protection doctrine anywhere (PBG-3), while 27 of 82 obligations depend on it.",
+      "classificationBasis": "DETERMINISTIC_DERIVATION from a documented absence",
+      "evidence": "Agent B EI-10 / Agent E E-UV-6: no document in either repository states a protection doctrine for any of the three.",
+      "confidence": "HIGH.",
+      "consequenceIfInferenceIsWrong": "The single largest validation class rests on an ungoverned instrument. If the account or harness is lost, changed or compromised mid-programme, 27 obligations lose their evidence path and the gates that consumed them are retrospectively unsupported.",
+      "couldChangeExecutionOrder": false
+    },
+    {
+      "id": "U12",
+      "dependency": "Time-dependent product certification — no obligation in the register covers durability over time.",
+      "classificationBasis": "ANALYTICAL_INFERENCE from an identified gap",
+      "evidence": "Agent C: 'F121's failure mode (images 404 after signature expiry) would only be observed by a certification that WAITS.' No VD row schedules a delayed re-observation, and no obligation covers reading quality, editor quality or first-run journey quality.",
+      "confidence": "MEDIUM-HIGH.",
+      "consequenceIfInferenceIsWrong": "A gate can pass on a published article whose images will 404 days later. The product standard is explicitly not 'all known defects closed'; a certification architecture with no time dimension cannot detect this class at all. Recorded as a gap of this analysis, not filled by inventing an obligation.",
+      "couldChangeExecutionOrder": false
+    }
+  ],
+
+  "contradictionsReported": [
+    {
+      "id": "S5C-CON-1",
+      "statement": "index-chapters.json CH-04 lists as an outstanding founder action 'CLASSIFY the completed crossing of RC-C6's PRESERVE list / PB-02 (AD-CON-5)', but stage2-amendment-rulings.json records the founder's PROTECTED_BOUNDARY_CORRECTIVE_REPAIR ruling of the same date classifying that exact crossing as DEFECT REPAIR (not RC-C6 chapter execution) and recording only conditions 7 and 8 as owed.",
+      "disposition": "REPORTED, NOT REPAIRED. If the ruling does discharge the classification, CH-04's founderActions list carries a stale blocker that would otherwise hold the chapter's honest start."
+    },
+    {
+      "id": "S5C-CON-2",
+      "statement": "index-chapters.json CH-17 certificationRequirements states 'All 143 findings and all 299 chartered obligations are reconciled INDEPENDENTLY at closure', while the founder-ratified Stage-3 rebuild baseline is 308 chartered obligations (299 preserved + 9 newly recovered) and 451 canonical units.",
+      "disposition": "REPORTED, NOT REPAIRED. The release gate's own reconciliation requirement understates the canonical population by nine obligations — the exact nine the founder ratified to stop chartered work disappearing."
+    },
+    {
+      "id": "S5C-CON-3",
+      "statement": "CH-12 dependsOn CH-15 for moderation POLICY while CH-15 blocks CH-12, and both are placed in the same wave candidate (W2). A policy freeze and its consumer sharing a wave is coherent only if the gate orders them internally.",
+      "disposition": "RESOLVED AS AN INTRA-WAVE ORDERING CONSTRAINT in G2 (policy freeze precedes examination implementation), not reported as a defect. Recorded so the constraint is not lost if the wave is re-cut."
+    },
+    {
+      "id": "S5C-CON-4",
+      "statement": "CH-03 (W2) dependsOn CH-12 (W2) for the F058 CORS action, but this architecture recommends initiating that action at W1 START as a long-lead founder item — placing an action from a later chapter earlier than its chapter.",
+      "disposition": "DELIBERATE AND DECLARED. The ACTION is scheduled early; the chapter is not. Recorded explicitly so it is not mistaken for CH-12 entering W1."
+    },
+    {
+      "id": "S5C-CON-5",
+      "statement": "Zero of the 82 validation obligations was attached to any executable chapter before this artifact (E-SC-7 / E-UV-1: the only VD mapping in existence used an S1..S12 namespace nothing downstream consumes).",
+      "disposition": "GAP CLOSED HERE, and recorded as a closure rather than a contradiction. Every VD row now carries a chapter, a session and a gate; the S1..S12 mapping is preserved as corroborating evidence and is not overwritten."
+    }
+  ],
+
+  "founderDecisionsRequiredBeforeThisArchitectureCanExecute": [
+    "Whether the §H coordinated realtime batch (VD-046) may be decomposed into VS-02 and VS-09, or must remain one atomic session (U2).",
+    "§L decision 7 — whether coordinated multi-party realtime testing is PARKED until one uninterrupted session is available (U10).",
+    "The RC-C5 hard-gate SCOPE question over the §12 content stages, recorded as NOT_RECORDED and founder-only (U4).",
+    "F035 ownership — CH-05 attention presentation vs CH-04 domain truth (U9).",
+    "Whether F131 may be certified against seeded/authored production content, since production holds zero article covers (U7).",
+    "Group identity doctrine (F055 ordering, F056 group avatar treatment) — no doctrine exists and engineering cannot supply it.",
+    "F069 exception policy — whether guest-reachable realtime/meeting routes become a named exception class.",
+    "Which routes are genuinely public, reconciling DOCTRINE-PUBLIC-FIRST with the fail-CLOSED classification.",
+    "Content policy, consequence ladder and the appeal/false-positive policy for automated media verdicts (F137's policy half).",
+    "Checkpoint 7 (before any DR1 retirement), Checkpoint D (Live moderation), Checkpoint E (audience-scale topology/provider), Checkpoint 12 (Correspondence convergence verdict), Checkpoint 10 (participation & invite), Meetings sign-off per slice.",
+    "Disposition of the unindexed Media population, and any reaper authority change (D-6 step 7 only).",
+    "The three external actions: R2 CORS, the migration deploy, and the store release — each a long-lead item that must be scheduled at the START of the wave that needs it.",
+    "The R2 public-read ratchet (VS-18), under its standing stop-and-report."
+  ],
+
+  "stageDiscipline": {
+    "notPerformed": [
+      "No product implementation, no migration, no deployment, no production mutation, no infrastructure change, no R2 change, no reaper run.",
+      "No validation session was convened, attempted or simulated.",
+      "No finding or obligation state was promoted, demoted, merged, deduplicated, renumbered, retired or deleted.",
+      "No validation obligation was reclassified out of its Stage-0 class to fit a session.",
+      "No preserved conflict (F043, F051, F122), no F139 dimension and no UNKNOWN was resolved.",
+      "No protected boundary was crossed and none was authorised; PBCR conditions 7-8 were positioned, never marked complete.",
+      "The 451 canonical units were not expanded into a backlog; the implementation unit remains the chapter, the accounting unit remains 143 findings + 308 obligations, and the validation unit remains the 82 VD rows."
+    ],
+    "rawSourceEscalations": [],
+    "rawSourceEscalationNote": "No targeted repository inspection was required. Every conclusion is derived from the ten named normalised artifacts. The ~703 MB corpus was not rescanned."
+  }
+}

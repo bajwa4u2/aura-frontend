@@ -1,0 +1,41 @@
+{
+  "artifact": "STAGE_5_DETERMINISTIC_VALIDATION",
+  "date": "2026-08-18",
+  "baseline": {
+    "findings": 143,
+    "obligations": 308,
+    "units": 451,
+    "chapters": 17
+  },
+  "waves": 9,
+  "keystones": 9,
+  "checksPassed": [
+    "1-3,5-6: 143 findings + 308 obligations = 451 units intact, none dropped or doubly owned",
+    "4. 17/17 executable chapters represented",
+    "12. All 17 chapters dispositioned with 8 SEPARATE readiness dimensions (never collapsed)",
+    "7. All 9 founder-ratified recovered COs present",
+    "7. All 9 sequenced with earliest-safe-execution points",
+    "8. RC-C0..RC-C11 12/12 preserved through charteredBy provenance",
+    "9. WG001-WG017 issued; WG018 RESERVED/UNISSUED",
+    "10-11. Founder-ratified states unchanged; F043/F051/F122 conflicts not adjudicated",
+    "13. All 52 dependencies point at real canonical targets",
+    "14. All 6 carried founder-attention items timed with earliest affected wave",
+    "15. Protected-boundary crossings surfaced (15) — identified, NOT authorised",
+    "16. All 9 waves carry explicit entry and exit conditions",
+    "F137 given an explicit execution position (not buried)",
+    "17. No implementation represented as authorised by Stage 5",
+    "18. Stage-4 reconciliation artifact and Stage-0 evidence historically unchanged"
+  ],
+  "warnings": [],
+  "failures": [],
+  "verdict": "PASS",
+  "stageStatus": {
+    "stage0": "COMPLETE_AND_FOUNDER_RATIFIED",
+    "stage1": "COMPLETE",
+    "stage2": "COMPLETE_WITH_AMENDMENT",
+    "stage3": "COMPLETE_FROZEN_FOUNDER_RATIFIED_REBUILD",
+    "stage4": "COMPLETE_DETERMINISTIC_PASS",
+    "stage5": "COMPLETE",
+    "productImplementation": "NOT_AUTHORIZED"
+  }
+}

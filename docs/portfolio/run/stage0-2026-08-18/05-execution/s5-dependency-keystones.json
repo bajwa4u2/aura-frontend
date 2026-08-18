@@ -1,0 +1,1304 @@
+{
+  "type": "ANALYTICAL_PROPOSAL",
+  "artifact": "S5-A DEPENDENCY GRAPH & KEYSTONE ARCHITECTURE",
+  "stage": "STAGE 5 - EXECUTION ARCHITECTURE & SEQUENCING",
+  "date": "2026-08-18",
+  "authorityDisclaimer": "ANALYTICAL / PLANNING / GOVERNANCE ONLY. This artifact authorises NO product implementation, no migration, no deployment, no protected-boundary crossing, no chapter entry and no state promotion. Chapter authorisation and chapter closure remain founder-only. Where this artifact proposes a bounded prerequisite it is a PROPOSAL for founder ratification, not a ruling.",
+  "canonicalBaselineConsumed": {
+    "findings": "143 (F001-F143)",
+    "charteredObligations": 308,
+    "totalCanonicalUnits": 451,
+    "executableChapters": 17,
+    "rcChapters": 12,
+    "wg": "WG001-WG017 issued, WG018 RESERVED_UNISSUED",
+    "arithmeticCheck": "Chapter-level obligation counts in index-chapters.json sum to 308 and finding counts sum to 143. Both independently verified by this analysis; neither population inferred from the other."
+  },
+  "methodDiscipline": {
+    "edgeDerivation": "Every edge below is derived from a recorded statement in a consumed normalised artifact. No edge is asserted because two chapters share a subject, a name or a number. Chapter numbering carries NO ordering weight in this analysis.",
+    "provenanceRule": "classificationBasisOfEvidence uses only the canonical vocabulary (ANALYTICAL_INFERENCE / DETERMINISTIC_DERIVATION / EXPLICIT_FOUNDER_RULING). evidenceGrade is a SEPARATE field recording corroboration strength and never upgrades the basis. An inferred state is never reported as a recorded state, a deterministic derivation, a founder ruling or a live certification.",
+    "boundedPrerequisiteRule": "Where the real prerequisite is a bounded authority rather than a finished chapter, the edge records boundedPrerequisite. A whole chapter is required only where the evidence requires a whole chapter.",
+    "economy": "Consumed only the named normalised artifacts. NO rescan of the ~703 MB corpus. NO repository inspection performed; rawSourceEscalations is empty."
+  },
+
+  "dependencies": [
+    {
+      "id": "D-01",
+      "from": "RC-C0 / RC-C1 closed authorities (Product Language, Product State Presentation, Temporal Presentation, Acting Context / Capability Projection)",
+      "to": "ALL 17 chapters",
+      "class": "AUTHORITY",
+      "boundedPrerequisite": "The four authorities themselves - ALREADY CLOSED 2026-08-15. CH-01's remaining work (adoption, ratchets, measured debt burn-down) is NOT a prerequisite for anything.",
+      "evidence": [
+        "index-chapters CH-01 sequencePosition: 'CONTINUOUS - runs alongside every wave. It gates nothing and is gated by nothing'",
+        "agent-b dependencyGraph L0: RC-C0/RC-C1 COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED",
+        "index-chapters CH-01 obligations: 17 COMPLETED_OR_SUPERSEDED, 16 PARTIALLY_COMPLETED, 3 OUTSTANDING_CONSTRUCTION"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "If CH-01's residual adoption debt is in fact a prerequisite, every chapter's definition of done silently inherits an unbudgeted burn-down and the ratchets fail inside other chapters' closures rather than before them. Cost is schedule, not demolition."
+    },
+    {
+      "id": "D-02",
+      "from": "CH-02 bounded subset S1 - single-choke-point session establishment (F065 / RC1, TokenStore.setSession) proven live",
+      "to": "CH-10 conversion half (F103/F104 auth-return)",
+      "class": "HARD_TECHNICAL",
+      "boundedPrerequisite": "S1 only. CH-02's profile-edit (F061/F062) and Meetings (F064/F113) continuity are NOT prerequisites of CH-10.",
+      "evidence": [
+        "agent-b prerequisiteEdges: F065 -> F059,F061,F062,F063,F064,F103,F104 (recorded keystone)",
+        "validation-debt VD-042 blockingWhat: 'F103/F104 must be owned by the shared continuity authority (F059-F070)'",
+        "rc-map RC-C10 remaining: 'Nothing built. F103/F104 must be owned by the shared continuity authority'",
+        "index-chapters CH-02 blocks: 'CH-10 (F065 gates F103/F104 - the only acquisition path in the register)'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG (three independent normalised artifacts)",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "If F065 does not in fact gate the auth-return, CH-10's conversion half could start earlier - a schedule gain. If it DOES gate and CH-10 starts first, CH-10 builds a local return-destination substitute inside the acquisition funnel: a second continuity authority in the exact place the register calls its only acquisition path, later demolished."
+    },
+    {
+      "id": "D-03",
+      "from": "CH-02 bounded subset S2 - DISJOINT, fail-closed route classification with the 23 navigation gates and the 103-file/294-site route ratchet green",
+      "to": "CH-07 institutional surfaces (F066 institution route destination survival), CH-08 institution room routes",
+      "class": "HARD_TECHNICAL",
+      "evidence": [
+        "index-chapters CH-02 destructiveBoundaries DB-6: classes must be DISJOINT, not ordered; 24 routes left unclassified by fail-open",
+        "index-chapters CH-07 dependsOn: 'CH-02 (institution route classification and destination survival - F066 lives there)'",
+        "protected-boundaries PB-09 route-integrity gate + literal ratchet"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Institutional surfaces built against an ordered or fail-open classification reproduce DB-6: authorization bypass and lockout live in the same file, and the recorded near-miss (meeting guests bounced into a login wall) recurs on a wider surface."
+    },
+    {
+      "id": "D-04",
+      "from": "CH-02 bounded subset S4 - draft/composition identity and ownership contract (F063/F070, WG006 per-conversation draft persistence)",
+      "to": "CH-13 intake construction",
+      "class": "DATA_MODEL",
+      "evidence": [
+        "index-chapters CH-02 blocks: 'CH-13 (draft/composition continuity, WG006 per-conversation draft persistence: founder ruled coordinate with F063/F070, do not create another store)'",
+        "index-chapters CH-13 dependsOn: 'CH-02 (draft continuity and durable identity of in-progress work)'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE (the founder instruction is quoted; the ordering consequence is this analysis's reading)",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "CH-13 creates a second draft store - the precise outcome the quoted founder instruction forbids - and DR3's eleven-pipeline retirement then has to preserve drafts across two stores instead of one."
+    },
+    {
+      "id": "D-05",
+      "from": "CH-02 continuity contract (continuity survives the Live event)",
+      "to": "CH-09 RC-C10 CONSTRUCTION EXIT GATE",
+      "class": "CERTIFICATION",
+      "evidence": [
+        "stage2-amendment-rulings RC_C10.exitGatesRemainFrozen.constructionExit: 'Live operates end-to-end as a governed MODE/STATE of an owning Thread or Space, continuity survives the Live event, canonical reconstructed authorities are consumed, and NO temporary substitute authorities remain.'"
+      ],
+      "classificationBasisOfEvidence": "EXPLICIT_FOUNDER_RULING",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "None available - this is a frozen founder gate, not an inference. Treating it as satisfiable without CH-02 would close CH-09 against an exit gate that is textually unmet."
+    },
+    {
+      "id": "D-06",
+      "from": "CH-02 destination reconstruction",
+      "to": "CH-04 mid-call rejoin",
+      "class": "HARD_TECHNICAL",
+      "evidence": [
+        "index-chapters CH-04 dependsOn: 'CH-02 (a rejoin needs a destination)'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK (single stated edge; DIRECTLY OPPOSED by the founder stop-order, see CON-3)",
+      "confidence": "LOW",
+      "consequenceIfWrong": "If CH-04 does not need CH-02 first (as the founder stop-order implies), holding CH-04 behind CH-02 delays the highest-fan-in substrate and the coordinated realtime batch for no evidenced reason. If it DOES need it and CH-04 runs first, rejoin lands on a local destination guess that CH-02 later replaces - rework confined to CH-04's rejoin path, not a duplicated authority."
+    },
+    {
+      "id": "D-07",
+      "from": "CH-02 draft resume before commit",
+      "to": "CH-14 publication commit",
+      "class": "DATA_MODEL",
+      "evidence": [
+        "index-chapters CH-14 dependsOn: 'CH-02 (draft resume before commit)'",
+        "index-chapters CH-02 blocks: 'CH-14 (article draft resume)'",
+        "agent-c CD-8: 'F027 draft lost on refresh'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM",
+      "consequenceIfWrong": "A publication flow that commits from an unrecoverable draft; the failure is user-visible data loss at the moment of highest intent, but it is repairable without demolition."
+    },
+    {
+      "id": "D-08",
+      "from": "CH-01 loading / restoring / expired state vocabulary (already frozen)",
+      "to": "CH-02",
+      "class": "AUTHORITY",
+      "evidence": [
+        "index-chapters CH-02 dependsOn: 'CH-01 (loading/restoring/expired state vocabulary already frozen)'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG (the vocabulary is recorded as already frozen, so the edge is satisfied at source)",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Negligible - the prerequisite is already met."
+    },
+    {
+      "id": "D-09",
+      "from": "CH-03 bounded subset - enumerated canonical-identity consumer audit plus the published IDENTITY CONFORMANCE GATE",
+      "to": "CH-04 participant tiles and rosters",
+      "class": "AUTHORITY",
+      "boundedPrerequisite": "The consumer contract and the gate. NOT the visual completion of F051/F052/F056, which is externally blocked (see D-13).",
+      "evidence": [
+        "index-chapters CH-03 blocks: 'CH-04 (participant tiles)'",
+        "index-chapters CH-03 certificationRequirements: 'IDENTITY CONFORMANCE GATE: this chapter publishes a gate that every later chapter building a new identity consumer must pass in its own definition of done'",
+        "agent-b CHAIN-5 hazard: 'F057 proves identity drift is AUTHORITY-affecting (host detection / Leave-vs-End, role lookup, Go Live eligibility), not cosmetic'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "New realtime consumers re-derive identity locally; F057's failure mode (End-vs-Leave, role lookup, Go Live eligibility) recurs on tiles built after the audit, and F116's exit condition - a systematic consumer audit - is invalidated by consumers created after it ran."
+    },
+    {
+      "id": "D-10",
+      "from": "CH-03 identity consumption contract",
+      "to": "CH-06 message attribution and avatars",
+      "class": "AUTHORITY",
+      "evidence": ["index-chapters CH-03 blocks: 'CH-06 (message attribution and avatars)'", "index-chapters CH-06 dependsOn: 'CH-03 (attribution and avatars)'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "Attribution drift inside the canonical Conversation - a PB-04 adjacent risk, because sender attribution is a party-truth-adjacent fact."
+    },
+    {
+      "id": "D-11",
+      "from": "CH-03 role lookup consumption",
+      "to": "CH-08 Institution Room role/entitlement resolution",
+      "class": "AUTHORITY",
+      "evidence": ["index-chapters CH-08 dependsOn: 'CH-03 (role lookup and institution identity - F057 failure mode)'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "A ring policy resolved from a drifted role at 10,000-member scale - the recorded irreversible fan-out hazard."
+    },
+    {
+      "id": "D-12",
+      "from": "CH-03 identity consumption contract (host detection, Go Live eligibility)",
+      "to": "CH-09 Live origination authority",
+      "class": "AUTHORITY",
+      "evidence": ["index-chapters CH-09 dependsOn: 'CH-03 (host detection and Go Live eligibility)'", "index-chapters CH-03 blocks: 'CH-09 (host detection and Go Live eligibility)'", "protected-boundaries PB-03 single origination door"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG (corroborated by the F057 precedent and PB-03)",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Go Live eligibility decided from a non-canonical identity - an authorization decision, not a presentation one; F086 replaced exactly such a heuristic and no viewer has got in since."
+    },
+    {
+      "id": "D-13",
+      "from": "FOUNDER ACTION - Cloudflare R2 / uploads CORS policy (F058), executed under CH-12's founder-action list",
+      "to": "CH-03 VISUAL completion of F051, F052, F056 (and WG010)",
+      "class": "FOUNDER_DECISION",
+      "correctionToStatedEdge": "index-chapters records CH-03 dependsOn CH-12. The evidence does NOT support a chapter-completion edge: VD-026 records the blocker as a founder dashboard action after PutBucketCors returned AccessDenied. The true edge is EXTERNAL / FOUNDER, not CH-12 construction. Recording it as a chapter edge would serialise all identity work behind the entire backend content chain.",
+      "evidence": [
+        "validation-debt VD-026: 'PutBucketCors returned AccessDenied with the backend token; the JSON was handed to the founder for a dashboard action' - state BLOCKED, class EXTERNAL_INFRASTRUCTURE",
+        "agent-b FA-3: 'Apply the Cloudflare R2 CORS JSON' unblocks F058 -> F051, F052, F056, WG010",
+        "index-chapters CH-03 founderActions: 'Cloudflare R2 CORS action (executed under CH-12; the identity band is the visible casualty)'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "If CH-12 construction genuinely is required first, CH-03's visual band slips with the backend track. If the correction is right and the stated edge is followed anyway, identity work is serialised behind the most destructive chapter in the portfolio for no technical reason."
+    },
+    {
+      "id": "D-14",
+      "from": "CH-04 bounded subset - one certified realtime session substrate (existence, participation, termination as one truth for every party)",
+      "to": "CH-09 Live state escalation",
+      "class": "HARD_TECHNICAL",
+      "evidence": [
+        "index-chapters CH-04 blocks: 'CH-09 (Live is a state escalation of a session - it cannot be certified over an uncertified substrate)'",
+        "index-chapters CH-09 whyOneBoundary: 'The three sub-systems are one chapter because they share one object: liveState on the owning RealtimeSession'",
+        "rc-map RC-C10 constructionEntry: 'All Live-consumed authorities stable'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Live certified over an uncertified substrate: every Live proof inherits the substrate's uncertainty, and F075's precedent shows what that costs - a model change invalidated the earlier 'proven live' evidence for F083/F084 outright."
+    },
+    {
+      "id": "D-15",
+      "from": "CH-04 shared realtime presentation family (owning no semantic meaning)",
+      "to": "CH-08 Institution Room presentation",
+      "class": "PRODUCT_CONVERGENCE",
+      "evidence": [
+        "index-chapters CH-08 dependsOn: 'CH-04 (shared presentation family, contextual realtime, participant selection)'",
+        "agent-c CD-15 / agent-d AD-D-03: 3,890 duplicated presentation lines consuming 0 of 5 shared realtime widgets"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "The Institution Room reimplements participant grid, spotlight and remote tiles - a fourth copy of the presentation layer whose existing three copies are already a chartered retirement obligation."
+    },
+    {
+      "id": "D-16",
+      "from": "CH-04 realtime attachments certified (audio F006, video F008, screen share F010)",
+      "to": "CH-06 Conversation FINAL certification",
+      "class": "CERTIFICATION",
+      "evidence": [
+        "agent-b CHAIN-6; validation-debt VD-073 CONVERSATION COMPLETION REGISTER - frozen obligation, unresolved",
+        "index-chapters CH-06 dependsOn: 'CH-04 (audio/video/screen-share attachments certified)'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "CONFLICTED - the four capability rows are held LIVE_CERTIFIED on WEAK single-line provenance and simultaneously named UNRESOLVED by the frozen Completion Register (agent-e E-SC-5, weakProvenanceDependencies CRITICAL)",
+      "confidence": "MEDIUM on the edge; LOW on the STATE of its endpoint",
+      "consequenceIfWrong": "This is the single largest apparent-completeness block in the portfolio. If the WEAK LIVE_CERTIFIED rows are wrong, CH-04 becomes a CONSTRUCTION chapter rather than a certification chapter, CH-06's final certification moves out by that construction, and every sequencing estimate that treats calling as done is wrong. Recorded as SU-1."
+    },
+    {
+      "id": "D-17",
+      "from": "CH-04 MEASURED mesh ceiling (F073, F108-F111)",
+      "to": "CH-09 audience-scale topology decision (founder checkpoint E)",
+      "class": "FOUNDER_DECISION",
+      "evidence": [
+        "index-chapters CH-04 certificationRequirements: 'Mesh ceiling MEASURED and ENFORCED, not asserted; F073 may not be closed by inference from a symptom'",
+        "index-chapters CH-09 founderActions: 'Checkpoint E: audience-scale topology and provider - measured in CH-04; provider independence preserved'",
+        "protected-boundaries PB-03 open checkpoint E"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "The audience-scale decision is taken without measurement, i.e. the topology is chosen by inference from a symptom - which the chapter's own certification requirement forbids - and provider independence is compromised by a default."
+    },
+    {
+      "id": "D-18",
+      "from": "PBCR conditions 7 and 8 discharged for the HISTORICAL PB-02 crossing (RC-A 509230a shared-singleton disposal; RC-B dfc9027 root-overlay latch): targeted regression for the protected subsystem, and a shared-system health report",
+      "to": "CH-04 entry (any further work in the protected realtime layer)",
+      "class": "PROTECTED_BOUNDARY",
+      "evidence": [
+        "stage2-amendment-rulings PROTECTED_BOUNDARY_CORRECTIVE_REPAIR.historicalApplication.outstanding: 'Condition 7 (targeted regression) and condition 8 (shared-system health report) are recorded as owed for the historical crossing.'",
+        "stage3RebuildRatification.openFounderAttention: 'PBCR conditions 7-8 (targeted regression; shared-system health)'",
+        "index-chapters CH-04 destructiveBoundaries: 'RC-A (509230a) and RC-B (dfc9027) must not regress; both made calls unusable in production'"
+      ],
+      "classificationBasisOfEvidence": "EXPLICIT_FOUNDER_RULING",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "whenDischarged": "PROPOSED: as CH-04's ENTRY condition, before any new work in the protected layer, and NOT as part of a later closure roll-up. Rationale: both repairs already made calls unusable in production once; CH-04's own destructive boundary names their regression as the hazard; and the health report is the only record that would show whether the protected layer is currently sound. These conditions are recorded here as OWED and are NOT marked complete by this analysis.",
+      "consequenceIfWrong": "If discharged later, CH-04's slices accumulate on top of an unverified protected layer, and the eventual regression cannot distinguish a new defect from the historical crossing. PBCR must never become a scheduling convenience: this edge exists to place the owed conditions, not to license a new crossing."
+    },
+    {
+      "id": "D-19",
+      "from": "FOUNDER DECISION - classification of the completed crossing of RC-C6's PRESERVE list / PB-02 (AD-CON-5), declined by four consecutive artifacts",
+      "to": "CH-04 entry",
+      "class": "FOUNDER_DECISION",
+      "evidence": [
+        "index-chapters CH-04 founderActions: 'CLASSIFY the completed crossing... four consecutive artifacts declined; this chapter proposes more work in the same layer and cannot start honestly while the question ages'",
+        "agent-e E-BV-5 / E-SC-13: 'an unowned question aging in plain sight' (HIGH)"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "CH-04 begins with an unclassified protected-boundary crossing in its own subject matter; any later governance reconstruction of what was authorised becomes impossible to settle on evidence."
+    },
+    {
+      "id": "D-20",
+      "from": "CH-05 bounded subset - Notification Preference Authority with the frozen distinction ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION",
+      "to": "CH-16 native notification delivery",
+      "class": "AUTHORITY",
+      "evidence": [
+        "index-chapters CH-05 blocks: 'CH-16 (native notification presentation consumes the preference authority)'",
+        "index-chapters CH-16 dependsOn: 'CH-05 (the preference authority native delivery must honour)'",
+        "agent-d AD-D-04: Notification Preference Authority - PRIMARY OWNER C4"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Native delivery encodes its own preference semantics; disabling a channel then erases the underlying obligation - the exact outcome the frozen distinction exists to prevent - and the correction has to be made on a shipped binary."
+    },
+    {
+      "id": "D-21",
+      "from": "CH-05 canonical attention hub (replacing the eight DR1 surfaces)",
+      "to": "CH-07 Thread/Space/institutional surfaces",
+      "class": "PRODUCT_CONVERGENCE",
+      "evidence": ["index-chapters CH-07 dependsOn: 'CH-05 (attention hub replaces the retired hubs these surfaces would otherwise inherit)'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "New Thread/Space surfaces inherit hubs already authorised for retirement, so DR1's inventory grows during its own retirement - the recorded VD-068 pattern (the retirement inventory GREW)."
+    },
+    {
+      "id": "D-22",
+      "from": "CH-05 attention projection",
+      "to": "CH-08 room-activity attention (ENTITLEMENT != INTERRUPTION)",
+      "class": "AUTHORITY",
+      "evidence": ["index-chapters CH-08 dependsOn: 'CH-05 (attention projection for room activity)'", "index-chapters CH-08 certificationRequirements: 10,000 members produce zero recipients absent invitation"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "A room builds its own notification path; a wrong ring policy then notifies an entire institution irreversibly."
+    },
+    {
+      "id": "D-23",
+      "from": "CH-05 attention hub as the canonical destination for Live attention",
+      "to": "CH-09",
+      "class": "PROTECTED_BOUNDARY",
+      "evidence": [
+        "index-chapters CH-09 dependsOn: 'CH-05 (Live attention consumes the hub, not a temporary banner)'",
+        "index-chapters CH-09 destructiveBoundaries: 'GOVERNANCE VIOLATION: building a temporary Live authority on surfaces already authorized for demolition - the governing invariant explicitly forbids it and Stage 0 records it as under pressure'",
+        "stage2-amendment-rulings RC_C10 constructionExit: 'NO temporary substitute authorities remain'"
+      ],
+      "classificationBasisOfEvidence": "EXPLICIT_FOUNDER_RULING",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Live attention is delivered through a surface already authorised for demolition; RC-C10's construction exit gate is then structurally unmeetable and the DR1 retirement acquires a new consumer it must keep alive."
+    },
+    {
+      "id": "D-24",
+      "from": "CH-05 - FOUNDER-DECLARED C4 LIVE CLOSURE (implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, founder declares C4 certified/closed)",
+      "to": "CH-13 RC-C5 TERRITORY (and the RC-C5-chartered obligations wherever they landed: CH-13 CO-RC-C5-001..031, CH-14 CO-RC-C5-003/006/013/032/033, CH-11 CO-RC-C5-019/020)",
+      "class": "DEPLOYMENT",
+      "secondaryClass": "FOUNDER_DECISION",
+      "evidence": [
+        "rc-map RC-C4 hardGateIssued (DECISIONS.md:382-385): 'C4 LOCAL CERTIFICATION != C5 AUTHORIZATION'",
+        "stage2-amendment-rulings RC_C5_GATE_SCOPE: BIFURCATED - the gate governs the RC-C5 chapter/deployment transition and authorities explicitly in scope WHEN FROZEN (2026-08-16)",
+        "index-chapters CH-05 certificationRequirements: 'C4 live closure is a FOUNDER DECLARATION, not an engineering claim - it is the gate on CH-13'"
+      ],
+      "classificationBasisOfEvidence": "EXPLICIT_FOUNDER_RULING",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "notWeakened": "This edge is recorded at full strength. No part of this analysis schedules around it, and no RC-C5-chartered item is proposed for execution ahead of the declaration.",
+      "consequenceIfWrong": "Not applicable - a frozen gate is not an inference. The live risk is the opposite one: agent-e E-BV-4 records the gate as already 'routed around in the operative tables, not removed'."
+    },
+    {
+      "id": "D-25",
+      "from": "CH-05 DR1 retirement of the ungoverned global attention overlay (F030/F031)",
+      "to": "CH-13 composer PRODUCT-BEHAVIOUR certification",
+      "class": "VALIDATION",
+      "evidence": [
+        "agent-b proposedInferredEdges[0]: 'F031 records the legacy banner overlapping the composer and /articles/write; PB-08 forbids an isolated cosmetic patch. A composer cannot be product-behaviour-certified while an ungoverned global overlay covers it.'",
+        "index-chapters CH-13 destructiveBoundaries: recorded as 'an inferred edge, MEDIUM confidence, recorded not assumed'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK-MODERATE (Agent B's reading of two recorded facts; explicitly not a stated dependency)",
+      "confidence": "MEDIUM",
+      "consequenceIfWrong": "If the overlay does not in fact obstruct certification, CH-13's composer proofs could run before DR1 completes - schedule only. If it does and the edge is ignored, a composer is certified under an overlay that will be removed, and the certification evidence describes a screen that no longer exists. Recorded as SU-6."
+    },
+    {
+      "id": "D-26",
+      "from": "CH-06 ONE canonical Conversation (party truth + durable message body, F124 sentinel eliminated)",
+      "to": "CH-07 Thread and Space surfaces",
+      "class": "DATA_MODEL",
+      "evidence": [
+        "index-chapters CH-06 blocks: 'CH-07 (Thread/Space surfaces are built on the canonical Conversation)'",
+        "index-chapters CH-06 destructiveBoundaries DB-4: retiring DirectThread and Space-as-conversation before journey certification removes the working fallback",
+        "protected-boundaries PB-04 party truth"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Thread and Space surfaces are built over the legacy DirectThread / Space-as-conversation stacks, which are themselves the retirement target - i.e. new product built directly onto demolition inventory."
+    },
+    {
+      "id": "D-27",
+      "from": "CH-06 Conversation shared capabilities certified",
+      "to": "CH-04 Meetings validation batch (F112) and the Meetings convergence slices",
+      "class": "PROTECTED_BOUNDARY",
+      "secondaryClass": "CERTIFICATION",
+      "evidence": [
+        "agent-b prerequisiteEdges: 'Conversation shared capabilities certified' -> 'Meetings validation batch F112/F113' (PB-01; VD-045)",
+        "validation-debt VD-045: 'The Meetings batch runs only after Conversation shared capabilities are certified, and only with explicit Meetings regression evidence'",
+        "index-chapters CH-06 blocks: 'CH-04 Meetings validation batch F112 (PB-01 sequencing)'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "The Meetings batch runs against uncertified shared capabilities, and a Meetings regression cannot be attributed. PB-01 remains authoritative regardless: this analysis identifies the ordering, it does not authorise any Meetings crossing."
+    },
+    {
+      "id": "D-28",
+      "from": "CH-06 owning-domain clearing semantics for messages (WHERE read-truth is committed)",
+      "to": "CH-05 obligation-badge clearing",
+      "class": "AUTHORITY",
+      "cycleArc": "CYCLE-1",
+      "boundedPrerequisite": "PROPOSED: the SEMANTIC CONTRACT only, resolvable from the frozen Conversation canon in aura-backend/docs via PB-12 pointers, NOT from CH-06 construction. If this bounded reading is wrong, CYCLE-1 is a true cycle and cannot be broken by engineering judgement.",
+      "evidence": [
+        "index-chapters CH-05 dependsOn: 'CH-06 (owning-domain clearing semantics for messages)'",
+        "index-chapters CH-07 certificationRequirements: 'Cross-System certification against the frozen Conversation and Invitation canons resolved from their pointers (PB-12), not from a frontend copy'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK (the bounded reading is this analysis's proposal; the stated edge is chapter-to-chapter)",
+      "confidence": "LOW-MEDIUM",
+      "consequenceIfWrong": "CYCLE-1 (CH-05 -> CH-06 -> CH-13 -> CH-05) is unbroken, one arc of it is a frozen founder gate that may not be weakened, and therefore NONE of CH-05, CH-06 or CH-13 can begin - a deadlock requiring an explicit founder ruling. This is the highest-consequence inference in the artifact."
+    },
+    {
+      "id": "D-29",
+      "from": "CH-11 bounded subset - the resolved type class (what a file actually IS) plus one governed ingestion door and one shared wire vocabulary",
+      "to": "CH-12 custody, delivery decision and examination",
+      "class": "DATA_MODEL",
+      "evidence": [
+        "index-chapters CH-11 blocks: 'CH-12 (custody and scanning cannot reason about an object whose identity was asserted by its uploader)'",
+        "index-chapters CH-12 dependsOn: 'CH-11 (an object cannot be governed before it is known)'",
+        "agent-b CHAIN-2 governing rule: 'no presentation stage should ship on top of an ungoverned ingestion path'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Custody and examination reason about client-asserted types; F127's absence of signature validation propagates into the delivery and scanning decisions, and F129's convergence - the recorded root cause of F143's aliasing - is left in place beneath them."
+    },
+    {
+      "id": "D-30",
+      "from": "CH-11 F016 honest media/document format model",
+      "to": "CH-13 F011, F014, F015",
+      "class": "HARD_TECHNICAL",
+      "evidence": [
+        "validation-debt VD-076 blockingWhat: 'F011, F014, F015 (recorded as gated by F016)'",
+        "index-chapters CH-13 certificationRequirements: 'F016's gate is honoured across the boundary... A-CON-1 records the gate as already appearing crossed'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE - agent-b B-U7: 'a single recorded statement; treat as MODERATE, not settled'",
+      "confidence": "MEDIUM",
+      "consequenceIfWrong": "If the gate is not real, part of CH-13's presentation work could precede CH-11 - a schedule gain. If it is real and ignored, presentation code infers document kinds locally in six composers, which is both the CD-1 deficiency (three identical grey pills) and a per-surface type authority that CH-11 must later demolish. Recorded as SU-3."
+    },
+    {
+      "id": "D-31",
+      "from": "CH-11 resolved type class",
+      "to": "CH-15 content verdicts / examination policy subject",
+      "class": "HARD_TECHNICAL",
+      "evidence": ["index-chapters CH-15 dependsOn: 'CH-11 (a verdict needs to know what the content is)'", "index-chapters CH-11 blocks: 'CH-15 (a scanner needs to know what it is scanning)'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "A policy written against client-asserted types; the F137 zero-coverage gap is closed on paper against a subject the platform cannot identify."
+    },
+    {
+      "id": "D-32",
+      "from": "CH-15 bounded subset - the content policy itself (what is prohibited), the consequence ladder, and the appeal / false-positive route",
+      "to": "CH-12 media examination mechanism (F137 ZERO_COVERAGE_SECURITY_GAP)",
+      "class": "AUTHORITY",
+      "evidence": [
+        "index-chapters CH-15 blocks: 'CH-12 (the examination pipeline cannot be built against an undefined policy or an absent appeal route)'",
+        "index-chapters CH-12 dependsOn: 'CH-15 (moderation POLICY, appeal and false-positive consequences - this chapter builds the mechanism, not the policy)'",
+        "stage2-amendment-rulings F137.stage3MustConfront includes 'false positives and appeals where applicable'; F137.assignmentPolicy: 'MUST NOT be assigned to an existing system merely because media or moderation appears in that system name'"
+      ],
+      "classificationBasisOfEvidence": "EXPLICIT_FOUNDER_RULING",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "An automated verdict removes real user content with no appeal route - recorded as an irreversible product harm even when the bytes survive."
+    },
+    {
+      "id": "D-33",
+      "from": "CH-12 bounded subset - governed delivery address for every visibility class, plus safe truthful derivatives",
+      "to": "CH-13 rich presentation",
+      "class": "HARD_TECHNICAL",
+      "evidence": [
+        "index-chapters CH-12 blocks: 'CH-13 (derivatives, governed delivery and safe originals are what presentation renders)'",
+        "agent-b CHAIN-2: RIC-D1 gates on RIC-C5 after the F138 promotion"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Presentation renders originals directly to draw a grid (the recorded deficiency), and rich media surfaces are built on raw storage URLs that DB-3 step 4 must later retire - a product-wide delivery break at exactly the moment the security ratchet becomes true."
+    },
+    {
+      "id": "D-34",
+      "from": "CH-12 canonical, durable media references (not expiring signed URLs)",
+      "to": "CH-14 durable publication",
+      "class": "DATA_MODEL",
+      "evidence": ["index-chapters CH-12 blocks: 'CH-14 (durable publication needs canonical references, not expiring URLs)'", "agent-c CD-8: F121 expiring signed URL baked into durable markdown; F131 published cover deleted by the reaper"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Published articles carry URLs that expire or objects the retention index cannot see - a durability claim failure written into permanent, addressable content."
+    },
+    {
+      "id": "D-35",
+      "from": "CH-12 separation of logical release from physical deletion (F143 aliasing; isRetentionEligible asymmetry)",
+      "to": "CH-06 WG002 delete/retract",
+      "class": "PROTECTED_BOUNDARY",
+      "evidence": [
+        "index-chapters CH-06 destructiveBoundaries: 'WG002 delete/retract interacts with retention truth (F142) - a message deletion must not authorise a storage deletion (CH-12 owns that separation)'",
+        "agent-b DB-2 / B-KEY-5: 10 duplicate/canonical pairs addressing identical R2 objects exist in production"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "A user-facing message delete authorises an irreversible per-object deletion of content other rows still address. This is the canonical evidence in the corpus that logical authority and physical consequence must be separate systems with separate gates."
+    },
+    {
+      "id": "D-36",
+      "from": "FOUNDER ACTION - deploy the three committed-but-unapplied migrations through the authorized path and observe the deployment",
+      "to": "CH-12 five-cohort read-only reconciliation, then F131, F139, F140, F141, F142, F143 and ANY reaper authority change",
+      "class": "MIGRATION",
+      "secondaryClass": "DEPLOYMENT",
+      "evidence": [
+        "validation-debt VD-055: three migrations COMMITTED, NOT APPLIED; class EXTERNAL_INFRASTRUCTURE",
+        "validation-debt VD-054: PRODUCTION_READ_ONLY, state OWED - cannot run",
+        "agent-b CHAIN-3 D-6 seven-step order: steps 1-4 largely landed, step 5 BLOCKED on a founder-observed deployment, steps 6-7 cannot start",
+        "agent-b FA-4"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Nothing in the retention-truth tail can close, and MediaCleanupService must not run. The recorded lesson stands independently: replay-from-empty is not production-safe, and reconciliation DDL must be guarded and split out of the deploy path."
+    },
+    {
+      "id": "D-37",
+      "from": "F138 resolution AND canonical Aura delivery existing for every visibility class (DB-3 steps 1-3)",
+      "to": "R2 PUBLIC-READ RATCHET (DB-3 step 4) - standing stop-and-report",
+      "class": "FOUNDER_DECISION",
+      "evidence": [
+        "validation-debt VD-052: 'F138 storage-boundary closure - remove R2 bucket public read and retire raw storage URLs, AFTER canonical Aura delivery exists for every visibility class'; state OPEN - CONFIRMED SECURITY ARCHITECTURE DEFECT",
+        "agent-b DB-3: 'Steps 1-3 are safe regardless; step 4 is where the ruling actually becomes true'",
+        "protected-boundaries PB-07: 'C5's final ratchet stops and reports before execution'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Executing step 4 early breaks delivery product-wide; deferring it indefinitely leaves the recorded position that possession of a key or a historical URL IS access, for PUBLIC, RESTRICTED and PRIVATE alike."
+    },
+    {
+      "id": "D-38",
+      "from": "CH-13 authoring surface (one governed composition lifecycle)",
+      "to": "CH-14 publication commit and designation",
+      "class": "HARD_TECHNICAL",
+      "evidence": ["index-chapters CH-14 dependsOn: 'CH-13 (the authoring surface a publication commits from)'", "index-chapters CH-13 blocks: 'CH-14 (the authoring surface a publication commits from)'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "The publish boundary is built over a composer scheduled for convergence, so FD-8's 'designation legible before commitment' is implemented six times or once in the wrong place."
+    },
+    {
+      "id": "D-39",
+      "from": "CH-13 one intake layer (drag/drop, clipboard, file handling doors)",
+      "to": "CH-16 platform intake proofs (NATIVE_DEVICE)",
+      "class": "VALIDATION",
+      "evidence": ["index-chapters CH-16 dependsOn: 'CH-13 (the intake layer whose platform doors it exercises)'", "index-chapters CH-13: 'drag/drop and clipboard have never been exercised live and exist in code'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "Real-device proofs exercise pipelines that DR3 is about to retire, so the proofs certify the wrong implementation."
+    },
+    {
+      "id": "D-40",
+      "from": "CH-09 ONE canonical Live truth consumed by both doors (F107)",
+      "to": "CH-10 public index truthfulness (F097; the 'live now: 0' shown to signed-out visitors)",
+      "class": "HARD_TECHNICAL",
+      "evidence": [
+        "index-chapters CH-09 blocks: 'CH-10 (one canonical Live truth consumed by both the signed-in and signed-out doors - F107)'",
+        "agent-c CD-3 (client-corroborated: globalDiscoverableLiveProvider 'degrades silently to an empty list when the user is not authenticated') and CD-4 (scope=me discovery)"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG on the edge; the 'confidently false zero' characterisation is flagged by its own author as a product judgement, not a Stage-0 fact",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "The signed-out door gets its own Live query - a second Live truth - which is the duplication CH-09's F107 exists to prevent, and the public index continues to assert a styled zero."
+    },
+    {
+      "id": "D-41",
+      "from": "CH-14 published content and discovery domains",
+      "to": "CH-10 acquisition funnel content",
+      "class": "PRODUCT_CONVERGENCE",
+      "evidence": ["index-chapters CH-10 dependsOn: 'CH-14 (public content and discovery surfaces the funnel presents)'", "index-chapters CH-14 blocks: 'CH-10 (the public funnel presents published content and discovery domains)'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM",
+      "consequenceIfWrong": "The funnel presents backend module names rather than human intentions - a first-impression cost, not a structural one."
+    },
+    {
+      "id": "D-42",
+      "from": "CH-16 required RC-C9 platform contracts proven (real device, NATIVE_DEVICE, WNS, native delivery)",
+      "to": "CH-09 RC-C10 CROSS-PLATFORM COMPLETION GATE",
+      "class": "CERTIFICATION",
+      "evidence": [
+        "stage2-amendment-rulings RC_C10.exitGatesRemainFrozen.crossPlatformCompletion: 'Required RC-C9 contracts are proven.'",
+        "index-chapters CH-16 blocks: 'CH-09 (cross-platform completion exit gate)'",
+        "index-nine-cos CO-RC-C9-030 obligationClass VALIDATION_OR_GATE_ONLY, derived from source token 'PRECONDITION_UNMET'"
+      ],
+      "classificationBasisOfEvidence": "EXPLICIT_FOUNDER_RULING",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Not applicable - frozen gate. Note the ratification instruction attached to CO-RC-C9-030: 'unmet preconditions are real dependency/gate evidence; do not schedule around them.'"
+    },
+    {
+      "id": "D-43",
+      "from": "Every other chapter + PD-1 and PD-2 dispositions + SupportScreen disposition + GAP-2 charter placement",
+      "to": "CH-17 RC-C11 entry conditions and the Release Gate",
+      "class": "RELEASE",
+      "evidence": [
+        "validation-debt VD-070: nine entry conditions, 'C10 complete or explicitly excluded by founder decision'; class FOUNDER_EXPERIENTIAL",
+        "index-chapters CH-17 dependsOn: 'Every other chapter'",
+        "index-nine-cos CO-RC-C1-021 (OWNERSHIP_VOID) and CO-RC-C1-022 (OPEN_DISPOSITION) -> CH-17, both DETERMINISTIC_DERIVATION",
+        "index-nine-cos CO-RC-C9-029 (UNASSIGNED_SURFACE) -> CH-17, DETERMINISTIC_DERIVATION"
+      ],
+      "classificationBasisOfEvidence": "DETERMINISTIC_DERIVATION",
+      "evidenceGrade": "STRONG (the three PD/SupportScreen obligations are deterministically derived from structured charter tokens)",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "The release gate is entered with conditions unmet - the one failure mode RC-C11 exists to prevent."
+    },
+    {
+      "id": "D-44",
+      "from": "CH-17 bounded subset - the non-shrinking register rule given a governed home, plus the item-level closure template (F043/F051/F122 reported as conflicts; F139 reported on BOTH dimensions)",
+      "to": "EVERY chapter closure",
+      "class": "CERTIFICATION",
+      "evidence": [
+        "index-chapters CH-17 certificationRequirements: 'The three preserved conflicts and F139's two dimensions are reported at ITEM level at every closure - a chapter-level roll-up that conceals them is the exact failure F119 records'",
+        "agent-b B-C10: the non-shrinking register rule has NO governed-markdown home and exists only in transcript evidence; F115/F119/F120 are all OPEN",
+        "agent-e weakProvenanceDependencies SYSTEMIC (HIGH): 'the rule that protects 115 transcript-only findings from disappearing lives in a transcript'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Chapters close on roll-ups that conceal preserved conflicts, and transcript-only findings vanish from reporting - which F119 records as having already happened once to F020/F021/F022."
+    },
+    {
+      "id": "D-45",
+      "from": "FOUNDER ACTION - trigger the store releases (Codemagic / Play Console / Partner Center), performed personally by the founder",
+      "to": "CH-16 F071 re-observation",
+      "class": "RELEASE",
+      "evidence": ["validation-debt VD-032 / agent-b FA-5", "index-chapters CH-16: 'F071 is re-observed only AFTER a founder-triggered release; until then its state is neither OPEN nor closed in an engineering sense and must be reported as distribution-lag debt'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "A defective binary stays in the field until the next submission - which is F071's condition today - and its state is misreported as an engineering open item rather than distribution lag."
+    },
+    {
+      "id": "D-46",
+      "from": "CH-09 F088 privacy proof (a Live viewer never becomes a Conversation party)",
+      "to": "CH-10 anonymous/non-member case - JOINT obligation, CH-09 owns the proof, CH-10 co-signs",
+      "class": "PROTECTED_BOUNDARY",
+      "evidence": [
+        "index-chapters CH-09 certificationRequirements: 'F088's privacy proof is a JOINT obligation with CH-10 for the anonymous case... (Agent E E-BV-2 recorded it as ownerless)'",
+        "agent-e E-BV-2 (HIGH): 'No artifact names an owner for the joint regression proof'",
+        "protected-boundaries PB-04"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG (the ownerlessness is directly recorded)",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "The anonymous half of a privacy invariant is proven by nobody; disclosure is not revocable by a later fix."
+    },
+    {
+      "id": "D-47",
+      "from": "CH-02 continuity contract",
+      "to": "CH-16 platform expression of continuity (background/foreground, deep links, active realtime continuity across lifecycle)",
+      "class": "HARD_TECHNICAL",
+      "evidence": ["index-chapters CH-16 dependsOn: 'CH-02 (the platform expression of the continuity contract)'", "index-chapters CH-02 certificationRequirements: 'the same destination contract proven on web and on a native binary (Real-Boundary lands in CH-16)'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "consequenceIfWrong": "The continuity contract is certified on web only and CH-02's own Cross-System requirement is unmet, leaving the native surface with a divergent destination model."
+    },
+    {
+      "id": "D-48",
+      "from": "CH-07 institutional context and membership semantics (the institutional Desk)",
+      "to": "CH-08 Institution Room (which must not absorb the Desk)",
+      "class": "PRODUCT_CONVERGENCE",
+      "evidence": ["index-chapters CH-08 dependsOn: 'CH-07 (institutional context and membership semantics)'", "index-chapters CH-07 blocks: 'CH-08 (Institution Room sits beside the institutional Desk and must not absorb it)'"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM",
+      "consequenceIfWrong": "The Room absorbs the Desk, collapsing two distinct institutional products into one - a product identity error that later separation cannot cheaply undo."
+    },
+    {
+      "id": "D-49",
+      "from": "CH-09 canonical Live DISCOVERY door existing",
+      "to": "CH-08 DR2 demolition of institution_live_rooms_screen (1,078 lines currently SERVING Live discovery)",
+      "class": "PROTECTED_BOUNDARY",
+      "secondaryClass": "PRODUCT_CONVERGENCE",
+      "evidence": [
+        "index-chapters CH-08 blocks: 'CH-09 in one respect only: DR2's screen currently serves Live discovery, so Live's discovery door must be canonical before or with its demolition'",
+        "index-chapters CH-08 destructiveBoundaries: 'Retiring it before Live's canonical discovery door exists removes a live capability. DO NOT RETROFIT is explicit'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "directionNote": "The stated relationship is written as CH-08 blocking CH-09; the evidence describes the opposite ordering for the DEMOLITION specifically. Both are recorded; the demolition ordering is the operative one.",
+      "consequenceIfWrong": "A live capability is removed with no replacement - demolition ahead of construction, which the chapter's own DO NOT RETROFIT rule was written to prevent."
+    },
+    {
+      "id": "D-50",
+      "from": "THE COORDINATED REALTIME HUMAN CERTIFICATION BATCH (VD-046: one journey, three identities, 19-20 obligations) - blocked environmentally, not technically",
+      "to": "CH-04 substrate certification, CH-03 F052/F054/F057 proofs, CH-09 F082-F088 lifecycle proofs, and by cascade CH-10",
+      "class": "VALIDATION",
+      "evidence": [
+        "validation-debt VD-046: 'NOT_STARTED - proposed, awaiting a single uninterrupted session'; blocker is 'the founder's browser window staying open and unminimized throughout - the window went unreachable repeatedly'",
+        "agent-b validationDependencies.structuralObservations: 'the single highest-leverage validation dependency in the corpus'",
+        "agent-e E-UV-2 (HIGH): 'No chapter carries it as a dependency'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "If the batch cannot be convened, ~20 obligations across three chapters stay uncertified regardless of construction progress, and any plan that assumes them dischargeable in sequence is wrong about its own critical path. This is a scheduling-and-coordination bottleneck, not an engineering one."
+    },
+    {
+      "id": "D-51",
+      "from": "CH-15 moderation authority (one authority, one adjudication path)",
+      "to": "CH-09 in-Live moderation (F095) and CH-06 message reporting (F023)",
+      "class": "AUTHORITY",
+      "evidence": [
+        "index-chapters CH-15 blocks: 'CH-09 (in-Live moderation consumes this authority)', 'CH-06 (message reporting attachment)'",
+        "index-chapters CH-09 nonGoals: 'Does not create a second moderation authority'",
+        "agent-e findingsAtRiskOfDisappearing F095: 'Either moderation is built twice - the classic duplication this programme exists to prevent - or the Live moderation obligation is absorbed without a decision'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "Moderation is built twice, and a report resolved on one surface is invisible on the other."
+    },
+    {
+      "id": "D-52",
+      "from": "CH-01 measured foundation debt hazard - 26 spinner sites and toLocal()/elapsed-time conversions reaching into CERTIFIED Meetings files",
+      "to": "PB-01 (CO-RC-C0-008 forbids modifying certified Meetings for foundation debt reduction)",
+      "class": "PROTECTED_BOUNDARY",
+      "evidence": ["index-chapters CH-01 destructiveBoundaries: 'NONE of its own. Hazard: ... CO-RC-C0-008 forbids modifying certified Meetings for foundation debt reduction'", "protected-boundaries PB-01"],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "consequenceIfWrong": "A continuous, low-ceremony debt burn-down becomes the vector for an unauthorised Meetings modification - the cheapest possible way to breach the most consistently asserted protected boundary in the corpus."
+    }
+  ],
+
+  "keystones": [
+    {
+      "id": "K1",
+      "chapter": "CH-02 Continuity & Destination Authority",
+      "canonicalCapability": "ONE authority that establishes session state at a single choke point and classifies every route disjointly, so that a person who refreshes, cold-loads, exits or authenticates arrives back at the destination they legitimately held - and NO surface reconstructs its own destination.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "S1 SESSION ESTABLISHMENT: the session hint written ONLY at the TokenStore.setSession() choke point, guest boundary preserved (guest tokens deliberately do NOT set it), with F065 proven on a LIVE refresh.",
+        "S2 ROUTE CLASSIFICATION: classes DISJOINT (not ordered) and UNKNOWN failing CLOSED, with all 23 navigation gates plus the 103-file/294-site literal ratchet plus the strengthened registry->router integrity gate green.",
+        "S3 DESTINATION RECONSTRUCTION CONTRACT: a published rule stating who reconstructs a destination and how, which surfaces CONSUME rather than reimplement.",
+        "S4 DRAFT IDENTITY CONTRACT: the durable identity and ownership of in-progress work (F063/F070, WG006), required only before CH-13 intake construction and CH-14 draft resume."
+      ],
+      "evidence": [
+        "agent-b B-KEY-4: F065 gates F059, F061, F062, F063, F064, F103, F104 - 'every return me where I was obligation including the founder-frozen Live auth-return'",
+        "index-chapters CH-02 certificationRequirements: 'F065 live refresh proof is the chapter's FIRST gate: until it passes, no downstream continuity finding may be claimed closed. The keystone relation F065 -> {F059, F061, F062, F063, F064, F103, F104} is preserved as an ordering constraint, not as a merge.'",
+        "agent-b DB-10: writing the session hint anywhere but the choke point reintroduces RC1",
+        "stage2-amendment-rulings RC_C10 constructionExit: 'continuity survives the Live event'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE, with the Live-continuity dependent resting on EXPLICIT_FOUNDER_RULING",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "downstreamDependents": ["CH-10 (D-02)", "CH-13 (D-04)", "CH-09 (D-05)", "CH-04 (D-06, LOW confidence)", "CH-14 (D-07)", "CH-07 (D-03)", "CH-08 (D-03)", "CH-16 (D-47)"],
+      "consequenceOfBuildingDependentsFirst": "Each dependent solves 'where was I' locally: the acquisition funnel gets its own return-destination store, the composer gets a second draft store (explicitly forbidden), Live builds its own auth-return, and the router boundary accumulates ordered exceptions. Every one of those is a duplicate of the authority this chapter exists to be, and the register already records the shape of that failure - session-state establishment written at 2 of N call sites.",
+      "minimumCompletionCondition": {
+        "toUnblockCH-09andCH-10": "S1 proven live (F065 refresh proof, SINGLE_AUTHORIZED_BROWSER) plus S3 published.",
+        "toUnblockCH-07andCH-08": "S2 green (disjoint classification, ratchets, integrity gate) plus a live signed-out probe for F069.",
+        "toUnblockCH-13andCH-14": "S4 published.",
+        "notRequiredToUnblockAnything": "F061/F062 profile-edit continuity, F064/F113 Meetings continuity, F117's systemic statement, and the full 16-finding closure. These remain CH-02's and are NOT redistributed."
+      },
+      "nonRedistributionStatement": "Continuity is NOT redistributed back into individual surfaces. CH-02 remains the single owner of all sixteen findings and of the REFRESH IS NOT NAVIGATION contract. The bounded subset is a PHASING of one authority's delivery, not a division of its ownership."
+    },
+    {
+      "id": "K2",
+      "chapter": "CH-11 Content Truth & Ingestion Governance",
+      "canonicalCapability": "The platform decides ONCE, at one governed door, in one vocabulary shared by both repositories, what a file actually IS, where it came from, and whether it may enter at all.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "Signature/magic-byte validation at the door (F127) and non-advisory limits (F128).",
+        "ONE ingestion path - the presign-bypassing route converged (F129).",
+        "The validated DTO actually in the request path (F130).",
+        "ONE wire vocabulary agreed across aura-backend and aura_final (media-frontend-mime-compatibility.spec.ts green).",
+        "The RESOLVED TYPE CLASS published as a consumable contract (F016's model), which is what downstream presentation and scanning consume."
+      ],
+      "evidence": [
+        "index-chapters CH-11 blocks: CH-12, CH-13, CH-15",
+        "agent-b CHAIN-2 governing rule: 'C1-C3 are prerequisites because they are security and data-integrity work; no presentation stage should ship on top of an ungoverned ingestion path'",
+        "agent-b DB-2 / index-chapters CH-11: 'F129's convergence is the recorded root cause of F143's aliasing'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "downstreamDependents": ["CH-12 (D-29)", "CH-13 (D-30)", "CH-15 (D-31)", "CH-06 attachments (via CH-13)", "CH-14 published bodies (via CH-12)"],
+      "consequenceOfBuildingDependentsFirst": "Six composers infer document kinds locally (the CD-1 deficiency literally is 'three identical grey pills'), the scanner has no reliable subject, and every new Media writer widens F143's aliasing exposure. Presentation built on client-asserted types must be rebuilt when the type class arrives, and a security decision taken over an unresolved type is not a security decision.",
+      "minimumCompletionCondition": "One door + one vocabulary + the resolved type class published and consumable, each with a rejection demonstrated on a REAL violating file before the gate counts as enforcement. F122's preserved conflict is reported as a conflict, not resolved. Full closure of the chapter (including the SVG decision and every legacy ingestion path) is NOT required to unblock CH-12/CH-13/CH-15."
+    },
+    {
+      "id": "K3",
+      "chapter": "CH-12 Media Custody, Delivery & Processing",
+      "canonicalCapability": "One governed, revocable delivery decision per stored object, and one reference index that can answer 'what authoritative relationships require this object to exist' - with logical release permanently separated from physical deletion.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "A canonical Aura delivery address for EVERY visibility class (DB-3 steps 1-3 only; step 4 is a founder stop-and-report and is NOT part of the keystone).",
+        "The reference/retention index seeded and reconciled (requires the founder migration deploy, D-36).",
+        "Real derivatives so that presentation never downloads originals to draw a grid.",
+        "The invariant that no logical decision can authorise an irreversible physical one (isRetentionEligible asymmetry preserved; F143 aliasing accounted)."
+      ],
+      "evidence": [
+        "index-chapters CH-12 blocks: CH-13, CH-03, CH-06, CH-14",
+        "agent-b B-KEY-5: 'THE MOST DANGEROUS SEQUENCING SURFACE IS RETENTION/STORAGE, NOT UI'",
+        "agent-c CD-10: F138 CONFIRMED SECURITY ARCHITECTURE DEFECT - 'private enforced by withholding the URL'",
+        "validation-debt VD-052: governed delivery is a security PREREQUISITE, never a bucket toggle"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "downstreamDependents": ["CH-13 (D-33)", "CH-14 (D-34)", "CH-06 WG002 (D-35)", "CH-03 visual band (externally, D-13)", "CH-09/CH-10 viewer privacy"],
+      "consequenceOfBuildingDependentsFirst": "Rich presentation and durable publication are built on raw storage URLs; when the R2 public-read ratchet finally becomes true, delivery breaks product-wide at exactly the moment the security ruling takes effect. Meanwhile a message-delete feature can authorise an irreversible object deletion across the 10 aliased pairs that exist in production today.",
+      "minimumCompletionCondition": "Canonical delivery route live for every visibility class with both paths valid (steps 1-3), plus the seeded reference index with the five-cohort read-only reconciliation completed. NOT required: the R2 public-read ratchet, the reaper authority change, or the disposition of the unindexed Media population - all three are founder-gated and none of them unblocks downstream construction."
+    },
+    {
+      "id": "K4",
+      "chapter": "CH-04 Realtime Substrate, Devices & Shared Presentation",
+      "canonicalCapability": "ONE realtime session substrate whose existence, participation and termination are the same truth for every party and every device, presented through ONE shared component family that never owns semantic meaning.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "The session-lifecycle truth certified once (the coordinated three-identity batch, VD-046).",
+        "The shared presentation family EXISTING and owning no semantic meaning - so later consumers adopt rather than reimplement.",
+        "The peer ceiling MEASURED (not asserted).",
+        "Explicitly NOT in the keystone: the Meetings presentation convergence slices, each of which carries its own targeted regression and founder sign-off and none of which unblocks another chapter."
+      ],
+      "evidence": [
+        "index-chapters CH-04 blocks: CH-09, CH-08, CH-06, and its own Meetings slices gate F112",
+        "agent-d AD-D-03: 3,890 lines reimplementing participant grid, spotlight and remote tiles while consuming 0 of 5 shared widgets",
+        "index-chapters CH-04 certificationRequirements: 'Mesh ceiling MEASURED and ENFORCED, not asserted'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG on the duplication and blocking relations; CONFLICTED on the substrate's current state (see D-16 / SU-1)",
+      "confidence": "HIGH on keystone status; MEDIUM on how much construction the minimum condition actually contains",
+      "downstreamDependents": ["CH-09 (D-14)", "CH-08 (D-15)", "CH-06 (D-16)", "CH-16 device transfer", "CH-05 call-derived attention"],
+      "consequenceOfBuildingDependentsFirst": "The Institution Room and Live each build local participant/roster/tile components - a fourth and fifth copy of a presentation layer whose existing three copies are already a chartered retirement obligation - and Live escalation is certified over an uncertified substrate, which F075's precedent shows produces evidence certifying a retired model.",
+      "minimumCompletionCondition": "The shared presentation family published and adopted by at least one real consumer, plus the coordinated lifecycle certification passing once, plus the ceiling measurement written. Entry is additionally conditioned on D-18 (PBCR conditions 7-8, OWED) and D-19 (founder classification of AD-CON-5). Meetings convergence slices are NOT part of the minimum condition."
+    },
+    {
+      "id": "K5",
+      "chapter": "CH-05 Attention, Notification Preference & Personal Controls",
+      "canonicalCapability": "ONE attention authority in which an obligation exists independently of the channel that delivers it and the interruption that announces it - ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION - resolvable where the work was actually done.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "The Attention Authority and the obligation badge with owning-domain clearing.",
+        "The Notification Preference Authority expressing the frozen three-way distinction.",
+        "Explicitly NOT in the keystone for downstream-unblocking purposes: the DR1 retirement of the eight surfaces, which is gated on founder checkpoint 7 and on proven-dead evidence (FD-12), and which is a demolition rather than a prerequisite - EXCEPT for the overlay edge D-25, which is inferred at MEDIUM confidence."
+      ],
+      "evidence": [
+        "index-chapters CH-05 blocks: CH-13 (the frozen hard gate) and CH-16",
+        "index-chapters CH-07 dependsOn CH-05; CH-08 dependsOn CH-05; CH-09 dependsOn CH-05",
+        "agent-d AD-D-04: Notification Preference Authority with the frozen governing distinction",
+        "agent-c CD-6: 'eight parallel attention surfaces per DR1' and 'a badge that does not clear'"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "downstreamDependents": ["CH-16 (D-20)", "CH-07 (D-21)", "CH-08 (D-22)", "CH-09 (D-23)", "CH-13 (D-24 gate-holder; D-25 inferred)"],
+      "consequenceOfBuildingDependentsFirst": "Every new surface invents its own badge and its own banner; the DR1 inventory grows during its own retirement (VD-068 records it already growing); native delivery encodes preference semantics that must later be unwound on a shipped binary; and Live gets a temporary attention authority on a surface already authorised for demolition, which makes RC-C10's construction exit gate unmeetable.",
+      "minimumCompletionCondition": "The two authorities published and consumable. NOTE, and do not blur: the RC-C5 hard gate on CH-13 is released ONLY by the founder's declaration that C4 is live-closed, which requires the full chapter - implemented, locally certified, pushed, deployed, observed end-to-end live, live defects resolved. The bounded minimum unblocks CH-07/CH-08/CH-09/CH-16 consumption; it does NOT open the CH-13 gate."
+    },
+    {
+      "id": "K6",
+      "chapter": "CH-15 Trust, Safety & Moderation Authority",
+      "canonicalCapability": "ONE adjudication authority: what is prohibited, who decides, what the consequence is, and how a wrong decision is corrected.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "The content policy and consequence ladder (founder-owned).",
+        "The appeal / false-positive route as a contract.",
+        "Explicitly NOT in the keystone: the live end-to-end report journey certification, which can follow."
+      ],
+      "evidence": [
+        "index-chapters CH-15 blocks: CH-12, CH-09, CH-06",
+        "stage2-amendment-rulings F137: ZERO_COVERAGE_SECURITY_GAP; 'authorizes NOTHING'; stage3MustConfront includes false positives and appeals",
+        "index-chapters CH-12 dependsOn: 'CH-15 (moderation POLICY, appeal and false-positive consequences - this chapter builds the mechanism, not the policy)'"
+      ],
+      "classificationBasisOfEvidence": "EXPLICIT_FOUNDER_RULING (F137 classification) combined with ANALYTICAL_INFERENCE (the ordering)",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "downstreamDependents": ["CH-12 examination mechanism (D-32)", "CH-09 in-Live moderation (D-51)", "CH-06 message reporting (D-51)"],
+      "consequenceOfBuildingDependentsFirst": "An automated examination pipeline ships with no policy behind its verdicts and no appeal route - an irreversible product harm even when the bytes survive - and Live builds a second moderation authority, which its own non-goals forbid.",
+      "minimumCompletionCondition": "Policy and appeal route FROZEN by the founder. This is the smallest keystone in the portfolio and the cheapest to discharge, and it is a hard prerequisite of the F137 remediation.",
+      "sizeCaveat": "CH-15 carries ONE finding (F023) and ONE obligation (CO-RC-C10-019). Its keystone status comes entirely from what depends on it, not from its own mass. A size-driven plan would schedule it last; the dependency evidence says otherwise."
+    },
+    {
+      "id": "K7",
+      "chapter": "CH-03 Identity Consumption & Presentation Truth",
+      "canonicalCapability": "The canonical identity is the ONLY identity any surface can render or reason about, enforced by a published conformance gate that every later identity consumer must pass in its own definition of done.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "The enumerated consumer audit (CODE_STATIC; recorded as safe, non-mutating work today).",
+        "The IDENTITY CONFORMANCE GATE published - the mechanism by which a re-entrant audit terminates.",
+        "Explicitly NOT in the keystone: the VISUAL completion of F051/F052/F056, which is externally blocked by the founder R2 CORS action (D-13); and the group identity doctrine (F055/F056), which is a founder decision no engineering can supply."
+      ],
+      "evidence": [
+        "index-chapters CH-03 blocks: CH-04, CH-06, CH-09, CH-08",
+        "index-chapters CH-03 certificationRequirements: the conformance gate and 'F116 must NOT be closed by fixing one consumer'",
+        "agent-b CHAIN-5: F057 proves identity drift is AUTHORITY-affecting"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE, with one DETERMINISTIC_DERIVATION obligation in the chapter (CO-RC-C2-037)",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "downstreamDependents": ["CH-04 (D-09)", "CH-06 (D-10)", "CH-08 (D-11)", "CH-09 (D-12)"],
+      "consequenceOfBuildingDependentsFirst": "Every consumer created after the audit invalidates the audit, so F116's exit condition recedes as construction proceeds - a re-entrant obligation with no termination. Worse, identity drift is recorded as reaching AUTHORITY (End-vs-Leave, role lookup, Go Live eligibility), so the consequence is an authorization defect, not a cosmetic one.",
+      "minimumCompletionCondition": "The consumer list enumerated and the conformance gate published and demonstrated to FAIL on a real violation (FD-13 precedent). F051's preserved conflict is reported as a conflict, never resolved by analytical consensus."
+    },
+    {
+      "id": "K8",
+      "chapter": "CH-06 Conversation & Messaging Core",
+      "canonicalCapability": "ONE canonical Conversation whose parties and message bodies are durable product facts rather than surface state.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "The canonical Conversation as the single party/message authority, with F124 (an ellipsis sentinel transmitted as the message body) eliminated - a UI flag violating a constitutional fact.",
+        "Legacy DirectThread / Space-as-conversation stacks RETAINED as the working fallback (retirement is a separate, founder-authorised, post-certification act).",
+        "Explicitly NOT in the keystone: the messaging capability set (edit, delete, reactions, search, typing, offline queue), which is product-completeness work, and the Phase 5 retirement."
+      ],
+      "evidence": [
+        "index-chapters CH-06 blocks: CH-07, CH-04's Meetings batch F112, CH-17",
+        "index-chapters CH-06 destructiveBoundaries DB-4",
+        "protected-boundaries PB-04 party truth as a constitutional fact"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG on the structural relation; the Completion Register conflict (SU-1) affects WHEN it can be certified, not whether it is a keystone",
+      "confidence": "HIGH",
+      "downstreamDependents": ["CH-07 (D-26)", "CH-04 Meetings batch (D-27)", "CH-17 release certification", "CH-05 clearing semantics (D-28, cycle arc)"],
+      "consequenceOfBuildingDependentsFirst": "Thread and Space surfaces are constructed over the very stacks that are the demolition target, so DB-4's hazard becomes structural: the fallback beneath an uncertified replacement is load-bearing for new product.",
+      "minimumCompletionCondition": "One canonical Conversation is the substrate every new surface addresses, with the Completion Register discharged item by item and named evidence per row. Legacy retirement is NOT part of it."
+    },
+    {
+      "id": "K9",
+      "chapter": "CH-17 Governance, Certification & Release Gate",
+      "canonicalCapability": "A closure-accounting mechanism that cannot lie: a non-shrinking register with a governed home, item-level reporting of preserved conflicts, and gates demonstrated to FAIL on a real violation before they count as enforcement.",
+      "isBoundedSubset": true,
+      "boundedSubsetDefinition": [
+        "The non-shrinking register rule given a governed-markdown home in BOTH repositories (it currently exists only in transcript evidence).",
+        "The chapter-closure template: item-level reporting of F043, F051, F122 as conflicts and F139 on BOTH dimensions; no chapter closes with an unexplained remainder.",
+        "Explicitly NOT in the keystone: the RC-C11 entry evaluation and Item 17, which are terminal by construction."
+      ],
+      "evidence": [
+        "agent-b B-C10: the rule 'has NO governed-markdown home. It exists only in transcript evidence, and F115/F119/F120 are all OPEN'",
+        "agent-e weakProvenanceDependencies SYSTEMIC (HIGH): 115 of 143 findings are evidenced only in transcripts",
+        "index-chapters CH-17 certificationRequirements: item-level conflict reporting; 'a chapter-level roll-up that conceals them is the exact failure F119 records'",
+        "agent-b SI-4: establishing the mechanism now is non-mutating and boundary-free"
+      ],
+      "classificationBasisOfEvidence": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG",
+      "confidence": "HIGH",
+      "downstreamDependents": ["all sixteen construction chapters, at their closures"],
+      "consequenceOfBuildingDependentsFirst": "Chapters close against a rule with no governed home; items that exist only in transcripts stop being reported (F119 records exactly this happening to F020/F021/F022, which is why they must be re-reported at closure); and the programme's own record of what is done becomes unverifiable - the failure CH-17 exists to prevent, occurring during the work it is meant to govern.",
+      "minimumCompletionCondition": "The register artifact and closure template exist in governed markdown in both repositories BEFORE the first chapter closure of this programme. F120 cannot COMPLETE until every item is terminal; only the mechanism is required early."
+    }
+  ],
+
+  "nonKeystones": [
+    {
+      "chapter": "CH-01",
+      "verdict": "NOT A KEYSTONE",
+      "reason": "Its four authorities already exist and are closed (RC-C0/RC-C1, 2026-08-15). What remains is adoption and ratchet-enforced burn-down, which executes INSIDE other chapters' definitions of done. Its own sequencePosition records that it gates nothing and is gated by nothing. Its only sequencing force is a hazard, not a prerequisite (D-52: debt reduction must not reach certified Meetings)."
+    },
+    {
+      "chapter": "CH-07",
+      "verdict": "NOT A KEYSTONE",
+      "reason": "A consumer of CH-06, CH-03, CH-02 and CH-05. Its one forward relation (D-48, CH-08 must not absorb the Desk) is a product-boundary constraint, not a capability whose absence forces temporary architecture. Its Correspondence convergence VERDICT is an unrecorded founder outcome (AD-D-10) and must be recorded as an outcome, not manufactured."
+    },
+    {
+      "chapter": "CH-08",
+      "verdict": "NOT A KEYSTONE",
+      "reason": "Terminal consumer. Zero findings, seventeen obligations - the dual-axis control case. Its only forward relation is the DR2 demolition ordering (D-49), which is a destructive-sequencing constraint rather than a downstream-enabling capability."
+    },
+    {
+      "chapter": "CH-09",
+      "verdict": "NOT A KEYSTONE, WITH ONE BOUNDED EXCEPTION",
+      "reason": "Live is a fan-in: it consumes CH-04, CH-02, CH-03, CH-05, CH-15 and is co-gated by CH-16. Its single forward capability - one canonical Live truth for both doors (F107) - has exactly one downstream dependent (CH-10), which fails the multiple-dependents test for keystone status. It is recorded as an ordinary HARD_TECHNICAL edge (D-40)."
+    },
+    {
+      "chapter": "CH-10",
+      "verdict": "NOT A KEYSTONE",
+      "reason": "Pure consumer. It blocks only CH-17 via the PD-2 disposition, which is a founder decision, not a capability. Its sizing rests on seven single-mention WEAK findings (SU-2), so its INTERNAL order is the least reliable in the portfolio even though its chartering argument - no anonymous zero-authority case exists anywhere - is strong and independent."
+    },
+    {
+      "chapter": "CH-13",
+      "verdict": "NOT A KEYSTONE",
+      "reason": "Despite its size and its visibility to the founder, it enables only CH-14 (D-38) and CH-16's platform proofs (D-39), both of which follow rather than duplicate it. It is the largest CONSUMER in the portfolio: gated by CH-05's founder declaration, CH-11, CH-12 and CH-02. Being the chapter that makes founder-observed defects visibly better is a product argument, not a keystone argument, and the security-first order is deliberately not reordered around it."
+    },
+    {
+      "chapter": "CH-14",
+      "verdict": "NOT A KEYSTONE",
+      "reason": "Consumer of CH-13, CH-12, CH-02, CH-03. Its forward edge to CH-10 is content supply (D-41), not an enabling authority. Its taxonomy-adoption slice is cheap and independent; its designation slice follows CH-13 and carries five RC-C5-chartered obligations that sit INSIDE the frozen hard gate."
+    },
+    {
+      "chapter": "CH-16",
+      "verdict": "NOT A KEYSTONE",
+      "reason": "It PROVES rather than enables: no chapter must build temporary architecture because CH-16 has not run. It is nonetheless a hard RELEASE dependency holding RC-C10's cross-platform completion gate (D-42) and two of C11's nine entry conditions, and its NATIVE_DEVICE proofs have never run and require founder-provided device access - a long-lead founder action that should be requested early even though the certification lands late."
+    }
+  ],
+
+  "ch02Determination": {
+    "question": "Is CH-02 Continuity - or a BOUNDED SUBSET of it - a keystone prerequisite for downstream surface work?",
+    "verdict": "YES - A BOUNDED SUBSET IS A KEYSTONE PREREQUISITE. The whole chapter is NOT.",
+    "boundedSubset": "S1 single-choke-point session establishment (F065/RC1) proven live; S2 disjoint fail-closed route classification with the ratchets and integrity gate green; S3 the published destination-reconstruction contract; and, for CH-13/CH-14 only, S4 the draft identity/ownership contract. See keystone K1 for the per-dependent unblocking conditions.",
+    "stage1RelationPreserved": "Stage 1 recorded F065 as a keystone gating seven findings plus the Live auth-return obligations. That relation is preserved here as an ORDERING CONSTRAINT, exactly as CH-02's own certification requirement states, and is NOT converted into a merge, a compression or a re-owning.",
+    "authorityAdmissionRespected": "CH-02 was admitted under the AUTHORITY_ADMISSION doctrine (frozen; CH-02 is its first application). Continuity is NOT redistributed back into individual surfaces for scheduling convenience. All sixteen findings stay in CH-02, and no surface chapter acquires a continuity obligation of its own. Phasing the delivery of ONE authority is not redistribution; if the founder reads it as redistribution, the correct reading is that CH-02's keystone slice must complete before ANY dependent begins, which is the stricter and safer alternative.",
+    "whatIsNotClaimed": [
+      "It is NOT claimed that CH-02 must finish before downstream work begins.",
+      "It is NOT claimed that F065's live proof has occurred; it is IMPLEMENTED_NOT_LIVE_CERTIFIED, and the chapter's own first gate is that live proof.",
+      "It is NOT claimed that F066/F068 are complete - their completion is genuinely unknown (SU-4), which changes the SIZE of the keystone slice but not its existence.",
+      "It is NOT claimed that the bounded subset satisfies the RC-C10 construction exit gate; that gate reads 'continuity survives the Live event' and is evaluated end-to-end, not as a sum of sub-conditions."
+    ],
+    "cheapnessClaim": "CH-02's own sequencePosition describes the keystone as 'cheap relative to its fan-out'. That is an ANALYTICAL_INFERENCE about cost, not a measurement, and this analysis does not strengthen it. What IS evidenced is the fan-out: eight downstream relations, including the register's only acquisition path."
+  },
+
+  "rcC5Position": {
+    "ruling": "BIFURCATED (FOUNDER, 2026-08-18) - consumed, not reopened, not weakened, not extended.",
+    "truePosition": "The RC-C5 frozen hard gate is a DEPLOYMENT-DISCIPLINE TRANSITION RULE sitting on ONE edge: CH-05's founder-declared C4 live closure -> the RC-C5-chartered territory. It is not a platform-wide gate and it is not a technical dependency. The recorded technical graph lists RC-C4 and RC-C5 as PARALLEL siblings, with RC-C5 dependsOn C0/C1/C2/C3 - not C4. Both statements are founder-frozen and both are preserved.",
+    "whatItGOVERNS": [
+      "CH-13's RC-C5 territory in full: the 26 RC-C5-chartered obligations CO-RC-C5-001..031 - six composers, eleven upload pipelines, 25-file paste handling, drag/drop, drafts/autosave as a Composition Authority concern.",
+      "CH-14's five RC-C5-chartered obligations (CO-RC-C5-003, -006, -013, -032, -033), which carry FD-8 official designation in the publish flow - explicitly within RC-C5's scope when the gate was frozen.",
+      "CH-11's two RC-C5-chartered obligations (CO-RC-C5-019, -020, both VALIDATION_OR_GATE_ONLY).",
+      "The RC-C5 chapter/deployment transition itself."
+    ],
+    "whatItDoesNOTGovern": [
+      "The section 12 / RIC content systems frozen 2026-08-17 - ONE DAY AFTER the gate - which is the whole of CH-11's ingestion-governance work (F127, F128, F129, F130, F016, F122, F123, F133, F134) and the whole of CH-12 (custody, governed delivery, processing, examination, retention truth). These are governed by their OWN explicit gates: the section 15 nine security gates, the section 14 five-step retirement condition, the D-6 seven-step retention order, and PB-11 founder-observed deployment.",
+      "CH-01 through CH-10, CH-15, CH-16 and CH-17 generally.",
+      "F137's examination obligation, which has no RC-C5 charter and must not acquire one by adjacency."
+    ],
+    "consequenceForSequencing": "The backend content track (CH-11 -> CH-12, with CH-15's policy freeze alongside) is NOT behind the RC-C5 gate and is not sequenced behind CH-05. The client composition track (CH-13, and CH-14's designation slice) IS. This is the single most load-bearing consequence of the BIFURCATED ruling: it de-serialises the security-first chain from the attention chapter without weakening the gate by one clause.",
+    "ambiguityHandling": "Where an item's charter provenance is genuinely ambiguous between RC-C5 and the section 12 contract, it is treated as GATED (fail-closed) and escalated to the founder. This follows the frozen RC-C5 NON-INFERENCE doctrine. Agent E recorded (E-BV-4, HIGH) that the gate was already 'routed around in the operative tables, not removed' by an earlier artifact - that is precisely what fail-closed treatment prevents here.",
+    "notWeakenedNotScheduledAround": true
+  },
+
+  "rcC10Position": {
+    "ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED (FOUNDER, 2026-08-18). No percentage-complete may be manufactured. 'Structurally partial' means ONLY that material governed architecture exists AND material governed architecture remains outstanding.",
+    "completionAssumption": "NONE MADE. Of the 21 canonical RC-C10 obligations, ONLY CO-RC-C10-013 and CO-RC-C10-014 are COMPLETED_OR_SUPERSEDED. Every other obligation retains its independently evidenced state, and the three UNKNOWN obligations carried in CH-04 (within CO-RC-C10-007, -016, -020) REMAIN UNKNOWN.",
+    "implementationDistribution": "CH-09 holds 16 RC-C10 obligations, CH-04 holds 3 (scale), CH-10 holds 1, CH-15 holds 1. Charter ownership (RC-C10) legitimately differs from implementation ownership; per the founder ruling this is not loss of ownership and must NOT spawn a duplicate programme.",
+    "truePosition": "RC-C10 is a FAN-IN TERMINUS, not a late chapter that can be scheduled by date. Its two frozen exit gates are owned across chapters and none of them can be discharged by CH-09 alone: (1) CONSTRUCTION EXIT requires an owning Thread/Space context (CH-06/CH-07), continuity surviving the Live event (CH-02, D-05), canonical authorities consumed (CH-03, CH-04, CH-05, CH-15) and NO temporary substitute authorities remaining (D-23); (2) CROSS-PLATFORM COMPLETION requires the RC-C9 contracts proven in CH-16 (D-42). Agent D recorded that splitting RC-C10 across three chapters previously left BOTH exit gates owned by none of them (AD-D-13); this analysis assigns the construction exit to CH-09 as sole owner with named co-signatories, and the cross-platform gate to a joint CH-09/CH-16 evaluation.",
+    "evidenceInvalidationCarried": "F075's model change (parallel broadcast -> state escalation) INVALIDATED the earlier live proofs relied on by F083 and F084: prior 'proven live' evidence certifies the RETIRED model. RC-C10's position therefore includes a RE-PROOF, never an inherited pass.",
+    "releaseRelation": "C11 entry condition 2 is 'C10 complete OR explicitly excluded from the release candidate by founder decision'. That exclusion is a live, founder-only option and is recorded here as a decision point, not as a plan.",
+    "notInferred": "No part of this analysis treats RC-C10 as complete, nor infers completion of any unverified CO, nor treats historical Live work as automatically satisfying an RC-C10 obligation."
+  },
+
+  "f137Position": {
+    "classification": "ZERO_COVERAGE_SECURITY_GAP (FOUNDER). Moderation is text-only; NO uploaded media of any kind is scanned. Zero coverage on every axis. Nothing is authorised by this placement.",
+    "ownershipAsFrozen": "CH-12 owns stored-object EXAMINATION (the mechanism). CH-15 owns the POLICY and CONSEQUENCE dependency. Neither may absorb the other, and neither acquires it by name similarity.",
+    "explicitExecutionPosition": {
+      "step1": "CH-15 policy freeze (keystone K6) - founder-owned: what is prohibited, the consequence ladder, the appeal and false-positive route. This is the SMALLEST and EARLIEST item on the whole security chain and it is a hard prerequisite (D-32).",
+      "step2": "CH-11 resolved type class published (keystone K2) - a scanner must know what it is scanning (D-31).",
+      "step3": "CH-12 examination mechanism constructed against the frozen policy and the resolved type, INCLUDING the frozen certification requirement that the verdict applies to objects uploaded BEFORE the scanner existed - a backfill obligation, not a go-forward filter.",
+      "step4": "Certification: a known-malicious sample refused delivery end-to-end, a deliberately induced false positive proven appealable."
+    },
+    "whatMustNotHappen": "F137 must NOT be buried behind cosmetic sequencing. It is not scheduled behind CH-13's rich presentation, CH-14's publication or any client-visible improvement; on this graph it sits on the earliest track in the portfolio, alongside the other two zero-coverage security items (F138 governed delivery, F127 signature validation).",
+    "openFounderInputs": ["media examination provider selection (with provider-independence preserved)", "the appeal / false-positive policy consequence, jointly with CH-12", "media moderation scope and timing (recorded as a governance decision, not an engineering one)"],
+    "riskIfLost": "agent-e recorded F137 as HIGH risk of disappearing: 'No home on any axis - no RC chapter, no RIC stage, no doctrine, no gap record.' Its execution position here is deliberately explicit for that reason."
+  },
+
+  "cyclesOrContradictions": [
+    {
+      "id": "CYCLE-1",
+      "type": "TRUE CYCLE IN THE DECLARED CHAPTER GRAPH",
+      "cycle": "CH-05 -> CH-06 -> CH-13 -> CH-05",
+      "arcs": [
+        "CH-05 dependsOn CH-06: 'owning-domain clearing semantics for messages'",
+        "CH-06 dependsOn CH-13: 'media/attachments attachment of the Completion Register'",
+        "CH-13 dependsOn CH-05: 'THE FROZEN HARD GATE: RC-C5 opens only on founder-declared C4 live closure'"
+      ],
+      "severity": "CRITICAL - if unbroken, none of CH-05, CH-06 or CH-13 can begin.",
+      "oneArcIsFrozen": "The CH-13 -> CH-05 arc is a founder-frozen gate and may NOT be weakened to break the cycle.",
+      "proposedDecomposition": "The two non-frozen arcs attach to DIFFERENT PHASES, not to chapter completion. (a) CH-05's real need from CH-06 is a SEMANTIC CONTRACT - where read-truth is committed for a message - which PB-12 says is resolved from the frozen Conversation canon's pointers in aura-backend/docs, not from CH-06 construction (D-28). (b) CH-06's need from CH-13 is the media/attachments ROW of the Completion Register, which is a FINAL-CERTIFICATION dependency, not a construction-start dependency; CH-06's canonical-Conversation keystone (K8) does not require it. With both arcs re-attached to their true phases the cycle opens: CH-05 construction -> CH-06 construction -> [C4 live closure declared] -> CH-13 -> CH-06 final certification.",
+      "status": "PROPOSED DECOMPOSITION, NOT A RULING. Both re-attachments are ANALYTICAL_INFERENCE at MEDIUM and LOW-MEDIUM confidence. If either is wrong, this is a genuine deadlock requiring an explicit founder ruling, and the correct response is to escalate, not to weaken the gate."
+    },
+    {
+      "id": "CON-1",
+      "type": "WAVE ASSIGNMENTS ARE NOT TOPOLOGICALLY CONSISTENT WITH THE STATED DEPENDENCY EDGES",
+      "statement": "index-chapters assigns CH-04 to WAVE 1 while recording it as dependsOn CH-03 (WAVE 2) and CH-02 (WAVE 1); assigns CH-05 to WAVE 2 while recording it as dependsOn CH-06 (WAVE 3); assigns CH-03 to WAVE 2 while recording it as dependsOn CH-12 (WAVE 2 backend track). At least three declared edges run backwards against the declared waves.",
+      "disposition": "REPORTED, NOT REPAIRED. The waves are a narrative layer; the edges are the evidence layer. This analysis derives order from edges only.",
+      "consequence": "Any plan that consumes the wave labels rather than the edges will schedule at least three chapters ahead of their own stated prerequisites."
+    },
+    {
+      "id": "CON-2",
+      "type": "STALE OBLIGATION COUNT IN A POST-RULING ARTIFACT",
+      "statement": "index-chapters CH-17 certificationRequirements states 'All 143 findings and all 299 chartered obligations are reconciled INDEPENDENTLY at closure'. The founder-ratified rebuild baseline is 308 chartered obligations (299 preserved + 9 newly recovered and ratified), for 451 canonical units. The chapter-level counts in the same file sum to 308, so the file contradicts itself.",
+      "disposition": "REPORTED, NOT SILENTLY REPAIRED. The release gate's own reconciliation requirement currently understates the population it must reconcile by nine obligations - including the two PD dispositions and the SupportScreen disposition that CH-17 itself owns.",
+      "severity": "HIGH - it is the closure rule of the release chapter."
+    },
+    {
+      "id": "CON-3",
+      "type": "FOUNDER STOP-ORDER vs DECLARED CHAPTER EDGES",
+      "statement": "The founder stop-order sequence recorded under PB-02 is 'realtime transport -> identity/avatar certification -> refresh-continuity contract -> video/screenshare/Live'. The chapter index records CH-04 (realtime) as dependsOn CH-03 (identity) AND CH-02 (continuity) - i.e. the exact reverse of the first three terms.",
+      "disposition": "REPORTED, NOT RESOLVED. A plausible reconciliation is that the stop-order governs the REPAIR/CERTIFICATION order of the protected transport layer (the emergency that produced RC-A and RC-B), while the chapter edges govern CONSTRUCTION of tiles and rosters that consume identity. That reconciliation is this analysis's reading and is NOT recorded anywhere.",
+      "consequence": "This determines whether CH-04 or CH-02/CH-03 enters first, i.e. the first execution decision of the whole programme. It requires a founder confirmation, not an engineering judgement."
+    },
+    {
+      "id": "CON-4",
+      "type": "CONTRADICTED STATE AT A LOAD-BEARING ENDPOINT",
+      "statement": "F006/F007/F008/F010 (audio, video, screen share) are held LIVE_CERTIFIED on WEAK single-line provenance while the frozen Conversation Completion Register simultaneously names audio call, video call, screen sharing and media/attachments as UNRESOLVED required contextual attachments. CH-04's own certification requirements record that the contradiction must be discharged before CH-04 may be described as certification-only.",
+      "disposition": "PRESERVED AS A CONTRADICTION. Not adjudicated here.",
+      "consequence": "It decides whether CH-04 is a certification chapter or a construction chapter - the single largest block of apparent completeness in the portfolio, and, per Agent E, the least safely evidenced."
+    },
+    {
+      "id": "CON-5",
+      "type": "MIS-STATED EDGE (evidence-based correction, reported not applied)",
+      "statement": "index-chapters records CH-03 dependsOn CH-12. The underlying evidence (VD-026, FA-3) shows the blocker is a founder Cloudflare dashboard action after PutBucketCors returned AccessDenied - an EXTERNAL_INFRASTRUCTURE/FOUNDER_DECISION edge, not a CH-12 construction edge. Recorded as D-13.",
+      "disposition": "REPORTED AS A CORRECTION PROPOSAL. Not applied to any register.",
+      "consequence": "Reading it as a chapter edge serialises all identity work behind the most destructive chapter in the portfolio for no technical reason."
+    },
+    {
+      "id": "CON-6",
+      "type": "POSSIBLE MIGRATION INTERLOCK, UNRESOLVABLE FROM NORMALISED EVIDENCE",
+      "statement": "Section 14 MessageAttachment retirement is 'now additionally gated on F140 coverage', while F140's own remaining closure is recorded against that same retirement lineage. Whether this is a true circular dependency or two separable halves is NOT establishable (agent-b B-C9 / B-U4).",
+      "disposition": "CARRIED FORWARD UNRESOLVED. It sits inside CH-12 and affects the internal order of the retention tail, not the inter-chapter graph.",
+      "founderInput": "FA-17 records the timing question as founder-owned: 'MessageAttachment retirement - now, or after Conversation lands?'"
+    },
+    {
+      "id": "CON-7",
+      "type": "OWED PROTECTED-BOUNDARY CONDITIONS WITH NO SCHEDULED DISCHARGE POINT",
+      "statement": "PBCR conditions 7 (targeted regression for the protected subsystem) and 8 (shared-system health report) are recorded as OWED for the historical PB-02 crossing (RC-A 509230a, RC-B dfc9027). No artifact schedules them. Separately, the classification of that crossing (AD-CON-5) has been declined by four consecutive artifacts.",
+      "disposition": "PLACED, NOT DISCHARGED. This analysis proposes both as CH-04 ENTRY conditions (D-18, D-19) and explicitly does NOT mark them complete.",
+      "severity": "HIGH - agent-e records it as 'an unowned question aging in plain sight'."
+    },
+    {
+      "id": "CON-8",
+      "type": "STRUCTURAL OBSERVATION ON DUAL-AXIS ACCOUNTING",
+      "statement": "CH-12 - the irreversibility chapter, holding 13 findings including F137, F138, F139 and F143 - carries ZERO chartered obligations. Its work is carried entirely on the findings axis and the section 12 stage chain. Conversely CH-07 and CH-08 carry 38 obligations between them and ZERO findings.",
+      "disposition": "REPORTED as evidence for the frozen dual-axis rule. A CO-axis-only view of the portfolio loses the most destructive chapter entirely; a findings-axis-only view loses the Institution Room entirely (the founder's own control case). Neither axis may be inferred from the other, and any sequencing built on one axis alone will mis-order both."
+    },
+    {
+      "id": "CON-9",
+      "type": "TERMINAL-VOCABULARY CONTRADICTIONS AFFECTING GATE EVIDENCE",
+      "statement": "F076 and F077 are EXPLICITLY_RETIRED yet carry 'UI unobserved' remains. F114 is LIVE_CERTIFIED on file-level non-modification - it certifies that nothing was touched, not that touching is safe, and CH-04 consumes it as a satisfied protection.",
+      "disposition": "PRESERVED. CH-09 already records that F076/F077's observation is completed there rather than inherited as terminal, and CH-04 already records that any slice touching Meetings replaces F114's evidence with a real regression proof. Both dispositions are consistent with the evidence and are noted, not altered."
+    }
+  ],
+
+  "sequencingUncertainties": [
+    {
+      "id": "SU-1",
+      "statement": "Whether the four core calling capabilities (F006, F007, F008, F010) are genuinely certified. Held LIVE_CERTIFIED on WEAK single-line provenance; named UNRESOLVED by the frozen Conversation Completion Register.",
+      "dependency": "D-16 (CH-04 -> CH-06 final certification); keystone K4's minimum condition.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK / CONFLICTED",
+      "confidence": "LOW",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "CH-04 converts from a certification chapter into a construction chapter. Its duration, its dependents' start dates and the whole 'largest block of apparent completeness' collapse together. This is the highest-leverage uncertainty in the portfolio."
+    },
+    {
+      "id": "SU-2",
+      "statement": "CH-10's eleven-obligation decomposition rests on seven findings that are WEAK with exactly ONE corpus mention each (F098-F102, F105, F106).",
+      "dependency": "CH-10's internal order and size.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK",
+      "confidence": "LOW on the decomposition; HIGH on the chartering argument (no anonymous zero-authority case exists anywhere).",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "The conclusion 'nothing is built' survives; every size and internal sequence for CH-10 does not. A plan that budgets CH-10 from this decomposition is budgeting from a single register sentence."
+    },
+    {
+      "id": "SU-3",
+      "statement": "The claim 'F016 gates F011, F014, F015' rests on a single recorded statement (VD-076). Agent B grades it MODERATE, not settled - and A-CON-1 records the gate as already appearing crossed.",
+      "dependency": "D-30 (CH-11 -> CH-13).",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "If the gate is not real, part of CH-13's presentation work can precede CH-11 and the client track de-serialises. If it is real and treated as crossed, six composers each acquire a local type authority that CH-11 must later demolish."
+    },
+    {
+      "id": "SU-4",
+      "statement": "Whether F066 and F068 are complete is genuinely unknown: both are absent from the later 'Wave 1A remaining' list (implying completion) but neither has an explicit STATE CHANGES entry. OPEN was retained on the explicit-evidence rule.",
+      "dependency": "The SIZE of CH-02's keystone slice S2 (K1).",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK",
+      "confidence": "LOW",
+      "couldChangeExecutionOrder": false,
+      "consequenceIfWrong": "The keystone slice is smaller or larger than planned. It does not change WHETHER CH-02's slice comes first, only how long it takes - but a plan that assumes completion and is wrong will report a gate green that was never proven."
+    },
+    {
+      "id": "SU-5",
+      "statement": "RC-C6's only declared blocker was 'blocked until C2', and RC-C2 was founder-closed 2026-08-16, yet no document restates RC-C6's status in either direction. Agent B explicitly flags the discharge as ITS OWN inference, not the corpus's.",
+      "dependency": "Whether CH-04 may be entered at all on current evidence.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE (strong sources; the discharge inference is the analyst's)",
+      "confidence": "MEDIUM",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "If the blocker is not discharged, the first chapter of the proposed order is not enterable, and 'roadmap approval != chapter authorisation' means only the founder can settle it."
+    },
+    {
+      "id": "SU-6",
+      "statement": "The inferred edge 'an ungoverned global overlay covers the composer, so the composer cannot be product-behaviour-certified' (D-25) is Agent B's reading of two recorded facts, graded MEDIUM and explicitly not a stated dependency.",
+      "dependency": "D-25 (CH-05 DR1 retirement -> CH-13 composer certification).",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK-MODERATE",
+      "confidence": "MEDIUM",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "If real, CH-13's certification is bound not only to the founder's C4 closure declaration but to the DR1 retirement completing - tightening an already-frozen gate. If not real, composer certification can proceed once the declaration lands."
+    },
+    {
+      "id": "SU-7",
+      "statement": "The PD-2 (Authentication & Account Entry) -> continuity-keystone ownership link is a MEDIUM-HIGH inference: the SURFACES are identical (session-hint contract, route classification, guest boundary), but no document states the ownership link.",
+      "dependency": "The scope of CH-02's keystone and the CH-17 pre-C11 condition.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM-HIGH",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "If PD-2's structure lands somewhere other than CH-02, the keystone's boundary moves and a second owner appears on the same surfaces - the duplication risk this analysis exists to prevent. CO-RC-C1-022 (PD-2, DETERMINISTIC_DERIVATION from token OPEN_DISPOSITION) now exists to hang the disposition on; the product fate remains founder authority."
+    },
+    {
+      "id": "SU-8",
+      "statement": "F073's domain is contested - recorded as miscategorised as native in one place and still categorised under the native domain in another; root cause explicitly UNKNOWN; three competing owners, none evidenced.",
+      "dependency": "Whether the missing fourth video frame is a CH-04 (early, shared realtime) item or a CH-16 (late, real-device) item.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK",
+      "confidence": "LOW",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "A four-party video defect either blocks CH-04's ceiling measurement early or waits for device access late. It also cannot be closed by inference from a symptom, per CH-04's own certification requirement."
+    },
+    {
+      "id": "SU-9",
+      "statement": "No evidence establishes that ANY certification occurred after 2026-08-18T01:25Z. Absence of a later record is not evidence that nothing was performed.",
+      "dependency": "Every 'not yet certified' premise in this artifact.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRUCTURAL (recorded as VDC-7 / B-U6)",
+      "confidence": "N/A - it is an unquantified staleness, not a claim",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "Work already discharged could be re-planned. The correct first act of execution is a freshness check against the live record, not a restart."
+    },
+    {
+      "id": "SU-10",
+      "statement": "F064 and F113 are ruled to remain TWO findings with TWO proof burdens (V2 single/two-browser vs V4 MULTI_PARTY_REALTIME Meetings topology), and VD-031's validation class is recorded as UNKNOWN.",
+      "dependency": "Whether a Meetings multi-party session must be scheduled into the continuity slice.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "MODERATE",
+      "confidence": "MEDIUM",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "A V2 proof silently discharges the V4 obligation (Agent E E-SC-12), and a Meetings continuity claim rests on a proof topology that never exercised Meetings."
+    },
+    {
+      "id": "SU-11",
+      "statement": "Whether the coordinated three-identity realtime batch (VD-046) can be convened at all - the blocker is environmental (the founder's browser window staying open and unminimized), and it went unreachable repeatedly on the recorded day.",
+      "dependency": "D-50; roughly 20 obligations across CH-03, CH-04 and CH-09.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG (the blocker is directly recorded)",
+      "confidence": "HIGH that the risk exists; UNKNOWN whether it resolves",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "If the batch cannot be convened, construction can complete while certification cannot, and the critical path is a scheduling problem rather than an engineering one. Founder decision FA-15 (whether to park coordinated testing until one uninterrupted session exists) is the governing input."
+    },
+    {
+      "id": "SU-12",
+      "statement": "27 of 82 validation obligations - the largest class - depend on the Aura Reviewer account, production credential handling and a headless Playwright harness, none of which has a protection doctrine anywhere (PBG-3).",
+      "dependency": "The dischargeability of every SINGLE_AUTHORIZED_BROWSER proof in the plan, including CH-02's first gate.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "STRONG (the absence is directly recorded)",
+      "confidence": "HIGH",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "The instrument the entire certification plan rests on is itself ungoverned; if it becomes unavailable or is changed, proofs already taken cannot be reproduced and the keystone gate cannot be re-run."
+    },
+    {
+      "id": "SU-13",
+      "statement": "The bounded reading of the CH-06 -> CH-05 arc (a semantic contract available from the frozen canon rather than CH-06 construction) is this analysis's own proposal at LOW-MEDIUM confidence.",
+      "dependency": "CYCLE-1's decomposition.",
+      "classificationBasis": "ANALYTICAL_INFERENCE",
+      "evidenceGrade": "WEAK",
+      "confidence": "LOW-MEDIUM",
+      "couldChangeExecutionOrder": true,
+      "consequenceIfWrong": "CYCLE-1 is a genuine deadlock among three chapters, one arc of which is a frozen founder gate. The response must be founder escalation - never weakening the gate."
+    }
+  ],
+
+  "founderDecisionsRequiredBeforeAnyExecutionOrderIsFixed": [
+    "CON-3: confirm whether the PB-02 stop-order or the declared chapter edges governs the first entry (CH-04 vs CH-02/CH-03). This is the first execution decision of the programme.",
+    "CON-7 / D-19: classify the completed PB-02 / RC-C6 PRESERVE-list crossing (AD-CON-5), declined by four consecutive artifacts.",
+    "D-18: confirm that the OWED PBCR conditions 7-8 are discharged at CH-04 entry rather than at a later closure. They remain OWED and are not marked complete.",
+    "CYCLE-1 / SU-13: rule on the decomposition, or on the deadlock, without weakening the RC-C5 gate.",
+    "RC-C5 hard-gate SCOPE confirmation in operational terms: the BIFURCATED ruling is applied here to place CH-11/CH-12 outside the gate and CH-13 plus CH-14's five RC-C5-chartered obligations inside it. Ratification requested; ambiguous items are treated as gated.",
+    "Chapter authorisation, individually, for every chapter proposed for entry - roadmap approval is never chapter authorisation.",
+    "F137: media examination scope, timing and provider selection (recorded as a governance decision, not an engineering one), plus the appeal / false-positive policy jointly with CH-12.",
+    "The four external / infrastructure actions that no agent can perform: R2 CORS (F058), the three-migration deploy under observation, the R2 public-read ratchet stop-and-report, and the store release (F071).",
+    "FA-15: whether coordinated multi-party realtime testing is parked until one uninterrupted session is available - roughly 20 obligations depend on it.",
+    "The open dispositions the ratification carried forward without adjudicating: GAP-1 Settings placement, PD-1, PD-2, SupportScreen, GAP-2 charter placement, and whether obligation state becomes formally multidimensional."
+  ],
+
+  "stageDiscipline": {
+    "notPerformed": [
+      "No product implementation, migration, deployment, cleanup or infrastructure change.",
+      "No chapter authorisation, chapter entry or state promotion.",
+      "No protected-boundary crossing proposed or authorised; PB-01..PB-12 remain authoritative and Meetings/Realtime/Live remain protected.",
+      "No preserved conflict adjudicated (F043, F051, F122 remain CONFLICTING_CURRENT_STATE; F139 remains STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED on two dimensions).",
+      "No 451-item backlog produced. The implementation unit remains the chapter/system boundary; the accounting unit remains 143 findings + 308 obligations, reconciled independently.",
+      "No inferred state reported as recorded state, deterministic evidence, founder ruling or live certification.",
+      "No evidence silently strengthened; every weak-evidence dependency that could change execution order is surfaced in sequencingUncertainties."
+    ],
+    "rawSourceEscalations": [],
+    "rawSourceEscalationNote": "ZERO escalations. This artifact was produced entirely from the ten named normalised artifacts. No repository file was opened, no corpus rescan was performed, and no evidence question required targeted repository inspection to resolve at the S5-A level."
+  }
+}
