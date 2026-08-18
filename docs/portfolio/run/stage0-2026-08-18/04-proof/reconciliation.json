@@ -1,0 +1,59 @@
+{
+  "artifact": "STAGE_4_DETERMINISTIC_RECONCILIATION",
+  "contract": "AURA_DYNAMIC_RECONSTRUCTION_WORKFLOW.md §2 — STAGE 4: DETERMINISTIC RECONCILIATION (code), 0 agents",
+  "date": "2026-08-18",
+  "baseline": "FOUNDER-RATIFIED 2026-08-18 — 143 findings + 308 obligations = 451 units, 17 chapters, 12 RC chapters",
+  "accounting": {
+    "findings": "143/143",
+    "charteredObligations": "308/308",
+    "totalCanonicalUnits": 451,
+    "executableChapters": 17,
+    "rcChapters": "12/12",
+    "originalCoPreserved": 299,
+    "newlyRecoveredRatified": 9
+  },
+  "perChapter": {
+    "CH-14": 19,
+    "CH-04": 58,
+    "CH-06": 9,
+    "CH-13": 38,
+    "CH-11": 11,
+    "CH-15": 2,
+    "CH-02": 33,
+    "CH-05": 37,
+    "CH-03": 41,
+    "CH-12": 13,
+    "CH-16": 30,
+    "CH-09": 40,
+    "CH-10": 10,
+    "CH-17": 30,
+    "CH-01": 42,
+    "CH-07": 21,
+    "CH-08": 17
+  },
+  "delta": null,
+  "checksPassed": [
+    "R1: 143 findings + 308 obligations = 451 units, each owned EXACTLY ONCE",
+    "All 9 founder-ratified recovered COs present and owned",
+    "R2: cross-references never substitute for ownership",
+    "R3: original 299 all PRESERVED; nothing dropped, merged or superseded away",
+    "R4: RC-C0..RC-C11 all represented (12/12)",
+    "R5: WG001-WG017 issued; WG018 RESERVED/UNISSUED",
+    "R6: no finding state promoted; F139 ruling honoured",
+    "R7: canonical Stage-0 evidence never modified by analysis",
+    "R8: 6 founder-attention items carried explicitly, none adjudicated",
+    "R9: 30 commentary entries rejected mechanically and reported, not silently dropped",
+    "17/17 executable chapters unchanged; no CH-18 invented"
+  ],
+  "warnings": [],
+  "failures": [],
+  "verdict": "PASS",
+  "stageStatus": {
+    "stage0": "COMPLETE_AND_FOUNDER_RATIFIED",
+    "stage1": "COMPLETE",
+    "stage2": "COMPLETE_WITH_AMENDMENT",
+    "stage3": "COMPLETE_FROZEN_FOUNDER_RATIFIED_REBUILD",
+    "stage4": "COMPLETE_PER_CANONICAL_CONTRACT"
+  },
+  "contractScopeNote": "The canonical Stage-4 contract is a deterministic accounting PROOF with zero agents. It contains no execution-sequencing stage. Any executable-program sequencing is OUTSIDE this contract and requires a separately authorised stage."
+}

@@ -240,5 +240,48 @@
    "status": "Classified as governance reconciliation only. NO further protected-system modification performed in this task.",
    "outstanding": "Condition 7 (targeted regression) and condition 8 (shared-system health report) are recorded as owed for the historical crossing."
   }
+ },
+ "stage3RebuildRatification": {
+  "date": "2026-08-18",
+  "authority": "FOUNDER",
+  "status": "COMPLETE + FROZEN + FOUNDER-RATIFIED REBUILD",
+  "canonicalBaseline": {
+   "findings": 143,
+   "charteredObligations": 308,
+   "totalCanonicalUnits": 451,
+   "executableChapters": 17,
+   "rcChapters": 12,
+   "originalCoPreserved": 299,
+   "newlyRecoveredCos": 9
+  },
+  "nineRatified": [
+   "CO-RC-C7-025",
+   "CO-RC-C1-021",
+   "CO-RC-C1-022",
+   "CO-RC-C2-037",
+   "CO-RC-C3-025",
+   "CO-RC-C3-026",
+   "CO-RC-C6-029",
+   "CO-RC-C9-029",
+   "CO-RC-C9-030"
+  ],
+  "ratificationScope": "Accepts the nine as CANONICAL OBLIGATIONS because they were recovered deterministically from previously unread structured charter fields. Does NOT automatically approve every inferred classification, owner interpretation, implementation direction or unresolved disposition attached to them.",
+  "founderSensitiveNotAdjudicated": [
+   "CO-RC-C3-025 GAP-1 Settings — CH-05 placement founder-sensitive; do not treat Settings as generic Personal Controls by name similarity",
+   "CO-RC-C1-021 / CO-RC-C1-022 PD-1 / PD-2 — obligations now exist to hang disposition on; product fate remains founder authority",
+   "CO-RC-C9-029 SupportScreen — disposition separately governable",
+   "CO-RC-C7-025 — do NOT manufacture the convergence verdict",
+   "CO-RC-C6-029 — Meetings remains PROTECTED; the obligation authorizes no demolition, modification, refactor or implementation",
+   "CO-RC-C9-030 — unmet preconditions are real dependency/gate evidence; do not schedule around them"
+  ],
+  "openFounderAttention": [
+   "GAP-1 final placement",
+   "PD-1 disposition",
+   "PD-2 disposition",
+   "SupportScreen disposition",
+   "whether obligation state becomes formally multidimensional",
+   "PBCR conditions 7-8 (targeted regression; shared-system health)"
+  ],
+  "note": "These do NOT block Stage 4, but Stage 4 must carry them explicitly and may not silently adjudicate them."
  }
 }
