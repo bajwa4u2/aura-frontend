@@ -1,0 +1,32 @@
+{
+  "stage": "STAGE_1",
+  "type": "DETERMINISTIC_VALIDATION",
+  "date": "2026-08-18",
+  "canonicalUniverse": {
+    "issuedFindings": 143,
+    "issuedWG": 17,
+    "reservedWG": [
+      "WG018"
+    ]
+  },
+  "checksPassed": [
+    "Stage-0 canonical evidence UNMUTATED (git clean under 00-evidence)",
+    "Agent A: 143/143 findings consumed, each with exactly one proposed root owner",
+    "Agent B: all 12 protected boundaries PB-01..PB-12 considered",
+    "Agent B: RC-C0..RC-C11 dependency axis referenced",
+    "Agent B: RC-C4/RC-C5 stalled-chain analysis present",
+    "Agent C: all 17 issued WG items considered",
+    "Agent C: WG018 not treated as issued",
+    "No finding state changed by Stage-1 analysis",
+    "F043/F051/F122 conflicts intact in the baseline"
+  ],
+  "warnings": [],
+  "failures": [],
+  "verdict": "PASS",
+  "stageStatus": {
+    "stage0": "COMPLETE_AND_FOUNDER_RATIFIED",
+    "stage1": "COMPLETE",
+    "stage2": "NOT_STARTED"
+  },
+  "note": "Stage-1 outputs are ANALYTICAL_PROPOSAL. Not ratified; they carry no ownership authority."
+}

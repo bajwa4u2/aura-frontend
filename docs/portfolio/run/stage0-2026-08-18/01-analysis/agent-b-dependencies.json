@@ -1,0 +1,864 @@
+{
+  "type": "ANALYTICAL_PROPOSAL",
+  "artifact": "AGENT_B_DEPENDENCY_RISK_PROTECTED_BOUNDARY_ANALYSIS",
+  "stage": "STAGE 1 — INDEPENDENT ANALYSIS (one of three independent analysts)",
+  "agent": "AGENT B — DEPENDENCY / RISK / PROTECTED-BOUNDARY",
+  "date": "2026-08-18",
+  "authorityDisclaimer": "NOT RATIFIED TRUTH. This is an analytical proposal built only from the founder-ratified Stage-0 normalised artifacts. It assigns no ownership, sets no priority, removes no gate, merges no finding, and changes no Stage-0 fact. Where evidence is insufficient the uncertainty is preserved rather than resolved.",
+  "inputsConsumed": [
+    "00-evidence/findings-batch-1.json (F001-F048)",
+    "00-evidence/findings-batch-2.json (F049-F120 wrapper object, .findings)",
+    "00-evidence/findings-batch-3.json (F097 band + F121-F143)",
+    "00-evidence/protected-boundaries.json (PB-01..PB-12, crossCuttingProtections, PBG-1..PBG-5)",
+    "00-evidence/rc-map.json (RC-C0..RC-C11, X1..X7, openQuestionsForLaterStages)",
+    "00-evidence/doctrine-index.json (64 doctrine records incl. the RIC stage table)",
+    "00-evidence/validation-debt.json (82 records VD-001..VD-082, class legend, VDC-1..VDC-8)",
+    "00-evidence/contradiction-register.json (CR-R1..CR-R6 resolved, CR-O1..CR-O5 still open, 70 agent-reported)",
+    "00-evidence/unmapped-surfaces.json (PD-1, PD-2, SupportScreen, GAP-1, GAP-2)",
+    "00-evidence/wg-register.json (WG001-WG017 issued; WG018 RESERVED_UNISSUED)",
+    "00-evidence/stage0-rulings.json (founder rulings consumed by the deterministic tools)"
+  ],
+  "namespaceDiscipline": {
+    "RC-C0..RC-C11": "Historical frontend Reconstruction chapters.",
+    "RIC-C1..RIC-F1": "Rich Content & Interaction implementation stages (§12 §16). A DIFFERENT AXIS.",
+    "RC1..RC9": "Refresh-continuity ROOT-CAUSE labels. Not chapters.",
+    "RC-A / RC-B": "Realtime defect ROOT-CAUSE labels. Not chapters.",
+    "C2-R1..R10 vs C1-R1/R2": "Follow adjudication rulings vs C1 accepted-exception labels — a fourth near-collision.",
+    "ruleApplied": "No classification in this artifact was made by token shape. Every axis attribution carries the Stage-0 evidence that established it."
+  },
+
+  "executiveDependencyFindings": [
+    {
+      "id": "B-KEY-1",
+      "statement": "The reconstruction is governed by FOUR partly independent dependency systems that no governed document reconciles: (1) the RC chapter chain RC-C0→C11, (2) the frozen §12 RIC stage chain C1→C2/C3→C5→D1→D2/D3→E1→E2→F1, (3) the founder-frozen deployment/observation gates (PB-11), and (4) the shared-cause continuity contract (RC1..RC9 / F059-F070) which has NO owning chapter on any axis. Any sequencing built on only one of these will be wrong.",
+      "evidence": ["rc-map X2/X6", "doctrine-index RIC stage records", "doctrine-index DOCTRINE-REFRESH-CONTINUITY: 'No RC chapter owns this'", "protected-boundaries PB-11"],
+      "provenanceGrade": "STRONG (multiple corroborating normalised artifacts)"
+    },
+    {
+      "id": "B-KEY-2",
+      "statement": "Two of the three stalled third-tier RC chapters have their DECLARED prerequisites already satisfied. RC-C4 depends on RC-C0/C1/C2/C3 — all four are closed — and is held only by founder sequencing ('C4 implementation NOT started, held per founder sequencing'). RC-C6 is recorded as 'blocked until C2', and RC-C2 was founder-closed 2026-08-16, so its stated blocker is discharged on the evidence. Only RC-C5 carries an explicit frozen gate. This is a structural observation about the dependency graph; it is NOT a recommendation to start anything.",
+      "evidence": ["rc-map RC-C4 currentEvidencedStatus + relationshipsAndDependencies", "rc-map RC-C6 currentEvidencedStatus (NEXT_WORK.md:97 'blocked until C2')", "rc-map RC-C2 FINAL CLOSURE 2026-08-16", "DECISIONS.md C5 HARD GATE"],
+      "provenanceGrade": "STRONG"
+    },
+    {
+      "id": "B-KEY-3",
+      "statement": "CLOSED CHAPTERS CARRY OPEN FINDINGS IN THEIR OWN TERRITORY. RC-C2 (Identity, Presence & Profile) is founder-closed, yet F061 (personal profile edit continuity) and F062 (institution profile edit continuity) are OPEN, and the whole identity-consumption hierarchy F050 ⊂ F053 ⊂ F116 is PARTIALLY_VALIDATED. RC-C3 is closed, yet F069 (route classification) and F066/F067/F068 (router-boundary continuity) are open. Chapter closure at the LOCALLY CERTIFIED layer therefore does not discharge finding-level obligations inside that chapter's subject matter. This is a certification-layer consequence (PB-10), not a claim that any closure was wrong.",
+      "evidence": ["findings F061/F062/F066/F067/F068/F069/F050/F053/F116", "VD-080 'C0,C1,C2,C3 recorded as LOCALLY CERTIFIED — higher layers outstanding'", "PB-10 'A lower layer passing never implies a higher one'"],
+      "provenanceGrade": "STRONG"
+    },
+    {
+      "id": "B-KEY-4",
+      "statement": "THREE KEYSTONES CARRY DISPROPORTIONATE FAN-OUT. F065 (RC1 session-hint contract) gates F059, F061, F062, F063, F064, F103, F104 — every 'return me where I was' obligation including the founder-frozen Live auth-return. F058 (R2/uploads CORS) blocks visual completion of F051, F052, F056 and WG010 and 'degrades Discover, Posts, Articles, Institutions equally'. F079/F082 (same-session Live escalation + return to private) gate F083-F088 and the entire viewer/engagement/acquisition stack F089-F107. Two of the three are not resolvable by engineering alone: F058 needs a founder Cloudflare dashboard action; F079/F082 need a multi-party human session.",
+      "evidence": ["findings F065/F058/F079/F082 (all transcript line 31827 dependency statements)", "VD-026, VD-027, VD-037"],
+      "provenanceGrade": "STRONG"
+    },
+    {
+      "id": "B-KEY-5",
+      "statement": "THE MOST DANGEROUS SEQUENCING SURFACE IS RETENTION/STORAGE, NOT UI. F143 is the recorded proof: a logical per-ROW release decision can authorise an irreversible per-OBJECT physical deletion because Media identity is not 1:1 with storage objects, and production currently holds 10 duplicate/canonical pairs addressing identical R2 objects. F138 independently establishes that the delivery boundary performs NO authorization of any kind, so PUBLIC/RESTRICTED/PRIVATE are physically indistinguishable at storage. Logical authority and physical consequence must be treated as separate systems with separate gates.",
+      "evidence": ["F143 (STRONG)", "F138 (STRONG)", "PB-07 isRetentionEligible() asymmetry", "Amendment 1 §B 'Retention is a derived consequence; storage deletion is a separate, irreversible execution decision'"],
+      "provenanceGrade": "STRONG"
+    }
+  ],
+
+  "dependencyGraph": {
+    "note": "Edges are recorded ONLY where a Stage-0 artifact states them. 'inferredEdge: true' marks an edge this analysis proposes from two or more recorded facts; those are proposals, not evidence.",
+    "layers": [
+      {
+        "layer": "L0 — CLOSED RC FOUNDATIONS",
+        "nodes": ["RC-C0", "RC-C1", "RC-C2", "RC-C3"],
+        "state": "COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED (C0, C1 2026-08-15; C2, C3 founder-closed 2026-08-16)",
+        "residualObligations": "Measured enforced debt (24 elapsed-time · 47 toLocal() · 26 spinners of which 14 in protected Meetings · 181 state-primitive sites · 17 screen time formatters); G5 remainder 168 sites/67 files chapter-owned; relative_time.dart shim 11 callers owned by C4+C6; PD-1/PD-2 withdrawn from C1."
+      },
+      {
+        "layer": "L1 — STALLED RC THIRD TIER",
+        "nodes": ["RC-C4 (OPEN, evidence complete, not started, held per founder sequencing)", "RC-C5 (BLOCKED by frozen hard gate)", "RC-C6 (OPEN, not started; declared blocker 'until C2' is discharged on evidence)"]
+      },
+      {
+        "layer": "L2 — UNREACHABLE-AS-SEQUENCED RC",
+        "nodes": ["RC-C7 (amended, not started; deps C4+C5+C6)", "RC-C8 (not started; dep C6)", "RC-C9 (not started; deps C4+C5)", "RC-C10 (CONFLICTING_CURRENT_STATE; construction entry requires C0-C8 stable)", "RC-C11 (not started; no entry condition currently satisfiable)"]
+      },
+      {
+        "layer": "RIC — FROZEN §12 STAGE CHAIN (SEPARATE AXIS, ADVANCING)",
+        "nodes": [
+          "RIC-C1 Content-truth authority — IMPLEMENTED_NOT_LIVE_CERTIFIED (62b39bf); deps: none recorded",
+          "RIC-C2 Reference index/retention — IMPLEMENTED_NOT_LIVE_CERTIFIED, 'stopped at its authorised boundary'; deps: RIC-C1",
+          "RIC-C3 Access context at ingestion — PROPOSED; deps: RIC-C1",
+          "RIC-C4 Canonical ingestion convergence (F129) — PROPOSED; deps: RIC-C1, RIC-C2",
+          "RIC-C5 Governed delivery, PROMOTED SECURITY STAGE — PROPOSED, explicitly NOT ADVANCED; deps: RIC-C1, RIC-C3",
+          "RIC-D1 MediaDerivative/EXIF — PROPOSED; deps: RIC-C1, RIC-C5",
+          "RIC-D2 posters/waveform/PDF — PROPOSED; deps: RIC-D1",
+          "RIC-D3 broad formats + external preview cache — PROPOSED; deps: RIC-D1",
+          "RIC-E1 shared client primitives — PROPOSED; deps: RIC-C1",
+          "RIC-E2 Conversation as FIRST COMPLETE REFERENCE — PROPOSED; deps: RIC-D2, RIC-E1",
+          "RIC-F1 Propagation (Articles, Posts, Announcements, Institution Posts, Correspondence) — PROPOSED; deps: RIC-E2"
+        ],
+        "criticalObservation": "RIC-E2 is the stage that owns F011-F019, F123-F125 and the six governed-home WG items. It sits behind FOUR upstream stages (C1→C5→D1→D2, plus E1). Every Conversation content capability the founder observed as defective is therefore, on the frozen contract's own ordering, at the far end of the longest chain in the corpus."
+      },
+      {
+        "layer": "CONTINUITY — OWNERLESS CROSS-CUTTING CONTRACT",
+        "nodes": ["F065 keystone (IMPLEMENTED_NOT_LIVE_CERTIFIED)", "F059, F061, F062, F063, F064, F066, F067, F068, F070 (OPEN)", "F060 (PARTIALLY_VALIDATED)", "F069 (IMPLEMENTED_NOT_LIVE_CERTIFIED)", "F117 (PARTIALLY_VALIDATED, systemic statement)", "F103/F104 (Live auth-return, OPEN)", "F113 (Meetings continuity, OPEN)"],
+        "ownership": "NOT_RECORDED on any axis. doctrine-index states plainly: 'No RC chapter owns this. It cuts across RC-C3, RC-C6/RC-C10, RC-C5 and RC-C9.'"
+      }
+    ],
+    "prerequisiteEdges": [
+      {"from": "RC-C0", "to": "RC-C1", "kind": "A_PREREQUISITE", "evidence": "rc-map RC-C1 dependsOn"},
+      {"from": "RC-C1", "to": "RC-C2", "kind": "A_PREREQUISITE", "evidence": "rc-map RC-C2 dependsOn"},
+      {"from": "RC-C1", "to": "RC-C3", "kind": "A_PREREQUISITE", "evidence": "rc-map RC-C3 dependsOn (+ RC-C0 language)"},
+      {"from": "RC-C2", "to": "RC-C4/RC-C5/RC-C6", "kind": "A_PREREQUISITE", "evidence": "rc-map RC-C2 unlocks"},
+      {"from": "RC-C3", "to": "RC-C4/RC-C5/RC-C6", "kind": "A_PREREQUISITE", "evidence": "rc-map RC-C3 unlocks"},
+      {"from": "RC-C4 live closure declared by founder", "to": "RC-C5", "kind": "D_CERTIFICATION + F_FOUNDER_ACTION (frozen hard gate)", "evidence": "DECISIONS.md C5 HARD GATE; PB-11", "note": "The roadmap's own relationship table lists RC-C4 and RC-C5 as PARALLEL siblings. The hard gate is a LATER founder-frozen sequencing rule layered on top of that graph, not the roadmap's original technical dependency. Both statements are founder-frozen; both preserved."},
+      {"from": "RC-C6", "to": "RC-C7 / RC-C8", "kind": "A_PREREQUISITE", "evidence": "rc-map RC-C6 unlocks"},
+      {"from": "RC-C4 + RC-C5", "to": "RC-C9", "kind": "A_PREREQUISITE", "evidence": "NEXT_WORK.md:100"},
+      {"from": "RC-C7 + RC-C8 (+C0-C6)", "to": "RC-C10 construction entry", "kind": "A_PREREQUISITE", "evidence": "rc-map RC-C10 constructionEntry: 'All Live-consumed authorities stable — C0..C8'"},
+      {"from": "RC-C9 platform contracts proven", "to": "RC-C10 cross-platform completion/certification", "kind": "D_CERTIFICATION", "evidence": "C9/C10 overlap rule, DECISIONS.md:38"},
+      {"from": "RC-C0..C10", "to": "RC-C11", "kind": "D_CERTIFICATION", "evidence": "C11 nine entry conditions"},
+      {"from": "RIC-C1", "to": "RIC-C2, RIC-C3, RIC-E1", "kind": "A_PREREQUISITE", "evidence": "doctrine-index RIC records dependencies"},
+      {"from": "RIC-C1 + RIC-C3", "to": "RIC-C5", "kind": "A_PREREQUISITE", "evidence": "doctrine-index RIC-C5 deps"},
+      {"from": "RIC-C1 + RIC-C5", "to": "RIC-D1", "kind": "A_PREREQUISITE", "evidence": "doctrine-index RIC-D1 deps ('D1 now gates on C5 after the F138 promotion')"},
+      {"from": "RIC-C1 + RIC-C2", "to": "RIC-C4", "kind": "A_PREREQUISITE", "evidence": "doctrine-index RIC-C4 deps"},
+      {"from": "RIC-D2 + RIC-E1", "to": "RIC-E2", "kind": "A_PREREQUISITE", "evidence": "doctrine-index RIC-E2 deps"},
+      {"from": "RIC-E2", "to": "RIC-F1", "kind": "A_PREREQUISITE", "evidence": "doctrine-index RIC-F1 deps"},
+      {"from": "CANON-AURA-INVITATION-SYSTEM", "to": "CANON-AURA-CONVERSATION-SYSTEM", "kind": "A_PREREQUISITE", "evidence": "doctrine-index: 'Conversation consumes Invitation first'"},
+      {"from": "F065 (RC1 session-hint contract)", "to": "F059, F061, F062, F063, F064, F103, F104", "kind": "A_PREREQUISITE (recorded keystone)", "evidence": "transcript 31827 via findings F065/F059/F061/F062/F063/F064/F103/F104"},
+      {"from": "F058 (R2 CORS)", "to": "F051, F052, F056, WG010", "kind": "E_EXTERNAL_INFRASTRUCTURE", "evidence": "findings F058, F051, F052, F056; VD-026"},
+      {"from": "F079 + F082", "to": "F083, F084, F085, F086, F087, F088 and F089-F107", "kind": "D_CERTIFICATION", "evidence": "findings F079/F082; VD-037: 'Nothing downstream of Live can be certified until the lifecycle journey passes once'"},
+      {"from": "F053 (canonical identity consumption)", "to": "F050, F051, F052, F054, F055, F056, F057", "kind": "B_SHARED_SYSTEM (hierarchy, not duplication)", "evidence": "transcript 31827/31798 via findings F050/F053/F116"},
+      {"from": "F116", "to": "F050-F058 (systemic statement)", "kind": "B_SHARED_SYSTEM", "evidence": "same; 'F116 must not be closed by fixing one consumer'"},
+      {"from": "F117", "to": "F059-F070", "kind": "B_SHARED_SYSTEM (hierarchy, not compression)", "evidence": "transcript 31827"},
+      {"from": "three committed-unapplied migrations", "to": "VD-054 production reconciliation", "kind": "C_MIGRATION", "evidence": "VD-055"},
+      {"from": "VD-054 production reconciliation", "to": "F139 closure, F142 coverage, F143 closure, ANY reaper authority change", "kind": "C_MIGRATION + D_CERTIFICATION", "evidence": "VD-054, VD-056, VD-057, VD-058, VD-062"},
+      {"from": "F129 canonical ingestion convergence (RIC-C4)", "to": "F143 cause removal", "kind": "A_PREREQUISITE", "evidence": "F143 'root cause — identified, deliberately not fixed here'; VD-058"},
+      {"from": "F138 resolution", "to": "retirement of raw storage URLs (RIC-C5 step 4)", "kind": "G_DESTRUCTIVE/IRREVERSIBLE + F_FOUNDER_ACTION", "evidence": "§15 security gate 9; PB-07; PB-11"},
+      {"from": "F140 coverage", "to": "MessageAttachment retirement (§14)", "kind": "C_MIGRATION", "evidence": "F140 PB: '§14 MessageAttachment retirement now additionally gated on F140 coverage'"},
+      {"from": "MessageAttachment retirement", "to": "F133 (ms-vs-seconds unit mismatch)", "kind": "C_MIGRATION", "evidence": "F133 CH/PB records"},
+      {"from": "F016 (honest media/document format model)", "to": "F011, F014, F015", "kind": "A_PREREQUISITE", "evidence": "VD-076 'BLK: F011, F014, F015 (recorded as gated by F016)'"},
+      {"from": "F126 application-level correction", "to": "F126 storage-level completion (RIC-C5)", "kind": "D_CERTIFICATION", "evidence": "VD-047, VD-052; 'do not read COMPLETE as terminal'"},
+      {"from": "founder-triggered store release", "to": "F071", "kind": "E_EXTERNAL_INFRASTRUCTURE + F_FOUNDER_ACTION", "evidence": "F071, VD-032"},
+      {"from": "Conversation shared capabilities certified", "to": "Meetings validation batch F112/F113", "kind": "D_CERTIFICATION", "evidence": "PB-01; VD-045; transcript 31827"},
+      {"from": "additive deploy → migration → founder live observation → journey certification → explicit authorization", "to": "Conversation Phase 5 legacy retirement", "kind": "F_FOUNDER_ACTION + G_DESTRUCTIVE", "evidence": "PB-11; VD-071"}
+    ],
+    "proposedInferredEdges": [
+      {
+        "inferredEdge": true,
+        "from": "RC-C4 attention retirement (F030/F031 legacy global banner)",
+        "to": "any certifiable composition/composer product behaviour (RC-C5 subject matter, RIC-E1/E2 client primitives)",
+        "basis": "F031 records the legacy banner overlapping the composer and /articles/write; PB-08 forbids an isolated cosmetic patch. A composer cannot be product-behaviour-certified while an ungoverned global overlay covers it.",
+        "confidence": "MEDIUM — this is Agent B's reading of two recorded facts, not a stated dependency."
+      },
+      {
+        "inferredEdge": true,
+        "from": "PD-2 Authentication & Account Entry disposition",
+        "to": "F065/F069 continuity keystone, F103/F104 Live auth-return, F027 second root cause, guest-reachable Meetings entry",
+        "basis": "PB-06 records the session-hint contract, route classification and guest boundary as the auth authority's protected surface; PD-2 is the unowned product disposition covering exactly those surfaces.",
+        "confidence": "MEDIUM-HIGH — the surfaces are the same; the ownership link is not stated."
+      },
+      {
+        "inferredEdge": true,
+        "from": "GAP-2 Long-Form Publishing (Articles)",
+        "to": "F121 (expiring signed URLs baked into durable markdown) and F141 (inline authored media outside retention truth)",
+        "basis": "Both findings are article-body defects with durability/retention consequences; GAP-2 has no owning chapter, so no chapter currently owns their product disposition.",
+        "confidence": "MEDIUM — the findings are chapter-mapped on the RIC axis (F1, C2 D-5) but the PRODUCT surface is unowned."
+      }
+    ]
+  },
+
+  "prerequisiteChains": [
+    {
+      "id": "CHAIN-1 — RC MAIN SEQUENCE",
+      "chain": "RC-C0 → RC-C1 → {RC-C2 ∥ RC-C3} → {RC-C4 ∥ RC-C5* ∥ RC-C6} → {RC-C7 ∥ RC-C8} → RC-C10 → RC-C11, with RC-C9 overlapping",
+      "stallPoint": "The third tier. *RC-C5 additionally carries the frozen hard gate on RC-C4 live closure.",
+      "consequence": "As sequenced, RC-C7, RC-C8, RC-C9, RC-C10 and RC-C11 are all downstream of the third tier; no RC-C11 entry condition is currently satisfiable.",
+      "evidence": "rc-map X6; NEXT_WORK.md:88-102"
+    },
+    {
+      "id": "CHAIN-2 — RIC SECURITY-FIRST SEQUENCE",
+      "chain": "RIC-C1 (content truth) → RIC-C3 (access context) → RIC-C5 (governed delivery, PROMOTED for F138) → RIC-D1 (derivatives/EXIF) → RIC-D2/D3 → RIC-E2 (Conversation reference) → RIC-F1 (propagation)",
+      "governingRule": "'C1-C3 are prerequisites because they are security and data-integrity work; no presentation stage should ship on top of an ungoverned ingestion path.'",
+      "consequence": "Every visible Conversation content capability (F011-F019, F123-F125) and every Article propagation defect (F025-F027, F121) sits at the tail of this chain. The stage that would fix what the founder actually saw is the last one.",
+      "evidence": "doctrine-index RIC records; §12 §16; F025 PB"
+    },
+    {
+      "id": "CHAIN-3 — RETENTION TRUTH / REAPER AUTHORITY (D-6 SEVEN-STEP ORDER)",
+      "chain": "(1) protect known live relationships → (2) establish missing authoritative relationships, especially identity → (3) resolve truthful reference semantics → (4) wire producers transactionally → (5) deploy migrations (FOUNDER) → (6) run post-deployment read-only reconciliation over five cohorts → (7) demonstrate equivalence/coverage against production reality → ONLY THEN any reaper authority change",
+      "currentPosition": "Steps 1-4 largely landed (D-1, D-3, D-5, D-6 producer wiring). Step 5 is BLOCKED on a founder-observed deployment. Steps 6-7 cannot start.",
+      "consequence": "F139, F140, F141, F142, F143 and the enlarged F131 cannot close, and MediaCleanupService must not run.",
+      "evidence": "PB-07; Amendment 1 D-6; VD-054, VD-055, VD-056, VD-057, VD-058, VD-059, VD-060, VD-061, VD-062"
+    },
+    {
+      "id": "CHAIN-4 — LIVE LIFECYCLE",
+      "chain": "F079/F082 human lifecycle journey (multi-party) → F083-F088 → F089-F096 engagement → F097-F107 public acquisition → F108-F111 scale assessment",
+      "additionalGates": "F103/F104 additionally depend on F065 (continuity keystone). F095 Live moderation cannot pre-empt the open founder checkpoint D. F110/F111 topology decisions require founder checkpoint E and preserve provider independence.",
+      "invalidationHazard": "F075's model change (parallel broadcast → state escalation) INVALIDATED the earlier live proofs relied on by F083 and F084. Prior 'proven live' evidence certifies the retired model.",
+      "evidence": "findings F075/F079/F082/F083/F084/F103/F104; VD-035, VD-037, VD-038, VD-041, VD-042, VD-043, VD-044"
+    },
+    {
+      "id": "CHAIN-5 — IDENTITY CONSUMPTION",
+      "chain": "F116 (systemic) ⊃ F053 (parent) ⊃ {F050, F051, F052, F054, F055, F056, F057}; visual completion of F051/F052/F056 additionally gated by F058 (external).",
+      "hazard": "F057 proves identity drift is AUTHORITY-affecting (host detection / Leave-vs-End, role lookup, Go Live eligibility), not cosmetic. Any identity change reaching realtime must re-prove those three.",
+      "protection": "PB-05: 'F116 must not be closed by fixing one consumer'; D-1 identity→Media convergence must be ADDITIVE and deployed identity consumers must not break.",
+      "evidence": "findings F050/F053/F057/F116; VD-021, VD-025; PB-05"
+    },
+    {
+      "id": "CHAIN-6 — CONVERSATION FINAL CERTIFICATION",
+      "chain": "CANON-AURA-INVITATION-SYSTEM → CANON-AURA-CONVERSATION-SYSTEM → Conversation Completion Register (audio F006 · video F008 · screen share F010 · media/attachments F011 · intentional Live · message reporting F023) → Conversation final certification → Meetings validation batch (F112/F113)",
+      "consequence": "Conversation is NOT final-certified until the Completion Register resolves, and the Meetings batch runs only after Conversation's shared capabilities are certified WITH explicit Meetings regression evidence. Two protected boundaries (PB-01, PB-04) sit on this chain.",
+      "note": "'C4 PROGRESSION DOES NOT ERASE IT' and 'NO FAKE UI SHIPS MEANWHILE' are frozen constraints on this chain.",
+      "evidence": "doctrine-index OBLIGATION-CONVERSATION-COMPLETION-REGISTER; VD-073; VD-045; PB-01; PB-04"
+    },
+    {
+      "id": "CHAIN-7 — CONTINUITY (OWNERLESS)",
+      "chain": "F065 keystone → {F059, F061, F062, F063, F064, F103, F104}; separately F066/F067/F068 (router boundary) and F070 (draft identity) → honest closure of F027",
+      "orderingConstraint": "The founder stop-order sequence governs execution: realtime transport → identity/avatar certification → refresh-continuity contract → video/screenshare/Live.",
+      "riskConcentration": "Regression risk is concentrated in the router, mitigated by the existing route ratchet; the same boundary nearly bounced Meetings guests into a login wall.",
+      "evidence": "findings F059-F070; VD-029; PB-02 stop-order; PB-06; PB-09"
+    },
+    {
+      "id": "CHAIN-8 — CROSS-PLATFORM / RELEASE",
+      "chain": "RC-C9 platform contracts proven (real-device, WNS, native notification delivery) → RC-C10 cross-platform completion → RC-C11 entry conditions 4 and 5 → Release Gate",
+      "blockers": "F071 cannot even be re-observed before a founder-triggered store release; F072 needs a real device; the workstation is windows-arm64 with no Prisma engine and no AppModule smoke boot.",
+      "evidence": "VD-032, VD-033, VD-069, VD-063; rc-map RC-C9 ENVIRONMENTAL_CONSTRAINT"
+    }
+  ],
+
+  "protectedBoundaryMatrix": [
+    {
+      "id": "PB-01",
+      "domain": "MEETINGS",
+      "candidateSystemsThatTouchIt": ["RC-C6 presentation convergence (the only chartered entry)", "route classification / navigation changes (F069, F066-F068)", "refresh-continuity F064/F113", "Meetings validation batch F112", "any Media/ContentReference retention generalisation (RIC-C2)", "multipart upload path shared with meeting recordings (RIC-C1/C5)"],
+      "whyTouched": "Meetings shares the router, the realtime primitives and the multipart upload path with systems under active work, while its lifecycle and storage universe are deliberately external.",
+      "avoidable": "PARTIALLY. Storage/retention contact is avoidable and is already prohibited (no fake Media bridge, no Meeting deriver). Router and realtime-primitive contact is NOT avoidable — shared-boundary work demonstrably threatened Meetings guest entry.",
+      "regressionRequirement": "Targeted Meetings regression after EVERY slice (currently 97/97). Route-classification disjointness must hold. The meeting-recordings multipart intersection requires explicit regression before it is touched — 'it is not assumed safe.'",
+      "founderApprovalRequired": "YES — founder checkpoint 11, Meetings sign-off after each slice; any convergence into the Media/ContentReference universe.",
+      "multiPartyValidationRequired": "YES for F112/F113 (MULTI_PARTY_REALTIME, V4).",
+      "externalInfrastructureRequired": "NO",
+      "destructivePotential": "MEETING REGRESSION: loss of guest/booker entry (near-miss on record); recording retention corruption if the external storage universe is merged.",
+      "notes": "F114 is held LIVE_CERTIFIED on file-level non-modification plus the regression set. That evidence form is fragile: it certifies 'nothing was touched', not 'touching it is safe'."
+    },
+    {
+      "id": "PB-02",
+      "domain": "REALTIME (transport, media service, session lifecycle)",
+      "candidateSystemsThatTouchIt": ["RC-C6", "Live work RC-C10 / F074-F088", "C4 attention retirement (shares producers with the incoming-call experience)", "refresh continuity F060/F046", "identity changes reaching realtime (F052, F054, F057)"],
+      "whyTouched": "Realtime primitives are already shared; attention presentation, identity presentation and continuity all render on top of them.",
+      "avoidable": "NO for C4 and Live. YES for a wholesale rewrite — which is prohibited.",
+      "regressionRequirement": "RC-A (shared socket/media singleton disposal on tokenStore-watch rebuild, 509230a) and RC-B (root-overlay _joining latch, dfc9027) must not regress. Presentation convergence only, slice-by-slice, regression after each slice.",
+      "founderApprovalRequired": "YES — checkpoint 10 (participation & invite interaction); the founder stop-order sequence; whether to park coordinated realtime testing until one uninterrupted session is available.",
+      "multiPartyValidationRequired": "YES — the §H coordinated batch certifies 19 obligations in one three-identity session.",
+      "externalInfrastructureRequired": "Indirectly — the founder's browser window must stay open and unminimized; it 'went unreachable repeatedly today'.",
+      "destructivePotential": "REALTIME REGRESSION and SESSION LOSS. RC-A/RC-B are both regressions that made calls unusable in production.",
+      "notes": "FD-3 forbids semantic convergence; shared components render context-supplied states and 'never own semantic meaning'. A component-level refactor is the exact shape that would violate this silently."
+    },
+    {
+      "id": "PB-03",
+      "domain": "LIVE",
+      "candidateSystemsThatTouchIt": ["F074-F111", "public/signed-out surfaces (F097-F107)", "auth return path (F103/F104 → F065)", "Institution Room RC-C8 (adjacent 'what is live now' territory)", "Discover / Public Home"],
+      "whyTouched": "Live is a governed MODE of a Thread or Space, so it reaches into Conversation, navigation, auth and discovery by construction.",
+      "avoidable": "NO. FD-5 makes C3, C4 and C5 PRODUCT dependencies of Live, 'not optional, and not merely later chapters'.",
+      "regressionRequirement": "Charter §26 A-O pins: same-session escalation, no re-invites, durable NORMAL→LIVE_PREPARING→LIVE trail, observer/non-party refusals, End-Live returning the SAME session to NORMAL with only observers detached, STANDALONE refused, born-public refused, discovery keyed on liveState LIVE.",
+      "founderApprovalRequired": "YES — checkpoint 15; open checkpoint D (moderation policy); open checkpoint E (audience-scale topology/provider); founder acceptance before release inclusion; any SFU/topology decision.",
+      "multiPartyValidationRequired": "YES — F082/F083/F084/F085/F088 are MULTI_PARTY_REALTIME; F088 is a PRIVACY proof.",
+      "externalInfrastructureRequired": "POTENTIALLY — audience-scale topology/provider, with provider independence preserved and deliberately not frozen.",
+      "destructivePotential": "PRIVACY EXPOSURE (F088: a viewer must never become a Conversation party with access to messages/history/attachments); AUTHORIZATION BYPASS (F086 role-derived, heuristic removed); GOVERNANCE VIOLATION (a temporary Live authority built on surfaces authorised for demolition).",
+      "notes": "The governing invariant 'LIVE MUST NOT CREATE TEMPORARY VERSIONS OF AUTHORITIES ALREADY SCHEDULED FOR RECONSTRUCTION' is under recorded pressure: Live navigation, discovery, viewer admission and counts exist while C3's successors, C4 and C5 are amended/not-started/hard-gated. Stage 0 records the tension without adjudicating; this analysis does the same."
+    },
+    {
+      "id": "PB-04",
+      "domain": "CONVERSATION PARTY TRUTH",
+      "candidateSystemsThatTouchIt": ["Live viewers (F088)", "F055 party ordering / firstJoinedAt", "F126 attachment visibility", "Phase 5 legacy retirement", "RC-C7 institutional Conversation & Desk", "Conversation Completion Register"],
+      "whyTouched": "Party membership is the durable relationship fact that realtime participation, media visibility and Live observation all sit beside without being.",
+      "avoidable": "NO — but the boundary is a NON-COLLAPSE rule, not a no-touch rule.",
+      "regressionRequirement": "F088 privacy proof (OBSERVER session row only). F126 visibility stamped on the SAME update that stamps the CONVERSATION parent — 'a parent stamp without a visibility stamp IS the defect', pinned seven ways. Party ordering must not revert to the rejected generic joinedAt + alphabetical approximation.",
+      "founderApprovalRequired": "YES — any new Party kind; Phase 5 retirement authorization; checkpoint 12 (Correspondence presentation and its convergence verdict).",
+      "multiPartyValidationRequired": "YES — F088 (3+), F126 (two-account/two-browser).",
+      "externalInfrastructureRequired": "Indirectly via deployment for Phase 5.",
+      "destructivePotential": "IDENTITY/RELATIONSHIP CORRUPTION: joinedAt IS overwritten on re-entry and Conversation.directKey is PERMANENTLY cleared once topology grows — two irreversible data facts already present in production. PRIVACY EXPOSURE via F126/F088.",
+      "notes": "The firstJoinedAt immutability is the recorded mitigation for the joinedAt overwrite. It is an additive, replay-guarded backfill (9313fdc) — a good migration shape to reuse, not a licence to rewrite party history."
+    },
+    {
+      "id": "PB-05",
+      "domain": "IDENTITY (canonical identity, presence, profile)",
+      "candidateSystemsThatTouchIt": ["F050-F058, F116", "RIC-C2 D-1 identity→Media authority + migration", "realtime surfaces (F052, F054, F057)", "GAP-1 Availability Off control", "PD-1/PD-2 (admin and auth identity surfaces)"],
+      "whyTouched": "D-1 introduces an authoritative identity→Media relationship, which is a shared boundary with the closed RC-C2 chapter.",
+      "avoidable": "NO — but the contract is narrow: 'The broader identity system is NOT to be casually rewritten because C2 needs a relationship.'",
+      "regressionRequirement": "Affected identity consumers regression-tested; migration/compatibility path must be ADDITIVE; existing URL fields may remain transitional; End-vs-Leave, role lookup and Go Live eligibility re-proved after any identity change reaching realtime.",
+      "founderApprovalRequired": "YES — checkpoints 3, 4, 5; the Availability Off control's roadmap placement (owner explicitly UNASSIGNED).",
+      "multiPartyValidationRequired": "YES for F052/F054/F057 (TWO_ACCOUNT_TWO_BROWSER).",
+      "externalInfrastructureRequired": "YES — F058 Cloudflare R2 CORS blocks visual completion of the identity band.",
+      "destructivePotential": "IDENTITY CORRUPTION and AUTHORIZATION BREAKAGE (F057 precedent); CONTENT DELETION (the six SUPERSEDED identity assets are explicitly not authorized for deletion; F139 records identity media as reaper-deletable while in active use).",
+      "notes": "URL equality is permitted for migration/evidence discovery ONLY. Treating it as the constitutional identity→Media relationship is prohibited — and is exactly the shortcut a migration author would reach for."
+    },
+    {
+      "id": "PB-06",
+      "domain": "AUTHENTICATION / SESSION AUTHORITY",
+      "candidateSystemsThatTouchIt": ["F065, F069, F059-F070", "F103/F104 Live auth-return", "F027 (/articles/write classification)", "PD-2", "guest-reachable Meetings routes (PB-01 intersection)", "signed-out Live preview F097-F107"],
+      "whyTouched": "Every continuity obligation and every public/signed-out surface funnels through session restoration and route classification.",
+      "avoidable": "NO. This is the single highest-fan-in shared system in the corpus after Media.",
+      "regressionRequirement": "All 23 navigation gates green after any classification change; the strengthened route-integrity gate must prove every authority-declared address EXECUTABLE against the router table; classes must be genuinely DISJOINT rather than order-dependent.",
+      "founderApprovalRequired": "YES — PD-2 product disposition; F069 exception policy (whether guest-reachable realtime/meeting routes become a named exception class); /spaces public browsability (a later ruling exists).",
+      "multiPartyValidationRequired": "NO — mostly SINGLE_AUTHORIZED_BROWSER, but F069 needs a live signed-out probe and F065 a live refresh proof.",
+      "externalInfrastructureRequired": "NO",
+      "destructivePotential": "AUTHORIZATION BYPASS (fail-open classification left /admin, /articles/* and /realtime/* unclassified — 24 routes enumerated) and LOCKOUT (the ordering shortcut would have bounced meeting guests into a login wall). Both directions are live risks in the same file.",
+      "notes": "The session hint is now a CONTRACT at TokenStore.setSession(), not a call site — 'no future authentication path can forget it.' Any future auth path that writes the hint elsewhere reintroduces the exact defect."
+    },
+    {
+      "id": "PB-07",
+      "domain": "MEDIA / STORAGE",
+      "candidateSystemsThatTouchIt": ["ALL of RIC-C1..F1", "F121-F143", "identity media (D-1)", "Articles (F121, F141)", "Correspondence (F129, F143 root cause)", "Institution Posts (legacy Media minting)", "meeting-recordings multipart path (PB-01 intersection)"],
+      "whyTouched": "Media is the second highest-fan-in shared system, and the only one whose incorrect sequencing destroys user content irreversibly.",
+      "avoidable": "NO",
+      "regressionRequirement": "All nine §15 security gates; the §14 five-step retirement condition applied to EVERY legacy representation; D-3 tests must prove previously blind relationships PREVENT deletion; D-6 seven-step order before any reaper authority change, ending in equivalence/coverage against production reality.",
+      "founderApprovalRequired": "YES — reaper authority change; the R2 public-read ratchet (standing stop-and-report); disposition of the unindexed Media population ('the disposition of real user content is yours'); the Cloudflare CORS action; deployment of the three migrations; any SVG unblocking.",
+      "multiPartyValidationRequired": "YES — F126 live journey (two accounts, two browsers): A sends · B renders · C refused · anonymous refused.",
+      "externalInfrastructureRequired": "YES — Cloudflare R2 bucket policy, production deploy, and a CDN/cache placed beneath Aura's authority at RIC-C5 step 3.",
+      "destructivePotential": "CONTENT DELETION (the reaper; F131 article covers; F139 identity media; F143 aliased objects), PRIVACY EXPOSURE (F126, F132 GPS, F135 viewer IPs), AUTHORIZATION BYPASS (F138 — possession of a storage key or historical URL currently IS access).",
+      "notes": "The asymmetry is the safety property to preserve above all: 'uncertain/deletable → KEEP is allowed; protected/keep → DELETE is NOT', and reconcile() REPAIRS NOTHING, pinned by a test asserting no write method is called."
+    },
+    {
+      "id": "PB-08",
+      "domain": "C4-OWNED NOTIFICATION / ATTENTION WORK",
+      "candidateSystemsThatTouchIt": ["RC-C4 (owner)", "the canonical incoming-call experience and PiP (shared producers)", "native call notification channel", "orphaned-session reconciliation", "GAP-1 Settings (Notification Preference Authority)", "any composer surface the legacy banner overlays"],
+      "whyTouched": "The surface to be retired SHARES ITS PRODUCERS with surfaces that must survive. Retirement is therefore a producer-level operation, not a widget deletion.",
+      "avoidable": "NO — and an isolated cosmetic patch is explicitly prohibited.",
+      "regressionRequirement": "Every enumerated MUST-SURVIVE consumer (incoming_live_overlay AuraIncomingLiveLayer, floating_call_widget PiP, thread_call_lifecycle_controller eviction sites, native_call_notification_channel, auth-drop clear + resume reconciliation, notification_open_reconcile, activity_screen, notifications_screen, module_attention nav badges, messages_hub, correspondence_hub, since_you_were_here, mark-read call sites, derived providers). FD-12 applies: proven-dead retirement only; a naïve zero-reference gate is FORBIDDEN.",
+      "founderApprovalRequired": "YES — checkpoint 7 BEFORE eight attention surfaces are retired; whether Attention earns primary navigation; C4 live certification and closure (which is itself the RC-C5 gate).",
+      "multiPartyValidationRequired": "Not recorded as required; the six C4 findings are SINGLE_AUTHORIZED_BROWSER, plus a PRODUCTION_READ_ONLY component for the stale sessions.",
+      "externalInfrastructureRequired": "NO for the presentation half; native delivery verification lands in RC-C9.",
+      "destructivePotential": "REALTIME REGRESSION — retiring the shared producers wrongly kills the canonical incoming-call experience. EVIDENCE DESTRUCTION — the six findings and the five stale-ACTIVE RealtimeSession rows are themselves C4 evidence and must not be patched or deleted.",
+      "notes": "PBG-4 is a real gap with dependency consequences: NO document states who owns regression proof for the FOUR companion global attention surfaces (orphaned_session_banner, update_gate soft-warn overlay, global_live_banner_layer, active_meeting_return_layer) if C4 retires them."
+    },
+    {
+      "id": "PB-09",
+      "domain": "SHARED NAVIGATION / ROUTING",
+      "candidateSystemsThatTouchIt": ["F059-F070 continuity", "F069 classification", "Live discovery/origination doors", "C4 deep-routing to exact context", "RC-C7 institutional-inbox quartet", "Meetings' 8 institution-context routes", "PD-1 admin routes"],
+      "whyTouched": "Routing is where destination truth, authorization classification and object scope meet, and three separate work streams need it at once.",
+      "avoidable": "NO",
+      "regressionRequirement": "All 23 navigation gates plus the literal ratchet (103 files / 294 sites) after ANY routing change; the strengthened registry→router executability gate; disjoint (not ordered) classification classes.",
+      "founderApprovalRequired": "YES — checkpoint 6 (exact primary destinations); any change to the four authenticated primaries; Articles' rendering in the live experience.",
+      "multiPartyValidationRequired": "NO",
+      "externalInfrastructureRequired": "NO",
+      "destructivePotential": "LOCKOUT and DEEP-LINK LOSS. Mitigated by the frozen rule 'Demolition ≠ data deletion. Every rebuild preserves valid data, state, drafts and deep links.'",
+      "notes": "The recorded governance lesson belongs to this boundary: 'ARCHITECTURE CAN PROPOSE COHERENCE. HUMAN USE VALIDATES MEANING.' C3's five-primary model was locally certified, internally coherent and still product-wrong in observed use."
+    },
+    {
+      "id": "PB-10",
+      "domain": "CERTIFIED SURFACES / CERTIFICATION AUTHORITY",
+      "candidateSystemsThatTouchIt": ["every chapter and every stage",
+        "the 9 items downgraded from 'fixed & deployed' to IMPLEMENTED_NOT_LIVE_CERTIFIED (F040, F043, F044, F045, F046, F047, F051, F054, F057)",
+        "the C0 anti-drift gate and the frozen measured debt baselines"],
+      "whyTouched": "Certification is the axis on which almost every open obligation actually sits — 57 OPEN, 30 IMPLEMENTED_NOT_LIVE_CERTIFIED, 18 PARTIALLY_VALIDATED against only 24 LIVE_CERTIFIED.",
+      "avoidable": "NO",
+      "regressionRequirement": "FD-13 items 13 and 14 (targeted AND cross-system regression) per chapter; every gate demonstrated to fail on a real violation before it counts as enforcement; certified suites must not be destabilised to manufacture coverage.",
+      "founderApprovalRequired": "YES — chapter authorisation individually ('Roadmap approval ≠ chapter authorisation'), checkpoints 1-16, chapter closure declarations, Item 17 at C11 only.",
+      "multiPartyValidationRequired": "Per obligation.",
+      "externalInfrastructureRequired": "Per obligation.",
+      "destructivePotential": "GOVERNANCE CORRUPTION — promoting a state on unit or architectural evidence, or removing an item from the register for being implemented/green/deployed.",
+      "notes": "TWO UNRECONCILED CERTIFICATION VOCABULARIES coexist (RC layer table vs §12 §17 validation classes). Chapter states use the first, finding states the second. Any cross-axis 'is this certified?' question is currently ambiguous by construction."
+    },
+    {
+      "id": "PB-11",
+      "domain": "FOUNDER-OBSERVED DEPLOYMENT / AUTHORIZATION BOUNDARIES",
+      "candidateSystemsThatTouchIt": ["RC-C5 hard gate", "Conversation Phase 5 retirement", "the three committed-unapplied media migrations", "reaper authority", "the R2 public-read ratchet", "F058 CORS", "F071 store release"],
+      "whyTouched": "This boundary is not a subsystem — it is the rule that separates 'we built it' from 'it is real'.",
+      "avoidable": "NO",
+      "regressionRequirement": "Journey certification after migration, before retirement authorization; post-deployment read-only reconciliation over five cohorts before any retention/reaper claim; migrations proven on disposable Postgres 16 across success, refusal and idempotency — 'never against production'.",
+      "founderApprovalRequired": "YES, definitionally — deployment itself, C4 certified/closed declaration, Phase 5 authorization, reaper authority, the R2 ratchet, the Cloudflare action, the store release.",
+      "multiPartyValidationRequired": "Founder live observation is the required form, which is FOUNDER_EXPERIENTIAL rather than multi-party.",
+      "externalInfrastructureRequired": "YES for every item in this boundary.",
+      "destructivePotential": "IRREVERSIBLE INFRASTRUCTURE CHANGE and DATA-MIGRATION LOSS if any step is taken as self-authorised.",
+      "notes": "The recorded precedent shape is C2's Follow convergence: additive deploy → healthy observed deploy → 8/8 equivalence checks → legacy stores retired (d18b0bb). That is the only fully-executed instance of this pattern in the corpus and is worth treating as the template."
+    },
+    {
+      "id": "PB-12",
+      "domain": "CROSS-REPOSITORY CONTRACTS",
+      "candidateSystemsThatTouchIt": ["§12 (authored in aura_final/docs, implemented in aura-backend)", "MIME policy duplicated across repos", "Conversation/Invitation canons living in aura-backend/docs", "RC-C10 declared a cross-repository CONSTRUCTION chapter", "Representation repository"],
+      "whyTouched": "Almost every remaining system spans both repositories; two of them (§12, C10) span them by design.",
+      "avoidable": "NO",
+      "regressionRequirement": "Cross-System regression is FD-13 item 14, required in every chapter's definition of done; enum/vocabulary changes must keep media-frontend-mime-compatibility.spec.ts green; backend and frontend suite evidence reported together at each checkpoint.",
+      "founderApprovalRequired": "YES — any SEMANTIC conflict between repositories goes to the founder before resolution; C11 entry condition 3 (backend frozen baseline intact at 2a92a0e).",
+      "multiPartyValidationRequired": "NO",
+      "externalInfrastructureRequired": "Indirectly — deploys are per-repository.",
+      "destructivePotential": "SILENT DIVERGENCE — 'an implementation agent silently choosing between repositories' is explicitly prohibited, and the failure mode is invisible until production.",
+      "notes": "Representation is a THIRD repository and is explicitly not upstream of product truth: PRODUCT_IDENTITY_CANON is centrally authoritative for exactly four sections (Identity, Purpose, Governing Philosophy, Scope); capability and implementation stay product-owned."
+    }
+  ],
+
+  "crossRepositoryDependencies": [
+    {
+      "id": "XR-1",
+      "pair": "aura_final (Flutter client) ↔ aura-backend (NestJS/Prisma/Postgres)",
+      "sharedContracts": ["MIME policy (recorded as duplicated ×2, kept honest by media-frontend-mime-compatibility.spec.ts)", "wire vocabulary for attachment kinds (F122 — wireKind(document) returns 'IMAGE' on one side while conversation_screen sends 'DOCUMENT')", "Media/presign lifecycle", "realtime session/state enums", "route/deep-link contract", "identity projection shape (F057: me['id'] vs me['user']['id'])"],
+      "risk": "F122 is a live instance of the cross-repo vocabulary hazard: two messaging surfaces report different kinds for identical content, and its closure is disputed between the RIC-C1 stage table and the RIC-C1 implementation checkpoint (CR-O3). F122 is deliberately deferred to RIC-E1 'because it touches the client' — i.e. the fix is cross-repo by nature.",
+      "certificationPoints": "Cross-System certification lands at RC-C1, RC-C5, RC-C8, RC-C10."
+    },
+    {
+      "id": "XR-2",
+      "pair": "§12 contract authored in aura_final/docs ↔ implemented in aura-backend",
+      "risk": "The contract's freeze authority and its implementation evidence live in different repositories. RIC-C2's register titles itself 'C2 RETENTION TRUTH' inside aura-backend while the amendment lives in aura_final — the source of the RC-C2 / RIC-C2 axis confusion (PBG-2).",
+      "mitigationRecorded": "Each register's own header line declares its axis explicitly. Any consumer that reads the title without the header will mis-assign."
+    },
+    {
+      "id": "XR-3",
+      "pair": "aura-backend/docs canons ↔ aura_final/docs pointers",
+      "rule": "'Canonical doctrine lives in ONE place per system (no duplication here)' — the Conversation and Invitation canons live in aura-backend/docs and are pointed to, never duplicated.",
+      "risk": "A frontend-only reader of aura_final/docs sees pointers, not doctrine. Dependency: any Conversation/Invitation work must resolve the pointer before acting."
+    },
+    {
+      "id": "XR-4",
+      "pair": "Product repositories ↔ Representation repository",
+      "rule": "C0-6 authority chain: IMPLEMENTATION/PRODUCT AUTHORITY owns product facts → FOUNDER-FROZEN DECISIONS are authoritative later semantic rulings → REPRESENTATION performs canonical reconciliation within governed scope. 'Stale Representation wording does not override later founder-frozen product truth.'",
+      "risk": "Representation reconciliation may run in parallel with implementation ONLY after semantic wording is founder-frozen; 'it must never race ahead of unresolved product language.'"
+    },
+    {
+      "id": "XR-5",
+      "chapter": "RC-C10 is declared a CROSS-REPOSITORY CONSTRUCTION CHAPTER",
+      "constraint": "'Backend construction must not be hidden inside it.' Backend baseline frozen at 2a92a0e; approved Live additions must be certified where included (C11 entry condition 3).",
+      "tension": "Live backend work (fb9bfa1, d3981e5, 88179ee) is evidenced as built while RC-C10 carries CONFLICTING_CURRENT_STATE. Whether those additions are 'approved Live additions' inside the frozen baseline is NOT_RECORDED."
+    }
+  ],
+
+  "migrationDataRisks": [
+    {
+      "id": "MDR-1",
+      "subject": "Three committed-but-UNAPPLIED migrations (20260902000000_d4_retire_reply_reference_type · 20260903000000_d1_identity_media_authority · 20260904000000_d5_authored_content_media)",
+      "state": "COMMITTED, NOT APPLIED. No production DDL has been executed.",
+      "proofPerformed": "All three proven on a disposable Postgres 16 across success path, refusal path and idempotency — and explicitly 'never against production'.",
+      "riskClass": "C_MIGRATION + F_FOUNDER_ACTION",
+      "downstreamBlocked": "VD-054 owed reconciliation → F139 closure, F142 coverage, F143 closure, any reaper authority change.",
+      "specificHazard": "D-4 'retire REPLY reference type' is a RETIREMENT migration. Retiring an enum member is the shape that the 2026-08-15 migration-divergence doctrine warns about: replay-from-empty ≠ production-safe, and that class of assumption caused a real outage."
+    },
+    {
+      "id": "MDR-2",
+      "subject": "Conversation Phase 5 migration + retirement (scripts/migrate-conversations.js with dry-run, scripts/seed-public-spaces.js)",
+      "state": "HELD. Standing prohibition: 'do NOT run production Conversation migration scripts'; 'do NOT run Phase 5 destructive retirement'.",
+      "riskClass": "C_MIGRATION + G_DESTRUCTIVE",
+      "gate": "additive deploy → migration → founder live observation → journey certification → explicit authorization.",
+      "specificHazard": "Legacy conversation surfaces are still live (legacy hub parked at /messages/legacy-hub). Retiring them before journey certification loses the fallback while the replacement is IMPLEMENTED_NOT_LIVE_CERTIFIED."
+    },
+    {
+      "id": "MDR-3",
+      "subject": "F121 — article markdown carrying baked expiring signed URLs must be rewritten to media references",
+      "riskClass": "C_MIGRATION over USER-AUTHORED DURABLE TEXT",
+      "specificHazard": "This is a content-rewriting migration on published human writing. A faulty rewrite corrupts articles irreversibly; a skipped rewrite leaves published images 404ing once signatures expire. F141 (inline authored media outside structured retention truth) rides the same body text, and F141's authority currently still depends on a TEXT SCAN because the composer does not emit structured references. Markdown regex scanning is explicitly prohibited as a PERMANENT inline-media authority.",
+      "recordedSeparation": "F121 is a delivery/representation defect; F141 is the retention consequence. Explicitly NOT merged."
+    },
+    {
+      "id": "MDR-4",
+      "subject": "MessageAttachment retirement (§14) carrying F133's ms-vs-seconds unit mismatch",
+      "riskClass": "C_MIGRATION + interlock",
+      "specificHazard": "Media.duration is milliseconds; MessageAttachment.durationSec is seconds; messages.service copies one straight into the other. Any equivalence proof written against the current dual-write will encode the wrong unit unless the mismatch is fixed first. Retirement is additionally gated on F140 coverage — see UNC-3 for the possible interlock.",
+      "openDecisionRecorded": "'MessageAttachment retirement timing — now, or after Conversation lands?' is an unresolved decision."
+    },
+    {
+      "id": "MDR-5",
+      "subject": "F055 firstJoinedAt additive backfill (9313fdc)",
+      "riskClass": "C_MIGRATION (LOW) — the good precedent",
+      "note": "Additive, replay-guarded, safe against a database that already has the column. Recorded here as the shape to reuse, alongside C2's Follow→FollowEdge+FollowConsent convergence with 8/8 equivalence checks."
+    },
+    {
+      "id": "MDR-6",
+      "subject": "F131 cannot be exercised by production data",
+      "riskClass": "VALIDATION GAP THAT NO DEPLOYMENT DISCHARGES",
+      "specificHazard": "'Production has zero article covers', so the ARTICLE reconciler row reads checked=0 because there is no data — not because the fix was proven. Any 'zero divergence' claim from that reconciliation is meaningful only for cohorts that actually have rows."
+    },
+    {
+      "id": "MDR-7",
+      "subject": "Irreversible facts already present in production data",
+      "items": [
+        "Conversation.directKey is PERMANENTLY cleared once topology grows — direct-pair provenance is not recoverable after the fact.",
+        "ConversationParty.joinedAt IS overwritten on re-entry — original admission chronology is destroyed for any re-entrant party prior to firstJoinedAt.",
+        "10 duplicate/canonical Media pairs address identical R2 objects (F143).",
+        "5 RealtimeSession rows stuck ACTIVE since 2026-08-12 on legacy THREAD surface cmsp7euhf00soqw0cjcrzh2d1 — preserved deliberately as C4 evidence.",
+        "The unindexed Media population grew 99 → 100 DURING the investigation because no producer calls attach()."
+      ],
+      "consequence": "Any migration that reconstructs history from these fields will reconstruct a falsehood. This is a data-truth constraint, not a bug to fix."
+    },
+    {
+      "id": "MDR-8",
+      "subject": "Environmental limit on migration/reconciliation verification",
+      "fact": "The production reconciler was run as a SQL MIRROR of the reconciler, not as the service itself: the Prisma query engine ships an x64 binary and the workstation is windows-arm64, so ContentReferenceService cannot execute locally against production. The AppModule smoke boot cannot run for the same reason.",
+      "consequence": "No claim that the reconciler SERVICE has executed against production can currently be made from this machine. Recorded as a method caveat, not discharged."
+    }
+  ],
+
+  "destructiveBoundaries": [
+    {
+      "id": "DB-1",
+      "name": "REAPER / MediaCleanupService — CONTENT DELETION",
+      "consequence": "Irreversible deletion of real user content.",
+      "sequencingHazard": "Running it before the D-6 seven-step order completes deletes content whose authoritative references the index cannot yet see (F131 article covers, F139 identity media, F140 legacy MessageAttachment media, F141 inline authored media).",
+      "currentProtection": "NOT RUN. Reaper authority remains outside the chapter; manual/admin-triggered, not cron-driven. isRetentionEligible() asymmetry: the index may say KEEP on its own but may NEVER say DELETE on its own; every uncertainty path, including a thrown error, returns keep.",
+      "founderApprovalRequired": true
+    },
+    {
+      "id": "DB-2",
+      "name": "F143 STORAGE-OBJECT ALIASING — LOGICAL DECISION → PHYSICAL CONSEQUENCE",
+      "consequence": "A logical per-ROW release decision authorises an irreversible per-OBJECT physical deletion, because deleteObject() acts on a storage KEY while protection was evaluated per Media ROW. Deleting an unreferenced row frees an object that referenced rows still address.",
+      "evidenceOfRealExposure": "Production currently holds 10 duplicate/canonical pairs where an unindexed duplicate addresses the identical R2 object.",
+      "structuralLesson": "THIS IS THE CANONICAL EVIDENCE THAT LOGICAL AUTHORITY AND PHYSICAL CONSEQUENCE MUST BE SEPARATE SYSTEMS WITH SEPARATE GATES. A LEVEL-2 physical storage authority now makes the duplication non-destructive; the CAUSE (multiple Media writers) is deliberately left to F129's convergence.",
+      "notAnImplementationTask": "Recorded here as a risk-analysis principle only. No implementation is proposed.",
+      "founderApprovalRequired": true
+    },
+    {
+      "id": "DB-3",
+      "name": "R2 PUBLIC-READ RATCHET (RIC-C5 step 4) — IRREVERSIBLE INFRASTRUCTURE CHANGE",
+      "consequence": "Removing bucket public read while any surface still consumes raw storage URLs breaks delivery product-wide. Not doing it leaves F138 open: possession of a storage key or a historical URL IS access, for PUBLIC, RESTRICTED and PRIVATE alike.",
+      "safeOrderRecorded": "(1) introduce canonical delivery route, both paths valid; (2) move clients; (3) add cache/CDN beneath Aura's authority; (4) contingent on F138, remove bucket public read and retire raw storage URLs. Steps 1-3 are safe regardless; step 4 is where the ruling actually becomes true.",
+      "standingInstruction": "'C5's final ratchet (removing R2 public read) stops and reports before execution.' Recorded as 'Not advanced, not performed.'",
+      "founderApprovalRequired": true
+    },
+    {
+      "id": "DB-4",
+      "name": "CONVERSATION PHASE 5 LEGACY RETIREMENT — DATA/HISTORY LOSS",
+      "consequence": "Retiring the DirectThread and Space-as-conversation stacks before journey certification removes the working fallback beneath an IMPLEMENTED_NOT_LIVE_CERTIFIED replacement.",
+      "counterRule": "'Demolition ≠ data deletion. Every rebuild preserves valid data, state, drafts and deep links.'",
+      "founderApprovalRequired": true
+    },
+    {
+      "id": "DB-5",
+      "name": "C4 ATTENTION RETIREMENT — REALTIME REGRESSION + EVIDENCE DESTRUCTION",
+      "consequence": "The retired surface shares producers with the canonical incoming-call experience, PiP, native call notifications, auth-drop clear and resume reconciliation. A producer-level retirement done as a widget deletion kills the incoming-call path. Separately, patching F030-F035 or the five stale-ACTIVE rows destroys the forensic evidence C4 needs.",
+      "amplifier": "FD-12 forbids a naïve zero-reference gate — 'LoginScreen looks dead to grep and is not.'",
+      "unownedRisk": "PBG-4: nobody owns regression proof for the four companion global attention surfaces.",
+      "founderApprovalRequired": true
+    },
+    {
+      "id": "DB-6",
+      "name": "ROUTE CLASSIFICATION CHANGES — AUTHORIZATION BYPASS AND LOCKOUT IN ONE FILE",
+      "consequence": "Fail-open left /admin, /articles/* and /realtime/* unclassified (24 routes enumerated). Fixing it with ORDER-dependent classes rather than DISJOINT ones would have bounced meeting guests into a login wall.",
+      "protection": "UNKNOWN FAILS CLOSED; a ratchet reads router.dart as source of truth; the strengthened integrity gate proves declared addresses executable.",
+      "founderApprovalRequired": "For the exception policy (guest-reachable realtime/meeting routes) — yes."
+    },
+    {
+      "id": "DB-7",
+      "name": "IDENTITY CONVERGENCE (D-1) — IDENTITY CORRUPTION + PROTECTED ASSET DELETION",
+      "consequence": "A non-additive identity→Media convergence breaks deployed identity consumers, and F057 proves identity drift reaches AUTHORITY (Leave-vs-End, role lookup, Go Live eligibility). The six SUPERSEDED identity assets are explicitly not authorized for deletion.",
+      "prohibitedShortcut": "URL equality as the constitutional identity→Media relationship.",
+      "founderApprovalRequired": "For checkpoints 3/4/5 and the Availability Off placement."
+    },
+    {
+      "id": "DB-8",
+      "name": "MEETINGS — MEETING REGRESSION",
+      "consequence": "Guest/booker entry loss (a near-miss is on record), or recording-retention corruption if the deliberate external storage universe is merged into Media/ContentReference.",
+      "prohibited": "Fake Media bridge · Meeting deriver · modifying Meeting storage · refactoring recording retention · moving admission rules into the shared component · modifying certified Meetings for foundation debt reduction.",
+      "founderApprovalRequired": true
+    },
+    {
+      "id": "DB-9",
+      "name": "PRIVACY EXPOSURE CLUSTER (non-deletion, still irreversible once disclosed)",
+      "items": [
+        "F126 — private DM attachments stay PUBLIC; GET /media/:id/url returned a permanent public URL to ANY caller. Application-level disclosure closed; storage-level confidentiality NOT closed.",
+        "F138 — the delivery boundary performs no authorization of any kind; PUBLIC/RESTRICTED/PRIVATE are physically indistinguishable.",
+        "F132 — GPS coordinates published to public R2 verbatim.",
+        "F135 — link-preview images hotlinked, leaking viewer IPs at render time.",
+        "F088 — a Live viewer must never become a Conversation party."
+      ],
+      "note": "Disclosure is not revocable by a later fix. 'PUBLIC CONTENT IS NOT PERMANENT UNREVOCABLE STORAGE ACCESS' addresses the governance state, not bytes already taken."
+    },
+    {
+      "id": "DB-10",
+      "name": "SESSION LOSS / CONTINUITY",
+      "consequence": "Writing the session hint anywhere but the TokenStore.setSession() choke point reintroduces RC1: an UNKNOWN/RESTORING session is treated as unauthenticated and the person is thrown out of a legitimate destination. Guest tokens deliberately do NOT set it — 'fixing' that blindly would cross the guest boundary."
+    }
+  ],
+
+  "externalInfrastructureDependencies": [
+    {"id": "EI-1", "system": "Cloudflare R2 / uploads bucket CORS policy", "blocks": "F058 (BLOCKED) → F051, F052, F056, WG010 visual completion; degrades Discover, Posts, Articles, Institutions equally", "why": "PutBucketCors returns AccessDenied with the backend token; requires a founder dashboard action", "class": "EXTERNAL_INFRASTRUCTURE + FOUNDER"},
+    {"id": "EI-2", "system": "Cloudflare R2 bucket public-read setting", "blocks": "F138 closure / RIC-C5 step 4", "why": "The ratchet is a standing stop-and-report; removing public read before canonical delivery exists breaks Posts", "class": "EXTERNAL_INFRASTRUCTURE + FOUNDER + DESTRUCTIVE"},
+    {"id": "EI-3", "system": "Production deployment (Railway) of the three committed migrations", "blocks": "VD-054 reconciliation → F139, F140, F141, F142, F143, F131 and any reaper authority change", "class": "EXTERNAL_INFRASTRUCTURE + FOUNDER"},
+    {"id": "EI-4", "system": "App-store release (native binaries)", "blocks": "F071 — the released binaries predate BOTH shared-code fixes, so the defect cannot even be re-observed until a founder-triggered release ships", "class": "EXTERNAL_INFRASTRUCTURE + FOUNDER"},
+    {"id": "EI-5", "system": "CDN / cache placed beneath Aura's authority", "blocks": "RIC-C5 step 3", "class": "EXTERNAL_INFRASTRUCTURE"},
+    {"id": "EI-6", "system": "Live audience-scale topology / SFU provider", "blocks": "F108-F111 and RC-C10 audience-scale testing", "constraint": "Provider independence is a cross-cutting protection: every pluggable capability requires a self-hosted tier-0 default; external services are tier-1 enrichment only. The provider is deliberately NOT frozen (open checkpoint E).", "class": "EXTERNAL_INFRASTRUCTURE + FOUNDER"},
+    {"id": "EI-7", "system": "Real devices (iOS / Android / Windows MSIX)", "blocks": "F072 (the sole V3/NATIVE_DEVICE item), RC-C9 real-device certification, RC-C11 entry conditions 4 and 5", "class": "NATIVE_DEVICE"},
+    {"id": "EI-8", "system": "The development workstation itself (windows-arm64)", "blocks": "Local execution of ContentReferenceService and the AppModule smoke boot — the Prisma query engine ships x64 only", "consequence": "Reconciliation evidence obtained here is a SQL mirror, not the service. Any platform-certification claim made from this machine inherits the caveat.", "class": "METHOD LIMIT"},
+    {"id": "EI-9", "system": "The founder's browser window (open and unminimized) for V2 / TWO_ACCOUNT_TWO_BROWSER work and the §H coordinated batch", "blocks": "19 obligations certified in one coordinated session (F037, F040, F045, F047, F052, F054, F057, F060, F079, F082, F083, F084, and the rest of the batch)", "recordedFailure": "'went unreachable repeatedly today'", "class": "FOUNDER_EXPERIENTIAL + ENVIRONMENTAL"},
+    {"id": "EI-10", "system": "Aura Reviewer account + headless Playwright harness", "blocks": "All V1 / SINGLE_AUTHORIZED_BROWSER validation (27 of 82 obligations — the largest single class)", "gap": "PBG-3: NO document in either repository states a protection doctrine for the Reviewer account, production credential handling, or the validation harness, even though V1 validation depends on all three. Recorded as an absence.", "class": "EXTERNAL_INFRASTRUCTURE (unprotected)"}
+  ],
+
+  "founderActionDependencies": [
+    {"id": "FA-1", "action": "Authorise RC-C4 (chapter authorisation is individual; 'Roadmap approval ≠ chapter authorisation')", "unblocks": "RC-C4 execution; and by the frozen hard gate, eventually RC-C5, and through it RC-C7/C9/C10/C11", "note": "STRUCTURAL OBSERVATION, NOT A RECOMMENDATION. Priority is not this analysis's authority."},
+    {"id": "FA-2", "action": "Declare C4 certified/closed after live observation", "unblocks": "RC-C5 (the frozen hard gate's sole release condition). 'C4 LOCAL CERTIFICATION ≠ C5 AUTHORIZATION.'"},
+    {"id": "FA-3", "action": "Apply the Cloudflare R2 CORS JSON", "unblocks": "F058 → F051, F052, F056, WG010"},
+    {"id": "FA-4", "action": "Deploy the three committed media migrations through the authorized path and observe the deployment", "unblocks": "VD-054 → F139, F142, F143, F131, F140"},
+    {"id": "FA-5", "action": "Trigger a store release", "unblocks": "F071 re-observation and RC-C9 native evidence"},
+    {"id": "FA-6", "action": "Disposition the unindexed Media population ('the disposition of real user content is yours')", "unblocks": "Any reaper authority change"},
+    {"id": "FA-7", "action": "Authorise (or refuse) the R2 public-read ratchet after the stop-and-report", "unblocks": "F138 closure / RIC-C5 completion"},
+    {"id": "FA-8", "action": "Authorise Conversation Phase 5 legacy retirement, after live observation and journey certification", "unblocks": "Legacy DirectThread / Space-as-conversation retirement"},
+    {"id": "FA-9", "action": "Resolve PD-1 and PD-2 product dispositions", "unblocks": "RC-C11 entry (both must be resolved before C11)"},
+    {"id": "FA-10", "action": "Resolve SupportScreen ownership", "unblocks": "RC-C11 accounting"},
+    {"id": "FA-11", "action": "Place GAP-1 Settings / the Availability Off control with an owner", "unblocks": "A frozen doctrine that currently has a required control and no implementer"},
+    {"id": "FA-12", "action": "Place GAP-2 Long-Form Publishing in the dependency order (no chapter number assigned)", "unblocks": "A shipped, live-certified capability with no chapter home"},
+    {"id": "FA-13", "action": "Open checkpoints that no implementation may pre-empt", "items": ["3 verification label mapping (C2)", "4 presence privacy/visibility policy (C2)", "5 profile visual direction (C2)", "6 exact primary navigation destinations (C3)", "7 attention interaction direction BEFORE eight surfaces are retired (C4)", "10 participation & invite interaction direction (C6)", "11 Meetings sign-off after each slice (C6)", "12 Correspondence presentation + convergence verdict (C7)", "15 Live architecture details (C10)", "D Live moderation policy", "E Live audience-scale topology/provider"], "rule": "'Do not invent founder policy. Bring them forward rather than deciding them.'"},
+    {"id": "FA-14", "action": "F069 exception policy — whether guest-reachable realtime/meeting routes become a declared named exception class (isGuestReachablePath)", "intersects": "PB-01 Meetings guest entry and PB-06 auth boundary"},
+    {"id": "FA-15", "action": "Decide whether to park coordinated realtime testing until the §H batch can run in one uninterrupted session", "unblocks": "19 obligations at once"},
+    {"id": "FA-16", "action": "Adjudicate whether the 2026-08-16..18 out-of-chapter work is INSIDE, ALONGSIDE or SUPERSEDING the RC frame", "note": "Recorded by Stage 0 as an open question requiring founder authority; it is the precondition for any coherent portfolio structure, because it determines whether the RC chain or the RIC chain governs the same subject matter."},
+    {"id": "FA-17", "action": "Decide MessageAttachment retirement timing ('now, or after Conversation lands?')", "affects": "F133, F140, §14 retirement lineage"},
+    {"id": "FA-18", "action": "Decide OG image mirroring (F135) — privacy gain vs storing third-party imagery/copyright", "class": "governance, not engineering"},
+    {"id": "FA-19", "action": "Decide media moderation scope and timing (F137) — 'a governance decision, not an engineering one'"}
+  ],
+
+  "validationDependencies": {
+    "totals": {"obligations": 82, "byClass": {"CODE_STATIC": 4, "LOCAL_AUTOMATED": 5, "SINGLE_AUTHORIZED_BROWSER": 27, "TWO_ACCOUNT_TWO_BROWSER": 9, "MULTI_PARTY_REALTIME": 10, "NATIVE_DEVICE": 2, "PRODUCTION_READ_ONLY": 7, "EXTERNAL_INFRASTRUCTURE": 5, "FOUNDER_EXPERIENTIAL": 10, "UNKNOWN": 3}},
+    "structuralObservations": [
+      "51 of 82 obligations (TWO_ACCOUNT_TWO_BROWSER + MULTI_PARTY_REALTIME + NATIVE_DEVICE + PRODUCTION_READ_ONLY + EXTERNAL_INFRASTRUCTURE + FOUNDER_EXPERIENTIAL + UNKNOWN, i.e. 9+10+2+7+5+10+3 = 46, plus the 5 EXTERNAL already counted — precisely: 46 of 82) require something the implementing agent cannot supply alone. Only 36 (CODE_STATIC 4 + LOCAL_AUTOMATED 5 + SINGLE_AUTHORIZED_BROWSER 27) are self-dischargeable, and the 27 depend on the Reviewer account and the Playwright harness, neither of which has a recorded protection doctrine (PBG-3).",
+      "The §H COORDINATED REALTIME HUMAN CERTIFICATION BATCH is the single highest-leverage validation dependency in the corpus: ONE journey, THREE identities, 19 obligations. Its blocker is environmental (the founder's window staying open), not technical.",
+      "PRODUCTION_READ_ONLY obligations (7) are ALL downstream of a founder-observed deploy — they cannot even be attempted today.",
+      "Two certification vocabularies coexist without reconciliation (RC layers vs §12 §17 classes). A stage may satisfy 'LOCALLY VERIFIED' and still be nowhere on the RC layer table, and vice versa."
+    ],
+    "cascades": [
+      {"trigger": "F065 live refresh proof", "releases": "the continuity keystone gating F059, F061, F062, F063, F064, F103, F104"},
+      {"trigger": "F079/F082 lifecycle journey passing ONCE", "releases": "F083-F088 certification and the entire viewer/engagement/acquisition stack"},
+      {"trigger": "Founder deploy of three migrations", "releases": "the five-cohort reconciliation → F139, F140, F141, F142, F143, F131"},
+      {"trigger": "Conversation shared capabilities certified", "releases": "the Meetings validation batch F112/F113 (with explicit Meetings regression evidence)"},
+      {"trigger": "F058 CORS applied", "releases": "visual certification of F051, F052, F056 and WG010"}
+    ],
+    "invalidationHazards": [
+      "F075's model change invalidated prior live proofs for F083 and F084 — existing evidence certifies the RETIRED model.",
+      "F136's 'confirmed live in production' confirms the DEFECT, not a fix.",
+      "F138's 'resolved empirically' resolved the blocking QUESTION, not the defect; the same session recorded 'no state promotions'.",
+      "'Closes F132' / 'Closes F135' appear only in frozen contract text describing the TARGET architecture.",
+      "F126 'COMPLETE' means application-level disclosure closed; storage-level confidentiality is explicitly deferred."
+    ]
+  },
+
+  "rcC4C5Analysis": {
+    "mandate": "Determine from evidence whether the RC-C4/RC-C5 stall is a still-valid dependency, obsolete historical sequencing, a genuine blocker, a dependency already changed by later implementation, a namespace/state misunderstanding, or another contradiction. NO RULING IS MADE. The gate is not removed and RC-C4 is not started.",
+    "ratifiedState": {
+      "RC-C4": "OPEN — forensic evidence base complete, implementation NOT started, held per founder sequencing.",
+      "RC-C5": "BLOCKED — closed by the frozen hard gate: 'C5 remains CLOSED until C4 is implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed. C4 LOCAL CERTIFICATION ≠ C5 AUTHORIZATION.'",
+      "downstream": "RC-C7 (deps C4+C5+C6), RC-C8 (dep C6), RC-C9 (deps C4+C5), RC-C10 (needs C0-C8 stable), RC-C11 (no entry condition satisfiable)."
+    },
+    "evidenceFor": [
+      {
+        "id": "E1",
+        "statement": "RC-C4's OWN declared prerequisites are met. rc-map records RC-C4 dependsOn RC-C2 (identity), RC-C3 (navigation), RC-C0 (temporal), RC-C1 (capability) — all four are closed. The only recorded reason it has not begun is 'held per founder sequencing'.",
+        "provenance": "STRONG"
+      },
+      {
+        "id": "E2",
+        "statement": "The roadmap's own relationship table lists RC-C4 and RC-C5 as PARALLEL siblings (RC-C5 parallelWith: [RC-C4, RC-C6]; RC-C5 dependsOn: C2, C3, C1, C0 — NOT C4). The hard gate frozen 2026-08-16 therefore ADDS a sequencing constraint that the roadmap's technical graph does not contain.",
+        "provenance": "STRONG",
+        "significance": "The gate is best read from this evidence as a DEPLOYMENT-DISCIPLINE / OBSERVATION gate (PB-11 family), not as a technical prerequisite. That reading is an interpretation, not a ruling."
+      },
+      {
+        "id": "E3",
+        "statement": "There is nevertheless a real PRODUCT coupling between the two chapters: F031 records the legacy global attention banner OVERLAPPING THE COMPOSER and /articles/write, and PB-08 forbids an isolated cosmetic patch. A composition system cannot be product-behaviour certified while an ungoverned global overlay covers it.",
+        "provenance": "STRONG for the overlap fact; the certification consequence is Agent B's inference (MEDIUM)."
+      },
+      {
+        "id": "E4",
+        "statement": "RC-C5's subject matter is substantially occupied by work proceeding OUTSIDE the gate: the frozen §12 RIC contract governs acquisition/intake normalization, attachment/upload primitives, drag/drop, paste, link previews and delivery; and the Conversation Completion Register (frozen 2026-08-16) makes media/attachments a REQUIRED contextual attachment of canonical Conversation, 'to be built against the CONVERSATION realtime surface'. RIC-C1 and RIC-C2 are already IMPLEMENTED_NOT_LIVE_CERTIFIED.",
+        "provenance": "STRONG"
+      },
+      {
+        "id": "E5",
+        "statement": "NO governed document states whether the C4 hard gate was intended to also gate the §12 composition/intake-adjacent stages. Stage 0 records this explicitly as an open question.",
+        "provenance": "STRONG (recorded absence)"
+      },
+      {
+        "id": "E6",
+        "statement": "TWO DISTINCT 'C5' GATES EXIST and are NOT the same boundary (PBG-1). RC-C5 is gated on founder-declared RC-C4 live closure. RIC-C5 (governed delivery, PROMOTED ahead of D1) is gated on RIC-C1 and RIC-C3 and carries the R2 public-read stop-and-report. The §12 hard stop 'do not advance to C5' refers to RIC-C5.",
+        "provenance": "STRONG"
+      },
+      {
+        "id": "E7",
+        "statement": "RIC-C4 (Canonical ingestion convergence, F129) is recorded by Stage 0 as 'the single most dangerous collision in the corpus, because RC-C4 is heavily referenced as C4-owned'. An unqualified sentence about 'C4' in this corpus is ambiguous by construction.",
+        "provenance": "STRONG"
+      },
+      {
+        "id": "E8",
+        "statement": "C4's declared inputs have partly materialised since the gate was frozen: 'C4 will consume truthful domain events/state', and substantial realtime/session-lifecycle truth landed 2026-08-16..17. Simultaneously, the retirement inventory C4 must handle GREW — the four companion global attention surfaces plus the orphaned-session reconciliation, with PBG-4 recording no owner for their regression proof.",
+        "provenance": "MODERATE (composed from several records)"
+      },
+      {
+        "id": "E9",
+        "statement": "The C4 findings are deliberately UNPATCHED as forensic evidence, and the five stale-ACTIVE RealtimeSession rows are preserved for the same reason. The stall therefore has a positive evidentiary function, not merely a cost.",
+        "provenance": "STRONG"
+      }
+    ],
+    "competingInterpretations": [
+      {
+        "id": "I-1",
+        "label": "STILL-VALID DEPENDENCY (product-coupling reading)",
+        "argument": "E3 supports a genuine product dependency: attention presentation physically overlays composition surfaces, and C4 owns the retirement. Certifying a composer beneath an ungoverned overlay would produce an uncertifiable product behaviour, exactly the failure C3's five-primary episode taught.",
+        "weaknesses": "The roadmap itself makes them parallel (E2). The coupling argument justifies ORDERING SOME OF C5's certification behind C4, not closing the whole chapter."
+      },
+      {
+        "id": "I-2",
+        "label": "DEPLOYMENT-DISCIPLINE GATE, NOT A TECHNICAL DEPENDENCY",
+        "argument": "E2 plus the gate's own wording — implemented, locally certified, pushed, deployed, observed live, live defects resolved, founder declares closed — describes an OBSERVATION PIPELINE, not a code dependency. It belongs to the PB-11 family alongside Phase 5 and the reaper. Its purpose reads as: do not open a second construction front until one has been proven end-to-end in production.",
+        "weaknesses": "This is an inference about intent. No document states the gate's rationale."
+      },
+      {
+        "id": "I-3",
+        "label": "OBSOLETE HISTORICAL SEQUENCING (de facto superseded)",
+        "argument": "E4 shows the frozen §12 contract and the Conversation Completion Register now govern most of RC-C5's originalScope and are advancing. If those are the operative authorities, the RC-C5 gate governs a chapter whose content has moved to another axis.",
+        "weaknesses": "E5 — nothing authorises that transfer. The RC-C5 gate is founder-frozen and was frozen AFTER much of this work began. Treating it as obsolete would be exactly the 'removing a gate for portfolio convenience' the founder ruling forbids."
+      },
+      {
+        "id": "I-4",
+        "label": "GENUINE BLOCKER, CORRECTLY HELD",
+        "argument": "C4 is the only chapter whose retirement touches producers shared with the canonical incoming-call experience (PB-08), and its evidence base is complete but its inventory grew (E8). Opening C5 while C4's global overlays still fire would build composition surfaces underneath a system scheduled for demolition — which is the same failure class FD-5/C10 forbids ('no temporary authority on surfaces authorised for demolition').",
+        "weaknesses": "Does not explain why C5 specifically, rather than C6/C7/C9, carries the gate."
+      },
+      {
+        "id": "I-5",
+        "label": "NAMESPACE / STATE MISUNDERSTANDING RISK (partly true, not the whole story)",
+        "argument": "E6 and E7 establish that 'C4' and 'C5' each denote two unrelated things. Some observed statements about C4/C5 being blocked or advancing may be about the RIC axis. RIC-C5 is 'explicitly NOT ADVANCED' while RC-C5 is 'BLOCKED by hard gate' — two different sentences that read identically when the prefix is dropped.",
+        "weaknesses": "The RC-C5 hard gate's own source text names C4 implementation, live-site observation and founder closure — unambiguously the RC axis. The namespace hazard is real for READERS of the corpus; it does not dissolve the gate."
+      },
+      {
+        "id": "I-6",
+        "label": "IMPLEMENTATION-STATE vs CERTIFICATION-STATE (explicitly offered as an interpretation)",
+        "argument": "AGENT B'S EXPLICIT INTERPRETATION: much of the apparent RC-C4/RC-C5 paradox is the corpus carrying IMPLEMENTATION STATE and CERTIFICATION STATE in the same field. RC-C5's subject matter has substantial IMPLEMENTATION (RIC-C1/C2 landed, drag/drop code exists at conversation_screen:960 against a roadmap premise of '0 drag-and-drop implementations', DropTarget/Pasteboard present), while RC-C5's CERTIFICATION is closed by a founder gate. Those are not contradictory facts about one variable; they are two variables. The same shape recurs at RC-C10 (built vs not-authorised) and at F139 (structurally closed vs open).",
+        "confidence": "This is offered as an interpretation, not a ruling, exactly as the mandate requires. It does not resolve CR-O5 or CR-R5.",
+        "limitation": "It does NOT explain everything: F031's composer overlay (E3) is a genuine product coupling that survives the implementation/certification split."
+      }
+    ],
+    "contradictionsSurfacedByThisAnalysis": [
+      "The roadmap's relationship graph (RC-C4 ∥ RC-C5) and the frozen C5 HARD GATE (RC-C5 strictly downstream of RC-C4 live closure) are both founder-frozen and are not the same graph. Both preserved; neither normalised.",
+      "RC-C4's own prerequisites are satisfied while the entire downstream tier is stalled on it — so the chain's single evidenced release point is a FOUNDER AUTHORISATION, not an engineering prerequisite. Recorded as a structural fact, not a recommendation.",
+      "RC-C6's declared blocker ('blocked until C2') is discharged by RC-C2's founder closure, yet RC-C6 is still recorded as not started with no later state transition either way."
+    ],
+    "ruling": "NONE. Evidence and competing interpretations only, per mandate."
+  },
+
+  "candidateSafeIndependentWork": {
+    "definitionUsed": "Work whose recorded dependencies are satisfied, which touches no protected boundary in a mutating way, requires no external infrastructure, no founder decision, and no destructive operation. THIS IS NOT A PRIORITY LIST AND NOT A SEQUENCING PROPOSAL. Several items are validation/observation rather than construction — that is a property of the evidence, not a preference.",
+    "candidates": [
+      {"id": "SI-1", "work": "CODE_STATIC consumer audit for canonical identity (VD-021: F053/F116/F050)", "why": "Read-only. Explicitly required ('F116 must not be closed by fixing one consumer'). No mutation, no boundary crossed.", "caveat": "The AUDIT is safe; acting on its results is not — that reaches PB-05."},
+      {"id": "SI-2", "work": "V1 single-browser proof debt on already-implemented, boundary-free items: F001 (People live pass), F002 (Create paths), F005 (creation journey), F019 (selection/copy), F017 (link hydration backfill check), F023 (report journey), F044/F046 (proof), F043 (re-verify no clock — state is CONFLICTING and must be carried as such)", "why": "Observation only; the code already shipped.", "caveat": "Depends on the Reviewer account + Playwright harness, which have NO recorded protection doctrine (PBG-3)."},
+      {"id": "SI-3", "work": "Authorship-only obligations: F110 (SFU/audience-scale assessment) and F111 (assessment scope)", "why": "Writing an assessment mutates no system.", "caveat": "The assessment must NOT decide topology — that is founder checkpoint E, and provider independence must be preserved. 'An informed engineering assessment precedes any architecture decision; no topology migration in this pass.'"},
+      {"id": "SI-4", "work": "Governance-closure hygiene F115 / F119 / F120 (three angles of one obligation)", "why": "The non-shrinking rule currently lives ONLY in transcript evidence with no governed-markdown home, which is itself a recorded risk.", "caveat": "F120 cannot COMPLETE until every item is terminal; only the mechanism can be established now."},
+      {"id": "SI-5", "work": "VD-066 classification work — the two blind producer routes (POST uploads/media, POST uploads/avatar) mapped to the §14 F129 retirement lineage", "why": "Already recorded as CLASSIFIED, not rewritten. Continuing to classify is non-mutating.", "caveat": "'Retirement is F129's call, not C2's' — classification must not become a rewrite."},
+      {"id": "SI-6", "work": "Documenting PBG-3 (Reviewer account / credential / harness protection doctrine) and PBG-4 (owner of regression proof for the four companion attention surfaces) as explicit obligations", "why": "Both are recorded ABSENCES with dependency consequences; naming them creates no product change.", "caveat": "Naming an obligation is not assigning an owner — ownership is Stage 4."}
+    ],
+    "explicitlyNotOnThisList": [
+      "WG004 (large-history pagination) looks independent — frontend-only, backend cursor already exists — but the frozen §12 stage table places it in RIC-E2, four stages downstream. Its apparent independence is a trap set by the stage ordering.",
+      "F016 (honest media/document formats) looks like a self-contained frontend fix but VD-076 records that NO image/video/document processing exists at all (no sharp, ffmpeg, pdf-lib, file-type) — it is a whole RIC-D1/D2 subsystem.",
+      "Any single-consumer identity fix — prohibited as a closure route for F116.",
+      "Any isolated cosmetic patch of the legacy attention banner — explicitly prohibited."
+    ]
+  },
+
+  "candidateHighCouplingWork": [
+    {"id": "HC-1", "work": "Retention / reaper authority (F131, F139, F140, F141, F142, F143)", "couplings": ["PB-07", "PB-11", "PB-05 (identity media)", "PB-01 (Meetings deliberately excluded universe)", "production data", "founder deploy", "founder disposition of real user content"], "destructive": true},
+    {"id": "HC-2", "work": "RIC-C5 governed delivery / F138 storage boundary", "couplings": ["PB-07", "PB-11", "every surface that renders media", "external R2 + CDN"], "destructive": true, "note": "The one stage whose step 4 is a standing stop-and-report."},
+    {"id": "HC-3", "work": "RC-C4 attention retirement", "couplings": ["PB-08", "PB-02 (shared producers with the incoming-call experience)", "PB-09 (deep routing to exact context)", "PB-11 (its closure IS the C5 gate)", "GAP-1 Settings via the Notification Preference Authority", "PBG-4 unowned regression"], "destructive": true},
+    {"id": "HC-4", "work": "Refresh-continuity contract F059-F070 (+F103/F104, F064/F113)", "couplings": ["PB-06", "PB-09", "PB-01 (guest entry near-miss)", "PB-03 (Live auth-return)", "no owning chapter on any axis"], "destructive": "LOCKOUT/BYPASS class"},
+    {"id": "HC-5", "work": "Live lifecycle F074-F088 and downstream F089-F107", "couplings": ["PB-03", "PB-04 (F088 privacy proof)", "PB-02", "PB-06 (signed-out preview + auth return)", "multi-party validation", "two open founder checkpoints"], "destructive": "PRIVACY/AUTHORIZATION class"},
+    {"id": "HC-6", "work": "Identity consumption F050-F058 / F116 and D-1 convergence", "couplings": ["PB-05", "PB-02 (authority-affecting via F057)", "PB-07 (identity→Media)", "F058 external blocker"], "destructive": "IDENTITY CORRUPTION class"},
+    {"id": "HC-7", "work": "F129 canonical ingestion convergence (RIC-C4)", "couplings": ["PB-07", "PB-04 (Correspondence semantics preserved)", "four Media writers across media.service, messages.service, institution-posts.service, uploads.controller", "it is F143's root cause"], "note": "Explicitly: patching the bypass in place is NOT acceptable — convergence onto the canonical lifecycle is required."},
+    {"id": "HC-8", "work": "Conversation Phase 5 retirement + Conversation Completion Register", "couplings": ["PB-04", "PB-11", "PB-02 (audio/video/screenshare as contextual attachments)", "PB-01 (Meetings batch runs after)", "RC-C7 amended scope"], "destructive": true},
+    {"id": "HC-9", "work": "Anything entering Meetings", "couplings": ["PB-01 in full"], "note": "The only chartered entry is RC-C6's slice-by-slice presentation convergence with per-slice regression and founder sign-off."},
+    {"id": "HC-10", "work": "F121 article markdown URL rewrite + F141 inline authored media", "couplings": ["PB-07", "GAP-2 (unowned surface)", "user-authored durable text", "RIC-F1 last in stage order"], "destructive": "CONTENT-INTEGRITY class"}
+  ],
+
+  "unmappedSurfaceAnalysis": {
+    "framing": "Examined ONLY from the dependency/risk/protected-boundary perspective. No ownership is assigned; none is force-mapped. Assignment is Stage 4's authority.",
+    "surfaces": [
+      {
+        "id": "PD-2",
+        "name": "Authentication & Account Entry",
+        "dependencyWeight": "HIGHEST of the five",
+        "why": "PB-06 is entirely about this surface: the single-choke-point session-hint contract, the four frozen route classes with UNKNOWN failing closed, the guest boundary, and destination preservation on gate exits. The continuity keystone F065, the classification finding F069, the Live auth-return F103/F104, and the second root cause of F027 (/articles/write unclassified) all live here.",
+        "protectedBoundariesIntersected": ["PB-06 (is)", "PB-09 (route classification)", "PB-01 (guest-reachable meeting entry)", "PB-03 (signed-out Live preview → same-Live return)"],
+        "destructivePotential": "Session loss, lockout, authorization bypass, Meetings guest-entry regression — all four in one surface.",
+        "founderDependency": "Product disposition is OPEN and must be resolved before RC-C11; the F069 exception policy is a separate open decision.",
+        "riskOfLeavingUnmapped": "Findings that funnel through it are being worked WITHOUT a chapter that owns the surface's product decisions. 3 G5 sites is a small code footprint attached to a very large authority footprint — the size measure understates it badly."
+      },
+      {
+        "id": "PD-1",
+        "name": "Platform Administration",
+        "dependencyWeight": "HIGH on authorization, LOW on product chains",
+        "why": "34 G5 sites across 11 files, withdrawn from RC-C1 when re-verification measured ZERO institutional authority code in all of them. The whole /admin workspace was among the 24 fail-open unclassified routes (F069).",
+        "protectedBoundariesIntersected": ["PB-06 (was fail-open)", "PB-09 (admin routes + shell classification)", "PB-10 (its G5 debt is enforced baseline)"],
+        "destructivePotential": "AUTHORIZATION BYPASS — an admin workspace that route classification did not cover is the highest-consequence instance of the F069 class.",
+        "founderDependency": "Product decision, not engineering judgment. Must be resolved before RC-C11.",
+        "riskOfLeavingUnmapped": "Admin internals were inherited from RC-C3's closeout with no receiving chapter, so they are currently owned by nothing."
+      },
+      {
+        "id": "GAP-2",
+        "name": "Long-Form Publishing (Articles)",
+        "dependencyWeight": "HIGH and CONTRADICTED",
+        "why": "Governance records NO CHAPTER NUMBER ASSIGNED awaiting founder dependency placement, while the capability SHIPPED, F024 is LIVE_CERTIFIED, and Articles is a declared Discover domain under the C3 navigation correction. It carries live defects with durability consequences: F121 (expiring signed URLs baked into durable markdown → published images will 404), F025, F026, F027, plus F141 (inline authored media outside retention truth).",
+        "protectedBoundariesIntersected": ["PB-07 (media/retention)", "PB-09 (Articles' rendering in the live experience is a founder visibility ruling — 'no dead coming-soon tenancy')", "PB-06 (/articles/write was fail-open)"],
+        "destructivePotential": "CONTENT-INTEGRITY LOSS in published human writing (F121), and reaper exposure for inline media (F141).",
+        "founderDependency": "Deliberate dependency placement; the full lifecycle is eventually required.",
+        "riskOfLeavingUnmapped": "A live, certified, public-facing capability whose defects are staged at RIC-F1 — the LAST stage of the longest chain — with no chapter accountable for the surface in the meantime."
+      },
+      {
+        "id": "GAP-1",
+        "name": "Settings / Personal Controls",
+        "dependencyWeight": "MEDIUM, with one hard obligation",
+        "why": "The roadmap charters no Settings chapter; prior 'C4 Settings' references are formally reclassified as continuity shorthand. The Availability Off user-facing control is REQUIRED by frozen C2 doctrine with IMPLEMENTATION OWNER UNASSIGNED. The Notification Preference Authority is RC-C4-primary-owned and intersects this gap.",
+        "protectedBoundariesIntersected": ["PB-05 (presence/availability doctrine)", "PB-08 (preferences control delivery/interruption, NEVER whether the obligation exists)"],
+        "destructivePotential": "LOW directly; but a preference implementation that erases the underlying Attention item would violate a frozen doctrine.",
+        "founderDependency": "Roadmap placement of the control's owner.",
+        "riskOfLeavingUnmapped": "A frozen doctrine currently requires a control that nobody is chartered to build."
+      },
+      {
+        "id": "SupportScreen",
+        "dependencyWeight": "LOWEST",
+        "why": "No recorded dependency edges in either direction. Explicitly NOT assigned to RC-C9, with an explicit prohibition on deleting it, modernising it in isolation, or forcing it into a chapter.",
+        "protectedBoundariesIntersected": ["PBG-5 — it behaves as a protected surface WITHOUT a protecting chapter"],
+        "destructivePotential": "Only via FD-12: it is exactly the shape of surface a naïve zero-reference retirement gate would delete. 'LoginScreen looks dead to grep and is not.'",
+        "founderDependency": "Ownership disposition before RC-C11.",
+        "riskOfLeavingUnmapped": "Low operational risk; non-zero deletion risk during any retirement sweep."
+      }
+    ],
+    "crossCuttingObservation": "All five unmapped surfaces share one property: their code footprint is small and their AUTHORITY footprint is not. PD-2's 3 G5 sites govern every continuity obligation in the corpus. Any portfolio structure that sizes work by code volume will misrank all five."
+  },
+
+  "contradictions": [
+    {"id": "B-C1", "statement": "The roadmap's relationship graph lists RC-C4 and RC-C5 as PARALLEL siblings (RC-C5 dependsOn C0/C1/C2/C3, parallelWith C4 and C6), while the founder-frozen C5 HARD GATE makes RC-C5 strictly downstream of RC-C4's LIVE closure. Both are founder-frozen. Neither is normalised here.", "carryForward": true},
+    {"id": "B-C2", "statement": "RC-C6's only declared blocker is 'blocked until C2', and RC-C2 was founder-closed 2026-08-16 — yet RC-C6 remains recorded as OPEN/NOT STARTED with no later transition in either direction. The blocker appears discharged by evidence while the state was never restated.", "carryForward": true},
+    {"id": "B-C3", "statement": "TWO 'C4' AND TWO 'C5' GATES. RC-C4 (Attention) vs RIC-C4 (Canonical ingestion convergence, F129); RC-C5 (Composition/Intake, hard-gated on C4) vs RIC-C5 (Governed delivery, gated on RIC-C1+C3, carrying the R2 stop-and-report). Stage 0 calls RIC-C4 'the single most dangerous collision in the corpus'.", "carryForward": true},
+    {"id": "B-C4", "statement": "F043, F051 and F122 carry CONFLICTING_CURRENT_STATE and are carried forward unresolved per founder ruling. F043: register row PARTIALLY_VALIDATED vs the same message's 'cannot honestly call LIVE_CERTIFIED' list. F051: identical shape. F122: RIC-C1 stage table says C1 closes it, the C1 implementation checkpoint names only F127/F128/F130.", "carryForward": true},
+    {"id": "B-C5", "statement": "F139 dual reading, same day, equal recency: STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED (aura-backend C2 retention register) vs OPEN (aura_final §12 Amendment 1 table). AGENT B'S EXPLICIT INTERPRETATION: this is most consistent with an IMPLEMENTATION-STATE vs CERTIFICATION-STATE split — the D-1 structure landed while closure explicitly 'requires the migration applied and identity reconciled in production', which is a certification condition blocked on a founder deploy. OFFERED AS AN INTERPRETATION, NOT A RULING; the dual reading is preserved.", "carryForward": true},
+    {"id": "B-C6", "statement": "RC-C10 CONFLICTING_CURRENT_STATE preserved: OPEN/NOT STARTED per CURRENT_STATE and NEXT_WORK ('Explicitly NOT next: Live (C10)') vs SUBSTANTIALLY CONSTRUCTED per the founder-frozen Live Origination Correction and backend commits fb9bfa1/d3981e5/88179ee. AGENT B NOTE: the same implementation-vs-certification split (B-C5) plausibly applies, but RC-C10 additionally has a GOVERNANCE dimension — its governing invariant forbids temporary versions of authorities scheduled for reconstruction, and C3/C4/C5 are amended/not-started/hard-gated. That governance question is NOT dissolved by the state split. No ruling.", "carryForward": true},
+    {"id": "B-C7", "statement": "The single largest structural gap: the entire 2026-08-16..18 body of work (Conversation, Invitation, Articles, realtime repair, Live origination, §12 Rich Content) is governed by its own canons and stage tables, and no governed document records the roadmap authorizing, absorbing or excluding any of it. Those canons nevertheless RESPECT the RC frame at its edges (each names RC-C4 as Attention owner). Inside/alongside/superseding is UNKNOWN and requires founder authority."},
+    {"id": "B-C8", "statement": "TWO UNRECONCILED CERTIFICATION VOCABULARIES: the RC layer table (Architecture/Implementation/Product-Behavior/Cross-System/Real-Boundary/Founder Acceptance/Item 17) and the §12 §17 classes (LOCALLY VERIFIED / AUTHORIZED-BROWSER / TWO-ACCOUNT-TWO-BROWSER / LIVE_CERTIFIED). Chapter states use the first; finding states use the second. Any cross-axis certification question is ambiguous by construction."},
+    {"id": "B-C9", "statement": "POSSIBLE MIGRATION INTERLOCK (flagged, not resolved): §14 MessageAttachment retirement is 'now additionally gated on F140 coverage', while F140's own remaining closure is recorded against that same retirement lineage ('the rest closes on…'). Whether this is a true circular dependency or two separable halves is NOT establishable from the normalised evidence."},
+    {"id": "B-C10", "statement": "The non-shrinking register rule — the closure standard RC-C11 must meet, and the rule that governs every finding state in this analysis — has NO governed-markdown home. It exists only in transcript evidence, and F115/F119/F120 (which would establish it) are all OPEN."},
+    {"id": "B-C11", "statement": "F064 and F113 are ruled to remain TWO SEPARATE canonical findings while being recorded as the same obligation — and they carry DIFFERENT validation topologies in the same message (F064 = V2/two-browser, F113 = V4/multi-party). Preserved per founder ruling CR-R3; the topology divergence is an unresolved practical consequence."},
+    {"id": "B-C12", "statement": "F045 and F071 were challenged as NOT sharing a root cause (F045 = overlay _joining latch; F071 = disposed shared singletons/RC-A), against an earlier framing that contemplated them as one shared-code defect with different deployment states. Both readings preserved. Dependency consequence: if they DO share a cause, the store release (F071) also carries F045's fix; if they do not, it does not."},
+    {"id": "B-C13", "statement": "F076 and F077 are terminal (EXPLICITLY_RETIRED) yet still carry unfinished 'Remains' values ('Lobby-as-directory UI unobserved', 'UI unobserved'). A terminal state with residual observation debt is a vocabulary contradiction, not a work contradiction."},
+    {"id": "B-C14", "statement": "PBG-3 recorded absence with real dependency force: the Aura Reviewer account, production credential handling and the headless Playwright harness have NO protection doctrine anywhere — yet 27 of 82 validation obligations (the largest class) depend on all three."},
+    {"id": "B-C15", "statement": "WG018 is RESERVED_UNISSUED per founder ruling; 17 WG items are issued. Only WG001/002/004/005/006/009 have a governed home (RIC-E2). The other eleven issued items have no chapter, no doctrine and no recorded disposition. The entire WG universe rests on ONE assistant message with no register artifact in any repository (SINGLE_SOURCE_REGISTER)."}
+  ],
+
+  "uncertainties": [
+    {"id": "B-U1", "statement": "Whether the RC-C5 hard gate was intended to also gate the §12 Rich Content composition/intake-adjacent stages is NOT_RECORDED. This single unknown determines whether RIC-E1/E2 are currently permitted work or gate violations.", "requires": "FOUNDER"},
+    {"id": "B-U2", "statement": "Whether RC-C6's Meetings presentation convergence obligation is affected by Conversation becoming a first-class realtime surface is NOT_RECORDED.", "requires": "FOUNDER or later analysis"},
+    {"id": "B-U3", "statement": "Whether the Live backend additions evidenced as built count as 'approved Live additions certified where included' under RC-C11 entry condition 3, against a backend baseline frozen at 2a92a0e, is NOT_RECORDED."},
+    {"id": "B-U4", "statement": "Whether the F140 ↔ MessageAttachment retirement relationship is a genuine interlock (B-C9) cannot be determined from normalised evidence."},
+    {"id": "B-U5", "statement": "Whether F066 and F068 were completed is genuinely unknown: both are absent from the later 'Wave 1A remaining' list (implying completion) but neither has an explicit STATE CHANGES entry. Stage 0 retained OPEN on the explicit-evidence rule; this analysis does the same and flags it as a live dependency uncertainty for the continuity chain."},
+    {"id": "B-U6", "statement": "Whether any of the §H coordinated realtime batch, the F126 two-account live journey, or any RIC-stage live certification has been ATTEMPTED since 2026-08-18T01:25Z is unknown. Absence of a later record is not evidence they were not performed (VD-007/VDC-7)."},
+    {"id": "B-U7", "statement": "The dependency claim 'F016 gates F011, F014, F015' rests on VD-076's blocking statement. It is plausible and consequential but is a single recorded statement; treat as MODERATE, not settled."},
+    {"id": "B-U8", "statement": "F073's domain is contested — challenged as miscategorised as native (observed in the browser too) yet still listed under domain K. Native. This affects whether it is a RC-C9 real-device dependency or a shared realtime dependency."},
+    {"id": "B-U9", "statement": "WEAK-EVIDENCE FLAG: the LIVE_CERTIFIED states of F003, F004, F006, F007, F008, F009, F010, F024, F028, F038, F039, F041, F042, F048, F076, F077, F118 are all graded WEAK, several with one-line problem statements and no finding-specific certification evidence. If any conclusion depends on those capabilities genuinely being certified, it inherits WEAK provenance. Notably F006/F008/F010 (audio, video, screen share) are simultaneously LIVE_CERTIFIED (weak) AND named as unresolved REQUIRED contextual attachments in the frozen Conversation Completion Register — the two records are not obviously compatible."},
+    {"id": "B-U10", "statement": "F001's provenance is graded STRONG but the Stage-0 dossier itself flags that grade as overstating finding-specific evidence (the excerpts are dominated by the range token 'F001-F120'). Provenance grades are therefore not uniformly reliable at the individual-finding level."},
+    {"id": "B-U11", "statement": "Whether the 41 quarantined non-findings include any identifier that a later stage might mistake for a real dependency node is not verifiable from the artifacts consumed; the self-contamination invariant ('ANALYSIS OUTPUT IS NOT HISTORICAL ISSUANCE EVIDENCE MERELY BECAUSE IT LATER APPEARS IN THE SEARCHABLE CORPUS') must persist through Stage 1-4."},
+    {"id": "B-U12", "statement": "The recorded historical total (138) and the reconstructed universe (143) both stand per founder ruling. No reconciled count exists at 143, so any dependency arithmetic over 'all findings' inherits that provenance gap."}
+  ],
+
+  "weakEvidenceDependentConclusions": [
+    "B-KEY-2's RC-C6 half depends on a single NEXT_WORK.md line ('C6 blocked until C2') read against RC-C2's closure. STRONG sources, but the INFERENCE that the blocker is discharged is this analysis's, not the corpus's.",
+    "The proposed inferred edge RC-C4 → certifiable composer behaviour (I-1/E3) rests on F031's overlap fact plus PB-08's prohibition. The fact is STRONG; the certification consequence is MEDIUM inference.",
+    "Any conclusion that treats F006/F007/F008/F010 as settled capabilities inherits WEAK provenance and conflicts with the Conversation Completion Register (B-U9).",
+    "The PD-2 → continuity keystone edge is a MEDIUM-HIGH inference: the SURFACES are identical, but no document states the ownership link."
+  ],
+
+  "stageDiscipline": {
+    "notPerformed": [
+      "No finding or WG issuance was altered. No finding was merged or deleted.",
+      "No Stage-0 founder-ratified fact was changed. No conflicting state was silently normalised.",
+      "No frozen doctrine or protected boundary was changed, softened or generalised.",
+      "No gate was removed — the RC-C5 hard gate, the reaper hard stops and the R2 ratchet stop-and-report are all carried intact.",
+      "No ruling was made on RC-C4/RC-C5, RC-C10, F043, F051, F122 or F139.",
+      "No priority, no final portfolio sequencing, no canonical ownership assignment (Stage 4's authority).",
+      "No product code was read, implemented or modified. No file outside 01-analysis/ was written.",
+      "No raw-corpus escalation was performed; only the normalised Stage-0 artifacts were consumed."
+    ],
+    "rawSourceEscalations": []
+  }
+}

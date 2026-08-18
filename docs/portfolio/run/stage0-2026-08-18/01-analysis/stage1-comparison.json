@@ -1,0 +1,589 @@
+{
+  "artifact": "STAGE_1_CROSS_AGENT_COMPARISON",
+  "type": "ANALYTICAL_PROPOSAL",
+  "date": "2026-08-18",
+  "status": "COMPARISON_NOT_RECONCILIATION",
+  "principle": "This is a comparison index. Disagreements are PRESERVED as evidence for Stage 2. Nothing is resolved by majority vote and no agent view is promoted over another.",
+  "agentA": {
+    "candidateSystems": 15,
+    "findingsMapped": 143,
+    "accountingBalances": true
+  },
+  "candidateSystems": [
+    {
+      "id": "CH-A",
+      "name": "Continuity & Destination Truth",
+      "findingCount": 16,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-B",
+      "name": "Realtime Session & Participation Truth",
+      "findingCount": 20,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-C",
+      "name": "Realtime Topology & Scale Decision",
+      "findingCount": 5,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-D",
+      "name": "Attention & Read-State Truth",
+      "findingCount": 5,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-E",
+      "name": "Identity Consumption Certification",
+      "findingCount": 9,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-F",
+      "name": "Rich Content & Interaction",
+      "findingCount": 33,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-G",
+      "name": "Live as a Governed Mode",
+      "findingCount": 24,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-H",
+      "name": "Public Acquisition & Anonymous Participation Boundary",
+      "findingCount": 8,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-I",
+      "name": "Product Taxonomy & Public Entry Adoption",
+      "findingCount": 6,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-J",
+      "name": "Long-Form Publication Lifecycle",
+      "findingCount": 2,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-K",
+      "name": "Trust, Safety & Moderation",
+      "findingCount": 2,
+      "referencedByB": false,
+      "referencedByC": true,
+      "independentConvergence": false
+    },
+    {
+      "id": "CH-L",
+      "name": "Cross-Platform Distribution Parity",
+      "findingCount": 2,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-M",
+      "name": "Meetings Validation Under Protection",
+      "findingCount": 2,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-N",
+      "name": "Register & Certification Governance",
+      "findingCount": 4,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    },
+    {
+      "id": "CH-O",
+      "name": "Conversation Party & Message Model",
+      "findingCount": 5,
+      "referencedByB": true,
+      "referencedByC": true,
+      "independentConvergence": true
+    }
+  ],
+  "independentConvergence": {
+    "note": "Systems all three analyses reached from different questions. Convergence is EVIDENCE, not proof.",
+    "items": [
+      {
+        "system": "Rich Content & Interaction (CH-F, 33 findings)",
+        "a": "33 findings independently reproduce the FROZEN s12 decomposition shape",
+        "b": "CHAIN-2 RIC security-first sequence; every visible Conversation content capability sits at its TAIL",
+        "c": "CD-1 generic document presentation; OPP-1/OPP-2 shared primitives already exist and are unadopted"
+      },
+      {
+        "system": "Continuity & Destination Truth (CH-A, 16 findings)",
+        "a": "largest unbuilt system; chartered by NO RC chapter",
+        "b": "CHAIN-7 F065 keystone gates 7 findings; has NO owning chapter on ANY axis",
+        "c": "CD-7 refresh loses the user; encountered by every user in the first session"
+      },
+      {
+        "system": "Live viewer / Public Acquisition (CH-G + CH-H, 32 findings)",
+        "a": "Public Acquisition is a SYSTEM not a Live feature; needs a zero-authority anonymous actor",
+        "b": "CHAIN-4 F079/F082 multi-party journey gates F083-F107",
+        "c": "CD-2 Live has no viewer product; CD-3 funnel does not exist; CD-4 discovery is scope=me"
+      },
+      {
+        "system": "Identity Consumption (CH-E, 9 findings)",
+        "a": "RC-C2 built and closed the AUTHORITY; nothing ever audited CONSUMPTION",
+        "b": "CHAIN-5 F116 -> F053 -> seven consumers, externally gated by F058",
+        "c": "FE-2 R2 CORS is the highest visible-improvement-per-effort founder action"
+      },
+      {
+        "system": "Attention & Read-State Truth (CH-D, 5 findings)",
+        "a": "C4-owned; F035 proposed analytical withdrawal",
+        "b": "DB-5 RC-C4 retirement shares producers with the canonical incoming-call experience",
+        "c": "CD-6 attention that lies; eight parallel attention surfaces survive any individual fix"
+      }
+    ]
+  },
+  "materialDisagreements": [
+    {
+      "id": "D-1",
+      "subject": "F035 roster vs connected count",
+      "a": "proposes analytical withdrawal from the C4-owned set to Realtime - attention cannot make a roster count true",
+      "b": "PB-08 protects the C4 findings from change",
+      "resolution": "NOT RESOLVED. Proposal only; PB-08 stands."
+    },
+    {
+      "id": "D-2",
+      "subject": "F012/F013 drag-drop and clipboard",
+      "a": "assigned to Composition & Content Intake because it must be correct on all platforms at once",
+      "b": "RC-C9 chartered build list explicitly names desktop drag/drop and clipboard; rc-map lists F012 under RC-C9",
+      "resolution": "NOT RESOLVED. Two defensible owners."
+    },
+    {
+      "id": "D-3",
+      "subject": "RC-C5 hard gate",
+      "b": "SIX competing interpretations I-1..I-6: still-valid product coupling, deployment-discipline gate not a technical dependency, obsolete sequencing, genuine blocker correctly held, namespace risk, implementation-vs-certification",
+      "resolution": "NOT RESOLVED BY DESIGN. Founder ruling required; the gate was not removed."
+    },
+    {
+      "id": "D-4",
+      "subject": "Validation debt vs construction debt",
+      "c": "asks whether several validation obligations (VD-041 Live engagement, VD-042 public preview, VD-050) are CONSTRUCTION DEBT WEARING A VALIDATION LABEL",
+      "a": "classifies the same items as unbuilt systems",
+      "resolution": "NOT RESOLVED. Material to how Stage 3 sizes chapters."
+    },
+    {
+      "id": "D-5",
+      "subject": "F060 mid-call refresh",
+      "a": "assigned Realtime, against its recorded continuity domain, because destination/roster/duration ARE preserved",
+      "alt": "recorded domain G (continuity)",
+      "resolution": "NOT RESOLVED. Agent A flags the alternative reading as legitimate."
+    },
+    {
+      "id": "D-6",
+      "subject": "GAP-2 Long-Form Publishing",
+      "a": "IMPORTANT NEGATIVE RESULT - looks like the clearest orphan chapter (8 findings) and is NOT one; findings disperse to intake/continuity/reference-truth/taxonomy. Needs a charter, not a chapter",
+      "c": "treats Articles presentation deficiencies as product-visible",
+      "resolution": "NOT RESOLVED. A proposes a 2-finding CH-J only."
+    }
+  ],
+  "conflictsCarriedForward": {
+    "note": "All five preserved. Agents offered interpretations; none adjudicated.",
+    "F043": "A: certification-SCOPE conflict - both agree the code shipped, they disagree whether the certified ruling covers a later unverified refinement. Alternative authoring-inconsistency reading preserved.",
+    "F051": "A: the finding is NOT ATOMIC - two surfaces with two true states. Correct action may be to record the compound structure rather than pick a label.",
+    "F122": "A: SPLIT-SURFACE - backend half plausibly closed by 62b39bf; client-side wire value unevidenced.",
+    "F139": "A: STRONGEST case for the different-dimensions reading - the D-1 authority is committed (4af75c5) while its migration is explicitly NOT APPLIED, so a structure can be closed while the production condition it corrects is still true. Two-authors-disagreeing reading preserved.",
+    "RC-C10": "A: PRIMARILY an ownership-FRAME conflict (same condition as Stage 0 X2) - Live work happened under its own founder-frozen doctrine that no governed document maps into or out of RC-C10. Only the founder can say whether the out-of-frame work IS RC-C10."
+  },
+  "unmappedSurfaces": {
+    "PD-1": "no natural owner surfaced by A; treated as governance/admin surface by B and C.",
+    "PD-2": "A: its structural half is silently supplied by Continuity & Destination Authority (CH-A).",
+    "SupportScreen": "low signal across all three analyses.",
+    "GAP-1 Settings": "B: the Availability Off control owner is explicitly UNASSIGNED.",
+    "GAP-2 Long-Form Publishing": "A: NEGATIVE RESULT - needs a charter, not a reconstruction chapter."
+  },
+  "stage2Questions": [
+    {
+      "from": "agent-c-product",
+      "item": "Does Stage 2 accept the distinction between VALIDATION DEBT (a built thing awaiting proof) and CONSTRUCTION DEBT WEARING A VALIDATION LABEL? VD-041 (Live engagement), VD-042 (public preview), VD-050 (no seek bar, no waveform, no document preview, no upload progress/cancel/retry — none of which exists) and the whole of RC-C4 are counted as validation obligations but are unbuilt product. Counting them together flatters readiness."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "Should an instrument exist for founder acceptance of PRESENTATION QUALITY distinct from defect closure, below the C11 release gate (FE-9)? No obligation among the 82 asks whether anything is good."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "Is a global (non scope=me) Live index intended to exist? F081, F097, F107 and CD-4 all turn on it, and building the F097-F107 preview stack over a scope=me endpoint would yield a preview with nothing to preview."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "How should the fail-closed route gate (F069) and the public-first doctrine be reconciled as a PRODUCT decision rather than a code decision (BFI-11)? Correct security may currently redirect curious visitors away from public content."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "Is the F064/F113 topology divergence (V2 vs V4, VDC-1) about the obligation or about the context? CR-R3 keeps both rows and VD-031 is classed UNKNOWN."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "Does the RC-C5 hard gate extend to the §12 RIC stages? Stage 0 records this as NOT_RECORDED, and it determines whether media PRESENTATION may proceed while media TRUTH does — currently the two halves of one user experience are advancing at very different speeds."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "PD-2 Authentication & Account Entry carries 100% of user entry with ZERO issued findings and ZERO dedicated validation obligations. Should Stage 2 treat 'zero findings' as a signal to LOOK, or as evidence of health? I argue unexamined, and flag that the evidence does not settle it."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "Should the WG register's WEAK_SINGLE_SOURCE status for eleven rows (WG003, WG007, WG008, WG010-WG017) change how much weight Stage 2 gives them, given that all 17 rows originate in ONE assistant message and no WG register artifact exists in any repository?"
+    },
+    {
+      "from": "agent-c-product",
+      "item": "WG012 (block boundary inside Conversation) is recommended LATER and marked WEAK_SINGLE_SOURCE, yet it is the only WG item whose absence has a direct personal-safety consequence, and the underlying blocking authority is already built and certified by C2. Does Stage 2 wish to re-read its position? (Raised as a question, NOT as an authorization request.)"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Is F058 a total or partial blocker for identity imagery on web, given F051/F052 record avatars rendering live?"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Was the F016 gate over F011/F014/F015 honoured, or are register dependencies advisory?"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "For F139, do the two same-day records describe different DIMENSIONS (structure committed, migration not applied) or genuinely conflicting states?"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Is F051 one finding with a disputed state, or two surfaces with two true states?"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Does the client half of F122 (conversation_screen sending DOCUMENT) still exist after RIC-C1?"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Is Settings' zero finding-pressure a real signal of health, or an artefact of the surface never having been exercised?"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Should Live moderation (F095) be built inside Live engagement or consumed from a Trust & Safety authority that does not yet exist?"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Does the founder consider the out-of-frame 2026-08-16..18 body of work inside, alongside, or superseding the RC roadmap? (Stage 0's X2 - the largest structural gap found, and the reason RC-C10's state conflicts.)"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Should PD-2 be split - structural half to CH-A Continuity, account-entry experience to CH-H Public Acquisition - rather than chartered as one surface?"
+    }
+  ],
+  "founderDecisionsRequired": [
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-1 Authorise RC-C4 (chapter authorisation is individual)"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-2 Declare C4 certified/closed after live observation — the sole release condition of the RC-C5 hard gate"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-3 Apply the Cloudflare R2 CORS JSON (F058 → F051/F052/F056/WG010)"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-4 Deploy and observe the three committed media migrations (unblocks F139/F140/F141/F142/F143/F131)"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-5 Trigger a store release (F071, RC-C9 native evidence)"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-6 Disposition the unindexed Media population"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-7 Authorise or refuse the R2 public-read ratchet after the stop-and-report"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-8 Authorise Conversation Phase 5 legacy retirement"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-9 Resolve PD-1 and PD-2 product dispositions before RC-C11"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-10 Resolve SupportScreen ownership"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-11 Place the GAP-1 Availability Off control with an owner"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-12 Place GAP-2 Long-Form Publishing in the dependency order"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-13 Open checkpoints 3,4,5,6,7,10,11,12,15 plus Live moderation (D) and audience-scale provider (E)"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-14 F069 exception policy for guest-reachable realtime/meeting routes"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-15 Whether to park coordinated realtime testing until one uninterrupted §H session is possible"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-16 Adjudicate whether the 2026-08-16..18 out-of-chapter work is inside, alongside or superseding the RC frame"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-17 MessageAttachment retirement timing"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-18 OG image mirroring (F135)"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "FA-19 Media moderation scope and timing (F137)"
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-1 Convene the coordinated realtime human certification session (VD-046) — 20 obligations across calling and Live are held behind ONE never-convened three-identity session. This is the largest single certification bottleneck in the programme and it is a scheduling problem, not an engineering one. VDC-8 records the standing environmental dependency on the founder's browser being reachable."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-2 Apply the Cloudflare R2 CORS policy (VD-026 / F058) — PutBucketCors returns AccessDenied with the backend token; the JSON is already prepared. Blocks visual completion of F051, F052, F056 and WG010. In my judgement the highest visible-improvement-per-effort item in the entire register, and it is not an engineering task at all."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-3 Trigger a store release to unblock F071 (VD-032) — both shared-code fixes post-date the released binaries, so the native accept/reject defect cannot even be RE-OBSERVED until a release ships. Everyone who installed the app currently has a worse experience than a web visitor."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-4 Deploy the three committed-but-unapplied retention migrations (VD-055: 20260902000000, 20260903000000, 20260904000000), then permit the read-only production reconciliation (VD-054). F131, F139, F140, F141, F142 and F143 cannot close until the index they measure is seeded."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-5 Disposition of the unindexed Media population (VD-061) and authorization of the reaper authority change (VD-062) — the unindexed population GREW 99 to 100 during the investigation because no producer calls attach(); 23 of 100 are proven in live use; the reaper is NOT AUTHORIZED and has NOT RUN. Deletion authority over live content is founder-owned."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-6 The three standing C2 founder checkpoints (VD-081): verification label mapping, presence privacy/visibility policy, profile visual direction. Each gates its chapter's Product-Behavior certification and no implementation may pre-empt them; the presence checkpoint intersects GAP-1's unassigned Availability Off control."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-7 The attention interaction direction checkpoint BEFORE the eight DR1 surfaces are retired (RC-C4's own scope requirement) — retiring eight surfaces without a direction decision is irreversible in practice."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-8 The C5 hard-gate sequence in full (VD-072), frozen verbatim: C4 implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed. C4 LOCAL CERTIFICATION != C5 AUTHORIZATION."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-9 (PROPOSED GAP, NOT AN EVIDENCED OBLIGATION) Whether an instrument should exist for founder acceptance of PRESENTATION QUALITY, distinct from defect closure and below the C11 release gate. No obligation among the 82 asks 'is this good?'. Without such an instrument every system can pass every obligation and remain competitively inadequate — the exact failure mode this analysis exists to prevent."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "FE-10 Disposition of the five UNMAPPED surfaces (CR-R4 forbids force-assignment): PD-2's structural disposition is explicitly OPEN, GAP-1's Availability Off owner is explicitly UNASSIGNED, SupportScreen was deliberately not assigned to RC-C9, GAP-2 shipped with no chapter number, PD-1 carries 11 files / 34 G5 sites."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "OPEN PRODUCT RULING: how the fail-closed route gate (F069) and the public-first doctrine reconcile — currently a code decision with an unexamined acquisition consequence."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "OPEN PRODUCT RULING: whether a global (non scope=me) Live index is intended to exist — F081, F097, F107 and CD-4 all depend on the answer."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Does CH-A Continuity & Destination Truth become a chapter, and does it absorb PD-2's structural half? No RC chapter charters session-state truth or route classification."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Is RS-11 Composition & Content Intake work RC-C5 work (gate-blocked by the frozen hard gate) or §12 Rich Content work (not blocked)?"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Group identity doctrine: party ordering (F055) and group visual representation (F056) are documented judgment calls flagged in code explicitly awaiting a founder ruling."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "May F035 be analytically withdrawn from the C4-owned set to realtime domain truth? PB-08 currently protects all six C4 findings from any change."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "GAP-2 Long-Form Publishing: charter and owner for publication semantics, given Articles shipped and F024 is LIVE_CERTIFIED while DECISIONS.md records NO CHAPTER NUMBER ASSIGNED."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "GAP-1 Settings: an owner for the Availability Off control (IMPLEMENTATION OWNER UNASSIGNED) and the Notification Preference Authority, neither of which any chapter charters."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Two findings no agent can close: the Cloudflare R2 CORS dashboard action (F058) and the app-store release (F071)."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Are register dependency statements binding sequencing or advisory? (A-CON-1)"
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Whether the 2026-08-16..18 out-of-frame work (Conversation, Invitation, Articles, realtime repair, Live correction, §12) is inside, alongside, or superseding the RC roadmap - the root of RC-C10's conflicting state."
+    }
+  ],
+  "economy": {
+    "agents": 3,
+    "peakConcurrency": 3,
+    "errors": 0,
+    "durationMinutes": 20.7,
+    "subagentTokens": 777467,
+    "toolUses": 103,
+    "rawCorpusEscalations": 0,
+    "note": "Agent C performed authorised READ-ONLY released-client inspection (9 targeted greps/reads), explicitly NOT corpus escalation. The 703 MB historical corpus was never reopened."
+  },
+  "rawSourceEscalations": [
+    {
+      "from": "agent-c-product",
+      "item": "NO ESCALATION TO THE ~703 MB HISTORICAL CORPUS OCCURRED. The frozen economy was respected; mentions.jsonl, dossiers/ and all transcripts were left unread."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "PERMITTED CLIENT INSPECTION (explicitly authorised by the task inputs: 'You may also inspect the released client under .../lib READ-ONLY to judge presentation quality'), listed here for transparency: (1) file census of aura_final/lib — 571 Dart files, largest-25 by size — reason: establish surface scale for accessibility and duplication claims."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "(2) grep 'Semantics(' across lib — reason: WG015 is WEAK_SINGLE_SOURCE and an accessibility conclusion needed corroboration before being called an adoption blocker. Result: 14 occurrences across 7 files, none in Conversation, Articles, Live, Discover or any composer."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "(3) targeted read of features/conversation/presentation/conversation_screen.dart around lines 1000-1070 and 1340-1400 — reason: the mission's worked example about attachment presentation required checking whether the 'ugly generic pill' is literal or hypothetical. Result: _fileChip('Attachment') renders an icon plus the hardcoded word 'Attachment', no filename/type/size/open affordance."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "(4) grep for AuraMediaViewer / MediaSaveService / RichPasteField consumers across lib — reason: separate two competing interpretations of F125 (is the missing viewer a Conversation-only gap or a product-wide absence?). Result: the shared primitives exist and are consumed by feed/post cards and five legacy composers, but NOT by the canonical Conversation. This produced CD-13 and OPP-2."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "(5) grep for ScrollController / loadMore / hasMore / cursor in conversation_screen.dart — reason: verify WG004's claim ('no ScrollController, loads a single page forever') because it is authorized and load-bearing for several conclusions. Result: confirmed absent."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "(6) grep for emoji and typing symbols across lib — reason: distinguish 'unimplemented' from 'implemented but unexercised' for WG009 and to test whether an unregistered emoji gap exists. Result: no typing symbol anywhere; 'emoji' only in meetings/presentation/meeting_live_room_screen.dart."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "(7) read of features/institutions/live_rooms/global_live_discovery.dart header and features/home/presentation/public_home_screen.dart lines 400-470 — reason: a genuine contradiction appeared between F097 (OPEN, 'Public Home does not surface real Live') and the visible existence of a live panel, and the contradiction materially affects the acquisition classification. Result: the provider is documented to 'degrade silently to an empty list when the user is not authenticated' and the endpoint is /realtime/sessions?scope=me, 'NOT a true cross-institution global feed'. This produced CD-3, CD-4 and AC-11."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "(8) find for settings/support/preference/live file names — reason: assess the UNMAPPED surfaces GAP-1 and SupportScreen, which have no findings and no validation obligations at all. Result: support surfaces are scattered across features/support/, features/monetization/presentation/support_screen.dart, screens/supporters_hub_screen.dart and screens/support_fallback_screen.dart, with a user-facing name collision between customer help and financial supporters."
+    }
+  ],
+  "weakEvidenceDependentConclusions": [
+    {
+      "from": "agent-b-dependencies",
+      "item": "RC-C6's blocker-discharged reading is this analysis's inference from two STRONG sources, not a corpus statement"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "The inferred edge RC-C4 → certifiable composer behaviour rests on F031's overlap fact (STRONG) plus a MEDIUM inference about certification"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "Any conclusion treating F006/F007/F008/F010 (1:1 audio, group audio, video, screen share) as settled inherits WEAK provenance AND conflicts with the frozen Conversation Completion Register that still names them as unresolved required attachments"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "The PD-2 → continuity-keystone ownership edge is MEDIUM-HIGH inference: identical surfaces, no stated link"
+    },
+    {
+      "from": "agent-b-dependencies",
+      "item": "F001 is graded STRONG while the dossier itself flags that grade as overstating finding-specific evidence — provenance grades are not uniformly reliable per finding"
+    },
+    {
+      "from": "agent-c-product",
+      "item": "ACQUISITION CLUSTER: F098, F099, F100, F101, F102, F105, F106 are all WEAK and F097, F103, F104, F107 are only MODERATE — so CD-2, CD-3, ACQ-1 and ACQ-3 rest on a cluster with no STRONG member. What is strong is the cluster-level record ('all OPEN ... Nothing built') plus my independent client observation of the provider's unauthenticated degradation."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "ELEVEN WG ROWS ARE WEAK_SINGLE_SOURCE (WG003, WG007, WG008, WG010, WG011, WG012, WG013, WG014, WG015, WG016, WG017), all originating in ONE assistant message with no register artifact in any repository. My competitive-necessity assessments for those rest on market knowledge plus corroborating F-evidence, not on project provenance."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "WG015 IS THE SOLE WEAK ROW ON WHICH I REST A STRONG CONCLUSION, and only because I independently corroborated it against code: 14 Semantics() usages across 7 of 571 Dart files."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "BASIC CALLING TREATED AS WORKING ON WEAK ROWS: F006 1:1 audio, F007 group audio, F008 video, F010 screen share are all LIVE_CERTIFIED on WEAK provenance. My S3 'partially good enough' assessment inherits that weakness."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "OTHER WEAK LIVE_CERTIFIED ROWS underpinning 'this works' statements: F003, F004, F024, F028, F038, F039, F041, F042, F048, F076, F077, F114, F118."
+    },
+    {
+      "from": "agent-c-product",
+      "item": "GROUP-CALL READINESS (CD-11) is bounded by two unmeasured quantities: F073's root cause is UNKNOWN and F108's mesh ceiling was NEVER MEASURED."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Realtime conversation capabilities are satisfied obligations rather than open work - rests on five WEAK single-line rows (F006-F010), partially corroborated by F048/F049 which presuppose working multi-party calls. Do not build a release argument on them without live re-proof."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "The Live public-acquisition system is entirely unbuilt - seven WEAK rows (F098-F102, F105, F106) sharing a single corroborating sentence. The CONCLUSION is safe; the DECOMPOSITION into eleven distinct obligations rests on that one sentence."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Live engagement capabilities are entirely absent - five WEAK rows (F090, F092-F095), corroborated only by F096 which presupposes the set exists as an unrecovered authority. Their separation is a reconstruction and should be re-validated against FD-5 §8-10, not against the register."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Several realtime lifecycle defects are terminal (F038, F039, F041, F042, F048 - all WEAK). MATERIAL RISK: if any is wrong, CH-B's 'certification not construction' framing is wrong with it. These are the rows most exposed to the F119 failure mode."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Live's alternate origination doors are retired (F076, F077 WEAK) - strongly corroborated by frozen doctrine and PB-03 regression pins, but both terminal rows still carry unfinished remains values."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Mesh is not the long-term architecture and its ceiling is unknown (F109, F110 WEAK) - the claim is about the ABSENCE of measurement, which weak evidence supports adequately."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "Institution acquisition placement is resolved (F003, F004 WEAK) - doctrine corroboration (C3 navigation correction, header semantic layers) is stronger than the finding rows."
+    },
+    {
+      "from": "agent-a-root-systems",
+      "item": "F001 should be read DOWN from STRONG to MODERATE at best: Stage 0's own contradiction flag records that the STRONG grade reflects register-wide 'F001-F120' tokens rather than F001-specific evidence."
+    }
+  ]
+}

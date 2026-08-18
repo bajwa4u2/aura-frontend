@@ -1,0 +1,1299 @@
+{
+  "type": "ANALYTICAL_PROPOSAL",
+  "agent": "AGENT C — PRODUCT / WORLD-CLASS / VALIDATION ANALYSIS",
+  "stage": "STAGE 1 — INDEPENDENT ANALYSIS (NOT RATIFIED TRUTH)",
+  "date": "2026-08-18",
+  "status": "OK",
+
+  "standingDisclaimers": [
+    "This artifact is an ANALYTICAL_PROPOSAL. Nothing here is founder-ratified, nothing here authorizes work, nothing here assigns final canonical ownership (Stage 4), and nothing here prioritises the final portfolio.",
+    "No Stage-0 fact was altered. Finding issuance (F001-F143 contiguous, F097 issued), WG issuance (WG001-WG017 issued, WG018 RESERVED/UNISSUED), the 12 RC chapters, 64 doctrines, 82 validation obligations and 12 protected boundaries are consumed READ-ONLY.",
+    "'Candidate system' names used below are a PRODUCT LENS for grouping evidence in this analysis only. They are NOT chapters, NOT owners, NOT a proposed roadmap, and MUST NOT be read as ownership.",
+    "NAMESPACE: RC-C0..RC-C11 = historical Reconstruction chapters. RIC-C1/C2/... and RIC-D1/E2/F1 = Rich Content & Interaction stages. These are DIFFERENT AXES and are never equated here. RC-A/RC-B/RC1..RC9 are ROOT-CAUSE LABELS, never chapters.",
+    "No WG item is authorized here. No separate 'WG implementation phase' is proposed here. WG018 is treated as RESERVED/UNISSUED throughout; no new WG identifier is minted by this analysis.",
+    "The unresolved conflicts F043, F051, F122, F139 and RC-C10 are carried forward unnormalised in the 'contradictions' section and are never silently resolved anywhere in this document."
+  ],
+
+  "methodNote": {
+    "evidenceConsumed": [
+      "findings-batch-1/2/3.json — all 143 issued findings (id, title, problemStatement, currentState, provenanceStrength, domainOwner, implementationChapter, wgRelationship, validationRequirement)",
+      "wg-register.json — 18 rows: WG001-WG017 issued + the honest empty WG018 row",
+      "validation-debt.json — all 82 canonical validation obligations VD-001..VD-082, their project V1-V5 class, the Stage-0 topology class, and VDC-1..VDC-8",
+      "contradiction-register.json — CR-R1..CR-R6 resolved, CR-O1..CR-O5 still open",
+      "rc-map.json — RC-C0..RC-C11 purpose, scope, evidenced state, remaining obligations, contradictions, X1-X7 cross-chapter gaps, open questions",
+      "unmapped-surfaces.json — PD-1, PD-2, SupportScreen, GAP-1, GAP-2"
+    ],
+    "clientInspection": "The released client under aura_final/lib was inspected READ-ONLY, as explicitly permitted by the task inputs, to judge PRESENTATION QUALITY. This is not a corpus rescan; the ~703 MB historical corpus was never re-read. Every client observation used below is listed in rawSourceEscalations with its reason.",
+    "productTestApplied": "For every candidate system: IF THE UNDERLYING BUG DISAPPEARED TOMORROW, WOULD THIS CAPABILITY ACTUALLY BE GOOD ENOUGH against WhatsApp / LinkedIn / Teams / Facebook / X and modern collaborative products? A 'NO' is recorded as a competitive deficiency independent of any bug."
+  },
+
+  "productQualityBySystem": [
+    {
+      "candidateSystem": "S1 — CONVERSATION & MESSAGING CORE",
+      "lensNote": "PRODUCT LENS ONLY — not an ownership claim. Evidence spans RC-C7's amended territory, the frozen CONVERSATION COMPLETION REGISTER, and RIC stage E2.",
+      "whatEvidenceSaysWorks": [
+        "F020 mentions, F021 reply-to-message, F022 translation, F018 external-link hydration are all LIVE_CERTIFIED (provenance MODERATE).",
+        "F009 grow 1:1 -> group via Add People LIVE_CERTIFIED.",
+        "F050 canonical counterpart identity in thread LIVE_CERTIFIED."
+      ],
+      "bugsIfAllFixedTomorrow": ["F005", "F011", "F019", "F023", "F051", "F053", "F055", "F056", "F116", "F122", "F123", "F124", "F125"],
+      "wouldItThenBeGoodEnough": "NO",
+      "whyNot": [
+        "Even with every listed finding closed, the canonical Conversation would still have NO message edit and NO message delete/retract (WG001, WG002 — both AUTHORIZED, NOT_IMPLEMENTED; the schema columns editedAt / deletedAt / deletedReason exist and are honoured on read, but nothing can write them). Every mainstream messenger the user compares Aura to has had both for years. This is not polish; it is a baseline correctness expectation about one's own speech.",
+        "NO per-message delivery/read truth (WG003) — only a per-human read cursor. Users read 'did it arrive' as a trust signal about the whole product.",
+        "NO in-conversation search (WG007). NO message reactions (WG008). NO forward/share (WG011). NO offline queue (WG013). NO participant management beyond LEAVE (WG016).",
+        "NO conversation history pagination — corroborated in the released client: conversation_screen.dart contains no ScrollController and no cursor call, so the surface loads one page forever (WG004). A conversation that cannot be scrolled back through is not a communication record; it is a recent-messages widget.",
+        "NO emoji entry affordance anywhere in Conversation — a grep of the released client finds 'emoji' only inside meetings/presentation/meeting_live_room_screen.dart. No WG item covers this; it is an unregistered competitive gap.",
+        "NO typing indicator anywhere in the client (WG009 AUTHORIZED, unimplemented), and no draft persistence (WG006, ties to F063/F070)."
+      ],
+      "structuralObservation": "THE CANONICAL SURFACE IS THE LEAST RICH SURFACE. Five surfaces slated for demolition or convergence — correspondence/thread/thread_composer.dart, direct_threads/direct_thread_screen.dart, institutions/announcements/institution_announcement_composer.dart, institutions/posts/institution_post_composer_screen.dart and posts/compose_screen.dart — all import the shared core/rich_content/rich_paste_field.dart. The new clean-sheet conversation_screen.dart does NOT. It also does not import core/media/aura_media_viewer.dart or core/media/media_save_service.dart, which the feed and post cards do use. Aura is standardising on the surface that has the fewest modern capabilities. This is an interpretation of code structure, offered as a product observation, not a ruling.",
+      "certificationVsImplementation": "IMPLEMENTATION-COMPLETE-BUT-FAR-FROM-PRODUCT-CERTIFIED. Present but never exercised live: F012 drag/drop (DropTarget/onDragDone at conversation_screen:960), F013 clipboard paste incl. image (Pasteboard.image + composer key handler), F015 video messages, F019 SelectableText.rich at conversation_screen:1277, F023 report journey."
+    },
+    {
+      "candidateSystem": "S2 — CONTENT INTAKE, ATTACHMENTS & RICH MEDIA PRESENTATION",
+      "lensNote": "PRODUCT LENS ONLY. Evidence spans the frozen §12 RIC contract (RIC-C1..C5, D1..D3, E1, E2, F1) and RC-C5's originalScope, which the Stage-0 rc-map records as OVERLAPPING while RC-C5 is hard-gated closed.",
+      "whatEvidenceSaysWorks": [
+        "F018 external-link hydration LIVE_CERTIFIED.",
+        "F014 voice-note pills and F011 attachment pills render live.",
+        "A shared media stack exists in core/media/ (aura_media_viewer.dart, media_save_service.dart, canonical_media_thumb.dart, aura_media_frame.dart)."
+      ],
+      "bugsIfAllFixedTomorrow": ["F016", "F121", "F122", "F123", "F124", "F125", "F126", "F127", "F128", "F129", "F130", "F131", "F132", "F133", "F134", "F135", "F136", "F137", "F138", "F139", "F140", "F141", "F142", "F143"],
+      "wouldItThenBeGoodEnough": "NO",
+      "whyNot": [
+        "THIS IS THE CANONICAL WORKED EXAMPLE OF THE MISSION'S TEST, AND IT IS LITERAL, NOT HYPOTHETICAL. In the released client, conversation_screen.dart renders an unresolvable attachment as _fileChip('Attachment') — a grey rounded rectangle containing Icons.insert_drive_file_outlined and the hardcoded English word 'Attachment'. No filename. No extension. No file size. No page count. No download or open affordance. Sending a colleague a contract, a deck and a spreadsheet produces three identical grey pills labelled 'Attachment'. Every finding in this system could close and that pill would still be there, because the pill is not a bug — it is the absence of a document presentation model.",
+        "F016 (OPEN, STRONG) already records the founder's own observation: PDFs render as bare attachments; docx/pptx unsupported; 'the whole media-kind honesty model is missing'. VD-076 confirms the model must be BUILT, then validated.",
+        "VD-050 enumerates what does not exist AT ALL, not merely what is broken: 'no seek bar, no waveform, no document preview, no upload progress/cancel/retry, no degradation chain, no keyboard/focus behaviour'. Voice messages therefore play but cannot be scrubbed — below WhatsApp's 2016 baseline.",
+        "F136: thumbUrl for images IS the full-resolution original — a thumbnail in name only — and is null for video/audio/document. So even after F058 CORS is fixed, a conversation media list would download full-size originals to draw a grid, and video would have nothing to draw at all. Fixing the CORS bug does not produce a good gallery.",
+        "F125: conversation images are not tappable, have no fullscreen, and have no save affordance, while every other surface routes through AuraMediaViewer / MediaSaveService. The most personal surface has the weakest media handling.",
+        "WG010 (media/files gallery per conversation) is NOT_AUTHORIZED and WEAK_SINGLE_SOURCE, yet its motivating statement — 'attachments are unrecoverable once scrolled past' — is compounded by WG004's missing pagination: an attachment sent last month is currently unreachable by any path in the product."
+      ],
+      "trustAndSafetyDimension": "F138 (CONFIRMED SECURITY ARCHITECTURE DEFECT) and F126 (private DM attachments stay PUBLIC) mean the product's confidentiality story is currently untrue at the storage boundary. F132 publishes GPS EXIF verbatim. F137 records zero moderation or scanning of uploaded media of any kind. F135 leaks viewer IPs to third-party hosts at render time. Institutional buyers ask about exactly these four things in procurement. This is not a polish gap; it is a sales-blocking gap.",
+      "certificationVsImplementation": "IMPLEMENTATION-COMPLETE-BUT-FAR-FROM-PRODUCT-CERTIFIED, with a sharper sub-case: VD-055 records THREE MIGRATIONS COMMITTED AND NOT APPLIED (20260902000000, 20260903000000, 20260904000000); VD-054 records that production reconciliation CANNOT RUN until they deploy; VD-060 records F131 is unexercised because 'production has zero article covers'. The retention system is structurally built and empirically unproven simultaneously."
+    },
+    {
+      "candidateSystem": "S3 — REALTIME CALLING (1:1, GROUP, VIDEO, SCREEN SHARE)",
+      "lensNote": "PRODUCT LENS ONLY. RC-C6 is recorded OPEN — NOT STARTED, yet rc-map records extensive realtime engineering landing 2026-08-16..17 outside any chapter frame (contradiction X2).",
+      "whatEvidenceSaysWorks": [
+        "F006 1:1 audio, F007 group audio, F008 video, F010 screen share are all LIVE_CERTIFIED (provenance WEAK — capability-obligation rows with no remaining evidence).",
+        "F036 stuck-in-Connecting, F041 false Connection lost, F042 dismiss/rejoin over own call, F048 leave/end propagation, F049 one-leaves-others-continue all LIVE_CERTIFIED.",
+        "F038 stale ACTIVE sessions and F039 NULL-expiry invites cleared in production."
+      ],
+      "bugsIfAllFixedTomorrow": ["F035", "F037", "F040", "F043", "F044", "F045", "F046", "F047", "F052", "F054", "F057", "F060", "F071", "F072", "F073"],
+      "wouldItThenBeGoodEnough": "PARTIALLY — closer than any other system, but NO for the group case",
+      "whyNot": [
+        "F073 (late/missing FOURTH video frame, root cause UNKNOWN, converged live but unexplained) sits directly on top of F108 (mesh bounded, CEILING NEVER MEASURED) and F109 (mesh is not the long-term architecture, NO ENFORCEMENT). A four-party call that intermittently drops a frame with no known cause and no measured ceiling is not a group-calling product an institution will standardise on. Teams and Zoom are the comparison whether or not we accept it.",
+        "F060: after a mid-call refresh the user must MANUALLY REJOIN. Destination, roster and duration survive; participation does not. Every competitor auto-reattaches. This is the single most visible 'this product is not finished' moment in the calling experience.",
+        "F072: on native, an incoming GROUP call rings as an INDIVIDUAL call. The ring is the highest-stakes 100ms in a communication product and it currently misrepresents the event.",
+        "The eight-item Live/call presentation debt (F047 ring card, F074 broadcaster stage still call chrome) shows realtime chrome has been repaired defect-by-defect rather than designed."
+      ],
+      "certificationVsImplementation": "THE SHARPEST IMPLEMENTATION-VS-CERTIFICATION GAP IN THE WHOLE REGISTER. VD-046 records a single proposed COORDINATED REALTIME HUMAN CERTIFICATION BATCH covering 20 obligations (F037, F040, F045, F047, F052, F054, F057, F060, F079, F082, F083, F084, F085, F086, F087, F088, F035, F073, F074, F081) that has NEVER RUN. VDC-7 explicitly records that no evidence establishes any attempt since 2026-08-18T01:25Z. VDC-8 records that V2 depends on the founder's browser window being reachable, which 'went unreachable repeatedly today' — an ENVIRONMENTAL dependency, not a property of any finding."
+    },
+    {
+      "candidateSystem": "S4 — LIVE (BROADCAST, VIEWER EXPERIENCE, PUBLIC ACQUISITION)",
+      "lensNote": "PRODUCT LENS ONLY. RC-C10 carries CONFLICTING_CURRENT_STATE (CR-O5) and is carried forward unresolved.",
+      "whatEvidenceSaysWorks": [
+        "The origination model was corrected from parallel-broadcast to same-session state escalation (F075), the standalone doors were retired (F076, F077 EXPLICITLY_RETIRED), viewer authority was made role-based (F086), and viewer/stage counts were separated (F087)."
+      ],
+      "bugsIfAllFixedTomorrow": ["F074", "F078", "F079", "F080", "F081", "F082", "F083", "F084", "F085", "F088"],
+      "wouldItThenBeGoodEnough": "NO — and this is the clearest case in the entire register",
+      "whyNot": [
+        "THIS IS THE MISSION'S SECOND WORKED EXAMPLE, VERBATIM IN THE EVIDENCE. F089-F096 are ALL OPEN and the master register's own words are 'Authority exists ... Nothing implemented.' There is no watch-oriented viewer experience (F089), no Live chat (F090), no reactions (F091), no raise hand (F092), no stage promotion/demotion (F093), no viewer presence atmosphere (F094), no Live moderation (F095). A viewer who successfully arrives lands in CALL CHROME (F074 explicitly: 'the broadcaster stage is still call chrome').",
+        "So: every calling defect could close, F085's view guard could work perfectly, and the resulting product would be a stranger silently watching a grid of call tiles with no way to speak, react, or be seen to exist. That is technically functional and competitively inadequate. X, LinkedIn Live, Facebook Live and Twitter Spaces all made viewer participation the product.",
+        "F097-F107 — the entire public-acquisition preview stack — are ALL OPEN with 'Nothing built.' No public home surfacing of real Live, no bounded preview, no 15s frozen bound, no auth wall, no zero-authority enforcement, no return-to-the-same-Live, no intent preservation, no refresh-proof bound, no truthful ended state, no single canonical Live truth for both doors.",
+        "CLIENT-CORROBORATED AND WORSE THAN ABSENT: the released public_home_screen.dart DOES render a 'HAPPENING NOW' panel with a 'live now' counter fed by globalDiscoverableLiveProvider. That provider's own header documents that it 'degrades silently to an empty list when the user is not authenticated'. A signed-out visitor is therefore shown a confident, styled, red-dot 'HAPPENING NOW / live now: 0' panel that is structurally incapable of ever being non-zero for them. An empty acquisition surface is a missed opportunity; a CONFIDENTLY FALSE one actively teaches the visitor that nothing happens on Aura. This is my interpretation of the code's documented behaviour, offered as a product judgement.",
+        "COMPOUNDING: the same file records that the underlying endpoint is /realtime/sessions?scope=me — 'NOT a true cross-institution global feed'. Even signed IN, Live discovery can only show sessions the viewer already belongs to. A discovery surface that can only show you what you already have is not discovery. This materially strengthens F081 and F097 and is worth flagging to Stage 2."
+      ],
+      "certificationVsImplementation": "SPLIT. The lifecycle half is IMPLEMENTED_NOT_LIVE_CERTIFIED and blocked behind MULTI_PARTY_REALTIME (VD-037 'THE DECISIVE PROOF', VD-038, VD-039, VD-040 'PRIVACY PROOF REQUIRED'). The engagement half (VD-041) and the acquisition half (VD-042) are not implementation-complete at all — they are unstarted product construction, and classifying them as validation debt would understate them."
+    },
+    {
+      "candidateSystem": "S5 — ATTENTION & NOTIFICATION",
+      "lensNote": "PRODUCT LENS ONLY. RC-C4 is OPEN, forensic evidence base complete, implementation NOT STARTED, held per founder sequencing. RC-C5 is hard-gated behind it.",
+      "whatEvidenceSaysWorks": ["Notification delivery capability and preferences exist and are named in RC-C4's PRESERVE list; updates/module_attention + notifications_controller are the authority seed."],
+      "bugsIfAllFixedTomorrow": ["F030", "F031", "F032", "F033", "F034", "F035"],
+      "wouldItThenBeGoodEnough": "NO",
+      "whyNot": [
+        "The six C4_OWNED_OPEN findings are a TRUST failure, not a UI failure, and the register's own §K verdicts say so: F032 'Unread badges lie after viewing — undermines trust in every list', F033 'call history is effectively unreadable', F030/F031 'Not harmless — actively degrades Conversation and Calls', F034 'Self-actor rows pollute the feed'.",
+        "Retiring the legacy banner (F030/F031) alone would leave an attention feed that still projects call facts as the generic row 'interacted with your content' (F033) and still shows a member her own actions (F034). Fixing the loudest symptom would make the system quieter and no more truthful.",
+        "The chapter's own DR1 target is EIGHT parallel attention surfaces (messages hub, notifications, activity, direct inbox, communications centre, correspondence hub, module attention, and the 1,033-line unreachable conversations_screen.dart). Eight places that each answer 'what needs me?' differently is the definition of a product that cannot be trusted at a glance. Every competitor converged on one badge with one meaning.",
+        "WG003 (per-message delivery/read truth) is recorded as RC-C4-coupled and NOT_AUTHORIZED. Attention truth and delivery truth are the same trust surface to a user."
+      ],
+      "certificationVsImplementation": "NOT IMPLEMENTED AT ALL. This is the one large system where the honest classification is 'construction owed', not 'certification owed'. VD-072 records the frozen C5 hard gate; VD-068 additionally records five orphaned RealtimeSession rows stuck ACTIVE since 2026-08-12 continuously feeding the legacy banner — so the attention defect currently has a live production data cause as well as a code cause."
+    },
+    {
+      "candidateSystem": "S6 — IDENTITY, PRESENCE, TRUST & PROFILE PRESENTATION",
+      "lensNote": "PRODUCT LENS ONLY. RC-C2 is FINAL CLOSURE DECLARED BY FOUNDER 2026-08-16.",
+      "whatEvidenceSaysWorks": [
+        "Layered verification never collapsed into a boolean; 'Verified person' deliberately does not exist as a product concept; VERIFICATION IS NOT AUTHORITY; revoked/expired first-class; monetization structurally decoupled from verification. This is a genuinely above-market trust model and should be protected as an asset, not just a closed chapter.",
+        "Canonical Follow converged physically; blocking outranks messaging eligibility (D2 safety defect closed)."
+      ],
+      "bugsIfAllFixedTomorrow": ["F050", "F051", "F052", "F053", "F054", "F055", "F056", "F057", "F058", "F116"],
+      "wouldItThenBeGoodEnough": "MOSTLY YES ON DOCTRINE, NO ON DELIVERY",
+      "whyNot": [
+        "F058 is BLOCKED on an EXTERNAL_INFRASTRUCTURE action (Cloudflare R2 CORS; PutBucketCors returns AccessDenied with the backend token) and blocks the VISUAL completion of F051, F052, F056 and WG010. So the strongest doctrine in the product currently renders as missing avatars on the web. A first-time visitor cannot see a trust model; they see grey circles.",
+        "F116 is the SYSTEMIC statement of F050-F058 and is explicitly protected from being closed by fixing one consumer. VD-021 classifies the owed proof as a FULL CONSUMER AUDIT (CODE_STATIC) that has never been performed.",
+        "GAP-1 records that the Availability Off user-facing control is REQUIRED, doctrine-frozen, runtime-canonical — and has NO IMPLEMENTATION OWNER. A presence model users cannot turn off is a privacy expectation gap, not a backlog item."
+      ],
+      "certificationVsImplementation": "CHAPTER-CLOSED BUT NOT PRODUCT-CERTIFIED. VD-080 is explicit: C0, C1, C2 and C3 are LOCALLY CERTIFIED = Architecture + Implementation + Product-Behavior only; Cross-System, Real-Boundary and Founder Product Acceptance remain outstanding for all four. VD-081 records three standing C2 founder checkpoints (verification label mapping, presence privacy/visibility policy, profile visual direction) that no implementation may pre-empt."
+    },
+    {
+      "candidateSystem": "S7 — CONTINUITY / REFRESH AS A PLATFORM CONTRACT",
+      "lensNote": "PRODUCT LENS ONLY. F117 states the frame: refresh/continuity is a PLATFORM CONTRACT, not per-screen behaviour.",
+      "whatEvidenceSaysWorks": ["F065 (RC1 session-hint) and F069 (route classification) are IMPLEMENTED_NOT_LIVE_CERTIFIED; the route gate found 24 previously fail-open routes including the entire /admin workspace and /articles/write."],
+      "bugsIfAllFixedTomorrow": ["F059", "F061", "F062", "F063", "F064", "F066", "F067", "F068", "F070", "F103", "F104", "F113", "F117"],
+      "wouldItThenBeGoodEnough": "YES ON CORRECTNESS, NO ON PERCEIVED MATURITY",
+      "whyNot": [
+        "Refresh is the single most common user action on the web and Aura currently loses: the conversation destination (F059), personal profile edits (F061), institution profile edits (F062), in-progress composition (F063), meetings (F064/F113), and can strand the user on a permanent spinner (F068) or redirect them mid-load (F066).",
+        "This is the deficiency most likely to be encountered by EVERY user in their FIRST SESSION, before they ever reach a differentiating capability. It is disproportionately damaging to first-use credibility relative to its engineering size.",
+        "Correctness alone is insufficient: F069 making route classification fail-CLOSED means an unauthenticated visitor is redirected to login rather than shown a public-first surface. Correct, and potentially anti-acquisition. The public-first doctrine and the fail-closed gate need to be reconciled as a product decision, not just a code decision. FLAGGED AS INTERPRETATION.",
+        "F065 (RC1) is recorded as the highest-leverage root cause and as GATING F059, F061, F062, F063, F064, F103, F104 — including the founder-frozen Live auth-return. Continuity is therefore a prerequisite of acquisition, not a sibling of it."
+      ],
+      "certificationVsImplementation": "MIXED. Two root causes implemented-not-certified; eight consequences still OPEN. VD-029 is one obligation covering nine findings and needs both implementation AND per-route-family proof."
+    },
+    {
+      "candidateSystem": "S8 — LONG-FORM PUBLISHING (ARTICLES)",
+      "lensNote": "PRODUCT LENS ONLY. GAP-2 records this shipped with NO CHAPTER NUMBER ASSIGNED.",
+      "whatEvidenceSaysWorks": ["F024 Article as 4th Discover domain LIVE_CERTIFIED; F028 create-500 root-caused and fixed; F029 revision keeps the URL and presents truthful history — a genuinely mature editorial-integrity behaviour."],
+      "bugsIfAllFixedTomorrow": ["F025", "F026", "F027", "F070", "F121", "F131"],
+      "wouldItThenBeGoodEnough": "NO",
+      "whyNot": [
+        "F025: inserting an image shows RAW MARKDOWN to the author instead of a rendered image. F026: pasting a title OVERSIZES it. F027: the draft is LOST ON REFRESH. Measured against Medium, Substack, LinkedIn articles and Notion, this is not a competitive authoring surface — it is a text box with a save button. Long-form publishing is a credibility surface: an institution judges whether Aura is a serious publishing venue by whether writing in it feels serious.",
+        "F121 is worse than a UX defect: image insertion writes the RESOLVED, EXPIRING SIGNED URL into durable markdown, so a published article's images 404 once the signature expires. Published work silently decays. For a product whose thesis includes durable institutional record, silently rotting archives are a direct contradiction of the value proposition.",
+        "F131 compounds it: Article.coverMediaId has no relation, no READY check, no MIME check and no attachedTo stamp, so MediaCleanupService treats a published article's cover as an orphan AND DELETES IT. Data loss on published content.",
+        "Even with all six closed, there would still be no rich-text editing surface (the editor is markdown-source-facing), no embeds, no co-authoring, and no reading-experience work recorded anywhere."
+      ],
+      "certificationVsImplementation": "SHIPPED, PARTLY LIVE_CERTIFIED, AND UNCHARTERED. RC-C11's own contradiction record notes a release gate enumerating C0-C10 has no declared home for it."
+    },
+    {
+      "candidateSystem": "S9 — DISCOVERY, NAVIGATION & CREATE",
+      "lensNote": "PRODUCT LENS ONLY. RC-C3 closed then AMENDED by the founder-observed navigation correction 2026-08-16.",
+      "whatEvidenceSaysWorks": [
+        "Four authenticated primaries (HOME · MESSAGES · DISCOVER · CREATE) derived from a frozen governing test; verification retired as relevance ranking end-to-end; one activity-ordered list truthfully labelled 'recent activity'; Articles canonically declared but deliberately NOT rendered until truthful reading capability exists — an unusually disciplined refusal to ship dead 'coming soon' tenancy.",
+        "C3-GOVERNANCE-LESSON is a real product asset: 'a locally certified architecture can be product-wrong; founder observation is evidence with amending authority'."
+      ],
+      "bugsIfAllFixedTomorrow": ["F001", "F002", "F003", "F004"],
+      "wouldItThenBeGoodEnough": "PROBABLY YES STRUCTURALLY, UNPROVEN EXPERIENTIALLY",
+      "whyNot": [
+        "F001 (People surface institution residue) and F002 (Create still follows the legacy creation model rather than the Discover taxonomy) are both unexercised live. VD-002's owed proof is literally 'exercise each Create path' — the first thing any new user does.",
+        "Discover has no recorded search-quality, ranking-quality or empty-state-quality work. 'One activity-ordered list' is honest but it is also the weakest possible discovery product; LinkedIn and X compete on exactly this axis.",
+        "F003/F004 are LIVE_CERTIFIED on WEAK provenance — conclusions about entry-point adequacy should not lean on them."
+      ],
+      "certificationVsImplementation": "IMPLEMENTED AND STRUCTURALLY CLOSED; the FIRST-RUN JOURNEY (sign up -> discover -> create -> converse) has no single validation obligation covering it end to end. That absence is itself a finding of this analysis."
+    },
+    {
+      "candidateSystem": "S10 — MEETINGS (PROTECTED)",
+      "lensNote": "PRODUCT LENS ONLY. X7 records Meetings protection asserted across four independent authorities and affirmatively evidenced by F114.",
+      "whatEvidenceSaysWorks": ["F114 LIVE_CERTIFIED — no Meetings file modified in any commit this session. 97/97 regression green."],
+      "bugsIfAllFixedTomorrow": ["F064", "F112", "F113"],
+      "wouldItThenBeGoodEnough": "UNKNOWN — DELIBERATELY UNEXAMINED",
+      "whyNot": [
+        "F112 records plainly that Meetings owes the EQUIVALENT validation that Conversation and Live have received, intact and unstarted. The protection that keeps Meetings safe from regression has also kept it outside the quality bar the rest of the product is being held to.",
+        "RC-C6's actual demolition target — 3,890 lines of duplicated participant grid / spotlight / remote tiles using 0 of 5 shared realtime widgets — is untouched. That means Meetings' realtime PRESENTATION cannot benefit from any realtime presentation improvement made elsewhere, and will visibly diverge from Conversation calling as the latter improves.",
+        "PRODUCT RISK, STATED AS INTERPRETATION: 'protected' currently reads as 'exempt'. Preserving a certified module from careless regression and holding it to the product standard are not in conflict, and the evidence does not show the second happening."
+      ],
+      "certificationVsImplementation": "LEGACY-CERTIFIED AGAINST AN OLDER BAR. VD-074 records the standing obligation of targeted regression plus founder sign-off after EACH slice, slice by slice, no wholesale rewrite."
+    },
+    {
+      "candidateSystem": "S11 — PLATFORM ADMIN / AUTH & ACCOUNT ENTRY / SETTINGS / SUPPORT",
+      "lensNote": "PRODUCT LENS ONLY. All four are UNMAPPED_TO_RC per founder ruling CR-R4, which explicitly says this is NOT automatically an architectural defect and they must NOT be force-assigned.",
+      "whatEvidenceSaysWorks": ["Surfaces exist in the released client (features/support/, features/monetization/presentation/support_screen.dart, features/admin/presentation/admin_settings_screen.dart, features/communications/presentation/widgets/*_preferences_panel.dart)."],
+      "bugsIfAllFixedTomorrow": ["F069"],
+      "wouldItThenBeGoodEnough": "NO — AND THIS IS THE LEAST-EXAMINED PRODUCT TERRITORY IN THE ENTIRE REGISTER",
+      "whyNot": [
+        "PD-2 Authentication & Account Entry is where 100% of users begin and it has ZERO issued findings, ZERO validation obligations of its own, and an OPEN structural disposition. Sign-up conversion is the single highest-leverage acquisition metric in any consumer product and no evidence in this baseline describes its quality at all.",
+        "GAP-1 Settings/Personal Controls is UNCHARTERED and holds a control the doctrine says is REQUIRED (Availability Off) with the implementation owner explicitly UNASSIGNED. Modern products are judged on whether a user can control their own visibility and notifications; today there is no evidenced home for that.",
+        "Notification preferences are recorded as a PRESERVE item of an unstarted chapter (RC-C4) and as a separate NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION whose PRIMARY OWNER is C4 — i.e. user control over interruption is downstream of the same hard gate as everything else.",
+        "SupportScreen: deliberately not assigned to RC-C9, ownership undetermined. For an institutional buyer, 'how do I get help' is a procurement question."
+      ],
+      "certificationVsImplementation": "NEITHER ASSESSED NOR VALIDATED. There is no obligation in VD-001..VD-082 whose subject is sign-up, sign-in, account recovery, or personal settings quality."
+    },
+    {
+      "candidateSystem": "S12 — CROSS-PLATFORM / NATIVE",
+      "lensNote": "PRODUCT LENS ONLY. RC-C9 is OPEN — NOT STARTED and is where Real-Boundary certification first substantially lands.",
+      "whatEvidenceSaysWorks": ["Device registration and notification preferences exist and are in RC-C9's PRESERVE list."],
+      "bugsIfAllFixedTomorrow": ["F071", "F072"],
+      "wouldItThenBeGoodEnough": "NO",
+      "whyNot": [
+        "F071 is BLOCKED on a founder-triggered STORE RELEASE: the released binaries predate both shared-code fixes, so accept/reject is defective on shipped native today and cannot even be RE-OBSERVED until a release happens. Anyone who installed the app has a broken call-answering experience right now.",
+        "RC-C9's governing rule — 'DESKTOP IS NOT WEB WITH A WIDER VIEWPORT' — is currently unmet by construction: no native Windows notifications (WNS), no desktop lifecycle, no window sizing/responsiveness work, no hover/context affordances, no keyboard discipline (which is also WG014's territory).",
+        "Aura ships on four platforms and is being judged against Teams and WhatsApp Desktop, both of which are natively-integrated. A web app in a window is a visible maturity signal to institutional evaluators."
+      ],
+      "certificationVsImplementation": "NOT STARTED, AND ITS PRECONDITIONS (RC-C4, RC-C5) ARE RESPECTIVELY NOT-STARTED AND HARD-GATED, so under the declared sequencing no part of it can currently enter."
+    }
+  ],
+
+  "competitiveDeficiencies": [
+    {
+      "id": "CD-1",
+      "title": "Generic document presentation — the literal worked example",
+      "severity": "HIGH — first-use credibility and institutional usefulness",
+      "evidence": "F016 (OPEN, STRONG) 'PDFs rendered as bare attachments and docx/pptx unsupported; the whole media-kind honesty model is missing'. VD-076. Client corroboration: conversation_screen.dart _fileChip('Attachment') renders an icon plus the hardcoded word 'Attachment' with no name, type, size or open/download affordance.",
+      "competitiveFrame": "Slack, Teams, WhatsApp and LinkedIn all render a document as a named, typed, sized card with a preview and a one-tap open. Aura renders three identical grey pills.",
+      "bugIndependent": true
+    },
+    {
+      "id": "CD-2",
+      "title": "Live has no viewer product",
+      "severity": "HIGH — public acquisition infrastructure",
+      "evidence": "F089-F096 ALL OPEN, 'Authority exists ... Nothing implemented.' F074 'the broadcaster stage is still call chrome'.",
+      "competitiveFrame": "X Spaces, LinkedIn Live, Facebook Live and YouTube Live are all viewer-participation products. A viewer who can only watch silently has no reason to return and no reason to sign up.",
+      "bugIndependent": true
+    },
+    {
+      "id": "CD-3",
+      "title": "No public preview stack — and a confidently false 'live now: 0' shown to signed-out visitors",
+      "severity": "HIGH — acquisition",
+      "evidence": "F097-F107 ALL OPEN, 'Nothing built.' Client corroboration: public_home_screen.dart renders a 'HAPPENING NOW' panel whose live count comes from globalDiscoverableLiveProvider, whose own documentation states it 'degrades silently to an empty list when the user is not authenticated'.",
+      "competitiveFrame": "Every acquisition-driven social product shows a signed-out visitor real activity. Aura shows them a styled zero.",
+      "bugIndependent": true,
+      "interpretationFlag": "The 'confidently false zero' characterisation is MY product judgement derived from the provider's documented degradation behaviour, not a Stage-0 fact."
+    },
+    {
+      "id": "CD-4",
+      "title": "Live discovery cannot discover — scope=me by construction",
+      "severity": "HIGH — acquisition and public usability",
+      "evidence": "global_live_discovery.dart header: 'liveSessionsProvider calls /realtime/sessions?scope=me, which returns sessions the viewer is a participant or member of. This is NOT a true cross-institution global feed'.",
+      "competitiveFrame": "A discovery surface that can only show what you already belong to is a recent-items list. Materially strengthens F081 and F097.",
+      "bugIndependent": true,
+      "interpretationFlag": "Client-derived. Recommend Stage 2 confirm whether a global Live index is intended to exist."
+    },
+    {
+      "id": "CD-5",
+      "title": "Messaging lacks the modern baseline: edit, delete, reactions, search, emoji, typing, delivery truth, pagination",
+      "severity": "HIGH — retention and communication quality",
+      "evidence": "WG001, WG002, WG003, WG004, WG007, WG008, WG009, WG013, WG016 all NOT_IMPLEMENTED. Client corroboration: no ScrollController or cursor call in conversation_screen.dart; 'emoji' appears only in meeting_live_room_screen.dart; no typing indicator anywhere.",
+      "competitiveFrame": "Edit and delete are baseline in WhatsApp, Teams, Slack, X DMs and LinkedIn messaging. Their absence reads as an unfinished product on the very first send.",
+      "bugIndependent": true
+    },
+    {
+      "id": "CD-6",
+      "title": "Attention that lies",
+      "severity": "HIGH — trust",
+      "evidence": "F032 'Unread badges lie after viewing — undermines trust in every list'. F033 'call history is effectively unreadable'. F034 self-actor rows. F030/F031 'Not harmless'. Eight parallel attention surfaces per DR1.",
+      "competitiveFrame": "One badge, one meaning, cleared by reading. Universal. Aura has eight surfaces and a badge that does not clear.",
+      "bugIndependent": false,
+      "note": "These ARE bugs, but fixing them individually still leaves eight surfaces. The deficiency survives the bug fix."
+    },
+    {
+      "id": "CD-7",
+      "title": "Refresh loses the user",
+      "severity": "HIGH — first-use credibility, encountered by every user",
+      "evidence": "F059, F061, F062, F063, F064, F066, F067, F068, F070, F113 — destination, profile edits, composition, institution routes, meetings; F068 permanent spinner.",
+      "competitiveFrame": "Refresh-safety is table stakes on web. This is the cheapest large credibility win available.",
+      "bugIndependent": false
+    },
+    {
+      "id": "CD-8",
+      "title": "Authoring surface below the long-form market",
+      "severity": "MEDIUM-HIGH — credibility and content quality",
+      "evidence": "F025 raw markdown shown to the author, F026 title paste oversizing, F027 draft lost on refresh, F121 expiring signed URL baked into durable markdown (published images 404), F131 published cover deleted by the reaper.",
+      "competitiveFrame": "Medium / Substack / Notion / LinkedIn articles. Also a DURABILITY claim failure, not only a UX one.",
+      "bugIndependent": true
+    },
+    {
+      "id": "CD-9",
+      "title": "Accessibility never audited anywhere in the product",
+      "severity": "MEDIUM-HIGH — institutional adoption blocker, legal exposure",
+      "evidence": "WG015 'Never audited anywhere in this work' (WEAK_SINGLE_SOURCE). Client corroboration: 14 Semantics() usages across 571 Dart files, in 7 files, none of them Conversation, Articles, Live, Discover or any composer.",
+      "competitiveFrame": "Public institutions, universities and government buyers commonly require WCAG/VPAT statements. An unaudited product cannot answer the questionnaire at all.",
+      "bugIndependent": true,
+      "note": "The client corroboration converts WG015 from a WEAK single-source assertion into a code-verifiable one. This matters because WG015 is otherwise a lone unauthorized row."
+    },
+    {
+      "id": "CD-10",
+      "title": "Confidentiality is untrue at the storage boundary",
+      "severity": "HIGH — institutional adoption, trust, procurement",
+      "evidence": "F138 CONFIRMED SECURITY ARCHITECTURE DEFECT (one bucket, every object written to the same public prefix; 'private' enforced by withholding the URL). F126 private DM attachments stay PUBLIC and GET /media/:id/url returns a permanent public URL to any caller. F129 correspondence path bypasses presign entirely. F127 no magic-byte validation. F132 GPS EXIF published verbatim. F135 viewer IP leakage. F137 no media moderation or scanning of any kind.",
+      "competitiveFrame": "This is the section of an institutional security review Aura currently fails on paper.",
+      "bugIndependent": false,
+      "note": "F138 is the reason app-level fixes are insufficient: the §12 contract itself promoted RIC-C5 governed delivery to a SECURITY stage, and Stage-0 records C5 governed delivery as a security PREREQUISITE, never a bucket toggle."
+    },
+    {
+      "id": "CD-11",
+      "title": "Group calling unproven at four parties with an unmeasured ceiling",
+      "severity": "MEDIUM-HIGH — institutional usability",
+      "evidence": "F073 late/missing fourth video frame, root cause UNKNOWN. F108 mesh bounded, CEILING NEVER MEASURED. F109 mesh not the long-term architecture, NO ENFORCEMENT. F110/F111 SFU assessment and its scope both unwritten.",
+      "competitiveFrame": "Teams/Zoom/Meet. An institution will test a 6-person call before adopting.",
+      "bugIndependent": true
+    },
+    {
+      "id": "CD-12",
+      "title": "Native binaries in the field are defective and cannot be re-observed without a release",
+      "severity": "MEDIUM-HIGH — credibility of anyone who already installed",
+      "evidence": "F071 BLOCKED; both shared-code fixes post-date the released binaries; VD-032 requires a founder-triggered store release before the defect can even be re-observed. F072 group calls ring as individual.",
+      "bugIndependent": false
+    },
+    {
+      "id": "CD-13",
+      "title": "The canonical surface is the least capable surface",
+      "severity": "MEDIUM-HIGH — structural, compounds over time",
+      "evidence": "Client-derived: rich_paste_field.dart is imported by five legacy/demolition-listed composers and NOT by conversation_screen.dart; AuraMediaViewer and MediaSaveService are used by feed/post cards and NOT by Conversation (consistent with F125).",
+      "competitiveFrame": "Standardising on the least capable implementation means every future improvement is a re-implementation rather than an adoption.",
+      "bugIndependent": true,
+      "interpretationFlag": "Structural interpretation of import graphs. Offered for Stage 2 scrutiny."
+    },
+    {
+      "id": "CD-14",
+      "title": "No evidenced first-run journey standard",
+      "severity": "MEDIUM-HIGH — acquisition",
+      "evidence": "No obligation among VD-001..VD-082 has sign-up, sign-in, account recovery, onboarding or first-session quality as its subject. PD-2 has zero issued findings and an OPEN structural disposition.",
+      "bugIndependent": true
+    },
+    {
+      "id": "CD-15",
+      "title": "Meetings held to an older bar than the rest of the product",
+      "severity": "MEDIUM",
+      "evidence": "F112 Meetings owes the equivalent validation, intact and unstarted. RC-C6's 3,890 duplicated presentation lines untouched; 0 of 5 shared realtime widgets consumed.",
+      "bugIndependent": true,
+      "protectionNote": "Stated WITHOUT proposing any change to the Meetings protected boundary, which X7 records as consistently asserted across four authorities."
+    }
+  ],
+
+  "wgMapping": [
+    {
+      "id": "WG001", "title": "Message edit", "issuanceState": "PROSPECTIVE_AUTHORIZED_NOT_STARTED", "authorization": "AUTHORIZED (founder, execution authorization §20)", "provenance": "STRONG",
+      "motivatingDeficiency": "A user cannot correct their own words. ConversationMessage.editedAt exists in schema but there is no API and no UI — the product models the concept and refuses to expose it.",
+      "naturallyOwningSystem": "S1 Conversation & Messaging Core (message authority). Stage-0 records its associated stage as RIC-E2 'Conversation as FIRST COMPLETE REFERENCE'.",
+      "insideReconstructionOfThatSystem": "YES — inseparable. Message mutability changes message truth, attention truth, timeline truth and moderation truth simultaneously. Retrofitting edit onto a reconstructed message surface later means reopening the same authority.",
+      "optionalOrNecessary": "NECESSARY COMPETITIVE CAPABILITY. Baseline in every comparison product.",
+      "materiallyInteractingFindings": ["F019 (rich/selectable text — edit re-renders the same body)", "F123/F124 (message body truth already misused as a UI flag; edit multiplies the damage if body truth is not fixed first)", "F032 (attention/read truth must not resurrect on edit)"],
+      "riskOfDelaying": "Every message sent in the interim is permanently uncorrectable; user-visible immaturity on the first send.",
+      "migrationOrRegressionRisk": "LOW-MEDIUM. The column exists. Risk concentrates in attention re-notification semantics (RC-C4 territory, not started) and in whether an edited message re-enters unread. Must not create a second attention path.",
+      "wouldItBeGoodEnoughWithoutIt": "NO"
+    },
+    {
+      "id": "WG002", "title": "Message delete/retract", "issuanceState": "PROSPECTIVE_AUTHORIZED_NOT_STARTED", "authorization": "AUTHORIZED", "provenance": "STRONG",
+      "motivatingDeficiency": "deletedAt / deletedReason exist and are HONOURED IN READS, but nothing can create them. The read path already believes in deletion; the write path does not exist.",
+      "naturallyOwningSystem": "S1 Conversation, then shared. Reuses moderation + message authority. RIC-E2.",
+      "insideReconstructionOfThatSystem": "YES. Also touches S2 (deleting a message with an attachment must interact with retention truth — F140, F142, F143) and moderation (F023).",
+      "optionalOrNecessary": "NECESSARY. Retraction is a safety capability, not a convenience: it is how a user limits harm from a mis-sent message.",
+      "materiallyInteractingFindings": ["F023 report/moderation", "F140 legacy MessageAttachment media invisible to the reaper", "F142 cleanup authority omits authoritative reference structures", "F143 storage-object aliasing", "F126 conversation media visibility"],
+      "riskOfDelaying": "A user who mis-sends confidential material to the wrong conversation has no recourse. Given F126/F138, that material is additionally publicly addressable. The delay risk here is a real-world harm risk, not a feature-parity risk.",
+      "migrationOrRegressionRisk": "MEDIUM-HIGH — deletion that frees storage objects intersects directly with the unresolved F143 aliasing defect (production holds 10 duplicate/canonical pairs where deleting one row frees an object another row still addresses). Sequencing matters.",
+      "wouldItBeGoodEnoughWithoutIt": "NO"
+    },
+    {
+      "id": "WG003", "title": "Per-message delivery/read truth", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "Only a per-human read cursor exists; there is no sent/delivered/read state per message.",
+      "naturallyOwningSystem": "Jointly S1 Conversation and S5 Attention. Stage-0 records associatedChapter RC-C4 (established by evidence, explicitly NOT the RIC C4 stage).",
+      "insideReconstructionOfThatSystem": "YES for S5 — delivery truth and attention truth are the same trust surface. Building it inside S1 alone would create a second read-state authority, which RC-C4's enforcement list explicitly gates against ('independent badge semantics', 'competing reconciliation').",
+      "optionalOrNecessary": "NECESSARY EVENTUALLY, but genuinely coupled — the issuance recommendation 'LATER (C4 coupling)' is well-founded and I concur on the coupling (not on any authorization).",
+      "materiallyInteractingFindings": ["F032 unread persists after viewing", "F033 call facts projected generically", "F034 self-actor notifications"],
+      "riskOfDelaying": "MODERATE. Users tolerate absent read receipts far better than LYING ones — and F032 shows Aura currently has the lying kind. Fixing F032 is more urgent than adding WG003.",
+      "migrationOrRegressionRisk": "HIGH IF DONE EARLY — a per-message state model built before the Attention Authority exists is precisely the 'temporary version of an authority already scheduled for reconstruction' that the frozen C10 invariant warns against by analogy.",
+      "wouldItBeGoodEnoughWithoutIt": "MARGINALLY YES SHORT-TERM, NO LONG-TERM",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE — this row exists in exactly one assistant message. Do not build a major architectural conclusion on it alone; the corroboration here is the independent F032/F033 evidence, not the WG row."
+    },
+    {
+      "id": "WG004", "title": "Large-history pagination", "issuanceState": "PROSPECTIVE_AUTHORIZED_NOT_STARTED", "authorization": "AUTHORIZED", "provenance": "STRONG",
+      "motivatingDeficiency": "The backend 'before' cursor EXISTS; the frontend never calls it — no ScrollController, loads a single page forever.",
+      "naturallyOwningSystem": "S1 Conversation.",
+      "insideReconstructionOfThatSystem": "YES — this is a correctness and performance property of the conversation surface, not a feature bolted onto it.",
+      "optionalOrNecessary": "NECESSARY. Independently corroborated in the released client: conversation_screen.dart contains no ScrollController, no loadMore, no hasMore, no cursor call. This is one of only two WG items I could verify directly against code.",
+      "materiallyInteractingFindings": ["F011/F125 (an attachment sent before the loaded page is currently unreachable by ANY path — this is what makes WG010's 'unrecoverable once scrolled past' true)", "F059 (destination continuity — restoring a destination into a truncated history is a partial restore)"],
+      "riskOfDelaying": "Compounds with time and usage. Every day of use makes more of every conversation unreachable, and it silently invalidates any claim that Aura is a durable communication record.",
+      "migrationOrRegressionRisk": "LOW. The API already exists. Main risk is scroll-anchor jitter and interaction with realtime message insertion.",
+      "wouldItBeGoodEnoughWithoutIt": "NO — categorically. A messenger without history is not a messenger."
+    },
+    {
+      "id": "WG005", "title": "Failed-send truth + retry", "issuanceState": "PROSPECTIVE_AUTHORIZED_NOT_STARTED", "authorization": "AUTHORIZED", "provenance": "STRONG",
+      "motivatingDeficiency": "Failure is a transient toast; THE MESSAGE IS SIMPLY LOST.",
+      "naturallyOwningSystem": "S1 Conversation -> shared composer (S2 composition territory).",
+      "insideReconstructionOfThatSystem": "YES. RC-C0 already froze the RETRY semantic CTA family and the failed/sending product-state vocabulary — the authority to express this exists and is unconsumed here.",
+      "optionalOrNecessary": "NECESSARY. Silent data loss on the product's primary action. This is arguably the most severe WG item on a pure harm basis.",
+      "materiallyInteractingFindings": ["F063 compose systems continuity (a failed send whose text is also lost on navigation is a double loss)", "F124 empty-text ellipsis sentinel (message body truth is already unreliable)", "WG013 offline queue is the same failure mode via a different cause"],
+      "riskOfDelaying": "HIGH AND SILENT. Users do not report messages they do not know failed; they conclude the recipient ignored them. This damages the relationship, not just the product.",
+      "migrationOrRegressionRisk": "LOW-MEDIUM. Needs a local pending/failed message representation, which must not become a second message store — coordinate with WG006/F063/F070's persistence mechanism, per the founder's explicit instruction on WG006.",
+      "wouldItBeGoodEnoughWithoutIt": "NO"
+    },
+    {
+      "id": "WG006", "title": "Per-conversation draft persistence", "issuanceState": "PROSPECTIVE_AUTHORIZED_NOT_STARTED", "authorization": "AUTHORIZED", "provenance": "STRONG",
+      "motivatingDeficiency": "Composer text dies on navigation.",
+      "naturallyOwningSystem": "Shared composer (S2), consuming the continuity authority (S7).",
+      "insideReconstructionOfThatSystem": "YES — and the founder already ruled on HOW: 'Coordinate this with F063/F070. Do not create another unrelated persistence mechanism.' That instruction is preserved verbatim in Stage-0 and is the single most important sequencing constraint in the WG register.",
+      "optionalOrNecessary": "NECESSARY.",
+      "materiallyInteractingFindings": ["F063 compose systems continuity (RC7/RC8)", "F070 draft identity absent from URL (RC7)", "F027 article draft lost on refresh", "F065 RC1 session hint — the gating root cause"],
+      "riskOfDelaying": "MEDIUM. But the delay risk is inverted here: implementing it EARLY and SEPARATELY is the larger risk, because it would create exactly the parallel persistence mechanism the founder forbade.",
+      "migrationOrRegressionRisk": "MEDIUM — the risk is architectural, not data. Storage-axis note: the co-token 'RC7' in the issuance row is C_AXIS_AMBIGUOUS per Stage-0 (written neither as RC-C7 nor RIC-C7) and separately RC7 is used as a ROOT-CAUSE LABEL in the refresh-continuity audit. Do not resolve this by token shape.",
+      "wouldItBeGoodEnoughWithoutIt": "NO"
+    },
+    {
+      "id": "WG007", "title": "In-conversation search", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "No endpoint, no UI; unusable at scale.",
+      "naturallyOwningSystem": "S1 Conversation. A search repository already exists to reuse.",
+      "insideReconstructionOfThatSystem": "PARTIALLY — the retrieval half can follow, but the surface's information architecture should reserve the affordance during reconstruction rather than acquire it as a patch.",
+      "optionalOrNecessary": "NECESSARY AT SCALE, NOT AT TODAY'S SCALE. Honest read: with WG004 absent, in-conversation search would today be the ONLY way to reach an old message — which perversely raises its urgency.",
+      "materiallyInteractingFindings": ["WG004 pagination (search is a substitute retrieval path)", "WG010 media gallery (the same 'I cannot find what was sent' complaint)"],
+      "riskOfDelaying": "LOW-MEDIUM NOW, HIGH LATER. Grows strictly with history volume.",
+      "migrationOrRegressionRisk": "MEDIUM — backend indexing work; must respect F126/F138 visibility so search never surfaces content the viewer may not access.",
+      "wouldItBeGoodEnoughWithoutIt": "YES SHORT-TERM, NO AT SCALE",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE."
+    },
+    {
+      "id": "WG008", "title": "Message reactions", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "No lightweight acknowledgement primitive. Explicitly recorded as DISTINCT from Live reactions (F091) — a contrast, not a dependency.",
+      "naturallyOwningSystem": "S1 Conversation.",
+      "insideReconstructionOfThatSystem": "YES, IF DONE — reactions change message rendering, attention semantics ('did a reaction earn a notification?') and read-state, so bolting them on later is a three-system change.",
+      "optionalOrNecessary": "NECESSARY FOR RETENTION, NOT FOR FUNCTION. Reactions are the cheapest social-affordance-per-engineering-hour in modern messaging and are universal in the comparison set. Also directly reduces low-value message volume, which improves attention quality.",
+      "materiallyInteractingFindings": ["F091 Live reactions (distinct, but a shared reaction vocabulary would be a genuine reuse opportunity)", "F034 self-actor notifications (a reaction system built before attention truth would multiply self-actor noise)"],
+      "riskOfDelaying": "LOW ON CORRECTNESS, MEDIUM ON RETENTION.",
+      "migrationOrRegressionRisk": "MEDIUM — introduces a per-message aggregate that attention must not double-count.",
+      "wouldItBeGoodEnoughWithoutIt": "FUNCTIONALLY YES, COMPETITIVELY NO",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE."
+    },
+    {
+      "id": "WG009", "title": "Typing/presence indicators", "issuanceState": "PROSPECTIVE_AUTHORIZED_NOT_STARTED", "authorization": "AUTHORIZED (under ephemeral-interaction doctrine)", "provenance": "STRONG",
+      "motivatingDeficiency": "Common expectation, but the issuance row itself flags that it 'arguably conflicts with passive presence is not attention'. The issuance recommendation was FOUNDER CALL and the founder authorized it explicitly under ephemeral-interaction doctrine.",
+      "naturallyOwningSystem": "S1 Conversation, consuming realtime presence (S3/S6).",
+      "insideReconstructionOfThatSystem": "YES — and it is a genuine DOCTRINE INTERSECTION, not just a feature. C1-4 froze 'Presence is the person'; RC-C4 gates against 'unread-as-universal-attention'. Typing is ephemeral interaction signal, NOT presence and NOT attention. Building it outside a reconstruction would risk conflating all three.",
+      "optionalOrNecessary": "NECESSARY COMPETITIVELY; DOCTRINALLY DELICATE.",
+      "materiallyInteractingFindings": ["F052/F053/F116 canonical identity consumption (a typing indicator names a person and must use canonical identity, not an ad-hoc resolution)", "C1-4 presence doctrine", "GAP-1 Availability Off — a user who has turned availability off must not leak typing state"],
+      "riskOfDelaying": "LOW ON CORRECTNESS. Conversation feels dead without it, which affects perceived liveness more than function.",
+      "migrationOrRegressionRisk": "MEDIUM — the real risk is doctrinal contamination (typing treated as presence, or presence treated as attention), not technical. Client corroboration: no isTyping/typingIndicator symbol exists anywhere in the released client, so there is no legacy behaviour to preserve.",
+      "wouldItBeGoodEnoughWithoutIt": "FUNCTIONALLY YES, COMPETITIVELY NO"
+    },
+    {
+      "id": "WG010", "title": "Media/files gallery per conversation", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "Attachments are unrecoverable once scrolled past.",
+      "naturallyOwningSystem": "S2 Rich media presentation, surfaced in S1 Conversation. Reuses the media authority.",
+      "insideReconstructionOfThatSystem": "YES — a gallery is the natural PROOF that a media system is coherent. It is the surface where thumbnails, kinds, names and save paths all have to be real at once.",
+      "optionalOrNecessary": "NECESSARY FOR INSTITUTIONAL USEFULNESS. 'Where is that PDF she sent me' is the single most common institutional retrieval task in a messaging product.",
+      "materiallyInteractingFindings": ["F058 — Stage-0 records an EXPLICIT blocking relation: 'F058 (R2 CORS) blocks visual completion of F051, F052, F056, and WG010'. Stage 0 did NOT promote WG010 to BLOCKED and neither do I.", "F136 no thumbnail generation — thumbUrl is the FULL-RESOLUTION original and is null for video/audio/document, so a gallery today would be a slow grid of broken tiles", "F125 no viewer and no save in conversation", "F016 media-kind honesty", "WG004 pagination (the underlying retrieval problem)"],
+      "riskOfDelaying": "MEDIUM-HIGH AND COMPOUNDING — every day of use buries more content.",
+      "migrationOrRegressionRisk": "LOW ARCHITECTURALLY, but it is a DEPENDENT capability: implementing it before F058, F136 and F126 are resolved would produce a gallery that is slow, broken and potentially leaks. This is the clearest case in the WG register where sequencing behind findings is a product decision, not a bureaucratic one.",
+      "wouldItBeGoodEnoughWithoutIt": "NO",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE for the WG row; the blocking relation to F058 is separately and explicitly evidenced."
+    },
+    {
+      "id": "WG011", "title": "Forward/share message to another conversation", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "No way to move information between conversations. The primitive already exists: internal-reference hydration.",
+      "naturallyOwningSystem": "S1 Conversation, reusing the internal reference service.",
+      "insideReconstructionOfThatSystem": "YES — and unusually cheap, because F017's internal-ref card already renders live.",
+      "optionalOrNecessary": "NECESSARY COMPETITIVELY (universal in WhatsApp/Slack/Teams), and it is also a QUIET GROWTH MECHANIC: forwarding is how content travels inside an institution.",
+      "materiallyInteractingFindings": ["F017 internal Aura-link hydration (PARTIALLY_VALIDATED — the /p/ backfill/skip-guard gap would be inherited by every forward of an older message)", "F126/F138 — forwarding an attachment across a visibility boundary is a privacy decision, not a copy operation"],
+      "riskOfDelaying": "LOW-MEDIUM.",
+      "migrationOrRegressionRisk": "MEDIUM — the visibility question above is genuinely hard and must not be answered by accident. Forwarding must not launder a RESTRICTED object into a PUBLIC conversation.",
+      "wouldItBeGoodEnoughWithoutIt": "FUNCTIONALLY YES, COMPETITIVELY NO",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE."
+    },
+    {
+      "id": "WG012", "title": "Block boundary inside Conversation", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "Report exists; block/unblock semantics are not surfaced in Conversation. Reuses the compliance authority.",
+      "naturallyOwningSystem": "S1 Conversation, consuming the canonical blocking authority established by C2-R1.",
+      "insideReconstructionOfThatSystem": "YES — C2-R1 froze 'BLOCKING OUTRANKS FOLLOW/RELATIONSHIP/MESSAGING ELIGIBILITY' and the C2 §6 forensic found D2 'blocking does not stop DMs' as a SAFETY defect, since resolved and certified. The authority is now correct; the USER-FACING SURFACE for it inside Conversation is what WG012 names.",
+      "optionalOrNecessary": "NECESSARY — SAFETY. This is not a parity feature. A user experiencing harassment must be able to stop it from inside the conversation where it is happening, not by navigating to a profile.",
+      "materiallyInteractingFindings": ["F023 report/moderation (IMPLEMENTED_NOT_LIVE_CERTIFIED — the report sheet is wired but the live journey has NEVER been run)", "C2-R1/R5 blocking precedence", "F137 no media moderation of any kind"],
+      "riskOfDelaying": "HIGH ON A HARM BASIS, LOW ON A VOLUME BASIS. I judge this the most UNDER-RATED row in the WG register: it is recommended 'LATER' and marked WEAK_SINGLE_SOURCE, yet it is the only WG item whose absence has a direct personal-safety consequence. FLAGGED FOR STAGE 2 as a candidate re-reading of its priority — NOT as an authorization request.",
+      "migrationOrRegressionRisk": "LOW — the authority already exists and is certified; this is surfacing, not building.",
+      "wouldItBeGoodEnoughWithoutIt": "NO",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE for the WG row; the underlying blocking authority and the D2 safety defect are separately and STRONGLY evidenced in C2."
+    },
+    {
+      "id": "WG013", "title": "Offline queue + reconnect replay", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "Sends during a connectivity blip VANISH.",
+      "naturallyOwningSystem": "Shared / platform. Reuses realtime reconnect machinery.",
+      "insideReconstructionOfThatSystem": "YES — same failure class as WG005 (failed-send truth) and the same persistence question as WG006/F063. Three different rows describing one missing durability layer.",
+      "optionalOrNecessary": "NECESSARY ON MOBILE. Mobile networks blip constantly; this is not an edge case there.",
+      "materiallyInteractingFindings": ["WG005 failed-send truth", "WG006/F063/F070 draft persistence", "F117 refresh as a platform contract", "F046 call lost after freeze/refresh (same durability instinct, different domain)"],
+      "riskOfDelaying": "MEDIUM-HIGH ON MOBILE, LOW ON DESKTOP WEB.",
+      "migrationOrRegressionRisk": "MEDIUM-HIGH — an offline queue that replays without idempotency causes duplicate sends, which is a worse failure than the one it fixes. Must be designed with WG005 as one mechanism.",
+      "wouldItBeGoodEnoughWithoutIt": "NO ON MOBILE",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE."
+    },
+    {
+      "id": "WG014", "title": "Keyboard/desktop discipline (Enter vs Shift+Enter, shortcuts)", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "The composer has a key handler for PASTE ONLY. There is no send/newline discipline and no shortcut vocabulary.",
+      "naturallyOwningSystem": "Split by evidence: composer behaviour sits with S2 composition; platform behaviour sits with S12 cross-platform (RC-C9 explicitly lists 'keyboard' in its build scope, and RC-C5's Composition Authority explicitly lists 'keyboard' and 'accessibility').",
+      "insideReconstructionOfThatSystem": "YES — BOTH. This is a genuine two-owner capability and Stage-0 already shows the same shape for drag/drop ('jointly owned C5 + C9').",
+      "optionalOrNecessary": "NECESSARY FOR DESKTOP CREDIBILITY. RC-C9's own governing rule is 'DESKTOP IS NOT WEB WITH A WIDER VIEWPORT'; keyboard discipline is the most legible expression of that rule. Aura ships MSIX; power users on desktop judge a messenger in the first thirty seconds by whether Enter sends.",
+      "materiallyInteractingFindings": ["F013 clipboard paste (the one key handler that DOES exist, and it has never been exercised live)", "F019 rich/selectable text (selection and copy are keyboard behaviours)", "WG015 accessibility — keyboard navigability IS an accessibility requirement, not merely a power-user nicety"],
+      "riskOfDelaying": "MEDIUM. Also accumulates: every new surface built without keyboard discipline is another surface to retrofit.",
+      "migrationOrRegressionRisk": "LOW-MEDIUM. Changing Enter behaviour on an existing composer IS a user-visible behaviour change, but the frozen product standard explicitly notes there is no installed base whose legacy behaviour must be preserved at the cost of quality.",
+      "wouldItBeGoodEnoughWithoutIt": "NO ON DESKTOP",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE."
+    },
+    {
+      "id": "WG015", "title": "Accessibility pass (semantics, labels, contrast, screen reader)", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "'Never audited anywhere in this work.' Scope recorded as PLATFORM, authority to reuse recorded as the design system.",
+      "naturallyOwningSystem": "PLATFORM-WIDE — it has no single owning system by nature, which is exactly why it has no home and keeps being deferred.",
+      "insideReconstructionOfThatSystem": "IT MUST BE INSIDE EVERY RECONSTRUCTION, NOT A CHAPTER OF ITS OWN. Accessibility retrofitted as a late pass is the single most reliably-abandoned item in software. RC-C0's precedent shows the mechanism that would work: the FD-13 pattern of zero-tolerance rules plus RATCHETS. A Semantics-coverage ratchet is directly analogous to the G2/G3/G4/G5/G7 ratchets C0 already froze — a technically sound, deliberately migratable improvement of exactly the kind the frozen product standard says to consider NOW.",
+      "optionalOrNecessary": "NECESSARY — AND IT IS AN INSTITUTIONAL ADOPTION BLOCKER, not a nicety. Public institutions, universities, healthcare and government procurement routinely require WCAG conformance or a VPAT. An unaudited product cannot answer the questionnaire at all, which removes Aura from consideration before any feature is compared.",
+      "materiallyInteractingFindings": ["WG014 keyboard discipline (keyboard navigability is an accessibility requirement)", "RC-C0's product-state vocabulary and RC-C5's Composition Authority both list accessibility explicitly in scope", "F016/F125/F136 — an image with no alt text and no accessible name is inaccessible regardless of how well it renders"],
+      "riskOfDelaying": "HIGH AND COMPOUNDING. Cost grows linearly with surface count; Aura currently has 571 Dart files and 14 Semantics() usages.",
+      "migrationOrRegressionRisk": "LOW TECHNICALLY. The risk is organisational: without a ratchet it will not hold.",
+      "wouldItBeGoodEnoughWithoutIt": "NO",
+      "provenanceCaution": "The WG row is WEAK_SINGLE_SOURCE. HOWEVER: I independently corroborated it against the released client — 14 Semantics() occurrences across 7 files out of 571 Dart files, none in Conversation, Articles, Live, Discover or any composer. That converts the claim from a single assertion into a code-verifiable fact. This is the one WEAK-provenance WG row on which I am willing to rest a strong conclusion, and only because of that independent corroboration."
+    },
+    {
+      "id": "WG016", "title": "Participant management beyond LEAVE", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "Schema comments say v1 exit is LEAVE only; there is no removal and no stewardship. Issuance recommendation was 'LATER (needs doctrine)'.",
+      "naturallyOwningSystem": "S1 Conversation, reusing the invitation authority. Note that Stage-0 records the Invitation System canon stating explicitly 'Invitation is NOT a C7 feature' — so the reusable authority is NOT where the original charter placed it.",
+      "insideReconstructionOfThatSystem": "YES, AND IT NEEDS DOCTRINE FIRST. 'Who may remove whom from a conversation' is a governance question, and C1-1 froze that governance is never a delegable capability. This cannot be answered by implementation.",
+      "optionalOrNecessary": "NECESSARY FOR GROUP CREDIBILITY. A group conversation someone cannot be removed from is not usable for institutional work — a departed employee stays in the room forever.",
+      "materiallyInteractingFindings": ["F009 grow 1:1 -> group via Add People (LIVE_CERTIFIED — the product can ADD but not REMOVE, an asymmetry users notice immediately)", "F055 group identity ordering (removal changes the joinedAt-derived order)", "F056 group avatar treatment (removal changes the composite avatar)", "C1-1 governance never delegable"],
+      "riskOfDelaying": "MEDIUM NOW, HIGH AS GROUPS PERSIST. The asymmetry with F009 makes it more visible than its usage frequency suggests.",
+      "migrationOrRegressionRisk": "MEDIUM — removal semantics interact with message history visibility (does a removed participant retain access to prior messages?) which is a doctrine question with F126/F138 consequences.",
+      "wouldItBeGoodEnoughWithoutIt": "NO FOR INSTITUTIONAL USE",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE."
+    },
+    {
+      "id": "WG017", "title": "Pin/save messages", "issuanceState": "PROSPECTIVE_NOT_AUTHORIZED", "authorization": "NOT_AUTHORIZED", "provenance": "WEAK_SINGLE_SOURCE",
+      "motivatingDeficiency": "'No evidence of need yet.' The issuance recommendation was 'REJECT for now' — recorded by Stage-0 as an ASSISTANT recommendation, NOT a founder ruling. Stage-0 explicitly does NOT record it as RETIRED or REJECTED, and neither do I.",
+      "naturallyOwningSystem": "S1 Conversation. relatedSystemOrDomain and existingAuthorityToReuse are both NOT_RECORDED (dashes in source) — this row is the thinnest in the register.",
+      "insideReconstructionOfThatSystem": "IF IT IS EVER DONE, YES — pinning is a per-conversation surface property.",
+      "optionalOrNecessary": "OPTIONAL ENHANCEMENT. I concur with the issuance assessment on evidence: no finding, no founder observation and no user report motivates it. I note honestly that pinning is common in Slack and Teams, so it may re-emerge as an institutional-usability request later; it should not be deleted from the register on that basis.",
+      "materiallyInteractingFindings": ["WG007 in-conversation search and WG010 media gallery address the same underlying 'I cannot find it again' need more generally, and would likely reduce the demand for pinning"],
+      "riskOfDelaying": "LOW.",
+      "migrationOrRegressionRisk": "LOW.",
+      "wouldItBeGoodEnoughWithoutIt": "YES",
+      "provenanceCaution": "WEAK_SINGLE_SOURCE."
+    }
+  ],
+
+  "wgMappingSummary": {
+    "issuedConsidered": 17,
+    "wg018": "RESERVED / UNISSUED — treated as never issued throughout. No new WG identifier is minted by this analysis.",
+    "authorizedByFounder": ["WG001", "WG002", "WG004", "WG005", "WG006", "WG009"],
+    "notAuthorized": ["WG003", "WG007", "WG008", "WG010", "WG011", "WG012", "WG013", "WG014", "WG015", "WG016", "WG017"],
+    "myProductAssessmentIndependentOfAuthorization": {
+      "necessaryCompetitiveCapability": ["WG001", "WG002", "WG004", "WG005", "WG006", "WG009", "WG010", "WG012", "WG014", "WG015", "WG016"],
+      "necessaryEventuallyOrConditionally": ["WG003", "WG007", "WG008", "WG011", "WG013"],
+      "optionalEnhancement": ["WG017"],
+      "note": "This is a PRODUCT ASSESSMENT of competitive necessity ONLY. It is not an authorization, not a priority order, not a recommendation to implement, and does NOT reclassify any founder authorization decision. Authorization is founder-only authority."
+    },
+    "structuralObservation": "Every one of the 17 WG rows names a capability that belongs INSIDE the reconstruction of an existing system. Not one of them is a standalone feature. This is the strongest argument in the evidence against ever creating a separate WG implementation phase — and it matches the record that the six authorized items were already 'folded into the Rich Content chapter's sequencing rather than implemented as isolated patches'.",
+    "provenanceObservation": "All 17 rows originate in ONE assistant message (line 31827) of ONE transcript, and NO WG register artifact exists in any repository. The six founder-authorized rows carry STRONG provenance because the founder acted on them; the other eleven are WEAK_SINGLE_SOURCE. Any Stage-2 conclusion resting on WG003, WG007, WG008, WG010-WG017 should say so explicitly. I have flagged each individually."
+  },
+
+  "worldClassOpportunitiesAbsorbedByReconstruction": [
+    {
+      "id": "OPP-1",
+      "opportunity": "Document presentation as a first-class model, not a pill",
+      "absorbedInto": "S2 rich media presentation, alongside F016/F125/F136",
+      "rationale": "The evidence already requires building a 'media-kind honesty model' (F016), thumbnail generation (F136) and a conversation viewer/save path (F125). Naming filename, type, size, page count and a real open/download affordance costs almost nothing ADDITIONALLY at that moment and costs a full re-render pass later.",
+      "migratability": "HIGH — a shared attachment-card component replacing _fileChip. Deliberately migratable.",
+      "regressionRisk": "LOW"
+    },
+    {
+      "id": "OPP-2",
+      "opportunity": "Adopt the EXISTING shared rich primitives in the canonical Conversation instead of re-implementing them later",
+      "absorbedInto": "S1 Conversation reconstruction",
+      "rationale": "core/rich_content/rich_paste_field.dart, core/media/aura_media_viewer.dart and core/media/media_save_service.dart already exist and are consumed by five other surfaces. The canonical Conversation consumes none of them. This is adoption, not construction — the cheapest possible quality gain and it directly closes F125.",
+      "migratability": "HIGH",
+      "regressionRisk": "LOW-MEDIUM (behaviour changes are user-visible, which the frozen product standard treats as acceptable correction)",
+      "interpretationFlag": "Derived from import-graph inspection of the released client."
+    },
+    {
+      "id": "OPP-3",
+      "opportunity": "An accessibility RATCHET rather than an accessibility project",
+      "absorbedInto": "Every reconstruction, using the RC-C0 FD-13 enforcement precedent",
+      "rationale": "C0 already froze 11 zero-tolerance rules, 5 ratchets and a hard-failure gate with a frozen baseline file. A Semantics-coverage ratchet is the same mechanism applied to a new axis. It converts WG015 from a project nobody schedules into a floor nobody can regress below.",
+      "migratability": "HIGH — mechanism already exists and is proven (each C0 rule was verified to actually fail).",
+      "regressionRisk": "LOW"
+    },
+    {
+      "id": "OPP-4",
+      "opportunity": "Make Live discovery genuinely global and make the signed-out surface truthful",
+      "absorbedInto": "S4 Live, alongside F081/F097-F107",
+      "rationale": "The public preview stack must be built anyway (F097-F107, 'Nothing built'). Doing it on top of a scope=me endpoint would produce a preview with nothing to preview. The endpoint question is therefore a prerequisite of the acquisition work, not a separate enhancement.",
+      "migratability": "MEDIUM — backend index work.",
+      "regressionRisk": "MEDIUM — a global index is a visibility surface and must respect blocking (C2-R1) and Live privacy (F088)."
+    },
+    {
+      "id": "OPP-5",
+      "opportunity": "One durability layer serving failed sends, drafts and offline replay",
+      "absorbedInto": "S2 composition / S7 continuity",
+      "rationale": "WG005, WG006 and WG013 plus F063 and F070 are five descriptions of one missing durability layer. The founder has ALREADY ruled on the principle for WG006: 'Do not create another unrelated persistence mechanism.' Treating them as one layer is the direct application of an existing ruling, not a new proposal.",
+      "migratability": "HIGH if unified, LOW if built three times.",
+      "regressionRisk": "MEDIUM — idempotency is essential or replay causes duplicate sends."
+    },
+    {
+      "id": "OPP-6",
+      "opportunity": "Surface the already-certified blocking authority inside Conversation",
+      "absorbedInto": "S1 Conversation, alongside F023",
+      "rationale": "C2 already built and certified the canonical blocking authority and closed the D2 'blocking does not stop DMs' safety defect. WG012 is pure surfacing of an authority that exists. The report sheet (F023) is already wired to the canonical authority and needs its live journey run anyway — the same reconstruction moment.",
+      "migratability": "HIGH",
+      "regressionRisk": "LOW"
+    },
+    {
+      "id": "OPP-7",
+      "opportunity": "Treat the trust/verification model as a marketable asset, not just a closed chapter",
+      "absorbedInto": "S6 and any public surface",
+      "rationale": "Layered verification that is never collapsed to a boolean, 'VERIFICATION IS NOT AUTHORITY', verification structurally decoupled from payment, and TRUSTED permanently rejected as a commercial concept — this is materially more principled than the comparison set, where verification is purchasable. It is currently invisible to users partly because F058 stops avatars rendering at all.",
+      "migratability": "N/A — presentation and positioning.",
+      "regressionRisk": "NONE"
+    },
+    {
+      "id": "OPP-8",
+      "opportunity": "Reserve the retrieval affordances (search, gallery, pin) in the IA during reconstruction even if unimplemented",
+      "absorbedInto": "S1 Conversation IA",
+      "rationale": "WG007, WG010 and WG017 are all 'I cannot find it again' problems. Deciding WHERE they live during reconstruction costs nothing and prevents three separate later IA disruptions. This is reserving space, not building features, and it does not authorize anything.",
+      "migratability": "HIGH",
+      "regressionRisk": "NONE",
+      "caution": "Must not become dead 'coming soon' tenancy — C3-DISCOVER explicitly refused that pattern for Articles. Reserve conceptually, do not render an empty promise."
+    }
+  ],
+
+  "userFrictionAnalysis": [
+    {
+      "frictionPoint": "Refresh loses the user",
+      "whoHitsIt": "EVERY user, in the first session, on web",
+      "evidence": ["F059", "F061", "F062", "F063", "F066", "F067", "F068", "F070", "F113", "F117"],
+      "frequency": "CONSTANT",
+      "severity": "HIGH — this is the deficiency most likely to form a first impression",
+      "note": "F065 (RC1) is recorded as the highest-leverage single root cause and as gating seven other findings including the founder-frozen Live auth-return."
+    },
+    {
+      "frictionPoint": "Cannot correct or retract what was said",
+      "whoHitsIt": "Every user, within minutes of first use",
+      "evidence": ["WG001", "WG002"],
+      "frequency": "HIGH",
+      "severity": "HIGH — reads as an unfinished product AND as a safety gap"
+    },
+    {
+      "frictionPoint": "Cannot reach old messages or old attachments at all",
+      "whoHitsIt": "Every returning user; worsens daily",
+      "evidence": ["WG004 (corroborated: no ScrollController in conversation_screen.dart)", "WG007", "WG010", "F125"],
+      "frequency": "GROWING",
+      "severity": "HIGH"
+    },
+    {
+      "frictionPoint": "Sends can vanish silently",
+      "whoHitsIt": "Anyone on an imperfect network",
+      "evidence": ["WG005", "WG013"],
+      "frequency": "INTERMITTENT",
+      "severity": "HIGH — silent, unreported, and damages the human relationship rather than the product perception"
+    },
+    {
+      "frictionPoint": "Attachments are indistinguishable grey pills",
+      "whoHitsIt": "Anyone sharing documents — i.e. every institutional user",
+      "evidence": ["F016", "F011", "F125", "client: _fileChip('Attachment')"],
+      "frequency": "EVERY DOCUMENT",
+      "severity": "HIGH"
+    },
+    {
+      "frictionPoint": "Badges lie; notifications are generic; you are notified about yourself",
+      "whoHitsIt": "Every user, every session",
+      "evidence": ["F032", "F033", "F034", "F030", "F031"],
+      "frequency": "CONSTANT",
+      "severity": "HIGH — the register's own words: 'undermines trust in every list'"
+    },
+    {
+      "frictionPoint": "Mid-call refresh requires a manual rejoin",
+      "whoHitsIt": "Anyone on a long or unstable call",
+      "evidence": ["F060"],
+      "frequency": "OCCASIONAL",
+      "severity": "MEDIUM-HIGH — highly visible immaturity at a high-stakes moment"
+    },
+    {
+      "frictionPoint": "Writing a long article is unpleasant and the result decays",
+      "whoHitsIt": "Every author — the users who create the content everyone else comes for",
+      "evidence": ["F025", "F026", "F027", "F121", "F131"],
+      "frequency": "EVERY ARTICLE",
+      "severity": "HIGH — authors are the scarcest users and the easiest to lose"
+    },
+    {
+      "frictionPoint": "A signed-out visitor sees a styled 'live now: 0'",
+      "whoHitsIt": "Every prospective user at the acquisition moment",
+      "evidence": ["F097", "client: globalDiscoverableLiveProvider degrades to empty when unauthenticated"],
+      "frequency": "EVERY FIRST VISIT",
+      "severity": "HIGH FOR ACQUISITION",
+      "interpretationFlag": "Client-derived interpretation."
+    },
+    {
+      "frictionPoint": "No keyboard discipline on desktop",
+      "whoHitsIt": "Every MSIX/desktop user",
+      "evidence": ["WG014", "RC-C9 build scope lists keyboard"],
+      "frequency": "EVERY MESSAGE",
+      "severity": "MEDIUM"
+    },
+    {
+      "frictionPoint": "The product is unusable with a screen reader or keyboard-only",
+      "whoHitsIt": "Users with disabilities; also every institutional accessibility reviewer",
+      "evidence": ["WG015", "client: 14 Semantics() across 571 files"],
+      "frequency": "TOTAL for affected users",
+      "severity": "HIGH — total exclusion, not friction"
+    },
+    {
+      "frictionPoint": "Cannot remove anyone from a group",
+      "whoHitsIt": "Any institutional group over time",
+      "evidence": ["WG016", "asymmetric with F009 which IS live-certified"],
+      "frequency": "OCCASIONAL BUT PERMANENT WHEN HIT",
+      "severity": "MEDIUM-HIGH"
+    },
+    {
+      "frictionPoint": "Cannot turn availability off",
+      "whoHitsIt": "Any privacy-conscious user",
+      "evidence": ["GAP-1 — control REQUIRED, doctrine frozen, IMPLEMENTATION OWNER UNASSIGNED"],
+      "frequency": "ONGOING",
+      "severity": "MEDIUM-HIGH — a privacy expectation, not a preference"
+    }
+  ],
+
+  "publicAndInstitutionalConsequences": [
+    {
+      "audience": "SIGNED-OUT PUBLIC VISITOR",
+      "consequence": "The acquisition surface is present but structurally empty. F097-F107 are all OPEN with 'Nothing built', and the one live-activity panel that does render is fed by a provider documented to return empty for unauthenticated users. The visitor's evidence-based conclusion is 'nothing is happening here'.",
+      "compoundedBy": ["F069 fail-closed route classification may redirect a curious visitor to login rather than to a public surface — correct security, unexamined acquisition consequence", "F058 means whatever they do see has no avatars"],
+      "evidenceGrade": "STRONG (F097-F107 states) + client-derived interpretation for the panel"
+    },
+    {
+      "audience": "NEW MEMBER, FIRST SESSION",
+      "consequence": "Refresh loses their place (F059-F070). They cannot edit a typo (WG001). Attachments they send arrive as grey pills (F016). Badges do not clear (F032). Nothing about this is catastrophic and all of it is legible as 'unfinished'.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "audience": "INSTITUTIONAL EVALUATOR / PROCUREMENT",
+      "consequence": "Aura currently fails or cannot answer: accessibility conformance (WG015, 14 Semantics in 571 files), media confidentiality (F138 confirmed, F126), content scanning/moderation (F137 — none of any kind), data-in-transit privacy to third parties (F135), personal-data hygiene (F132 GPS EXIF published verbatim), group-call reliability at four+ parties (F073, F108 unmeasured ceiling), and member removal from a shared conversation (WG016). Each of these is a standard security/accessibility questionnaire line item.",
+      "evidenceGrade": "STRONG",
+      "note": "This is the single highest-consequence cluster in the analysis, and it is largely INVISIBLE in a demo. It fails at the paperwork stage, after the demo has gone well."
+    },
+    {
+      "audience": "INSTITUTIONAL DAILY USER",
+      "consequence": "Cannot find last month's PDF (WG004+WG010+F125). Cannot remove a departed colleague from a group (WG016). Cannot search a thread (WG007). Meetings, the institution's own workflow, holds an unstarted equivalent validation obligation (F112).",
+      "evidenceGrade": "STRONG for the WG-adjacent, MODERATE for the WG rows themselves (WEAK_SINGLE_SOURCE)"
+    },
+    {
+      "audience": "AUTHOR / CONTENT CREATOR",
+      "consequence": "Raw markdown while writing (F025), oversized pasted titles (F026), drafts lost on refresh (F027), published images that 404 when a signature expires (F121), and covers deleted by the cleanup reaper (F131). Authors are the supply side of the network; each of these is a reason to publish elsewhere and link in.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "audience": "LIVE VIEWER (the acquisition target)",
+      "consequence": "If they arrive at all, they land in call chrome with no chat, no reactions, no hand raise, no sense that anyone else is there, and no moderation protecting the space (F089-F095, all OPEN, 'Nothing implemented'). There is no reason to stay and no mechanism to convert.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "audience": "EXISTING NATIVE APP INSTALLER",
+      "consequence": "Accept/reject is defective on the released binaries and cannot be re-observed without a founder-triggered store release (F071 BLOCKED, VD-032). Group calls ring as individual (F072). Anyone who installed Aura currently has a worse experience than a web visitor.",
+      "evidenceGrade": "MODERATE (F071 MODERATE, F072 MODERATE) — flagged"
+    },
+    {
+      "audience": "USERS WITH DISABILITIES",
+      "consequence": "Effectively excluded. No audit has ever been performed anywhere in the product.",
+      "evidenceGrade": "WG015 is WEAK_SINGLE_SOURCE but INDEPENDENTLY CORROBORATED against the released client"
+    }
+  ],
+
+  "acquisitionImplications": [
+    {
+      "id": "ACQ-1",
+      "claim": "The public acquisition funnel does not exist as built software.",
+      "evidence": "F097-F107 all OPEN, master register verbatim: 'Live — public acquisition (F097-F107) — all OPEN ... Nothing built.'",
+      "consequence": "There is currently no evidenced mechanism by which a stranger becomes a member through Live. Every other quality improvement improves RETENTION of people who already arrived by some other means.",
+      "grade": "STRONG for the cluster state; F098-F102, F105, F106 individually WEAK"
+    },
+    {
+      "id": "ACQ-2",
+      "claim": "Acquisition is GATED BY CONTINUITY, not merely adjacent to it.",
+      "evidence": "'F065 (RC1 auth hint) gates F059, F061, F062, F063, F064, F103, F104 ... including the founder-frozen Live auth-return' and 'F103/F104 must be owned by the shared continuity authority (ties to F059-F070)'.",
+      "consequence": "Building the preview stack before the continuity contract holds would produce a funnel that drops the visitor at the moment of conversion — the single worst place to drop them. Stage 2 should treat continuity as an acquisition prerequisite.",
+      "grade": "STRONG"
+    },
+    {
+      "id": "ACQ-3",
+      "claim": "A working Live with no viewer experience does not acquire.",
+      "evidence": "F089-F096 OPEN + F074 broadcaster stage still call chrome.",
+      "consequence": "This is the mission's own worked example, confirmed by evidence rather than asserted: operational, and weak as public acquisition infrastructure.",
+      "grade": "STRONG"
+    },
+    {
+      "id": "ACQ-4",
+      "claim": "First-use credibility is currently damaged by cheap, high-frequency defects rather than by missing differentiation.",
+      "evidence": "Refresh (F059-F070), badge truth (F032), attachment presentation (F016), avatars absent on web (F058).",
+      "consequence": "Aura's differentiated assets — the layered trust model, the public-first doctrine, the governed identity separation — are invisible behind defects a visitor meets in the first ninety seconds.",
+      "grade": "STRONG"
+    },
+    {
+      "id": "ACQ-5",
+      "claim": "F058 is a one-action external blocker with outsized acquisition cost.",
+      "evidence": "F058 BLOCKED, EXTERNAL_INFRASTRUCTURE, VD-026: PutBucketCors returns AccessDenied with the backend token; the JSON was handed to the founder for a dashboard action. It blocks visual completion of F051, F052, F056 and WG010.",
+      "consequence": "A product whose people have no faces reads as empty and untrustworthy. This is the highest ratio of user-visible improvement to effort anywhere in the register, and it is not an engineering task at all.",
+      "grade": "STRONG"
+    },
+    {
+      "id": "ACQ-6",
+      "claim": "Institutional acquisition fails at paperwork, not at demo.",
+      "evidence": "F138, F126, F137, F135, F132, WG015.",
+      "consequence": "Deals will be lost after a successful demonstration, at the security and accessibility review stage, with no feedback loop that makes the cause visible.",
+      "grade": "STRONG"
+    },
+    {
+      "id": "ACQ-7",
+      "claim": "Long-form publishing is a public acquisition surface being treated as an internal capability.",
+      "evidence": "F024 Articles as the 4th Discover domain LIVE_CERTIFIED; GAP-2 records NO CHAPTER NUMBER ASSIGNED; F121 published images decay; F131 covers deleted.",
+      "consequence": "Public articles are the most SEO-visible and most shareable artifact Aura produces. They are also the least owned. A decaying public archive is a durable negative signal.",
+      "grade": "STRONG"
+    }
+  ],
+
+  "validationTopologyByCandidateSystem": {
+    "note": "All 82 canonical validation obligations VD-001..VD-082 are consumed. Classes are drawn ONLY from the permitted vocabulary. Where Stage-0 already assigned a class I preserve it; where I group, I state the dominant class and the escalation class.",
+    "totalObligationsConsumed": 82,
+    "stage0ClassCounts": {
+      "CODE_STATIC": 4, "LOCAL_AUTOMATED": 5, "SINGLE_AUTHORIZED_BROWSER": 27, "TWO_ACCOUNT_TWO_BROWSER": 9,
+      "MULTI_PARTY_REALTIME": 10, "NATIVE_DEVICE": 2, "PRODUCTION_READ_ONLY": 7, "EXTERNAL_INFRASTRUCTURE": 5,
+      "FOUNDER_EXPERIENTIAL": 10, "UNKNOWN": 3, "total": 82
+    },
+    "bySystem": [
+      {
+        "candidateSystem": "S1 Conversation & Messaging Core",
+        "obligations": ["VD-003", "VD-004", "VD-005", "VD-006", "VD-007", "VD-008", "VD-009", "VD-010", "VD-023", "VD-024", "VD-073", "VD-077"],
+        "dominantClass": "SINGLE_AUTHORIZED_BROWSER",
+        "escalationClasses": ["TWO_ACCOUNT_TWO_BROWSER (cross-party render parity, sender-vs-receiver truth)", "FOUNDER_EXPERIENTIAL (VD-005 drag/drop + clipboard paste are explicitly EXCLUDED from the agent-validated wave)", "MULTI_PARTY_REALTIME (VD-073 conversation completion register spans V1/V2/V4)"],
+        "implementationCompleteButNotProductCertified": "YES — F012, F013, F015, F019, F023 all have code present and zero live exercise.",
+        "productCertificationBeyondValidationDebt": "Message edit/delete, pagination, search, reactions, emoji and typing are NOT validation debt at all — they are unbuilt. No amount of validation closes them. This distinction must survive Stage 1."
+      },
+      {
+        "candidateSystem": "S2 Content Intake, Attachments & Rich Media",
+        "obligations": ["VD-047", "VD-048", "VD-049", "VD-050", "VD-051", "VD-052", "VD-053", "VD-054", "VD-055", "VD-056", "VD-057", "VD-058", "VD-059", "VD-060", "VD-061", "VD-062", "VD-063", "VD-064", "VD-065", "VD-066", "VD-076", "VD-077", "VD-078", "VD-079"],
+        "dominantClass": "PRODUCTION_READ_ONLY",
+        "escalationClasses": ["EXTERNAL_INFRASTRUCTURE (VD-052 F138 storage boundary; VD-055 three migrations committed and NOT applied; VD-063 the reconciler was run as a SQL MIRROR because the Prisma engine ships x64 and the workstation is windows-arm64)", "TWO_ACCOUNT_TWO_BROWSER (VD-047 F126 live journey: A sends, B renders, C refused, anonymous refused)", "SINGLE_AUTHORIZED_BROWSER (VD-050 presentation/playback/preview — none of which exists yet)", "FOUNDER_EXPERIENTIAL (VD-061 disposition of the unindexed Media population; VD-062 reaper authority change NOT AUTHORIZED)"],
+        "implementationCompleteButNotProductCertified": "YES, AND IN AN UNUSUAL FORM — the retention/security authority is structurally built while being empirically unproven, because its proving instrument depends on migrations that have not been applied and on production data that does not exist (VD-060: 'production has zero article covers'). This is the clearest case in the register where LOCALLY VERIFIED is very far from PRODUCT-CERTIFIED.",
+        "productCertificationBeyondValidationDebt": "VD-050's entire AUTHORIZED-BROWSER class is a list of capabilities that DO NOT EXIST: no seek bar, no waveform, no document preview, no upload progress/cancel/retry, no degradation chain, no keyboard/focus. Classifying that as validation debt would be a category error — it is construction debt wearing a validation label."
+      },
+      {
+        "candidateSystem": "S3 Realtime Calling",
+        "obligations": ["VD-012", "VD-013", "VD-014", "VD-015", "VD-016", "VD-017", "VD-018", "VD-020", "VD-022", "VD-025", "VD-030", "VD-034", "VD-046", "VD-073"],
+        "dominantClass": "TWO_ACCOUNT_TWO_BROWSER",
+        "escalationClasses": ["MULTI_PARTY_REALTIME (VD-034 four-party frame; VD-046 the coordinated batch)", "FOUNDER_EXPERIENTIAL (VD-013 founder re-observation of the persistent ring)", "SINGLE_AUTHORIZED_BROWSER (VD-014, VD-015, VD-017)"],
+        "implementationCompleteButNotProductCertified": "YES — MAXIMALLY. VD-046 alone holds 20 obligations behind ONE uninterrupted three-identity session that has never been convened. This is a scheduling-and-coordination bottleneck, not an engineering one, and it currently blocks the largest single block of certification in the programme.",
+        "productCertificationBeyondValidationDebt": "F073's unknown root cause and F108's unmeasured mesh ceiling cannot be certified by any session; they need measurement and an engineering assessment (F110/F111, both unwritten)."
+      },
+      {
+        "candidateSystem": "S4 Live",
+        "obligations": ["VD-035", "VD-036", "VD-037", "VD-038", "VD-039", "VD-040", "VD-041", "VD-042", "VD-043", "VD-044"],
+        "dominantClass": "MULTI_PARTY_REALTIME",
+        "escalationClasses": ["SINGLE_AUTHORIZED_BROWSER (VD-041 engagement layer; VD-042 the whole signed-out preview stack is V1 because 'a signed-out visitor is a single session')", "UNKNOWN (VD-044 the SFU assessment — a document, not an observation)"],
+        "implementationCompleteButNotProductCertified": "PARTIALLY — the lifecycle half is implemented-not-certified. The engagement half (VD-041) and the acquisition half (VD-042) are NOT implemented, so calling them validation debt overstates readiness.",
+        "productCertificationBeyondValidationDebt": "VD-042 is the single most acquisition-critical obligation in the register and is also the CHEAPEST to validate once built (single browser). That asymmetry is worth Stage 2's attention: high value, low validation cost, zero implementation."
+      },
+      {
+        "candidateSystem": "S5 Attention",
+        "obligations": ["VD-067", "VD-068", "VD-072"],
+        "dominantClass": "SINGLE_AUTHORIZED_BROWSER",
+        "escalationClasses": ["PRODUCTION_READ_ONLY (VD-068 five orphaned ACTIVE RealtimeSession rows since 2026-08-12 on legacy THREAD surface cmsp7euhf00soqw0cjcrzh2d1, continuously feeding the banner)", "FOUNDER_EXPERIENTIAL (VD-072 the frozen C5 hard gate: C4 must be implemented, locally certified, pushed, deployed, observed end-to-end on the LIVE site, live defects resolved, AND founder-declared closed)"],
+        "implementationCompleteButNotProductCertified": "NO — NOT IMPLEMENTED AT ALL. This is the one large system where the honest word is construction, not certification.",
+        "productCertificationBeyondValidationDebt": "The eight-surface DR1 retirement is a product decision requiring a founder checkpoint on attention interaction direction BEFORE retirement, per RC-C4's own scope."
+      },
+      {
+        "candidateSystem": "S6 Identity, Presence & Trust",
+        "obligations": ["VD-019", "VD-020", "VD-021", "VD-022", "VD-023", "VD-024", "VD-025", "VD-026", "VD-081", "VD-082"],
+        "dominantClass": "SINGLE_AUTHORIZED_BROWSER",
+        "escalationClasses": ["CODE_STATIC (VD-021 the full consumer audit for F053/F116 — never performed)", "EXTERNAL_INFRASTRUCTURE (VD-026 Cloudflare R2 CORS — outside agent authority)", "FOUNDER_EXPERIENTIAL (VD-081 verification label mapping, presence privacy policy, profile visual direction)"],
+        "implementationCompleteButNotProductCertified": "YES — and uniquely, the chapter is FOUNDER-CLOSED while its visual result is blocked by an external action. Closure and visibility have decoupled.",
+        "productCertificationBeyondValidationDebt": "VD-080: LOCALLY CERTIFIED covers Architecture + Implementation + Product-Behavior only. Cross-System, Real-Boundary and Founder Product Acceptance remain outstanding for C0, C1, C2 AND C3 simultaneously."
+      },
+      {
+        "candidateSystem": "S7 Continuity",
+        "obligations": ["VD-011", "VD-027", "VD-028", "VD-029", "VD-030", "VD-031"],
+        "dominantClass": "SINGLE_AUTHORIZED_BROWSER",
+        "escalationClasses": ["TWO_ACCOUNT_TWO_BROWSER (VD-030 mid-call refresh reattach)", "UNKNOWN (VD-031 Meetings refresh continuity — VDC-1: F064 is V2 and F113 is V4 for what is declared the SAME obligation; carried forward unresolved)"],
+        "implementationCompleteButNotProductCertified": "PARTIALLY — F065 and F069 are implemented-not-certified; the eight consequences remain OPEN.",
+        "productCertificationBeyondValidationDebt": "VD-029 is one obligation covering nine findings and demands implementation FIRST, then per-route-family proof. It is mislabelled if read as pure validation debt."
+      },
+      {
+        "candidateSystem": "S8 Long-Form Publishing",
+        "obligations": ["VD-011", "VD-059", "VD-060", "VD-077"],
+        "dominantClass": "SINGLE_AUTHORIZED_BROWSER",
+        "escalationClasses": ["PRODUCTION_READ_ONLY (VD-060 — F131 cannot be exercised because production has zero article covers)", "LOCAL_AUTOMATED (VD-059 — populating ArticleBodyMedia/ArticleRevisionMedia still depends on a text scan)"],
+        "implementationCompleteButNotProductCertified": "MIXED — shipped and partly live-certified, with unclosed durability defects (F121, F131) and an unassigned chapter home (GAP-2).",
+        "productCertificationBeyondValidationDebt": "There is no obligation anywhere covering READING quality, editor quality, or the durability of a published article over time. F121's failure mode (images 404 after signature expiry) would only be observed by a certification that WAITS."
+      },
+      {
+        "candidateSystem": "S9 Discovery, Navigation & Create",
+        "obligations": ["VD-001", "VD-002"],
+        "dominantClass": "SINGLE_AUTHORIZED_BROWSER",
+        "escalationClasses": [],
+        "implementationCompleteButNotProductCertified": "YES — F001 and F002 are both about surfaces that shipped and were never exercised.",
+        "productCertificationBeyondValidationDebt": "NO OBLIGATION EXISTS covering the end-to-end first-run journey, discovery relevance quality, or empty-state quality. Recorded as a gap of this analysis."
+      },
+      {
+        "candidateSystem": "S10 Meetings",
+        "obligations": ["VD-031", "VD-045", "VD-074"],
+        "dominantClass": "MULTI_PARTY_REALTIME",
+        "escalationClasses": ["LOCAL_AUTOMATED (VD-074 targeted regression 97/97 after each slice)", "FOUNDER_EXPERIENTIAL (founder sign-off after EACH Meetings slice)"],
+        "implementationCompleteButNotProductCertified": "CERTIFIED AGAINST AN OLDER BAR. F112's equivalent-validation obligation is intact and unstarted, and Stage-0 records the Meetings batch runs only AFTER Conversation's shared capabilities are certified, with explicit Meetings regression evidence.",
+        "productCertificationBeyondValidationDebt": "Presentation convergence (3,890 duplicated lines, 0 of 5 shared widgets) is construction, not validation."
+      },
+      {
+        "candidateSystem": "S11 Platform Admin / Auth / Settings / Support",
+        "obligations": ["VD-028 (partially — the route gate found the whole /admin workspace fail-open)"],
+        "dominantClass": "UNKNOWN",
+        "escalationClasses": ["SINGLE_AUTHORIZED_BROWSER would be the natural class if obligations existed"],
+        "implementationCompleteButNotProductCertified": "UNASSESSED. There is NO obligation among all 82 whose subject is sign-up, sign-in, account recovery, personal settings or support quality.",
+        "productCertificationBeyondValidationDebt": "The entire surface. This is the largest blind spot the validation topology reveals, and it sits exactly where acquisition happens."
+      },
+      {
+        "candidateSystem": "S12 Cross-Platform / Native",
+        "obligations": ["VD-032", "VD-033", "VD-069"],
+        "dominantClass": "NATIVE_DEVICE",
+        "escalationClasses": ["EXTERNAL_INFRASTRUCTURE (VD-032 F071 requires a founder-triggered STORE RELEASE before the defect can even be re-observed)"],
+        "implementationCompleteButNotProductCertified": "NOT STARTED as a chapter; the two native findings are respectively BLOCKED and OPEN.",
+        "productCertificationBeyondValidationDebt": "RC-C9 is where Real-Boundary certification first substantially lands, and its own preconditions (RC-C4, RC-C5) are not-started and hard-gated."
+      },
+      {
+        "candidateSystem": "CROSS-CUTTING GOVERNANCE",
+        "obligations": ["VD-070", "VD-071", "VD-075", "VD-080", "VD-081", "VD-082"],
+        "dominantClass": "FOUNDER_EXPERIENTIAL",
+        "escalationClasses": ["UNKNOWN (VD-075 — F115/F119/F120 are three angles of ONE governance obligation)"],
+        "implementationCompleteButNotProductCertified": "N/A",
+        "productCertificationBeyondValidationDebt": "VD-070 (RC-C11 / Item 17) has nine entry conditions, NONE of which is currently satisfiable. VD-071 records that Conversation/Invitation Phase 5 legacy retirement is NOT AUTHORIZED with an explicit sequential gate."
+      }
+    ],
+    "systemsWhereImplementationCompleteButFarFromProductCertified": [
+      "S3 Realtime Calling — 20 obligations behind one never-convened session (VD-046). The largest single certification bottleneck in the programme.",
+      "S2 Rich Content — structurally built, empirically unproven; three migrations committed and not applied; reconciler run only as a SQL mirror due to a windows-arm64 Prisma engine limit.",
+      "S6 Identity & Trust — chapter founder-closed, visual result blocked by an external Cloudflare action.",
+      "S1 Conversation — five capabilities present in code and never once exercised live (F012, F013, F015, F019, F023).",
+      "S7 Continuity — two root causes implemented, eight consequences open.",
+      "ALL CLOSED CHAPTERS — VD-080: C0, C1, C2, C3 are LOCALLY CERTIFIED only; Cross-System, Real-Boundary and Founder Product Acceptance are outstanding for every one of them."
+    ]
+  },
+
+  "founderExperientialCertificationNeeds": [
+    {
+      "id": "FE-1",
+      "need": "The coordinated realtime human certification session (VD-046)",
+      "why": "20 obligations across calling and Live cannot be discharged any other way. Three identities, one uninterrupted journey.",
+      "constraint": "VDC-8 records that V2 depends on the founder's browser window being open and unminimized, which 'went unreachable repeatedly today'. This is an environmental dependency, not a property of any finding.",
+      "class": "MULTI_PARTY_REALTIME + FOUNDER_EXPERIENTIAL"
+    },
+    {
+      "id": "FE-2",
+      "need": "Cloudflare R2 CORS dashboard action (VD-026 / F058)",
+      "why": "PutBucketCors returns AccessDenied with the backend token. Blocks visual completion of F051, F052, F056 and WG010.",
+      "class": "EXTERNAL_INFRASTRUCTURE",
+      "note": "Not a certification per se, but a founder-only action gating four items and, in my judgement, the highest visible-improvement-per-effort item in the entire register."
+    },
+    {
+      "id": "FE-3",
+      "need": "Store release to unblock F071 (VD-032)",
+      "why": "Both shared-code fixes post-date the released binaries; the defect cannot even be RE-OBSERVED until a release ships.",
+      "class": "EXTERNAL_INFRASTRUCTURE + NATIVE_DEVICE"
+    },
+    {
+      "id": "FE-4",
+      "need": "Production deployment of the three committed retention migrations (VD-055) then read-only reconciliation (VD-054)",
+      "why": "F131, F139, F140, F141, F142, F143 cannot close until the index they measure is seeded.",
+      "class": "EXTERNAL_INFRASTRUCTURE then PRODUCTION_READ_ONLY"
+    },
+    {
+      "id": "FE-5",
+      "need": "Disposition of the unindexed Media population (VD-061) and authorization of the reaper authority change (VD-062)",
+      "why": "150 Media rows; the unindexed population GREW 99 -> 100 during the investigation because no producer calls attach(). 23 of 100 proven in live use. Deletion authority over live content is founder-owned; VD-062 records the reaper is NOT AUTHORIZED and has NOT RUN.",
+      "class": "FOUNDER_EXPERIENTIAL"
+    },
+    {
+      "id": "FE-6",
+      "need": "The three standing C2 founder checkpoints (VD-081): verification label mapping, presence privacy/visibility policy, profile visual direction",
+      "why": "Each gates its chapter's Product-Behavior certification and no implementation may pre-empt them. The presence policy checkpoint additionally intersects GAP-1's unassigned Availability Off control.",
+      "class": "FOUNDER_EXPERIENTIAL"
+    },
+    {
+      "id": "FE-7",
+      "need": "The attention interaction direction checkpoint BEFORE the eight DR1 surfaces are retired",
+      "why": "RC-C4's own scope requires it. Retiring eight surfaces without a direction decision would be irreversible in practice.",
+      "class": "FOUNDER_EXPERIENTIAL"
+    },
+    {
+      "id": "FE-8",
+      "need": "The C5 hard-gate sequence (VD-072) in full",
+      "why": "Frozen verbatim: C4 implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed. C4 LOCAL CERTIFICATION != C5 AUTHORIZATION.",
+      "class": "FOUNDER_EXPERIENTIAL"
+    },
+    {
+      "id": "FE-9",
+      "need": "Product acceptance of PRESENTATION QUALITY, distinct from defect closure",
+      "why": "No obligation in VD-001..VD-082 asks 'is this good?'. VD-080 names Founder Product Acceptance as a certification LAYER, but the register has no instrument for it below the C11 release gate. Without one, every system can pass every obligation and still be competitively inadequate — which is precisely the failure mode this analysis exists to prevent.",
+      "class": "FOUNDER_EXPERIENTIAL",
+      "flag": "THIS IS A PROPOSED GAP, NOT AN EVIDENCED OBLIGATION. Offered for Stage 2 scrutiny."
+    },
+    {
+      "id": "FE-10",
+      "need": "Disposition decisions for the five UNMAPPED surfaces",
+      "why": "CR-R4 ruled them UNMAPPED_TO_RC and NOT to be force-assigned. PD-2's structural disposition is explicitly OPEN; GAP-1's Availability Off owner is explicitly UNASSIGNED; SupportScreen was deliberately not assigned to RC-C9; GAP-2 shipped with no chapter number.",
+      "class": "FOUNDER_EXPERIENTIAL"
+    }
+  ],
+
+  "bugFixedButStillInadequate": [
+    {
+      "id": "BFI-1",
+      "ifFixed": "F011 + F016 + F122 + F125 + F126 (attachments send, open, download, are correctly kinded, correctly private and viewable)",
+      "stillInadequateBecause": "The presentation model is absent, not broken. _fileChip('Attachment') gives no filename, type, size, page count or open affordance. Three different documents render identically. Closing every attachment finding produces a working system that still looks amateur next to Slack, Teams or WhatsApp.",
+      "whatWorldClassWouldRequire": "A typed document card: real filename, extension badge, size, page/slide count where known, a first-page or first-slide preview, one-tap open and explicit download.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "id": "BFI-2",
+      "ifFixed": "F058 (R2 CORS applied, avatars and images render on web)",
+      "stillInadequateBecause": "F136 means thumbUrl for an image IS the full-resolution original and is null for video, audio and documents. Any media grid would download originals to draw itself and video would draw nothing. The bug closes; the experience is slow and half-blank.",
+      "whatWorldClassWouldRequire": "Real derivative generation with responsive sizes, video poster frames, and document first-page renders.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "id": "BFI-3",
+      "ifFixed": "F136 (thumbnails generated)",
+      "stillInadequateBecause": "F016's media-kind honesty model still does not exist, so PDFs, DOCX and PPTX remain unsupported or bare. A thumbnail for a photo does not make a contract legible.",
+      "whatWorldClassWouldRequire": "Per-kind handling with honest capability disclosure, and visible-recoverable failure for unsupported input rather than silence.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "id": "BFI-4",
+      "ifFixed": "F125 (conversation images become tappable, fullscreen, saveable)",
+      "stillInadequateBecause": "Without WG010 (gallery) and WG004 (pagination) an image sent last month remains unreachable by any path. Viewing works; finding does not.",
+      "whatWorldClassWouldRequire": "A per-conversation media/files tab plus history pagination plus search.",
+      "evidenceGrade": "STRONG for the findings; WEAK_SINGLE_SOURCE for the WG rows (flagged)"
+    },
+    {
+      "id": "BFI-5",
+      "ifFixed": "F054 (video tiles show canonical identity instead of 'Participant')",
+      "stillInadequateBecause": "F074 records the broadcaster stage is STILL CALL CHROME. Correctly-named tiles in a call grid is not a broadcast product. The identity fix is necessary and nowhere near sufficient.",
+      "whatWorldClassWouldRequire": "A distinct stage presentation: speaker prominence, viewer-facing framing, and a visual language that says 'broadcast', not 'meeting'.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "id": "BFI-6",
+      "ifFixed": "F085 (a legitimate viewer finally gets into a Live)",
+      "stillInadequateBecause": "They arrive into F089-F095: no watch experience, no chat, no reactions, no raise hand, no promotion path, no sense of other viewers, no moderation. The viewer has been admitted to an empty room with no voice.",
+      "whatWorldClassWouldRequire": "The engagement layer as a product, recovered from FD-5 sections 8-10 per F096 rather than reinvented.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "id": "BFI-7",
+      "ifFixed": "F097-F107 (the entire public preview stack built)",
+      "stillInadequateBecause": "TWO independent reasons. (a) F065/RC1 gates F103/F104, so the auth-return that converts the visitor is unreliable until continuity holds. (b) Live discovery is scope=me by construction, so the preview would frequently have nothing real to preview.",
+      "whatWorldClassWouldRequire": "Continuity first, a genuine global Live index second, then the preview.",
+      "evidenceGrade": "STRONG for (a); client-derived interpretation for (b)"
+    },
+    {
+      "id": "BFI-8",
+      "ifFixed": "F030 + F031 (the legacy global 'started a call' banner retired)",
+      "stillInadequateBecause": "F032 badges still lie after viewing, F033 calls still appear as 'interacted with your content', F034 still notifies you about yourself, and DR1's eight parallel attention surfaces still exist. The product becomes quieter without becoming truthful.",
+      "whatWorldClassWouldRequire": "One hub, one badge semantic, owning-domain clearing, deterministic reconciliation, no dead CTAs — RC-C4's own exit condition.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "id": "BFI-9",
+      "ifFixed": "F027 (article drafts survive refresh)",
+      "stillInadequateBecause": "F025 still shows the author raw markdown where an image should be, F026 still oversizes a pasted title, and F121 still bakes an expiring signed URL into durable markdown so published images 404 later. The draft survives; the writing experience and the published artifact do not.",
+      "whatWorldClassWouldRequire": "A real authoring surface with rendered inline media, plus stable canonical media references in published bodies.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "id": "BFI-10",
+      "ifFixed": "F059 + F061 + F062 + F063 (destination and composition survive refresh)",
+      "stillInadequateBecause": "The user is returned to a conversation that still loads one page forever (WG004). Restoring someone to a truncated history is a partial restore of a partial product.",
+      "whatWorldClassWouldRequire": "Continuity plus real history retrieval, treated as one capability.",
+      "evidenceGrade": "STRONG for the findings; WG004 is STRONG and independently code-corroborated"
+    },
+    {
+      "id": "BFI-11",
+      "ifFixed": "F069 (route classification made fail-closed)",
+      "stillInadequateBecause": "Correctness improves and acquisition may worsen: a signed-out visitor now gets redirected to login rather than shown a public-first surface. The public-first doctrine and the fail-closed gate have not been reconciled as a product decision.",
+      "whatWorldClassWouldRequire": "Fail-closed for authority, public-first for content — an explicit product ruling on which routes are genuinely public.",
+      "evidenceGrade": "STRONG for the fix; the acquisition consequence is MY INTERPRETATION and is flagged as such."
+    },
+    {
+      "id": "BFI-12",
+      "ifFixed": "F126 (conversation media visibility correctly set to non-PUBLIC)",
+      "stillInadequateBecause": "F138 stands: there is ONE R2 bucket and every object — PUBLIC, RESTRICTED and PRIVATE alike — is written to the same public prefix. Privacy is enforced by withholding the URL from DTOs. An app-level fix over a publicly-readable storage boundary is a disclosure control, not confidentiality.",
+      "whatWorldClassWouldRequire": "Canonical governed delivery for every visibility class BEFORE the bucket's public read is removed — which the §12 contract itself promoted to a SECURITY stage.",
+      "evidenceGrade": "STRONG",
+      "protectedBoundaryNote": "Stated as evidence, not as a proposal to alter any frozen boundary."
+    },
+    {
+      "id": "BFI-13",
+      "ifFixed": "F019 (live selection and copy proven) plus every other conversation finding",
+      "stillInadequateBecause": "Messaging still has no edit (WG001), no delete (WG002), no reactions (WG008), no search (WG007), no emoji entry, no typing indicator (WG009) and no history (WG004). Selection is a detail; the baseline is missing.",
+      "whatWorldClassWouldRequire": "The baseline messaging capability set, built inside the Conversation reconstruction rather than after it.",
+      "evidenceGrade": "MIXED — WG001/002/004/009 STRONG, WG007/008 WEAK_SINGLE_SOURCE (flagged); the emoji absence is my own client-derived observation with no WG row at all"
+    },
+    {
+      "id": "BFI-14",
+      "ifFixed": "F014 (voice-message timeline/playback presentation shipped)",
+      "stillInadequateBecause": "VD-050 records that no seek bar and no waveform exist as capabilities at all. Playback without scrubbing is below the 2016 messaging baseline; a two-minute voice note becomes unusable.",
+      "whatWorldClassWouldRequire": "Waveform, scrub, playback speed, resume position, and a background-safe player.",
+      "evidenceGrade": "STRONG"
+    },
+    {
+      "id": "BFI-15",
+      "ifFixed": "F071 + F072 (native accept/reject and group ring corrected and released)",
+      "stillInadequateBecause": "The native app would then correctly ring for a messaging product that still lacks edit, delete, reactions, typing, read receipts, offline queue and history. Mobile is where those absences are most keenly felt, because mobile is where the comparison to WhatsApp is instantaneous.",
+      "whatWorldClassWouldRequire": "Native parity on the baseline set, not just on call correctness.",
+      "evidenceGrade": "MODERATE for F071/F072 (flagged); STRONG for the WG absences"
+    }
+  ],
+
+  "unmappedSurfaceAnalysis": {
+    "governingConstraint": "CR-R4 ruled all five UNMAPPED_TO_RC, explicitly NOT force-assigned and explicitly NOT automatically an architectural defect. Nothing below assigns ownership. This is my PRODUCT-LENS reading only; final ownership is Stage 4.",
+    "surfaces": [
+      {
+        "id": "PD-1",
+        "name": "Platform Administration",
+        "productReading": "The lowest acquisition consequence of the five and the highest OPERATIONAL consequence. Its users are internal. Its measured debt is real (11 files / 34 G5 sites, the largest single withdrawal from RC-C1's original 42) and VD-028 records the ENTIRE /admin workspace was fail-open on route classification until the C3 gate found it — an authority surface with no auth classification is a governance risk, not a polish item.",
+        "worldClassTest": "Would an operator trust it? Unassessed. No finding, no obligation, no evidence of quality assessment exists.",
+        "acquisitionConsequence": "INDIRECT — poor admin tooling slows every institutional onboarding, which is a growth cost rather than a conversion cost.",
+        "myView": "Belongs inside a reconstruction of whatever owns institutional authority presentation, because C1's capability projection is what it must consume. NOT a standalone chapter in my reading. STATED AS OPINION."
+      },
+      {
+        "id": "PD-2",
+        "name": "Authentication & Account Entry",
+        "productReading": "THE MOST CONSEQUENTIAL UNMAPPED SURFACE AND THE LEAST EXAMINED THING IN THE ENTIRE BASELINE. 100% of users pass through it. It has ZERO issued findings, ZERO dedicated validation obligations, only 3 G5 sites, and DECISIONS.md records its STRUCTURAL DISPOSITION REMAINS OPEN.",
+        "worldClassTest": "FAILS THE TEST BY DEFAULT — not because it is bad, but because nobody has looked. Sign-up conversion, error recovery, password reset, session restoration and the public-to-authenticated transition are the highest-leverage acquisition surface in any consumer product.",
+        "acquisitionConsequence": "DIRECT AND MAXIMAL. F103/F104 (sign-up preserves intent, auth returns to the SAME Live) are the conversion moment of the entire Live acquisition thesis and both are OPEN, and both are gated by F065/RC1 which lives in the same territory.",
+        "myView": "The absence of a single finding here is more likely evidence of an unexamined surface than of a healthy one. Stage 2 should treat 'zero findings' as a signal to LOOK, not as reassurance. STATED AS INTERPRETATION."
+      },
+      {
+        "id": "SupportScreen",
+        "name": "Support surface",
+        "productReading": "Deliberately NOT assigned to RC-C9 and ownership-undetermined. The released client shows a scattered support presence: features/support/ (agent screen, admin console, case list, chat bubble, quick chips), features/monetization/presentation/support_screen.dart, screens/supporters_hub_screen.dart and screens/support_fallback_screen.dart. Note the NAME COLLISION: 'support' means both customer help AND financial supporters/monetization in this codebase.",
+        "worldClassTest": "Unassessed. A vocabulary collision on a user-facing word is exactly the class of problem C0's Product Language Authority exists to prevent, and this one appears to have survived C0.",
+        "acquisitionConsequence": "INSTITUTIONAL — 'how do we get help' is a procurement question and an SLA question.",
+        "myView": "The vocabulary collision is a concrete, checkable observation worth raising at Stage 2 independently of ownership. Client-derived; flagged."
+      },
+      {
+        "id": "GAP-1",
+        "name": "Settings / Personal Controls",
+        "productReading": "UNCHARTERED, and it holds a control the doctrine declares REQUIRED with the implementation owner explicitly UNASSIGNED (Availability Off). Stage-0 additionally records that the earlier 'C4 Settings' shorthand was RECLASSIFIED as continuity shorthand, i.e. it never really had a home.",
+        "worldClassTest": "FAILS. Every comparison product gives users granular control over notifications, visibility and privacy. Aura's notification preference authority is an obligation owned by an unstarted chapter, and its availability control has no owner at all.",
+        "acquisitionConsequence": "RETENTION AND TRUST. Users who cannot control interruption churn or mute. Users who cannot control visibility do not trust the product with their presence.",
+        "myView": "This is the unmapped surface most likely to be quietly load-bearing for retention, and it is also where GAP-1, WG015 accessibility settings, WG009 typing/presence and RC-C4's notification preferences all converge. STATED AS OPINION."
+      },
+      {
+        "id": "GAP-2",
+        "name": "Long-Form Publishing (Articles)",
+        "productReading": "CARRIES ITS OWN PRESERVED CONTRADICTION, which I carry forward and do not resolve: DECISIONS.md records NO CHAPTER NUMBER ASSIGNED awaiting founder dependency placement, yet Articles SHIPPED and F024 is LIVE_CERTIFIED. A capability that is simultaneously unchartered and in production.",
+        "worldClassTest": "FAILS on authoring (F025, F026, F027) and on DURABILITY (F121 published images 404 after signature expiry; F131 published covers deleted by the reaper).",
+        "acquisitionConsequence": "HIGH AND UNDER-APPRECIATED. Public articles are the most shareable, most linkable and most search-visible artifact Aura produces. A decaying public archive is a permanent negative signal that outlives any fix.",
+        "myView": "The durability defects matter more than the ownership question. An unchartered capability that works is a governance issue; a published archive that silently rots is a product-thesis failure. STATED AS OPINION.",
+        "contradictionCarriedForward": "RC-C11 records that a release gate enumerating C0-C10 has no declared home for it. Preserved, not resolved."
+      }
+    ],
+    "crossCuttingObservation": "Four of the five unmapped surfaces (PD-2 auth, GAP-1 settings, SupportScreen, PD-1 admin) share one property: they are the surfaces a user meets when something needs to be CONTROLLED or FIXED, rather than when something is being CREATED or COMMUNICATED. The RC roadmap is organised almost entirely around creation and communication. That is a coherent explanation for why these five have no home, and it is offered as a hypothesis for Stage 2, not as a defect claim — CR-R4 explicitly forbids treating unmapped status as automatically defective."
+  },
+
+  "contradictions": [
+    {
+      "id": "AC-1",
+      "subject": "F043 — Timer before establishment",
+      "carriedForwardState": "CONFLICTING_CURRENT_STATE",
+      "stage0Record": "CR-O1: the master register row records PARTIALLY_VALIDATED while the same message lists it among items that cannot honestly be called LIVE_CERTIFIED.",
+      "myReading": "IMPLEMENTATION STATE VS CERTIFICATION STATE — STATED EXPLICITLY AS AN INTERPRETATION, NOT A RESOLUTION. The founder ruling shipped (b25b554) and was certified; a subsequent answeredAt-only refinement (b401398) is unverified. Both statements can be simultaneously true of different commits. VD-014's owed proof ('re-verify Ready-to-join shows no clock') is consistent with that reading.",
+      "resolutionStatus": "NOT RESOLVED. Carried forward unchanged. Evidence is sufficient to OFFER the interpretation and insufficient to CLOSE the conflict; the two states may also genuinely disagree.",
+      "productConsequence": "A call timer that starts before establishment tells the user the call connected when it did not. Whichever reading is correct, the user-facing obligation is identical and cheap to verify."
+    },
+    {
+      "id": "AC-2",
+      "subject": "F051 — Avatar missing in chat",
+      "carriedForwardState": "CONFLICTING_CURRENT_STATE",
+      "stage0Record": "CR-O2: register row PARTIALLY_VALIDATED vs the same report's 'previously called fixed & deployed' list.",
+      "myReading": "IMPLEMENTATION STATE VS CERTIFICATION STATE — OFFERED AS INTERPRETATION. The thread-header avatar is live; the Messages-list avatars are deployed (b401398) but unverified. VD-019's owed proof is exactly 'verify Messages-list avatars deployed in b401398'. A SECOND, INDEPENDENT reading is equally available and I do not dismiss it: F058's R2 CORS block means avatars may be deployed in code and still not RENDER on web, in which case 'deployed' and 'not working' are both literally true and the conflict is not about certification at all.",
+      "resolutionStatus": "NOT RESOLVED. Both readings preserved. The second reading materially changes what proof would settle it.",
+      "productConsequence": "Faceless people is a first-impression failure. Either reading points at F058 as the real gate."
+    },
+    {
+      "id": "AC-3",
+      "subject": "F122 — Wire-kind inconsistency (canonical wireKind(document) returns 'IMAGE'; conversation_screen sends 'DOCUMENT')",
+      "carriedForwardState": "CONFLICTING_CURRENT_STATE",
+      "stage0Record": "CR-O3: the frozen RIC stage C1 is documented as closing F122, but the C1 implementation checkpoint names only F127/F128/F130.",
+      "myReading": "SCOPE-DECLARATION VS SCOPE-EXECUTION MISMATCH — OFFERED AS INTERPRETATION, NOT A RESOLUTION. This is NOT cleanly 'implementation vs certification': the conflict is about whether the item was in the delivered scope at all, which is a different axis. VD-053 lists F122 alongside F127/F128/F130 as awaiting live certification of the content-truth authority, which weakly favours the 'in scope' reading, but the checkpoint's own omission is direct contrary evidence.",
+      "resolutionStatus": "NOT RESOLVED. Explicitly NOT collapsed into the implementation-vs-certification frame.",
+      "productConsequence": "Two messaging surfaces report different kinds for identical content, so any per-kind presentation model (F016) built on wireKind would be built on an inconsistent foundation. This makes F122 a PREREQUISITE of the document-presentation work, not a peer of it."
+    },
+    {
+      "id": "AC-4",
+      "subject": "F139 — Identity media orphaned at upload and reaper-deletable",
+      "carriedForwardState": "DUAL READING PRESERVED — STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED (backend register) vs OPEN (frontend §12 amendment), recorded THE SAME DAY with equal recency; neither supersedes.",
+      "stage0Record": "CR-O4 and VDC-2.",
+      "myReading": "THIS ONE I DO READ AS IMPLEMENTATION STATE VS CERTIFICATION STATE, AND I SAY SO EXPLICITLY AS AN INTERPRETATION. VD-056 states the closure condition precisely: 'Structure landed (D-1, 4af75c5) but closure explicitly requires the migration applied AND identity reconciled in production.' Both records are then simultaneously accurate: the STRUCTURE is closed and the OUTCOME is open. VD-055 corroborates — migration 20260903000000_d1_identity_media_authority is COMMITTED AND NOT APPLIED.",
+      "resolutionStatus": "NOT RESOLVED — the interpretation is offered, the dual reading is preserved intact, and the founder-ratified conflict is not normalised. If Stage 2 accepts the interpretation it should record it as an accepted interpretation, not as a discovered fact.",
+      "productConsequence": "A user's profile photo can be deleted by a cleanup process while it is actively in use. If it fires, the visible result is a product that forgets people's faces — compounding F058. The risk is live in production until the migration deploys."
+    },
+    {
+      "id": "AC-5",
+      "subject": "RC-C10 — Live (cross-repository)",
+      "carriedForwardState": "CONFLICTING_CURRENT_STATE",
+      "stage0Record": "CR-O5. Reading A: OPEN — NOT STARTED (CURRENT_STATE.md:19, NEXT_WORK.md:101 'blocked until C0-C8 all stable', NEXT_WORK.md:121 'Explicitly NOT next: Live (C10)'). Reading B: SUBSTANTIALLY CONSTRUCTED OUTSIDE THE CHAPTER FRAME (origination correction FOUNDER-FROZEN 2026-08-17, backend commits 88179ee/d3981e5/fb9bfa1, viewer path, role authority, counts and state model implemented and partly live-verified).",
+      "myReading": "PRODUCT-LENS OBSERVATION ONLY, NOT AN ADJUDICATION: the two readings are separable by LAYER rather than by truth value. What exists is the SESSION MODEL (origination, escalation, roles, counts, admission). What does not exist is the LIVE PRODUCT (viewer experience F089-F095, public acquisition F097-F107, audience scale F108-F111). Reading A is accurate about the product; Reading B is accurate about the plumbing. I do NOT claim this resolves the conflict — the chapter's state is a governance fact, not a product fact, and the chapter also carries a frozen invariant (LIVE MUST NOT CREATE TEMPORARY VERSIONS OF AUTHORITIES ALREADY SCHEDULED FOR RECONSTRUCTION) whose status Stage 0 explicitly declined to adjudicate.",
+      "resolutionStatus": "NOT RESOLVED. Carried forward unchanged.",
+      "productConsequence": "The layer distinction matters for Stage 2 because it means Live's engineering progress and Live's product readiness are on different curves, and reporting either as 'Live status' would mislead."
+    },
+    {
+      "id": "AC-6",
+      "subject": "F064 vs F113 — Meetings refresh continuity",
+      "state": "CONFLICTING VALIDATION TOPOLOGY (VDC-1) ON A PAIR RULED TO REMAIN SEPARATE (CR-R3)",
+      "statement": "Declared the same obligation, yet F064 is V2 and F113 is V4 in the same message. CR-R3 ruled BOTH remain separate canonical findings and duplicate evidence is never deletion authority. VD-031 therefore carries validationClass UNKNOWN.",
+      "myReading": "The topology divergence is probably about CONTEXT rather than about the obligation — refresh continuity in a 1:1 versus in a multi-party meeting genuinely need different party counts to observe. OFFERED AS INTERPRETATION. It does not license merging them and I do not propose merging them.",
+      "resolutionStatus": "PRESERVED, NOT RESOLVED."
+    },
+    {
+      "id": "AC-7",
+      "subject": "GAP-2 — Long-Form Publishing is unchartered and shipped simultaneously",
+      "state": "PRESERVED CONTRADICTION (from unmapped-surfaces.json, explicitly 'Preserved, not resolved')",
+      "statement": "DECISIONS.md records NO CHAPTER NUMBER ASSIGNED awaiting founder dependency placement; Articles shipped and F024 is LIVE_CERTIFIED; RC-C11's release gate enumerates C0-C10 and has no declared home for it.",
+      "myReading": "Recorded as-is. My only product addition is that the DURABILITY defects (F121, F131) are more urgent than the chartering question and are independent of it.",
+      "resolutionStatus": "PRESERVED, NOT RESOLVED."
+    },
+    {
+      "id": "AC-8",
+      "subject": "RC-C5 hard-gated closed while §12 RIC governs substantially the same territory",
+      "state": "PRESERVED OVERLAP (rc-map RC-C5 contradictionsOrGaps; cross-chapter X2)",
+      "statement": "RC-C5 (Composition, Content Intake & Attachments) is BLOCKED by an explicit frozen hard gate behind RC-C4, while the founder-frozen §12 RICH CONTENT & INTERACTION chapter governs acquisition/intake normalization, attachment/upload primitives, drag/drop, paste, link previews and delivery — substantially RC-C5's originalScope. Stage 0 recorded the overlap and did not resolve it; open question: 'Whether the C4 hard gate on C5 was intended to also gate the §12 stages is NOT_RECORDED.'",
+      "myReading": "PRODUCT CONSEQUENCE ONLY, NO RESOLUTION PROPOSED: the practical effect is that the attachment and intake findings (F011-F017, F121-F138) have an active governing frame while the chapter that would own their COMPOSITION experience does not. That is a plausible explanation for why the media TRUTH layer is far more advanced than the media PRESENTATION layer — the two halves of one user experience are being governed by different frames at different speeds.",
+      "resolutionStatus": "PRESERVED, NOT RESOLVED. This is a founder-authority question."
+    },
+    {
+      "id": "AC-9",
+      "subject": "Register arithmetic — 138 vs 143",
+      "state": "BOTH FACTS PRESERVED (CR-R6, VDC-3)",
+      "statement": "The last explicit register-health count is 138 total (24 LC / 30 INLC / 20 PV / 54 OPEN / 2 BLOCKED / 6 C4 / 0 SUPERSEDED / 2 RETIRED) at 2026-08-18T01:25Z; F139-F143 were issued afterwards. No reconciled count exists at 143 and Stage 0 does not manufacture one. I do not manufacture one either — no state-distribution total appears anywhere in this artifact.",
+      "resolutionStatus": "PRESERVED."
+    },
+    {
+      "id": "AC-10",
+      "subject": "F097 issuance — workflow document vs id-accounting",
+      "state": "RESOLVED BY FOUNDER RULING CR-R1 (F097 IS ISSUED); the documentary conflict itself remains on record as VDC-4",
+      "statement": "The workflow design document asserts one gap at F097; id-accounting reports contiguous true with F097 carrying 37 mentions. The founder ruled F097 ISSUED. I treat F097 as issued throughout, and note only that its own provenance is MODERATE while its cluster siblings F098-F102/F105/F106 are WEAK.",
+      "resolutionStatus": "ISSUANCE RESOLVED BY RULING; documentary discrepancy recorded."
+    },
+    {
+      "id": "AC-11",
+      "subject": "MY OWN OBSERVATION — public home renders a Live panel that F097 says does not exist",
+      "state": "APPARENT TENSION BETWEEN CANONICAL EVIDENCE AND THE RELEASED CLIENT — REPORTED, NOT RESOLVED",
+      "statement": "F097 (OPEN, MODERATE) states 'Public Home does not surface real Live sessions to signed-out visitors'. The released public_home_screen.dart DOES render a 'HAPPENING NOW' panel with a 'live now' count. The two are reconcilable: the panel's provider is documented to return an empty list when the user is not authenticated, so the panel exists but is structurally incapable of surfacing anything to a signed-out visitor. On that reading F097 is CORRECT and the panel is a false-comfort surface.",
+      "myReading": "I believe the canonical evidence is right and the client merely explains HOW it is right. I report it rather than treating it as an error in the baseline, per instruction. If Stage 2 disagrees, the disagreement is checkable in one file.",
+      "resolutionStatus": "REPORTED AS A CONTRADICTION FOR STAGE 2. Baseline NOT rewritten."
+    }
+  ],
+
+  "uncertainties": [
+    "WEAK-PROVENANCE DEPENDENCY — WG items: eleven of the seventeen WG rows (WG003, WG007, WG008, WG010, WG011, WG012, WG013, WG014, WG015, WG016, WG017) are WEAK_SINGLE_SOURCE, originating in ONE assistant message with no register artifact in any repository. My competitive-necessity assessments for those eleven rest on general market knowledge plus corroborating F-evidence, NOT on strong project provenance. WG015 is the sole exception where I independently corroborated the claim against the released client's code.",
+    "WEAK-PROVENANCE DEPENDENCY — Live acquisition cluster: F098, F099, F100, F101, F102, F105 and F106 are all WEAK, and F097, F103, F104, F107 are MODERATE. My acquisition conclusions (ACQ-1, ACQ-3, CD-2, CD-3) therefore rest on a cluster with NO strong member. What IS strong is the cluster-level record ('all OPEN ... Nothing built.') and my independent client observation about the provider's unauthenticated degradation. FLAGGED: a major architectural conclusion about acquisition should not be built on any single WEAK finding here.",
+    "WEAK-PROVENANCE DEPENDENCY — capability obligations: F006, F007, F008, F010 (audio, group audio, video, screen share) are LIVE_CERTIFIED on WEAK provenance; so are F003, F004, F024, F028, F038, F039, F041, F042, F048, F076, F077, F114, F118. Conclusions that these capabilities are 'working' inherit that weakness. Notably my S3 assessment treats basic calling as working largely on WEAK rows.",
+    "F073's root cause is UNKNOWN and F108's mesh ceiling was NEVER MEASURED. Any statement about group-call readiness, including mine (CD-11), is therefore bounded by two unmeasured quantities.",
+    "No evidence establishes whether ANY certification activity occurred after 2026-08-18T01:25Z (VDC-7). Absence of a later record is not evidence that nothing happened. Every 'not yet certified' statement here inherits that boundary.",
+    "The V2 validation class carries a standing ENVIRONMENTAL dependency on the founder's browser being reachable, which the evidence records as having 'went unreachable repeatedly today' (VDC-8). Certification feasibility estimates are therefore uncertain in a way that is not a property of any finding.",
+    "F119-F143 have NO entry in the project's own V1-V5 matrix; their topology is Stage-0's classification, not the project's (VDC-6). My validationTopologyByCandidateSystem inherits that.",
+    "MY CLIENT OBSERVATIONS ARE A SNAPSHOT of the working tree at 2026-08-18 and were not cross-checked against which build is deployed. The _fileChip('Attachment') rendering, the absent ScrollController, the 14 Semantics() usages, the absent typing/emoji symbols and the import-graph asymmetry are all facts about the source I read, and I did not verify they match production.",
+    "I could not determine whether the absence of a rich composer in the canonical Conversation is deliberate (a minimal first-reference surface) or an oversight. CD-13 and OPP-2 are stated as structural interpretation for exactly that reason.",
+    "PD-2's zero findings could mean a healthy surface or an unexamined one. I argue for unexamined; the evidence does not settle it and I flag the argument as interpretation.",
+    "I did not assess visual/aesthetic quality (typography, spacing, colour, motion, layout craft) beyond what code structure reveals. A world-class product judgement genuinely requires seeing rendered screens, and screenshots are not in this baseline. This is a real limit on the completeness of any 'visual quality' claim I make.",
+    "SupportScreen's 'support' name collision (customer help vs financial supporters) is my client-derived observation; I did not verify whether the Product Language Authority already adjudicated it, since that would require corpus escalation I judged unwarranted.",
+    "The relationship between the RC axis and the RIC axis is a founder-authority question that Stage 0 explicitly left open. Every statement I make about S2's governance frame is bounded by that openness and I do not assert which axis owns anything.",
+    "I have deliberately NOT produced a state-distribution total across the 143 findings, because VDC-3/CR-R6 record that no reconciled count exists at 143 and manufacturing one would create a false checkpoint."
+  ],
+
+  "handoffToStage2": {
+    "note": "Questions only. No recommendations, no priorities, no ownership, no authorizations.",
+    "questions": [
+      "Does Stage 2 accept the distinction between VALIDATION DEBT (a built thing awaiting proof) and CONSTRUCTION DEBT WEARING A VALIDATION LABEL (VD-041, VD-042, VD-050, and the whole of RC-C4)? The two are currently counted together and that flatters readiness.",
+      "Should FE-9 exist — an instrument for founder acceptance of PRESENTATION QUALITY distinct from defect closure, below the C11 release gate? Without one, every obligation can pass while the product remains competitively inadequate.",
+      "Is a global (non scope=me) Live index intended to exist? Four separate items (F081, F097, F107, CD-4) depend on the answer.",
+      "How should the fail-closed route gate (F069) and the public-first doctrine be reconciled as a product decision rather than a code decision? (BFI-11)",
+      "Is the F064/F113 topology divergence (V2 vs V4) about the obligation or about the context? CR-R3 keeps both rows; VD-031 is UNKNOWN.",
+      "Does the RC-C5 hard gate extend to the §12 RIC stages? Stage 0 records this as NOT_RECORDED and it materially determines whether media PRESENTATION can proceed while media TRUTH does.",
+      "PD-2 has zero findings and zero validation obligations while carrying 100% of user entry. Should Stage 2 treat that as a signal to look, or as evidence of health?"
+    ]
+  }
+}
