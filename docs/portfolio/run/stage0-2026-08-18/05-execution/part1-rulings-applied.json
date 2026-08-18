@@ -1,0 +1,30 @@
+{
+ "type": "PART1_FOUNDER_RULINGS_APPLIED",
+ "date": "2026-08-18",
+ "ruling1": {
+  "subject": "DEFECT-1 realtime room goldens",
+  "assignedTo": "CH-04",
+  "certificationRequirementsAdded": 3,
+  "waived": false,
+  "canonicalAccountingChanged": false
+ },
+ "ruling2": {
+  "subject": "Meetings targeted regression figure",
+  "kind": "EVIDENCE_SUPERSESSION",
+  "historicalRetainedVerbatim": true,
+  "historicalStringStillPresentAtIndex": 2,
+  "operativeValue": "118 PASS"
+ },
+ "ruling5PreservedOutcomes": [
+  "W1-000 PBCR conditions 7 and 8 discharged on current evidence",
+  "W1-A CH-17 register and closure mechanism accepted",
+  "W1-B 8/8 anti-drift ratchets accepted as ENFORCING",
+  "W1-F consumer enumeration accepted as evidentiary input to F116/F053",
+  "F116 remains PARTIALLY_VALIDATED",
+  "F053 remains PARTIALLY_VALIDATED",
+  "No chapter closes from Part 1",
+  "No unproven state promoted",
+  "451/451 canonical units and 17/17 chapters intact"
+ ],
+ "executionHold": "PART 2 NOT STARTED. Decision hold pending PD-1 and PD-2 rulings."
+}
