@@ -1,0 +1,104 @@
+{
+ "artifact": "STAGE_2_AMENDMENT_FOUNDER_RULINGS",
+ "date": "2026-08-18",
+ "authority": "FOUNDER",
+ "dualAxisModel": {
+  "ruling": "THE TWO AXES MUST NOT BE COLLAPSED",
+  "axis1": {
+   "name": "EVIDENCE / ROOT-SYSTEM COVERAGE",
+   "question": "What defect, finding, recurring cause or systemic failure must become correct?",
+   "population": "F001-F143 (143 issued) plus separately governed WG evidence",
+   "purpose": "root-cause consolidation, dependency, risk, systemic reconstruction, implementation ownership"
+  },
+  "axis2": {
+   "name": "CHARTERED-OBLIGATION COVERAGE",
+   "question": "What did Aura explicitly undertake, freeze, promise, require, demolish, migrate, validate or reconstruct REGARDLESS of whether a defect was ever observed?",
+   "population": "CO-RC-C0-001 .. CO-RC-C11-nnn derived from RC-C0..RC-C11 charters",
+   "purpose": "prevent deliberately chartered work from disappearing merely because it generated no F-item"
+  },
+  "invariants": [
+   "A finding does not automatically create a charter obligation.",
+   "A charter obligation does not require a finding to exist.",
+   "The portfolio is complete only when BOTH populations reconcile.",
+   "Related findings are CROSS-REFERENCES, never ownership equivalence.",
+   "Neither axis may infer completeness from the other."
+  ],
+  "controlCase": "RC-C8 — a real chapter with frozen backend authority, a demolition target, an ENTITLEMENT != INTERRUPTION rule and a named 10,000-member invariant test, producing ZERO findings. A workflow accounting 143/143 findings while losing RC-C8 is NOT complete."
+ },
+ "F139": {
+  "ruling": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+  "adjudicatedBy": "FOUNDER",
+  "date": "2026-08-18",
+  "reason": "The structural correction/authority exists. That does NOT establish that the production migration/remediation condition has occurred, nor that live certification has been achieved.",
+  "dimensions": {
+   "structuralImplementation": "CLOSED",
+   "productionRemediationAndLiveCertification": "OUTSTANDING_NOT_PROVEN"
+  },
+  "schemaLimitation": "The Stage-0 finding schema carries ONE currentState field and cannot express both dimensions natively. Recorded here explicitly rather than collapsing them into a single misleading status.",
+  "historicalContradictionPreserved": true,
+  "historicalEvidence": [
+   "aura-backend/docs/2026-08-18-c2-retention-truth-register.md — STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+   "aura_final/docs/2026-08-18-rich-content-s12-amendment-1-retention-truth.md — OPEN"
+  ],
+  "lock": "Future agents may NOT return F139 to OPEN or promote it to LIVE_CERTIFIED without new founder authority or new evidence. Enforced by validate-stage2.mjs.",
+  "note": "Adjudication by accumulation was the risk Agent E identified; this ruling replaces drift with a decision."
+ },
+ "F137": {
+  "classification": "ZERO_COVERAGE_SECURITY_GAP",
+  "evidence": "Moderation is text-only; NO uploaded media of any kind is scanned. Zero coverage on every axis.",
+  "implementationPerformed": false,
+  "assignmentPolicy": "MUST NOT be assigned to an existing system merely because \"media\" or \"moderation\" appears in that system name. Requires explicit architectural/implementation ownership.",
+  "stage3MustConfront": [
+   "malicious-file / content scanning",
+   "media safety and moderation",
+   "image / video / audio / document implications",
+   "storage lifecycle",
+   "privacy",
+   "provider vs self-hosting implications",
+   "false positives and appeals where applicable",
+   "existing MIME / content-truth authority boundaries",
+   "asynchronous processing requirements"
+  ],
+  "authorizes": "NOTHING. No implementation and no architecture selection now."
+ },
+ "stage1EvidenceCorrections": [
+  {
+   "id": "CORR-1",
+   "subject": "F069 attribution",
+   "stage1Said": "Agent A listed F069 among 16 continuity findings chartered by NO RC chapter",
+   "stage2Evidence": "rc-map explicitly attributes F069 to RC-C3",
+   "canonicalNow": "F069 is attributed to RC-C3; the other 15 continuity findings remain ADJACENT and unattributed",
+   "note": "Correction, not historical rewriting. Stage 1 said X -> Stage 2 evidence corrected X -> canonical mapping is Y."
+  },
+  {
+   "id": "CORR-2",
+   "subject": "CH-H Public Acquisition coverage",
+   "stage1Said": "Agent A treated CH-H (8 findings) as outside any RC chapter",
+   "stage2Evidence": "RC-C10's own explicitlyRemainingObligations enumerate 'Live public acquisition F097-F107'",
+   "canonicalNow": "6 of 8 CH-H findings ARE inside RC-C10. Genuinely homeless: F103/F104 (assigned to the shared continuity authority, which has no chapter) and the anonymous zero-authority capability-projection concept (RC-C1 chartered only authenticated actors and is closed).",
+   "note": "A known Stage-1 mapping error is not preserved merely because Stage 1 came first."
+  }
+ ],
+ "supersession": {
+  "rulingDate": "2026-08-18 (Stage-2 amendment)",
+  "policy": "A founder ruling applies FORWARD. Artifacts produced BEFORE it cannot be violations for failing to anticipate it, and the founder explicitly required that the historical contradiction be preserved rather than rewritten. Pre-ruling artifacts are therefore recorded as SUPERSEDED, never silently amended and never treated as misconduct. Post-ruling artifacts MUST comply.",
+  "preRulingArtifacts": [
+   "agent-a-root-systems.json",
+   "agent-b-dependencies.json",
+   "agent-c-product.json",
+   "stage1-comparison.json",
+   "agent-d-rc-reconciliation.json",
+   "agent-e-adversarial.json"
+  ],
+  "knownSupersededAssertions": [
+   {
+    "artifact": "agent-a-root-systems.json",
+    "path": "contradictions/carriedForwardUnresolvedPerInstruction[3]",
+    "findingId": "F139",
+    "assertedState": "DUAL_READING_PRESERVED",
+    "status": "SUPERSEDED_BY_FOUNDER_RULING",
+    "note": "Agent A was COMPLYING with its then-current instruction to preserve the dual reading. This record is retained as the preserved historical contradiction the founder required, not corrected away."
+   }
+  ]
+ }
+}

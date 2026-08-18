@@ -1,0 +1,141 @@
+{
+ "artifact": "DISAPPEARED_OBLIGATION_REGRESSION_FIXTURE",
+ "date": "2026-08-18",
+ "origin": "Agent D, Stage 2 — obligations invisible to a finding-driven taxonomy BY CONSTRUCTION",
+ "purpose": "These are the regression fixture, NOT the desired register size. They are evidence that the second axis is necessary. Any future transformation that loses one of them must fail.",
+ "count": 20,
+ "chaptersCovered": [
+  "RC-C0",
+  "RC-C10",
+  "RC-C2",
+  "RC-C3",
+  "RC-C4",
+  "RC-C5",
+  "RC-C6",
+  "RC-C7",
+  "RC-C8",
+  "RC-C9"
+ ],
+ "entries": [
+  {
+   "id": "AD-D-01",
+   "rcChapter": "RC-C8",
+   "obligation": "{\"id\": \"AD-D-01\", \"chapter\": \"RC-C8\", \"obligation\": \"THE ENTIRE CHAPTER - Institution Room client for frozen backend D5: room ownership, invitations, participant states, ring policy (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS), lifecycle, contextual realtime, attention, modern participant selection; DR2 demolition of institution_live_rooms_screen (1,078 lines, DO NOT RETROFIT); the governing rule ENTITLEMENT != INTERRUPTION; the LARGE-INSTITUTION INVARIANT (10,000 members -> zero recipients absent invitation); Cross-System certification.\", \"carriedBy\": \"NO candidate system. Zero findings.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"rc-map RC-C8 (roadmap:405-445); rc-map RC-C8 evidencedFindingRelationships 'NOT_RECORDED - No F-id or WG-id explicitly attributed to RC-C8'\", \"consequenceIfLost\": \"An institution-owned realtime product surface with a frozen backend authority would have no construction plan, while its de facto substitute (institution_live_rooms_screen) is the screen the chapter exists to demolish and is currently serving Live discovery.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-02",
+   "rcChapter": "RC-C6",
+   "obligation": "{\"id\": \"AD-D-02\", \"chapter\": \"RC-C6\", \"obligation\": \"Multi-device authority and the device layer: device transfer UI (offer / accept / relinquish / failed), preferred-device behaviour made visible, preferred-first ring with stagger and fallback, durable media ownership, and the D2 transfer handshake - all with backend contracts recorded FROZEN and the client side unbuilt.\", \"carriedBy\": \"NO candidate system. Zero findings.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"rc-map RC-C6 originalScope build + extendedScope + backendDependencies (roadmap:316-356)\", \"consequenceIfLost\": \"A frozen backend capability would remain permanently unexposed, and the chapter's exit condition ('transfer and preferred-device visible') would be unmeetable while the chapter looked served by CH-B.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-03",
+   "rcChapter": "RC-C6",
+   "obligation": "{\"id\": \"AD-D-03\", \"chapter\": \"RC-C6\", \"obligation\": \"Meetings presentation convergence: 3,890 lines reimplementing participant grid, spotlight and remote tiles while consuming 0 of 5 shared realtime widgets, to be converged SLICE BY SLICE with targeted regression (97/97) and founder sign-off after each slice.\", \"carriedBy\": \"PARTIAL - VD-074 preserves the per-slice regression and sign-off rule on the validation axis, and CH-M holds the protection boundary. NO candidate system carries the convergence itself.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"FD4_REALTIME_PRESENTATION_CONVERGENCE_FROZEN:10-26; rc-map RC-C6 contradictionsOrGaps SCOPE_UNADDRESSED; F114 confirming no Meetings file was modified\", \"consequenceIfLost\": \"FD-4 is a frozen founder decision with measured evidence. CH-M is explicitly validation-only, so a portfolio reading CH-M as 'Meetings covered' would silently drop the demolition FD-4 froze.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-04",
+   "rcChapter": "RC-C4",
+   "obligation": "{\"id\": \"AD-D-04\", \"chapter\": \"RC-C4\", \"obligation\": \"Notification Preference Authority - PRIMARY OWNER C4, with the frozen governing distinction ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION, and the rule that disabling email or push must never erase the underlying governed Attention item.\", \"carriedBy\": \"NO candidate system. Zero findings. It has its own frozen obligation document.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"NOTIFICATION_PREFERENCE_AUTHORITY_OBLIGATION.md:5,14-27,29-30; doctrine-index OBLIGATION-NOTIFICATION-PREFERENCE-AUTHORITY 'RC-C4 primary owner. Intersects the uncharted Settings gap (GAP-1)'\", \"consequenceIfLost\": \"A frozen doctrine would have no implementing plan, and its natural surface (Settings) is itself unchartered - so the obligation is doubly homeless.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-05",
+   "rcChapter": "RC-C4",
+   "obligation": "{\"id\": \"AD-D-05\", \"chapter\": \"RC-C4 (inherited from RC-C2 ruling R4)\", \"obligation\": \"Name the Subscribe product surface and vocabulary. FOLLOW != SUBSCRIBE is frozen; C2 recorded the semantics and C4 OWNS THE VOCABULARY; Subscribe stays physically in InteractionFollow thread/space rows until C4 names its product surface.\", \"carriedBy\": \"NO candidate system.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"DECISIONS:227; rc-map RC-C4 keyFrozenOutcomes C4-SUBSCRIBE-VOCAB\", \"consequenceIfLost\": \"Live data would remain parked in a table under a name the product has never adopted, with the naming obligation forgotten.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-06",
+   "rcChapter": "RC-C4",
+   "obligation": "{\"id\": \"AD-D-06\", \"chapter\": \"RC-C4\", \"obligation\": \"The DR1 inventory as an inventory: EIGHT attention surfaces retired (messages hub, notifications, activity, direct inbox, communications centre, correspondence hub, module attention, conversations_screen.dart at 1,033 lines), PLUS the four companion global attention surfaces and orphaned-session reconciliation added later, whose regression proof has no recorded owner (PBG-4). Also: semantic views (Conversations / Activity / Invitations / Actions), cross-device read state, noise reduction, deterministic reconciliation with no dead CTAs, and the NO WALL OF FALSE UNREADS migration constraint.\", \"carriedBy\": \"PARTIAL - CH-D names 'DR1 retirement' as a sub-system but carries findings for only the banner and read-state slices; seven of the eight surfaces and all of the listed build items carry no finding.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"roadmap:238,244-262; VD-068; PBG-4\", \"consequenceIfLost\": \"RC-C4 would be sized at five findings when its charter is roughly a dozen build obligations plus a growing demolition inventory - the single largest sizing error available to Stage 3.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-07",
+   "rcChapter": "RC-C5",
+   "obligation": "{\"id\": \"AD-D-07\", \"chapter\": \"RC-C5\", \"obligation\": \"FD-8 official designation expressed in the publish flow ONLY, with consequence legible BEFORE commitment, no post-publication elevation, withdrawal object-local, content change invalidating approval; plus E_OFFICIAL designation representation and institutional approval workflow language, explicitly handed forward from C0 and deliberately not pre-empted there.\", \"carriedBy\": \"NO candidate system. Zero findings.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"FD8_OFFICIAL_DESIGNATION_MOMENT_FROZEN:10-27; DECISIONS:127; rc-map RC-C5 extendedScope\", \"consequenceIfLost\": \"A frozen founder decision governing how institutional publications acquire official status would have no implementing chapter, while institutional publication surfaces continue to exist.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-08",
+   "rcChapter": "RC-C5",
+   "obligation": "{\"id\": \"AD-D-08\", \"chapter\": \"RC-C5\", \"obligation\": \"DR3 convergence as a duplication-retirement obligation: six composers (hashtags in 1 of 6, upload progress in 1 of 6), ELEVEN upload pipelines, per-composer paste/clipboard handling across 25 files, and voice implied by route. Plus drafts and autosave as Composition Authority concerns, and the open checkpoint on orphan-cleanup windows versus canonical draft lifetime.\", \"carriedBy\": \"PARTIAL - CH-F cites the counts in prose as its rationale for RS-11, but no finding expresses the convergence and no candidate system carries it as an obligation. CH-A carries draft continuity only as durable identity of in-progress work.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"roadmap:282-288; CONTENT_INTAKE_RESOLUTION_AUTHORITY_FROZEN:12-20; NEXT_WORK:108\", \"consequenceIfLost\": \"Eleven upload pipelines can each be individually 'working' while the chapter's exit condition (one lifecycle, one intake layer) is never met. Duplication debt is invisible to a finding-driven taxonomy because duplication produces no single observable defect.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-09",
+   "rcChapter": "RC-C7",
+   "obligation": "{\"id\": \"AD-D-09\", \"chapter\": \"RC-C7\", \"obligation\": \"SPACE SURFACES as a product obligation - persistent shared context / community, explicitly NOT a large group chat, NO EIGHT-TAB INTERFACE, never forced to contain every Thread - together with the frozen THREAD != SPACE distinction.\", \"carriedBy\": \"NO candidate system. Zero findings.\", \"visibility\": \"PROSPECTIVE, AND UNUSUALLY EXPOSED\", \"evidence\": \"THREADS_SPACES_PRODUCT_MODEL_FROZEN:11-18; roadmap:377; DECISIONS C3-DISCOVER (Spaces is an immediate Discover domain); CURRENT_STATE:143 (Spaces taxonomy broadened to 10)\", \"consequenceIfLost\": \"Spaces is a publicly discoverable domain in the shipped navigation with a ten-item taxonomy, and its reconstruction obligation is represented in nothing. This is the sharpest mismatch between what is publicly visible and what current planning contains.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-10",
+   "rcChapter": "RC-C7",
+   "obligation": "{\"id\": \"AD-D-10\", \"chapter\": \"RC-C7\", \"obligation\": \"The Correspondence ARCHITECTURAL CONVERGENCE VERDICT - the chapter's named founder checkpoint, recorded by Stage 0 as having NO RECORDED OUTCOME - plus the umbrella rename/migration (choose the correct internal name, migrate safely, preserve compatibility and history; filesystem naming may lag, documentation and the Product Language Authority may not).\", \"carriedBy\": \"NO candidate system.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"roadmap:395; DECISIONS:85-87 (C0-4); NEXT_WORK:34; rc-map RC-C7 contradictionsOrGaps UNRESOLVED\", \"consequenceIfLost\": \"A frozen semantic ruling (Correspondence has exactly one canonical product meaning; the umbrella sense is architectural naming drift) would remain permanently unexecuted, and the checkpoint that was to decide it would be forgotten rather than answered.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-11",
+   "rcChapter": "RC-C7",
+   "obligation": "{\"id\": \"AD-D-11\", \"chapter\": \"RC-C7 (as amended)\", \"obligation\": \"The institutional Desk experience, institutional participation, and membership/join/invite lifecycle reconstruction that never exposes role enums or permission machinery - the substance of the founder-approved C7 amendment - plus InstitutionCorrespondenceScreen disposition (FD-12 section 4) and the requirement that no route-derived sender survive C7 closure.\", \"carriedBy\": \"NO candidate system.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"DECISIONS:355-361; C3_FINAL_CLOSEOUT:42; NEXT_WORK:113\", \"consequenceIfLost\": \"The only chapter chartered to own the institution-side conversation experience would be represented in planning solely by CH-O, which is a five-finding model-integrity system with no institutional scope.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-12",
+   "rcChapter": "RC-C10",
+   "obligation": "{\"id\": \"AD-D-12\", \"chapter\": \"RC-C10\", \"obligation\": \"REPLAY-AS-PRODUCT and RECORDING STATE. Replay is recorded in the chapter's own backendConstructionRequired list as 'missing'; recording state and replay are both named client construction items; the chapter also owes post-live continuity.\", \"carriedBy\": \"NO candidate system. Zero findings.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"roadmap:524-528 (backend construction required), 548 (client construction list)\", \"consequenceIfLost\": \"A named backend construction item and its client surface would disappear entirely from a Live portfolio that otherwise looks comprehensive at 37 findings.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-13",
+   "rcChapter": "RC-C10",
+   "obligation": "{\"id\": \"AD-D-13\", \"chapter\": \"RC-C10\", \"obligation\": \"The chapter's TWO EXIT GATES and its cross-repository framing: the construction exit (Live works end-to-end from a governed context with continuity preserved after it ends, consuming canonical navigation, attention and composition, with NO TEMPORARY AUTHORITIES ANYWHERE) and the cross-platform completion gate (required C9 platform contracts proven). Also the governing invariant, the open checkpoints (Live moderation policy, audience-scale topology/provider, Thread vs Space Live differences) and the C0-handed plural/contextual Live language question.\", \"carriedBy\": \"NO candidate system. The 37 findings partition into CH-C, CH-G and CH-H; the gates belong to none of the three.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"roadmap:502-511, 542, 550-556; DECISIONS:38, 128\", \"consequenceIfLost\": \"Three systems could each report themselves complete while the chapter's actual exit conditions - which are about integration, not about any one system - were never evaluated. This is the specific failure mode of decomposing a chapter into root systems.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-14",
+   "rcChapter": "RC-C9",
+   "obligation": "{\"id\": \"AD-D-14\", \"chapter\": \"RC-C9\", \"obligation\": \"WNS native Windows push, desktop lifecycle, file handling, keyboard, hover/context affordances, window sizing and responsiveness, installation and launch context, deep links, background/foreground, iOS/Android native notification presentation, per-platform suites, REAL-DEVICE TESTING, and the governing rule DESKTOP IS NOT WEB WITH A WIDER VIEWPORT - plus Real-Boundary certification, which lands substantially here and nowhere else.\", \"carriedBy\": \"PARTIAL - CH-L carries two findings (distribution lag, native ring topology). VD-069 preserves the chapter obligation on the validation axis.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"roadmap:449-486; VD-069; GOVERNANCE-RC-CERTIFICATION-LAYERS\", \"consequenceIfLost\": \"Real-Boundary certification is a layer no other chapter substantially provides. A portfolio that reads CH-L as 'cross-platform covered' would lose the only chapter where the product is proven on real devices.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-15",
+   "rcChapter": "RC-C0",
+   "obligation": "{\"id\": \"AD-D-15\", \"chapter\": \"RC-C0 and RC-C1 (routed through the ownership matrix to C3, C4, C5, C7, C8, C9, PD-1, PD-2)\", \"obligation\": \"The ratcheted debt burn-down as a structure: G5 remainder 168 sites / 67 files under the ownership matrix; 181 direct state-primitive constructions; 47 toLocal(); 24 local elapsed-time sites; 17 screen-declared time formatters; 26 full-surface spinners; the relative_time.dart shim with 11 caller files owned by C4 and C6; C1's R1 (25 files / 85 role-derived booleans) and R2; C3's route-literal ratchet (103 files / 294 sites).\", \"carriedBy\": \"NO candidate system. The Stage-1 taxonomy has no burn-down structure at all, and the ownership matrix routes these to chapters the taxonomy does not preserve.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"CURRENT_STATE:62; C2_RECONSTRUCTION_DEBT_REGISTER:114,158; DECISIONS:103-107,171-173; C3_FINAL_CLOSEOUT:23\", \"consequenceIfLost\": \"Every one of these is enforced by a ratchet gate that fails the build if it grows. They cannot regress silently - but they can stop shrinking forever, which is exactly what happens when the receiving structure disappears.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-16",
+   "rcChapter": "RC-C0",
+   "obligation": "{\"id\": \"AD-D-16\", \"chapter\": \"RC-C0\", \"obligation\": \"The 68 SizedBox.shrink() empty states named in the chapter's declared migration.\", \"carriedBy\": \"NOTHING, on any axis.\", \"visibility\": \"ALREADY_LOST\", \"evidence\": \"rc-map RC-C0 contradictionsOrGaps SUPERSEDED_MEASUREMENT: 'the 68 SizedBox.shrink() line was never adjudicated and C0 did not convert them'\", \"consequenceIfLost\": \"Already lost. Recorded here so it re-enters visibility: it is the only item in the C0 migration list that was neither executed nor reclassified nor explicitly dropped.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-17",
+   "rcChapter": "RC-C2",
+   "obligation": "{\"id\": \"AD-D-17\", \"chapter\": \"RC-C2 and RC-C3\", \"obligation\": \"PresenceScreen disposition (RC-C2, under FD-12 section 5 - to be dispositioned on architecture, NEVER on reference count) and LoginScreen disposition (RC-C3). Both are recorded as chapter-owned OPEN IMPLEMENTATION CHECKPOINTS, and both chapters are founder-closed.\", \"carriedBy\": \"NO candidate system.\", \"visibility\": \"PROSPECTIVE, WITH A NAMED HAZARD\", \"evidence\": \"NEXT_WORK:113; FD-12; Agent B's PBG-5 note that 'LoginScreen looks dead to grep and is not'\", \"consequenceIfLost\": \"FD-12 exists precisely because a naive reachability sweep would delete these surfaces. An unowned disposition checkpoint on a surface that looks dead to tooling is the exact hazard FD-12 was frozen to prevent.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-18",
+   "rcChapter": "RC-C2",
+   "obligation": "{\"id\": \"AD-D-18\", \"chapter\": \"RC-C2\", \"obligation\": \"The final Free/Pro commercial entitlement boundary, deliberately NOT frozen at C2 closeout, together with the FUTURE COMMERCIALIZATION GOVERNANCE MARKER explicitly recorded to survive handoff, and the rule that no new payment enforcement is activated or expanded during release-client reconstruction.\", \"carriedBy\": \"NO candidate system.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"C2_FINAL_CLOSEOUT:36; DECISIONS:276-294\", \"consequenceIfLost\": \"A deliberately deferred decision with a marker written specifically to survive handoff would be lost at the first handoff after the marker was written.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-19",
+   "rcChapter": "RC-C3",
+   "obligation": "{\"id\": \"AD-D-19\", \"chapter\": \"RC-C3\", \"obligation\": \"Retirement of the two gate-pinned legacy route aliases, gated on link-traffic evidence at A FUTURE OBSERVED WINDOW.\", \"carriedBy\": \"NO candidate system. No artifact records who watches for the trigger condition.\", \"visibility\": \"PROSPECTIVE, TRIGGER UNOWNED\", \"evidence\": \"C3_FINAL_CLOSEOUT:44-46\", \"consequenceIfLost\": \"A compatibility layer with a stated retirement condition becomes permanent by default, which contradicts the Founder Reconstruction Doctrine's rule that compatibility layers are transitional only and each must carry a retirement condition AND path.\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  },
+  {
+   "id": "AD-D-20",
+   "rcChapter": "RC-C5",
+   "obligation": "{\"id\": \"AD-D-20\", \"chapter\": \"RC-C5, RC-C6, RC-C9, RC-C10\", \"obligation\": \"Chapter founder checkpoints that gate Product-Behavior certification: composition interaction direction (C5), designation/approval workflow language (C5), participation and invite interaction direction plus sign-off after EACH Meetings slice (C6), desktop experience direction (C9), Live moderation policy and audience-scale topology/provider (C10).\", \"carriedBy\": \"PARTIAL - VD-081 preserves them on the validation axis and Agent C surfaces some as FE-items. NO candidate system carries them, and the C5/C6/C9 checkpoints appear in no Stage-1 artifact at all.\", \"visibility\": \"PROSPECTIVE\", \"evidence\": \"VD-081; roadmap:256, 350, 484, 542\", \"consequenceIfLost\": \"Each is a decision that no implementation may pre-empt. Losing them does not stop work - it causes work to proceed past a decision point, which is the failure mode RC-C4's own scope guards against ('founder checkpoint BEFORE the eight surfaces are retired').\"}",
+   "requirement": "MUST remain representable in the chartered-obligation axis. A portfolio transformation that loses this entry FAILS."
+  }
+ ]
+}

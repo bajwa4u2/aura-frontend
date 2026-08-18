@@ -1,27 +1,58 @@
 {
-  "stage": "STAGE_2",
-  "type": "DETERMINISTIC_VALIDATION",
+  "stage": "STAGE_2_AMENDMENT",
+  "type": "DETERMINISTIC_DUAL_AXIS_VALIDATION",
   "date": "2026-08-18",
+  "axis1Findings": {
+    "accounted": 143,
+    "expected": 143,
+    "conflictsIntact": true
+  },
+  "axis2Obligations": {
+    "accounted": 299,
+    "rawInputs": 299,
+    "zeroFinding": 296,
+    "chapters": 12
+  },
+  "quietAdjudication": {
+    "assertionsChecked": 4,
+    "violations": [],
+    "supersededPreRuling": [
+      {
+        "findingId": "F139",
+        "assertedState": "DUAL_READING_PRESERVED",
+        "expected": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+        "kind": "CONTRADICTS_FOUNDER_RULING",
+        "source": "agent-a-root-systems.json"
+      }
+    ]
+  },
   "checksPassed": [
-    "Stage-0 baseline UNMUTATED by Stage 2 (git clean)",
-    "Stage-1 proposals UNMUTATED by Stage 2 (git clean)",
-    "Agent D: all 12 chapters RC-C0..RC-C11 addressed",
-    "Agent D: disappeared-obligation question answered explicitly (undefined recorded)",
-    "Agent E: all 20 adversarial questions answered",
-    "Agent E: 18 surviving criticism(s) — the reviewer did its job",
-    "F043/F051/F122 conflicts intact in the baseline",
-    "Agent D references 90 of 143 findings (chapter-level reconciliation; full ownership is Stage 4)"
+    "Stage-0 baseline UNMUTATED (git clean)",
+    "Stage-1 proposals UNMUTATED (git clean)",
+    "AXIS 1: 143/143 founder-ratified findings present",
+    "AXIS 1: F043/F051/F122 remain CONFLICTING_CURRENT_STATE",
+    "F139 founder-adjudicated STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED (structural CLOSED / production+certification OUTSTANDING)",
+    "F139 historical contradictory evidence preserved as provenance",
+    "F137 classified ZERO_COVERAGE_SECURITY_GAP; no implementation performed",
+    "SUPERSESSION: 1 pre-ruling assertion(s) recorded as SUPERSEDED_BY_FOUNDER_RULING, retained as preserved history (F139 in agent-a-root-systems.json)",
+    "No quiet adjudication: 4 structured state assertion(s) checked, all match baseline or an authorised ruling",
+    "AXIS 2: 299-input disposition invariant holds — 299 candidates, 299 promoted + 0 merged, 0 dropped",
+    "AXIS 2: register count equals promoted inputs (299)",
+    "AXIS 2: every CO counted exactly once",
+    "AXIS 2: all 12 chapters RC-C0..RC-C11 represented",
+    "AXIS 2: RC-C8 control case represented with 17 obligations despite 0 findings",
+    "AXIS 2: no obligation converted into an F-item",
+    "AXIS 2: no obligation declared satisfied from chapter status alone",
+    "CROSS-AXIS: 296 zero-finding obligations are explicitly visible",
+    "REGRESSION: all 20 disappeared obligations are representable in the CO axis"
   ],
   "warnings": [],
-  "failures": [
-    "QUIET ADJUDICATION — Stage 2 appears to resolve carried conflict(s): F139"
-  ],
-  "verdict": "FAIL",
+  "failures": [],
+  "verdict": "PASS",
   "stageStatus": {
     "stage0": "COMPLETE_AND_FOUNDER_RATIFIED",
     "stage1": "COMPLETE",
-    "stage2": "FAILED_VALIDATION",
-    "stage3": "NOT_STARTED"
-  },
-  "note": "Stage-2 outputs are ANALYTICAL_PROPOSAL. No canonical ownership assigned; that is Stage 4."
+    "stage2": "COMPLETE_WITH_AMENDMENT",
+    "stage3": "NOT_STARTED_NOT_AUTHORIZED"
+  }
 }
