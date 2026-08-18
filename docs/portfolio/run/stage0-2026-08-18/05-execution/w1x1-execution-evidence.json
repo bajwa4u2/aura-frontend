@@ -1,0 +1,79 @@
+{
+ "type": "W1X1_EXECUTION_EVIDENCE",
+ "unit": "W1-X1",
+ "chapter": "CH-11 Content Truth & Ingestion Governance",
+ "date": "2026-08-18",
+ "authorization": "FOUNDER DIRECTION 2026-08-18 — adjudicate RC-C5/W1-X1 against the already-ratified BIFURCATED doctrine and, if the evidence determines the classification, apply it without another checkpoint.",
+ "classification": "PARTIALLY_GATED (see rcc5-w1x1-classification.json)",
+ "chapterClosed": false,
+
+ "executedUngatedPortion": {
+  "F129": {
+   "title": "Correspondence-messages path bypasses /media/presign entirely",
+   "priorState": "OPEN",
+   "whatWasWrong": "src/messages/messages.service.ts created Media at status=READY from a client-supplied storageKey with no ownership proof, no existence check, no MIME check and no size check.",
+   "change": "Added MediaService.verifyClientSuppliedObject — the governed door for callers who already hold a key. It answers the same three questions in the same vocabulary: WHO OWNS IT (keys are namespaced users/{userId}/ by makeObjectKey, so a key outside the caller's prefix is refused before storage is touched), DOES IT EXIST (headObject, so a row can never reach READY for bytes never uploaded), WHAT IS IT (size and content type taken from STORAGE, not the client's claim, checked against the same canonical MIME policy and size buckets presign uses).",
+   "wiring": "MessagesService now verifies every attachment BEFORE opening the database transaction — network I/O must not be held inside a transaction, and a refused attachment refuses the send rather than half-writing a message or silently dropping a file.",
+   "deliberatelyNotDone": "The full six-layer Content Truth resolution (magic bytes, container inspection) is NOT run here. That is confirmUpload's job and needs byte-range reads. Running it here would change what the product ACCEPTS on a currently-working path, which CH-11's destructive boundary and the RC-C5 preserve obligations forbid doing incidentally.",
+   "preserveConstraintVerified": "Every server-side key generator in the repository uses makeObjectKey(userId, ...) — presign (media.service.ts:388) and the multipart uploads controller (uploads.controller.ts:93,148). The ownership prefix check therefore narrows NO legitimate path. Verified by enumeration, not assumed.",
+   "existingDataUntouched": "The check applies at send time for new messages only. No existing Media or MessageAttachment row is read, rewritten or re-validated. No migration, no production-data mutation.",
+   "newState": "IMPLEMENTED_NOT_LIVE_CERTIFIED (not recorded into Stage-0 evidence — see stateHandling below)"
+  },
+  "F133": {
+   "title": "Duration unit mismatch — Media.duration is ms, MessageAttachment.durationSec is seconds",
+   "priorState": "OPEN",
+   "whatWasWrong": "messages.service.ts:238 wrote SECONDS into Media.duration (a millisecond column) and :752 read MILLISECONDS back out as durationSec (a seconds field). A 30-second voice note persisted as 30 ms and projected as 30000 seconds. Nothing crashed, which is why it survived.",
+   "change": "New src/media/duration-units.ts with durationSecondsToMillis / durationMillisToSeconds, so the conversion is NAMED at every call site and a bare assignment between the two fields looks wrong on sight. Both call sites converted.",
+   "honestLimit": "Rounding is to whole units because both columns are integers. Sub-second precision is not representable in durationSec and is not invented; the loss is recorded as a test rather than left as a surprise.",
+   "existingDataNotCorrected": {
+    "statement": "Rows already written with the wrong unit are NOT corrected. Fixing them is a production-data mutation and is not authorized.",
+    "exposure": "Historical correspondence attachments carry a Media.duration that is 1000x too small and a projected durationSec that is 1000x too large. The code no longer produces new instances.",
+    "disposition": "Reported here as owed data-correction work for whichever chapter owns it, with founder authorization required. NOT scheduled by this unit."
+   },
+   "newState": "IMPLEMENTED_NOT_LIVE_CERTIFIED"
+  },
+  "F134": {
+   "title": "Media.aiFlags is client-writable and read by nothing",
+   "priorState": "OPEN",
+   "whatWasWrong": "media.service.ts updateMetadata assigned aiFlags WITHOUT the allowUnsafeFields worker gate that protects every neighbouring processed field (thumbnailUrl, displayUrl, playbackUrl, originalUrl).",
+   "severityCorrectionRecorded": "The finding says aiFlags is 'read by nothing'. That understates it: media.service.ts writes { contentTruthRejection: reason } INTO aiFlags when confirmUpload refuses an object. A client-writable aiFlags therefore let the uploader FORGE or ERASE the record of its own content-truth rejection — the audit trail of the gate that refused it. Recorded as new evidence against F134; the finding text is NOT rewritten and its state is NOT promoted.",
+   "change": "aiFlags is now gated with the other server-owned fields rather than merely made read-only, so the worker path is unchanged. Caption-class metadata (caption, altText, transcript) stays client-writable — the gate is not a blanket refusal.",
+   "newState": "IMPLEMENTED_NOT_LIVE_CERTIFIED"
+  }
+ },
+
+ "notExecuted": {
+  "F127": "IMPLEMENTED_NOT_LIVE_CERTIFIED already — content-truth.ts and the confirmUpload ranged read are present. Awaiting live certification, not construction.",
+  "F128": "IMPLEMENTED_NOT_LIVE_CERTIFIED already.",
+  "F130": "IMPLEMENTED_NOT_LIVE_CERTIFIED already — the controller binds PresignDto and the dead-code comment records the fix.",
+  "F123": "GATED. Composer paste/clipboard provenance is inside RC-C5's frozen scope (DR3, 'per-composer paste/clipboard handling (25 files)'). Untouched.",
+  "F122": "GATED on its composer half AND separately untouchable as a PRESERVED CONFLICT. Not adjudicated in either direction.",
+  "F016": "Split; its ungated backend half was not executed because it is not required by the security head and executing it would blur the boundary this adjudication drew."
+ },
+
+ "stateHandling": {
+  "rule": "Stage-0 evidence is never modified by analysis or by execution (stage4-proof R7; validate-portfolio-v2 invariant 2 — no finding state silently mutated).",
+  "consequence": "F129/F133/F134 are NOT rewritten in the findings batches. Their implementation evidence lives here and in the Reconstruction Register. The state transition is a governance act belonging to chapter closure, and CH-11 has not closed.",
+  "noPromotion": "No finding is recorded as LIVE_CERTIFIED. Nothing here has been observed on the live system."
+ },
+
+ "evidence": {
+  "backend": { "suites": 195, "tests": 2453, "result": "PASS", "delta": "+3 suites / +27 tests from 192/2426" },
+  "newTests": {
+   "media.service.client-supplied-key.spec.ts": "12 — six REAL REJECTIONS (foreign key, hand-built key, empty key, never-uploaded object, storage error, disallowed type, over-limit size) and four PRESERVE cases proving the door does not narrow accepted content, including a 20 MB PDF admitted under the DOCUMENT bucket.",
+   "duration-units.spec.ts": "15 — both directions, rounding, null vs zero, nonsense refusal, round-trip stability, and the honest sub-second precision limit.",
+   "media.service.aiflags-gating.spec.ts": "5 — client write refused, ERASE refused, FORGE refused, worker path still allowed, caption-class metadata still writable."
+  },
+  "certificationRequirementMet": "CH-11: 'A rejection is demonstrated on a real violating file before the gate counts as enforcement.' Six real rejections are demonstrated for the F129 door and three for the F134 gate.",
+  "typecheck": "npx tsc --noEmit — clean"
+ },
+
+ "boundariesObserved": [
+  "No migration authored or applied.",
+  "No production data read, written or corrected.",
+  "No R2, CORS, deployment or configuration action.",
+  "No protected surface modified — Meetings untouched, the SSRF-safe fetcher untouched and un-weakened.",
+  "No composer, paste handler or client upload pipeline touched — the entire gated portion is untouched.",
+  "inferKindFromMime left unchanged: altering it would change presign's own behaviour, outside this bounded unit."
+ ]
+}

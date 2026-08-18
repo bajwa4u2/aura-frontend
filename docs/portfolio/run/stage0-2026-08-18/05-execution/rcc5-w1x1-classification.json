@@ -1,0 +1,148 @@
+{
+ "type": "RC_C5_GATE_CLASSIFICATION_FOR_W1X1",
+ "date": "2026-08-18",
+ "adjudicatedUnder": "FOUNDER RULING — RC-C5 BIFURCATED (2026-08-18), PORTFOLIO_GOVERNANCE_DOCTRINE.md §6. Not treated as an unconstrained new founder decision.",
+ "classification": "PARTIALLY_GATED",
+ "classificationNotChosenToUnblock": "The ungated portion is the smaller, less visible half. The two most product-visible items in CH-11 (F123 composer provenance, F122 wire-kind) are held on the GATED side, and F122 is additionally a PRESERVED CONFLICT that this adjudication does not touch at all.",
+
+ "A_gateLanguageAndFreeze": {
+  "frozen": "2026-08-16",
+  "source": "aura_final/docs/DECISIONS.md:382-385",
+  "verbatim": "C5 HARD GATE (frozen transition rule): C5 remains CLOSED until C4 is implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed. C4 LOCAL CERTIFICATION != C5 AUTHORIZATION.",
+  "natureOfTheGate": "A DEPLOYMENT-DISCIPLINE TRANSITION RULE governing when the RC-C5 chapter may open. Doctrine §6 records explicitly that it is 'not evidence of an invented RC-C4 -> RC-C5 technical dependency'.",
+  "corroboration": ["aura_final/docs/CURRENT_STATE.md:163 'C4 held; C5 hard-gated.'", "aura_final/docs/CURRENT_STATE.md:178 'C5 hard-gated on C4 live closure.'"]
+ },
+
+ "B_scopeInsideRcC5WhenFrozen": {
+  "source": "00-evidence/rc-map.json RC-C5.originalScope",
+  "build": [
+   "Composition Authority — content state, drafts, autosave, mentions, links, formatting, validation, readiness, keyboard, accessibility",
+   "Attachment Lifecycle — SELECT/PASTE/DROP -> VALIDATE -> PREVIEW -> UPLOAD -> PROGRESS -> READY -> SEND/PUBLISH",
+   "Content Intake & Resolution — rich paste, image/file paste, drag-and-drop, mixed content, governed link previews",
+   "Official designation in the publish flow only (FD-8)"
+  ],
+  "demolishOrRebuild": ["DR3 — six composers", "eleven upload pipelines", "per-composer paste/clipboard handling (25 files)", "voice implied by route"],
+  "frozenDecisions": ["FD-6", "FD-7", "FD-8"],
+  "preserve": ["Backend contracts", "supported content behaviour", "attachment/media capabilities", "DRAFTS AND DRAFT DATA", "proven validation", "accessibility behaviour", "legitimate context differences", "working media rendering"],
+  "observation": "Every BUILD and DEMOLISH item is a CLIENT COMPOSITION surface. The backend appears in RC-C5's scope only under 'preserve' (backend contracts) and as 'backendDependencies' that RC-C5 CONSUMES — never as territory RC-C5 constructs."
+ },
+
+ "C_boundedUnit": {
+  "id": "W1-X1",
+  "label": "CH-11 — the security-first head of the content chain",
+  "stage5SequencePosition": "WAVE 1 (backend track) — the security-first head of the frozen chain; nothing downstream in content can be honest before it.",
+  "declaredDependsOn": ["CH-01 (state/error vocabulary for honest refusal)"],
+  "note": "CH-11 does NOT declare a dependency on RC-C5 or on any CH owning composition."
+ },
+
+ "D_ch11ResponsibilityAndUnits": {
+  "governingOutcome": "The platform knows what a file actually IS, where it actually came from, and whether it may enter at all — decided once, at one governed door, in one vocabulary shared by both repositories.",
+  "findings": ["F016", "F122", "F123", "F127", "F128", "F129", "F130", "F133", "F134"],
+  "obligations": ["CO-RC-C5-019", "CO-RC-C5-020"],
+  "nonGoals": [
+   "Does not own storage lifecycle, retention or delivery (CH-12)",
+   "Does not own presentation of the resolved type (CH-13)",
+   "Does not perform content scanning (CH-12/CH-15)",
+   "Does not weaken the SSRF-safe fetcher"
+  ]
+ },
+
+ "E_F_dependencyTestPerUnit": {
+  "method": "Each finding was tested against RC-C5's frozen scope by its ACTUAL touch surface in code, not by title or by axis membership. Chronology alone was not treated as exempting (bifurcated clause 5).",
+  "units": [
+   {
+    "id": "F127", "title": "No magic-byte/signature validation anywhere", "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "touches": "aura-backend confirmUpload / content-truth.ts — server-side verification of stored bytes",
+    "existedInRcC5ScopeAtFreeze": false,
+    "reason": "A server-side signature check on a stored object is not a composer, a paste handler, a client upload pipeline, or official designation. RC-C5's VALIDATE step is the composer's readiness validation, not R2 byte verification.",
+    "side": "UNGATED"
+   },
+   {
+    "id": "F128", "title": "Size limits advisory, not enforced", "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "touches": "presign content-length-range and confirmUpload reconciliation — server-side",
+    "existedInRcC5ScopeAtFreeze": false,
+    "reason": "Same as F127.",
+    "side": "UNGATED"
+   },
+   {
+    "id": "F129", "title": "Correspondence-messages path bypasses /media/presign entirely", "state": "OPEN",
+    "touches": "aura-backend src/messages/messages.service.ts — creates Media at status=READY from a client-supplied storageKey with no MIME check, no size check, no HEAD verification and no proof the caller owns the key",
+    "existedInRcC5ScopeAtFreeze": false,
+    "reason": "This is a SERVER endpoint accepting an unverified key. RC-C5's 'eleven upload pipelines' are CLIENT pipelines under DR3. Closing a server-side authorization hole neither modifies nor crosses a composition surface.",
+    "side": "UNGATED",
+    "constraintThatBinds": "CO-RC-C5-019 / CO-RC-C5-020 (preserve) — the fix must not break supported content behaviour or attachment/media capabilities."
+   },
+   {
+    "id": "F130", "title": "Presign body unvalidated; PresignDto dead code", "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "touches": "aura-backend media.controller.ts / dto/presign.dto.ts — NestJS ValidationPipe",
+    "existedInRcC5ScopeAtFreeze": false,
+    "reason": "A server DTO binding. No composition surface.",
+    "side": "UNGATED"
+   },
+   {
+    "id": "F133", "title": "Duration unit mismatch — Media.duration is ms, MessageAttachment.durationSec is seconds", "state": "OPEN",
+    "touches": "aura-backend src/messages/messages.service.ts:238 (seconds written into a ms field) and :752 (ms read back as seconds)",
+    "existedInRcC5ScopeAtFreeze": false,
+    "reason": "A server-side unit error in a wire projection. Not a composer, not intake.",
+    "side": "UNGATED"
+   },
+   {
+    "id": "F134", "title": "Media.aiFlags is client-writable and read by nothing", "state": "OPEN",
+    "touches": "aura-backend media.service.ts updateMetadata — aiFlags is assigned WITHOUT the allowUnsafeFields worker gate that protects every neighbouring processed field",
+    "existedInRcC5ScopeAtFreeze": false,
+    "reason": "A server authorization gap on a PATCH endpoint.",
+    "side": "UNGATED",
+    "severityCorrection": "The finding says aiFlags is 'read by nothing'. That understates it: media.service.ts:512 writes { contentTruthRejection: reason } INTO aiFlags. A client can therefore forge or erase the record of its own content-truth rejection. Recorded as new evidence against F134; the finding is NOT re-stated or promoted."
+   },
+   {
+    "id": "F123", "title": "Falsified content provenance — every conversation attachment labelled GALLERY", "state": "OPEN",
+    "touches": "the CONVERSATION COMPOSER — clipboard pastes and desktop drops are labelled source:'GALLERY' despite AttachmentSource supporting paste/upload",
+    "existedInRcC5ScopeAtFreeze": true,
+    "reason": "This is per-composer PASTE/CLIPBOARD handling and the SELECT/PASTE/DROP head of the Attachment Lifecycle — both explicitly inside RC-C5's frozen scope (DR3, 'per-composer paste/clipboard handling (25 files)'). Bifurcated clause 4 applies: later work that MODIFIES a boundary inside the frozen gate remains gated.",
+    "side": "GATED"
+   },
+   {
+    "id": "F122", "title": "Wire-kind inconsistency between canonical wireKind and conversation_screen", "state": "CONFLICTING_CURRENT_STATE",
+    "touches": "canonical wireKind (backend vocabulary) AND conversation_screen (composer surface)",
+    "existedInRcC5ScopeAtFreeze": "PARTIALLY — the conversation_screen side is a composer surface inside the frozen scope; the canonical vocabulary side is not.",
+    "side": "GATED_AND_SEPARATELY_UNTOUCHABLE",
+    "reason": "Two independent reasons to leave it alone: its composer half is inside the frozen gate, AND it is a PRESERVED CONFLICT. CH-11's own certification requirement states the dispute 'is not resolved by agreement'. This adjudication does not touch F122 in either direction."
+   },
+   {
+    "id": "F016", "title": "Honest document/media formats", "state": "OPEN",
+    "touches": "spans backend type resolution AND presentation of the resolved kind",
+    "existedInRcC5ScopeAtFreeze": "PARTIALLY",
+    "side": "SPLIT_BUT_NOT_EXECUTED_HERE",
+    "reason": "The presentation half is a CH-11 NON-GOAL (owned by CH-13) and the composer-facing half sits inside the frozen scope. The backend type-resolution half is ungated, but it is not executed in this unit because it is not required by the security head and executing it would blur the boundary this adjudication just drew."
+   }
+  ]
+ },
+
+ "G_consumeVersusCross": {
+  "verdict": "The ungated portion CONSUMES RC-C5's preserve constraints; it does not modify or cross an unresolved RC-C5-governed boundary.",
+  "keyEvidence": "CH-11's ONLY two RC-C5-chartered obligations are CO-RC-C5-019 ('supported content behaviour') and CO-RC-C5-020 ('attachment/media capabilities'). BOTH come from RC-C5.originalScope.PRESERVE — scopeArea 'preserve', obligationType CHARTERED_SCOPE. Neither is a construction deliverable awaiting RC-C5's transition.",
+  "doctrineApplied": "The frozen completion distinction ACTIVE_CONSTRAINT != DISCHARGED_OBLIGATION. A preserve obligation BINDS whoever works in the territory; it does not GATE them. Reading a preserve constraint as a gate would make RC-C5 govern every future change to anything it ever promised not to break — precisely the retroactive platform-wide gate the bifurcated ruling forbids.",
+  "notBroadened": "RC-C5 was not broadened merely because CH-11 depends on something RC-C5 touched — the two preserve constraints are honoured, not ignored.",
+  "notNarrowed": "RC-C5 was not narrowed merely because CH-11 was architected later — F123 and F122's composer half are held GATED on their actual touch surface, despite both belonging to the later §12 axis."
+ },
+
+ "H_gateConditionStatus": {
+  "condition": "C4 implemented, locally certified, pushed, deployed, observed end-to-end LIVE, live defects resolved, and FOUNDER DECLARES C4 certified/closed.",
+  "status": "OUTSTANDING — no founder declaration of C4 live closure is recorded.",
+  "relevanceToTheUngatedPortion": "IRRELEVANT under the bifurcated doctrine. The condition governs RC-C5's own chapter/deployment transition and the composition territory inside the gate when it froze. The backend ingestion door is neither.",
+  "relevanceToTheGatedPortion": "DIRECTLY APPLICABLE. F123 and F122's composer half stay untouched until the condition is satisfied."
+ },
+
+ "chronologyNotReliedUpon": {
+  "facts": "Gate frozen 2026-08-16; §12 Rich Content frozen 2026-08-17; F127-F134 originate in the 2026-08-17 rich-content audit.",
+  "statement": "Bifurcated clause 3 would already exempt the later-frozen §12 axis, but that argument is NOT the basis of this classification. Each unit was tested on its actual touch surface, which is why two §12-axis findings (F123, F122) are classified GATED despite post-dating the gate."
+ },
+
+ "executionConsequence": {
+  "executeNow": ["F129", "F133", "F134"],
+  "alreadyImplementedAwaitingLiveCertification": ["F127", "F128", "F130"],
+  "leaveUntouchedUntilTheGateIsSatisfied": ["F123", "F122 (composer half)", "F016 (composer-facing half)"],
+  "leaveUntouchedForAnIndependentReason": ["F122 — PRESERVED CONFLICT, not adjudicated in either direction"],
+  "boundConstraints": ["CO-RC-C5-019 supported content behaviour", "CO-RC-C5-020 attachment/media capabilities", "CH-11 destructive boundary: refusal must be truthful, visible and recoverable, never silent"]
+ }
+}

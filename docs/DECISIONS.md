@@ -420,3 +420,49 @@ clear.
 is owed and needs PB-11 founder observation); F103/F104 remain `OPEN`; F116/F053 remain
 `PARTIALLY_VALIDATED`; DEFECT-1 (realtime room goldens) is assigned to CH-04 and not waived. **No
 chapter was closed.**
+
+---
+
+## 2026-08-18 — RC-C5 / W1-X1 adjudicated PARTIALLY_GATED; CH-11 security head executed
+
+**Adjudicated against the already-ratified BIFURCATED doctrine, not as a new founder decision.**
+
+**Classification: PARTIALLY_GATED.** Each CH-11 finding was tested on its ACTUAL touch surface, not by
+title and not by axis membership. Chronology was deliberately not relied upon — which is why two
+§12-axis findings are classified GATED despite post-dating the gate.
+
+**The decisive evidence:** CH-11's only two RC-C5-chartered obligations, CO-RC-C5-019 ("supported
+content behaviour") and CO-RC-C5-020 ("attachment/media capabilities"), both come from
+`RC-C5.originalScope.PRESERVE`. They are ACTIVE CONSTRAINTS, not construction deliverables awaiting
+RC-C5's transition. Under the frozen distinction ACTIVE_CONSTRAINT != DISCHARGED_OBLIGATION, a
+preserve obligation BINDS whoever works in the territory; it does not GATE them. Reading a preserve
+constraint as a gate would make RC-C5 govern every future change to anything it once promised not to
+break — precisely the retroactive platform-wide gate the bifurcated ruling forbids.
+
+**UNGATED and executed** — the backend ingestion door, none of which is a composer, a paste handler, a
+client upload pipeline, or official designation:
+
+- **F129** — the correspondence-messages path created `Media` at `status=READY` from a client-supplied
+  `storageKey` with no ownership proof, no existence check, no MIME check and no size check. It now
+  passes through `MediaService.verifyClientSuppliedObject`: keys must sit under the caller's own
+  `users/{userId}/` prefix (refused before storage is touched), the object must exist, and type and
+  size are taken from STORAGE rather than the client's claim. Verified by enumeration that every
+  server-side key generator uses `makeObjectKey(userId, …)`, so the check narrows no legitimate path.
+- **F133** — `Media.duration` is milliseconds, `MessageAttachment.durationSec` is seconds, and the
+  service copied one into the other in both directions. A 30-second voice note persisted as 30 ms and
+  projected as 30 000 seconds. New `duration-units.ts` names the conversion at every call site.
+- **F134** — `aiFlags` was written without the worker gate protecting every neighbouring processed
+  field. Worse than the finding recorded: the service stores `{ contentTruthRejection: reason }` in
+  `aiFlags`, so a client could **forge or erase the record of its own content-truth rejection**. Now
+  gated with the other server-owned fields; caption-class metadata stays writable.
+
+**GATED and untouched:** F123 (composer paste/clipboard provenance — inside RC-C5's frozen DR3 scope)
+and F122's composer half. F122 is additionally a PRESERVED CONFLICT and was not adjudicated in either
+direction. The gate condition — founder declaration of C4 live closure — remains OUTSTANDING.
+
+**Not corrected:** rows already written with the wrong duration unit. Correcting them is a
+production-data mutation and is not authorized. The exposure is recorded; the code no longer produces
+new instances.
+
+**No finding state was rewritten.** Stage-0 evidence is never modified by execution. F129/F133/F134
+are implemented but not live-certified, and CH-11 has not closed.
