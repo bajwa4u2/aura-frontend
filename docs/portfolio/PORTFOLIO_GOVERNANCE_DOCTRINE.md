@@ -122,3 +122,109 @@ canonical portfolio  the current ratified state
 A founder ruling applies **forward**. Artifacts produced before it are recorded as
 `SUPERSEDED_BY_FOUNDER_RULING` and **retained** — never silently amended, never treated as
 misconduct for failing to anticipate a decision that did not yet exist.
+
+---
+
+## 6. RC-C5 HARD GATE — **BIFURCATED** *(founder ruling, 2026-08-18; supersedes the NOT_RECORDED status in §2)*
+
+> RC-C5's frozen hard gate governs **(1)** the RC-C5 chapter/deployment transition, and **(2)** authorities,
+> conditions or dependencies **explicitly within the scope of that gate when it was frozen**.
+>
+> It does **NOT** retroactively become a platform-wide gate over systems, contracts or authorities frozen
+> **later** merely because they now exist downstream in the reconstruction portfolio.
+
+A later independently frozen system is governed by **its own explicit gates**, or by RC-C5 **only where an
+explicit dependency on RC-C5 exists**.
+
+**Historical facts preserved:** gate frozen **2026-08-16** · §12 frozen **2026-08-17** · RC-C4 and RC-C5 are
+**parallel** in the recorded graph · RC-C5 depends on **C0–C3**, not C4 · the gate is a
+**deployment-discipline transition rule**, not evidence of an invented RC-C4 → RC-C5 technical dependency.
+
+**The original gate is neither weakened nor retroactively extended.**
+
+## 7. PROTECTED BOUNDARY CORRECTIVE REPAIR *(frozen)*
+
+A protected/shared subsystem may be changed **outside** the execution scope of a reconstruction chapter only
+when **all ten** conditions hold:
+
+1. Evidence demonstrates an actual defect **resides in or necessarily crosses** the protected subsystem.
+2. The change is **corrective**, not opportunistic reconstruction or feature expansion.
+3. The repair is the **minimum necessary** change.
+4. The repair does **not silently expand** the executing chapter's authority or scope.
+5. The protected subsystem's **governing invariants remain authoritative**.
+6. The affected shared-system boundary is **explicitly identified before** modification.
+7. **Targeted regression/certification** for the protected subsystem is mandatory.
+8. **Shared-system health must be reported** before the repair is considered complete.
+9. Any change altering a founder-frozen doctrine, product boundary or protected invariant **still requires
+   explicit founder approval**.
+10. This category must **never** be used as a convenience bypass around a protected boundary.
+
+**Generalises to all of PB-01…PB-12**, not only PB-02.
+
+**Historical application — PB-02 / RC-C6.** The RC-A (`509230a`) and RC-B (`_joining` latch) repairs are
+classified **defect repair, not RC-C6 chapter execution**: RC-C6's chartered work is presentation convergence,
+which FD-4 already permits slice-by-slice *without* touching transport, media service or event parser.
+Governance reconciliation only — **no protected-system modification was performed**. Conditions **7 and 8
+remain owed** for the historical crossing.
+
+## 8. CHECKPOINT-AWARE EXTRACTION *(frozen)*
+
+> Chartered obligations may be recorded in **any** structured charter field, not only the three the first
+> extractor happened to read.
+
+RC-C7's Correspondence architectural-convergence verdict — a **named founder checkpoint with no recorded
+outcome** — sat in `contradictionsOrGaps` and was invisible to the axis built to stop chartered work
+disappearing. **It was not a one-off:** the same class hid **9 obligations**, including all five previously
+`UNMAPPED_TO_RC` surfaces.
+
+**Narrative commentary is not an obligation.** Only entries whose **type token** signals an unresolved
+required decision — `UNRESOLVED`, `OPEN_`, `VOID`, `UNASSIGNED`, `UNADDRESSED`, `UNMET`, `DISPOSITION` —
+create obligations. The rule is a documented token test, reproducible on every run. **30 entries were
+mechanically rejected as commentary.**
+
+**Ids are stable.** Existing COs are matched by (chapter, normalised text) and keep their ids; new ones
+continue each chapter's sequence. **Nothing is renumbered to make the register look tidy.**
+
+## 9. CLASSIFICATION PROVENANCE *(frozen)*
+
+Every obligation carries `classificationBasis`, so **inference can never be read as historical fact**:
+
+| Value | Meaning |
+|---|---|
+| `EXPLICIT_RECORDED_STATE` | a recorded obligation-level state |
+| `EXPLICIT_FOUNDER_RULING` | adjudicated by the founder |
+| `DETERMINISTIC_DERIVATION` | derived mechanically from canonical evidence |
+| `ANALYTICAL_INFERENCE` | inferred from charter/evidence by an agent |
+| `UNRESOLVED_INSUFFICIENT_EVIDENCE` | evidence does not determine a class |
+
+**Current distribution: 293 ANALYTICAL_INFERENCE · 9 DETERMINISTIC_DERIVATION · 6 EXPLICIT_FOUNDER_RULING.**
+That 293 is the honest headline: the axis is uniformly classified but **overwhelmingly by inference**, because
+no obligation-level state was ever recorded.
+
+**Schema limitation reported, not hidden.** The six-value taxonomy cannot express a multidimensional state
+(`FOUNDER_DECIDED` + `IMPLEMENTED` + `NOT VALIDATED` + `ACTIVE_CONSTRAINT`). Rather than collapse it, a
+`dimensions` object is carried on the affected RC-C10 rows. **The taxonomy was not widened without founder
+authority.**
+
+## 10. FROZEN COMPLETION DISTINCTIONS
+
+```
+FOUNDER_DECIDED        != COMPLETED_OR_SUPERSEDED
+IMPLEMENTED            != VALIDATED
+IMPLEMENTED            != LIVE_CERTIFIED
+STRUCTURALLY_COMPLETE  != LIVE_CERTIFIED
+ACTIVE_CONSTRAINT      != DISCHARGED_OBLIGATION
+```
+
+**A live founder constraint must never be made to appear discharged.** Implementation evidence may be recorded
+where it exists; validation and live certification may **never** be inferred.
+
+## 11. CORRESPONDENCE — FORM vs PRODUCT *(frozen)*
+
+> **DISTINCT GOVERNED COMMUNICATION FORM ≠ SEPARATE PRODUCT**
+
+Correspondence remains a distinct governed communication form/capability with its own semantics and authority.
+RC-C7 does **not** recreate Correspondence as a separate product. The original charter statement and the
+2026-08-16 amendment **coexist** — they use different nouns. `CO-RC-C7-015` is reconciled on this basis and is
+no longer UNKNOWN. The ruling does not extend to unrelated Correspondence architecture.
+

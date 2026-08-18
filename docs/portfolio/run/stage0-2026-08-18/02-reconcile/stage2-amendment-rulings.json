@@ -194,5 +194,51 @@
    "VALIDATOR_FAIL_CLOSEDNESS"
   ],
   "stage4": "NOT_STARTED / NOT_AUTHORIZED"
+ },
+ "RC_C5_GATE_SCOPE": {
+  "ruling": "BIFURCATED",
+  "adjudicatedBy": "FOUNDER",
+  "date": "2026-08-18",
+  "doctrine": "RC-C5's frozen hard gate governs (1) the RC-C5 chapter/deployment transition, and (2) authorities, conditions or dependencies explicitly within the scope of that gate WHEN IT WAS FROZEN. It does NOT retroactively become a platform-wide gate over systems, contracts or authorities frozen LATER merely because they now exist downstream in the reconstruction portfolio.",
+  "laterSystemsGovernedBy": [
+   "their own explicit gates",
+   "RC-C5 only where an explicit dependency on RC-C5 exists"
+  ],
+  "preservedHistoricalFacts": [
+   "RC-C5 gate frozen 2026-08-16 (DECISIONS.md:382-385)",
+   "S12 Rich Content frozen 2026-08-17 — one day later",
+   "RC-C4 and RC-C5 are PARALLEL in the recorded dependency graph",
+   "RC-C5 dependsOn C0, C1, C2, C3 as recorded — not C4",
+   "The gate is a deployment-discipline TRANSITION RULE, not evidence of an invented RC-C4 -> RC-C5 technical dependency"
+  ],
+  "originalGateWeakened": false,
+  "retroactivelyExtended": false,
+  "note": "Do not weaken the original RC-C5 gate. Do not retroactively extend it."
+ },
+ "PROTECTED_BOUNDARY_CORRECTIVE_REPAIR": {
+  "doctrine": "PROTECTED BOUNDARY CORRECTIVE REPAIR",
+  "adjudicatedBy": "FOUNDER",
+  "date": "2026-08-18",
+  "statement": "A protected/shared subsystem may be changed OUTSIDE the execution scope of a reconstruction chapter only when ALL ten conditions hold. This category must never be used as a convenience bypass.",
+  "conditions": [
+   "1. Evidence demonstrates an actual defect resides in or necessarily crosses the protected/shared subsystem.",
+   "2. The change is corrective, not opportunistic reconstruction or feature expansion.",
+   "3. The repair is the minimum necessary change to correct the demonstrated defect.",
+   "4. The repair does not silently expand the executing chapter’s authority or scope.",
+   "5. The protected subsystem’s governing invariants remain authoritative.",
+   "6. The affected shared-system boundary is explicitly identified before modification.",
+   "7. Targeted regression/certification for the protected subsystem is mandatory.",
+   "8. Shared-system health must be reported before the repair is considered complete.",
+   "9. Any change altering a founder-frozen doctrine, product boundary or protected invariant still requires explicit founder approval.",
+   "10. This category must never be used as a convenience bypass around a protected boundary."
+  ],
+  "generalises": "Applies to every protected boundary PB-01..PB-12, not only PB-02.",
+  "historicalApplication": {
+   "case": "PB-02 / RC-C6 — the RC-A (509230a, controller disposing shared socket/media singletons) and RC-B (root-overlay _joining latch) repairs",
+   "classification": "DEFECT REPAIR, not RC-C6 chapter execution",
+   "evidence": "RC-C6's chartered work is presentation convergence, which FD-4 already permits slice-by-slice WITHOUT touching transport, media service or event parser. The repairs corrected demonstrated defects in the protected layer.",
+   "status": "Classified as governance reconciliation only. NO further protected-system modification performed in this task.",
+   "outstanding": "Condition 7 (targeted regression) and condition 8 (shared-system health report) are recorded as owed for the historical crossing."
+  }
  }
 }

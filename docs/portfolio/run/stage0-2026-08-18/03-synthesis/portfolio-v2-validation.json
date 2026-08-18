@@ -1,0 +1,125 @@
+{
+  "artifact": "PORTFOLIO_V2_DETERMINISTIC_RECONCILIATION",
+  "date": "2026-08-18",
+  "accounting": {
+    "findings": "143/143",
+    "charteredObligations": "308/308",
+    "original299": {
+      "input": 299,
+      "preserved": 299,
+      "reclassified": 0,
+      "merged": 0,
+      "superseded": 0,
+      "dropped": 0
+    },
+    "newlyDiscovered": 9,
+    "finalCoTotal": 308,
+    "totalCanonicalUnits": 451,
+    "executableChapters": 17
+  },
+  "byClass": {
+    "COMPLETED_OR_SUPERSEDED": 49,
+    "PARTIALLY_COMPLETED": 50,
+    "OUTSTANDING_CONSTRUCTION": 114,
+    "VALIDATION_OR_GATE_ONLY": 64,
+    "FOUNDER_ACTION_ONLY": 28,
+    "UNKNOWN": 3
+  },
+  "perChapter": {
+    "CH-14": {
+      "f": 8,
+      "co": 11
+    },
+    "CH-04": {
+      "f": 26,
+      "co": 32
+    },
+    "CH-06": {
+      "f": 5,
+      "co": 4
+    },
+    "CH-13": {
+      "f": 12,
+      "co": 26
+    },
+    "CH-11": {
+      "f": 9,
+      "co": 2
+    },
+    "CH-15": {
+      "f": 1,
+      "co": 1
+    },
+    "CH-02": {
+      "f": 16,
+      "co": 17
+    },
+    "CH-05": {
+      "f": 6,
+      "co": 31
+    },
+    "CH-03": {
+      "f": 9,
+      "co": 32
+    },
+    "CH-12": {
+      "f": 13,
+      "co": 0
+    },
+    "CH-16": {
+      "f": 2,
+      "co": 28
+    },
+    "CH-09": {
+      "f": 24,
+      "co": 16
+    },
+    "CH-10": {
+      "f": 8,
+      "co": 2
+    },
+    "CH-17": {
+      "f": 4,
+      "co": 26
+    },
+    "CH-01": {
+      "f": 0,
+      "co": 42
+    },
+    "CH-07": {
+      "f": 0,
+      "co": 21
+    },
+    "CH-08": {
+      "f": 0,
+      "co": 17
+    }
+  },
+  "checksPassed": [
+    "16. Stage-0 evidence historically intact (git clean)",
+    "1-2. Findings 143/143 exactly accounted, none invented, lost, duplicated or unowned",
+    "2. No finding state silently mutated",
+    "3. Original 299: each has exactly one disposition — 299 PRESERVED, 0 reclassified, 0 merged, 0 superseded, 0 dropped",
+    "4-6. 308 obligations owned exactly once, charteredBy preserved, ids unique and deterministic",
+    "6. 9 newly discovered COs carry deterministic chapter-preserving ids; no existing CO renumbered",
+    "7. RC chapters 12/12 represented",
+    "8-9. WG001-WG017 issued; WG018 RESERVED/UNISSUED",
+    "10. F043/F051/F122 conflicts intact (not touched by these rulings)",
+    "11. RC-C5 BIFURCATED ruling recorded; original gate neither weakened nor retroactively extended",
+    "12. RC-C10 completed set is EXACTLY -013/-014; -001/-002/-003 reclassified with dimensions preserved (FOUNDER_DECIDED != COMPLETED)",
+    "13. CO-RC-C7-015 reconciled (OUTSTANDING_CONSTRUCTION) on EXPLICIT_FOUNDER_RULING basis",
+    "14. Protected Boundary Corrective Repair doctrine recorded with all 10 conditions",
+    "15. Explicit-vs-inferred provenance mechanically inspectable on all 308 {\"ANALYTICAL_INFERENCE\":293,\"DETERMINISTIC_DERIVATION\":9,\"EXPLICIT_FOUNDER_RULING\":6}",
+    "17. Stage 4 NOT_STARTED / NOT_AUTHORIZED"
+  ],
+  "warnings": [],
+  "failures": [],
+  "verdict": "PASS",
+  "stageStatus": {
+    "stage0": "COMPLETE_AND_FOUNDER_RATIFIED",
+    "stage1": "COMPLETE",
+    "stage2": "COMPLETE_WITH_AMENDMENT",
+    "stage3": "COMPLETE_FROZEN_REBUILT",
+    "stage4": "NOT_STARTED_NOT_AUTHORIZED"
+  }
+}

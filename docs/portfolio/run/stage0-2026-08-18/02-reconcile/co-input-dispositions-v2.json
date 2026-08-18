@@ -1,0 +1,4575 @@
+{
+ "artifact": "CO_INPUT_DISPOSITION_LEDGER_V2",
+ "invariant": "Every raw charter candidate has an explicit disposition, and every original-299 CO has an explicit disposition. Nothing may be dropped.",
+ "rawInputs": 308,
+ "dispositions": [
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-001",
+   "text": "Final Product Language FROZEN — 13 nouns; 4 stop/abandon/surface intents; 25 actions; IdentityConcept preserves PERSON != INSTITUTION != MEMBERSHIP != ACTING CONTEXT != PRESENCE; Connect · Works · generic Verified not to be introduced"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-002",
+   "text": "Membership actions FROZEN — addMember / invitePerson / manageInvites remain semantically distinct; no action label itself grants authority"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-003",
+   "text": "PERSON = canonical human identity. MEMBER = contextual membership/relationship state. A human is never canonically typed as 'Member'"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[3]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-004",
+   "text": "Correspondence FROZEN to one canonical product meaning (governed formal/deliberate communication); the umbrella module meaning is LEGACY / ARCHITECTURAL NAMING DRIFT; C7 owns the rename/convergence but not the semantic decision"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[4]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-005",
+   "text": "Discovery framing SUPERSEDED — the 2026-07-11 'always trusted discovery / never directory' directive is superseded; historical record preserved struck-through, not deleted"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[5]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-006",
+   "text": "Representation authority chain FROZEN — IMPLEMENTATION/PRODUCT AUTHORITY -> FOUNDER-FROZEN DECISIONS -> REPRESENTATION. Stale Representation wording does not override later founder-frozen product truth"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[6]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-007",
+   "text": "G5 ownership APPROVED — 181/181 assigned, zero unassigned: C1 42 · C2 21 · C3 44 · C4 26 · C5 16 · C7 26 · C8 3 · C9 3 · C6 0. A 'J' assignment is reasoned, not immutable product truth"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[7]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[7]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-008",
+   "text": "Meetings PRESERVED — holds zero G5 sites; its protected debt is G3 (16) and G4 (14), belonging to controlled C6 review; certified Meetings is not modified for foundation debt reduction"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[8]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[8]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-009",
+   "text": "Enforcement pattern — the FD-13 precedent: 11 zero-tolerance rules + 5 ratchets + 2 baseline-honesty gates; hard failure; no warning-only structural governance. This is the working precedent every later chapter follows"
+  },
+  {
+   "inputId": "IN:RC-C0.keyFrozenOutcomes[9]",
+   "rcChapter": "RC-C0",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C0.keyFrozenOutcomes[9]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-010",
+   "text": "Date correction ACCEPTED — the 2026-08-16 propagation was an authoring error corrected across repositories; Estonia visa-note dates recorded UNRESOLVED FACTUAL DATE, outside C0"
+  },
+  {
+   "inputId": "IN:RC-C0.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C0",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C0.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-011",
+   "text": "Measured, enforced debt carried into later chapters: 24 local elapsed-time sites · 47 toLocal() · 26 full-surface spinners (14 in Meetings, protected) · 181 direct state-primitive constructions · 17 screen-declared time formatters"
+  },
+  {
+   "inputId": "IN:RC-C0.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C0",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C0.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-012",
+   "text": "G5 remainder at C2 closeout measured 168 sites / 67 files, chapter-owned per the ownership matrix (C3 44 · C4 26 · C5 16 · C7 26 · C8 3 · C9 3 · PD-1 34 · PD-2 3 · C2 view-profiles 8)"
+  },
+  {
+   "inputId": "IN:RC-C0.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C0",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C0.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-013",
+   "text": "Deprecated relative_time.dart shim: 11 caller files remain; burn-down owners C4 and C6; retirement = last caller converged, shim deleted"
+  },
+  {
+   "inputId": "IN:RC-C0.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C0",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C0.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-014",
+   "text": "Chapter-level completeness recorded as ARCHITECTURE complete / RUNTIME ADOPTION partial / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial"
+  },
+  {
+   "inputId": "IN:RC-C0.explicitlyRemainingObligations[4]",
+   "rcChapter": "RC-C0",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C0.explicitlyRemainingObligations[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-015",
+   "text": "Obligations explicitly handed onward and NOT C0 backlog: C2 verification labels · C5 official-designation vocabulary · C7 legacy Correspondence rename/convergence · C10 Live plural/contextual language · All: measured G2/G3/G4/G5/G7 debt under ratchet"
+  },
+  {
+   "inputId": "IN:RC-C0.originalScope.build[0]",
+   "rcChapter": "RC-C0",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C0.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-016",
+   "text": "Product Language Authority (canonical nouns, semantic CTA families incl. RETRY and the four distinct CANCEL/DISMISS/CLOSE/DISCARD families, state terminology) — explicitly 'Not a database of every sentence'"
+  },
+  {
+   "inputId": "IN:RC-C0.originalScope.build[1]",
+   "rcChapter": "RC-C0",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C0.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-017",
+   "text": "Product State Presentation vocabulary: loading, empty, error, retry, offline, reconnecting, expired, unavailable, revoked, deleted, sending, uploading, failed, unauthorized, success"
+  },
+  {
+   "inputId": "IN:RC-C0.originalScope.build[2]",
+   "rcChapter": "RC-C0",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C0.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-018",
+   "text": "Temporal Presentation: semantic event type, canonical timestamp selection, relative vs absolute, locale/timezone incl. DST and cross-timezone, humanized formatting, exact-time access, sorting semantics, aging/refresh"
+  },
+  {
+   "inputId": "IN:RC-C0.originalScope.preserve[0]",
+   "rcChapter": "RC-C0",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C0.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-019",
+   "text": "AuraLoadingState / AuraErrorState / AuraEmptyState"
+  },
+  {
+   "inputId": "IN:RC-C0.originalScope.preserve[1]",
+   "rcChapter": "RC-C0",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C0.originalScope.preserve[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-020",
+   "text": "relative_time.dart"
+  },
+  {
+   "inputId": "IN:RC-C0.originalScope.preserve[2]",
+   "rcChapter": "RC-C0",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C0.originalScope.preserve[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-021",
+   "text": "local_timezone.dart"
+  },
+  {
+   "inputId": "IN:RC-C0.originalScope.demolishOrRetire[0]",
+   "rcChapter": "RC-C0",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C0.originalScope.demolishOrRetire[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-022",
+   "text": "NOTHING — the chapter is additive + migratory"
+  },
+  {
+   "inputId": "IN:RC-C0.originalScope.historicalItems[0]",
+   "rcChapter": "RC-C0",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C0.originalScope.historicalItems[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C0-023",
+   "text": "Item 6 (Communication Timeline Authority — temporal half)"
+  },
+  {
+   "inputId": "IN:RC-C1.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C1",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C1.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-001",
+   "text": "ACTING AUTHORITY BECOMES EXPLICIT WHEN A CONSEQUENTIAL ACTION REQUIRES ATTRIBUTION — NOT BECAUSE OF THE ROUTE THE PERSON NAVIGATED THROUGH. No global acting mode, no route-derived sender, institutional acting context always person-backed, unavailable actions absent rather than disabled, governance never a delegable capability."
+  },
+  {
+   "inputId": "IN:RC-C1.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C1",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C1.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-002",
+   "text": "WHETHER A PERSONAL ACTING ALTERNATIVE EXISTS IS A PROPERTY OF THE SURFACE / ACTION CONTEXT, NOT AN INTRINSIC PROPERTY OF THE CONSEQUENTIAL ACT. resolve(act, offerPersonalAlternative: ...) is the governed contract. NO CHOICE WITHOUT A REAL CONSEQUENCE."
+  },
+  {
+   "inputId": "IN:RC-C1.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C1",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C1.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-003",
+   "text": "ProductAction.switchIdentity added as a governed C0 Product Language extension discovered through C1 implementation — not C0 remediation; four competing phrasings gate-prohibited."
+  },
+  {
+   "inputId": "IN:RC-C1.keyFrozenOutcomes[3]",
+   "rcChapter": "RC-C1",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C1.keyFrozenOutcomes[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-004",
+   "text": "Presence is the person. It never inherits institutional identity from affiliation, navigation or membership."
+  },
+  {
+   "inputId": "IN:RC-C1.keyFrozenOutcomes[4]",
+   "rcChapter": "RC-C1",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C1.keyFrozenOutcomes[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-005",
+   "text": "Backend converged — institutions.service.ts delegates to InstitutionAuthorityService; every membership now carries its own effective capabilities."
+  },
+  {
+   "inputId": "IN:RC-C1.keyFrozenOutcomes[5]",
+   "rcChapter": "RC-C1",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C1.keyFrozenOutcomes[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-006",
+   "text": "The six-token client capability injection was proven UNREACHABLE DEAD CODE; no backend correction warranted; no alternate authority path created."
+  },
+  {
+   "inputId": "IN:RC-C1.keyFrozenOutcomes[6]",
+   "rcChapter": "RC-C1",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C1.keyFrozenOutcomes[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-007",
+   "text": "G5 ownership correction — 38 of 42 C1 sites withdrawn on measured evidence to PD-1 Platform Administration (34) and PD-2 Authentication & Account Entry (3); C1 retains 4 on R basis; 181 sites still traceable."
+  },
+  {
+   "inputId": "IN:RC-C1.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C1",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C1.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-008",
+   "text": "Accepted exceptions, none blocking closeout: R1 (25 files / 85 role-derived booleans, ratcheted) · R2 (3 files / 6 role-literal comparisons, classified) · resolveActorContext 3 consumers -> C3/C7 · platform-admin flattening -> PD-1 · further attribution consumers -> owning chapters"
+  },
+  {
+   "inputId": "IN:RC-C1.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C1",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C1.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-009",
+   "text": "Two product disposition checkpoints opened before C11: PD-1 Platform Administration (11 files / 34 G5 sites), PD-2 Authentication & Account Entry (2 files / 3 sites). Neither has an owning chapter in the approved roadmap; both need a product decision"
+  },
+  {
+   "inputId": "IN:RC-C1.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C1",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C1.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-010",
+   "text": "Debt register rows 2, 3, 4 remain TRANSITIONAL with named owners: actor_context.dart resolveActorContext (retire at C3+C7); member_shell.dart:267 admin count gating (backend-coupled, retire with backend role->capability gating + C3 shell reconstruction); institution_correspondence_screen.dart isAdmin gate (C7-owned)"
+  },
+  {
+   "inputId": "IN:RC-C1.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C1",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C1.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-011",
+   "text": "Chapter-level completeness recorded as ARCHITECTURE complete / RUNTIME ADOPTION near-complete (4 residual named-owner sites) / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial (resolveActorContext awaiting C3/C7)"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.build[0]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-012",
+   "text": "Acting Context Authority — person = default actor; institutional context entered deliberately and remains attributable"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.build[1]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-013",
+   "text": "Capability Projection — consumes backend effective capability; NEVER computes it"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.preserve[0]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-014",
+   "text": "Existing auth flows"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.preserve[1]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.preserve[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-015",
+   "text": "session handling"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.preserve[2]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.preserve[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-016",
+   "text": "backend contracts"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.demolishOrRetire[0]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.demolishOrRetire[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-017",
+   "text": "Shadow governance: role comparisons in 29 files, canX derivations in 20 files"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.extendedScope[0]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.extendedScope[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-018",
+   "text": "Fail-closed auth projection"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.extendedScope[1]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.extendedScope[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-019",
+   "text": "institution capability model"
+  },
+  {
+   "inputId": "IN:RC-C1.originalScope.historicalItems[0]",
+   "rcChapter": "RC-C1",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C1.originalScope.historicalItems[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C1-020",
+   "text": "Item 4 (Identity Foundation — acting/capability half)"
+  },
+  {
+   "inputId": "IN:RC-C1.contradictionsOrGaps[1]",
+   "rcChapter": "RC-C1",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C1.contradictionsOrGaps[1]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C1-021",
+   "text": "PD-1 and PD-2 exist because the approved roadmap names no owner for platform admin, institution admin, public directory, search/saves/updates or auth surfaces. 107 of 181 G5 sites were assigned from labelled judgment rather than roadmap text."
+  },
+  {
+   "inputId": "IN:RC-C1.contradictionsOrGaps[2]",
+   "rcChapter": "RC-C1",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C1.contradictionsOrGaps[2]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C1-022",
+   "text": "PD-2 STRUCTURAL DISPOSITION remains OPEN even though the PD-2-adjacent public-first copy drift was resolved."
+  },
+  {
+   "inputId": "IN:RC-C2.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C2",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C2.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-001",
+   "text": "Founder adjudication R1-R10 on Follow: R1 BLOCKING OUTRANKS FOLLOW/RELATIONSHIP/MESSAGING ELIGIBILITY (use the canonical blocking authority, do not create a second one) · R2 FOLLOW is a governed relationship between an acting Person or Institution and another Person or Institution subject to the target's consent rules · R3 InteractionFollow's current schema is NOT a safe canonical replacement; live Follow data must NOT be migrated into it · R4 FOLLOW != SUBSCRIBE; C2 records semantics, C4 owns the vocabulary · R5 BLOCK > EXPLICIT CONSENT/REJECTION > ACTIVE FOLLOW, provenance preserved · R6 no historical relationship may silently gain a new behavioural consequence because its row moved · R7 relationship domain events are C2, attention delivery policy is C4 · R8 no zombie REQUESTED, no accepted-and-discarded request message · R9 Institution->Person must be classified, not inferred from API reach · R10 blocking prerequisite first, then complete §8-§12 discovery before destructive convergence"
+  },
+  {
+   "inputId": "IN:RC-C2.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C2",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C2.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-002",
+   "text": "D1 FROZEN FEED SEMANTIC — an established Person->Person Follow makes eligible public participation available to the member feed's existing visibility/ranking rules; it does not guarantee delivery, bypass ranking/visibility/moderation/blocks, expose restricted content, or become Subscribe"
+  },
+  {
+   "inputId": "IN:RC-C2.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C2",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C2.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-003",
+   "text": "Trust presentation doctrine frozen by implementation: layered never collapsed ('Verified person' does not exist as a product concept; absence renders nothing) · subject-explicit wording · VERIFICATION IS NOT AUTHORITY · revoked/expired first-class · unknown wire classes dropped never guessed"
+  },
+  {
+   "inputId": "IN:RC-C2.keyFrozenOutcomes[3]",
+   "rcChapter": "RC-C2",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C2.keyFrozenOutcomes[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-004",
+   "text": "Monetization x Verification Decoupling FROZEN — verification is not purchasable; a commercial tier does not establish verification; TRUSTED rejected as a commercial product concept; verification authority and commercial entitlement separate structurally and visually; ROLE_OR_CREDENTIAL is governed attestation not a portable credential; 'Role attested' is the public wording"
+  },
+  {
+   "inputId": "IN:RC-C2.keyFrozenOutcomes[4]",
+   "rcChapter": "RC-C2",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C2.keyFrozenOutcomes[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-005",
+   "text": "Commercial Taxonomy Closeout FROZEN — active taxonomy = FREE + PRO; the legacy VERIFIED middle tier is retired, not renamed; TRUSTED permanently rejected; NO final Free/Pro entitlement boundary decided; no new payment enforcement during release-client reconstruction. FUTURE COMMERCIALIZATION GOVERNANCE MARKER recorded to survive handoff"
+  },
+  {
+   "inputId": "IN:RC-C2.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C2",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C2.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-006",
+   "text": "Entitlement boundary deliberately NOT frozen; final Free/Pro commercial entitlement boundary NOT YET FROZEN; payment enforcement not to be activated/expanded during release-client reconstruction"
+  },
+  {
+   "inputId": "IN:RC-C2.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C2",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C2.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-007",
+   "text": "Availability Off user-facing control — C2 doctrine frozen, runtime semantics canonical, control required, IMPLEMENTATION OWNER UNASSIGNED pending founder roadmap placement (recorded as FOUNDER-OWNED ROADMAP GAP 1)"
+  },
+  {
+   "inputId": "IN:RC-C2.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C2",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C2.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-008",
+   "text": "Debt register row 12 records the Availability Off control as 'LEGITIMATELY FUTURE-OWNED (C4 Settings — adjudicated ownership split)' — which GAP 1 later reclassifies as continuity shorthand"
+  },
+  {
+   "inputId": "IN:RC-C2.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C2",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C2.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-009",
+   "text": "PresenceScreen disposition (FD-12 §5) is listed as a C2-owned open implementation checkpoint"
+  },
+  {
+   "inputId": "IN:RC-C2.explicitlyRemainingObligations[4]",
+   "rcChapter": "RC-C2",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C2.explicitlyRemainingObligations[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-010",
+   "text": "People Selection — 6 local person-shaped extraction sites classified with future owners (conversations_screen C4-retired; correspondence_hub/space/invite_member C7; member_home C3; admin_institution_members PD-1)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.build[0]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-011",
+   "text": "Identity Projection (Person/Institution)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.build[1]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-012",
+   "text": "Relationship Projection"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.build[2]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-013",
+   "text": "Presence Projection (permitted human-facing only)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.build[3]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.build[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-014",
+   "text": "Verification Projection — LAYERED, NEVER BOOLEAN"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.build[4]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.build[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-015",
+   "text": "Action Projection (backend-authorised)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.build[5]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.build[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-016",
+   "text": "People & Participation Selection primitive (backend-resolved eligibility; no local inference)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.build[6]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.build[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-017",
+   "text": "Rebuilt profile surfaces: IDENTITY FIRST · CONTEXT SECOND · ACTIONS THIRD · METADATA ON DEMAND"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.demolishOrRebuild[0]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.demolishOrRebuild[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-018",
+   "text": "DR5 — three profile implementations (profile/, me/, institutions/profile/; ~4,100 lines of parallel edit screens)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.demolishOrRebuild[1]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.demolishOrRebuild[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-019",
+   "text": "Retire the six-meaning overload of 'presence'"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.demolishOrRebuild[2]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.demolishOrRebuild[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-020",
+   "text": "Disposition PresenceScreen here (FD-12 §5 — never on reference count)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[0]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-021",
+   "text": "Canonical identity data"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[1]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-022",
+   "text": "relationships"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[2]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-023",
+   "text": "public content"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[3]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-024",
+   "text": "institution relationships"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[4]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-025",
+   "text": "verification data"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[5]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-026",
+   "text": "privacy controls"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[6]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-027",
+   "text": "follow state"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[7]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[7]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-028",
+   "text": "backend contracts"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.preserve[8]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.preserve[8]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-029",
+   "text": "conceptually-correct deep links"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.extendedScope[0]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.extendedScope[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-030",
+   "text": "Canonical person identity projection"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.extendedScope[1]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.extendedScope[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-031",
+   "text": "layered verification"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.extendedScope[2]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.extendedScope[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-032",
+   "text": "account lifecycle states"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.historicalItems[0]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.historicalItems[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-033",
+   "text": "Item 4 (Identity Foundation)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.founderCheckpoints[0]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.founderCheckpoints[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-034",
+   "text": "Verification label mapping (class -> human meaning -> user value -> label -> context)"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.founderCheckpoints[1]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.founderCheckpoints[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-035",
+   "text": "Presence privacy/visibility policy"
+  },
+  {
+   "inputId": "IN:RC-C2.originalScope.founderCheckpoints[2]",
+   "rcChapter": "RC-C2",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C2.originalScope.founderCheckpoints[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C2-036",
+   "text": "Profile visual direction"
+  },
+  {
+   "inputId": "IN:RC-C2.contradictionsOrGaps[3]",
+   "rcChapter": "RC-C2",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C2.contradictionsOrGaps[3]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C2-037",
+   "text": "Founder decisions still required at the time of the debt register: institution->person residue disposition at migration step 3 (only if production rows exist) and authorization of the physical migration execution window. Both were subsequently overtaken by C2_FINAL_CLOSEOUT (I->P residue = 0), but the register text itself was not updated."
+  },
+  {
+   "inputId": "IN:RC-C3.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C3",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C3.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-001",
+   "text": "MIRRORED ROUTE != OBJECT-LOCAL INSTITUTION DEPTH != PATH-MANUFACTURED CONTEXT. 2 mirrored routes existed and were retired to gate-pinned unbuildable aliases; 34 routes are canonical object-local institution depth; path-manufactured context is structurally impossible (resolveActorContext deleted, 0 mechanisms); the institutional-inbox quartet (4 routes) carries the explicit-context contract and finalizes with C7; the Phase-1 phrasing 'the :institutionId prefix is what dies' is SUPERSEDED as over-broad."
+  },
+  {
+   "inputId": "IN:RC-C3.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C3",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C3.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-002",
+   "text": "FOUNDER-OBSERVED NAVIGATION CORRECTION (amends the five-primary freeze). GOVERNING TEST FROZEN: PRIMARY NAVIGATION MUST REPRESENT A FUNDAMENTAL, RECURRING HUMAN INTENTION IN AURA. AUTHENTICATED PRIMARIES — FOUR: HOME · MESSAGES · DISCOVER · CREATE. ME removed (CLOSED). MEETINGS removed (CLOSED) — MEETINGS ARE AN INSTITUTIONAL DOMAIN, deliberately NO bare /meetings destination. CREATE restored as primary; global and contextual create are complementary. NO FIFTH DESTINATION invented or reserved; Attention may earn primary status only at C4's own founder checkpoint."
+  },
+  {
+   "inputId": "IN:RC-C3.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C3",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C3.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-003",
+   "text": "DISCOVER = extensible discovery framework; immediate domains PEOPLE · INSTITUTIONS · SPACES · ARTICLES. Verification is never relevance ranking — one activity-ordered list truthfully labeled 'recent activity'. Articles canonically declared but NOT rendered until truthful reading capability exists (no dead 'coming soon' tenancy)."
+  },
+  {
+   "inputId": "IN:RC-C3.keyFrozenOutcomes[3]",
+   "rcChapter": "RC-C3",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C3.keyFrozenOutcomes[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-004",
+   "text": "Header semantic layers frozen: primaries (rail/bottom bar only) · identity/account (avatar) · attention (bell, until C4) · institution acquisition (lifecycle-gated) · Live (justified global) · invite icon RETIRED."
+  },
+  {
+   "inputId": "IN:RC-C3.keyFrozenOutcomes[4]",
+   "rcChapter": "RC-C3",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C3.keyFrozenOutcomes[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-005",
+   "text": "ARCHITECTURE CAN PROPOSE COHERENCE. HUMAN USE VALIDATES MEANING. WHEN THEY CONFLICT, INVESTIGATE THE CONFLICT RATHER THAN PROTECTING THE ARCHITECTURE. A locally certified architecture can be product-wrong; founder observation is evidence with amending authority."
+  },
+  {
+   "inputId": "IN:RC-C3.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C3",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C3.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-006",
+   "text": "Contracts inherited by later chapters — C4: settings/attention internals, Me-depth placement fixed. C7: membership/invite/join lifecycles + correspondence sender experience MUST consume institutionContextId + correspondAsInstitution; no route-derived sender may survive C7 closure; the institutional-inbox trio's route disposition finalizes with it. C8: live-rooms internals (DR2). PD-1: admin internals. Meetings: protected, its 8 institution-context routes untouched."
+  },
+  {
+   "inputId": "IN:RC-C3.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C3",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C3.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-007",
+   "text": "Remaining C3-owned debt: NONE unexplained — every remainder carries owner + retirement condition (literal baseline per-surface owners; C7 trio; alias retirement gated on link-traffic evidence at a future observed window; G5 C3-owned sites burn with their surfaces)"
+  },
+  {
+   "inputId": "IN:RC-C3.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C3",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C3.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-008",
+   "text": "LoginScreen disposition is listed as a C3-owned open implementation checkpoint"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.build[0]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-009",
+   "text": "Navigation/Surface Authority"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.build[1]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-010",
+   "text": "canonical navigation actions"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.build[2]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-011",
+   "text": "declared surface/route registry (FD-12 §8 — architecture-aware; naive zero-reference gate FORBIDDEN)"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.build[3]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.build[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-012",
+   "text": "object-local contextual depth"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.build[4]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.build[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-013",
+   "text": "responsive IA (conceptual before visual)"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.build[5]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.build[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-014",
+   "text": "room for universal Find/Go-To that SUPPLEMENTS IA, never patches it"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.demolishOrRebuild[0]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.demolishOrRebuild[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-015",
+   "text": "DR4 — 40 mirrored /institution/:institutionId/... routes, per-route test"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.demolishOrRebuild[1]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.demolishOrRebuild[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-016",
+   "text": "module-oriented destinations"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.demolishOrRebuild[2]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.demolishOrRebuild[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-017",
+   "text": "redundant destinations"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.demolishOrRebuild[3]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.demolishOrRebuild[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-018",
+   "text": "27 corrective redirects"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.demolishOrRebuild[4]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.demolishOrRebuild[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-019",
+   "text": "literal route strings scattered across features"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.preserve[0]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-020",
+   "text": "Four shells where product-correct"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.preserve[1]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.preserve[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-021",
+   "text": "session continuity (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host)"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.preserve[2]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.preserve[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-022",
+   "text": "ALL existing deep links must continue to resolve"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.preserve[3]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.preserve[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-023",
+   "text": "redirects as a temporary compatibility layer"
+  },
+  {
+   "inputId": "IN:RC-C3.originalScope.historicalItems[0]",
+   "rcChapter": "RC-C3",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C3.originalScope.historicalItems[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C3-024",
+   "text": "Item 11 (Legacy global runtime overlay cleanup)"
+  },
+  {
+   "inputId": "IN:RC-C3.contradictionsOrGaps[2]",
+   "rcChapter": "RC-C3",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C3.contradictionsOrGaps[2]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C3-025",
+   "text": "GAP 1 — Settings / Personal Controls: the roadmap charters no Settings chapter; prior 'C4 Settings' references were continuity shorthand, now formally reclassified. The broader personal Settings experience is UNCHARTERED."
+  },
+  {
+   "inputId": "IN:RC-C3.contradictionsOrGaps[3]",
+   "rcChapter": "RC-C3",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C3.contradictionsOrGaps[3]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C3-026",
+   "text": "GAP 2 — Long-Form Publishing / Articles: net-new first-class capability, NOT reconstruction debt, NOT a Post extension, NOT part of C4, NO CHAPTER NUMBER ASSIGNED; awaiting deliberate founder dependency placement."
+  },
+  {
+   "inputId": "IN:RC-C4.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C4",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C4.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-001",
+   "text": "One Governed Attention Hub + Actionable Attention — attention is a projection, never a new owner; domain-owned resolvable actions. Explicitly NOT original Option B ('one giant chronological notification feed' is rejected); partially subsumes Option A's separation as semantic views inside one hub; rejects Option C's premise."
+  },
+  {
+   "inputId": "IN:RC-C4.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C4",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C4.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-002",
+   "text": "PRIMARY ATTENTION BADGE = UNRESOLVED ACTIONABLE OBLIGATIONS. Contributing: ACTION_REQUIRED, INVITED, MISSED while unresolved, and mentions conditionally where they represent unresolved attention. Mentions are not blanket-counted."
+  },
+  {
+   "inputId": "IN:RC-C4.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C4",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C4.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-003",
+   "text": "Notification Preference Authority — PRIMARY OWNER: C4. Governing distinction frozen: ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION. Disabling email or push must never erase the underlying governed Attention item."
+  },
+  {
+   "inputId": "IN:RC-C4.keyFrozenOutcomes[3]",
+   "rcChapter": "RC-C4",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C4.keyFrozenOutcomes[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-004",
+   "text": "R4 — FOLLOW != SUBSCRIBE is frozen; C2 records the semantics and C4 OWNS THE VOCABULARY. Subscribe stays physically in InteractionFollow thread/space rows until C4 names its product surface."
+  },
+  {
+   "inputId": "IN:RC-C4.keyFrozenOutcomes[4]",
+   "rcChapter": "RC-C4",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C4.keyFrozenOutcomes[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-005",
+   "text": "NO FIFTH DESTINATION is invented or reserved. Attention may earn primary status only at C4's own founder checkpoint, on product merits — navigation count is not a product requirement. Until C4, attention lives in the header bell."
+  },
+  {
+   "inputId": "IN:RC-C4.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C4",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C4.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-006",
+   "text": "All of DR1 — eight attention surfaces retired, including conversations_screen.dart"
+  },
+  {
+   "inputId": "IN:RC-C4.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C4",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C4.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-007",
+   "text": "Retire the legacy global attention presentation comprehensively — founder instruction: no isolated cosmetic patch. Mechanism traced to a global floating SnackBar pushed through an app-root GlobalKey<ScaffoldMessengerState> (notification_bridge.dart:294-308 and :425-440; global key :21; mounted at aura_app.dart:306-329)"
+  },
+  {
+   "inputId": "IN:RC-C4.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C4",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C4.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-008",
+   "text": "Notification Preference Authority scope"
+  },
+  {
+   "inputId": "IN:RC-C4.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C4",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C4.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-009",
+   "text": "Name the Subscribe product surface / vocabulary (inherited from C2 R4)"
+  },
+  {
+   "inputId": "IN:RC-C4.explicitlyRemainingObligations[4]",
+   "rcChapter": "RC-C4",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C4.explicitlyRemainingObligations[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-010",
+   "text": "26 G5 state-primitive sites assigned to C4"
+  },
+  {
+   "inputId": "IN:RC-C4.explicitlyRemainingObligations[5]",
+   "rcChapter": "RC-C4",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C4.explicitlyRemainingObligations[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-011",
+   "text": "Settings/attention internals and Me-depth placement inherited from C3"
+  },
+  {
+   "inputId": "IN:RC-C4.explicitlyRemainingObligations[6]",
+   "rcChapter": "RC-C4",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C4.explicitlyRemainingObligations[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-012",
+   "text": "Founder checkpoint on attention interaction direction BEFORE the eight surfaces are retired"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.build[0]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-013",
+   "text": "Attention Authority (projection · semantic type · owning domain · destination · state · available actions · priority · aggregation)"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.build[1]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-014",
+   "text": "Semantic views: Conversations · Activity · Invitations · Actions"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.build[2]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-015",
+   "text": "Domain-owned resolvable actions (ATTENTION -> CONTEXT -> ACTION -> RESOLUTION -> CONTINUITY)"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.build[3]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.build[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-016",
+   "text": "Obligation badge (ACTION_REQUIRED + INVITED + MISSED + qualifying mentions; passive unread NEVER contributes; truncation 99+)"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.build[4]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.build[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-017",
+   "text": "Owning-domain clearing semantics"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.build[5]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.build[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-018",
+   "text": "Deterministic reconciliation (no dead CTAs)"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.build[6]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.build[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-019",
+   "text": "Cross-device read state"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.build[7]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.build[7]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-020",
+   "text": "Noise reduction"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.demolishOrRebuild[0]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.demolishOrRebuild[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-021",
+   "text": "DR1 — eight attention surfaces: messages hub · notifications · activity · direct inbox · communications centre · correspondence hub · module attention · conversations_screen.dart (1,033 lines, unreachable) RETIRED here per FD-12"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.preserve[0]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-022",
+   "text": "Read/unread data where valid"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.preserve[1]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.preserve[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-023",
+   "text": "invitation state"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.preserve[2]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.preserve[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-024",
+   "text": "notification delivery capability"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.preserve[3]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.preserve[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-025",
+   "text": "notification preferences"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.preserve[4]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.preserve[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-026",
+   "text": "updates/module_attention + notifications_controller as the authority seed"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.historicalItems[0]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.historicalItems[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-027",
+   "text": "Item 3 (Notification Delivery Authority — client half)"
+  },
+  {
+   "inputId": "IN:RC-C4.originalScope.historicalItems[1]",
+   "rcChapter": "RC-C4",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C4.originalScope.historicalItems[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C4-028",
+   "text": "Item 6 (Timeline)"
+  },
+  {
+   "inputId": "IN:RC-C5.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C5",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C5.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-001",
+   "text": "Canonical Composition System + Context-Governed Experience — COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION. Note the recorded numbering hazard: the founder instruction that froze this called it 'FD-2', but register FD-2 is Attention vocabulary; this decision is authoritative BY NAME."
+  },
+  {
+   "inputId": "IN:RC-C5.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C5",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C5.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-002",
+   "text": "Upload on selection. UPLOADING AN ATTACHMENT NEVER MEANS THE MESSAGE / POST / PUBLICATION HAS BEEN SENT OR PUBLISHED. An uploaded-but-uncommitted attachment belongs to the composition/draft state."
+  },
+  {
+   "inputId": "IN:RC-C5.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C5",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C5.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-003",
+   "text": "Official designation may only be expressed BEFORE publication, as part of the publication commitment/publish flow. No post-publication elevation (Options B and C rejected). Withdrawal remains legitimate and is different."
+  },
+  {
+   "inputId": "IN:RC-C5.keyFrozenOutcomes[3]",
+   "rcChapter": "RC-C5",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C5.keyFrozenOutcomes[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-004",
+   "text": "Content Intake & Resolution Authority — founder-surfaced cross-product obligation, NOT identified by the original discovery audit. Measured: 25 files touching Clipboard, 25 with paste handling, 0 implementing drag-and-drop."
+  },
+  {
+   "inputId": "IN:RC-C5.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C5",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C5.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-005",
+   "text": "Entire chapter — DR3 six composers, eleven upload pipelines, 25-file paste handling, drag/drop, official designation in the publish flow"
+  },
+  {
+   "inputId": "IN:RC-C5.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C5",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C5.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-006",
+   "text": "Official-designation and institutional-approval vocabulary, deliberately not pre-empted by C0"
+  },
+  {
+   "inputId": "IN:RC-C5.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C5",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C5.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-007",
+   "text": "Open checkpoint: orphan-cleanup windows vs draft lifetime"
+  },
+  {
+   "inputId": "IN:RC-C5.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C5",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C5.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-008",
+   "text": "16 G5 state-primitive sites assigned to C5"
+  },
+  {
+   "inputId": "IN:RC-C5.explicitlyRemainingObligations[4]",
+   "rcChapter": "RC-C5",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C5.explicitlyRemainingObligations[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-009",
+   "text": "Drag/drop (0 implementations) is jointly owned C5 + C9"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.build[0]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-010",
+   "text": "Composition Authority: content state · drafts · autosave · mentions · links · formatting · validation · readiness · keyboard · accessibility. COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.build[1]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-011",
+   "text": "Attachment Lifecycle: SELECT/PASTE/DROP -> VALIDATE -> PREVIEW -> UPLOAD -> PROGRESS -> READY -> SEND/PUBLISH; upload on selection; uncommitted attachments belong to the DRAFT; explicit discard -> immediate release; abandonment -> backend cleanup; attachment readiness is part of composition readiness; NO SILENT QUEUED-SEND; no hybrid size/type timing"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.build[2]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-012",
+   "text": "Content Intake & Resolution: rich paste (preserve richness, do not invent richness) · image/file paste · drag-and-drop (currently 0 implementations) · mixed content · governed link previews (consume backend link intelligence; do not fetch client-side) · unsupported input fails visibly and recoverably, never silently"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.build[3]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.build[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-013",
+   "text": "Official designation in the publish flow only (FD-8): no post-publication elevation; consequence legible BEFORE commitment; withdrawal object-local; content change invalidates approval"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.demolishOrRebuild[0]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.demolishOrRebuild[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-014",
+   "text": "DR3 — six composers (hashtags in 1 of 6; upload progress in 1 of 6)"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.demolishOrRebuild[1]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.demolishOrRebuild[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-015",
+   "text": "eleven upload pipelines"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.demolishOrRebuild[2]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.demolishOrRebuild[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-016",
+   "text": "per-composer paste/clipboard handling (25 files)"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.demolishOrRebuild[3]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.demolishOrRebuild[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-017",
+   "text": "voice implied by route"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.preserve[0]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-018",
+   "text": "Backend contracts"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.preserve[1]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.preserve[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-019",
+   "text": "supported content behaviour"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.preserve[2]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.preserve[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-020",
+   "text": "attachment/media capabilities"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.preserve[3]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.preserve[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-021",
+   "text": "DRAFTS AND DRAFT DATA"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.preserve[4]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.preserve[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-022",
+   "text": "proven validation"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.preserve[5]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.preserve[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-023",
+   "text": "accessibility behaviour"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.preserve[6]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.preserve[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-024",
+   "text": "legitimate context differences"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.preserve[7]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.preserve[7]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-025",
+   "text": "working media rendering"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.historicalItems[0]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.historicalItems[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-026",
+   "text": "Item 5 (Compose Link Intelligence/OG)"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.historicalItems[1]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.historicalItems[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-027",
+   "text": "Item 10 (Selection/Clipboard/Rich Paste)"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.historicalItems[2]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.historicalItems[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-028",
+   "text": "Item 13 (External Link/OG)"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.historicalItems[3]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.historicalItems[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-029",
+   "text": "Item 14 (Internal Link Hydration)"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.historicalItems[4]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.historicalItems[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-030",
+   "text": "Item 15 (Rich-Text Composition)"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.historicalItems[5]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.historicalItems[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-031",
+   "text": "Item 16 (Content-Length Expansion)"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.extendedScope[0]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.extendedScope[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-032",
+   "text": "E_OFFICIAL designation representation"
+  },
+  {
+   "inputId": "IN:RC-C5.originalScope.extendedScope[1]",
+   "rcChapter": "RC-C5",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C5.originalScope.extendedScope[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C5-033",
+   "text": "institutional approval workflow language"
+  },
+  {
+   "inputId": "IN:RC-C6.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C6",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C6.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-001",
+   "text": "Shared realtime infrastructure does NOT imply shared product semantics. Frozen conceptual ownership: DM · THREAD · SPACE · INSTITUTION ROOM · MEETING · LIVE, each with its own frozen meaning. LIVE is NOT another Meeting merely because both use realtime media."
+  },
+  {
+   "inputId": "IN:RC-C6.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C6",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C6.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-002",
+   "text": "Converge the PRESENTATION of participant list · host controls · admission/join-requests · consent onto a shared component family. MEETINGS LIFECYCLE IS UNTOUCHED. THE SHARED COMPONENT DOES NOT OWN SEMANTIC MEANING. Evidence: five shared realtime widgets consumed by realtime_room_screen and ZERO times by meeting_live_room_screen (3,890 lines)."
+  },
+  {
+   "inputId": "IN:RC-C6.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C6",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C6.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-003",
+   "text": "C6 holds ZERO G5 sites. Meetings' protected debt is G3 (16) and G4 (14), belonging to controlled C6 review."
+  },
+  {
+   "inputId": "IN:RC-C6.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C6",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C6.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-004",
+   "text": "Entire chapter: shared presentation family, device transfer UI, preferred-device visibility, slice-by-slice Meetings presentation convergence with regression and founder sign-off after each slice"
+  },
+  {
+   "inputId": "IN:RC-C6.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C6",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C6.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-005",
+   "text": "Meetings G3 (16) and G4 (14) protected debt belongs to controlled C6 review"
+  },
+  {
+   "inputId": "IN:RC-C6.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C6",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C6.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-006",
+   "text": "relative_time.dart shim burn-down: C6 is a named owner (thread surfaces)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.build[0]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-007",
+   "text": "Shared presentation family — participant list · host controls · admission/join-requests · consent — rendering context-supplied states and language; the component never owns semantic meaning"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.build[1]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-008",
+   "text": "Modern invite/add flows consuming the People & Participation primitive"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.build[2]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-009",
+   "text": "Device transfer UI (offer/accept/relinquish/failed)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.build[3]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.build[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-010",
+   "text": "Preferred-device behaviour made visible"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.preserveDoNotTouch[0]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.preserveDoNotTouch[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-011",
+   "text": "Realtime transport"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.preserveDoNotTouch[1]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.preserveDoNotTouch[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-012",
+   "text": "media service"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.preserveDoNotTouch[2]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.preserveDoNotTouch[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-013",
+   "text": "event parser"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.preserveDoNotTouch[3]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.preserveDoNotTouch[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-014",
+   "text": "reconnect/orphan recovery (realtime_reconciliation_controller, orphaned-session handling)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.preserveDoNotTouch[4]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.preserveDoNotTouch[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-015",
+   "text": "session continuity across navigation"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.preserveDoNotTouch[5]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.preserveDoNotTouch[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-016",
+   "text": "MEETINGS LIFECYCLE (booking, invitation, attendance, waiting/admission, prep, summary, follow-up)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.demolishOrConverge[0]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.demolishOrConverge[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-017",
+   "text": "Duplicated presentation: Meetings reimplements participant grid, spotlight and remote tiles across 3,890 lines while using 0 of 5 shared realtime widgets"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.historicalItems[0]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.historicalItems[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-018",
+   "text": "Item 1 (Runtime Lifecycle)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.historicalItems[1]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.historicalItems[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-019",
+   "text": "Item 2 (Device Presence)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.historicalItems[2]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.historicalItems[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-020",
+   "text": "Item 7 (Realtime Architecture Correction)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.historicalItems[3]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.historicalItems[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-021",
+   "text": "Item 9 (Lifecycle Phase 2)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.historicalItems[4]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.historicalItems[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-022",
+   "text": "Item 12 (Advanced Device Preference / Transfer)"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.extendedScope[0]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.extendedScope[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-023",
+   "text": "Multi-device authority"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.extendedScope[1]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.extendedScope[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-024",
+   "text": "preferred-first ring + stagger + fallback"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.extendedScope[2]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.extendedScope[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-025",
+   "text": "durable media ownership"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.extendedScope[3]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.extendedScope[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-026",
+   "text": "D2 transfer handshake"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.founderCheckpoints[0]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.founderCheckpoints[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-027",
+   "text": "Participation/invite interaction direction"
+  },
+  {
+   "inputId": "IN:RC-C6.originalScope.founderCheckpoints[1]",
+   "rcChapter": "RC-C6",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C6.originalScope.founderCheckpoints[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C6-028",
+   "text": "Sign-off after EACH Meetings slice"
+  },
+  {
+   "inputId": "IN:RC-C6.contradictionsOrGaps[1]",
+   "rcChapter": "RC-C6",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C6.contradictionsOrGaps[1]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C6-029",
+   "text": "The chapter's actual demolition target — Meetings' 3,890 lines of duplicated presentation using 0 of 5 shared widgets — has no evidence of being touched, and F114 affirmatively records that no Meetings file was modified."
+  },
+  {
+   "inputId": "IN:RC-C7.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C7",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C7.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-001",
+   "text": "THREAD = FOCUSED CONVERSATION CONTINUITY; SPACE = PERSISTENT SHARED CONTEXT / COMMUNITY. Do NOT reduce both to generic containers, merge them, treat a Space as a large group chat, treat a Thread as a message list, or force every Thread to belong to a Space."
+  },
+  {
+   "inputId": "IN:RC-C7.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C7",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C7.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-002",
+   "text": "Correspondence = one canonical product meaning; C7 owns the eventual path/module rename or convergence — the semantic decision is NOT reopened there."
+  },
+  {
+   "inputId": "IN:RC-C7.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C7",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C7.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-003",
+   "text": "C7 = INSTITUTIONAL CONVERSATION & DESK. C7 does NOT recreate Correspondence as a product, does NOT own Invitation, and there is ONE canonical Conversation system."
+  },
+  {
+   "inputId": "IN:RC-C7.keyFrozenOutcomes[3]",
+   "rcChapter": "RC-C7",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C7.keyFrozenOutcomes[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-004",
+   "text": "C7 MUST consume the explicit-context contract (institutionContextId + correspondAsInstitution); no route-derived sender may survive C7 closure; the institutional-inbox quartet's route disposition finalizes with it."
+  },
+  {
+   "inputId": "IN:RC-C7.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C7",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C7.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-005",
+   "text": "Phase 5 legacy retirement NOT AUTHORIZED — gate: additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization. Legacy conversation surfaces NOT yet retired; legacy hub parked at /messages/legacy-hub."
+  },
+  {
+   "inputId": "IN:RC-C7.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C7",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C7.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-006",
+   "text": "CONVERSATION COMPLETION REGISTER (frozen obligation): audio call · video call · screen sharing · media/attachments · intentional Live · message reporting/moderation remain REQUIRED contextual attachments of canonical Conversation. Conversation is NOT final-certified until this register is resolved; C4 progression does not erase it."
+  },
+  {
+   "inputId": "IN:RC-C7.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C7",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C7.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-007",
+   "text": "Correspondence umbrella rename/migration — choose the correct internal name, migrate safely, preserve compatibility and history. Paths may lag; documentation may not."
+  },
+  {
+   "inputId": "IN:RC-C7.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C7",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C7.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-008",
+   "text": "InstitutionCorrespondenceScreen disposition (FD-12 §4)"
+  },
+  {
+   "inputId": "IN:RC-C7.explicitlyRemainingObligations[4]",
+   "rcChapter": "RC-C7",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C7.explicitlyRemainingObligations[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-009",
+   "text": "26 G5 state-primitive sites assigned to C7; debt register rows 4, 10, 11 are C7-owned"
+  },
+  {
+   "inputId": "IN:RC-C7.explicitlyRemainingObligations[5]",
+   "rcChapter": "RC-C7",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C7.explicitlyRemainingObligations[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-010",
+   "text": "Retire resolveActorContext residue and the institutional-inbox quartet route disposition"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.build[0]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-011",
+   "text": "Thread surfaces (focused conversation continuity)"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.build[1]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-012",
+   "text": "Space surfaces (persistent shared context; NO EIGHT-TAB INTERFACE)"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.build[2]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-013",
+   "text": "membership/join/invite flows (never expose role enums or permission machinery)"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.build[3]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.build[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-014",
+   "text": "object-local management"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.build[4]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.build[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-015",
+   "text": "Correspondence as a distinct governed communication form — sharing infrastructure but not semantics"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.demolishOrConverge[0]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.demolishOrConverge[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-016",
+   "text": "Three thread_screen implementations (correspondence/, public/, direct_threads/)"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.demolishOrConverge[1]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.demolishOrConverge[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-017",
+   "text": "duplicated conversation mechanics"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.demolishOrConverge[2]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.demolishOrConverge[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-018",
+   "text": "four institution messaging entry points"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.demolishOrConverge[3]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.demolishOrConverge[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-019",
+   "text": "disposition InstitutionCorrespondenceScreen here (FD-12 §4)"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.preserve[0]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-020",
+   "text": "Communication histories"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.preserve[1]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.preserve[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-021",
+   "text": "membership/relationship data"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.preserve[2]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.preserve[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-022",
+   "text": "Thread/Space content"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.preserve[3]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.preserve[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-023",
+   "text": "deep links"
+  },
+  {
+   "inputId": "IN:RC-C7.originalScope.preserve[4]",
+   "rcChapter": "RC-C7",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C7.originalScope.preserve[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C7-024",
+   "text": "Meetings boundary"
+  },
+  {
+   "inputId": "IN:RC-C7.contradictionsOrGaps[2]",
+   "rcChapter": "RC-C7",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C7.contradictionsOrGaps[2]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C7-025",
+   "text": "The Correspondence architectural convergence verdict — the chapter's named founder checkpoint — has no recorded outcome."
+  },
+  {
+   "inputId": "IN:RC-C8.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C8",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C8.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-001",
+   "text": "INSTITUTION ROOM = institution-owned persistent/drop-in communication room with GOVERNED PARTICIPATION — a distinct realtime product semantic that shared infrastructure may not erase."
+  },
+  {
+   "inputId": "IN:RC-C8.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C8",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C8.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-002",
+   "text": "Live is explicitly NOT an Institution Room — 'Option C rejected' — so C8 and C10 remain separate constructions."
+  },
+  {
+   "inputId": "IN:RC-C8.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C8",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C8.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-003",
+   "text": "Entire chapter, including DR2 demolition of institution_live_rooms_screen"
+  },
+  {
+   "inputId": "IN:RC-C8.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C8",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C8.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-004",
+   "text": "Live-rooms internals inherited from C3"
+  },
+  {
+   "inputId": "IN:RC-C8.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C8",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C8.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-005",
+   "text": "3 G5 state-primitive sites assigned to C8"
+  },
+  {
+   "inputId": "IN:RC-C8.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C8",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C8.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-006",
+   "text": "Large-institution invariant test: 10,000 members -> zero recipients absent invitation"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.build[0]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-007",
+   "text": "Room ownership"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.build[1]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-008",
+   "text": "invitations"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.build[2]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-009",
+   "text": "participant states"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.build[3]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.build[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-010",
+   "text": "ring policy (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS)"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.build[4]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.build[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-011",
+   "text": "lifecycle"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.build[5]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.build[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-012",
+   "text": "contextual realtime"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.build[6]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.build[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-013",
+   "text": "attention"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.build[7]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.build[7]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-014",
+   "text": "modern participant selection"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.demolishAndRebuild[0]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.demolishAndRebuild[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-015",
+   "text": "DR2 — institution_live_rooms_screen (1,078 lines): imports neither realtime nor meetings, consumes untyped Map<String,dynamic>, and lists realtime sessions rather than InstitutionRoom. DO NOT RETROFIT."
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.preserve[0]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-016",
+   "text": "'See what is live now' for an institution; card layout only"
+  },
+  {
+   "inputId": "IN:RC-C8.originalScope.extendedScope[0]",
+   "rcChapter": "RC-C8",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C8.originalScope.extendedScope[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C8-017",
+   "text": "Institution Room (backend D5)"
+  },
+  {
+   "inputId": "IN:RC-C9.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C9",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C9.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-001",
+   "text": "C9/C10 overlap rule (a founder correction applied at roadmap approval): C10 CONSTRUCTION ENTRY requires C0-C8 authorities stable; C10 CROSS-PLATFORM COMPLETION/CERTIFICATION requires the relevant C9 platform contracts proven. C9 may overlap C10 construction."
+  },
+  {
+   "inputId": "IN:RC-C9.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C9",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C9.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-002",
+   "text": "SupportScreen — ownership undetermined -> product disposition checkpoint. EXPLICITLY NOT ASSIGNED TO C9."
+  },
+  {
+   "inputId": "IN:RC-C9.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C9",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C9.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-003",
+   "text": "Real-Boundary certification lands substantially at C9 (and at C10 for media scale). A lower layer passing never implies a higher one."
+  },
+  {
+   "inputId": "IN:RC-C9.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C9",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C9.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-004",
+   "text": "Entire chapter: WNS native Windows notifications, desktop lifecycle, drag/drop, clipboard, file handling, keyboard, windowing, background/foreground, active realtime continuity, deep links, iOS/Android native notification presentation"
+  },
+  {
+   "inputId": "IN:RC-C9.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C9",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C9.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-005",
+   "text": "Drag/drop is jointly owned C5 + C9"
+  },
+  {
+   "inputId": "IN:RC-C9.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C9",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C9.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-006",
+   "text": "3 G5 state-primitive sites assigned to C9"
+  },
+  {
+   "inputId": "IN:RC-C9.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C9",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C9.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-007",
+   "text": "C4 certification is only partial for Real-Boundary because native delivery lands in C9"
+  },
+  {
+   "inputId": "IN:RC-C9.explicitlyRemainingObligations[4]",
+   "rcChapter": "RC-C9",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C9.explicitlyRemainingObligations[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-008",
+   "text": "C6 certification is only partial for Real-Boundary because device testing lands in C9"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[0]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-009",
+   "text": "Native Windows notifications (WNS)"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[1]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-010",
+   "text": "desktop lifecycle"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[2]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-011",
+   "text": "drag/drop"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[3]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-012",
+   "text": "clipboard"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[4]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-013",
+   "text": "file handling"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[5]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-014",
+   "text": "keyboard"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[6]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-015",
+   "text": "hover/context affordances"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[7]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[7]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-016",
+   "text": "window sizing/responsiveness"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[8]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[8]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-017",
+   "text": "background/foreground"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[9]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[9]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-018",
+   "text": "active realtime continuity"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[10]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[10]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-019",
+   "text": "deep links"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[11]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[11]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-020",
+   "text": "installation/launch context"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.build[12]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.build[12]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-021",
+   "text": "iOS/Android native notification presentation"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.preserve[0]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.preserve[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-022",
+   "text": "Existing device registration"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.preserve[1]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.preserve[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-023",
+   "text": "notification preferences"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.preserve[2]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.preserve[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-024",
+   "text": "session continuity"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.historicalItems[0]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.historicalItems[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-025",
+   "text": "Item 7 (device/native pass)"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.historicalItems[1]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.historicalItems[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-026",
+   "text": "Item 8 (iOS Firebase/APNs)"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.extendedScope[0]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.extendedScope[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-027",
+   "text": "Windows/MSIX native push (WNS)"
+  },
+  {
+   "inputId": "IN:RC-C9.originalScope.extendedScope[1]",
+   "rcChapter": "RC-C9",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C9.originalScope.extendedScope[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C9-028",
+   "text": "desktop obligations"
+  },
+  {
+   "inputId": "IN:RC-C9.contradictionsOrGaps[0]",
+   "rcChapter": "RC-C9",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C9.contradictionsOrGaps[0]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C9-029",
+   "text": "SupportScreen was deliberately NOT assigned to C9 and remains an ownership-undetermined product disposition checkpoint."
+  },
+  {
+   "inputId": "IN:RC-C9.contradictionsOrGaps[2]",
+   "rcChapter": "RC-C9",
+   "sourceField": "contradictionsOrGaps",
+   "sourcePath": "RC-C9.contradictionsOrGaps[2]",
+   "disposition": "PROMOTED_NEW",
+   "coId": "CO-RC-C9-030",
+   "text": "C9's own dependencies (C4 and C5) are respectively not-started and hard-gated closed, so no part of C9 can currently enter under the declared sequencing."
+  },
+  {
+   "inputId": "IN:RC-C10.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C10",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C10.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-001",
+   "text": "LIVE IS a governed public/stage participation STATE of an appropriate owning Thread or Space. LIVE is NOT a standalone generic broadcast product, another Meeting, an expanded Institution Room, or a fourth disconnected realtime surface. Going Live must never orphan the conversation from its source context."
+  },
+  {
+   "inputId": "IN:RC-C10.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C10",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C10.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-002",
+   "text": "Discovery correction preserved: PUBLIC_STAGE, participant roles, hand-raise and per-track publish state already exist; PUBLIC_STAGE is declared but NOT operationally consumed. 'The vocabulary exists; the mechanism does not.' The earlier claim that the backend had no speaker/audience model is WITHDRAWN."
+  },
+  {
+   "inputId": "IN:RC-C10.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C10",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C10.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-003",
+   "text": "FOUNDER-FROZEN 2026-08-17: LIVE IS NOT SOMETHING A USER CREATES. LIVE IS SOMETHING AN EXISTING REALTIME HUMAN INTERACTION DELIBERATELY BECOMES. ORIGINATION IS CONTEXTUAL. DISCOVERY IS GLOBAL. NO ACTIVE REALTIME INTERACTION = NO GO LIVE ORIGINATION. Supersedes the 2026-08-16/17 conversation-menu Go Live implementation and the legacy standalone Live lobby. End Live != End Call; viewers are OBSERVER-role session participants, never Conversation parties."
+  },
+  {
+   "inputId": "IN:RC-C10.keyFrozenOutcomes[3]",
+   "rcChapter": "RC-C10",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C10.keyFrozenOutcomes[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-004",
+   "text": "Stored as RealtimeSession.liveState: NORMAL -> LIVE_PREPARING -> LIVE -> ENDING -> NORMAL. liveState is lifecycle truth; accessMode is participation policy (kept in sync — PUBLIC_STAGE while LIVE — never collapsed into one concept)."
+  },
+  {
+   "inputId": "IN:RC-C10.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C10",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C10.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-005",
+   "text": "Live engagement F089-F096 — watch-oriented viewer experience · Live chat · reactions · raise hand · stage promotion/demotion · viewer presence atmosphere · Live moderation · recover FD-5 §§8-10 rather than reinvent. 'Authority exists ... Nothing implemented.'"
+  },
+  {
+   "inputId": "IN:RC-C10.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C10",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C10.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-006",
+   "text": "Live public acquisition F097-F107 — public home surfaces real Live, bounded preview, auth wall, one canonical Live truth for both doors. 'Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059-F070).'"
+  },
+  {
+   "inputId": "IN:RC-C10.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C10",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C10.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-007",
+   "text": "Live scale F108-F111 — mesh bounded (ceiling NEVER MEASURED), mesh != long-term architecture (no enforcement), SFU assessment not written, assessment scope not written"
+  },
+  {
+   "inputId": "IN:RC-C10.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C10",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C10.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-008",
+   "text": "Open founder checkpoints: Live moderation policy · audience-scale topology/provider · Thread vs Space Live differences if material"
+  },
+  {
+   "inputId": "IN:RC-C10.explicitlyRemainingObligations[4]",
+   "rcChapter": "RC-C10",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C10.explicitlyRemainingObligations[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-009",
+   "text": "Whether Live ever needs a plural/contextual form (C0 language obligation handed to C10)"
+  },
+  {
+   "inputId": "IN:RC-C10.explicitlyRemainingObligations[5]",
+   "rcChapter": "RC-C10",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C10.explicitlyRemainingObligations[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-010",
+   "text": "Replay-as-product, go-live authority formalization, and Live attention/interaction all recorded as backend-missing"
+  },
+  {
+   "inputId": "IN:RC-C10.explicitlyRemainingObligations[6]",
+   "rcChapter": "RC-C10",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C10.explicitlyRemainingObligations[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-011",
+   "text": "Cross-platform completion gate: required C9 platform contracts proven"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.backendConstructionRequired[0]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.backendConstructionRequired[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-012",
+   "text": "{\"concern\":\"Role/stage vocabulary (PUBLIC_STAGE, HOST/CO_HOST/MODERATOR/SPEAKER/PARTICIPANT/LISTENER/OBSERVER, hand-raise, per-track publish)\",\"state\":\"already modelled\"}"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.backendConstructionRequired[1]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.backendConstructionRequired[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-013",
+   "text": "{\"concern\":\"PUBLIC_STAGE consumption\",\"state\":\"declared but unconsumed\"}"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.backendConstructionRequired[2]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.backendConstructionRequired[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-014",
+   "text": "{\"concern\":\"Go-live authority\",\"state\":\"missing\"}"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.backendConstructionRequired[3]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.backendConstructionRequired[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-015",
+   "text": "{\"concern\":\"Public observation (distinct from active media participation)\",\"state\":\"missing\"}"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.backendConstructionRequired[4]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.backendConstructionRequired[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-016",
+   "text": "{\"concern\":\"Audience scale (SFU/broadcast topology)\",\"state\":\"missing\"}"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.backendConstructionRequired[5]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.backendConstructionRequired[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-017",
+   "text": "{\"concern\":\"Live attention/interaction\",\"state\":\"missing\"}"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.backendConstructionRequired[6]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.backendConstructionRequired[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-018",
+   "text": "{\"concern\":\"Replay-as-product\",\"state\":\"missing\"}"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.openCheckpoints[0]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.openCheckpoints[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-019",
+   "text": "Live moderation policy"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.openCheckpoints[1]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.openCheckpoints[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-020",
+   "text": "audience-scale topology/provider (provider independence preserved; not frozen)"
+  },
+  {
+   "inputId": "IN:RC-C10.originalScope.openCheckpoints[2]",
+   "rcChapter": "RC-C10",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C10.originalScope.openCheckpoints[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C10-021",
+   "text": "Thread vs Space Live differences if material"
+  },
+  {
+   "inputId": "IN:RC-C11.keyFrozenOutcomes[0]",
+   "rcChapter": "RC-C11",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C11.keyFrozenOutcomes[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-001",
+   "text": "Item 17 is a certification/release gate, not a construction chapter, and must not be redefined."
+  },
+  {
+   "inputId": "IN:RC-C11.keyFrozenOutcomes[1]",
+   "rcChapter": "RC-C11",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C11.keyFrozenOutcomes[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-002",
+   "text": "PD-1 Platform Administration and PD-2 Authentication & Account Entry are product disposition checkpoints that must be resolved BEFORE C11."
+  },
+  {
+   "inputId": "IN:RC-C11.keyFrozenOutcomes[2]",
+   "rcChapter": "RC-C11",
+   "sourceField": "keyFrozenOutcomes",
+   "sourcePath": "RC-C11.keyFrozenOutcomes[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-003",
+   "text": "A lower certification layer passing never implies a higher one."
+  },
+  {
+   "inputId": "IN:RC-C11.explicitlyRemainingObligations[0]",
+   "rcChapter": "RC-C11",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C11.explicitlyRemainingObligations[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-004",
+   "text": "All nine entry conditions"
+  },
+  {
+   "inputId": "IN:RC-C11.explicitlyRemainingObligations[1]",
+   "rcChapter": "RC-C11",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C11.explicitlyRemainingObligations[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-005",
+   "text": "PD-1 Platform Administration disposition (11 files / 34 G5 sites) — no owning chapter in the approved roadmap"
+  },
+  {
+   "inputId": "IN:RC-C11.explicitlyRemainingObligations[2]",
+   "rcChapter": "RC-C11",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C11.explicitlyRemainingObligations[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-006",
+   "text": "PD-2 Authentication & Account Entry disposition (2 files / 3 sites) — STRUCTURAL DISPOSITION STILL OPEN"
+  },
+  {
+   "inputId": "IN:RC-C11.explicitlyRemainingObligations[3]",
+   "rcChapter": "RC-C11",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C11.explicitlyRemainingObligations[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-007",
+   "text": "SupportScreen ownership disposition"
+  },
+  {
+   "inputId": "IN:RC-C11.explicitlyRemainingObligations[4]",
+   "rcChapter": "RC-C11",
+   "sourceField": "explicitlyRemainingObligations",
+   "sourcePath": "RC-C11.explicitlyRemainingObligations[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-008",
+   "text": "Consolidated Founder Product Acceptance"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[0]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[0]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-009",
+   "text": "C0-C9 complete to their FD-13 definition of done (authority + migration + gate + regression + certification)"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[1]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[1]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-010",
+   "text": "C10 complete OR explicitly excluded from this release candidate by founder decision"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[2]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[2]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-011",
+   "text": "Backend frozen baseline intact; approved Live additions certified where included"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[3]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[3]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-012",
+   "text": "Cross-platform behaviour verified on mobile, web and MSIX"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[4]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[4]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-013",
+   "text": "Real-device / native testing complete"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[5]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[5]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-014",
+   "text": "Integrated end-to-end journeys pass"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[6]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[6]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-015",
+   "text": "Real-Boundary certification complete"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[7]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[7]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-016",
+   "text": "Founder Product Acceptance readiness"
+  },
+  {
+   "inputId": "IN:RC-C11.originalScope.entryConditionsAllMustBeTrue[8]",
+   "rcChapter": "RC-C11",
+   "sourceField": "originalScope",
+   "sourcePath": "RC-C11.originalScope.entryConditionsAllMustBeTrue[8]",
+   "disposition": "PROMOTED_PRESERVED",
+   "coId": "CO-RC-C11-017",
+   "text": "A Release Client candidate exists"
+  }
+ ],
+ "original299Disposition": [
+  {
+   "id": "CO-RC-C0-001",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-002",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-003",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-004",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-005",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-006",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-007",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-008",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-009",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-010",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-011",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-012",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-013",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-014",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-015",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-016",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-017",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-018",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-019",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-020",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-021",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-022",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C0-023",
+   "rcChapter": "RC-C0",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-001",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-002",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-003",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-004",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-005",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-006",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-007",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-008",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-009",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-010",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-011",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-012",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-013",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-014",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-015",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-016",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-017",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-018",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-019",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C1-020",
+   "rcChapter": "RC-C1",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-001",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-002",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-003",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-004",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-005",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-006",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-007",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-008",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-009",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-010",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-011",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-012",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-013",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-014",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-015",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-016",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-017",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-018",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-019",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-020",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-021",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-022",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-023",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-024",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-025",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-026",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-027",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-028",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-029",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-030",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-031",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-032",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-033",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-034",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-035",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C2-036",
+   "rcChapter": "RC-C2",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-001",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-002",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-003",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-004",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-005",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-006",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-007",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-008",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-009",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-010",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-011",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-012",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-013",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-014",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-015",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-016",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-017",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-018",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-019",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-020",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-021",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-022",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-023",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C3-024",
+   "rcChapter": "RC-C3",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-001",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-002",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-003",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-004",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-005",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-006",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-007",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-008",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-009",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-010",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-011",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-012",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-013",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-014",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-015",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-016",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-017",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-018",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-019",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-020",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-021",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-022",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-023",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-024",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-025",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-026",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-027",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C4-028",
+   "rcChapter": "RC-C4",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-001",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-002",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-003",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-004",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-005",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-006",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-007",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-008",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-009",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-010",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-011",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-012",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-013",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-014",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-015",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-016",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-017",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-018",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-019",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-020",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-021",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-022",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-023",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-024",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-025",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-026",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-027",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-028",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-029",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-030",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-031",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-032",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C5-033",
+   "rcChapter": "RC-C5",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-001",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-002",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-003",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-004",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-005",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-006",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-007",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-008",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-009",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-010",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-011",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-012",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-013",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-014",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-015",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-016",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-017",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-018",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-019",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-020",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-021",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-022",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-023",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-024",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-025",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-026",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-027",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C6-028",
+   "rcChapter": "RC-C6",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-001",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-002",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-003",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-004",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-005",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-006",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-007",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-008",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-009",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-010",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-011",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-012",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-013",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-014",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-015",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-016",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-017",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-018",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-019",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-020",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-021",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-022",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-023",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C7-024",
+   "rcChapter": "RC-C7",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-001",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-002",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-003",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-004",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-005",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-006",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-007",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-008",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-009",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-010",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-011",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-012",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-013",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-014",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-015",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-016",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C8-017",
+   "rcChapter": "RC-C8",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-001",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-002",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-003",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-004",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-005",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-006",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-007",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-008",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-009",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-010",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-011",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-012",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-013",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-014",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-015",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-016",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-017",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-018",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-019",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-020",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-021",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-022",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-023",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-024",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-025",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-026",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-027",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C9-028",
+   "rcChapter": "RC-C9",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-001",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-002",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-003",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-004",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-005",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-006",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-007",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-008",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-009",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-010",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-011",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-012",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-013",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-014",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-015",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-016",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-017",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-018",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-019",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-020",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C10-021",
+   "rcChapter": "RC-C10",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-001",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-002",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-003",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-004",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-005",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-006",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-007",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-008",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-009",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-010",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-011",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-012",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-013",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-014",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-015",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-016",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  },
+  {
+   "id": "CO-RC-C11-017",
+   "rcChapter": "RC-C11",
+   "disposition": "PRESERVED",
+   "note": "Identity matched by (chapter, normalised text). Id stable; never renumbered."
+  }
+ ]
+}
