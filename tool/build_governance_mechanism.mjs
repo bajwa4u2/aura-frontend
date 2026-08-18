@@ -17,6 +17,7 @@ const REPOS = [
   'C:/Users/muham/flutter_projects/aura/aura_final',
   'C:/Users/muham/flutter_projects/aura/aura-backend',
 ]
+const NL = String.fromCharCode(10)
 const rd = (p) => JSON.parse(readFileSync(resolve(RUN, p), 'utf8'))
 
 const chapters = rd('05-execution/index-chapters.json').chapters
@@ -49,6 +50,57 @@ const conflictRows = PRESERVED_CONFLICTS.map((id) => {
   const f = findings[id]
   return `| **${id}** | ${f.title} | \`${f.currentState}\` | PRESERVE — do not adjudicate for cleaner counts |`
 }).join('\n')
+
+const dispositions = rd('05-execution/index-chapters.json').productDispositions || []
+const dispositionSection = dispositions.length === 0 ? '' : `
+---
+
+## PRODUCT DISPOSITION CHECKPOINTS
+
+Surfaces the approved roadmap never named an owner for. Each is resolved by founder ruling, and a
+resolved disposition is **not** the same thing as a closed obligation — the originating records are
+retained verbatim and superseded only as to current status.
+
+${dispositions.map((d) => {
+  const lines = []
+  lines.push(`### ${d.id} — ${d.name}`)
+  lines.push('')
+  lines.push(`**Status:** \`${d.status}\` · **Ruled by:** ${d.ruledBy}`)
+  lines.push('')
+  lines.push(`**Disposition:** ${d.disposition}`)
+  if (d.productStanding) {
+    lines.push('')
+    lines.push('**Product standing — the ruling is about RECONSTRUCTION SCOPE, not the product:**')
+    lines.push('')
+    lines.push('| | |')
+    lines.push('|---|---|')
+    lines.push(`| Legitimate shipped capability | ${d.productStanding.isLegitimateShippedCapability ? 'YES' : 'no'} |`)
+    lines.push(`| Deprecated | ${d.productStanding.deprecated ? 'yes' : 'NO'} |`)
+    lines.push(`| Demolished | ${d.productStanding.demolished ? 'yes' : 'NO'} |`)
+    lines.push(`| Architecturally invalid | ${d.productStanding.architecturallyInvalid ? 'yes' : 'NO'} |`)
+    lines.push(`| Removed from Aura | ${d.productStanding.removedFromAura ? 'yes' : 'NO'} |`)
+  }
+  if (d.debtTreatment) {
+    lines.push('')
+    lines.push(`**Debt:** ${d.debtTreatment.files} files / ${d.debtTreatment.sites} sites, classified \`${d.debtTreatment.classification}\`. Counted as ordinary executable reconstruction debt: **${d.debtTreatment.countsAsOrdinaryExecutableDebt ? 'yes' : 'NO'}**. Ownerless-by-reconstruction is **${d.debtTreatment.ownerlessByReconstruction}**.`)
+    lines.push('')
+    lines.push(`> ${d.debtTreatment.stillMeasured}`)
+  }
+  if (d.doesNotExempt) {
+    lines.push('')
+    lines.push(`**Does not exempt:** ${d.doesNotExempt.statement}`)
+  }
+  if (d.readmission) {
+    lines.push('')
+    lines.push(`**Readmission:** ${d.readmission}`)
+  }
+  if (d.supersedes) {
+    lines.push('')
+    lines.push(`**Supersedes:** ${d.supersedes.record} — ${d.supersedes.treatment}`)
+  }
+  return lines.join(NL)
+}).join(NL + NL)}
+`
 
 const register = `# AURA RECONSTRUCTION REGISTER — NON-SHRINKING
 
@@ -130,6 +182,7 @@ Reporting one dimension as "F139 status" is a governance violation.
 |---|---|---:|---:|
 ${chapters.map((c) => `| ${c.id} | ${c.name} | ${c.findings.count} | ${c.obligations.count} |`).join('\n')}
 
+${dispositionSection}
 ---
 
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER

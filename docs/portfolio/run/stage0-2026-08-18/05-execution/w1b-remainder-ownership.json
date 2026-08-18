@@ -105,8 +105,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G2",
@@ -115,8 +118,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G2",
@@ -126,7 +132,9 @@
    "owner": "CH-04",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G2",
@@ -136,7 +144,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G2",
@@ -146,7 +156,9 @@
    "owner": "CH-03",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -156,7 +168,9 @@
    "owner": "CH-05",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -165,8 +179,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -175,8 +192,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -185,8 +205,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -196,7 +219,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -206,7 +231,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -216,7 +243,9 @@
    "owner": "CH-06",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -226,7 +255,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -236,7 +267,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -246,7 +279,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -256,7 +291,9 @@
    "owner": "CH-04",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -266,7 +303,9 @@
    "owner": "CH-03",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -276,7 +315,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -286,7 +327,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -296,7 +339,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -306,7 +351,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -316,7 +363,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -326,7 +375,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -336,7 +387,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -346,7 +399,9 @@
    "owner": "CH-03",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -356,7 +411,9 @@
    "owner": "CH-03",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -366,7 +423,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -376,7 +436,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -386,7 +449,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -396,7 +462,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -406,7 +475,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -416,7 +488,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -426,7 +501,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -436,7 +514,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -446,7 +527,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -456,7 +540,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -466,7 +553,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G3",
@@ -476,7 +566,9 @@
    "owner": "CH-06",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -486,7 +578,9 @@
    "owner": "CH-14",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G3",
@@ -496,7 +590,9 @@
    "owner": "CH-04",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -505,8 +601,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -516,7 +615,9 @@
    "owner": "CH-04",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -526,7 +627,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -536,7 +639,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -546,7 +651,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -556,7 +663,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -566,7 +675,9 @@
    "owner": "CH-03",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -576,7 +687,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -586,7 +700,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -596,7 +713,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -606,7 +726,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -616,7 +739,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -626,7 +752,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -636,7 +765,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -646,7 +778,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -656,7 +791,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -666,7 +804,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G4",
@@ -676,7 +817,9 @@
    "owner": "CH-16",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -686,7 +829,9 @@
    "owner": "CH-17",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G4",
@@ -696,7 +841,9 @@
    "owner": "CH-10",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G7",
@@ -706,7 +853,9 @@
    "owner": "CH-02",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G7",
@@ -715,8 +864,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G7",
@@ -725,8 +877,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G7",
@@ -735,8 +890,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G7",
@@ -745,8 +903,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G7",
@@ -755,8 +916,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G7",
@@ -766,7 +930,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G7",
@@ -776,7 +942,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G7",
@@ -786,7 +954,9 @@
    "owner": "CH-06",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G7",
@@ -796,7 +966,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G7",
@@ -806,7 +978,10 @@
    "owner": "PB-01",
    "ownerIsExecutableChapter": false,
    "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "PROTECTED_SURFACE_MODIFICATION_PROHIBITED (CO-RC-C0-008)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G7",
@@ -816,7 +991,9 @@
    "owner": "CH-05",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G7",
@@ -826,7 +1003,9 @@
    "owner": "CH-04",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G7",
@@ -836,7 +1015,9 @@
    "owner": "CH-14",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020).",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -846,7 +1027,9 @@
    "owner": "CH-05",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -855,8 +1038,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -865,8 +1051,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -875,8 +1064,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -885,8 +1077,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -895,8 +1090,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -905,8 +1103,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -915,8 +1116,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -925,8 +1129,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -935,8 +1142,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -945,8 +1155,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -955,8 +1168,11 @@
    "area": "admin",
    "owner": "PD-1",
    "ownerIsExecutableChapter": false,
-   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "ownerNote": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE — A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "retirementCondition": "NO RETIREMENT CONDITION WHILE OUT OF SCOPE. Lifted only by a future founder-authorized admission into reconstruction. The absence of a condition is the disposition, not an omission.",
+   "debtClass": "FROZEN_BY_RULE",
+   "frozenReason": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE (founder ruling 2026-08-18)",
+   "countsAsExecutableDebt": false
   },
   {
    "rule": "G5",
@@ -966,7 +1182,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -976,7 +1194,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -986,7 +1206,9 @@
    "owner": "CH-02",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -996,7 +1218,9 @@
    "owner": "CH-02",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1006,7 +1230,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1016,7 +1242,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1026,7 +1254,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1036,7 +1266,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1046,7 +1278,9 @@
    "owner": "CH-06",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1056,7 +1290,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1066,7 +1302,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1076,7 +1314,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1086,7 +1326,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1096,7 +1338,9 @@
    "owner": "CH-07",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1106,7 +1350,9 @@
    "owner": "CH-06",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1116,7 +1362,9 @@
    "owner": "CH-06",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1126,7 +1374,9 @@
    "owner": "CH-06",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1136,7 +1386,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1146,7 +1398,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1156,7 +1410,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1166,7 +1422,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1176,7 +1434,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1186,7 +1446,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1196,7 +1458,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1206,7 +1470,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1216,7 +1482,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1226,7 +1494,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1236,7 +1506,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1246,7 +1518,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1256,7 +1530,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1266,7 +1542,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1276,7 +1554,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1286,7 +1566,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1296,7 +1578,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1306,7 +1590,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1316,7 +1602,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1326,7 +1614,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1336,7 +1626,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1346,7 +1638,9 @@
    "owner": "CH-08",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1356,7 +1650,9 @@
    "owner": "CH-03",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1366,7 +1662,9 @@
    "owner": "CH-06",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1376,7 +1674,9 @@
    "owner": "CH-05",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1386,7 +1686,9 @@
    "owner": "CH-03",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1396,7 +1698,9 @@
    "owner": "CH-10",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1406,7 +1710,9 @@
    "owner": "CH-10",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1416,7 +1722,9 @@
    "owner": "CH-10",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1426,7 +1734,9 @@
    "owner": "CH-10",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1436,7 +1746,9 @@
    "owner": "CH-10",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1446,7 +1758,9 @@
    "owner": "CH-10",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1456,7 +1770,9 @@
    "owner": "CH-14",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1466,7 +1782,9 @@
    "owner": "CH-14",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1476,7 +1794,9 @@
    "owner": "CH-05",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   },
   {
    "rule": "G5",
@@ -1486,7 +1806,35 @@
    "owner": "CH-12",
    "ownerIsExecutableChapter": true,
    "ownerNote": null,
-   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly.",
+   "debtClass": "EXECUTABLE",
+   "countsAsExecutableDebt": true
   }
- ]
+ ],
+ "debtSeparation": {
+  "rule": "Frozen debt must be explicitly distinguishable from executable debt and must never be reported as ordinary outstanding reconstruction work.",
+  "executable": {
+   "files": 95,
+   "sites": 187
+  },
+  "frozenByRule": {
+   "files": 44,
+   "sites": 83,
+   "reasons": {
+    "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE": {
+     "owner": "PD-1",
+     "files": 11,
+     "sites": 52,
+     "basis": "Founder ruling 2026-08-18"
+    },
+    "PROTECTED_SURFACE_MODIFICATION_PROHIBITED": {
+     "owner": "PB-01",
+     "files": 22,
+     "sites": 31,
+     "basis": "CO-RC-C0-008"
+    }
+   },
+   "semanticallyDistinct": "Semantically distinct from PB protection. PB-01 Meetings is frozen because modification is PROHIBITED on a certified protected surface (CO-RC-C0-008). PD-1 is frozen because the surface is OUT OF SCOPE for this reconstruction. Both are FROZEN_BY_RULE; the rules differ and must not be conflated."
+  }
+ }
 }

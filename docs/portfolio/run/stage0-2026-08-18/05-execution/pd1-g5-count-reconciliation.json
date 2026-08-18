@@ -1,0 +1,123 @@
+{
+ "type": "PD1_G5_COUNT_RECONCILIATION",
+ "ruling": "FOUNDER RULING 3 (2026-08-18) — reconcile mechanically; escalate only if the underlying sets encode conflicting product scope or governance intent.",
+ "date": "2026-08-18",
+ "method": "Per-file comparison of the two canonical site populations. Totals were not compared until the sets were shown to match.",
+ "sources": {
+  "A": {
+   "artifact": "docs/frontend-discovery/C1_G5_DISPOSITION_MATRIX.md",
+   "section": "PD-1 — PLATFORM ADMINISTRATION",
+   "headerClaim": {
+    "files": 11,
+    "sites": 34
+   },
+   "enumeratedRows": 11,
+   "enumeratedSum": 35
+  },
+  "B": {
+   "artifact": "test/product/c0_drift_baseline.txt",
+   "measured": "2026-08-15, machine-measured, ratchet-enforced",
+   "rows": 11,
+   "sum": 35
+  }
+ },
+ "setComparison": {
+  "filesInBoth": 11,
+  "onlyInMatrix": [],
+  "onlyInBaseline": [],
+  "perFileDisagreements": [],
+  "setsIdentical": true
+ },
+ "perFile": [
+  {
+   "file": "admin_audit_logs_screen.dart",
+   "matrix": 4,
+   "baseline": 4,
+   "agrees": true
+  },
+  {
+   "file": "admin_feature_flags_screen.dart",
+   "matrix": 3,
+   "baseline": 3,
+   "agrees": true
+  },
+  {
+   "file": "admin_grants_screen.dart",
+   "matrix": 3,
+   "baseline": 3,
+   "agrees": true
+  },
+  {
+   "file": "admin_institution_domains_screen.dart",
+   "matrix": 3,
+   "baseline": 3,
+   "agrees": true
+  },
+  {
+   "file": "admin_institution_members_screen.dart",
+   "matrix": 3,
+   "baseline": 3,
+   "agrees": true
+  },
+  {
+   "file": "admin_institutions_screen.dart",
+   "matrix": 6,
+   "baseline": 6,
+   "agrees": true
+  },
+  {
+   "file": "admin_moderation_screen.dart",
+   "matrix": 2,
+   "baseline": 2,
+   "agrees": true
+  },
+  {
+   "file": "admin_policies_screen.dart",
+   "matrix": 2,
+   "baseline": 2,
+   "agrees": true
+  },
+  {
+   "file": "admin_review_queue_screen.dart",
+   "matrix": 3,
+   "baseline": 3,
+   "agrees": true
+  },
+  {
+   "file": "admin_settings_screen.dart",
+   "matrix": 2,
+   "baseline": 2,
+   "agrees": true
+  },
+  {
+   "file": "admin_users_screen.dart",
+   "matrix": 4,
+   "baseline": 4,
+   "agrees": true
+  }
+ ],
+ "finding": "The two site populations are IDENTICAL: the same 11 files, and every per-file count agrees. Source A's own enumerated rows sum to 35, but Source A's summary line states 34. The 34 is an arithmetic error in a summary line, not a different set of sites.",
+ "cause": "SUMMATION_ERROR_IN_THE_SUMMARY_LINE",
+ "escalateToFounder": false,
+ "operativeCount": 35,
+ "disposition": {
+  "historicalFiguresPreserved": [
+   {
+    "value": 34,
+    "source": "C1_G5_DISPOSITION_MATRIX.md PD-1 summary line, propagated to docs/NEXT_WORK.md:62-65, thence to 00-evidence/rc-map.json RC-C11.explicitlyRemainingObligations[1] and CO-RC-C11-005",
+    "status": "RETAINED_AS_HISTORICAL_EVIDENCE_WITH_PROVENANCE — not rewritten"
+   },
+   {
+    "value": 35,
+    "source": "test/product/c0_drift_baseline.txt (frozen 2026-08-15)",
+    "status": "CURRENT_OPERATIVE_COUNT"
+   }
+  ],
+  "correction": "SUMMATION_CORRECTION — 34 is SUPERSEDED_BY_CURRENT_VERIFICATION at 35. The underlying obligation, the 11-file set and every per-file count are unchanged.",
+  "productScopeChanged": false,
+  "governanceIntentChanged": false,
+  "canonicalUnitsAffected": 0,
+  "closedWithoutFounderEscalation": true,
+  "note": "No product or governance judgement was required, so per ruling 3 this is closed here rather than returned to founder attention."
+ }
+}

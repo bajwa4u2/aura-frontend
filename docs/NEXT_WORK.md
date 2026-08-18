@@ -119,3 +119,32 @@ migrating, as C1 did).
 ## Explicitly NOT next
 
 Live (C10) · Item 17 (C11) · any demolition · any route change · Representation edits before wording is frozen.
+
+---
+
+## 2026-08-18 — Wave 1 Parts 1 & 2 complete; what is next
+
+**Done (nothing closed).** W1-000 PBCR 7+8 discharged · W1-A CH-17 governance mechanism (both repos) ·
+W1-B CH-01 ratchets, 11/11 proven ENFORCING by seeded failure · W1-F 335-consumer identity audit ·
+W1-C/D/E the CH-02 keystone S1–S3 with the PD-2 seam published and gated.
+
+**Owed before CH-02 can close — none of it is optional:**
+
+1. **F065 LIVE REFRESH PROOF.** The chapter's own first gate. A live authenticated session that
+   survives a browser refresh without dropping to unauthenticated. Requires a running app and
+   **PB-11 founder observation** of the authentication behaviour change. Until it passes, no
+   downstream continuity finding may be claimed closed.
+2. **Live signed-out probe** for the route-classification contract (S2). Fail-closedness is proven by
+   gate, not yet on a live browser.
+3. **F103 / F104** remain `OPEN`, gated by F065.
+4. **CH-02 S4** (draft identity/ownership contract) still refused — it consumes CH-03's conformance
+   gate, which is W2.
+
+**Blocked on a founder decision:** W1-X1 (CH-11) needs the **RC-C5 scope ratification** — does the
+BIFURCATED ruling answer CH-11's recorded scope question? Fail-closed default is *treat as gated*, so
+CH-11 has not been started.
+
+**Assigned but not scheduled:** DEFECT-1 — `realtime_room_golden_test.dart` is skipped for
+pre-existing rot, so realtime *rendered* presentation has no automated visual proof. Assigned to
+CH-04, not waived; restoration/replacement is a CH-04 closure requirement. The 333-pass realtime suite
+must never be represented as covering it.

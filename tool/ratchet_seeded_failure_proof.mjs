@@ -17,9 +17,11 @@ import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 
 const PROBE = 'lib/features/fd13_ratchet_seed_probe.dart'
+const GUEST_PROBE = 'lib/features/fd13_guest_seed_probe.dart'
 const C0 = 'test/product/c0_anti_drift_gate_test.dart'
 const C1 = 'test/authority/c1_anti_drift_gate_test.dart'
 const C3 = 'test/navigation/c3_route_integrity_gate_test.dart'
+const S1 = 'test/authority/ch02_s1_session_choke_point_test.dart'
 
 const header = `// TEMPORARY FD-13 SEED PROBE — created and deleted by
 // tool/ratchet_seeded_failure_proof.mjs. If this file is committed, the
@@ -31,6 +33,8 @@ class Fd13SeedProbe extends StatelessWidget {
 `
 const footer = `}
 `
+const NL = String.fromCharCode(10)
+const MAT_IMPORT = "import 'package:flutter/material.dart';"
 
 // Each seed is a REAL violation of exactly one ratchet rule.
 const SEEDS = [
@@ -124,6 +128,55 @@ const SEEDS = [
 `,
   },
   {
+    id: 'S1-ESTABLISH',
+    rule: 'CH-02 S1',
+    suite: S1,
+    test: 'setSessionHint(true) is written ONLY at the choke point',
+    imports: `import '../core/auth/session_hint.dart';
+`,
+    body: `
+  Future<void> probe() async {
+    await setSessionHint(true);
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+`,
+  },
+  {
+    id: 'S1-CLEAR',
+    rule: 'CH-02 S1',
+    suite: S1,
+    test: 'setSessionHint(false) appears only at governed clear sites',
+    imports: `import '../core/auth/session_hint.dart';
+`,
+    body: `
+  Future<void> probe() async {
+    await setSessionHint(false);
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+`,
+  },
+  {
+    id: 'S1-GUEST',
+    rule: 'CH-02 S1',
+    suite: S1,
+    probe: GUEST_PROBE,
+    test: 'no path establishes a hint for a guest token',
+    imports: `import '../core/auth/session_hint.dart';
+`,
+    body: `
+  Future<void> probe() async {
+    await setSessionHint(true);
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+`,
+  },
+  {
     id: 'C3-RESOLVE',
     rule: 'C3 ROUTE INTEGRITY / literal resolves against the route table',
     suite: C3,
@@ -162,9 +215,11 @@ let harnessError = null
 try {
   for (const s of SEEDS) {
     process.stdout.write(`${s.id.padEnd(11)} ${s.rule} ... `)
-    writeFileSync(PROBE, header + s.body + footer)
+    const probePath = s.probe || PROBE
+    const hdr = s.imports ? header.replace(MAT_IMPORT, MAT_IMPORT + NL + s.imports) : header
+    writeFileSync(probePath, hdr + s.body + footer)
     const seeded = run(s.suite, s.test)
-    unlinkSync(PROBE)
+    unlinkSync(probePath)
     const clean = run(s.suite, s.test)
 
     const proven = seeded.failed && !clean.failed
@@ -185,7 +240,7 @@ try {
 } catch (e) {
   harnessError = String(e && e.message)
 } finally {
-  if (existsSync(PROBE)) unlinkSync(PROBE)
+  for (const p of [PROBE, GUEST_PROBE]) if (existsSync(p)) unlinkSync(p)
 }
 
 const enforcing = results.filter((r) => r.verdict === 'ENFORCING').length
@@ -203,8 +258,8 @@ const out = {
 writeFileSync('docs/portfolio/run/stage0-2026-08-18/05-execution/w1b-ratchet-seeded-failure-proof.json', JSON.stringify(out, null, 1))
 console.log(`\nENFORCING: ${enforcing}/${results.length}`)
 if (harnessError) console.log('HARNESS ERROR:', harnessError)
-if (existsSync(PROBE)) {
-  console.log('FAIL-CLOSED: probe file survived; repository is dirty')
+for (const p of [PROBE, GUEST_PROBE]) if (existsSync(p)) {
+  console.log('FAIL-CLOSED: probe file survived; repository is dirty:', p)
   process.exit(1)
 }
 process.exit(enforcing === results.length && !harnessError ? 0 : 1)

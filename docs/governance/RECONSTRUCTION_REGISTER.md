@@ -110,6 +110,49 @@ Reporting one dimension as "F139 status" is a governance violation.
 | CH-16 | Cross-Platform, Native Surfaces & Release Delivery | 2 | 28 |
 | CH-17 | Governance, Certification & Release Gate | 4 | 26 |
 
+
+---
+
+## PRODUCT DISPOSITION CHECKPOINTS
+
+Surfaces the approved roadmap never named an owner for. Each is resolved by founder ruling, and a
+resolved disposition is **not** the same thing as a closed obligation — the originating records are
+retained verbatim and superseded only as to current status.
+
+### PD-2 — Authentication & Account Entry
+
+**Status:** `RESOLVED` · **Ruled by:** FOUNDER RULING 2026-08-18
+
+**Disposition:** RATIFIED_SPLIT — CH-02 owns STRUCTURE; CH-10 owns ACCOUNT-ENTRY EXPERIENCE.
+
+**Supersedes:** CO-RC-C1-022 — "PD-2 STRUCTURAL DISPOSITION remains OPEN" — RETAINED VERBATIM as historical evidence; superseded as to current status only.
+
+### PD-1 — Platform Administration
+
+**Status:** `RESOLVED_FOR_THIS_RECONSTRUCTION_PROGRAMME` · **Ruled by:** FOUNDER RULING 2026-08-18
+
+**Disposition:** OUT_OF_CURRENT_RECONSTRUCTION_SCOPE
+
+**Product standing — the ruling is about RECONSTRUCTION SCOPE, not the product:**
+
+| | |
+|---|---|
+| Legitimate shipped capability | YES |
+| Deprecated | NO |
+| Demolished | NO |
+| Architecturally invalid | NO |
+| Removed from Aura | NO |
+
+**Debt:** 11 files / 52 sites, classified `FROZEN_BY_RULE / OUT_OF_CURRENT_RECONSTRUCTION_SCOPE`. Counted as ordinary executable reconstruction debt: **NO**. Ownerless-by-reconstruction is **INTENTIONAL, NOT NEGLECTED**.
+
+> The C0 anti-drift ratchet continues to hold these counts: they may never rise, and if they fall the gate fails until the baseline is updated. Exclusion from reconstruction is NOT exclusion from measurement.
+
+**Does not exempt:** PD-1 does NOT exempt Platform Administration from shared runtime/security authorities. CH-02 S2 fail-closed classification of /admin REMAINS APPLICABLE where the shared auth/routing boundary requires it. Scope exclusion does not create a security or shared-authority bypass.
+
+**Readmission:** A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.
+
+**Supersedes:** CO-RC-C11-005 — "PD-1 Platform Administration disposition (11 files / 34 G5 sites) — no owning chapter in the approved roadmap" — RETAINED VERBATIM as historical evidence; superseded as to current status only — the obligation is now DISPOSED_BY_RULING rather than REMAINING.
+
 ---
 
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER

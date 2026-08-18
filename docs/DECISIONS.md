@@ -383,3 +383,40 @@ debt.
 implemented, locally certified, pushed as authorized, deployed, observed
 end-to-end on the LIVE site, live defects resolved, and founder declares C4
 certified/closed. C4 LOCAL CERTIFICATION ≠ C5 AUTHORIZATION.
+
+---
+
+## 2026-08-18 — PD-1 and PD-2 adjudicated; Wave 1 Parts 1 and 2 executed
+
+**PD-2 — RATIFIED SPLIT.** CH-02 owns STRUCTURE (session establishment, route classification,
+redirect/destination reconstruction, verification gating). CH-10 owns ACCOUNT-ENTRY EXPERIENCE.
+This recognised convergent evidence already recorded *independently* in both chapters'
+`founderActions`; it was not a new decomposition. The seam is enumerated and gated at
+`docs/governance/CH02_DESTINATION_RECONSTRUCTION_CONTRACT.md` +
+`test/navigation/ch02_s3_destination_contract_test.dart`.
+
+**PD-1 — OUT OF CURRENT RECONSTRUCTION SCOPE.** Platform Administration remains a legitimate shipped
+Aura capability: **not deprecated, not demolished, not architecturally invalid, not removed.** Its
+11 files / 52 foundation-debt sites are `FROZEN_BY_RULE`, preserved in the register, and
+ownerless-by-reconstruction is recorded as **intentional, not neglected**. They are not counted as
+ordinary executable debt. The C0 ratchet still holds the counts — exclusion from reconstruction is
+not exclusion from measurement. **Scope exclusion is not a security bypass:** CH-02 S2 fail-closed
+classification of `/admin` still applies, and is now asserted by gate rather than assumed.
+
+**34 vs 35 G5 sites — closed mechanically, no founder escalation.** Site sets compared file by file:
+same 11 files, every per-file count agrees. The disposition matrix's own rows sum to 35 while its
+summary line says 34 — a summation error, not a different site population. 35 is operative; 34
+retained as historical evidence.
+
+**Session establishment (CH-02 S1).** The session hint is written at exactly one choke point,
+`TokenStore.setSession`. The two original call sites in `auth_controller.dart` were removed — they
+were not merely redundant, they wrote unconditionally and bypassed the guest-token exclusion.
+Establishment on the login path is now fire-and-forget, matching the frozen "hint bookkeeping must
+never delay or fail auth" design. Clearing deliberately remains multi-sited and is enumerated with
+justifications, including the governed `session_bootstrap` exception where there is no session to
+clear.
+
+**Not closed by any of this:** F065 remains `IMPLEMENTED_NOT_LIVE_CERTIFIED` (the live refresh proof
+is owed and needs PB-11 founder observation); F103/F104 remain `OPEN`; F116/F053 remain
+`PARTIALLY_VALIDATED`; DEFECT-1 (realtime room goldens) is assigned to CH-04 and not waived. **No
+chapter was closed.**

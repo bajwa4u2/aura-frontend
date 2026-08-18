@@ -1,6 +1,6 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-15**
+**Last updated: 2026-08-18**
 
 ---
 
@@ -17,8 +17,9 @@
 | **C1 — Acting Context & Capability** | ✅ **COMPLETE / FOUNDER APPROVED / LOCALLY CERTIFIED** (2026-08-15) |
 | **C2 — Identity / Presence / Profile** | ⛔ **READY / NOT STARTED / NOT YET AUTHORIZED** |
 | **Frontend implementation (C2–C11)** | ⛔ **NOT STARTED** |
-| **⚡ PD-1 Platform Administration** | ⛔ **NEW PRODUCT DISPOSITION CHECKPOINT** (before C11) |
-| **⚡ PD-2 Authentication & Account Entry** | ⛔ **NEW PRODUCT DISPOSITION CHECKPOINT** (before C11) |
+| **PD-1 Platform Administration** | ✅ **RESOLVED** (founder ruling 2026-08-18) — `OUT_OF_CURRENT_RECONSTRUCTION_SCOPE`. NOT deprecated, demolished or removed; 11 files / 52 debt sites `FROZEN_BY_RULE`. `/admin` route classification still applies — scope exclusion is not a security bypass. |
+| **PD-2 Authentication & Account Entry** | ✅ **RESOLVED** (founder ruling 2026-08-18) — split ratified: **CH-02 owns STRUCTURE, CH-10 owns ACCOUNT-ENTRY EXPERIENCE**. Seam enumerated in `docs/governance/CH02_DESTINATION_RECONSTRUCTION_CONTRACT.md`. |
+| **Portfolio reconstruction — Wave 1** | 🟡 **PART 1 + PART 2 EXECUTED** (2026-08-18) — W1-000/A/B/F and W1-C/D/E done. **No chapter closed.** F065 live refresh proof OWED (PB-11 founder observation). See `docs/portfolio/PART2_EXECUTION_RECORD_2026-08-18.md`. |
 | **Item 17 — Release Gate** | ⛔ **OPEN, NOT STARTED** |
 
 ## What is frozen

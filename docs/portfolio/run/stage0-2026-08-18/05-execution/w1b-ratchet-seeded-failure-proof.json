@@ -4,8 +4,8 @@
  "date": "2026-08-18",
  "doctrine": "A ratchet counts as enforcement ONLY after it is demonstrated to FAIL on a deliberately introduced real violation (FD-13 precedent).",
  "harnessError": null,
- "ratchetsProven": 8,
- "ratchetsAttempted": 8,
+ "ratchetsProven": 11,
+ "ratchetsAttempted": 11,
  "results": [
   {
    "id": "G2",
@@ -72,6 +72,36 @@
    "rule": "ROLE LITERAL COMPARISON",
    "suite": "test/authority/c1_anti_drift_gate_test.dart",
    "test": "no new role-literal comparisons",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "S1-ESTABLISH",
+   "rule": "CH-02 S1",
+   "suite": "test/authority/ch02_s1_session_choke_point_test.dart",
+   "test": "setSessionHint(true) is written ONLY at the choke point",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "S1-CLEAR",
+   "rule": "CH-02 S1",
+   "suite": "test/authority/ch02_s1_session_choke_point_test.dart",
+   "test": "setSessionHint(false) appears only at governed clear sites",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "S1-GUEST",
+   "rule": "CH-02 S1",
+   "suite": "test/authority/ch02_s1_session_choke_point_test.dart",
+   "test": "no path establishes a hint for a guest token",
    "failedWhenSeeded": true,
    "greenWhenClean": true,
    "failureNamedTheRule": true,

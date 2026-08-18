@@ -159,7 +159,8 @@
     "All 23 navigation gates green plus the literal route ratchet (103 files / 294 sites) after ANY classification change",
     "The strengthened registry->router integrity gate proves every authority-declared address EXECUTABLE",
     "A live signed-out probe for F069 and a targeted Meetings regression (97/97) for every router change",
-    "Cross-System: the same destination contract proven on web and on a native binary (Real-Boundary lands in CH-16)"
+    "Cross-System: the same destination contract proven on web and on a native binary (Real-Boundary lands in CH-16)",
+    "PD-2 SEAM ENUMERATION (founder ruling 2026-08-18): CH-02 S3 MUST publish an explicit seam enumeration identifying, at minimum: (1) the structural auth/destination routes governed by CH-02; (2) the account-entry experience surfaces governed by CH-10; (3) the redirect/destination reconstruction contract; (4) the ownership boundary at each crossing; (5) any shared dependency; (6) the fail-closed behaviour where destination reconstruction cannot be proven. This is an implementation/certification obligation, NOT a founder decision."
    ],
    "founderActions": [
     "ADMIT this chapter as a new cross-cutting authority after RC-C0 closed - and rule on the admission mechanism generally, since the roadmap froze 2026-08-15 and REFRESH IS NOT NAVIGATION froze 2026-08-17 (Agent D: the axis has no mechanism for admitting a later authority)",
@@ -238,7 +239,33 @@
      "CO-RC-C3-023",
      "CO-RC-C3-024"
     ]
-   }
+   },
+   "productDispositions": [
+    {
+     "id": "PD-2",
+     "name": "Authentication & Account Entry",
+     "ruledBy": "FOUNDER RULING 2026-08-18",
+     "status": "RESOLVED",
+     "disposition": "RATIFIED_SPLIT — CH-02 owns STRUCTURE; CH-10 owns ACCOUNT-ENTRY EXPERIENCE.",
+     "natureOfRuling": "Recognition of convergent canonical evidence already recorded INDEPENDENTLY in CH-02 and CH-10 founderActions, and of the corresponding built-system seam. NOT a newly invented decomposition.",
+     "constraints": [
+      "Do not enlarge either chapter beyond that boundary.",
+      "Do not create a new authority.",
+      "Do not allow implementation to redefine the split."
+     ],
+     "supersedes": {
+      "record": "CO-RC-C1-022 — \"PD-2 STRUCTURAL DISPOSITION remains OPEN\"",
+      "treatment": "RETAINED VERBATIM as historical evidence; superseded as to current status only."
+     },
+     "ownedHere": "STRUCTURE — session establishment, route classification, redirect/destination reconstruction, and verification gating as structural decisions.",
+     "notOwnedHere": "The account-entry EXPERIENCE surfaces (login/register/forgot/reset presentation, conversion, copy) belong to CH-10.",
+     "unblocks": [
+      "W1-C (S1)",
+      "W1-D (S2)",
+      "W1-E (S3)"
+     ]
+    }
+   ]
   },
   {
    "id": "CH-03",
@@ -1217,7 +1244,29 @@
      "CO-RC-C3-008",
      "CO-RC-C10-006"
     ]
-   }
+   },
+   "productDispositions": [
+    {
+     "id": "PD-2",
+     "name": "Authentication & Account Entry",
+     "ruledBy": "FOUNDER RULING 2026-08-18",
+     "status": "RESOLVED",
+     "disposition": "RATIFIED_SPLIT — CH-02 owns STRUCTURE; CH-10 owns ACCOUNT-ENTRY EXPERIENCE.",
+     "natureOfRuling": "Recognition of convergent canonical evidence already recorded INDEPENDENTLY in CH-02 and CH-10 founderActions, and of the corresponding built-system seam. NOT a newly invented decomposition.",
+     "constraints": [
+      "Do not enlarge either chapter beyond that boundary.",
+      "Do not create a new authority.",
+      "Do not allow implementation to redefine the split."
+     ],
+     "supersedes": {
+      "record": "CO-RC-C1-022 — \"PD-2 STRUCTURAL DISPOSITION remains OPEN\"",
+      "treatment": "RETAINED VERBATIM as historical evidence; superseded as to current status only."
+     },
+     "ownedHere": "ACCOUNT-ENTRY EXPERIENCE — the user-facing account-entry/acquisition surfaces.",
+     "notOwnedHere": "Structural destination/reconstruction authority belongs to CH-02.",
+     "consumesFrom": "CH-02 S3 seam enumeration and destination-reconstruction contract."
+    }
+   ]
   },
   {
    "id": "CH-11",
@@ -1960,6 +2009,97 @@
      "CO-RC-C11-017"
     ]
    }
+  }
+ ],
+ "productDispositions": [
+  {
+   "id": "PD-2",
+   "name": "Authentication & Account Entry",
+   "ruledBy": "FOUNDER RULING 2026-08-18",
+   "status": "RESOLVED",
+   "disposition": "RATIFIED_SPLIT — CH-02 owns STRUCTURE; CH-10 owns ACCOUNT-ENTRY EXPERIENCE.",
+   "natureOfRuling": "Recognition of convergent canonical evidence already recorded INDEPENDENTLY in CH-02 and CH-10 founderActions, and of the corresponding built-system seam. NOT a newly invented decomposition.",
+   "constraints": [
+    "Do not enlarge either chapter beyond that boundary.",
+    "Do not create a new authority.",
+    "Do not allow implementation to redefine the split."
+   ],
+   "supersedes": {
+    "record": "CO-RC-C1-022 — \"PD-2 STRUCTURAL DISPOSITION remains OPEN\"",
+    "treatment": "RETAINED VERBATIM as historical evidence; superseded as to current status only."
+   }
+  },
+  {
+   "id": "PD-1",
+   "name": "Platform Administration",
+   "ruledBy": "FOUNDER RULING 2026-08-18",
+   "status": "RESOLVED_FOR_THIS_RECONSTRUCTION_PROGRAMME",
+   "productStanding": {
+    "isLegitimateShippedCapability": true,
+    "deprecated": false,
+    "demolished": false,
+    "architecturallyInvalid": false,
+    "removedFromAura": false,
+    "note": "Platform Administration remains a legitimate shipped Aura product capability. The ruling is about RECONSTRUCTION SCOPE, not about the product."
+   },
+   "disposition": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE",
+   "readmission": "A future founder-authorized admission may explicitly bring it into reconstruction. Until then there is no retirement condition, and that absence IS the recorded disposition.",
+   "prohibitions": [
+    "Do not invent a reconstruction chapter merely to own its debt.",
+    "Do not distort an existing chapter to absorb it.",
+    "Do not modify the Platform Administration surface merely to satisfy reconstruction debt accounting."
+   ],
+   "debtTreatment": {
+    "classification": "FROZEN_BY_RULE / OUT_OF_CURRENT_RECONSTRUCTION_SCOPE",
+    "files": 11,
+    "sites": 52,
+    "byRule": {
+     "G2": 6,
+     "G3": 3,
+     "G4": 1,
+     "G7": 7,
+     "G5": 35
+    },
+    "preservedInGovernedRegister": true,
+    "ownerlessByReconstruction": "INTENTIONAL, NOT NEGLECTED",
+    "countsAsOrdinaryExecutableDebt": false,
+    "stillMeasured": "The C0 anti-drift ratchet continues to hold these counts: they may never rise, and if they fall the gate fails until the baseline is updated. Exclusion from reconstruction is NOT exclusion from measurement."
+   },
+   "distinctFromPbProtection": "Semantically distinct from PB protection. PB-01 Meetings is frozen because modification is PROHIBITED on a certified protected surface (CO-RC-C0-008). PD-1 is frozen because the surface is OUT OF SCOPE for this reconstruction. Both are FROZEN_BY_RULE; the rules differ and must not be conflated.",
+   "doesNotExempt": {
+    "sharedRuntimeAndSecurityAuthorities": true,
+    "statement": "PD-1 does NOT exempt Platform Administration from shared runtime/security authorities. CH-02 S2 fail-closed classification of /admin REMAINS APPLICABLE where the shared auth/routing boundary requires it. Scope exclusion does not create a security or shared-authority bypass."
+   },
+   "g5CountReconciliation": {
+    "historical": {
+     "value": 34,
+     "status": "RETAINED_AS_HISTORICAL_EVIDENCE_WITH_PROVENANCE"
+    },
+    "operative": {
+     "value": 35,
+     "status": "CURRENT_OPERATIVE_COUNT"
+    },
+    "cause": "SUMMATION_ERROR_IN_THE_SUMMARY_LINE",
+    "escalated": false,
+    "note": "Site populations proven identical file-by-file; 34 was a summation error in a summary line. Product scope and governance intent unchanged."
+   },
+   "supersedes": {
+    "record": "CO-RC-C11-005 — \"PD-1 Platform Administration disposition (11 files / 34 G5 sites) — no owning chapter in the approved roadmap\"",
+    "treatment": "RETAINED VERBATIM as historical evidence; superseded as to current status only — the obligation is now DISPOSED_BY_RULING rather than REMAINING."
+   },
+   "files": [
+    "lib/features/admin/presentation/admin_audit_logs_screen.dart",
+    "lib/features/admin/presentation/admin_feature_flags_screen.dart",
+    "lib/features/admin/presentation/admin_grants_screen.dart",
+    "lib/features/admin/presentation/admin_institution_domains_screen.dart",
+    "lib/features/admin/presentation/admin_institution_members_screen.dart",
+    "lib/features/admin/presentation/admin_institutions_screen.dart",
+    "lib/features/admin/presentation/admin_moderation_screen.dart",
+    "lib/features/admin/presentation/admin_policies_screen.dart",
+    "lib/features/admin/presentation/admin_review_queue_screen.dart",
+    "lib/features/admin/presentation/admin_settings_screen.dart",
+    "lib/features/admin/presentation/admin_users_screen.dart"
+   ]
   }
  ]
 }

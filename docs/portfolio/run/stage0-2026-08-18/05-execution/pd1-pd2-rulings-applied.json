@@ -1,0 +1,61 @@
+{
+ "type": "PD1_PD2_RULINGS_APPLIED",
+ "date": "2026-08-18",
+ "pd2": {
+  "status": "RESOLVED",
+  "owners": {
+   "structure": "CH-02",
+   "accountEntryExperience": "CH-10"
+  },
+  "seamEnumeration": "CH-02 certification requirement",
+  "unblocked": [
+   "W1-C",
+   "W1-D",
+   "W1-E"
+  ]
+ },
+ "pd1": {
+  "status": "RESOLVED_FOR_THIS_RECONSTRUCTION_PROGRAMME",
+  "disposition": "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE",
+  "debt": {
+   "files": 11,
+   "sites": 52,
+   "classification": "FROZEN_BY_RULE"
+  },
+  "securityBypassCreated": false,
+  "adminRouteClassificationStillApplies": true
+ },
+ "g5Reconciliation": {
+  "cause": "SUMMATION_ERROR_IN_THE_SUMMARY_LINE",
+  "operative": 35,
+  "escalated": false
+ },
+ "debtSeparation": {
+  "rule": "Frozen debt must be explicitly distinguishable from executable debt and must never be reported as ordinary outstanding reconstruction work.",
+  "executable": {
+   "files": 95,
+   "sites": 187
+  },
+  "frozenByRule": {
+   "files": 44,
+   "sites": 83,
+   "reasons": {
+    "OUT_OF_CURRENT_RECONSTRUCTION_SCOPE": {
+     "owner": "PD-1",
+     "files": 11,
+     "sites": 52,
+     "basis": "Founder ruling 2026-08-18"
+    },
+    "PROTECTED_SURFACE_MODIFICATION_PROHIBITED": {
+     "owner": "PB-01",
+     "files": 22,
+     "sites": 31,
+     "basis": "CO-RC-C0-008"
+    }
+   },
+   "semanticallyDistinct": "Semantically distinct from PB protection. PB-01 Meetings is frozen because modification is PROHIBITED on a certified protected surface (CO-RC-C0-008). PD-1 is frozen because the surface is OUT OF SCOPE for this reconstruction. Both are FROZEN_BY_RULE; the rules differ and must not be conflated."
+  }
+ },
+ "canonicalUnitsChanged": 0,
+ "historicalEvidenceRewritten": false
+}

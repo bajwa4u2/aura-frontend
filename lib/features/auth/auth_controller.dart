@@ -327,12 +327,13 @@ class AuthController {
       refreshToken: (refresh != null && refresh.trim().isNotEmpty) ? refresh : null,
     );
 
-    // Mark this device as having an established session so the next cold
-    // load knows it is safe to attempt /auth/refresh. Without the hint, the
-    // bootstrap stays silent on public routes and never produces a 401
-    // for users who have never authenticated here.
-    await setSessionHint(true);
-
+    // The session hint is NOT written here. It is a consequence of holding a
+    // member session and is written at the single choke point inside
+    // `TokenStore.setSession` (CH-02 S1). This path used to write it too —
+    // one of the original two call sites — which is exactly the shape of
+    // defect F065 names: an establishment path that has to REMEMBER to
+    // record the session. Writing it here again would also bypass the choke
+    // point's guest-token exclusion.
     _invalidateAuth();
     // Notify any sibling tabs that auth has succeeded so they can quietly
     // reread /auth/me instead of staying stuck in a stale signed-out state.
@@ -402,9 +403,9 @@ class AuthController {
       refreshToken: (refresh != null && refresh.trim().isNotEmpty) ? refresh : null,
     );
 
-    // Same hint as the password-only path so future cold loads can attempt
-    // refresh silently; without the hint, public-route loads stay quiet.
-    await setSessionHint(true);
+    // Session hint: written at the `TokenStore.setSession` choke point, not
+    // here. See the password path above — this was the second of the two
+    // original call sites.
 
     // Persist trusted device token if the server issued one
     final deviceToken = (outer['deviceToken'] ?? '').toString().trim();
