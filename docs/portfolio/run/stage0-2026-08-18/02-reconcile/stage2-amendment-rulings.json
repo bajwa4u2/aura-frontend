@@ -283,5 +283,34 @@
    "PBCR conditions 7-8 (targeted regression; shared-system health)"
   ],
   "note": "These do NOT block Stage 4, but Stage 4 must carry them explicitly and may not silently adjudicate them."
+ },
+ "CH17_POPULATION_CORRECTION": {
+  "ruling": "CH-17 must reconcile 308 chartered obligations, not 299",
+  "authority": "FOUNDER",
+  "date": "2026-08-18",
+  "nature": "FACTUAL BASELINE CORRECTION, not a new architectural decision. The 299 figure predates the founder-ratified Stage-3 rebuild that deterministically recovered nine additional obligations.",
+  "invariant": "143 findings + 308 chartered obligations = 451 canonical units",
+  "guarantee": "No original obligation disappears, merges, renumbers or loses provenance as a consequence.",
+  "applied": [
+   {
+    "artifact": "05-execution/index-chapters.json",
+    "action": "CORRECTED IN PLACE",
+    "scope": "CH-17 certificationRequirements operative closure rule"
+   }
+  ],
+  "superseded": [
+   {
+    "artifact": "03-synthesis/chapter-architecture.json",
+    "field": "CH-17 certificationRequirements",
+    "staleText": "All 143 findings and all 299 chartered obligations are reconciled INDEPENDENTLY at closure",
+    "status": "SUPERSEDED_BY_FOUNDER_CORRECTION",
+    "action": "NOT EDITED",
+    "reason": "This is a frozen, founder-ratified Stage-3 artifact. Under the four-layer doctrine a ruling applies FORWARD and historical records are not rewritten to look cleaner. The operative rule is corrected in the Stage-5 artifact and superseded here; the Stage-3 text remains as history."
+   }
+  ],
+  "deliberatelyNotChanged": [
+   "Stage-3 narrative statements describing the 299-era population (history)",
+   "Stage-5 contradiction reports S5C-CON-2 / S5D-CON-01 / the dependency-artifact staleness report — these are the DETECTION of the defect and must survive as evidence that it was caught"
+  ]
  }
 }
