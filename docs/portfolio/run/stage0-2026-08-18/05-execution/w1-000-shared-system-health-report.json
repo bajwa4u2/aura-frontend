@@ -1,0 +1,97 @@
+{
+ "type": "SHARED_SYSTEM_HEALTH_REPORT",
+ "unit": "W1-000",
+ "date": "2026-08-18",
+ "purpose": "Discharge of PROTECTED BOUNDARY CORRECTIVE REPAIR conditions 7 and 8, owed for the historical PB-02 / RC-C6 crossing. Non-mutating: suites were RUN and behaviour was OBSERVED. No protected system was modified and no boundary was crossed.",
+ "authority": "Founder Ruling 2 (2026-08-18): where work reaches a protected boundary, execution STOPS at that boundary and applies protected-boundary/PBCR governance before proceeding.",
+ "prerequisiteVerification": {
+  "RC-A": { "commit": "509230a", "subject": "fix(realtime): stop controller from disposing shared transport singletons", "date": "2026-08-17", "presentAndAncestorOfHead": true },
+  "RC-B": { "commit": "dfc9027", "subject": "fix(realtime): permanent accept-freeze fix + canonical identity + Go Live in dock", "date": "2026-08-17", "presentAndAncestorOfHead": true },
+  "verdict": "Both corrective repairs are present in the tree and not reverted."
+ },
+ "condition7_targetedRegressionForTheProtectedSubsystem": {
+  "status": "DISCHARGED",
+  "meetings": {
+   "backend": { "suites": 8, "tests": 90, "result": "PASS" },
+   "frontend": { "tests": 28, "result": "PASS" },
+   "total": 118,
+   "REGISTER_DISCREPANCY_REPORTED": {
+    "recordedRequirement": "Meetings 97/97",
+    "actualCurrentSuite": "118 tests (90 backend + 28 frontend), all passing",
+    "reading": "The governance record's 97/97 figure does not match the current suite composition. The suite has GROWN, not shrunk, so this is not a coverage loss. It is recorded because a stale numeric target silently passing is exactly how a register stops measuring anything.",
+    "notDone": "The 97/97 figure was NOT retro-fitted to 118, and 118 was NOT presented as 97/97. The discrepancy is reported for founder disposition."
+   }
+  },
+  "realtimeTransport": {
+   "backend": { "suites": 19, "tests": 290, "result": "PASS" },
+   "frontend": { "suite": "test/realtime_canonical", "tests": 43, "result": "PASS" },
+   "total": 333
+  },
+  "attributability": "No chapter was executing and no product behaviour was changed while these ran, so every result is attributable to the tree as it stands rather than to concurrent work. This is why W1-000 is the FIRST unit of the wave."
+ },
+ "condition8_sharedSystemHealthReport": {
+  "status": "DISCHARGED_WITH_TWO_DEFECTS_REPORTED",
+  "subsystemsImplicatedByTheHistoricalCrossing": [
+   {
+    "subsystem": "Realtime transport (PB-02)",
+    "health": "GREEN with one gap",
+    "evidence": "backend realtime 19 suites / 290 tests PASS; frontend realtime_canonical 43 tests PASS",
+    "gap": "DEFECT-1 below"
+   },
+   {
+    "subsystem": "Meetings (PB-01)",
+    "health": "GREEN",
+    "evidence": "118 tests PASS across both repositories",
+    "gap": "none, beyond the stale 97/97 figure recorded above"
+   },
+   {
+    "subsystem": "Frontend product surface",
+    "health": "GREEN after a repair made in this unit",
+    "evidence": "578 passed / 0 failed / 1 skipped",
+    "gap": "DEFECT-2 below — the suite was RED when this unit began"
+   },
+   {
+    "subsystem": "Backend (whole)",
+    "health": "GREEN",
+    "evidence": "192 suites / 2426 tests PASS"
+   },
+   {
+    "subsystem": "Cross-repository reporting (PB-12)",
+    "health": "SATISFIED FOR THE FIRST TIME IN THIS PROGRAMME",
+    "evidence": "Both repositories were run and are reported together in this single artifact. LANE-CONT records that this had never been done for one closure."
+   }
+  ],
+  "defectsFound": [
+   {
+    "id": "DEFECT-1",
+    "severity": "REPORTED_NOT_REPAIRED",
+    "subsystem": "Realtime presentation",
+    "statement": "test/realtime_room_golden_test.dart is @Skip-ped in its entirety: 'Pre-existing rot — RealtimeRoomScreen fixtures drifted; needs a dedicated revival pass with --update-goldens.'",
+    "consequence": "The realtime ROOM's rendered appearance is currently unverified by any automated proof. The 333 passing realtime tests cover semantics and lifecycle, not what the room looks like. A green realtime suite must not be read as covering realtime presentation.",
+    "disposition": "NOT REPAIRED HERE. Reviving it means regenerating goldens against RealtimeRoomScreen, which is CH-04 presentation territory and is not authorized in this wave. Recorded against CH-04.",
+    "whyItMatters": "This is precisely the kind of gap condition 8 exists to surface: the suite was green and the gap was invisible in the green."
+   },
+   {
+    "id": "DEFECT-2",
+    "severity": "REPAIRED_IN_THIS_UNIT",
+    "subsystem": "Product state authority (CH-01)",
+    "statement": "The C0 anti-drift ratchet was RED at the start of this unit: lib/features/realtime/presentation/realtime_lobby_screen.dart had introduced a new full-surface spinner outside the state authority.",
+    "repair": "The raw CircularProgressIndicator was replaced with AuraProductState(state: ProductState.loading, subject: ProductNoun.live). Presentation only — no transport, no session semantics, no Meetings surface touched. Recorded under W1-B.",
+    "significance": "The baseline was NOT green when the programme proposed to start. Had W1-000 not run first, this drift would have been attributed to whichever chapter next touched the tree."
+   }
+  ]
+ },
+ "whatThisDoesNotDischarge": [
+  "AD-CON-5 — the founder classification of the completed PB-02 / RC-C6 crossing. That is a founder act and is untouched by this evidence.",
+  "SU-5 — whether RC-C6's 'blocked until C2' blocker discharged when RC-C2 closed on 2026-08-16.",
+  "PBCR conditions 1-6 and 9-10, which were not owed and are not addressed.",
+  "CH-04 chapter entry. Two of its three blockers survive this report.",
+  "VS-02 — the three-sequential-calls-in-one-page-lifetime condition. No live call was made; nothing here observes the F045 root cause."
+ ],
+ "boundariesObserved": [
+  "No protected system modified.",
+  "No production data read or written.",
+  "No migration, deployment, CORS, R2 or configuration action.",
+  "The single code change made (DEFECT-2) is a presentation-layer loading state in the CH-01 state authority's own chartered scope."
+ ]
+}

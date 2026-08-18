@@ -1,0 +1,1492 @@
+{
+ "type": "W1B_REMAINDER_OWNERSHIP_REGISTER",
+ "unit": "W1-B",
+ "date": "2026-08-18",
+ "source": "test/product/c0_drift_baseline.txt",
+ "principle": "A count states how much debt remains. An obligation states WHO retires it and UNDER WHAT CONDITION. CH-01 owns the measurement and the ratchet; it does not own the burn-down of surfaces other chapters own.",
+ "totals": {
+  "files": 139,
+  "sites": 270,
+  "byRule": {
+   "G2": {
+    "files": 5,
+    "sites": 18
+   },
+   "G3": {
+    "files": 35,
+    "sites": 47
+   },
+   "G4": {
+    "files": 20,
+    "sites": 26
+   },
+   "G7": {
+    "files": 14,
+    "sites": 17
+   },
+   "G5": {
+    "files": 65,
+    "sites": 162
+   }
+  },
+  "byOwner": {
+   "PD-1": {
+    "files": 22,
+    "sites": 52
+   },
+   "CH-04": {
+    "files": 5,
+    "sites": 7
+   },
+   "CH-08": {
+    "files": 34,
+    "sites": 63
+   },
+   "CH-03": {
+    "files": 7,
+    "sites": 18
+   },
+   "CH-05": {
+    "files": 5,
+    "sites": 9
+   },
+   "CH-07": {
+    "files": 19,
+    "sites": 34
+   },
+   "CH-06": {
+    "files": 8,
+    "sites": 21
+   },
+   "PB-01": {
+    "files": 22,
+    "sites": 31
+   },
+   "CH-14": {
+    "files": 4,
+    "sites": 8
+   },
+   "CH-16": {
+    "files": 1,
+    "sites": 2
+   },
+   "CH-17": {
+    "files": 1,
+    "sites": 2
+   },
+   "CH-10": {
+    "files": 7,
+    "sites": 16
+   },
+   "CH-02": {
+    "files": 3,
+    "sites": 5
+   },
+   "CH-12": {
+    "files": 1,
+    "sites": 2
+   }
+  }
+ },
+ "frozenByRuleNotBySchedule": {
+  "count": 44,
+  "sites": 83,
+  "explanation": "These carry an owner that is not an executable chapter. They are NOT unowned, and they are NOT scheduled. Reporting them as remaining debt without this distinction would read as neglect.",
+  "owners": {
+   "PD-1": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "PB-01": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter."
+  }
+ },
+ "rows": [
+  {
+   "rule": "G2",
+   "sites": 3,
+   "path": "lib/features/admin/presentation/admin_grants_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+  },
+  {
+   "rule": "G2",
+   "sites": 3,
+   "path": "lib/features/admin/presentation/admin_review_queue_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+  },
+  {
+   "rule": "G2",
+   "sites": 3,
+   "path": "lib/features/devices/presentation/devices_screen.dart",
+   "area": "devices",
+   "owner": "CH-04",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+  },
+  {
+   "rule": "G2",
+   "sites": 3,
+   "path": "lib/features/institutions/presentation/institution_dashboard_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+  },
+  {
+   "rule": "G2",
+   "sites": 6,
+   "path": "lib/features/me/presentation/security_screen.dart",
+   "area": "me",
+   "owner": "CH-03",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface consumes AuraTemporal.humanize(ProductTime(instant, TimeEvent.x)) so the event semantics travel with the instant. Precedent: updates_screen G2 6 -> 0 (C2 §12, 2026-08-16)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/activity/presentation/activity_screen.dart",
+   "area": "activity",
+   "owner": "CH-05",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/admin/presentation/admin_audit_logs_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/admin/presentation/admin_moderation_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/admin/presentation/admin_review_queue_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/announcements/presentation/announcement_detail_screen.dart",
+   "area": "announcements",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/announcements/presentation/announcements_screen.dart",
+   "area": "announcements",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/conversations/presentation/conversations_screen.dart",
+   "area": "conversations",
+   "owner": "CH-06",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/correspondence/data/correspondence_identity.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/correspondence/presentation/thread/thread_utils.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 3,
+   "path": "lib/features/correspondence/presentation/thread_screen.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/devices/presentation/devices_screen.dart",
+   "area": "devices",
+   "owner": "CH-04",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 2,
+   "path": "lib/features/home/presentation/member_home_screen.dart",
+   "area": "home",
+   "owner": "CH-03",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 2,
+   "path": "lib/features/institutions/activity/institution_activity_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/institutions/announcements/institution_announcements_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/institutions/correspondence/institution_correspondence_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/institutions/data/institution_draft_store.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/institutions/presentation/institution_invites_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/institutions/presentation/institution_join_requests_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/invitations/presentation/invite_accept_screen.dart",
+   "area": "invitations",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 3,
+   "path": "lib/features/me/presentation/me/me_participation_continuity.dart",
+   "area": "me",
+   "owner": "CH-03",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 2,
+   "path": "lib/features/me/presentation/security_screen.dart",
+   "area": "me",
+   "owner": "CH-03",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/meetings/domain/meeting_asset.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/meetings/domain/meeting_conversation_message.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 2,
+   "path": "lib/features/meetings/presentation/booking_confirm_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/booking_reschedule_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/guest_waiting_room_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/institution_availability_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 3,
+   "path": "lib/features/meetings/presentation/meeting_detail_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/meeting_lifecycle_presenter.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 3,
+   "path": "lib/features/meetings/presentation/meetings_home_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/slot_picker_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/widgets/meeting_preparation_panel.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/messages/presentation/messages_hub_screen.dart",
+   "area": "messages",
+   "owner": "CH-06",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/posts/presentation/compose_screen.dart",
+   "area": "posts",
+   "owner": "CH-14",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G3",
+   "sites": 1,
+   "path": "lib/features/realtime/domain/realtime_models.dart",
+   "area": "realtime",
+   "owner": "CH-04",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface uses ProductTime.local for presentation, or AuraTemporal.zoneId where a zone identifier is sent or stored. local_timezone.dart is PRESERVED as an interface until its last caller is burnt down (CO-RC-C0-021)."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/admin/presentation/admin_institution_members_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/devices/presentation/devices_screen.dart",
+   "area": "devices",
+   "owner": "CH-04",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/institutions/announcements/integrity/announcement_integrity_review_sheet.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/institutions/posts/institution_post_composer_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/institutions/posts/integrity/institution_post_integrity_review_sheet.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/institutions/wizard/institution_onboarding_wizard.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/me/presentation/me/me_participation_continuity.dart",
+   "area": "me",
+   "owner": "CH-03",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/booking_confirm_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/booking_reschedule_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/create_meeting_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/guest_waiting_room_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 2,
+   "path": "lib/features/meetings/presentation/institution_availability_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 2,
+   "path": "lib/features/meetings/presentation/meeting_detail_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/meeting_live_room_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 2,
+   "path": "lib/features/meetings/presentation/meetings_home_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/pre_join_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 2,
+   "path": "lib/features/meetings/presentation/public_booking_screen.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 2,
+   "path": "lib/features/monetization/presentation/institution_billing_screen.dart",
+   "area": "monetization",
+   "owner": "CH-16",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 2,
+   "path": "lib/features/support/presentation/admin_support_console_screen.dart",
+   "area": "support",
+   "owner": "CH-17",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G4",
+   "sites": 1,
+   "path": "lib/screens/contact_screen.dart",
+   "area": "screens/contact_screen.dart",
+   "owner": "CH-10",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface renders AuraProductState(state: ProductState.loading). Inline progress (strokeWidth, or a box <= 32px) is legitimately local and was never debt."
+  },
+  {
+   "rule": "G7",
+   "sites": 2,
+   "path": "lib/app/shell/rail/rail_modules.dart",
+   "area": "app/shell",
+   "owner": "CH-02",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/admin/presentation/admin_audit_logs_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 2,
+   "path": "lib/features/admin/presentation/admin_grants_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/admin/presentation/admin_institution_domains_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 2,
+   "path": "lib/features/admin/presentation/admin_institutions_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/admin/presentation/admin_review_queue_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/announcements/presentation/announcements_screen.dart",
+   "area": "announcements",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/correspondence/presentation/thread/thread_utils.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/direct_threads/presentation/inbox_screen.dart",
+   "area": "direct_threads",
+   "owner": "CH-06",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/institutions/activity/institution_activity_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/meetings/presentation/meeting_lifecycle_presenter.dart",
+   "area": "meetings",
+   "owner": "PB-01",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Meetings is a PROTECTED CERTIFIED SURFACE. CO-RC-C0-008 affirmatively PROHIBITS modifying it for foundation debt reduction. This debt is frozen BY RULE and is not scheduled for retirement by any chapter.",
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/notifications/presentation/notifications_screen.dart",
+   "area": "notifications",
+   "owner": "CH-05",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/features/realtime/presentation/widgets/floating_call_widget.dart",
+   "area": "realtime",
+   "owner": "CH-04",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G7",
+   "sites": 1,
+   "path": "lib/widgets/note_card.dart",
+   "area": "widgets/note_card.dart",
+   "owner": "CH-14",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the DateTime-to-human-string function moves to the Human Temporal Presentation Authority. relative_time.dart is a temporal-authority shim PRESERVED as an interface while its callers burn down; CH-01 owns its retirement condition (CO-RC-C0-013, CO-RC-C0-020)."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/activity/presentation/activity_screen.dart",
+   "area": "activity",
+   "owner": "CH-05",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 4,
+   "path": "lib/features/admin/presentation/admin_audit_logs_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/admin/presentation/admin_feature_flags_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/admin/presentation/admin_grants_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/admin/presentation/admin_institution_domains_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/admin/presentation/admin_institution_members_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 6,
+   "path": "lib/features/admin/presentation/admin_institutions_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/admin/presentation/admin_moderation_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/admin/presentation/admin_policies_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/admin/presentation/admin_review_queue_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/admin/presentation/admin_settings_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 4,
+   "path": "lib/features/admin/presentation/admin_users_screen.dart",
+   "area": "admin",
+   "owner": "PD-1",
+   "ownerIsExecutableChapter": false,
+   "ownerNote": "Platform Administration disposition is OPEN and has NO owning chapter in the approved roadmap (CO-RC-C11-005). This debt cannot be assigned to a chapter until the founder disposes PD-1.",
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/announcements/presentation/announcement_detail_screen.dart",
+   "area": "announcements",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 6,
+   "path": "lib/features/announcements/presentation/announcements_screen.dart",
+   "area": "announcements",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/auth/presentation/auth_screen.dart",
+   "area": "auth",
+   "owner": "CH-02",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/auth/presentation/register_screen.dart",
+   "area": "auth",
+   "owner": "CH-02",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/communications/presentation/widgets/admin_ai_draft_panel.dart",
+   "area": "communications",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/communications/presentation/widgets/admin_campaign_workflow.dart",
+   "area": "communications",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/communications/presentation/widgets/admin_newsletter_lab.dart",
+   "area": "communications",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/communications/presentation/widgets/digest_preferences_panel.dart",
+   "area": "communications",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/conversations/presentation/conversations_screen.dart",
+   "area": "conversations",
+   "owner": "CH-06",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/correspondence/presentation/archived_spaces_screen.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/correspondence/presentation/archived_threads_screen.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 4,
+   "path": "lib/features/correspondence/presentation/correspondence_hub_screen.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/correspondence/presentation/space_screen.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/correspondence/presentation/thread_screen.dart",
+   "area": "correspondence",
+   "owner": "CH-07",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/direct_threads/presentation/direct_intent_screen.dart",
+   "area": "direct_threads",
+   "owner": "CH-06",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 4,
+   "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
+   "area": "direct_threads",
+   "owner": "CH-06",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 4,
+   "path": "lib/features/direct_threads/presentation/inbox_screen.dart",
+   "area": "direct_threads",
+   "owner": "CH-06",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/activity/institution_activity_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/announcements/institution_announcements_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/institutions/correspondence/institution_correspondence_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/institutions/domain/institution_domains_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/engagement/engagement_detail_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/engagement/engagement_list_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/explore/institution_explore_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/institutions/live_rooms/institution_live_rooms_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/messaging/institution_messaging_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/participation/participation_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/institutions/posts/institution_post_composer_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 4,
+   "path": "lib/features/institutions/posts/institution_post_detail_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 4,
+   "path": "lib/features/institutions/presentation/admin_workspace_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/presentation/institution_dashboard_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/presentation/institution_detail_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/presentation/institution_invites_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/presentation/institution_join_requests_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/presentation/institution_members_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/institutions/presentation/institution_page.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/institutions/presentation/institution_spaces_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 4,
+   "path": "lib/features/institutions/profile/institution_profile_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/institutions/units/institution_units_screen.dart",
+   "area": "institutions",
+   "owner": "CH-08",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/me/presentation/me_screen.dart",
+   "area": "me",
+   "owner": "CH-03",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 5,
+   "path": "lib/features/messages/presentation/messages_hub_screen.dart",
+   "area": "messages",
+   "owner": "CH-06",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/notifications/presentation/notifications_screen.dart",
+   "area": "notifications",
+   "owner": "CH-05",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/profile/presentation/author_profile_screen.dart",
+   "area": "profile",
+   "owner": "CH-03",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/public/presentation/institution_sector_screen.dart",
+   "area": "public",
+   "owner": "CH-10",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/public/presentation/public_institution_units_screen.dart",
+   "area": "public",
+   "owner": "CH-10",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/public/presentation/public_institutions_directory_screen.dart",
+   "area": "public",
+   "owner": "CH-10",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/features/public/presentation/public_unit_detail_screen.dart",
+   "area": "public",
+   "owner": "CH-10",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 1,
+   "path": "lib/features/public/presentation/space_detail_screen.dart",
+   "area": "public",
+   "owner": "CH-10",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/public/presentation/thread_screen.dart",
+   "area": "public",
+   "owner": "CH-10",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/saves/presentation/saved_screen.dart",
+   "area": "saves",
+   "owner": "CH-14",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/search/presentation/search_screen.dart",
+   "area": "search",
+   "owner": "CH-14",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 3,
+   "path": "lib/features/updates/presentation/updates_screen.dart",
+   "area": "updates",
+   "owner": "CH-05",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  },
+  {
+   "rule": "G5",
+   "sites": 2,
+   "path": "lib/shared/media/profile_media_editor.dart",
+   "area": "shared/media",
+   "owner": "CH-12",
+   "ownerIsExecutableChapter": true,
+   "ownerNote": null,
+   "retirementCondition": "Retired when the surface says what is TRUE via AuraProductState(state: ProductState.x) instead of constructing AuraLoading/Empty/ErrorState itself. CO-RC-C0-019 preserves the three primitives as the authority composes them - they are not deleted, only stopped being constructed directly."
+  }
+ ]
+}

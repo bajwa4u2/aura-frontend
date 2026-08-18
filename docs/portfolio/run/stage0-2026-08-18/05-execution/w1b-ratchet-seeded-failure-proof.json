@@ -1,0 +1,91 @@
+{
+ "type": "FD13_SEEDED_FAILURE_PROOF",
+ "unit": "W1-B",
+ "date": "2026-08-18",
+ "doctrine": "A ratchet counts as enforcement ONLY after it is demonstrated to FAIL on a deliberately introduced real violation (FD-13 precedent).",
+ "harnessError": null,
+ "ratchetsProven": 8,
+ "ratchetsAttempted": 8,
+ "results": [
+  {
+   "id": "G2",
+   "rule": "HUMAN TEMPORAL / local elapsed-time",
+   "suite": "test/product/c0_anti_drift_gate_test.dart",
+   "test": "no new local humanized-time formatting",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "G3",
+   "rule": "HUMAN TEMPORAL / toLocal",
+   "suite": "test/product/c0_anti_drift_gate_test.dart",
+   "test": "no new local timezone conversion",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "G4",
+   "rule": "PRODUCT STATE / full-surface loading",
+   "suite": "test/product/c0_anti_drift_gate_test.dart",
+   "test": "no new full-surface spinner outside the state authority",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "G5",
+   "rule": "PRODUCT STATE / direct primitive construction",
+   "suite": "test/product/c0_anti_drift_gate_test.dart",
+   "test": "no new direct construction of the state primitives",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "G7",
+   "rule": "HUMAN TEMPORAL / local formatter declarations",
+   "suite": "test/product/c0_anti_drift_gate_test.dart",
+   "test": "no new locally declared time formatter",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "R1",
+   "rule": "ROLE-AS-PERMISSION",
+   "suite": "test/authority/c1_anti_drift_gate_test.dart",
+   "test": "no new role-derived authority booleans",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "R2",
+   "rule": "ROLE LITERAL COMPARISON",
+   "suite": "test/authority/c1_anti_drift_gate_test.dart",
+   "test": "no new role-literal comparisons",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "C3-RESOLVE",
+   "rule": "C3 ROUTE INTEGRITY / literal resolves against the route table",
+   "suite": "test/navigation/c3_route_integrity_gate_test.dart",
+   "test": "every feature navigation literal resolves against the declared route table",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  }
+ ]
+}

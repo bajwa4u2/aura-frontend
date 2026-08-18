@@ -165,7 +165,35 @@ when **all ten** conditions hold:
 classified **defect repair, not RC-C6 chapter execution**: RC-C6's chartered work is presentation convergence,
 which FD-4 already permits slice-by-slice *without* touching transport, media service or event parser.
 Governance reconciliation only — **no protected-system modification was performed**. Conditions **7 and 8
-remain owed** for the historical crossing.
+were owed** for the historical crossing.
+
+### 7.1 Discharge of conditions 7 and 8 — W1-000, 2026-08-18
+
+Evidence: `run/stage0-2026-08-18/05-execution/w1-000-shared-system-health-report.json`.
+Non-mutating: suites were run and behaviour observed; **no protected system was modified**.
+
+| | Condition | Status | Evidence |
+|---|---|---|---|
+| 7 | Targeted regression for the protected subsystem | **DISCHARGED** | Meetings **118** tests PASS (90 backend + 28 frontend); realtime transport **333** PASS (290 backend + 43 frontend); RC-A `509230a` and RC-B `dfc9027` verified present and ancestors of HEAD |
+| 8 | Shared-system health reported | **DISCHARGED, two defects reported** | Backend 192 suites / 2426 tests PASS; frontend 578 PASS after repair; **PB-12 satisfied for the first time** — both repositories reported together for one closure |
+
+**Two defects the green suites concealed, both recorded rather than smoothed over:**
+
+- **DEFECT-1 — `REPORTED_NOT_REPAIRED`.** `test/realtime_room_golden_test.dart` is `@Skip`-ped
+  entirely for "pre-existing rot". The realtime room's **rendered appearance is unverified by any
+  automated proof**; the 333 passing realtime tests cover semantics and lifecycle, not presentation.
+  Reviving it is CH-04 territory and is not authorized in this wave. **A green realtime suite must
+  not be read as covering realtime presentation.**
+- **DEFECT-2 — `REPAIRED_IN_W1-B`.** The C0 anti-drift ratchet was **RED before this wave began**:
+  `realtime_lobby_screen.dart` had introduced a new full-surface spinner outside the state authority.
+  Repaired to `AuraProductState`. **The baseline was not green when the programme proposed to start.**
+
+**Stale figure reported, not retro-fitted.** The governance record requires "Meetings 97/97"; the
+current suite is **118**. The suite grew, so this is not a coverage loss — but 118 was **not** presented
+as 97/97 and 97 was **not** rewritten to 118. Left for founder disposition.
+
+**Still owed after this discharge:** AD-CON-5 (founder classification of the crossing) and SU-5.
+Conditions 7 and 8 are discharged; **CH-04 entry is not**.
 
 ## 8. CHECKPOINT-AWARE EXTRACTION *(frozen)*
 

@@ -1,0 +1,37 @@
+{
+ "type": "W1A_GOVERNANCE_MECHANISM",
+ "unit": "W1-A",
+ "chapter": "CH-17 (MECHANISM half only — the TERMINAL half remains W7)",
+ "date": "2026-08-18",
+ "constructsProductCapability": false,
+ "findingsAddressed": {
+  "F115": "The non-shrinking rule now has a governed markdown home in BOTH repositories. It previously existed only in transcript evidence. NOT closed — the rule existing is not the rule having governed a closure.",
+  "F119": "Recorded as a corollary with its historical failure named.",
+  "F120": "Terminal vocabulary published, with the look-alike states that are NOT terminal listed explicitly."
+ },
+ "carries": {
+  "preservedConflicts": [
+   "F043",
+   "F051",
+   "F122"
+  ],
+  "f139Dimensions": [
+   "structural closure",
+   "live certification"
+  ],
+  "pb12": "Backend and frontend suites reported together is a required checkbox.",
+  "fd13": "Seeded-violation proof is a required column, not an aspiration."
+ },
+ "accounting": {
+  "findings": 143,
+  "obligations": 308,
+  "units": 451,
+  "chapters": 17
+ },
+ "filesWritten": [
+  "C:/Users/muham/flutter_projects/aura/aura_final/docs/governance/RECONSTRUCTION_REGISTER.md",
+  "C:/Users/muham/flutter_projects/aura/aura_final/docs/governance/CHAPTER_CLOSURE_TEMPLATE.md",
+  "C:/Users/muham/flutter_projects/aura/aura-backend/docs/governance/RECONSTRUCTION_REGISTER.md",
+  "C:/Users/muham/flutter_projects/aura/aura-backend/docs/governance/CHAPTER_CLOSURE_TEMPLATE.md"
+ ]
+}

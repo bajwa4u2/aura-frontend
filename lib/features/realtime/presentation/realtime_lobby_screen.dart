@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/navigation/navigation_authority.dart';
+import '../../../core/product/product_language.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -64,7 +67,10 @@ class RealtimeLobbyScreen extends ConsumerWidget {
                   broadcasts.when(
                     loading: () => const Padding(
                       padding: EdgeInsets.symmetric(vertical: AuraSpace.s32),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: AuraProductState(
+                        state: ProductState.loading,
+                        subject: ProductNoun.live,
+                      ),
                     ),
                     error: (_, __) => Text(
                       'Could not load live sessions — pull to retry.',
