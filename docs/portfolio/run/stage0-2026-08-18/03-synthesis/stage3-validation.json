@@ -1,0 +1,112 @@
+{
+  "stage": "STAGE_3",
+  "type": "DETERMINISTIC_DUAL_AXIS_OWNERSHIP_RECONCILIATION",
+  "date": "2026-08-18",
+  "portfolioHealth": {
+    "findings": "143/143",
+    "charteredObligations": "299/299",
+    "combinedCanonicalUnits": 442,
+    "executableChapters": 17,
+    "reductionRatio": 26,
+    "rcChaptersRepresented": "12/12",
+    "wg": "17 issued / WG018 reserved",
+    "protectedBoundaries": "12/12"
+  },
+  "perChapter": {
+    "CH-14": {
+      "f": 8,
+      "co": 10
+    },
+    "CH-04": {
+      "f": 26,
+      "co": 31
+    },
+    "CH-06": {
+      "f": 5,
+      "co": 4
+    },
+    "CH-13": {
+      "f": 12,
+      "co": 26
+    },
+    "CH-11": {
+      "f": 9,
+      "co": 2
+    },
+    "CH-15": {
+      "f": 1,
+      "co": 1
+    },
+    "CH-02": {
+      "f": 16,
+      "co": 17
+    },
+    "CH-05": {
+      "f": 6,
+      "co": 30
+    },
+    "CH-03": {
+      "f": 9,
+      "co": 31
+    },
+    "CH-12": {
+      "f": 13,
+      "co": 0
+    },
+    "CH-16": {
+      "f": 2,
+      "co": 27
+    },
+    "CH-09": {
+      "f": 24,
+      "co": 16
+    },
+    "CH-10": {
+      "f": 8,
+      "co": 2
+    },
+    "CH-17": {
+      "f": 4,
+      "co": 23
+    },
+    "CH-01": {
+      "f": 0,
+      "co": 42
+    },
+    "CH-07": {
+      "f": 0,
+      "co": 20
+    },
+    "CH-08": {
+      "f": 0,
+      "co": 17
+    }
+  },
+  "checksPassed": [
+    "Stage-0 baseline UNMUTATED by Stage 3",
+    "Stage-1 proposals UNMUTATED by Stage 3",
+    "Architecture defines 17 implementation chapters",
+    "AXIS 1 findings: 143/143 owned EXACTLY ONCE",
+    "AXIS 2 obligations: 299/299 owned EXACTLY ONCE",
+    "RC chapters: 12/12 still represented via charteredBy",
+    "charteredBy preserved on every obligation assignment",
+    "No obligation declared satisfied outside the permitted class vocabulary",
+    "No unauthorised state mutation across finding assignments",
+    "F043/F051/F122 remain CONFLICTING_CURRENT_STATE",
+    "F139 founder ruling preserved (structural CLOSED / certification OUTSTANDING)",
+    "RC-C10 ruling preserved: ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED, gates intact",
+    "F137 explicitly owned by CH-12",
+    "WG: 17 issued (WG001-WG017), WG018 reserved",
+    "Protected boundaries: 12/12 accounted in the chapter architecture"
+  ],
+  "warnings": [],
+  "failures": [],
+  "verdict": "PASS",
+  "stageStatus": {
+    "stage0": "COMPLETE_AND_FOUNDER_RATIFIED",
+    "stage1": "COMPLETE",
+    "stage2": "COMPLETE_WITH_AMENDMENT",
+    "stage3": "COMPLETE",
+    "stage4": "NOT_STARTED_NOT_AUTHORIZED"
+  }
+}

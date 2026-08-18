@@ -1,0 +1,1268 @@
+{
+ "type": "ANALYTICAL_PROPOSAL",
+ "artifact": "ownership-findings",
+ "stage": "STAGE 3 - SYNTHESIS (FINDING OWNERSHIP)",
+ "date": "2026-08-18",
+ "authority": "NOT RATIFIED TRUTH. Founder-authorised for STAGE 3 SYNTHESIS ONLY. Assigns exactly one canonical implementation-chapter owner per finding. It resolves no preserved conflict, revises no currentState, weakens no gate or protected boundary, and authorises no implementation.",
+ "chapterSetConsumed": "chapter-architecture.json (FIXED SET, CH-01..CH-17). No chapter was invented; nothing was force-fitted.",
+ "axisDiscipline": "This artifact reconciles the FINDING axis only (143/143). It makes no claim over the 299 chartered obligations. A finding cross-referencing a chapter never transfers obligation ownership, and an obligation related to a finding never discharges it.",
+ "count": 143,
+ "assignments": [
+  {
+   "id": "F001",
+   "canonicalChapter": "CH-14",
+   "crossReferencedChapters": ["CH-03", "CH-17"],
+   "ownershipRationale": "The system that must become correct is the DISCOVER domain taxonomy and its entry surfaces (RC-C3 product-meaning obligations, owned by CH-14). Institution residue on the People surface is taxonomy-adoption residue, not identity-projection drift; CH-03 is a consumer of the identity shown on the surface, not the owner of what the surface is FOR. Its IMPLEMENTED_NOT_LIVE_CERTIFIED state is recorded as never exercised live, which CH-14's certification requirements name explicitly.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Removing residue does not make People discovery name a human intention. CH-14's obligation - discovery that names intentions rather than backend modules - survives the fix."}
+  },
+  {
+   "id": "F002",
+   "canonicalChapter": "CH-14",
+   "crossReferencedChapters": ["CH-13", "CH-06"],
+   "ownershipRationale": "FREEZE-CREATE-INTENT-VOCABULARY (MESSAGE / POST / ARTICLE / ANNOUNCEMENT) and Create's migration off the legacy creation model are named CH-14 obligations. The composer each intent opens is CH-13's and the MESSAGE intent lands in CH-06, but the intent vocabulary itself is the system that must become correct.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "Migrating off the legacy model still leaves the question of whether Create expresses what a person intends to make. Naming the intents correctly is the product obligation, not deleting the old model."}
+  },
+  {
+   "id": "F003",
+   "canonicalChapter": "CH-14",
+   "crossReferencedChapters": ["CH-10", "CH-07"],
+   "ownershipRationale": "Institution acquisition placement (header, lifecycle-gated) is enumerated CH-14 scope. The unaffiliated-person case is a placement decision inside the entry/taxonomy layer, not an institutional-communication capability (CH-07) and not the anonymous funnel (CH-10).",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "Correct placement is sufficient here. The live-certified claim rests on WEAK provenance (CH-14 records F003/F004/F024 as carrying no structural weight), which is a certification concern owned by CH-17, not a product-adequacy residue."}
+  },
+  {
+   "id": "F004",
+   "canonicalChapter": "CH-14",
+   "crossReferencedChapters": ["CH-10"],
+   "ownershipRationale": "Whether Add Institution is a Create or Discover domain is a taxonomy question decided by the frozen domain/intent vocabulary CH-14 owns. Nothing else in the set owns the domain list.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "A correct domain classification is the whole of the obligation. WEAK provenance is flagged for CH-17, not carried as product inadequacy."}
+  },
+  {
+   "id": "F005",
+   "canonicalChapter": "CH-14",
+   "crossReferencedChapters": ["CH-06", "CH-13"],
+   "ownershipRationale": "This is the MESSAGE creation intent behaving as a simple human act rather than a configuration surface - a Create-intent vocabulary obligation. CH-06 owns what a Conversation IS; CH-14 owns what creating one MEANS at the intent layer.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "Validating the current flow does not make the creation moment good. 'Stays simple human messaging' is a standing quality obligation that a validation pass cannot discharge."}
+  },
+  {
+   "id": "F006",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-06", "CH-16", "CH-17"],
+   "ownershipRationale": "1:1 audio is a capability of the realtime session substrate, which CH-04 owns. Its LIVE_CERTIFIED state rests on single-line WEAK provenance while the frozen Conversation Completion Register (adjudicated in CH-06) simultaneously names it unresolved; CH-04's certification requirements make live re-proof a precondition of any completeness claim. Ownership sits with the substrate that must be correct, not with the register that adjudicates it.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "A call that connects is the baseline every competitor meets. A row marked certified on weak provenance is not the same as an audio experience that is competitively adequate on real devices (proof lands with CH-16)."}
+  },
+  {
+   "id": "F007",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-06", "CH-16", "CH-17"],
+   "ownershipRationale": "Group audio is a substrate capability under the same WEAK-provenance re-proof condition as F006. CH-04 owns the session substrate whose participation truth must hold for more than two parties.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Group audio that connects is not group audio that shows who is actually there and ends the same way for everyone - the substrate obligation survives the capability row."}
+  },
+  {
+   "id": "F008",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-06", "CH-16", "CH-17"],
+   "ownershipRationale": "Video call is a substrate capability; the shared presentation family (tiles, grid, spotlight) that renders it is CH-04's FD-4 convergence scope. Held LIVE_CERTIFIED on WEAK provenance and named unresolved by the Completion Register.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Video that establishes is not video that holds four frames (F073) or carries canonical identity on tiles (F054). Certification of the capability row leaves both inadequacies standing."}
+  },
+  {
+   "id": "F009",
+   "canonicalChapter": "CH-06",
+   "crossReferencedChapters": ["CH-04", "CH-03", "CH-07"],
+   "ownershipRationale": "Party topology as a durable relationship fact is PB-04 constitutional ground owned by CH-06: 1:1 growing to group, firstJoinedAt immutability, directKey clearing and the rejected generic ordering approximation are all message/party-model obligations, not realtime-substrate ones. The growth may occur during a live session (CH-04), but what changes is the Conversation's party set.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Growing a conversation is table stakes; participant management beyond LEAVE (WG016) has no doctrine at all, so the certified growth path still leaves a product where nobody can be removed. Doctrine is founder-owned."}
+  },
+  {
+   "id": "F010",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-06", "CH-16", "CH-13", "CH-17"],
+   "ownershipRationale": "Screen share is a media-track capability of the session substrate. Same WEAK-provenance re-proof condition as F006/F007/F008; the Completion Register row is adjudicated in CH-06 but the capability must become correct in CH-04.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Screen share that starts is not screen share with legible framing, source selection and stop affordances. The certified row does not describe a competitive sharing experience."}
+  },
+  {
+   "id": "F011",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-11", "CH-12", "CH-06"],
+   "ownershipRationale": "The attachment LIFECYCLE (select/paste/drop -> validate -> preview -> upload -> progress -> ready -> send) is the RC-C5 Composition/Attachment authority owned by CH-13. F016 (CH-11) explicitly GATES this finding across the chapter boundary - the gate is visible precisely because the two live in different chapters and cannot be silently absorbed.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "CD-1's literal worked example: three identical grey pills where typed document cards with filename, extension, size, page count and a first-page preview belong. An attachment that uploads is not an attachment that is presented."}
+  },
+  {
+   "id": "F012",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-16", "CH-11"],
+   "ownershipRationale": "Drag/drop is dual-chartered (RC-C5 intake, RC-C9 platform). The design treats these as TWO obligations with two owners and no merge; the finding describes the intake layer - what happens to content that arrives by drop - so it is owned by CH-13. CH-16 owns the platform surface that produces the drop event and will prove it at the native boundary.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "RC-C5 records drag/drop at zero implementations across composers. Certifying one door leaves the interaction inconsistent everywhere else - 'behaves the way every competitor's does' means every door on every platform."}
+  },
+  {
+   "id": "F013",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-16", "CH-11"],
+   "ownershipRationale": "Clipboard paste including image is Content Intake & Resolution - CH-13's named RC-C5 obligation, with per-composer paste handling across 25 files as its DR3 demolition target. The platform clipboard half is CH-16's and is consumed, not owned, here.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Paste that accepts an image is not paste that preserves richness without inventing it. Rich paste fidelity across mixed content is the obligation; a working image path is one door of six."}
+  },
+  {
+   "id": "F014",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-11", "CH-12"],
+   "ownershipRationale": "Voice messages are an intake-plus-presentation capability of one surface: recording is a composition act and playback is a shared client primitive, both owned by CH-13. F016 (CH-11) gates it; derivatives (waveform) are generated in CH-12 and consumed here.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "VD-050 records that no seek bar and no waveform exist AS CAPABILITIES ANYWHERE. A voice message that records and plays is still below every competitor without waveform, scrub, speed and resume."}
+  },
+  {
+   "id": "F015",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-11", "CH-12"],
+   "ownershipRationale": "Video messages are the same intake-plus-presentation pair as F014 and sit behind the same F016 gate in CH-11. Posters and inline playback derive from CH-12 derivatives; the composition and presentation layers are CH-13's.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "A video message that sends but plays without a poster, inline surface or timeline is an inadequate product even when the transport is correct."}
+  },
+  {
+   "id": "F016",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": ["CH-13", "CH-12"],
+   "ownershipRationale": "Honest media/document kind is a RESOLVED TYPE CLASS decision taken once, at the ingestion door, in one vocabulary - CH-11's governing outcome. It is deliberately placed apart from the findings it gates (F011/F014/F015 in CH-13) so the gate crosses a chapter boundary and cannot be silently absorbed by the chapter it gates (E-SC-12). Its MISSING_AUTHORITY class is exactly an authority-creation obligation.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "PDF, DOCX and PPTX must be known formats with honest capability disclosure. Knowing the true type is the precondition; the product is still inadequate until that truth is expressed as typed presentation (CH-13) and honest refusal (F128)."}
+  },
+  {
+   "id": "F017",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-12", "CH-14"],
+   "ownershipRationale": "Link intelligence is an AUTHORING-TIME resolution of what a person typed, which places hydration in the composition chapter. Backfill for pre-existing content is a hydration obligation of the same authority; preview-image bytes are custodied in CH-12 and consumed here.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "Hydrating new links leaves historical content permanently un-hydrated. A link surface that is rich only for content authored after the fix is not a rich hydrated presentation."}
+  },
+  {
+   "id": "F018",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-12", "CH-17"],
+   "ownershipRationale": "External hydration is the same authority as F017 and belongs with it. It is one of the five live-certified capabilities that VANISHED from reporting once (F119), so CH-17's non-shrinking register rule applies to its re-reporting - a governance cross-reference, not shared ownership.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Certified hydration that hotlinks third-party images (F135) is not a private or durable preview. The capability row does not describe the obligation."}
+  },
+  {
+   "id": "F019",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-06", "CH-16"],
+   "ownershipRationale": "Rich and selectable text is a shared client presentation primitive plus a composition capability - both halves of CH-13's governing outcome. CH-06 owns the message body as a durable fact; how that body is composed, selected and rendered is CH-13's.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Selection and copy behaviour that works on one surface is not the frozen doctrine's standard. Rich text must survive the round trip - compose, transmit, render, copy back out - on every surface."}
+  },
+  {
+   "id": "F020",
+   "canonicalChapter": "CH-06",
+   "crossReferencedChapters": ["CH-13", "CH-03", "CH-05", "CH-17"],
+   "ownershipRationale": "Mentions are a MESSAGE-LEVEL semantic (who is referenced in a message body, and what attention that creates), owned with the message model in CH-06. The composer affordance is CH-13's and the qualifying-mention badge rule is CH-05's; neither owns the semantic.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Mentions must survive the round trip alongside emoji and rich text, and must resolve to canonical identity (CH-03). A certified send path leaves rendering and attention semantics unproven; it also vanished from reporting once (F119)."}
+  },
+  {
+   "id": "F021",
+   "canonicalChapter": "CH-06",
+   "crossReferencedChapters": ["CH-13", "CH-17"],
+   "ownershipRationale": "Reply-to-message is a relationship between two messages in the canonical message model - CH-06 ground. Recorded as one of the five capabilities completed earlier and then disappeared from reporting.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Part of the 2016 messaging baseline (CD-5) the product otherwise lacks. Reply existing is not reply presented with legible quoted context and a working jump-to-source."}
+  },
+  {
+   "id": "F022",
+   "canonicalChapter": "CH-06",
+   "crossReferencedChapters": ["CH-13", "CH-17"],
+   "ownershipRationale": "Translation acts on a message body, which is CH-06's constitutional fact. Presentation of the translated body is CH-13's shared primitive; the capability itself is a message-level semantic.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "Correct translation of a correct body is adequate at this row. Its live residue is a governance one - it is a capability that vanished from reporting once and must be re-reported at closure (F119, CH-17)."}
+  },
+  {
+   "id": "F023",
+   "canonicalChapter": "CH-15",
+   "crossReferencedChapters": ["CH-06", "CH-09", "CH-12"],
+   "ownershipRationale": "The report journey wired to the canonical moderation authority is CH-15's core: policy, adjudication and the human journey. CH-06 attaches message reporting as a Completion Register row and CH-09 delivers an in-Live surface, but both CONSUME this authority - a second moderation authority is prohibited.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "A report journey that is wired but has never been run end to end does nothing for a harmed person. Reporting must visibly act - report, adjudicate, resolve, notify - on every surface a person can be harmed on, with an appeal route."}
+  },
+  {
+   "id": "F024",
+   "canonicalChapter": "CH-14",
+   "crossReferencedChapters": ["CH-13", "CH-10"],
+   "ownershipRationale": "Article as a fourth Discover domain is a taxonomy fact owned by CH-14 alongside the domain framework and the publication act. Its authoring surface is CH-13's and the public funnel that presents it is CH-10's.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "The domain existing does not deliver CD-8's obligation - an authoring and publishing experience at the level of the long-form market. A certified domain over an inadequate authoring surface is exactly the case the product standard names."}
+  },
+  {
+   "id": "F025",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-14", "CH-12"],
+   "ownershipRationale": "Raw markdown appearing on image insert is the absent shared intake/representation layer seen from the editor door - RC-C5 Content Intake & Resolution. It was explicitly distinguished from F121 at issuance (F121 is reference durability, CH-12); this row is what the author SEES while composing.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Rendering the image instead of the markup is the minimum. The obligation is inline rendered media in the authoring surface (CD-8), which suppressing raw syntax does not by itself deliver."}
+  },
+  {
+   "id": "F026",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-14"],
+   "ownershipRationale": "Title paste oversizing is per-composer paste handling - the SHARED_DEFICIENCY_MANIFESTATION of the same missing intake layer as F013/F025, whose DR3 demolition (25 paste files) is CH-13 scope.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Clamping one title field patches one door. The obligation is one governed paste path with sane behaviour in every field on every surface."}
+  },
+  {
+   "id": "F027",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-13", "CH-14"],
+   "ownershipRationale": "Draft resume is durable identity of in-progress work, which the continuity authority owns; the register places F027 and F070 together as one obligation and the GAP-2 dispersal record routes it explicitly to CH-02. CH-13 owns WG006 per-conversation draft persistence and is under a founder ruling to coordinate with F063/F070 rather than create another store.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Refresh is never a data-loss event. Restoring text is not restoring the work: selection, scroll position, attachment upload state and the draft's address must all survive."}
+  },
+  {
+   "id": "F028",
+   "canonicalChapter": "CH-14",
+   "crossReferencedChapters": [],
+   "ownershipRationale": "An article create 500 is an ISOLATED_DEFECT in the publication commit path, which CH-14 owns. It is terminal and disperses to nothing - the GAP-2 dispersal record names it as isolated and terminal, and it must not be used to make an Articles chapter look substantial.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "A fixed and live-certified isolated defect with no residual product inadequacy attached to it. The long-form quality obligation is carried by F024/F029, not here."}
+  },
+  {
+   "id": "F029",
+   "canonicalChapter": "CH-14",
+   "crossReferencedChapters": ["CH-12", "CH-17"],
+   "ownershipRationale": "Durable URL across revision and a truthful revision history is the publication lifecycle - the GAP-2 charter granted inside CH-14. Canonical media references inside the revised body come from CH-12; the address promise is CH-14's.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "A stable address and an honest 'revised' fact is the floor, not the ceiling: CD-8 records the surrounding authoring and publishing experience as below the long-form market. Also one of the five capabilities that vanished from reporting once."}
+  },
+  {
+   "id": "F030",
+   "canonicalChapter": "CH-05",
+   "crossReferencedChapters": ["CH-04", "CH-13", "CH-02"],
+   "ownershipRationale": "The app-root ScaffoldMessenger floating SnackBar above the Router is legacy global attention presentation with no governing authority. CH-05 owns the Attention Authority and the DR1 eight-surface retirement that retires it; the founder-frozen instruction is that C4 retires it rather than patching it cosmetically.",
+   "currentState": "C4_OWNED_OPEN",
+   "protectedStatus": "C4-OWNED under PB-08. Assignment to CH-05 is an implementation placement; the protected status is FLAGGED, not overridden. Retirement is producer-level and gated on founder checkpoint 7.",
+   "worldClassObligation": {"value": true, "note": "Deleting the banner is explicitly prohibited as a cosmetic fix. The obligation is one governed attention hub where a call fact is resolvable where it is shown - an ungoverned overlay is the anti-pattern the doctrine names."}
+  },
+  {
+   "id": "F031",
+   "canonicalChapter": "CH-05",
+   "crossReferencedChapters": ["CH-13", "CH-14"],
+   "ownershipRationale": "The overlap with composers and /articles/write is the same producer as F030 seen from another surface - a SHARED_DEFICIENCY_MANIFESTATION of the ungoverned global overlay CH-05 owns. CH-13 records the consequence (a composer cannot be product-behaviour-certified while an ungoverned overlay covers it) as a dependency, not as ownership.",
+   "currentState": "C4_OWNED_OPEN",
+   "protectedStatus": "C4-OWNED under PB-08. Protected status flagged; DR1 retirement must be proven-dead (FD-12), never a naive zero-reference deletion.",
+   "worldClassObligation": {"value": true, "note": "No ungoverned overlay may cover the composer. Moving or shrinking the banner does not discharge that - the surface must stop existing as an ungoverned producer."}
+  },
+  {
+   "id": "F032",
+   "canonicalChapter": "CH-05",
+   "crossReferencedChapters": ["CH-06", "CH-16"],
+   "ownershipRationale": "Unread persisting after viewing is read-state truth and owning-domain clearing - the heart of RC-C4's frozen obligation set that CH-05 owns. CH-06 supplies message-level clearing semantics as a named dependency; cross-device read state is delivered natively via CH-16.",
+   "currentState": "C4_OWNED_OPEN",
+   "protectedStatus": "C4-OWNED under PB-08. The stale-state evidence must not be patched or deleted (EVIDENCE DESTRUCTION boundary).",
+   "worldClassObligation": {"value": true, "note": "A badge a person can trust, that clears where the work was actually done. Clearing on view is not the obligation; deterministic reconciliation with NO WALL OF FALSE UNREADS is."}
+  },
+  {
+   "id": "F033",
+   "canonicalChapter": "CH-05",
+   "crossReferencedChapters": ["CH-04"],
+   "ownershipRationale": "Call facts rendered as 'interacted with your content' is a PROJECTION SEMANTIC defect: attention is describing a domain event in the wrong vocabulary. CH-05 owns projection semantics; CH-04 owns the domain event truth that is being mis-described.",
+   "currentState": "C4_OWNED_OPEN",
+   "protectedStatus": "C4-OWNED under PB-08. Flagged, not overridden.",
+   "worldClassObligation": {"value": true, "note": "No call facts disguised as content interactions. Relabelling the string is not the fix - the projection must consume domain-owned semantics and offer the domain's resolvable action."}
+  },
+  {
+   "id": "F034",
+   "canonicalChapter": "CH-05",
+   "crossReferencedChapters": ["CH-03"],
+   "ownershipRationale": "Self-actor notifications are actor filtering inside the attention projection - CH-05's obligation. It consumes canonical identity from CH-03 to know who the actor is, which is a dependency rather than shared ownership.",
+   "currentState": "C4_OWNED_OPEN",
+   "protectedStatus": "C4-OWNED under PB-08. Flagged, not overridden.",
+   "worldClassObligation": {"value": true, "note": "No self-notifications. Filtering the obvious self case still leaves the broader noise-reduction obligation: what the product says needs attention must actually need it."}
+  },
+  {
+   "id": "F035",
+   "canonicalChapter": "CH-05",
+   "crossReferencedChapters": ["CH-04", "CH-09"],
+   "ownershipRationale": "RETAINED in CH-05 as C4_OWNED_OPEN under PB-08 and the frozen BOUNDARY-REALTIME-LIVE-PROTECTED-FROM-RIC doctrine. Agent A's substantive argument - that attention presentation cannot manufacture a media-connected count and the finding should be re-owned to the realtime substrate - is PRESERVED AS A FOUNDER QUESTION and is NOT executed here. This artifact has no authority to move it.",
+   "currentState": "C4_OWNED_OPEN",
+   "protectedStatus": "C4-OWNED under PB-08. Ownership is under an open founder question (CH-05 founderActions); the protected status is the reason it has not moved.",
+   "worldClassObligation": {"value": true, "note": "Showing a roster where a connected count belongs is a truthfulness defect in the most visible realtime surface. Correcting the number still leaves the question of which authority is entitled to state it."}
+  },
+  {
+   "id": "F036",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-02"],
+   "ownershipRationale": "'Stuck in Connecting forever' is terminal-state convergence in the session lifecycle cluster (RC-A/RC-B territory) that CH-04 owns over the PB-02 protected transport.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Never hanging in Connecting is the floor. The obligation is that existence, participation and termination are the same truth for every party and every device - one unstuck path does not establish that."}
+  },
+  {
+   "id": "F037",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-06"],
+   "ownershipRationale": "Parallel sessions per conversation is a session-identity lifecycle defect of the substrate. CH-06 owns the Conversation the sessions attach to, but singleton session truth is a CH-04 property.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "One session per conversation is a correctness property AND an experience one: parallel sessions split participants into rooms that cannot see each other, which no competitor does."}
+  },
+  {
+   "id": "F038",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-05", "CH-09", "CH-10"],
+   "ownershipRationale": "Stale ACTIVE session rows are session lifecycle truth owned by CH-04. The five stale rows are also C4 EVIDENCE (CH-05's evidence-destruction boundary) and feed public 'live now' truthfulness in CH-10 - both are cross-references, not co-ownership.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Stale ACTIVE rows make every downstream surface lie - rosters, discovery, attention, the public index. Reaping them is not the same as making termination converge at the source."}
+  },
+  {
+   "id": "F039",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": [],
+   "ownershipRationale": "NULL-expiry legacy invites are LEGACY_COMPATIBILITY_DEBT in the realtime invite model, which CH-04 owns alongside modern invite/add flows.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "Legacy data compatibility with a correct expiry model is adequate. The invite EXPERIENCE obligation is carried by CH-04's modern invite/add flows, not by this legacy row."}
+  },
+  {
+   "id": "F040",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-16", "CH-05"],
+   "ownershipRationale": "A persistent browser ring notification is ring lifecycle over the shared realtime producers CH-04 owns. Native ring presentation is CH-16's and delivery preference is CH-05's; the lifecycle that fails to terminate is the substrate's.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "A ring that outlives its call is the most conspicuous possible interaction failure. Clearing it is necessary; preferred-first ring with stagger and fallback is the actual product obligation."}
+  },
+  {
+   "id": "F041",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-01"],
+   "ownershipRationale": "A false 'Connection lost' before join is a PRESENTATION_DEFICIENCY over realtime state, owned by CH-04's shared presentation family. CH-01 supplies the honest loading/error vocabulary it must consume.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Suppressing the false message is not the same as consistent, honest connecting / retrying / failed states everywhere - the CH-01 substrate obligation this surface must adopt."}
+  },
+  {
+   "id": "F042",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-05"],
+   "ownershipRationale": "Dismiss/Rejoin offered over one's own call is shared-presentation semantics driven by participation truth - CH-04's boundary. The surface that shows it may be an attention producer, but the semantic error is about who is already in the session.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Offering an action that contradicts the person's own state is a competitive-quality failure; correct affordances require the shared component family to consume participation truth rather than infer it."}
+  },
+  {
+   "id": "F043",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-05"],
+   "ownershipRationale": "Timer before establishment is call-lifecycle truth (RINGING/ACCEPTED versus JOINING/CONNECTED never collapsed) owned by CH-04. Its state is CONFLICTING_CURRENT_STATE and is CARRIED FORWARD UNRESOLVED: analytical consensus is not founder adjudication, and this artifact does not adjudicate it.",
+   "currentState": "CONFLICTING_CURRENT_STATE",
+   "protectedStatus": "PRESERVED CONFLICT. Must be reported at ITEM level at every closure; a chapter-level roll-up that conceals it is a governance failure (CH-17).",
+   "worldClassObligation": {"value": true, "note": "A duration that starts before the call exists is a truthfulness defect in the surface a person watches most closely. Fixing the start point does not discharge the frozen doctrine that accept/decline truth propagates from the authoritative commit."}
+  },
+  {
+   "id": "F044",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-05"],
+   "ownershipRationale": "'Ready to join' persisting after the session ended is terminal-state convergence in the shared presentation family - CH-04.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "A dead call that still offers entry is a dead CTA. Convergence must be deterministic for every party and every device, not corrected on one surface."}
+  },
+  {
+   "id": "F045",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-02"],
+   "ownershipRationale": "Accept freezing or spinning on later calls is the RC-A shared-singleton disposal class - the twenty-finding lifecycle cluster built INSIDE the PB-02 protected layer that CH-04 owns and must now certify.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "The second call must behave exactly like the first. A repaired disposal path is not proof; RC-A and RC-B both made calls unusable in production, so re-proof is the obligation."}
+  },
+  {
+   "id": "F046",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-02"],
+   "ownershipRationale": "Call lost after freeze/refresh is session-participation recovery over the protected transport - CH-04's reconnect/orphan-recovery territory. The DESTINATION half of a refresh is CH-02's; the SESSION half is here, and CH-02 blocks it as a named dependency (a rejoin needs a destination to return to).",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Refresh must not be a call-ending event. Recovering the session without recovering the person's place in the product is still a loss."}
+  },
+  {
+   "id": "F047",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-01"],
+   "ownershipRationale": "The ring card is a member of the shared presentation family whose FD-4 convergence CH-04 owns (3,890 lines reimplementing participant presentation while using 0 of 5 shared widgets). Classed ISOLATED_DEFECT, but the surface it defaces is not isolated.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Textbook 'defect fixed, product still inadequate': removing a yellow underline leaves incoming-call chrome that is not competitive. The incoming ring is the most-seen realtime surface in the product."}
+  },
+  {
+   "id": "F048",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-03", "CH-09"],
+   "ownershipRationale": "Leave/end propagation and convergence is the substrate's defining obligation - the same truth for every party and every device. CH-03 is cross-referenced because identity drift (F057) reached End-vs-Leave authority, which is why any identity change must re-prove it.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "A call that ends the same way for everyone is the baseline every competitor meets. Certified propagation on one topology does not cover multi-device or Meetings-equivalent topologies."}
+  },
+  {
+   "id": "F049",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-06"],
+   "ownershipRationale": "One participant leaving while others continue is participation truth in the session substrate, and one of the five capability rows held LIVE_CERTIFIED on WEAK provenance that CH-04 must re-prove before any completeness claim.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "The remaining parties must see an accurate roster instantly - which is F035's unresolved question. A certified leave path over an inaccurate participant count is not an adequate product."}
+  },
+  {
+   "id": "F050",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-06", "CH-07"],
+   "ownershipRationale": "The thread counterpart's canonical identity is identity CONSUMPTION - the audited half RC-C2 never covered and CH-03's governing outcome. CH-06/CH-07 own the surfaces; the projection they must consume is owned here.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Original identity and appearance must survive every projection. One correct counterpart does not establish that; F116's systematic consumer audit is the exit condition."}
+  },
+  {
+   "id": "F051",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-12", "CH-06"],
+   "ownershipRationale": "Avatar absence in chat is identity consumption; CH-03 owns the canonical projection every surface must consume. Its VISUAL completion is externally blocked by F058 (R2/uploads CORS) in CH-12 - a dependency, not a transfer. Its state is CONFLICTING_CURRENT_STATE and is CARRIED FORWARD UNRESOLVED.",
+   "currentState": "CONFLICTING_CURRENT_STATE",
+   "protectedStatus": "PRESERVED CONFLICT. Reported at ITEM level at closure; never resolved by analytical consensus (founder ruling).",
+   "worldClassObligation": {"value": true, "note": "A real avatar on every message is part of original identity surviving projection. Even once CORS is cleared, the obligation is a canonical projection consumed everywhere, not a repaired image on one surface."}
+  },
+  {
+   "id": "F052",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-04", "CH-12"],
+   "ownershipRationale": "Avatars on realtime surfaces are the same consumption obligation applied to tiles and rosters. CH-04 owns the tiles; CH-03 owns the identity they must render. Derivative imagery comes from CH-12.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "Realtime tiles and the native ring are where identity most often degrades to a placeholder. Repairing the web tile leaves the native boundary (CH-16) unproven."}
+  },
+  {
+   "id": "F053",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-04", "CH-06", "CH-07", "CH-08"],
+   "ownershipRationale": "The parent consumption finding: canonical identity consumed consistently across the product. FRAGMENTED_AUTHORITY is precisely the class CH-03 was chartered to end, and the identity conformance gate it publishes is how the audit terminates rather than recurring in every later chapter.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "Consistency is not achieved by fixing the known consumers; it is achieved when no new consumer can be built that does not pass the conformance gate."}
+  },
+  {
+   "id": "F054",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-04", "CH-09"],
+   "ownershipRationale": "Video tiles rendering 'Participant' is the canonical identity failing at the realtime consumption point - CH-03's boundary. The tile component belongs to CH-04's shared presentation family and consumes the projection.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "'Participant' is the literal opposite of original identity surviving projection. A name on the tile is the floor; verification layering and presence must project truthfully too."}
+  },
+  {
+   "id": "F055",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-06", "CH-17"],
+   "ownershipRationale": "Group identity ordering is MISSING_AUTHORITY with no doctrine anywhere in the 64 records - CH-03 owns group identity representation and names it a founder action, because engineering cannot supply the doctrine. The rejected generic party-ordering approximation (PB-04, CH-06) is a related but distinct constraint.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "A group must have a truthful, deliberate identity representation rather than an accidental one. Any ordering can be implemented; only a founder-frozen doctrine makes one correct."}
+  },
+  {
+   "id": "F056",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-12"],
+   "ownershipRationale": "Group avatar treatment is the visual half of the same doctrine gap as F055 and is owned with it. Its visual completion depends on CH-12's derivative and CORS work.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Stacked crops chosen by accident are not a group's identity. This is a doctrine obligation before it is an implementation one."}
+  },
+  {
+   "id": "F057",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-04", "CH-08", "CH-09"],
+   "ownershipRationale": "me['id'] versus me['user']['id'] is resolver-SHAPE drift in identity consumption, and it is the proof that consumption drift is AUTHORITY-affecting rather than cosmetic: host detection, Leave-vs-End, role lookup and Go Live eligibility all depend on it. That makes CH-03 the owner and CH-04/CH-08/CH-09 the affected consumers who must re-prove after any identity change.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "At this site, correct resolution IS adequacy - the shape either matches or it does not. The systemic inadequacy it exposes is owned by F116's consumer audit, not double-counted here."}
+  },
+  {
+   "id": "F058",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-03", "CH-13"],
+   "ownershipRationale": "R2/uploads CORS is a DELIVERY boundary property of the storage universe CH-12 owns, and it sits beside the R2 public-read ratchet as part of the same founder-actioned external surface. CH-03 is the visible casualty (the identity band cannot complete visually) but does not own the bucket. State is BLOCKED on an external founder action.",
+   "currentState": "BLOCKED",
+   "worldClassObligation": {"value": true, "note": "Nothing in the identity band can look right while avatars are blocked at the delivery boundary. Unblocking CORS is one step of the four-step safe order toward canonical governed delivery - it is not the whole obligation."}
+  },
+  {
+   "id": "F059",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-06"],
+   "ownershipRationale": "Losing the Conversation destination on refresh is one of the six surfaces produced by the two shared causes (F065 session-state establishment, F069 route classification). Assigning it to CH-06 would make the Conversation chapter build its own destination reconstruction - the temporary architecture the chapter test forbids and the observed cause of the sixteen findings.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Refresh is never a data-loss event: composition, selection, scroll position and in-progress uploads must survive, not just the route."}
+  },
+  {
+   "id": "F060",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-02"],
+   "ownershipRationale": "Mid-call re-participation is a session-rejoin mechanic over the protected realtime layer, which CH-04 owns; Agent A moved it out of the recorded continuity domain on the ground that destination, roster and duration ARE preserved. DISPUTED: the alternative reading (that it is a continuity manifestation belonging to CH-02) is preserved as legitimate and recorded in contradictions.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "Automatic, silent re-participation after a refresh is what every competitor does. Being able to rejoin manually is not the obligation."}
+  },
+  {
+   "id": "F061",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-03"],
+   "ownershipRationale": "Personal profile edit continuity is the same shared cause on a different surface. CH-03 rebuilds profile surfaces but must not build its own session-state reading or destination reconstruction.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "An interrupted profile edit must return the person to the edit with the edit intact - restoring the route alone is still a data-loss event."}
+  },
+  {
+   "id": "F062",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-07", "CH-03"],
+   "ownershipRationale": "Institution profile edit continuity is the institutional instance of the same cause, and it sits beside F066 (institution routes redirecting while loading) which is already CH-02's. Splitting them across CH-02 and CH-07 would divide one cause across two chapters.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Institutional editing loses more work per interruption than personal editing; the same contract must hold, proven in the institution acting context."}
+  },
+  {
+   "id": "F063",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-13", "CH-14"],
+   "ownershipRationale": "Compose systems continuity is the durable-identity-of-in-progress-work half of the continuity contract. The founder ruled explicitly that WG006 per-conversation draft persistence (CH-13) must coordinate with F063/F070 and NOT create another store - which places the store's authority here and its composer consumption there.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "A composer that loses text on refresh is disqualifying. Surviving text without surviving attachments-in-flight, selection and the draft's address is still an inadequate product."}
+  },
+  {
+   "id": "F064",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-04"],
+   "ownershipRationale": "SEPARATE ROW from F113 and kept so deliberately. Meetings' two continuity findings are repaired at the SHARED cause in CH-02 without opening the Meetings lifecycle (PB-01); CH-M's analytically important contribution was exactly this subtraction. F064's proof burden is SINGLE_AUTHORIZED_BROWSER and may not be discharged by F113's multi-party proof, or vice versa.",
+   "currentState": "OPEN",
+   "protectedStatus": "Touches PB-01 Meetings routes. Fixed at the shared continuity cause; the Meetings lifecycle is not opened, and a targeted Meetings regression (97/97) follows any router change.",
+   "worldClassObligation": {"value": true, "note": "A booked attendee who refreshes must not lose the meeting. The router-boundary precedent (institutionId-in-path is not institution-actor identity) shows how easily this class recurs."}
+  },
+  {
+   "id": "F065",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-10", "CH-09", "CH-13", "CH-16"],
+   "ownershipRationale": "The KEYSTONE: session-state establishment (KNOWN / UNKNOWN / RESTORING) written at 2 of N call sites, with TokenStore.setSession() as the choke point. It is preserved as an ORDERING CONSTRAINT inside CH-02, not as a merge - its live refresh proof is the chapter's first gate and no downstream continuity finding may be claimed closed before it passes.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "protectedStatus": "DB-10 SESSION LOSS: writing the hint anywhere but the TokenStore.setSession() choke point reintroduces RC1; guest tokens deliberately do NOT set it and 'fixing' that blindly crosses the guest boundary.",
+   "worldClassObligation": {"value": true, "note": "Treating an unknown session as signed-out is the single most damaging interaction defect in the product: it converts every refresh into an eviction. Correct tri-state handling is necessary and still leaves the destination reconstruction obligation."}
+  },
+  {
+   "id": "F066",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-07", "CH-08"],
+   "ownershipRationale": "Institution routes redirecting while loading is the F065 cause expressed at the router boundary; CH-07's dependsOn names it explicitly as living in CH-02 (institution route classification and destination survival).",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "A legitimate institutional address must never bounce to a sign-in wall because state has not resolved yet. Suppressing the redirect is not the same as a fail-CLOSED classification with a truthful RESTORING state."}
+  },
+  {
+   "id": "F067",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-14"],
+   "ownershipRationale": "Destination-destroying exits are the router-boundary half of the continuity contract - what an exit action does to the destination a person legitimately held. Canonical navigation actions and object-local contextual depth are CH-02's RC-C3 inheritance.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Exit must return a person to where they were, not to a generic home. Every surface repairing its own back behaviour is the divergence that produced this class."}
+  },
+  {
+   "id": "F068",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-01"],
+   "ownershipRationale": "A permanent /_boot spinner is destination reconstruction failing to terminate - the cold-load path CH-02 owns. CH-01 supplies the honest loading/restoring/expired vocabulary the boot surface must consume (and is a stated CH-02 dependency).",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "A spinner that never resolves is the worst possible state because it is indistinguishable from progress. The obligation is an honest, terminating restore state - one of CH-01's 26 spinner sites in its most consequential position."}
+  },
+  {
+   "id": "F069",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-10", "CH-04"],
+   "ownershipRationale": "Route classification as a hand-kept fail-OPEN allowlist is the second shared cause and the only continuity finding rc-map DOES attribute to RC-C3 (Stage-2 correction CORR-1 adopted). CH-02 owns turning it into a closed, fail-CLOSED authority; CH-10 owns which routes are genuinely public as a founder-ruled policy input.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "protectedStatus": "DB-6 ROUTE CLASSIFICATION: authorization bypass and lockout live in the same file; classes must be DISJOINT, not ORDERED - an order-dependent fix would have bounced meeting guests into a login wall (PB-01 near-miss on record).",
+   "worldClassObligation": {"value": true, "note": "A deep link must always resolve to the object, never to a login wall for a legitimately public address. Closing the allowlist correctly can make acquisition WORSE unless the public-route policy is ruled on (BFI-11) - correctness alone is not adequacy."}
+  },
+  {
+   "id": "F070",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-13", "CH-14"],
+   "ownershipRationale": "A draft with no identity in the URL cannot be returned to, which makes it a DATA_MODEL_DEFICIENCY of the destination authority rather than of the composer. Paired with F027 in the register as durable identity of in-progress work.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "A draft that has no address cannot be shared, resumed on another device, or restored after a crash. Giving it an id is the start; the obligation is that in-progress work is a first-class addressable object."}
+  },
+  {
+   "id": "F071",
+   "canonicalChapter": "CH-16",
+   "crossReferencedChapters": ["CH-04", "CH-17"],
+   "ownershipRationale": "Distribution lag is a class no other chapter has vocabulary for: the shared code carries both fixes, the released binaries predate them, and only a founder-triggered store release can clear it. CH-16 owns release delivery and the founder-owned submission boundary. State is BLOCKED on that founder act.",
+   "currentState": "BLOCKED",
+   "protectedStatus": "PB-11: store submission is a founder act. F071 is re-observed only AFTER a release; until then it is neither OPEN nor closed in an engineering sense and must be reported as distribution-lag debt.",
+   "worldClassObligation": {"value": false, "note": "The defect itself is already corrected in shared code; what remains is a release-channel obligation, not a product-quality residue. The native call-handling quality obligation is carried by F072 and by CH-16's NATIVE_DEVICE proofs."}
+  },
+  {
+   "id": "F072",
+   "canonicalChapter": "CH-16",
+   "crossReferencedChapters": ["CH-03", "CH-04", "CH-05"],
+   "ownershipRationale": "The native ring showing an individual instead of the group is native presentation failing to consume canonical truth at the platform boundary - CH-16's governing outcome. CH-03 owns the group identity projection (F055/F056 doctrine) and CH-04 the participation truth; the native surface consumes both.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Native ring, native notifications and native file handling must match platform expectations. Showing the correct group name is one part; the ring must also carry group avatar treatment, which has no doctrine yet (F056)."}
+  },
+  {
+   "id": "F073",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-09"],
+   "ownershipRationale": "A late or missing fourth video frame is a four-party CALL defect, not a Live defect, so it belongs with the transport substrate that CH-04 owns. Its root cause is explicitly UNKNOWN and its placement with the topology cluster is an INFERENCE FROM A SYMPTOM - carried with the inference stated, and it may not be closed by that inference.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "CH-04 names it directly: four-party video that does not lose the fourth frame. A bounded mesh (F108) caps the failure without curing it."}
+  },
+  {
+   "id": "F074",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04"],
+   "ownershipRationale": "Go Live looking like an ordinary call is the presentation half of Live-as-a-governed-mode. CH-09 owns liveState on the owning RealtimeSession and everything that must LOOK different when it is set; CH-04 owns the shared components that must not own semantic meaning.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "Explicitly named: a broadcaster stage that is not call chrome - speaker prominence, viewer framing, a visual language that says broadcast. Labelling a call 'Live' does not deliver it."}
+  },
+  {
+   "id": "F075",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04"],
+   "ownershipRationale": "The parallel-broadcast workaround is the ARCHITECTURE_CONTRADICTION the founder-frozen model correction resolved; it is the reason F083/F084's prior proofs certify a RETIRED model and must be re-proven. Only the chapter that owns liveState and the two exit gates can own it.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "This row is architectural correctness - same-session escalation instead of a parallel session. The experience inadequacy it exposes is carried by F074 and the F089-F095 engagement layer, not double-counted here."}
+  },
+  {
+   "id": "F076",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-10"],
+   "ownershipRationale": "A retired standalone origination door is a Live origination fact: ORIGINATION IS CONTEXTUAL and LIVE IS NOT SOMETHING A USER CREATES are CH-09's frozen rules. EXPLICITLY_RETIRED with 'UI unobserved' remains - CH-09 completes the observation rather than inheriting it as terminal.",
+   "currentState": "EXPLICITLY_RETIRED",
+   "worldClassObligation": {"value": false, "note": "Removing an illegitimate door is complete in itself. The discovery experience that replaces it is F081/F097's obligation."}
+  },
+  {
+   "id": "F077",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-06"],
+   "ownershipRationale": "The conversation-menu Go Live entry is the duplicated-origination twin of F076 under the same frozen origination correction, and its outstanding UI observation is a CH-09 certification requirement.",
+   "currentState": "EXPLICITLY_RETIRED",
+   "worldClassObligation": {"value": false, "note": "Retirement of a duplicate origination door is complete in itself; the remaining work is observation, not product quality."}
+  },
+  {
+   "id": "F078",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04", "CH-06"],
+   "ownershipRationale": "A group call deliberately becoming Live is the state escalation that defines the chapter - a liveState transition on an owning session, chartered by RC-C10 and implemented over CH-04's certified substrate.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "The moment of going public must feel deliberate and legible to everyone already in the room. A working transition without consent legibility and a changed stage is not the product."}
+  },
+  {
+   "id": "F079",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04"],
+   "ownershipRationale": "Same-session transition (never a parallel session) is a charter section 26 regression pin owned by CH-09 and proven against the corrected model.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "An architectural invariant whose correctness is its adequacy. The experience obligations attach to F074, F082 and the engagement layer."}
+  },
+  {
+   "id": "F080",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": [],
+   "ownershipRationale": "NO ACTIVE REALTIME INTERACTION = NO GO LIVE is part of the founder-frozen origination correction and is a CH-09 regression pin.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": false, "note": "A refusal rule that is correctly enforced is adequate; the refusal must be truthful in its wording, which CH-01's vocabulary supplies."}
+  },
+  {
+   "id": "F081",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-10", "CH-08"],
+   "ownershipRationale": "The header Live surface being DISCOVERY rather than ORIGINATION is the frozen 'DISCOVERY IS GLOBAL' half of the origination correction. CH-10 consumes the same canonical truth for the signed-out door and CH-08's DR2 demolition currently serves Live discovery - both are sequencing cross-references, not ownership.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "A discovery door that merely refuses to originate is not a discovery experience. What is live now must be legible, current and truthful - including when nothing is."}
+  },
+  {
+   "id": "F082",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04", "CH-02"],
+   "ownershipRationale": "Ending Live returning to the private call is the ENDING -> NORMAL half of the liveState machine with only observers detached - a CH-09 charter pin proven as an end-to-end journey.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Returning to private must be a felt, deliberate moment for the people still in the room, not a silent state change. Continuity of the underlying conversation must survive the Live event."}
+  },
+  {
+   "id": "F083",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04", "CH-05"],
+   "ownershipRationale": "No re-ringing when a call goes public is a participation/attention consequence of the escalation, owned by the chapter that owns the escalation. Its prior 'proven live' evidence certifies the RETIRED parallel-broadcast model and must be re-proven (F075).",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Not re-ringing is correct; telling the already-present parties that the room is now public, in the governed attention hub rather than a temporary banner, is the obligation that remains."}
+  },
+  {
+   "id": "F084",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04"],
+   "ownershipRationale": "'No auto-die for no answer' is Live lifecycle behaviour under the corrected model; it sits with the other section 26 pins in CH-09 rather than with the private-call ring lifecycle in CH-04.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "A Live that persists with nobody watching, or dies while someone is, are both truthfulness failures. A timeout rule is not the same as a lifecycle a viewer and a broadcaster both understand."}
+  },
+  {
+   "id": "F085",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-10"],
+   "ownershipRationale": "A legitimate viewer blocked by the view guard is viewer ADMISSION - the authority boundary CH-09 owns. It cannot be separated from the engagement layer a viewer is admitted into (F089-F095), which is the chapter's coherence argument.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Admitting the viewer delivers them into the absence F089-F095 describes. Fixing admission alone produces a person watching a muted call with nothing to do."}
+  },
+  {
+   "id": "F086",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-03", "CH-10"],
+   "ownershipRationale": "Viewer authority derived from the OBSERVER role (replacing a heuristic) is an authorization property of Live admission - CH-09. CH-03 supplies role lookup, whose drift (F057) is exactly what makes this fragile.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "protectedStatus": "AUTHORIZATION BYPASS boundary: no viewer has got in since the role-derived authority replaced the heuristic; a permissive 'fix' re-opens admission.",
+   "worldClassObligation": {"value": false, "note": "Role-derived admission that is correct is adequate as an authority. The viewing experience obligation belongs to F089-F095."}
+  },
+  {
+   "id": "F087",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04", "CH-05"],
+   "ownershipRationale": "Keeping viewer count and stage count separate is the PUBLIC OBSERVATION versus ACTIVE MEDIA PARTICIPATION distinction frozen in RC-C10 - a Live semantic, distinct from F035's roster-versus-connected question in the attention layer.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Two honest numbers are the minimum; a broadcaster needs a legible sense of audience, which a separated counter alone does not provide (F094 viewer presence atmosphere)."}
+  },
+  {
+   "id": "F088",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-10", "CH-06"],
+   "ownershipRationale": "Live viewers never becoming Conversation parties is the PB-04 privacy invariant expressed inside Live, owned by CH-09. Its anonymous case is a JOINT proof co-signed by CH-10 - CH-09 owns the proof and names CH-10 as co-signatory, which closes the ownerless gap Agent E recorded (E-BV-2).",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "protectedStatus": "PRIVACY EXPOSURE boundary: once messages, history or attachments are disclosed to a viewer it is not revocable.",
+   "worldClassObligation": {"value": false, "note": "A correctly enforced non-revocable privacy boundary is adequate as an invariant. Its residual risk is proof coverage (anonymous case) rather than product quality."}
+  },
+  {
+   "id": "F089",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-13"],
+   "ownershipRationale": "The watch-oriented viewer experience is unbuilt and is the head of the audience engagement layer CH-09 owns. VD-041 is reclassified as CONSTRUCTION debt rather than validation debt - there is nothing to validate.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Being watched is a different product from being on a call. Single corpus mention - the FD-5 sections 8-10 re-derivation must precede sizing."}
+  },
+  {
+   "id": "F090",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-06", "CH-15"],
+   "ownershipRationale": "Live chat is an audience-layer capability of Live, not a Conversation capability: viewers are explicitly never Conversation parties (F088), so it cannot be delivered by CH-06's message model without crossing that boundary.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Chat is the audience layer that makes admission worth having - and it immediately requires moderation (F095) and the policy CH-15 owns."}
+  },
+  {
+   "id": "F091",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-06"],
+   "ownershipRationale": "Live reactions are audience-layer ephemera over liveState, distinct from CH-06's WG008 message reactions on durable message objects. Two capabilities, two owners, no merge.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Unbuilt. Reactions are the lowest-friction audience signal every competitor has; their absence is why a viewer 'endures a muted call'."}
+  },
+  {
+   "id": "F092",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04"],
+   "ownershipRationale": "Raise hand is the request half of stage promotion (F093) and belongs with the participation escalation CH-09 owns over CH-04's substrate.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Unbuilt; single corpus mention. Without it a viewer has no legitimate route from audience to stage."}
+  },
+  {
+   "id": "F093",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-04", "CH-03"],
+   "ownershipRationale": "Stage promotion and demotion is a participation-authority transition inside Live - CH-09 owns the authority; CH-04's shared presentation family renders the resulting tiles without owning the semantic.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Unbuilt; single corpus mention. Promotion is where broadcast becomes conversation and is the capability that distinguishes a stage from a stream."}
+  },
+  {
+   "id": "F094",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-03"],
+   "ownershipRationale": "Viewer presence atmosphere is an audience-layer presentation obligation over Live, consuming the presence projection CH-03 owns under the frozen 'presence is the person' rule.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Unbuilt; single corpus mention. A broadcaster speaking into a room with no felt audience is the defining inadequacy of a stage with no atmosphere."}
+  },
+  {
+   "id": "F095",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-15"],
+   "ownershipRationale": "The in-Live moderation SURFACE is delivered by CH-09 CONSUMING CH-15's single moderation authority - a second moderation authority is prohibited. Whether it is instead owned by CH-15 is an explicit open founder question, recorded and not pre-empted.",
+   "currentState": "OPEN",
+   "protectedStatus": "Ownership subject to founder Checkpoint D (Live moderation policy). Assignment here follows the architecture's proposal and does not settle the question.",
+   "worldClassObligation": {"value": true, "note": "Unbuilt; single corpus mention. Public chat without in-context moderation is a harm surface, not a feature - and the policy it expresses does not exist yet."}
+  },
+  {
+   "id": "F096",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-17"],
+   "ownershipRationale": "The instruction to RECOVER FD-5 sections 8-10 rather than reinvent is an obligation about how CH-09's engagement slice is derived, so it is owned by the chapter that must obey it. It is also the named justification for the single recommended raw-source escalation.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "A recovery/derivation instruction, not a product capability. Its value is that it prevents F089-F095 being reinvented at lower fidelity than the authority already recorded."}
+  },
+  {
+   "id": "F097",
+   "canonicalChapter": "CH-10",
+   "crossReferencedChapters": ["CH-09", "CH-14"],
+   "ownershipRationale": "Public Home surfacing real Live is a PUBLIC HOME obligation, not a Live surface: the signed-out door, its truthfulness and its funnel belong to CH-10. CH-09 owns the canonical Live truth (F107) that both doors consume.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "A stranger must see something real within seconds. Surfacing rows is not enough - the index must be truthful, including when nothing is live (CD-3: a confidently false 'live now: 0' is a certification item)."}
+  },
+  {
+   "id": "F098",
+   "canonicalChapter": "CH-10",
+   "crossReferencedChapters": ["CH-09"],
+   "ownershipRationale": "The bounded preview is the anonymous grant itself and belongs with the authority that expresses it. RC-C10 charters it; implementation ownership sits here by the founder's explicit charter-versus-implementation permission (Stage-2 correction CORR-2).",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "A preview that is real Aura value rather than a teaser is the whole acquisition proposition. Single corpus mention - decomposition is weak even though the chartering argument is strong."}
+  },
+  {
+   "id": "F099",
+   "canonicalChapter": "CH-10",
+   "crossReferencedChapters": ["CH-02"],
+   "ownershipRationale": "The 15-second bound is the founder-frozen economics of the same grant, owned with F098. Its durability across refresh is F105 and consumes CH-02's continuity rather than a local timer.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "The bound must feel like an invitation, not a slammed door. A correctly counted 15 seconds with an abrupt cut is an inadequate acquisition moment."}
+  },
+  {
+   "id": "F100",
+   "canonicalChapter": "CH-10",
+   "crossReferencedChapters": ["CH-02"],
+   "ownershipRationale": "The auth wall after 15 seconds is the account-entry hinge, which is why PD-2's EXPERIENCE half (sign-in/sign-up surfaces, LoginScreen disposition) lands in CH-10: the wall and the entry are the same moment. The STRUCTURAL half (what establishes a session) stays in CH-02.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "This is the conversion moment of the only acquisition path in the register. A functioning wall that loses the visitor's intent (F103/F104, CH-02) converts nobody."}
+  },
+  {
+   "id": "F101",
+   "canonicalChapter": "CH-10",
+   "crossReferencedChapters": ["CH-04", "CH-09"],
+   "ownershipRationale": "Zero PARTICIPATION authority during preview is a security obligation wearing marketing clothes: it requires an anonymous case of the C1 Capability Projection contract, which exists nowhere and which CH-10 is chartered to create. It cannot be satisfied by a UI convention in a surface chapter.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Proven by REFUSAL evidence - an anonymous actor is refused, not merely shown nothing. Correct refusal is adequacy; the experience obligation is F098's real preview."}
+  },
+  {
+   "id": "F102",
+   "canonicalChapter": "CH-10",
+   "crossReferencedChapters": ["CH-06", "CH-09"],
+   "ownershipRationale": "Zero CONVERSATION authority during preview is the same anonymous capability projection applied to the Conversation boundary, and it co-signs F088's privacy invariant for the non-member visitor.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "A correctly enforced zero-authority boundary is adequate in itself; anonymous access implemented as UI gating would be an authorization bypass by construction."}
+  },
+  {
+   "id": "F103",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-10", "CH-09"],
+   "ownershipRationale": "Owned by CH-02 BY THE REGISTER'S OWN STATEMENT: CO-RC-C10-006's auth-return clause assigns it to the shared continuity authority, and it is one of the seven findings gated by the F065 keystone. CH-10 is its most important consumer and cannot certify conversion without it - consumption, not ownership.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Returning from authentication must land on the intended object - the SAME Live - not a generic home. This is the register's only acquisition path and it fails at its last step."}
+  },
+  {
+   "id": "F104",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-10"],
+   "ownershipRationale": "Sign-up preserving intent is the same return-intent obligation as F103 on the registration path, assigned to the shared continuity authority by the same clause. Splitting F103 and F104 across CH-02 and CH-10 would divide one contract.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "The moment a stranger decides to join, nothing may be lost. Preserving a redirect URL is not preserving intent - the in-progress action, preview position and target object must all survive."}
+  },
+  {
+   "id": "F105",
+   "canonicalChapter": "CH-10",
+   "crossReferencedChapters": ["CH-02"],
+   "ownershipRationale": "'Refresh cannot reset the preview' is a property of the preview BUDGET, which CH-10 owns; it is satisfied by consuming CH-02's continuity authority rather than by a local timer. The budget belongs to the grant, the durability mechanism to continuity.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "A budget that resets on refresh is not a budget - and a visitor who discovers that learns to game the product rather than join it."}
+  },
+  {
+   "id": "F106",
+   "canonicalChapter": "CH-10",
+   "crossReferencedChapters": ["CH-09"],
+   "ownershipRationale": "A truthful ended state DURING PREVIEW is what the signed-out visitor sees, which is CH-10's surface and CH-10's truthfulness obligation, consuming CH-09's canonical Live truth.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "The public index must tell the truth about what is happening, including when it has stopped. A frozen last frame presented as live is worse than an empty state."}
+  },
+  {
+   "id": "F107",
+   "canonicalChapter": "CH-09",
+   "crossReferencedChapters": ["CH-10", "CH-08"],
+   "ownershipRationale": "One canonical Live truth for BOTH doors is a MISSING_AUTHORITY over liveState, and liveState is CH-09's object. CH-09 blocks CH-10 on exactly this; if CH-10 owned it, the signed-out door would be defining truth for the signed-in one.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Two doors telling different stories about what is live is the visible form of a missing authority. One truth is necessary; discovery quality on top of it (F081, F097) is still owed."}
+  },
+  {
+   "id": "F108",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-09"],
+   "ownershipRationale": "The mesh peer ceiling is a property of the transport substrate CH-04 owns; the RC-C10 charter relationship is preserved explicitly and implementation ownership sits with the substrate per the founder's charter-versus-implementation ruling. It must be MEASURED and ENFORCED, not asserted.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": false, "note": "An honestly enforced ceiling is adequate as an engineering property - it caps failure rather than curing it. The user-visible obligation is F073's fourth frame and the audience-scale decision (F110)."}
+  },
+  {
+   "id": "F109",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-09", "CH-17"],
+   "ownershipRationale": "'Mesh is not the long-term architecture' is UNENFORCED_ARCHITECTURAL_INTENT about the transport, owned where the transport is owned. Recording it as a chapter of its own would dress a decision up as work (CH-C rejected and merged).",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": false, "note": "A statement of intent; adequacy is delivered by acting on it (F110/F111), not by restating it."}
+  },
+  {
+   "id": "F110",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-09"],
+   "ownershipRationale": "The SFU assessment is ARCHITECTURE_DECISION_OWED and belongs with the chapter that supplies the measurement the decision needs. CH-04 explicitly does not decide the purchase; Checkpoint E is a founder act with provider independence preserved.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "A decision, not a capability. Its downstream product consequence (audience scale for Live) is carried by CH-09's engagement slice."}
+  },
+  {
+   "id": "F111",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-09"],
+   "ownershipRationale": "Assessment scope is the bounding of F110 and is owned with it; separating a decision from its scope would leave neither actionable.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Scoping an owed decision is preparatory work with no independent product-quality residue."}
+  },
+  {
+   "id": "F112",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-06", "CH-16"],
+   "ownershipRationale": "The equivalent validation Meetings is owed is a CONSEQUENCE of Conversation capability certification under PB-01, not a separate programme - which is why CH-M was merged into CH-04 while its subtraction (F064/F113 are continuity work) was preserved. It is sequenced behind CH-06's shared capability certification.",
+   "currentState": "OPEN",
+   "protectedStatus": "PB-01 Meetings. Targeted Meetings regression (97/97) after EVERY slice with founder sign-off per slice (CO-RC-C6-028) - non-optional.",
+   "worldClassObligation": {"value": false, "note": "Validation debt over an already-certified lifecycle. The Meetings PRODUCT quality obligations arrive with the FD-4 presentation convergence, not with this row."}
+  },
+  {
+   "id": "F113",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-04"],
+   "ownershipRationale": "SEPARATE ROW from F064 and kept so deliberately. Both are Meetings continuity repaired at the shared cause in CH-02 without opening the Meetings lifecycle, but F113 carries a MULTI_PARTY_REALTIME Meetings topology with VD-031 UNKNOWN. A V2 single-browser proof must NOT silently discharge this V4 obligation (E-SC-12).",
+   "currentState": "OPEN",
+   "protectedStatus": "PB-01 Meetings; distinct proof burden from F064. Both rows survive to closure independently.",
+   "worldClassObligation": {"value": true, "note": "Continuity must hold in a multi-party meeting, where a lost destination affects other people's time, not only the refresher's."}
+  },
+  {
+   "id": "F114",
+   "canonicalChapter": "CH-04",
+   "crossReferencedChapters": ["CH-17"],
+   "ownershipRationale": "The protected-boundary obligation HELD is a statement about the Meetings layer CH-04 must not touch, so it is owned by the chapter that is proposing to work beside it. Its evidence form is explicitly weak - it certifies that nothing was touched, not that touching is safe.",
+   "currentState": "LIVE_CERTIFIED",
+   "protectedStatus": "PB-01. Any slice that touches Meetings REPLACES this evidence with a real regression proof; the LIVE_CERTIFIED state must not be read as clearance to modify.",
+   "worldClassObligation": {"value": false, "note": "A protection-held record, not a product capability. Its risk is evidential (a non-event certified as an event), which CH-17 carries."}
+  },
+  {
+   "id": "F115",
+   "canonicalChapter": "CH-17",
+   "crossReferencedChapters": [],
+   "ownershipRationale": "The non-shrinking register rule currently lives ONLY in a transcript with no governed-artifact home. CH-17 is the only chapter that owns the programme's own record and can give it one; assigning it to any construction chapter would let the chapter police itself.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Governance integrity, not product capability. It is nonetheless the precondition for every world-class claim being auditable, since five live-certified capabilities have already vanished from reporting once."}
+  },
+  {
+   "id": "F116",
+   "canonicalChapter": "CH-03",
+   "crossReferencedChapters": ["CH-04", "CH-06", "CH-07", "CH-08", "CH-09", "CH-16"],
+   "ownershipRationale": "The systemic consumption finding whose exit condition is a SYSTEMATIC CONSUMER AUDIT with an enumerated consumer list - CH-03's governing outcome and the reason the chapter exists as a chapter rather than a layer with no owner. Its re-entrancy is terminated by the identity conformance gate every later chapter must pass.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "protectedStatus": "PB-05: it must NOT be closed by fixing one consumer, and it does not authorise rewriting the broader identity system because a consumer needs a relationship.",
+   "worldClassObligation": {"value": true, "note": "Original identity and appearance surviving every projection is the obligation; an audit that enumerates today's consumers without a gate for tomorrow's leaves the product one new surface away from the same defect."}
+  },
+  {
+   "id": "F117",
+   "canonicalChapter": "CH-02",
+   "crossReferencedChapters": ["CH-16", "CH-17"],
+   "ownershipRationale": "The systemic statement of the chapter: REFRESH IS NOT NAVIGATION is a founder-frozen PLATFORM CONTRACT with no implementing authority, and CH-02 exists to be that authority. Its admission as a new cross-cutting authority after RC-C0 closed is a required founder act.",
+   "currentState": "PARTIALLY_VALIDATED",
+   "worldClassObligation": {"value": true, "note": "The chapter's exit condition is a single product-wide statement - no surface reconstructs its own destination. Per-surface repairs satisfy findings and not the contract."}
+  },
+  {
+   "id": "F118",
+   "canonicalChapter": "CH-17",
+   "crossReferencedChapters": ["CH-05"],
+   "ownershipRationale": "'C4 findings preserved' is a governance-integrity closure gate about the register, not about attention behaviour. CH-05 must not patch or delete F030-F035 or the stale-session rows (its evidence-destruction boundary); CH-17 owns the rule that keeps them visible.",
+   "currentState": "LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "Governance obligation. Its product value is indirect: preserved evidence is what makes the C4 live-closure declaration meaningful."}
+  },
+  {
+   "id": "F119",
+   "canonicalChapter": "CH-17",
+   "crossReferencedChapters": ["CH-06", "CH-13", "CH-14"],
+   "ownershipRationale": "'Implemented capabilities must not vanish from reporting' is the register discipline CH-17 owns. The chapters holding the five capabilities that already vanished (F018, F020, F021, F022, F029) carry a re-report requirement at closure as a dependency, not as ownership.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Governance obligation. It protects world-class claims from silently disappearing but is not itself a product capability."}
+  },
+  {
+   "id": "F120",
+   "canonicalChapter": "CH-17",
+   "crossReferencedChapters": [],
+   "ownershipRationale": "Terminal-state discipline for every item is the closure gate itself. No construction chapter can own the rule that governs how it is allowed to claim completion.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Governance obligation. It is the mechanism by which 143/143 and 299/299 are reconciled independently rather than inferred from one another."}
+  },
+  {
+   "id": "F121",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-14", "CH-13"],
+   "ownershipRationale": "An expiring signed URL baked into durable markdown is a REFERENCE TRUTH defect over a stored object - CH-12's boundary (canonical references, retention truth, governed delivery). It was explicitly distinguished from F025 at issuance: F025 is what the author sees, F121 is what the published body permanently contains.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Published content must not decay. Replacing the URL scheme is necessary; durable publication also requires the reference to be indexed so retention can protect it (F141/F142)."}
+  },
+  {
+   "id": "F122",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": ["CH-13", "CH-06", "CH-17"],
+   "ownershipRationale": "Wire-kind inconsistency between the canonical wireKind and conversation_screen is ONE WIRE VOCABULARY - CH-11's governing outcome ('one vocabulary shared by both repositories'). It is deliberately cross-repository, which is why it cannot be settled inside one repository's record. State is CONFLICTING_CURRENT_STATE and is CARRIED FORWARD UNRESOLVED.",
+   "currentState": "CONFLICTING_CURRENT_STATE",
+   "protectedStatus": "PRESERVED CONFLICT (stage table versus implementation checkpoint CR-O3). PB-12: semantic conflicts between repositories go to the founder before resolution. Reported at ITEM level at closure.",
+   "worldClassObligation": {"value": false, "note": "Vocabulary coherence across repositories is correctness, and correctness here is adequacy. The presentation consequences it enables are owned by F016 and CH-13."}
+  },
+  {
+   "id": "F123",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": ["CH-12"],
+   "ownershipRationale": "Provenance hardcoded to GALLERY for every conversation attachment is an INGESTION-time truth defect: where a file actually came from is captured at the door, in the same decision point as its type and its access context. CH-12 consumes provenance; it does not create it.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Recording true provenance is complete in itself as a data-truth obligation; what it enables (honest presentation, camera-versus-file distinctions) is carried by F016 and CH-13."}
+  },
+  {
+   "id": "F124",
+   "canonicalChapter": "CH-06",
+   "crossReferencedChapters": ["CH-13"],
+   "ownershipRationale": "A literal ellipsis sentinel transmitted as the message body is the Conversation constitution being violated by a UI flag - message body truth is PB-04 ground owned by CH-06. CH-13 owns the composer that produced it, but the durable falsehood lives in the message model.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Removing the sentinel still leaves the product unable to express an attachment-only or emoji-only message as a first-class fact. Emoji entry has no WG row at all and is recorded from client observation."}
+  },
+  {
+   "id": "F125",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-12", "CH-06"],
+   "ownershipRationale": "Conversation images having no viewer and no save is the shared client presentation family missing from the canonical Conversation - OPP-2, the observation that the canonical Conversation consumes NONE of the shared rich primitives five other surfaces do consume. That is a CH-13 chapter-shape argument, not a Conversation-model defect.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "A tappable image is the floor. The obligation is a real viewer - zoom, pan, save, share, next/previous - fed by real derivatives (F136) rather than full-resolution originals."}
+  },
+  {
+   "id": "F126",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-11", "CH-06"],
+   "ownershipRationale": "Visibility never being set on conversation media is an ACCESS-CONTROL property of the stored object and its delivery decision - CH-12. F138 proves the application-level fix is insufficient because the storage boundary performs no authorization at all, so the two must live in one chapter. Capturing access context AT ingestion is CH-11's contribution and is consumed here.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "protectedStatus": "DB-9 PRIVACY EXPOSURE CLUSTER: disclosure is not revocable by a later fix.",
+   "worldClassObligation": {"value": true, "note": "Private means private at the storage boundary, not merely absent from a DTO. Setting the field closes app-level disclosure and leaves possession of a URL as access until the R2 ratchet completes."}
+  },
+  {
+   "id": "F127",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": ["CH-12"],
+   "ownershipRationale": "Magic-byte/signature validation is the canonical example of deciding what a file IS at the door - CH-11's governing outcome, and MISSING_AUTHORITY is exactly an authority-creation class. It supplies the resolved type CH-12's scanner consumes.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "Signature validation that is correct and enforced at every door is adequate as a security property. The visible-failure obligation attaches to F128 and the honest-format obligation to F016."}
+  },
+  {
+   "id": "F128",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": ["CH-12", "CH-13"],
+   "ownershipRationale": "Advisory size limits with over-limit objects reconciled rather than rejected is a decision at the ingestion door about what may enter at all - CH-11. Rejection changes what the product ACCEPTS, which is why its destructive boundary is stated there.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": true, "note": "Enforcing the limit is not enough: a file the product cannot handle must fail VISIBLY and RECOVERABLY, not silently. A hard reject with no explanation is a different inadequacy, not a fix."}
+  },
+  {
+   "id": "F129",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": ["CH-12", "CH-07"],
+   "ownershipRationale": "The correspondence-messages path bypassing /media/presign entirely is the canonical ingestion convergence obligation - one governed door. It is also the recorded root cause of F143's aliasing, which is why the two sit in adjacent chapters with the causal relationship stated: fixing ingestion removes the cause but not the existing exposure.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Convergence onto one door is architectural correctness. Its consequence for scanning coverage (a scan bound to one door would miss objects by construction) is carried by F137."}
+  },
+  {
+   "id": "F130",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": [],
+   "ownershipRationale": "An unvalidated TS type on the presign body with the validated PresignDto as dead code is validation at the door - the same decision point as F127/F128, in the same repository and the same choke point.",
+   "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "worldClassObligation": {"value": false, "note": "Wiring the validated DTO is complete in itself. FD-12 discipline applies to the dead code: disposition on architecture, never on reference count."}
+  },
+  {
+   "id": "F131",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-14"],
+   "ownershipRationale": "Article cover media being unrelated, unstamped and reaper-deletable is REFERENCE AND RETENTION TRUTH over a stored object - the irreversibility chapter. Its consumer is CH-14's publication act, which needs canonical references rather than expiring or unprotected ones.",
+   "currentState": "OPEN",
+   "protectedStatus": "DB-1 REAPER: the isRetentionEligible() asymmetry must hold - uncertain may KEEP, never DELETE. The reaper is NOT RUN.",
+   "worldClassObligation": {"value": false, "note": "Making the reference authoritative so the object is protected is adequate at this row. The durable-publication experience obligation is carried by F121."}
+  },
+  {
+   "id": "F132",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-11", "CH-13"],
+   "ownershipRationale": "EXIF stripping happens at PROCESSING time over a stored object, in the same worker that generates derivatives - CH-12's named obligation. Ingestion can detect metadata but the stripping is an operation on the stored bytes.",
+   "currentState": "OPEN",
+   "protectedStatus": "DB-9 PRIVACY EXPOSURE CLUSTER: GPS already published to public R2 verbatim; disclosure is not revocable.",
+   "worldClassObligation": {"value": true, "note": "Named directly as a world-class obligation: a photo does not publish the sender's home coordinates. Stripping new uploads leaves the existing published population exposed - backfill is part of the obligation."}
+  },
+  {
+   "id": "F133",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": ["CH-13", "CH-12"],
+   "ownershipRationale": "Media.duration in milliseconds against MessageAttachment.durationSec in seconds is a WIRE VOCABULARY disagreement of exactly the F122 kind, decided in the shared content-truth vocabulary CH-11 owns rather than in the surface that renders it wrongly.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "One unit, honestly named, is the whole obligation here. The playback experience it feeds (waveform, scrub, resume) is F014's."}
+  },
+  {
+   "id": "F134",
+   "canonicalChapter": "CH-11",
+   "crossReferencedChapters": ["CH-12", "CH-15"],
+   "ownershipRationale": "Media.aiFlags being client-writable and read by nothing is an ungoverned field on the ingestion contract - CH-11 owns what a client may assert. A real verdict field is CH-12's examination pipeline under CH-15's policy; this row is about removing a false affordance, not building that.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Retiring or governing a client-writable field is complete in itself. A client-asserted safety flag is worse than none, which is why it must not be quietly repurposed as the F137 verdict."}
+  },
+  {
+   "id": "F135",
+   "canonicalChapter": "CH-13",
+   "crossReferencedChapters": ["CH-12", "CH-11"],
+   "ownershipRationale": "Hotlinked preview images are a property of LINK INTELLIGENCE - what the hydration layer chooses to render - which CH-13 owns as authoring-time resolution. The remedy (mirroring bytes into custody) is EXECUTED in CH-12, which serves them; the architecture states custody is defined with the link layer. DISPUTED: a reading that places it with the privacy-exposure cluster in CH-12 is legitimate and is recorded in contradictions.",
+   "currentState": "OPEN",
+   "protectedStatus": "DB-9 PRIVACY EXPOSURE CLUSTER (viewer IP leakage): disclosure is not revocable by a later fix.",
+   "worldClassObligation": {"value": true, "note": "Link previews must be hydrated, PRIVATE and DURABLE. Mirroring the bytes fixes the leak and is also what makes previews survive the third party deleting or changing the image."}
+  },
+  {
+   "id": "F136",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-13"],
+   "ownershipRationale": "thumbUrl being the full-resolution original is an absent DERIVATIVE - CH-12 owns MediaDerivative generation and the rule that a failed derivative never fails the media. CH-13 renders what CH-12 produces.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": true, "note": "Named directly: images, video, audio and documents load fast because real derivatives exist - not because originals are downloaded to draw a grid. Posters, waveforms and document first-page renders are part of the same obligation."}
+  },
+  {
+   "id": "F137",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-15", "CH-11", "CH-09", "CH-13"],
+   "ownershipRationale": "ASSIGNED TO THE OWNER THE ARCHITECT PROVED, not to the word-similar chapter. The ownership test is which system's responsibility boundary must change for an uploaded object to be examined AND for that examination to have a consequence: an examination is an asynchronous operation over a stored object that must also cover objects uploaded before it existed (CH-12 owns the async pipeline and backfill posture); a verdict is only real if it gates DELIVERY, and F138 shows the delivery boundary performs no authorization at all (CH-12 owns delivery); a verdict also gates RETENTION through quarantine/hold/removal (CH-12 owns retention and the isRetentionEligible() asymmetry). CH-11 supplies the resolved type but presign-time rejection is synchronous and per-door, and F129 proves the doors are still plural, so a door-bound scan would miss objects by construction. CH-13 cannot own it because presentation consumes access state and never decides it. CH-15 owns no storage lifecycle, no delivery boundary, no worker and no ingestion door - assigning it there would satisfy the vocabulary and defer the capability. A dedicated safety chapter would have to manufacture four systems CH-12 already owns. Agent A's proposedRootOwner RS-20 (moderation) is therefore NOT followed, and the divergence is recorded.",
+   "currentState": "OPEN",
+   "protectedStatus": "FOUNDER-CLASSIFIED ZERO_COVERAGE_SECURITY_GAP. Provider selection is a founder act under the provider-independence doctrine (self-hosted tier-0 default required; external providers optional tier-1, never load-bearing) because third-party scanning would itself disclose private user content. Policy, appeal and false-positive consequences are CH-15's and must be frozen BEFORE CH-12 implements - a named dependency, not shared ownership.",
+   "worldClassObligation": {"value": true, "note": "A scanner whose verdict cannot stop bytes reaching a viewer is theatre. Adequacy requires: coverage of every stored object including a backfill over the existing population, an explicit product-visible interim state for unexamined objects, quarantine as a REVERSIBLE retention state rather than a deletion, and a per-kind examination - documents (PDF/DOCX/PPTX) being the highest-risk and least-covered kind, and the kind F016 shows the product does not yet honestly understand."
+   }
+  },
+  {
+   "id": "F138",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-11", "CH-03", "CH-13"],
+   "ownershipRationale": "Storage-level public readability undercutting visibility enforcement is the delivery boundary itself, which is CH-12's core. It is the proof that logical and physical authority cannot be split across chapters: PUBLIC, RESTRICTED and PRIVATE are physically indistinguishable today, so F126's application-level closure is necessary and not sufficient.",
+   "currentState": "OPEN",
+   "protectedStatus": "DB-3 R2 PUBLIC-READ RATCHET: steps 1-3 are safe; step 4 is the ruling becoming true and is a founder act under a standing stop-and-report. Removing bucket public read while any surface still consumes raw storage URLs breaks delivery product-wide.",
+   "worldClassObligation": {"value": true, "note": "Private means private at the storage boundary, not merely absent from a DTO. Until the ratchet completes, possession of a key or a historical URL IS access - and the CDN/cache must sit beneath Aura's authority, not beside it."}
+  },
+  {
+   "id": "F139",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-03", "CH-17"],
+   "ownershipRationale": "Identity media orphaned at upload and reaper-deletable while in active identity use is retention truth over a stored object - CH-12. The Identity->Media authoritative relationship (D-1) is an ADDITIVE migration executed here in service of CH-03; a non-additive convergence would break deployed identity consumers and reach AUTHORITY (F057 precedent).",
+   "currentState": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+   "protectedStatus": "FOUNDER RULING CARRIED VERBATIM: structural CLOSED; production remediation and live certification OUTSTANDING. The founder lock forbids returning it to OPEN or promoting it to LIVE_CERTIFIED without new authority or evidence. The Stage-0 schema carries one currentState field and cannot express both dimensions; CH-12 certifies them SEPARATELY. DB-7: URL equality is permitted for migration/evidence discovery ONLY; the six SUPERSEDED identity assets are not authorized for deletion.",
+   "worldClassObligation": {"value": false, "note": "Reference-truth correctness, adequate when the relationship is authoritative and the object is protected. Its live residue is a certification obligation on two dimensions, not a product-quality gap."}
+  },
+  {
+   "id": "F140",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-06", "CH-03"],
+   "ownershipRationale": "Legacy MessageAttachment media being invisible to the reaper and to C2 is a coverage gap in the retention index - the ContentReference index as an INDEX, NOT AN ASSERTION. CH-12 owns the D-6 seven-step order that must precede any reaper authority change.",
+   "currentState": "OPEN",
+   "protectedStatus": "DB-1 REAPER: blindness must be cured BEFORE authority is granted; D-3 tests must prove previously blind relationships PREVENT deletion, not merely that they are visible.",
+   "worldClassObligation": {"value": false, "note": "Legacy visibility is correctness work whose completion is its adequacy; no user-facing capability is owed by this row."}
+  },
+  {
+   "id": "F141",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-14", "CH-13"],
+   "ownershipRationale": "Media referenced INSIDE authored content living outside structured retention truth is the same index-coverage obligation as F140 applied to composed bodies. CH-14's durable publication and CH-13's authored bodies are consumers of the index; the index is CH-12's.",
+   "currentState": "OPEN",
+   "worldClassObligation": {"value": false, "note": "Indexing inline references correctly is adequate here; the visible promise it protects (published content that does not decay) is carried by F121."}
+  },
+  {
+   "id": "F142",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-06"],
+   "ownershipRationale": "The cleanup authority omitting authoritative composition/reference structures is the reaper's own coverage - CH-12's most irreversible surface. It is also why WG002 delete/retract in CH-06 must never authorise a storage deletion: that separation is owned here.",
+   "currentState": "OPEN",
+   "protectedStatus": "DB-1 REAPER: NOT RUN. reconcile() REPAIRS NOTHING; uncertain/deletable -> KEEP is allowed, protected/keep -> DELETE is not.",
+   "worldClassObligation": {"value": false, "note": "Coverage completeness before authority is granted is the whole obligation; it protects against harm rather than delivering capability."}
+  },
+  {
+   "id": "F143",
+   "canonicalChapter": "CH-12",
+   "crossReferencedChapters": ["CH-11"],
+   "ownershipRationale": "Storage-object aliasing - Media identity not 1:1 with storage objects - is THE proof that logical authority and physical consequence cannot live in different chapters, which is CH-12's coherence argument. Its recorded root cause is F129 (plural ingestion doors, CH-11); fixing ingestion removes the cause but not the existing exposure, so remediation is owned here.",
+   "currentState": "OPEN",
+   "protectedStatus": "DB-2: a per-ROW logical release authorises a per-OBJECT irreversible deletion; 10 aliased duplicate/canonical pairs exist in production TODAY. Disposition of the unindexed Media population is a founder act.",
+   "worldClassObligation": {"value": false, "note": "1:1 identity between a Media row and a storage object is a correctness invariant; adequacy is achieved when it holds and is proven against production reality."}
+  }
+ ],
+ "unassignable": [],
+ "byChapter": {
+  "CH-01": {"count": 0, "findings": [], "note": "ZERO findings BY CONSTRUCTION and by design - it exists on chartered-obligation authority alone. Its emptiness here is a correct result, not a coverage failure; the obligation-ownership artifacts carry its 42 obligations."},
+  "CH-02": {"count": 16, "findings": ["F027", "F059", "F061", "F062", "F063", "F064", "F065", "F066", "F067", "F068", "F069", "F070", "F103", "F104", "F113", "F117"]},
+  "CH-03": {"count": 9, "findings": ["F050", "F051", "F052", "F053", "F054", "F055", "F056", "F057", "F116"]},
+  "CH-04": {"count": 26, "findings": ["F006", "F007", "F008", "F010", "F036", "F037", "F038", "F039", "F040", "F041", "F042", "F043", "F044", "F045", "F046", "F047", "F048", "F049", "F060", "F073", "F108", "F109", "F110", "F111", "F112", "F114"]},
+  "CH-05": {"count": 6, "findings": ["F030", "F031", "F032", "F033", "F034", "F035"], "note": "All six are C4_OWNED_OPEN under PB-08. Implementation placement here does not override protected status; F035's ownership is an open founder question."},
+  "CH-06": {"count": 5, "findings": ["F009", "F020", "F021", "F022", "F124"]},
+  "CH-07": {"count": 0, "findings": [], "note": "ZERO findings by design - the Threads/Spaces/institutional-communication construction is chartered by obligation, not described by any finding. Spaces are the sharpest corpus mismatch between what is publicly shipped and what planning contains."},
+  "CH-08": {"count": 0, "findings": [], "note": "ZERO findings on every axis - the founder's own control case. Its emptiness is the reason the portfolio is a reconstruction plan rather than a defect plan, and it is reported, not treated as coverage."},
+  "CH-09": {"count": 24, "findings": ["F074", "F075", "F076", "F077", "F078", "F079", "F080", "F081", "F082", "F083", "F084", "F085", "F086", "F087", "F088", "F089", "F090", "F091", "F092", "F093", "F094", "F095", "F096", "F107"]},
+  "CH-10": {"count": 8, "findings": ["F097", "F098", "F099", "F100", "F101", "F102", "F105", "F106"]},
+  "CH-11": {"count": 9, "findings": ["F016", "F122", "F123", "F127", "F128", "F129", "F130", "F133", "F134"]},
+  "CH-12": {"count": 13, "findings": ["F058", "F121", "F126", "F131", "F132", "F136", "F137", "F138", "F139", "F140", "F141", "F142", "F143"]},
+  "CH-13": {"count": 12, "findings": ["F011", "F012", "F013", "F014", "F015", "F017", "F018", "F019", "F025", "F026", "F125", "F135"]},
+  "CH-14": {"count": 8, "findings": ["F001", "F002", "F003", "F004", "F005", "F024", "F028", "F029"]},
+  "CH-15": {"count": 1, "findings": ["F023"], "note": "One finding is thin evidence for a chapter; 'no uploaded media of any kind is examined' is not a thin consequence. The chapter is narrowed to POLICY and JOURNEY and deliberately does NOT receive F137."},
+  "CH-16": {"count": 2, "findings": ["F071", "F072"]},
+  "CH-17": {"count": 4, "findings": ["F115", "F118", "F119", "F120"]},
+  "UNASSIGNABLE": {"count": 0, "findings": []},
+  "total": 143
+ },
+ "conflictsPreserved": [
+  {
+   "id": "F043",
+   "canonicalChapter": "CH-04",
+   "currentState": "CONFLICTING_CURRENT_STATE",
+   "handling": "CARRIED FORWARD UNRESOLVED. No state was revised, reconciled or promoted. Analytical consensus is not founder adjudication and repeated agreement is not authority. Reported at ITEM level at every closure; a chapter-level roll-up that conceals it is a governance failure (CH-17)."
+  },
+  {
+   "id": "F051",
+   "canonicalChapter": "CH-03",
+   "currentState": "CONFLICTING_CURRENT_STATE",
+   "handling": "CARRIED FORWARD UNRESOLVED. Its visual completion is additionally blocked by F058 (CH-12, BLOCKED on a founder Cloudflare action) - a dependency that must not be mistaken for the conflict's resolution."
+  },
+  {
+   "id": "F122",
+   "canonicalChapter": "CH-11",
+   "currentState": "CONFLICTING_CURRENT_STATE",
+   "handling": "CARRIED FORWARD UNRESOLVED. The dispute between the stage table and the implementation checkpoint (CR-O3) is cross-repository by nature and cannot be settled inside one repository's record; PB-12 sends semantic conflicts between repositories to the founder before resolution."
+  },
+  {
+   "id": "F139",
+   "canonicalChapter": "CH-12",
+   "currentState": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+   "handling": "FOUNDER RULING CARRIED VERBATIM. Structural CLOSED; production remediation and live certification OUTSTANDING. Certified on BOTH dimensions separately. The founder lock forbids returning it to OPEN or promoting it without new authority or evidence. The single-field schema cannot express both dimensions; that limitation is reported rather than resolved."
+  }
+ ],
+ "contradictions": [
+  "F060 DOMAIN - assigned to CH-04 following Agent A's move from the recorded continuity domain (on the ground that destination, roster and duration ARE preserved). The alternative reading, that it is a continuity manifestation owned by CH-02, is preserved as legitimate and is not foreclosed by this assignment.",
+  "F073 PLACEMENT - assigned to CH-04, but its root cause is explicitly UNKNOWN and its association with the topology cluster is an INFERENCE FROM A SYMPTOM. It may not be closed by that inference.",
+  "F035 OWNERSHIP - retained in CH-05 as C4_OWNED_OPEN under PB-08. Agent A's substantive argument for re-owning it to CH-04 (attention presentation cannot manufacture a media-connected count) is preserved as an OPEN FOUNDER QUESTION and is not executed here.",
+  "F137 OWNER DIVERGES FROM THE PROPOSED ROOT OWNER - the index proposes RS-20 (moderation); this assignment places it on CH-12 on the responsibility-boundary proof (async pipeline over stored objects, delivery gate, retention gate, backfill posture). The divergence is deliberate and is the founder's own instruction: it must not be defaulted to a moderation chapter by word similarity. CH-15 retains the POLICY, consequence and appeal route as a named blocking dependency.",
+  "F135 PLACEMENT - assigned to CH-13 as an authoring-time link-intelligence property, while its remedy (mirroring preview bytes into custody) executes in CH-12 and it appears in CH-12's DB-9 privacy-exposure cluster. A reading that places canonical ownership with CH-12 is legitimate; the split follows the architecture's statement that mirrored bytes are served in CH-12 while custody is DEFINED with the link layer.",
+  "F016 GATE CROSSES A CHAPTER BOUNDARY - F016 is owned by CH-11 while F011/F014/F015, which it GATES, are owned by CH-13. This is deliberate (E-SC-12) so the gate cannot be silently absorbed; A-CON-1 already records the gate as appearing crossed, so the boundary must be enforced in practice, not merely declared.",
+  "F064 AND F113 REMAIN TWO ROWS WITH TWO PROOF BURDENS - both are owned by CH-02, but F064 is provable in a SINGLE_AUTHORIZED_BROWSER while F113 carries a MULTI_PARTY_REALTIME Meetings topology with VD-031 UNKNOWN. Neither proof discharges the other, and their shared chapter must not be read as a merge.",
+  "F103/F104 CHARTER-VERSUS-IMPLEMENTATION SPLIT - owned by CH-02 by the register's own statement (CO-RC-C10-006 assigns the auth-return clause to the shared continuity authority) while their chartering RC chapter is RC-C10 and their most important consumer is CH-10. Explicit, permitted, and not a duplicate programme.",
+  "F006/F007/F008/F010/F049 EVIDENCE CONTRADICTION - held LIVE_CERTIFIED on single-line WEAK provenance while the frozen Conversation Completion Register (CH-06) simultaneously names the same capabilities UNRESOLVED. The two records are reconciled by live re-proof in CH-04, not by preferring one. CH-04 may not be described as certification-only until this is discharged.",
+  "F114 CERTIFIES A NON-EVENT - LIVE_CERTIFIED evidence that nothing was touched is not evidence that touching is safe. Its state is copied verbatim and its weakness is flagged; any Meetings slice replaces it with a real regression proof.",
+  "F076/F077 TERMINAL WITH UNFINISHED PROOF - EXPLICITLY_RETIRED with 'UI unobserved' remains. The observation is completed in CH-09 rather than inherited as terminal.",
+  "F018/F020/F021/F022/F029 VANISHED FROM REPORTING ONCE - five live-certified capabilities distributed across CH-13, CH-06 and CH-14. Each carries a re-report requirement at closure under F119 (CH-17); their live-certified state must not be allowed to become invisibility a second time.",
+  "PB-02 / RC-C6 COMPLETED CROSSING - the twenty-finding realtime lifecycle cluster now owned by CH-04 was repaired INSIDE a PRESERVE / DO-NOT-TOUCH layer with no governed record authorizing it. Four consecutive artifacts declined to classify it; this artifact does not classify it either and carries it as CH-04's first founder action.",
+  "SINGLE-MENTION DECOMPOSITION WEAKNESS - F092, F093, F094, F095, F098, F099, F100, F101, F102, F105, F106 and F109 each carry exactly one corpus mention and constitute most of CH-09's engagement slice and all of CH-10. They are ASSIGNED with confidence in the chartering argument and LOW confidence in the decomposition; neither chapter may be sized on them without the declared FD-5 sections 8-10 re-derivation.",
+  "RC-C10 STATE - ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. Assigning 24 findings to CH-09 and 8 to CH-10 recognises the 2026-08-16/17 construction as RC-C10 EXECUTION and is not completion, not certification, and not permission to weaken either exit gate. UNKNOWN stays UNKNOWN.",
+  "RC-C5 HARD GATE SCOPE UNRESOLVED - whether founder-declared C4 live closure gates only CH-13's composer surfaces or also CH-11/CH-12's content stages is NOT_RECORDED. Assignments here do not assume either answer and do not route around the gate; the gate's holder (CH-05) is unchanged."
+ ],
+ "assuranceStatements": {
+  "identifierAccounting": "143 rows emitted; every id F001-F143 appears EXACTLY ONCE, including F097 (issued). Sum of byChapter counts = 143. Zero duplicates, zero omissions, zero multi-chapter assignments.",
+  "statesCopiedVerbatim": "Every currentState is copied character-for-character from index-findings.json. No state was revised, promoted, demoted, merged or reconciled. The four special states (three CONFLICTING_CURRENT_STATE plus F139's STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED) are preserved and separately reported.",
+  "chapterSetRespected": "Every canonicalChapter is drawn from the FIXED set CH-01..CH-17. No chapter was invented. UNASSIGNABLE is empty - not because nothing was hard to place, but because every hard case (F137, F135, F103/F104, F060, F035, F064/F113) resolved onto a real responsibility boundary rather than a word match. An empty UNASSIGNABLE list is reported as a result, not as a claim of ease.",
+  "singleOwnerRule": "Exactly one canonical owner per finding. crossReferencedChapters are unlimited and carry NO ownership weight; a cross-reference never transfers or shares ownership, and no chapter may claim a finding closed on another chapter's proof.",
+  "protectedStatusFlagged": "All six C4-owned findings (F030-F035) are flagged as C4-OWNED under PB-08 with their implementation placement stated as placement only. PB-01 (F064, F112, F113, F114), PB-05 (F116), PB-11 (F071) and the destructive boundaries DB-1/DB-2/DB-3/DB-6/DB-7/DB-9/DB-10 are flagged on the rows they constrain. No protected status was overridden.",
+  "axisIndependence": "This artifact reconciles 143/143 on the FINDING axis ONLY. It asserts nothing about the 299 chartered obligations, does not treat a related obligation as discharging a finding, and does not treat a finding's chapter as determining an obligation's owner. CH-01, CH-07 and CH-08 hold zero findings and that is reported as a correct result.",
+  "worldClassAccounting": {
+   "true": 103,
+   "false": 40,
+   "basis": "worldClassObligation is TRUE where the evidence shows that fixing the literal defect still leaves an inadequate product, sourced from the chapters' recorded worldClassObligations, the competitive-deficiency notes (CD-1, CD-3, CD-5, CD-8), OPP-2, VD-050 and the frozen world-class interaction/content doctrine. It is FALSE where correctness IS adequacy - security invariants, architectural decisions, governance rules, legacy-compatibility and isolated terminal defects - so the flag stays discriminating rather than decorative."
+  },
+  "economy": "Consumed ONLY index-findings.json and chapter-architecture.json. The ~703 MB historical corpus was NOT rescanned. NO raw-source escalation was performed. One escalation is RECOMMENDED and inherited, not executed: a bounded, declared read of FD-5 sections 8-10 before CH-09's engagement slice (F089-F096) and CH-10's single-mention rows are sized - F096 names it as the recovery source and twelve single-mention findings cannot otherwise be corroborated."
+ },
+ "authorises": "NOTHING. No implementation, no migration, no production mutation, no infrastructure change, no protected-boundary modification, no chapter authorisation, no conflict adjudication, no state change."
+}

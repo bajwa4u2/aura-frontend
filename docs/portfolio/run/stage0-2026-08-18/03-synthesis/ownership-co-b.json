@@ -1,0 +1,2927 @@
+{
+ "type": "ANALYTICAL_PROPOSAL",
+ "artifact": "ownership-co-b",
+ "stage": "STAGE 3 - SYNTHESIS (CHARTERED-OBLIGATION OWNERSHIP, RC-C6..RC-C11)",
+ "agent": "CHARTERED-OBLIGATION ASSIGNER B",
+ "date": "2026-08-18",
+ "status": "NOT RATIFIED TRUTH. Founder-authorised for STAGE 3 SYNTHESIS ONLY. Assigns exactly one canonical implementation-chapter owner to each of the 135 chartered obligations CO-RC-C6-001..CO-RC-C11-017. No obligation state, finding state, protected boundary, frozen gate, exit gate or founder ruling is altered, merged, resolved, satisfied or weakened. No implementation, migration, production mutation, infrastructure change or protected-boundary modification was performed or authorised.",
+ "count": 135,
+ "range": "RC-C6..RC-C11",
+ "inputsConsumed": [
+  "docs/portfolio/run/stage0-2026-08-18/03-synthesis/index-co-b.json (135 obligations, authoritative population)",
+  "docs/portfolio/run/stage0-2026-08-18/03-synthesis/chapter-architecture.json (FIXED chapter set CH-01..CH-17; unitAssignmentRules 1-9; coverageAssuranceByRcChapter; f137OwnerAndProof; unmappedSurfaceResolution)"
+ ],
+ "economy": {
+  "corpusRescan": "NONE. The ~703 MB historical corpus was NOT rescanned.",
+  "escalations": "NONE performed. No raw-source escalation was required: every obligation's text plus the fixed chapter set was sufficient to identify a responsibility boundary.",
+  "note": "chapter-architecture.json was read in full (1,651 lines, paged) because chapter ownership cannot be assigned from summaries of chapter boundaries."
+ },
+ "hardRulesObserved": [
+  "Exactly 135 rows; each id appears exactly once; no id invented, merged or dropped.",
+  "charteredBy is preserved verbatim from index-co-b.json on every row and is never rewritten by the assignment.",
+  "EXACTLY ONE canonical owner per obligation. crossReferences are unlimited and are never ownership.",
+  "No satisfaction, closure or completion is inferred from any related finding. Three rows (CO-RC-C10-005/006/007) carry relatedFindings; all three are marked satisfactionInferredFromFinding=false.",
+  "UNKNOWN stays UNKNOWN. Every row carries stateCarriedForward=UNCHANGED; this artifact assigns ownership only.",
+  "CHARTER != IMPLEMENTATION OWNER is applied only where the chapter architecture already states the split (RULE 8), and the charter relationship is written on the row.",
+  "Assignment to only the fixed chapter ids in chapter-architecture.json. No chapter invented. No force-fitting.",
+  "The two axes stay independent: this artifact reconciles 135 of the 299 obligations and makes no claim about the 143-finding population."
+ ],
+ "assignments": [
+  {
+   "id": "CO-RC-C6-001",
+   "charteredBy": "RC-C6",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "Shared realtime infrastructure does NOT imply shared product semantics. Frozen conceptual ownership: DM · THREAD · SPACE · INSTITUTION ROOM · MEETING · LIVE, each with its own frozen meaning. LIVE is NOT another Meeting merely bec",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 3",
+   "rationale": "Frozen conceptual ownership (DM/THREAD/SPACE/INSTITUTION ROOM/MEETING/LIVE) is a constraint on the shared realtime substrate; CH-04 owns the substrate whose convergence would otherwise erase those meanings, so it owns the outcome that forbids it.",
+   "crossReferences": [
+    "CH-06 (DM/THREAD semantics consumer)",
+    "CH-07 (THREAD/SPACE surfaces)",
+    "CH-08 (INSTITUTION ROOM)",
+    "CH-09 (LIVE)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-002",
+   "charteredBy": "RC-C6",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "Converge the PRESENTATION of participant list · host controls · admission/join-requests · consent onto a shared component family. MEETINGS LIFECYCLE IS UNTOUCHED. THE SHARED COMPONENT DOES NOT OWN SEMANTIC MEANING. Evidence: five ",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Presentation convergence of participant list / host controls / admission / consent onto a shared family, with MEETINGS LIFECYCLE UNTOUCHED and the component owning no semantic meaning, is CH-04's governing outcome.",
+   "crossReferences": [
+    "CH-08 (consumes the shared family)",
+    "CH-09 (consumes it for Live)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-003",
+   "charteredBy": "RC-C6",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "C6 holds ZERO G5 sites. Meetings' protected debt is G3 (16) and G4 (14), belonging to controlled C6 review.",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "The statement of C6's own G5 position (zero sites) and that Meetings' G3/G4 debt belongs to controlled C6 review is an accounting fact CH-04 must hold; the ratchet/baseline accounting itself is CH-01/CH-17.",
+   "crossReferences": [
+    "CH-01 (foundation-debt ratchets)",
+    "CH-17 (burn-down accounting)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-004",
+   "charteredBy": "RC-C6",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Entire chapter: shared presentation family, device transfer UI, preferred-device visibility, slice-by-slice Meetings presentation convergence with regression and founder sign-off after each slice",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "The entire unbuilt C6 chapter — shared presentation family, device transfer UI, preferred-device visibility, slice-by-slice Meetings convergence with regression and per-slice founder sign-off — is CH-04's construction scope.",
+   "crossReferences": [
+    "CH-16 (Real-Boundary device proofs)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-005",
+   "charteredBy": "RC-C6",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Meetings G3 (16) and G4 (14) protected debt belongs to controlled C6 review",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Meetings G3 (16) and G4 (14) protected debt is discharged only under controlled C6 review, which is CH-04's slice-by-slice Meetings convergence with PB-01 sign-off.",
+   "crossReferences": [
+    "CH-01 (state-primitive vocabulary)",
+    "CH-17 (remainder reporting)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-006",
+   "charteredBy": "RC-C6",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "relative_time.dart shim burn-down: C6 is a named owner (thread surfaces)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "C6 is a named owner of the relative_time.dart shim burn-down for thread/realtime surfaces; the shim's central accounting and the 11-caller remainder sit with CH-01.",
+   "crossReferences": [
+    "CH-01 (shim burn-down owner of record)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-007",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Shared presentation family — participant list · host controls · admission/join-requests · consent — rendering context-supplied states and language; the component never owns semantic meaning",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build of the shared presentation family that renders context-supplied state and language and never owns semantic meaning is the core of CH-04.",
+   "crossReferences": [
+    "CH-01 (state/temporal presentation vocabulary it renders)",
+    "CH-03 (identity on tiles and rosters)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-008",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Modern invite/add flows consuming the People & Participation primitive",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Modern invite/add flows consuming the People & Participation primitive are built at the realtime substrate; the primitive itself is extracted by CH-03.",
+   "crossReferences": [
+    "CH-03 (People & Participation Selection primitive)",
+    "CH-07 (membership/invite surfaces)",
+    "CH-08 (modern participant selection)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-009",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Device transfer UI (offer/accept/relinquish/failed)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Device transfer UI (offer/accept/relinquish/failed) is the unbuilt device layer chartered to C6 and implemented at the substrate; its native proof lands at Real-Boundary in CH-16.",
+   "crossReferences": [
+    "CH-16 (device testing; CO-RC-C9-008)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-010",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Preferred-device behaviour made visible",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Making preferred-device behaviour visible is part of the same unbuilt device layer over FROZEN backend contracts.",
+   "crossReferences": [
+    "CH-16 (native/device proof)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-011",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserveDoNotTouch",
+   "obligation": "Realtime transport",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 4",
+   "rationale": "Realtime transport is PRESERVE / DO-NOT-TOUCH under PB-02; CH-04 is the chapter that would otherwise break it, so it owns the preservation obligation.",
+   "crossReferences": [
+    "CH-09 (state escalation over the same transport)",
+    "CH-16 (platform lifecycle over active sessions)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-012",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserveDoNotTouch",
+   "obligation": "media service",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 4",
+   "rationale": "Media service is PRESERVE / DO-NOT-TOUCH under PB-02; CH-04 is the only chapter proposing work in that layer.",
+   "crossReferences": [
+    "CH-09"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-013",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserveDoNotTouch",
+   "obligation": "event parser",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 4",
+   "rationale": "Event parser is PRESERVE / DO-NOT-TOUCH under PB-02; owned by the chapter whose convergence work could break it.",
+   "crossReferences": [
+    "CH-09"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-014",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserveDoNotTouch",
+   "obligation": "reconnect/orphan recovery (realtime_reconciliation_controller, orphaned-session handling)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 4",
+   "rationale": "Reconnect/orphan recovery (realtime_reconciliation_controller, orphaned-session handling) is PRESERVE; CH-04 owns it because its lifecycle certification touches exactly these paths.",
+   "crossReferences": [
+    "CH-05 (orphaned_session_banner companion surface)",
+    "CH-02 (rejoin destination)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-015",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserveDoNotTouch",
+   "obligation": "session continuity across navigation",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 4",
+   "rationale": "Session continuity across navigation is PRESERVE for C6 (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host). CH-04 owns not breaking it; CH-02 owns the destination-reconstruction authority as a separate obligation.",
+   "crossReferences": [
+    "CH-02 (continuity authority — separate obligation, not this one)",
+    "CH-05 (shared producers under DR1)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-016",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserveDoNotTouch",
+   "obligation": "MEETINGS LIFECYCLE (booking, invitation, attendance, waiting/admission, prep, summary, follow-up)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 4",
+   "rationale": "MEETINGS LIFECYCLE (booking, invitation, attendance, waiting/admission, prep, summary, follow-up) is PRESERVE under PB-01; CH-04 holds the only work that reaches Meetings files and therefore owns the preservation.",
+   "crossReferences": [
+    "CH-07 (RC-C7 Meetings boundary preserve)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-017",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "demolishOrConverge",
+   "obligation": "Duplicated presentation: Meetings reimplements participant grid, spotlight and remote tiles across 3,890 lines while using 0 of 5 shared realtime widgets",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "The FD-4 demolition/convergence of 3,890 duplicated Meetings presentation lines using 0 of 5 shared realtime widgets is CH-04's named demolition, executed slice by slice with per-slice regression and sign-off.",
+   "crossReferences": [
+    "CH-17 (demolition accounting)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-018",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "historicalItems",
+   "obligation": "Item 1 (Runtime Lifecycle)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 5",
+   "rationale": "Historical Item 1 (Runtime Lifecycle) continues in the realtime substrate chapter.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-019",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "historicalItems",
+   "obligation": "Item 2 (Device Presence)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 5",
+   "rationale": "Historical Item 2 (Device Presence) continues in the chapter that builds the device layer.",
+   "crossReferences": [
+    "CH-16"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-020",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "historicalItems",
+   "obligation": "Item 7 (Realtime Architecture Correction)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 5",
+   "rationale": "Historical Item 7 (Realtime Architecture Correction) continues here; note RC-C9 separately carries an Item 7 device/native pass (CO-RC-C9-025) owned by CH-16 — two distinct halves, not one obligation.",
+   "crossReferences": [
+    "CH-16 (CO-RC-C9-025 device/native half)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-021",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "historicalItems",
+   "obligation": "Item 9 (Lifecycle Phase 2)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 5",
+   "rationale": "Historical Item 9 (Lifecycle Phase 2) continues in the lifecycle-owning chapter.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-022",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "historicalItems",
+   "obligation": "Item 12 (Advanced Device Preference / Transfer)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 5",
+   "rationale": "Historical Item 12 (Advanced Device Preference / Transfer) continues with the device layer.",
+   "crossReferences": [
+    "CH-16"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-023",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "extendedScope",
+   "obligation": "Multi-device authority",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Multi-device authority is extended C6 scope over frozen backend contracts and is a property of the one session substrate.",
+   "crossReferences": [
+    "CH-03 (identity across devices)",
+    "CH-16 (native device surface)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-024",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "extendedScope",
+   "obligation": "preferred-first ring + stagger + fallback",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Preferred-first ring with stagger and fallback is substrate behaviour; its native presentation is proven in CH-16 and its delivery-channel governance is CH-05's preference authority.",
+   "crossReferences": [
+    "CH-05 (delivery channel governance)",
+    "CH-16 (native ring)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-025",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "extendedScope",
+   "obligation": "durable media ownership",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "Durable media ownership across devices is extended C6 scope at the substrate; it is not the stored-object custody authority (CH-12), which is a separate population.",
+   "crossReferences": [
+    "CH-12 (stored-object custody — distinct)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-026",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "extendedScope",
+   "obligation": "D2 transfer handshake",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 2",
+   "rationale": "The D2 transfer handshake is the protocol half of the device layer over FROZEN backend contracts.",
+   "crossReferences": [
+    "CH-16 (real-device proof)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C6-027",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "founderCheckpoints",
+   "obligation": "Participation/invite interaction direction",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 6",
+   "rationale": "Founder checkpoint on participation/invite interaction direction: CH-04 is the chapter that may not proceed past it, and it appears in CH-04's founderActions (Checkpoint 10).",
+   "crossReferences": [
+    "CH-07 (membership/invite surfaces consume the direction)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "FOUNDER CHECKPOINT — CH-04 may not build participation/invite interaction past this point without the founder ruling. Assignment does not convert the checkpoint into an engineering decision."
+  },
+  {
+   "id": "CO-RC-C6-028",
+   "charteredBy": "RC-C6",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "founderCheckpoints",
+   "obligation": "Sign-off after EACH Meetings slice",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 6",
+   "rationale": "Founder sign-off after EACH Meetings convergence slice is non-optional and gates CH-04's own slices; it is the operative expression of PB-01 inside this chapter.",
+   "crossReferences": [
+    "CH-06 (PB-01 sequencing consequence)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C6 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "FOUNDER CHECKPOINT — per-slice sign-off; a slice may not proceed on engineering judgement, and the targeted Meetings regression (97/97) accompanies each one."
+  },
+  {
+   "id": "CO-RC-C7-001",
+   "charteredBy": "RC-C7",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "THREAD = FOCUSED CONVERSATION CONTINUITY; SPACE = PERSISTENT SHARED CONTEXT / COMMUNITY. Do NOT reduce both to generic containers, merge them, treat a Space as a large group chat, treat a Thread as a message list, or force every T",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 3",
+   "rationale": "THREAD = focused conversation continuity, SPACE = persistent shared context: the frozen outcome constrains the chapter that BUILDS those surfaces, and CH-07 must prove THREAD != SPACE behaviourally.",
+   "crossReferences": [
+    "CH-06 (one canonical Conversation beneath both)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-002",
+   "charteredBy": "RC-C7",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "Correspondence = one canonical product meaning; C7 owns the eventual path/module rename or convergence — the semantic decision is NOT reopened there.",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 3",
+   "rationale": "Correspondence has one canonical product meaning and C7 owns the eventual path/module rename or convergence; the semantic decision is NOT reopened. CH-07 owns the surfaces and the rename.",
+   "crossReferences": [
+    "CH-01 (RC-C0 handoff of the semantic ruling)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-003",
+   "charteredBy": "RC-C7",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "C7 = INSTITUTIONAL CONVERSATION & DESK. C7 does NOT recreate Correspondence as a product, does NOT own Invitation, and there is ONE canonical Conversation system.",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 3",
+   "rationale": "C7 = INSTITUTIONAL CONVERSATION & DESK, does not recreate Correspondence as a product and does not own Invitation. Owned by the institutional-surfaces chapter. The clause 'there is ONE canonical Conversation system' is a cross-reference to CH-06's governing outcome, not a second ownership.",
+   "crossReferences": [
+    "CH-06 (ONE canonical Conversation clause)",
+    "CH-07 nonGoal: Invitation is a separate canon consumed first"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-004",
+   "charteredBy": "RC-C7",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "C7 MUST consume the explicit-context contract (institutionContextId + correspondAsInstitution); no route-derived sender may survive C7 closure; the institutional-inbox quartet's route disposition finalizes with it.",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Consuming the explicit-context contract (institutionContextId + correspondAsInstitution) so that no route-derived sender survives closure, with the institutional-inbox quartet route disposition finalising with it, is CH-07's stated closure gate.",
+   "crossReferences": [
+    "CH-02 (route classification)",
+    "CH-03 (institution identity projection)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-005",
+   "charteredBy": "RC-C7",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Phase 5 legacy retirement NOT AUTHORIZED — gate: additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization. Legacy conversation surfaces NOT yet retired; legacy hub parked at /mess",
+   "canonicalOwner": "CH-06",
+   "ownershipRule": "RULE 2",
+   "rationale": "Phase 5 legacy retirement (NOT AUTHORIZED; gate: additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization) is retirement of the DirectThread and Space-as-conversation conversation stacks beneath the canonical Conversation — CH-06's named destructive boundary and PB-11 obligation.",
+   "crossReferences": [
+    "CH-07 (surface-side legacy routes)",
+    "CH-17 (authorization discipline)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-06",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-006",
+   "charteredBy": "RC-C7",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "CONVERSATION COMPLETION REGISTER (frozen obligation): audio call · video call · screen sharing · media/attachments · intentional Live · message reporting/moderation remain REQUIRED contextual attachments of canonical Conversation.",
+   "canonicalOwner": "CH-06",
+   "ownershipRule": "RULE 2",
+   "rationale": "The CONVERSATION COMPLETION REGISTER is CH-06's own exit condition; its rows are executed across CH-04 (audio/video/screen share), CH-13 (media/attachments), CH-09 (intentional Live) and CH-15 (message reporting) and adjudicated in CH-06. Execution elsewhere is dependency, never ownership.",
+   "crossReferences": [
+    "CH-04",
+    "CH-13",
+    "CH-09",
+    "CH-15"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-06",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-007",
+   "charteredBy": "RC-C7",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Correspondence umbrella rename/migration — choose the correct internal name, migrate safely, preserve compatibility and history. Paths may lag; documentation may not.",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "The Correspondence umbrella rename/migration — choose the internal name, migrate safely, preserve compatibility and history — is CH-07's migration over live data.",
+   "crossReferences": [
+    "CH-12 (no storage consequence may follow a rename)",
+    "CH-02 (deep links)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-008",
+   "charteredBy": "RC-C7",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "InstitutionCorrespondenceScreen disposition (FD-12 §4)",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "InstitutionCorrespondenceScreen disposition (FD-12 §4) is dispositioned on architecture, never on reference count, by the chapter that owns institutional communication surfaces.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-009",
+   "charteredBy": "RC-C7",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "26 G5 state-primitive sites assigned to C7; debt register rows 4, 10, 11 are C7-owned",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "26 G5 state-primitive sites assigned to C7 and debt register rows 4, 10, 11: per-site conversion happens in the surface chapter that owns the files; the baseline and remainder accounting stay with CH-01/CH-17.",
+   "crossReferences": [
+    "CH-01 (baselines and ratchets)",
+    "CH-17 (burn-down accounting)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-010",
+   "charteredBy": "RC-C7",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Retire resolveActorContext residue and the institutional-inbox quartet route disposition",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Retiring resolveActorContext residue and finalising the institutional-inbox quartet route disposition is CH-07 work; the route registry and classification authority it must not bypass is CH-02's.",
+   "crossReferences": [
+    "CH-02 (route registry / classification)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-011",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Thread surfaces (focused conversation continuity)",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build of Thread surfaces (focused conversation continuity).",
+   "crossReferences": [
+    "CH-06 (canonical Conversation substrate)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-012",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Space surfaces (persistent shared context; NO EIGHT-TAB INTERFACE)",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build of Space surfaces (persistent shared context; NO EIGHT-TAB INTERFACE) — the sharpest visible/planned mismatch in the corpus, owned as construction here.",
+   "crossReferences": [
+    "CH-14 (Discover SPACES domain)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-013",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "membership/join/invite flows (never expose role enums or permission machinery)",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build of membership/join/invite flows that never expose role enums or permission machinery.",
+   "crossReferences": [
+    "CH-03 (People & Participation primitive)",
+    "CH-08 (room invitations — distinct obligation)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-014",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "object-local management",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build of object-local management for Threads and Spaces.",
+   "crossReferences": [
+    "CH-02 (object-local contextual depth)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-015",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Correspondence as a distinct governed communication form — sharing infrastructure but not semantics",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build of Correspondence as a distinct governed communication form sharing infrastructure but not semantics.",
+   "crossReferences": [
+    "CH-06 (shared infrastructure)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-016",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "demolishOrConverge",
+   "obligation": "Three thread_screen implementations (correspondence/, public/, direct_threads/)",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Demolition/convergence of the three thread_screen implementations (correspondence/, public/, direct_threads/).",
+   "crossReferences": [
+    "CH-06 (substrate they converge onto)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-017",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "demolishOrConverge",
+   "obligation": "duplicated conversation mechanics",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Demolition of duplicated conversation mechanics carried by those surfaces; named explicitly in CH-07's demolition set. The canonical mechanics they converge onto are CH-06's.",
+   "crossReferences": [
+    "CH-06"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-018",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "demolishOrConverge",
+   "obligation": "four institution messaging entry points",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Convergence of the four institution messaging entry points — retires live routes, so deep-link resolution and history preservation are conditions of closure.",
+   "crossReferences": [
+    "CH-02 (deep links)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-019",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "demolishOrConverge",
+   "obligation": "disposition InstitutionCorrespondenceScreen here (FD-12 §4)",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 2",
+   "rationale": "Disposition of InstitutionCorrespondenceScreen executed here (FD-12 §4), paired with CO-RC-C7-008.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-020",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "Communication histories",
+   "canonicalOwner": "CH-06",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE communication histories: the chapter that would otherwise break them is the one authorised (later) to retire the legacy conversation stacks — Phase 5 in CH-06. CH-07's convergences carry the same constraint as a stated destructive boundary, not as ownership.",
+   "crossReferences": [
+    "CH-07 (thread/entry-point convergence must not break histories)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-06",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-021",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "membership/relationship data",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE membership/relationship data: CH-07 performs the membership/invite rebuild and the institutional convergence that could break it.",
+   "crossReferences": [
+    "CH-03 (relationship projection)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-022",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "Thread/Space content",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE Thread/Space content: CH-07 builds and converges exactly those surfaces.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-023",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "deep links",
+   "canonicalOwner": "CH-07",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE deep links: CH-07's route retirements and the Correspondence rename are the C7 acts that could break them. The general 'ALL EXISTING DEEP LINKS MUST CONTINUE TO RESOLVE' authority is CH-02's separate RC-C3 obligation.",
+   "crossReferences": [
+    "CH-02 (RC-C3 deep-link preservation obligation — distinct row)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-07",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C7-024",
+   "charteredBy": "RC-C7",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "Meetings boundary",
+   "canonicalOwner": "CH-06",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE the Meetings boundary: within C7 the risk is that ONE canonical Conversation absorbs Meetings. CH-06 carries PB-01 as a sequencing consequence and is the chapter that would otherwise erase the boundary. ALTERNATIVE READING RECORDED: CH-07 (institutional convergence) or CH-04 (PB-01 holder).",
+   "crossReferences": [
+    "CH-04 (PB-01 Meetings protection)",
+    "CH-07 (institutional surfaces adjacent to Meetings)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C7 / IMPLEMENTATION CH-06",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-001",
+   "charteredBy": "RC-C8",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "INSTITUTION ROOM = institution-owned persistent/drop-in communication room with GOVERNED PARTICIPATION — a distinct realtime product semantic that shared infrastructure may not erase.",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 3",
+   "rationale": "INSTITUTION ROOM as a distinct realtime product semantic that shared infrastructure may not erase — owned by the chapter that builds it and would otherwise let the shared family erase it.",
+   "crossReferences": [
+    "CH-04 (shared presentation family)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-002",
+   "charteredBy": "RC-C8",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "Live is explicitly NOT an Institution Room — 'Option C rejected' — so C8 and C10 remain separate constructions.",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 3",
+   "rationale": "Live is explicitly NOT an Institution Room ('Option C rejected'), so C8 and C10 remain separate constructions. Owned here; appears as a nonGoal in CH-09.",
+   "crossReferences": [
+    "CH-09 (must not absorb Institution Room)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-003",
+   "charteredBy": "RC-C8",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Entire chapter, including DR2 demolition of institution_live_rooms_screen",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "The entire unentered chapter including DR2 demolition of institution_live_rooms_screen.",
+   "crossReferences": [
+    "CH-09 (Live discovery currently served by the demolition target)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-004",
+   "charteredBy": "RC-C8",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Live-rooms internals inherited from C3",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Live-rooms internals inherited from C3 land with the chapter that rebuilds the rooms surface.",
+   "crossReferences": [
+    "CH-02 (route registry for the retired internals)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-005",
+   "charteredBy": "RC-C8",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "3 G5 state-primitive sites assigned to C8",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "3 G5 state-primitive sites assigned to C8: per-site conversion in the owning surface chapter; baselines and remainder accounting in CH-01/CH-17.",
+   "crossReferences": [
+    "CH-01",
+    "CH-17"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-006",
+   "charteredBy": "RC-C8",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Large-institution invariant test: 10,000 members -> zero recipients absent invitation",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "The large-institution invariant test (10,000 members -> zero recipients absent invitation) is a named, executed test of this chapter's governing rule ENTITLEMENT != INTERRUPTION.",
+   "crossReferences": [
+    "CH-05 (attention projection)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-007",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Room ownership",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: room ownership.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-008",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "invitations",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: room invitations — a distinct obligation from CH-07's membership/join/invite flows and from the Invitation canon.",
+   "crossReferences": [
+    "CH-07 (institutional membership flows)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-009",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "participant states",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: participant states.",
+   "crossReferences": [
+    "CH-04 (shared participation presentation)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-010",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "ring policy (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS)",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: ring policy (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS) — the fan-out hazard the invariant test measures.",
+   "crossReferences": [
+    "CH-05 (interruption governance)",
+    "CH-04 (ring mechanics)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-011",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "lifecycle",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: room lifecycle.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-012",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "contextual realtime",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: contextual realtime for the institution.",
+   "crossReferences": [
+    "CH-04 (substrate)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-013",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "attention",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: attention for room activity — projected through CH-05's hub, never a second attention authority.",
+   "crossReferences": [
+    "CH-05 (Attention Authority)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-014",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "modern participant selection",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: modern participant selection consuming the People & Participation primitive.",
+   "crossReferences": [
+    "CH-03 (primitive)",
+    "CH-04 (invite/add flows)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-015",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "demolishAndRebuild",
+   "obligation": "DR2 — institution_live_rooms_screen (1,078 lines): imports neither realtime nor meetings, consumes untyped Map<String,dynamic>, and lists realtime sessions rather than InstitutionRoom. DO NOT RETROFIT.",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "DR2 demolish-and-rebuild of institution_live_rooms_screen (1,078 lines, untyped maps, lists realtime sessions rather than InstitutionRoom). DO NOT RETROFIT — the replacement is built.",
+   "crossReferences": [
+    "CH-09 (canonical Live discovery must exist before or with the demolition)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-016",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "'See what is live now' for an institution; card layout only",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE 'see what is live now' for an institution, card layout only: CH-08's own DR2 demolition is what would otherwise remove it.",
+   "crossReferences": [
+    "CH-09 (one canonical Live truth)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C8-017",
+   "charteredBy": "RC-C8",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "extendedScope",
+   "obligation": "Institution Room (backend D5)",
+   "canonicalOwner": "CH-08",
+   "ownershipRule": "RULE 2",
+   "rationale": "Extended scope: Institution Room backend D5 (FROZEN authority) — cross-repository construction declared under PB-12.",
+   "crossReferences": [
+    "CH-17 (cross-repository certification reporting)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C8 / IMPLEMENTATION CH-08",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-001",
+   "charteredBy": "RC-C9",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "C9/C10 overlap rule (a founder correction applied at roadmap approval): C10 CONSTRUCTION ENTRY requires C0-C8 authorities stable; C10 CROSS-PLATFORM COMPLETION/CERTIFICATION requires the relevant C9 platform contracts proven. C9 m",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 3",
+   "rationale": "The C9/C10 overlap rule (C10 construction entry needs C0-C8 stable; C10 cross-platform COMPLETION needs the relevant C9 contracts proven) is a constraint on the platform layer that must supply those contracts. CH-16 owns supplying and proving them; CH-09 owns the gate that consumes the proof.",
+   "crossReferences": [
+    "CH-09 (owns RC-C10's cross-platform completion exit gate, CO-RC-C10-011)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "GATE INPUT — CH-16 supplies proven platform contracts; it does NOT own or discharge RC-C10's cross-platform completion gate. Ownership of that gate stays with CH-09."
+  },
+  {
+   "id": "CO-RC-C9-002",
+   "charteredBy": "RC-C9",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "SupportScreen — ownership undetermined -> product disposition checkpoint. EXPLICITLY NOT ASSIGNED TO C9.",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 2",
+   "rationale": "SupportScreen ownership is undetermined and EXPLICITLY NOT ASSIGNED TO C9; it resolves as a product disposition checkpoint. The DECISION is owned by CH-17; no construction chapter takes the surface, and CH-16 names it as a nonGoal. This is deliberate non-construction ownership, not an unassignable.",
+   "crossReferences": [
+    "CH-16 (explicit nonGoal)",
+    "CO-RC-C11-007 (same disposition on the C11 axis)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "PRODUCT DISPOSITION CHECKPOINT — founder decision; FD-12 applies (disposition on architecture, never reference count). Force-assigning it to a construction chapter is prohibited."
+  },
+  {
+   "id": "CO-RC-C9-003",
+   "charteredBy": "RC-C9",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "Real-Boundary certification lands substantially at C9 (and at C10 for media scale). A lower layer passing never implies a higher one.",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 3",
+   "rationale": "Real-Boundary certification lands substantially at C9, and a lower layer passing never implies a higher one (PB-10). CH-16 is the only chapter that executes NATIVE_DEVICE and EXTERNAL_INFRASTRUCTURE topologies.",
+   "crossReferences": [
+    "CH-17 (certification-layer model)",
+    "CH-12 (media scale at Real-Boundary)",
+    "CH-09 (media-scale certification)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-004",
+   "charteredBy": "RC-C9",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Entire chapter: WNS native Windows notifications, desktop lifecycle, drag/drop, clipboard, file handling, keyboard, windowing, background/foreground, active realtime continuity, deep links, iOS/Android native notification presenta",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "The entire C9 chapter — WNS, desktop lifecycle, drag/drop, clipboard, file handling, keyboard, windowing, background/foreground, active realtime continuity, deep links, iOS/Android native notification presentation — is CH-16's construction scope.",
+   "crossReferences": [
+    "CH-02 (continuity contract)",
+    "CH-05 (preference authority)",
+    "CH-13 (intake layer)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-005",
+   "charteredBy": "RC-C9",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Drag/drop is jointly owned C5 + C9",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 9",
+   "rationale": "Drag/drop is jointly chartered by C5 and C9. This is the C9 row and is owned by CH-16 as the PLATFORM surface; the intake-layer obligation (CO-RC-C5-009) is a separate obligation owned by CH-13. Two obligations, two owners, no merge — Agent B's D-2 disagreement stands.",
+   "crossReferences": [
+    "CH-13 (RC-C5 intake half)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-006",
+   "charteredBy": "RC-C9",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "3 G5 state-primitive sites assigned to C9",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "3 G5 state-primitive sites assigned to C9; conversion in the owning chapter, accounting in CH-01/CH-17.",
+   "crossReferences": [
+    "CH-01",
+    "CH-17"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-007",
+   "charteredBy": "RC-C9",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "C4 certification is only partial for Real-Boundary because native delivery lands in C9",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "The record that C4 certification is only PARTIAL for Real-Boundary because native delivery lands in C9 is discharged by CH-16 running the native delivery proof; CH-05 carries the partiality as a stated limit on its own closure.",
+   "crossReferences": [
+    "CH-05 (its certification is PARTIAL until this runs)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "PARTIALITY GATE — CH-05 may not claim full Real-Boundary certification until CH-16 executes native delivery. A lower layer passing never implies a higher one (PB-10)."
+  },
+  {
+   "id": "CO-RC-C9-008",
+   "charteredBy": "RC-C9",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "C6 certification is only partial for Real-Boundary because device testing lands in C9",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "The record that C6 certification is only PARTIAL for Real-Boundary because device testing lands in C9 is discharged by CH-16 running the device proofs; CH-04 carries the partiality as a stated limit.",
+   "crossReferences": [
+    "CH-04 (its certification is PARTIAL until this runs)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "PARTIALITY GATE — CH-04 may not claim full Real-Boundary certification until CH-16 executes real-device testing."
+  },
+  {
+   "id": "CO-RC-C9-009",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "Native Windows notifications (WNS)",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Native Windows notifications (WNS).",
+   "crossReferences": [
+    "CH-05 (preference authority honoured)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-010",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "desktop lifecycle",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Desktop lifecycle under DESKTOP IS NOT WEB WITH A WIDER VIEWPORT.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-011",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "drag/drop",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Drag/drop — the PLATFORM surface half; the intake layer is CH-13's separate obligation.",
+   "crossReferences": [
+    "CH-13 (intake half)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-012",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "clipboard",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Clipboard at the platform boundary; the paste-intake layer is CH-13's.",
+   "crossReferences": [
+    "CH-13"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-013",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "file handling",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: File handling at the platform boundary; what a file IS remains CH-11's.",
+   "crossReferences": [
+    "CH-11 (resolved type class)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-014",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "keyboard",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Keyboard — the platform/desktop half of WG014; the composer half is CH-13's.",
+   "crossReferences": [
+    "CH-13 (composer half of WG014)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-015",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "hover/context affordances",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Hover/context affordances.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-016",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "window sizing/responsiveness",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Window sizing and responsiveness.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-017",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "background/foreground",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Background/foreground platform lifecycle.",
+   "crossReferences": [
+    "CH-02 (destination survival)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-018",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "active realtime continuity",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Active realtime continuity across platform lifecycle — the platform expression of the continuity contract defined in CH-02 and of the sessions owned by CH-04.",
+   "crossReferences": [
+    "CH-02 (contract)",
+    "CH-04 (session substrate)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-019",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "deep links",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Deep links at the platform boundary; classification and destination reconstruction remain CH-02's.",
+   "crossReferences": [
+    "CH-02"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-020",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "installation/launch context",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: Installation/launch context.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-021",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "build",
+   "obligation": "iOS/Android native notification presentation",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Build: iOS/Android native notification presentation.",
+   "crossReferences": [
+    "CH-05 (attention/preference truth)",
+    "CH-03 (canonical identity in the native ring)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-022",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "Existing device registration",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE existing device registration: the platform chapter is the one whose native work would otherwise break it.",
+   "crossReferences": [
+    "CH-04 (multi-device authority consumer)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-023",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "notification preferences",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE notification preferences: CH-16's native delivery work is what could break them. The Notification Preference AUTHORITY itself is CH-05's separate obligation.",
+   "crossReferences": [
+    "CH-05 (Notification Preference Authority)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-024",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "preserve",
+   "obligation": "session continuity",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 4",
+   "rationale": "PRESERVE session continuity across platform lifecycle: CH-16's platform work is what could break it. The continuity AUTHORITY is CH-02's separate obligation.",
+   "crossReferences": [
+    "CH-02 (continuity authority)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-025",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "historicalItems",
+   "obligation": "Item 7 (device/native pass)",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 5",
+   "rationale": "Historical Item 7 device/native pass continues in the platform chapter. Distinct from CO-RC-C6-020 (Item 7 Realtime Architecture Correction) owned by CH-04 — two halves of one historical item, two owners, stated.",
+   "crossReferences": [
+    "CH-04 (CO-RC-C6-020)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-026",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "historicalItems",
+   "obligation": "Item 8 (iOS Firebase/APNs)",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 5",
+   "rationale": "Historical Item 8 (iOS Firebase/APNs) continues in the platform chapter.",
+   "crossReferences": [
+    "CH-05"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-027",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "extendedScope",
+   "obligation": "Windows/MSIX native push (WNS)",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Extended scope: Windows/MSIX native push (WNS).",
+   "crossReferences": [
+    "CH-17 (release artifacts)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C9-028",
+   "charteredBy": "RC-C9",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "extendedScope",
+   "obligation": "desktop obligations",
+   "canonicalOwner": "CH-16",
+   "ownershipRule": "RULE 2",
+   "rationale": "Extended scope: desktop obligations.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C9 / IMPLEMENTATION CH-16",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C10-001",
+   "charteredBy": "RC-C10",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "LIVE IS a governed public/stage participation STATE of an appropriate owning Thread or Space. LIVE is NOT a standalone generic broadcast product, another Meeting, an expanded Institution Room, or a fourth disconnected realtime sur",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 3",
+   "rationale": "LIVE IS a governed public/stage participation STATE of an owning Thread or Space, and is not a standalone broadcast product, another Meeting, an expanded Institution Room or a fourth realtime surface. Owned by the chapter that builds Live as a mode; appears as a nonGoal in CH-04, CH-08 and CH-10.",
+   "crossReferences": [
+    "CH-08 (Live is NOT an Institution Room)",
+    "CH-07 (owning Thread/Space)",
+    "CH-04 (session substrate)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-002",
+   "charteredBy": "RC-C10",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "Discovery correction preserved: PUBLIC_STAGE, participant roles, hand-raise and per-track publish state already exist; PUBLIC_STAGE is declared but NOT operationally consumed. 'The vocabulary exists; the mechanism does not.' The e",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 3",
+   "rationale": "The discovery correction — role/stage vocabulary exists, PUBLIC_STAGE declared but NOT operationally consumed, 'the vocabulary exists; the mechanism does not' — constrains Live construction and is owned by CH-09.",
+   "crossReferences": [
+    "CH-08 (DR2 screen currently serving Live discovery)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-003",
+   "charteredBy": "RC-C10",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "FOUNDER-FROZEN 2026-08-17: LIVE IS NOT SOMETHING A USER CREATES. LIVE IS SOMETHING AN EXISTING REALTIME HUMAN INTERACTION DELIBERATELY BECOMES. ORIGINATION IS CONTEXTUAL. DISCOVERY IS GLOBAL. NO ACTIVE REALTIME INTERACTION = NO GO",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 3",
+   "rationale": "FOUNDER-FROZEN 2026-08-17 origination correction: LIVE IS NOT SOMETHING A USER CREATES; ORIGINATION IS CONTEXTUAL; DISCOVERY IS GLOBAL; NO ACTIVE REALTIME INTERACTION = NO GO LIVE. Owned by CH-09 as the authority it froze.",
+   "crossReferences": [
+    "CH-04 (an active session is the precondition)",
+    "CH-14 (global discovery surfaces)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-004",
+   "charteredBy": "RC-C10",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "Stored as RealtimeSession.liveState: NORMAL -> LIVE_PREPARING -> LIVE -> ENDING -> NORMAL. liveState is lifecycle truth; accessMode is participation policy (kept in sync — PUBLIC_STAGE while LIVE — never collapsed into one concept",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 3",
+   "rationale": "RealtimeSession.liveState NORMAL -> LIVE_PREPARING -> LIVE -> ENDING -> NORMAL as lifecycle truth, never collapsed with accessMode (participation policy). One object, owned by CH-09; the session it lives on is CH-04's.",
+   "crossReferences": [
+    "CH-04 (RealtimeSession substrate)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-005",
+   "charteredBy": "RC-C10",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Live engagement F089-F096 — watch-oriented viewer experience · Live chat · reactions · raise hand · stage promotion/demotion · viewer presence atmosphere · Live moderation · recover FD-5 §§8-10 rather than reinvent. 'Authority exi",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "Live engagement (watch-oriented viewer experience, Live chat, reactions, raise hand, stage promotion/demotion, viewer presence atmosphere, Live moderation surface, recovery of FD-5 §§8-10) is CH-09's unbuilt engagement slice. The row's relatedFindings (F089, F096) are cross-references on the finding axis and discharge nothing here.",
+   "crossReferences": [
+    "CH-15 (moderation POLICY the in-Live surface delivers)",
+    "CH-05 (attention hub)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [
+    "F089",
+    "F096"
+   ],
+   "zeroFinding": false,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-006",
+   "charteredBy": "RC-C10",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Live public acquisition F097-F107 — public home surfaces real Live, bounded preview, auth wall, one canonical Live truth for both doors. 'Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059-F070",
+   "canonicalOwner": "CH-10",
+   "ownershipRule": "RULE 8",
+   "rationale": "Live public acquisition (public home surfaces real Live, bounded preview, auth wall, one canonical Live truth for both doors) is chartered by RC-C10 but IMPLEMENTED by CH-10, whose load-bearing content is the anonymous zero-authority capability projection. CHARTER REMAINS RC-C10. The row's own F103/F104 clause is executed by CH-02 (the shared continuity authority) as a named cross-boundary clause — cross-reference, never second ownership.",
+   "crossReferences": [
+    "CH-02 (F103/F104 auth-return clause, per the row's own instruction)",
+    "CH-09 (F107 one canonical Live truth)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-10 - stated explicitly, no duplicate programme",
+   "relatedFindings": [
+    "F097",
+    "F107",
+    "F103",
+    "F104",
+    "F059",
+    "F070"
+   ],
+   "zeroFinding": false,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "CLAUSE-SPLIT RECORDED — canonical owner CH-10; the F103/F104 auth-return half is executed in CH-02 and CH-10 cannot certify conversion until CH-02's F065 keystone passes.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-007",
+   "charteredBy": "RC-C10",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Live scale F108-F111 — mesh bounded (ceiling NEVER MEASURED), mesh != long-term architecture (no enforcement), SFU assessment not written, assessment scope not written",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 8",
+   "rationale": "Live scale (mesh bounded with a ceiling NEVER MEASURED, mesh != long-term architecture with no enforcement, SFU assessment and assessment scope unwritten) is chartered by RC-C10 and IMPLEMENTED by CH-04, because the measurement and the enforcement are properties of the transport substrate (F073 is a four-party CALL defect). CHARTER REMAINS RC-C10.",
+   "crossReferences": [
+    "CH-09 (consumer of the measurement and the ceiling)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-04 - stated explicitly, no duplicate programme",
+   "relatedFindings": [
+    "F108",
+    "F111"
+   ],
+   "zeroFinding": false,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "CHARTER/IMPLEMENTATION SPLIT — implementation in CH-04 does not move the charter and does not discharge any RC-C10 exit gate; CH-09 consumes the measurement.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-008",
+   "charteredBy": "RC-C10",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Open founder checkpoints: Live moderation policy · audience-scale topology/provider · Thread vs Space Live differences if material",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 6",
+   "rationale": "The bundle of open founder checkpoints (Live moderation policy · audience-scale topology/provider · Thread vs Space Live differences) gates Live's own certification, so CH-09 is the chapter that may not proceed past it. Its three constituent checkpoint rows are separately owned: CO-RC-C10-019 -> CH-15, CO-RC-C10-020 -> CH-04, CO-RC-C10-021 -> CH-09.",
+   "crossReferences": [
+    "CH-15 (Live moderation policy)",
+    "CH-04 (audience-scale topology/provider)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "FOUNDER-ACTION CHECKPOINT — all three remain OPEN. Assigning this row to CH-09 records who is blocked; it grants no engineering authority to answer any of the three, and it does not weaken either RC-C10 exit gate.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-009",
+   "charteredBy": "RC-C10",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Whether Live ever needs a plural/contextual form (C0 language obligation handed to C10)",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "Whether Live ever needs a plural/contextual form is a C0 language obligation handed to C10; the Product Language Authority that receives the answer is CH-01's.",
+   "crossReferences": [
+    "CH-01 (Product Language Authority)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-010",
+   "charteredBy": "RC-C10",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Replay-as-product, go-live authority formalization, and Live attention/interaction all recorded as backend-missing",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "Replay-as-product, go-live authority formalization and Live attention/interaction are all recorded as backend-missing; CH-09 is the declared cross-repository construction chapter for them (PB-12: backend construction must not be hidden inside it).",
+   "crossReferences": [
+    "CH-05 (attention hub)",
+    "CH-12 (stored replay artifacts custody)",
+    "CH-17 (cross-repository reporting)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-011",
+   "charteredBy": "RC-C10",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Cross-platform completion gate: required C9 platform contracts proven",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "The cross-platform completion gate (required C9 platform contracts proven) is one of RC-C10's TWO EXIT GATES and is owned HERE and nowhere else; CH-16 supplies and proves the contracts and co-evaluates, but does not own or discharge the gate.",
+   "crossReferences": [
+    "CH-16 (supplies proven C9 contracts; joint evaluation)",
+    "CO-RC-C9-001 (the overlap rule)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "RC-C10 EXIT GATE (2 of 2) — NOT WEAKENED. Owned by CH-09. Joint evaluation with CH-16 is evidence supply, not co-ownership. C9 contracts proven is a precondition of RC-C10 cross-platform COMPLETION, and no CH-16 pass implies RC-C10 completion (PB-10).",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-012",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "backendConstructionRequired",
+   "obligation": "{\"concern\":\"Role/stage vocabulary (PUBLIC_STAGE, HOST/CO_HOST/MODERATOR/SPEAKER/PARTICIPANT/LISTENER/OBSERVER, hand-raise, per-track publish)\",\"state\":\"already modelled\"}",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "Role/stage vocabulary (PUBLIC_STAGE, HOST/CO_HOST/MODERATOR/SPEAKER/PARTICIPANT/LISTENER/OBSERVER, hand-raise, per-track publish) is recorded as ALREADY MODELLED; CH-09 owns consuming it without creating a second vocabulary. State recorded as-evidenced; modelled != consumed.",
+   "crossReferences": [
+    "CH-04 (participation presentation)",
+    "CH-01 (no second vocabulary)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-013",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "backendConstructionRequired",
+   "obligation": "{\"concern\":\"PUBLIC_STAGE consumption\",\"state\":\"declared but unconsumed\"}",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "PUBLIC_STAGE consumption — recorded 'declared but unconsumed'. This is one of the two rows the founder identifies as COMPLETED-OR-SUPERSEDED by the 2026-08-16/17 Live construction. Assignment records the owner ONLY; no completion, supersession or certification is asserted here.",
+   "crossReferences": [
+    "CH-04 (accessMode on the session)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "RC-C10 CANDIDATE COMPLETED-OR-SUPERSEDED — state NOT adjudicated by this artifact. The 2026-08-16/17 construction constitutes RC-C10 EXECUTION, which is not completion and not certification. Independently evidenced state stands; UNKNOWN stays UNKNOWN.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-014",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "backendConstructionRequired",
+   "obligation": "{\"concern\":\"Go-live authority\",\"state\":\"missing\"}",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "Go-live authority — recorded 'missing'. The second row the founder identifies as COMPLETED-OR-SUPERSEDED. Owner recorded; state untouched. CO-RC-C10-010 separately records go-live authority FORMALIZATION as still backend-missing, and that tension is preserved rather than resolved.",
+   "crossReferences": [
+    "CH-03 (Go Live eligibility depends on canonical host detection)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "RC-C10 CANDIDATE COMPLETED-OR-SUPERSEDED — state NOT adjudicated. Preserved tension with CO-RC-C10-010's 'go-live authority formalization ... backend-missing'.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-015",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "backendConstructionRequired",
+   "obligation": "{\"concern\":\"Public observation (distinct from active media participation)\",\"state\":\"missing\"}",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "Public observation as a concept distinct from active media participation is missing backend construction; it is the authority behind the viewer/privacy boundary and is owned by CH-09.",
+   "crossReferences": [
+    "CH-10 (anonymous case consumer; co-signs the F088 privacy proof)",
+    "CH-04 (PB-04 participation != party membership)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-016",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "backendConstructionRequired",
+   "obligation": "{\"concern\":\"Audience scale (SFU/broadcast topology)\",\"state\":\"missing\"}",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 8",
+   "rationale": "Audience scale (SFU/broadcast topology) is chartered by RC-C10 and IMPLEMENTED by CH-04 with CO-RC-C10-007, because it is one topology decision over one transport substrate and splitting the measurement from the topology would leave each half unable to prove the other. CHARTER REMAINS RC-C10. ALTERNATIVE READING RECORDED: CH-09 as the Live-only consumer.",
+   "crossReferences": [
+    "CH-09 (consumer; does not decide the SFU purchase)",
+    "CO-RC-C10-020 (the founder checkpoint that decides it)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-04 - stated explicitly, no duplicate programme",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "CHARTER/IMPLEMENTATION SPLIT — CH-04 supplies measurement and topology capability; the DECISION is Checkpoint E and remains founder-only. Neither RC-C10 exit gate is weakened by implementing this outside CH-09.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-017",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "backendConstructionRequired",
+   "obligation": "{\"concern\":\"Live attention/interaction\",\"state\":\"missing\"}",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "Live attention/interaction backend construction is missing and is owned by CH-09, which must express it through CH-05's governed hub rather than a temporary Live banner.",
+   "crossReferences": [
+    "CH-05 (One Governed Attention Hub — no second attention authority)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-018",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "backendConstructionRequired",
+   "obligation": "{\"concern\":\"Replay-as-product\",\"state\":\"missing\"}",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 2",
+   "rationale": "Replay-as-product backend construction is missing; CH-09 owns the product semantic, while custody, retention and governed delivery of the stored replay objects are CH-12's separate population.",
+   "crossReferences": [
+    "CH-12 (stored-object custody, retention, delivery)",
+    "CH-04 (recording is not merged into the external Meetings storage universe)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-019",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "openCheckpoints",
+   "obligation": "Live moderation policy",
+   "canonicalOwner": "CH-15",
+   "ownershipRule": "RULE 6",
+   "rationale": "The Live moderation policy checkpoint is owned by the chapter that owns the single moderation AUTHORITY; a second moderation authority is prohibited. CH-09 delivers the in-Live surface consuming this policy and may not proceed past the checkpoint.",
+   "crossReferences": [
+    "CH-09 (in-Live moderation surface, F095)",
+    "CH-12 (media verdict mechanism)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-15",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "FOUNDER-ACTION CHECKPOINT (Checkpoint D) — OPEN. Assigning policy ownership to CH-15 does not answer the checkpoint and does not permit CH-09 to build an interim Live moderation authority.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-020",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "openCheckpoints",
+   "obligation": "audience-scale topology/provider (provider independence preserved; not frozen)",
+   "canonicalOwner": "CH-04",
+   "ownershipRule": "RULE 6",
+   "rationale": "The audience-scale topology/provider checkpoint (provider independence preserved; deliberately NOT frozen) is owned by the chapter that must not proceed past it while it builds the topology and supplies the measurement — CH-04, where it already stands as Checkpoint E.",
+   "crossReferences": [
+    "CH-09 (consumer)",
+    "CO-RC-C10-016 (the construction it gates)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-04",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "FOUNDER-ACTION CHECKPOINT (Checkpoint E) — OPEN and deliberately not frozen. CH-04 supplies measurement only; provider selection and topology remain founder-only, and the provider-independence doctrine (self-hosted tier-0 default) binds any proposal.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C10-021",
+   "charteredBy": "RC-C10",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "openCheckpoints",
+   "obligation": "Thread vs Space Live differences if material",
+   "canonicalOwner": "CH-09",
+   "ownershipRule": "RULE 6",
+   "rationale": "Whether Thread and Space Live differ materially is a Live product question; CH-09 is the chapter that cannot close its construction exit gate while it is open.",
+   "crossReferences": [
+    "CH-07 (Thread and Space surfaces)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C10 / IMPLEMENTATION CH-09",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only.",
+   "gateRelationship": "FOUNDER-ACTION CHECKPOINT — OPEN. CH-09 may not resolve Thread-vs-Space Live differences by engineering judgement, and CH-07 may not pre-empt it by building a Live-specific Space affordance.",
+   "rcC10Ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction constitutes RC-C10 EXECUTION - not completion, not certification, not permission to weaken either exit gate."
+  },
+  {
+   "id": "CO-RC-C11-001",
+   "charteredBy": "RC-C11",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "Item 17 is a certification/release gate, not a construction chapter, and must not be redefined.",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 3",
+   "rationale": "Item 17 is a certification/release gate, not a construction chapter, and must not be redefined — owned by the gate chapter itself.",
+   "crossReferences": [
+    "every construction chapter as a certification subject"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-002",
+   "charteredBy": "RC-C11",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "PD-1 Platform Administration and PD-2 Authentication & Account Entry are product disposition checkpoints that must be resolved BEFORE C11.",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 3",
+   "rationale": "PD-1 and PD-2 are product disposition checkpoints that must resolve BEFORE C11; the gate chapter owns the condition and the ratification.",
+   "crossReferences": [
+    "CH-01 (PD-1 work)",
+    "CH-02 (PD-2 structural half)",
+    "CH-10 (PD-2 experience half)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-003",
+   "charteredBy": "RC-C11",
+   "coType": "FROZEN_OUTCOME",
+   "scope": null,
+   "obligation": "A lower certification layer passing never implies a higher one.",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 3",
+   "rationale": "A lower certification layer passing never implies a higher one (PB-10) — the rule that governs how every other chapter may claim completion.",
+   "crossReferences": [
+    "CH-16 (Real-Boundary)",
+    "CH-04",
+    "CH-05"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-004",
+   "charteredBy": "RC-C11",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "All nine entry conditions",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "All nine entry conditions are RC-C11 entry-condition obligations and are owned by CH-17.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-005",
+   "charteredBy": "RC-C11",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "PD-1 Platform Administration disposition (11 files / 34 G5 sites) — no owning chapter in the approved roadmap",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 2",
+   "rationale": "PD-1 Platform Administration disposition (11 files / 34 G5 sites) has no owning chapter in the approved roadmap; the DECISION is owned here and the conversion work lands in CH-01. Sized by authority footprint, never code footprint.",
+   "crossReferences": [
+    "CH-01 (11 files / 34 G5 sites conversion)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-006",
+   "charteredBy": "RC-C11",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "PD-2 Authentication & Account Entry disposition (2 files / 3 sites) — STRUCTURAL DISPOSITION STILL OPEN",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 2",
+   "rationale": "PD-2 Authentication & Account Entry disposition remains STRUCTURALLY OPEN; the DECISION and the ratification of the structural/experience split are owned here, the halves are executed in CH-02 and CH-10.",
+   "crossReferences": [
+    "CH-02 (structural half)",
+    "CH-10 (experience half)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-007",
+   "charteredBy": "RC-C11",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "SupportScreen ownership disposition",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 2",
+   "rationale": "SupportScreen ownership disposition — the same decision as CO-RC-C9-002 seen from the C11 axis; deliberately unowned as construction and not force-assigned.",
+   "crossReferences": [
+    "CO-RC-C9-002 (the C9-axis row)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-008",
+   "charteredBy": "RC-C11",
+   "coType": "REMAINING_OBLIGATION",
+   "scope": null,
+   "obligation": "Consolidated Founder Product Acceptance",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 2",
+   "rationale": "Consolidated Founder Product Acceptance is the terminal founder act of the release gate.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-009",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "C0-C9 complete to their FD-13 definition of done (authority + migration + gate + regression + certification)",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: C0-C9 complete to their FD-13 definition of done (authority + migration + gate + regression + certification).",
+   "crossReferences": [
+    "all construction chapters"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-010",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "C10 complete OR explicitly excluded from this release candidate by founder decision",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: C10 complete OR explicitly excluded from this release candidate by founder decision. RC-C10 is currently ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED, so this condition is live and unmet.",
+   "crossReferences": [
+    "CH-09 (RC-C10 exit gates)"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-011",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "Backend frozen baseline intact; approved Live additions certified where included",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: backend frozen baseline intact; approved Live additions certified where included (PB-12 cross-repository reporting).",
+   "crossReferences": [
+    "CH-09",
+    "CH-12",
+    "CH-06"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-012",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "Cross-platform behaviour verified on mobile, web and MSIX",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: cross-platform behaviour verified on mobile, web and MSIX — evidence supplied by CH-16.",
+   "crossReferences": [
+    "CH-16"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-013",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "Real-device / native testing complete",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: real-device / native testing complete — evidence supplied by CH-16, whose two NATIVE_DEVICE obligations have never run.",
+   "crossReferences": [
+    "CH-16"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-014",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "Integrated end-to-end journeys pass",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: integrated end-to-end journeys pass.",
+   "crossReferences": [
+    "CH-06",
+    "CH-02",
+    "CH-13"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-015",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "Real-Boundary certification complete",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: Real-Boundary certification complete — the layer CH-16 executes and CH-04/CH-05 are PARTIAL against.",
+   "crossReferences": [
+    "CH-16",
+    "CH-04",
+    "CH-05",
+    "CH-12"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-016",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "Founder Product Acceptance readiness",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: Founder Product Acceptance readiness.",
+   "crossReferences": [],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  },
+  {
+   "id": "CO-RC-C11-017",
+   "charteredBy": "RC-C11",
+   "coType": "CHARTERED_SCOPE",
+   "scope": "entryConditionsAllMustBeTrue",
+   "obligation": "A Release Client candidate exists",
+   "canonicalOwner": "CH-17",
+   "ownershipRule": "RULE 7",
+   "rationale": "Entry condition: a Release Client candidate exists; store submission itself is founder-triggered and CH-16's role ends at certified artifacts.",
+   "crossReferences": [
+    "CH-16"
+   ],
+   "charterVsImplementation": "CHARTER RC-C11 / IMPLEMENTATION CH-17",
+   "relatedFindings": [],
+   "zeroFinding": true,
+   "satisfactionInferredFromFinding": false,
+   "stateCarriedForward": "UNCHANGED - independently evidenced state preserved; UNKNOWN stays UNKNOWN. This artifact assigns ownership only."
+  }
+ ],
+ "unassignable": [],
+ "unassignableNote": "ZERO. Every one of the 135 obligations landed on a real chapter in the fixed set. Two rows deserve explicit statement so that they are not mistaken for unassignable entries: CO-RC-C9-002 (SupportScreen) and CO-RC-C11-007 (SupportScreen disposition) are owned by CH-17 as a DECISION. That is deliberate non-construction ownership recorded in the chapter architecture (SupportScreen is explicitly NOT ASSIGNED TO C9 and may not be force-assigned to a construction chapter), not an absence of an owner.",
+ "byChapter": {
+  "CH-04": {
+   "name": "Realtime Substrate, Devices & Shared Presentation",
+   "count": 31,
+   "charteredBy": [
+    "RC-C10",
+    "RC-C6"
+   ],
+   "ids": [
+    "CO-RC-C6-001",
+    "CO-RC-C6-002",
+    "CO-RC-C6-003",
+    "CO-RC-C6-004",
+    "CO-RC-C6-005",
+    "CO-RC-C6-006",
+    "CO-RC-C6-007",
+    "CO-RC-C6-008",
+    "CO-RC-C6-009",
+    "CO-RC-C6-010",
+    "CO-RC-C6-011",
+    "CO-RC-C6-012",
+    "CO-RC-C6-013",
+    "CO-RC-C6-014",
+    "CO-RC-C6-015",
+    "CO-RC-C6-016",
+    "CO-RC-C6-017",
+    "CO-RC-C6-018",
+    "CO-RC-C6-019",
+    "CO-RC-C6-020",
+    "CO-RC-C6-021",
+    "CO-RC-C6-022",
+    "CO-RC-C6-023",
+    "CO-RC-C6-024",
+    "CO-RC-C6-025",
+    "CO-RC-C6-026",
+    "CO-RC-C6-027",
+    "CO-RC-C6-028",
+    "CO-RC-C10-007",
+    "CO-RC-C10-016",
+    "CO-RC-C10-020"
+   ]
+  },
+  "CH-06": {
+   "name": "Conversation & Messaging Core",
+   "count": 4,
+   "charteredBy": [
+    "RC-C7"
+   ],
+   "ids": [
+    "CO-RC-C7-005",
+    "CO-RC-C7-006",
+    "CO-RC-C7-020",
+    "CO-RC-C7-024"
+   ]
+  },
+  "CH-07": {
+   "name": "Threads, Spaces & Institutional Communication",
+   "count": 20,
+   "charteredBy": [
+    "RC-C7"
+   ],
+   "ids": [
+    "CO-RC-C7-001",
+    "CO-RC-C7-002",
+    "CO-RC-C7-003",
+    "CO-RC-C7-004",
+    "CO-RC-C7-007",
+    "CO-RC-C7-008",
+    "CO-RC-C7-009",
+    "CO-RC-C7-010",
+    "CO-RC-C7-011",
+    "CO-RC-C7-012",
+    "CO-RC-C7-013",
+    "CO-RC-C7-014",
+    "CO-RC-C7-015",
+    "CO-RC-C7-016",
+    "CO-RC-C7-017",
+    "CO-RC-C7-018",
+    "CO-RC-C7-019",
+    "CO-RC-C7-021",
+    "CO-RC-C7-022",
+    "CO-RC-C7-023"
+   ]
+  },
+  "CH-08": {
+   "name": "Institution Room",
+   "count": 17,
+   "charteredBy": [
+    "RC-C8"
+   ],
+   "ids": [
+    "CO-RC-C8-001",
+    "CO-RC-C8-002",
+    "CO-RC-C8-003",
+    "CO-RC-C8-004",
+    "CO-RC-C8-005",
+    "CO-RC-C8-006",
+    "CO-RC-C8-007",
+    "CO-RC-C8-008",
+    "CO-RC-C8-009",
+    "CO-RC-C8-010",
+    "CO-RC-C8-011",
+    "CO-RC-C8-012",
+    "CO-RC-C8-013",
+    "CO-RC-C8-014",
+    "CO-RC-C8-015",
+    "CO-RC-C8-016",
+    "CO-RC-C8-017"
+   ]
+  },
+  "CH-09": {
+   "name": "Live as a Governed Mode",
+   "count": 16,
+   "charteredBy": [
+    "RC-C10"
+   ],
+   "ids": [
+    "CO-RC-C10-001",
+    "CO-RC-C10-002",
+    "CO-RC-C10-003",
+    "CO-RC-C10-004",
+    "CO-RC-C10-005",
+    "CO-RC-C10-008",
+    "CO-RC-C10-009",
+    "CO-RC-C10-010",
+    "CO-RC-C10-011",
+    "CO-RC-C10-012",
+    "CO-RC-C10-013",
+    "CO-RC-C10-014",
+    "CO-RC-C10-015",
+    "CO-RC-C10-017",
+    "CO-RC-C10-018",
+    "CO-RC-C10-021"
+   ]
+  },
+  "CH-10": {
+   "name": "Public Acquisition & Anonymous Access",
+   "count": 1,
+   "charteredBy": [
+    "RC-C10"
+   ],
+   "ids": [
+    "CO-RC-C10-006"
+   ]
+  },
+  "CH-15": {
+   "name": "Trust, Safety & Moderation Authority",
+   "count": 1,
+   "charteredBy": [
+    "RC-C10"
+   ],
+   "ids": [
+    "CO-RC-C10-019"
+   ]
+  },
+  "CH-16": {
+   "name": "Cross-Platform, Native Surfaces & Release Delivery",
+   "count": 27,
+   "charteredBy": [
+    "RC-C9"
+   ],
+   "ids": [
+    "CO-RC-C9-001",
+    "CO-RC-C9-003",
+    "CO-RC-C9-004",
+    "CO-RC-C9-005",
+    "CO-RC-C9-006",
+    "CO-RC-C9-007",
+    "CO-RC-C9-008",
+    "CO-RC-C9-009",
+    "CO-RC-C9-010",
+    "CO-RC-C9-011",
+    "CO-RC-C9-012",
+    "CO-RC-C9-013",
+    "CO-RC-C9-014",
+    "CO-RC-C9-015",
+    "CO-RC-C9-016",
+    "CO-RC-C9-017",
+    "CO-RC-C9-018",
+    "CO-RC-C9-019",
+    "CO-RC-C9-020",
+    "CO-RC-C9-021",
+    "CO-RC-C9-022",
+    "CO-RC-C9-023",
+    "CO-RC-C9-024",
+    "CO-RC-C9-025",
+    "CO-RC-C9-026",
+    "CO-RC-C9-027",
+    "CO-RC-C9-028"
+   ]
+  },
+  "CH-17": {
+   "name": "Governance, Certification & Release Gate",
+   "count": 18,
+   "charteredBy": [
+    "RC-C11",
+    "RC-C9"
+   ],
+   "ids": [
+    "CO-RC-C9-002",
+    "CO-RC-C11-001",
+    "CO-RC-C11-002",
+    "CO-RC-C11-003",
+    "CO-RC-C11-004",
+    "CO-RC-C11-005",
+    "CO-RC-C11-006",
+    "CO-RC-C11-007",
+    "CO-RC-C11-008",
+    "CO-RC-C11-009",
+    "CO-RC-C11-010",
+    "CO-RC-C11-011",
+    "CO-RC-C11-012",
+    "CO-RC-C11-013",
+    "CO-RC-C11-014",
+    "CO-RC-C11-015",
+    "CO-RC-C11-016",
+    "CO-RC-C11-017"
+   ]
+  }
+ },
+ "byClass": {
+  "CHARTERED_SCOPE": {
+   "count": 86,
+   "byChapter": {
+    "CH-04": 24,
+    "CH-07": 12,
+    "CH-06": 2,
+    "CH-08": 11,
+    "CH-16": 20,
+    "CH-09": 7,
+    "CH-15": 1,
+    "CH-17": 9
+   }
+  },
+  "FROZEN_OUTCOME": {
+   "count": 19,
+   "byChapter": {
+    "CH-04": 3,
+    "CH-07": 4,
+    "CH-08": 2,
+    "CH-16": 2,
+    "CH-17": 4,
+    "CH-09": 4
+   }
+  },
+  "REMAINING_OBLIGATION": {
+   "count": 30,
+   "byChapter": {
+    "CH-04": 4,
+    "CH-06": 2,
+    "CH-07": 4,
+    "CH-08": 4,
+    "CH-16": 5,
+    "CH-09": 5,
+    "CH-10": 1,
+    "CH-17": 5
+   }
+  }
+ },
+ "byCharteringRcChapter": {
+  "RC-C10": {
+   "count": 21,
+   "byChapter": {
+    "CH-09": 16,
+    "CH-10": 1,
+    "CH-04": 3,
+    "CH-15": 1
+   }
+  },
+  "RC-C11": {
+   "count": 17,
+   "byChapter": {
+    "CH-17": 17
+   }
+  },
+  "RC-C6": {
+   "count": 28,
+   "byChapter": {
+    "CH-04": 28
+   }
+  },
+  "RC-C7": {
+   "count": 24,
+   "byChapter": {
+    "CH-07": 20,
+    "CH-06": 4
+   }
+  },
+  "RC-C8": {
+   "count": 17,
+   "byChapter": {
+    "CH-08": 17
+   }
+  },
+  "RC-C9": {
+   "count": 28,
+   "byChapter": {
+    "CH-16": 27,
+    "CH-17": 1
+   }
+  }
+ },
+ "controlCases": {
+  "RC-C8 (17 obligations, ZERO findings)": "ALL 17 land on CH-08 Institution Room, a real chapter with a governing outcome, a frozen backend authority (D5), a named demolition (DR2) and a named invariant test (10,000 members -> zero recipients absent invitation). Nothing was distributed, deferred or footnoted. This is the proof the CO axis is necessary: a portfolio built from findings alone would contain zero Institution Room work.",
+  "RC-C6 (28 obligations, ZERO findings on every row)": "ALL 28 land on CH-04. Every row in this range carries zeroFinding=true, including the entire unbuilt device layer (CO-RC-C6-009/010/023/024/025/026) and the FD-4 demolition of 3,890 duplicated Meetings presentation lines (CO-RC-C6-017). CH-04's 26 findings and its 31 obligations are separate populations that happen to share a chapter.",
+  "RC-C7 (24 obligations, ZERO findings)": "Split 4 / 20 between CH-06 and CH-07 exactly as the chapter architecture's RC-C7 substrate/surfaces split states. CH-07 carries zero findings on the finding axis and 20 obligations here - the second control case."
+ },
+ "rcC10GateNotes": [
+  {
+   "scope": "RULING",
+   "note": "RC-C10 is ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. The 2026-08-16/17 Live construction CONSTITUTES RC-C10 execution (framing reconciliation). This artifact treats that as EXECUTION only: not completion, not certification, and not permission to weaken either exit gate. Every one of the 21 RC-C10 rows carries the ruling verbatim in its rcC10Ruling field and keeps its independently evidenced state. UNKNOWN stays UNKNOWN."
+  },
+  {
+   "scope": "EXIT GATE 1 of 2 - CONSTRUCTION EXIT",
+   "owner": "CH-09",
+   "note": "The construction exit gate (Live works end-to-end from a governed context, continuity survives the Live event, canonical reconstructed authorities are consumed, NO TEMPORARY AUTHORITIES REMAIN) is NOT represented by a single CO row in index-co-b.json; it is carried across CO-RC-C10-001..005, 010, 012..018. It is owned by CH-09 and by nothing else. Assigning CO-RC-C10-007, CO-RC-C10-016 and CO-RC-C10-020 to CH-04, CO-RC-C10-006 to CH-10 and CO-RC-C10-019 to CH-15 moves IMPLEMENTATION only; none of those chapters may declare any part of this gate satisfied, and CH-09 evaluates it as a single end-to-end journey rather than as a sum of sub-system claims."
+  },
+  {
+   "scope": "EXIT GATE 2 of 2 - CROSS-PLATFORM COMPLETION",
+   "owner": "CH-09",
+   "coRow": "CO-RC-C10-011",
+   "note": "CO-RC-C10-011 IS the RC-C9 cross-platform gate and is assigned to CH-09, whose expectedObligationFamilies name the two exit gates as owned there. CH-16 supplies and proves the required C9 platform contracts (CO-RC-C9-001 records the overlap rule; CO-RC-C9-003 places Real-Boundary substantially at C9) and CO-EVALUATES the gate. Evidence supply is not co-ownership. A CH-16 pass never implies RC-C10 completion - PB-10: a lower certification layer passing never implies a higher one."
+  },
+  {
+   "scope": "FOUNDER-ACTION CHECKPOINTS",
+   "coRows": [
+    "CO-RC-C10-008",
+    "CO-RC-C10-019",
+    "CO-RC-C10-020",
+    "CO-RC-C10-021"
+   ],
+   "note": "All four remain OPEN founder actions. CO-RC-C10-008 is the bundle row and is assigned to CH-09 as the chapter that may not proceed past it. Its three constituents are separately owned by the chapter that must not proceed past each: CO-RC-C10-019 Live moderation policy -> CH-15 (the single moderation authority; a second one is prohibited); CO-RC-C10-020 audience-scale topology/provider -> CH-04 (Checkpoint E, deliberately NOT frozen, provider independence preserved); CO-RC-C10-021 Thread vs Space Live differences -> CH-09. Assigning a checkpoint to an implementation chapter records WHO IS BLOCKED. It confers no authority to answer the checkpoint, and it does not convert a founder decision into an engineering one."
+  },
+  {
+   "scope": "COMPLETED-OR-SUPERSEDED CANDIDATES",
+   "coRows": [
+    "CO-RC-C10-013",
+    "CO-RC-C10-014"
+   ],
+   "owner": "CH-09",
+   "note": "The founder identifies PUBLIC_STAGE consumption (CO-RC-C10-013) and go-live authority (CO-RC-C10-014) as the two rows that are completed-or-superseded. This artifact records their OWNER only and asserts NO completion, supersession or certification - that adjudication is founder-only and this is an analytical proposal. A preserved tension is carried forward: CO-RC-C10-010 still records 'go-live authority formalization' as backend-missing while CO-RC-C10-014 is a completed-or-superseded candidate. Both readings stand."
+  },
+  {
+   "scope": "CHARTER vs IMPLEMENTATION - RC-C10 ROWS LEAVING CH-09",
+   "coRows": [
+    "CO-RC-C10-006 -> CH-10",
+    "CO-RC-C10-007 -> CH-04",
+    "CO-RC-C10-016 -> CH-04",
+    "CO-RC-C10-019 -> CH-15",
+    "CO-RC-C10-020 -> CH-04"
+   ],
+   "note": "Five of the 21 RC-C10 obligations are implemented outside CH-09 under the founder's CHARTER != IMPLEMENTATION OWNER ruling. Every one keeps charteredBy=RC-C10 verbatim, states the charter relationship on the row, and names CH-09 as the consuming gate-holder. No duplicate programme is created and no RC-C10 exit gate is transferred, split or diluted. Sixteen of 21 remain with CH-09."
+  },
+  {
+   "scope": "CLAUSE SPLIT",
+   "coRow": "CO-RC-C10-006",
+   "note": "CO-RC-C10-006 is canonically owned by CH-10 (public acquisition, implementation ownership). The row's own text instructs that F103/F104 'must be owned by the shared continuity authority', which is CH-02. That clause is recorded as a named cross-boundary reference, NOT as a second owner: CH-02 executes the auth-return half and CH-10 cannot certify conversion until CH-02's F065 keystone passes. The finding identifiers on this row (F097, F107, F103, F104, F059, F070) are finding-axis cross-references and discharge nothing on the CO axis."
+  }
+ ],
+ "contradictions": [
+  "RC-C10 STATE - ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED is carried on all 21 RC-C10 rows. Recognising the 2026-08-16/17 construction as RC-C10 execution is not completion and not certification. No row's state was promoted, demoted or resolved here.",
+  "CO-RC-C10-010 vs CO-RC-C10-014 - CO-RC-C10-010 records 'go-live authority formalization' as backend-missing while CO-RC-C10-014 (go-live authority) is one of the two founder-identified completed-or-superseded candidates. The tension is PRESERVED, not reconciled. Both rows are owned by CH-09 and both keep their independently evidenced states.",
+  "CO-RC-C10-013 PUBLIC_STAGE - the row text says 'declared but unconsumed' while the founder identifies it as completed-or-superseded. Preserved as a state question for founder adjudication; the assignment records the owner only.",
+  "CO-RC-C10-016 AUDIENCE-SCALE TOPOLOGY PLACEMENT - assigned to CH-04 on the ground that measurement and topology are one substrate decision and that F073 is a four-party CALL defect. ALTERNATIVE READING PRESERVED: CH-09 as the Live-only consumer of audience scale. Neither reading is adjudicated here.",
+  "CO-RC-C7-024 MEETINGS BOUNDARY PRESERVE - assigned to CH-06 because CH-06 carries PB-01 as a sequencing consequence and 'ONE canonical Conversation' is the C7-territory act that could erase the boundary. ALTERNATIVE READINGS PRESERVED: CH-07 (institutional convergence adjacent to Meetings) and CH-04 (the PB-01 holder). Not adjudicated.",
+  "CO-RC-C7-003 BUNDLED CLAUSES - a single frozen outcome carries 'C7 = INSTITUTIONAL CONVERSATION & DESK', 'does not own Invitation' and 'there is ONE canonical Conversation system'. The last clause is CH-06's governing outcome. Assigned whole to CH-07 with the clause recorded as a cross-reference; splitting a founder-frozen row into two obligations is not within this artifact's authority.",
+  "CO-RC-C6-020 vs CO-RC-C9-025 - historical Item 7 appears twice, as 'Realtime Architecture Correction' (RC-C6) and as a 'device/native pass' (RC-C9). Treated as two distinct halves with two owners (CH-04, CH-16) and stated on both rows rather than merged.",
+  "DRAG/DROP DUAL CHARTER - CO-RC-C9-005 and CO-RC-C9-011 are the C9 platform half (CH-16); CO-RC-C5-009 is the C5 intake half (CH-13, owned by the RC-C0..C5 assigner). Two obligations, two owners, no merge. Agent B's D-2 disagreement stands unadjudicated.",
+  "CO-RC-C9-002 / CO-RC-C11-007 SUPPORTSCREEN - the same disposition seen from two charter axes, kept as two rows with the same owner (CH-17) rather than collapsed. SupportScreen remains DELIBERATELY UNOWNED as construction; assigning it to any construction chapter to tidy the map is prohibited.",
+  "CO-RC-C11-010 - 'C10 complete OR explicitly excluded by founder decision' is a live, unmet entry condition precisely because RC-C10 is NOT CERTIFIED. This artifact does not answer it.",
+  "PB-02 / RC-C6 COMPLETED CROSSING - CO-RC-C6-011..016 are PRESERVE / DO-NOT-TOUCH rows assigned to CH-04, the chapter recorded as having already crossed that boundary in the RC-A / RC-B repairs with no governed record authorizing it. Four consecutive artifacts declined to classify the crossing. This artifact also declines - it has no authority to classify it - and records that CH-04 owns six preservation obligations in a layer whose completed crossing is still unclassified.",
+  "F043 / F051 / F122 - CONFLICTING_CURRENT_STATE findings are carried forward UNRESOLVED on the finding axis. No obligation in this population was assigned, satisfied, blocked or promoted on the basis of any of them, and no analytical consensus about them was treated as adjudication.",
+  "F137 ZERO_COVERAGE_SECURITY_GAP - no obligation in RC-C6..RC-C11 was assigned to CH-12 or CH-15 by word similarity to 'moderation'. CO-RC-C10-019 (Live moderation POLICY) went to CH-15 on the responsibility test (single moderation authority, policy and consequence), and CO-RC-C10-005's in-Live moderation SURFACE stays with CH-09 as a consumer. The F137 owner question itself belongs to the finding axis and is not touched here.",
+  "TWO UNRECONCILED CERTIFICATION VOCABULARIES - RC-C9's and RC-C11's certification rows (CO-RC-C9-003, CO-RC-C11-003, CO-RC-C11-009, CO-RC-C11-015) are assigned as ownership even though the RC layer table and the section 12/17 validation classes remain unreconciled. CH-17 owns the reconciliation; until it happens, an obligation's owner is unambiguous but its certification vocabulary is not."
+ ],
+ "notes": {
+  "authority": "ANALYTICAL PROPOSAL. Ownership assignment only. Nothing here is ratified truth and nothing here authorises implementation.",
+  "independence": "This artifact reconciles 135 of the 299 chartered obligations. The RC-C0..RC-C5 assigner reconciles the other 164, and the findings assigner reconciles 143 findings separately. A related finding never subsumed an obligation and no obligation was reduced to an annotation on a finding.",
+  "consolidationDiscipline": "Nine of the seventeen chapters receive obligations from this range. Fewer executable chapters, but all 135 obligations remain individually visible with their charter, class, scope and text carried on the row - consolidation without loss.",
+  "productStandard": "Where an obligation describes a capability that would still leave an inadequate product once defects are fixed - the unbuilt C6 device layer, C7's Space surfaces, C8's entire chapter, C9's platform affordances, C10's engagement and replay - it is assigned as a CONSTRUCTION obligation to a chapter with a governing outcome, not recorded as debt.",
+  "selfContamination": "This artifact is analysis output. Its later appearance in the searchable corpus does not make it historical issuance evidence."
+ }
+}

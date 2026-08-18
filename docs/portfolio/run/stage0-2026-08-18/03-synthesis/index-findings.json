@@ -1,0 +1,1006 @@
+{
+"count": 143,
+"findings": [
+{
+"id": "F001",
+"title": "People surface institution residue",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-18",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F002",
+"title": "Create legacy creation model",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-18",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F003",
+"title": "Add Institution missing for unaffiliated person",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-18",
+"deficiencyClass": "PRESENTATION_DEFICIENCY"
+},
+{
+"id": "F004",
+"title": "Add Institution not a Create/Discover domain",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-18",
+"deficiencyClass": "PRESENTATION_DEFICIENCY"
+},
+{
+"id": "F005",
+"title": "Conversation creation stays simple human messaging",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-18",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F006",
+"title": "1:1 audio",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F007",
+"title": "Group audio",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F008",
+"title": "Video call",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F009",
+"title": "Grow 1:1 -> group via Add People",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-04",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F010",
+"title": "Screen share",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F011",
+"title": "Attachments",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-11",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F012",
+"title": "Drag/drop",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-11",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F013",
+"title": "Clipboard paste incl. image",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-11",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F014",
+"title": "Voice messages",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-12",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F015",
+"title": "Video messages",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-11",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F016",
+"title": "Honest document/media formats",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F017",
+"title": "Internal Aura-link hydration",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-13",
+"deficiencyClass": "LEGACY_COMPATIBILITY_DEBT"
+},
+{
+"id": "F018",
+"title": "External-link hydration",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-13",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F019",
+"title": "Rich/selectable text",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-12",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F020",
+"title": "Mentions",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-04",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F021",
+"title": "Reply-to-message",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-04",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F022",
+"title": "Translation",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-04",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F023",
+"title": "Report/moderation",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-20",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F024",
+"title": "Article as 4th domain",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-18",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F025",
+"title": "Image insert shows raw markdown",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-11",
+"deficiencyClass": "PRESENTATION_DEFICIENCY"
+},
+{
+"id": "F026",
+"title": "Title paste oversizing",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-11",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F027",
+"title": "Draft resume/continuity",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F028",
+"title": "Article create 500",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-19",
+"deficiencyClass": "ISOLATED_DEFECT"
+},
+{
+"id": "F029",
+"title": "Revision keeps URL + truthful history",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-19",
+"deficiencyClass": "OTHER_EVIDENCED:PUBLICATION_LIFECYCLE_OBLIGATION_MET"
+},
+{
+"id": "F030",
+"title": "Legacy global \"started a call\" banner",
+"currentState": "C4_OWNED_OPEN",
+"proposedRootOwner": "RS-05",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F031",
+"title": "Banner overlaps composer/surfaces",
+"currentState": "C4_OWNED_OPEN",
+"proposedRootOwner": "RS-05",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F032",
+"title": "Unread persists after viewing",
+"currentState": "C4_OWNED_OPEN",
+"proposedRootOwner": "RS-05",
+"deficiencyClass": "LIFECYCLE_DEFICIENCY"
+},
+{
+"id": "F033",
+"title": "Call facts -> \"interacted with your content\"",
+"currentState": "C4_OWNED_OPEN",
+"proposedRootOwner": "RS-05",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F034",
+"title": "Self-actor notifications",
+"currentState": "C4_OWNED_OPEN",
+"proposedRootOwner": "RS-05",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F035",
+"title": "Roster vs actually-connected count",
+"currentState": "C4_OWNED_OPEN",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F036",
+"title": "Stuck in Connecting forever",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F037",
+"title": "Parallel sessions per conversation",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "LIFECYCLE_DEFICIENCY"
+},
+{
+"id": "F038",
+"title": "Stale ACTIVE sessions",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "LIFECYCLE_DEFICIENCY"
+},
+{
+"id": "F039",
+"title": "NULL-expiry legacy invites",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "LEGACY_COMPATIBILITY_DEBT"
+},
+{
+"id": "F040",
+"title": "Persistent browser ring notification",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "LIFECYCLE_DEFICIENCY"
+},
+{
+"id": "F041",
+"title": "False \"Connection lost\" pre-join",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "PRESENTATION_DEFICIENCY"
+},
+{
+"id": "F042",
+"title": "Dismiss/Rejoin over own call",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "PRESENTATION_DEFICIENCY"
+},
+{
+"id": "F043",
+"title": "Timer before establishment",
+"currentState": "CONFLICTING_CURRENT_STATE",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "LIFECYCLE_DEFICIENCY"
+},
+{
+"id": "F044",
+"title": "Ready-to-join persists after end",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "LIFECYCLE_DEFICIENCY"
+},
+{
+"id": "F045",
+"title": "Accept freezes/spins on later calls",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F046",
+"title": "Call lost after freeze/refresh",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "LIFECYCLE_DEFICIENCY"
+},
+{
+"id": "F047",
+"title": "Ugly yellow-underline ring card",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "ISOLATED_DEFECT"
+},
+{
+"id": "F048",
+"title": "Leave/end propagation + convergence",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "LIFECYCLE_DEFICIENCY"
+},
+{
+"id": "F049",
+"title": "One participant leaves, the others continue",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "OTHER_EVIDENCED:CAPABILITY_OBLIGATION_LIVE_CERTIFIED"
+},
+{
+"id": "F050",
+"title": "Thread counterpart canonical identity",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F051",
+"title": "Avatar missing in chat",
+"currentState": "CONFLICTING_CURRENT_STATE",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F052",
+"title": "Avatar in realtime surfaces",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F053",
+"title": "Canonical Identity consumed consistently across the product",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "FRAGMENTED_AUTHORITY"
+},
+{
+"id": "F054",
+"title": "Video tiles say \"Participant\"",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F055",
+"title": "Group identity ordering",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F056",
+"title": "Group avatar treatment",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F057",
+"title": "me['id'] vs me['user']['id'] - realtime identity resolution drift",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F058",
+"title": "R2 / uploads CORS blocks avatars",
+"currentState": "BLOCKED",
+"proposedRootOwner": "RS-09",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F059",
+"title": "Conversation destination lost on refresh",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F060",
+"title": "Mid-call refresh gives no automatic re-participation",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-02",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F061",
+"title": "Personal profile edit continuity",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F062",
+"title": "Institution profile edit continuity",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F063",
+"title": "Compose systems continuity",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F064",
+"title": "Meetings refresh continuity",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F065",
+"title": "UNKNOWN/RESTORING authentication treated as unauthenticated",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "FRAGMENTED_AUTHORITY"
+},
+{
+"id": "F066",
+"title": "Institution routes redirect while loading",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F067",
+"title": "Destination-destroying exits",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F068",
+"title": "/_boot permanent spinner",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F069",
+"title": "Unclassified routes (route classification fails open)",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F070",
+"title": "Draft identity absent from URL",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "DATA_MODEL_DEFICIENCY"
+},
+{
+"id": "F071",
+"title": "Native accept/reject defect",
+"currentState": "BLOCKED",
+"proposedRootOwner": "RS-21",
+"deficiencyClass": "OTHER_EVIDENCED:DISTRIBUTION_LAG_DEBT"
+},
+{
+"id": "F072",
+"title": "Native ring shows individual, not group",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-21",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F073",
+"title": "Late or missing fourth video frame",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-03",
+"deficiencyClass": "ISOLATED_DEFECT"
+},
+{
+"id": "F074",
+"title": "Go Live looked like an ordinary call",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F075",
+"title": "Live was a parallel-broadcast workaround",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "ARCHITECTURE_CONTRADICTION"
+},
+{
+"id": "F076",
+"title": "Header lobby exposed standalone Live origination",
+"currentState": "EXPLICITLY_RETIRED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "OTHER_EVIDENCED:RETIRED_ORIGINATION_DOOR"
+},
+{
+"id": "F077",
+"title": "Conversation-menu Go Live duplicated origination",
+"currentState": "EXPLICITLY_RETIRED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "OTHER_EVIDENCED:RETIRED_ORIGINATION_DOOR"
+},
+{
+"id": "F078",
+"title": "A group call can deliberately become Live",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F079",
+"title": "Same-session Live transitions, never a parallel session",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F080",
+"title": "No active interaction means no Live origination",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F081",
+"title": "Header Live surface is discovery, not origination",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F082",
+"title": "Ending Live returns to the private call",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F083",
+"title": "No re-ringing when a call goes public",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F084",
+"title": "No auto-die for \"no answer\"",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F085",
+"title": "Legitimate viewer blocked by the view guard",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-15",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F086",
+"title": "Viewer authority derives from the OBSERVER role",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-15",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F087",
+"title": "Viewer count and stage count kept separate",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-15",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F088",
+"title": "Live viewers are never Conversation parties",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-15",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F089",
+"title": "Watch-oriented viewer experience",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-16",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F090",
+"title": "Live chat",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-16",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F091",
+"title": "Reactions",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-16",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F092",
+"title": "Raise hand",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-16",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F093",
+"title": "Stage promotion / demotion",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-16",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F094",
+"title": "Viewer presence atmosphere",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-16",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F095",
+"title": "Live moderation",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-16",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F096",
+"title": "Recover FD-5 sections 8-10 rather than reinvent",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-16",
+"deficiencyClass": "OTHER_EVIDENCED:EXISTING_AUTHORITY_NOT_CONSUMED"
+},
+{
+"id": "F097",
+"title": "Public Home surfaces real Live",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-17",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F098",
+"title": "Real bounded preview",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-17",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F099",
+"title": "15s frozen preview bound",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-17",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F100",
+"title": "Auth wall after 15s",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-17",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F101",
+"title": "Zero participation authority during preview",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-17",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F102",
+"title": "Zero Conversation authority during preview",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-17",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F103",
+"title": "Auth returns to the SAME Live",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F104",
+"title": "Sign-up preserves intent",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F105",
+"title": "Refresh cannot reset the preview",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-17",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F106",
+"title": "Truthful ended state during preview",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-17",
+"deficiencyClass": "OTHER_EVIDENCED:UNBUILT_CAPABILITY_OBLIGATION"
+},
+{
+"id": "F107",
+"title": "One canonical Live truth for both doors",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-14",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F108",
+"title": "Mesh bounded",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-03",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F109",
+"title": "Mesh is not the long-term architecture",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-03",
+"deficiencyClass": "OTHER_EVIDENCED:UNENFORCED_ARCHITECTURAL_INTENT"
+},
+{
+"id": "F110",
+"title": "SFU assessment",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-03",
+"deficiencyClass": "OTHER_EVIDENCED:ARCHITECTURE_DECISION_OWED"
+},
+{
+"id": "F111",
+"title": "Assessment scope",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-03",
+"deficiencyClass": "OTHER_EVIDENCED:ARCHITECTURE_DECISION_OWED"
+},
+{
+"id": "F112",
+"title": "Meetings equivalent validation",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-22",
+"deficiencyClass": "VALIDATION_CERTIFICATION_DEBT"
+},
+{
+"id": "F113",
+"title": "Meetings refresh continuity",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "SHARED_DEFICIENCY_MANIFESTATION"
+},
+{
+"id": "F114",
+"title": "Meetings protected",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-22",
+"deficiencyClass": "OTHER_EVIDENCED:PROTECTED_BOUNDARY_OBLIGATION_HELD"
+},
+{
+"id": "F115",
+"title": "Non-shrinking register",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-23",
+"deficiencyClass": "OTHER_EVIDENCED:GOVERNANCE_INTEGRITY_OBLIGATION"
+},
+{
+"id": "F116",
+"title": "Identity as a shared-consumption problem",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-06",
+"deficiencyClass": "FRAGMENTED_AUTHORITY"
+},
+{
+"id": "F117",
+"title": "Refresh as a platform contract",
+"currentState": "PARTIALLY_VALIDATED",
+"proposedRootOwner": "RS-01",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F118",
+"title": "C4 findings preserved",
+"currentState": "LIVE_CERTIFIED",
+"proposedRootOwner": "RS-23",
+"deficiencyClass": "OTHER_EVIDENCED:GOVERNANCE_INTEGRITY_OBLIGATION"
+},
+{
+"id": "F119",
+"title": "Implemented capabilities must not vanish from reporting",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-23",
+"deficiencyClass": "OTHER_EVIDENCED:GOVERNANCE_INTEGRITY_OBLIGATION"
+},
+{
+"id": "F120",
+"title": "Every item reaches a terminal state",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-23",
+"deficiencyClass": "OTHER_EVIDENCED:GOVERNANCE_INTEGRITY_OBLIGATION"
+},
+{
+"id": "F121",
+"title": "Article image insertion bakes an expiring signed URL into durable markdown",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-08",
+"deficiencyClass": "DATA_MODEL_DEFICIENCY"
+},
+{
+"id": "F122",
+"title": "Wire-kind inconsistency between canonical wireKind and conversation_screen",
+"currentState": "CONFLICTING_CURRENT_STATE",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "FRAGMENTED_AUTHORITY"
+},
+{
+"id": "F123",
+"title": "Falsified content provenance - every conversation attachment labelled GALLERY",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "DATA_MODEL_DEFICIENCY"
+},
+{
+"id": "F124",
+"title": "Empty-text sends transmit a literal ellipsis sentinel as the message body",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-04",
+"deficiencyClass": "DATA_MODEL_DEFICIENCY"
+},
+{
+"id": "F125",
+"title": "Conversation images have no viewer and no save",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-12",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F126",
+"title": "Conversation media visibility is never set - private DM attachments stay PUBLIC",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-09",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F127",
+"title": "No magic-byte/signature validation anywhere",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F128",
+"title": "Size limits are advisory - over-limit objects reconciled, not rejected",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F129",
+"title": "Correspondence-messages path bypasses /media/presign entirely",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "FRAGMENTED_AUTHORITY"
+},
+{
+"id": "F130",
+"title": "Presign body is an unvalidated TS type; the validated PresignDto is dead code",
+"currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F131",
+"title": "Article cover media is unrelated, unstamped, and deleted by the cleanup reaper",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-08",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F132",
+"title": "No EXIF stripping - GPS coordinates published to public R2 verbatim",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-10",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F133",
+"title": "Duration unit mismatch - Media.duration is ms, MessageAttachment.durationSec is seconds",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "DATA_MODEL_DEFICIENCY"
+},
+{
+"id": "F134",
+"title": "Media.aiFlags is client-writable and read by nothing",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-07",
+"deficiencyClass": "DATA_MODEL_DEFICIENCY"
+},
+{
+"id": "F135",
+"title": "Link-preview images are hotlinked third-party URLs, leaking viewer IPs",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-13",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F136",
+"title": "No thumbnail generation - thumbUrl is the full-resolution original",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-10",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F137",
+"title": "No moderation or scanning of uploaded media of any kind",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-20",
+"deficiencyClass": "MISSING_AUTHORITY"
+},
+{
+"id": "F138",
+"title": "Storage-level public readability undercuts visibility enforcement",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-09",
+"deficiencyClass": "ARCHITECTURE_CONTRADICTION"
+},
+{
+"id": "F139",
+"title": "Identity media is orphaned at upload and reaper-deletable while in active identity use",
+"currentState": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+"proposedRootOwner": "RS-08",
+"deficiencyClass": "DATA_MODEL_DEFICIENCY"
+},
+{
+"id": "F140",
+"title": "Legacy MessageAttachment media is invisible to the reaper and to C2",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-08",
+"deficiencyClass": "LEGACY_COMPATIBILITY_DEBT"
+},
+{
+"id": "F141",
+"title": "Media referenced inside authored content lives outside structured retention truth",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-08",
+"deficiencyClass": "DATA_MODEL_DEFICIENCY"
+},
+{
+"id": "F142",
+"title": "Cleanup authority omits authoritative composition/reference structures",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-08",
+"deficiencyClass": "INCOMPLETE_IMPLEMENTATION"
+},
+{
+"id": "F143",
+"title": "Storage-object aliasing - Media identity is not 1:1 with storage objects",
+"currentState": "OPEN",
+"proposedRootOwner": "RS-08",
+"deficiencyClass": "ARCHITECTURE_CONTRADICTION"
+}
+]
+}

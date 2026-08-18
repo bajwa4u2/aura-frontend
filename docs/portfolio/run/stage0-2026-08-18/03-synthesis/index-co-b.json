@@ -1,0 +1,1234 @@
+{
+"range": "RC-C6..RC-C11",
+"count": 135,
+"obligations": [
+{
+"id": "CO-RC-C6-001",
+"rc": "RC-C6",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Shared realtime infrastructure does NOT imply shared product semantics. Frozen conceptual ownership: DM · THREAD · SPACE · INSTITUTION ROOM · MEETING · LIVE, each with its own frozen meaning. LIVE is NOT another Meeting merely bec",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-002",
+"rc": "RC-C6",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Converge the PRESENTATION of participant list · host controls · admission/join-requests · consent onto a shared component family. MEETINGS LIFECYCLE IS UNTOUCHED. THE SHARED COMPONENT DOES NOT OWN SEMANTIC MEANING. Evidence: five ",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-003",
+"rc": "RC-C6",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "C6 holds ZERO G5 sites. Meetings' protected debt is G3 (16) and G4 (14), belonging to controlled C6 review.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-004",
+"rc": "RC-C6",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Entire chapter: shared presentation family, device transfer UI, preferred-device visibility, slice-by-slice Meetings presentation convergence with regression and founder sign-off after each slice",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-005",
+"rc": "RC-C6",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Meetings G3 (16) and G4 (14) protected debt belongs to controlled C6 review",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-006",
+"rc": "RC-C6",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "relative_time.dart shim burn-down: C6 is a named owner (thread surfaces)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-007",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Shared presentation family — participant list · host controls · admission/join-requests · consent — rendering context-supplied states and language; the component never owns semantic meaning",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-008",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Modern invite/add flows consuming the People & Participation primitive",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-009",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Device transfer UI (offer/accept/relinquish/failed)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-010",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Preferred-device behaviour made visible",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-011",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "preserveDoNotTouch",
+"obligation": "Realtime transport",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-012",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "preserveDoNotTouch",
+"obligation": "media service",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-013",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "preserveDoNotTouch",
+"obligation": "event parser",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-014",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "preserveDoNotTouch",
+"obligation": "reconnect/orphan recovery (realtime_reconciliation_controller, orphaned-session handling)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-015",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "preserveDoNotTouch",
+"obligation": "session continuity across navigation",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-016",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "preserveDoNotTouch",
+"obligation": "MEETINGS LIFECYCLE (booking, invitation, attendance, waiting/admission, prep, summary, follow-up)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-017",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrConverge",
+"obligation": "Duplicated presentation: Meetings reimplements participant grid, spotlight and remote tiles across 3,890 lines while using 0 of 5 shared realtime widgets",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-018",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 1 (Runtime Lifecycle)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-019",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 2 (Device Presence)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-020",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 7 (Realtime Architecture Correction)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-021",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 9 (Lifecycle Phase 2)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-022",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 12 (Advanced Device Preference / Transfer)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-023",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "Multi-device authority",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-024",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "preferred-first ring + stagger + fallback",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-025",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "durable media ownership",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-026",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "D2 transfer handshake",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-027",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "founderCheckpoints",
+"obligation": "Participation/invite interaction direction",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C6-028",
+"rc": "RC-C6",
+"type": "CHARTERED_SCOPE",
+"scope": "founderCheckpoints",
+"obligation": "Sign-off after EACH Meetings slice",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-001",
+"rc": "RC-C7",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "THREAD = FOCUSED CONVERSATION CONTINUITY; SPACE = PERSISTENT SHARED CONTEXT / COMMUNITY. Do NOT reduce both to generic containers, merge them, treat a Space as a large group chat, treat a Thread as a message list, or force every T",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-002",
+"rc": "RC-C7",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Correspondence = one canonical product meaning; C7 owns the eventual path/module rename or convergence — the semantic decision is NOT reopened there.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-003",
+"rc": "RC-C7",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "C7 = INSTITUTIONAL CONVERSATION & DESK. C7 does NOT recreate Correspondence as a product, does NOT own Invitation, and there is ONE canonical Conversation system.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-004",
+"rc": "RC-C7",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "C7 MUST consume the explicit-context contract (institutionContextId + correspondAsInstitution); no route-derived sender may survive C7 closure; the institutional-inbox quartet's route disposition finalizes with it.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-005",
+"rc": "RC-C7",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Phase 5 legacy retirement NOT AUTHORIZED — gate: additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization. Legacy conversation surfaces NOT yet retired; legacy hub parked at /mess",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-006",
+"rc": "RC-C7",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "CONVERSATION COMPLETION REGISTER (frozen obligation): audio call · video call · screen sharing · media/attachments · intentional Live · message reporting/moderation remain REQUIRED contextual attachments of canonical Conversation.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-007",
+"rc": "RC-C7",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Correspondence umbrella rename/migration — choose the correct internal name, migrate safely, preserve compatibility and history. Paths may lag; documentation may not.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-008",
+"rc": "RC-C7",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "InstitutionCorrespondenceScreen disposition (FD-12 §4)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-009",
+"rc": "RC-C7",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "26 G5 state-primitive sites assigned to C7; debt register rows 4, 10, 11 are C7-owned",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-010",
+"rc": "RC-C7",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Retire resolveActorContext residue and the institutional-inbox quartet route disposition",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-011",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Thread surfaces (focused conversation continuity)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-012",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Space surfaces (persistent shared context; NO EIGHT-TAB INTERFACE)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-013",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "membership/join/invite flows (never expose role enums or permission machinery)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-014",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "object-local management",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-015",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Correspondence as a distinct governed communication form — sharing infrastructure but not semantics",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-016",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrConverge",
+"obligation": "Three thread_screen implementations (correspondence/, public/, direct_threads/)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-017",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrConverge",
+"obligation": "duplicated conversation mechanics",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-018",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrConverge",
+"obligation": "four institution messaging entry points",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-019",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrConverge",
+"obligation": "disposition InstitutionCorrespondenceScreen here (FD-12 §4)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-020",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Communication histories",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-021",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "membership/relationship data",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-022",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Thread/Space content",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-023",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "deep links",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C7-024",
+"rc": "RC-C7",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Meetings boundary",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-001",
+"rc": "RC-C8",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "INSTITUTION ROOM = institution-owned persistent/drop-in communication room with GOVERNED PARTICIPATION — a distinct realtime product semantic that shared infrastructure may not erase.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-002",
+"rc": "RC-C8",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Live is explicitly NOT an Institution Room — 'Option C rejected' — so C8 and C10 remain separate constructions.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-003",
+"rc": "RC-C8",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Entire chapter, including DR2 demolition of institution_live_rooms_screen",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-004",
+"rc": "RC-C8",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Live-rooms internals inherited from C3",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-005",
+"rc": "RC-C8",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "3 G5 state-primitive sites assigned to C8",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-006",
+"rc": "RC-C8",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Large-institution invariant test: 10,000 members -> zero recipients absent invitation",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-007",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Room ownership",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-008",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "invitations",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-009",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "participant states",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-010",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "ring policy (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-011",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "lifecycle",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-012",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "contextual realtime",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-013",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "attention",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-014",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "modern participant selection",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-015",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishAndRebuild",
+"obligation": "DR2 — institution_live_rooms_screen (1,078 lines): imports neither realtime nor meetings, consumes untyped Map<String,dynamic>, and lists realtime sessions rather than InstitutionRoom. DO NOT RETROFIT.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-016",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "'See what is live now' for an institution; card layout only",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C8-017",
+"rc": "RC-C8",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "Institution Room (backend D5)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-001",
+"rc": "RC-C9",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "C9/C10 overlap rule (a founder correction applied at roadmap approval): C10 CONSTRUCTION ENTRY requires C0-C8 authorities stable; C10 CROSS-PLATFORM COMPLETION/CERTIFICATION requires the relevant C9 platform contracts proven. C9 m",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-002",
+"rc": "RC-C9",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "SupportScreen — ownership undetermined -> product disposition checkpoint. EXPLICITLY NOT ASSIGNED TO C9.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-003",
+"rc": "RC-C9",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Real-Boundary certification lands substantially at C9 (and at C10 for media scale). A lower layer passing never implies a higher one.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-004",
+"rc": "RC-C9",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Entire chapter: WNS native Windows notifications, desktop lifecycle, drag/drop, clipboard, file handling, keyboard, windowing, background/foreground, active realtime continuity, deep links, iOS/Android native notification presenta",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-005",
+"rc": "RC-C9",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Drag/drop is jointly owned C5 + C9",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-006",
+"rc": "RC-C9",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "3 G5 state-primitive sites assigned to C9",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-007",
+"rc": "RC-C9",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "C4 certification is only partial for Real-Boundary because native delivery lands in C9",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-008",
+"rc": "RC-C9",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "C6 certification is only partial for Real-Boundary because device testing lands in C9",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-009",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Native Windows notifications (WNS)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-010",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "desktop lifecycle",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-011",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "drag/drop",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-012",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "clipboard",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-013",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "file handling",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-014",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "keyboard",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-015",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "hover/context affordances",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-016",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "window sizing/responsiveness",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-017",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "background/foreground",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-018",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "active realtime continuity",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-019",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "deep links",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-020",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "installation/launch context",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-021",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "iOS/Android native notification presentation",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-022",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Existing device registration",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-023",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "notification preferences",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-024",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "session continuity",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-025",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 7 (device/native pass)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-026",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 8 (iOS Firebase/APNs)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-027",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "Windows/MSIX native push (WNS)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C9-028",
+"rc": "RC-C9",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "desktop obligations",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-001",
+"rc": "RC-C10",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "LIVE IS a governed public/stage participation STATE of an appropriate owning Thread or Space. LIVE is NOT a standalone generic broadcast product, another Meeting, an expanded Institution Room, or a fourth disconnected realtime sur",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-002",
+"rc": "RC-C10",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Discovery correction preserved: PUBLIC_STAGE, participant roles, hand-raise and per-track publish state already exist; PUBLIC_STAGE is declared but NOT operationally consumed. 'The vocabulary exists; the mechanism does not.' The e",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-003",
+"rc": "RC-C10",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "FOUNDER-FROZEN 2026-08-17: LIVE IS NOT SOMETHING A USER CREATES. LIVE IS SOMETHING AN EXISTING REALTIME HUMAN INTERACTION DELIBERATELY BECOMES. ORIGINATION IS CONTEXTUAL. DISCOVERY IS GLOBAL. NO ACTIVE REALTIME INTERACTION = NO GO",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-004",
+"rc": "RC-C10",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Stored as RealtimeSession.liveState: NORMAL -> LIVE_PREPARING -> LIVE -> ENDING -> NORMAL. liveState is lifecycle truth; accessMode is participation policy (kept in sync — PUBLIC_STAGE while LIVE — never collapsed into one concept",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-005",
+"rc": "RC-C10",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Live engagement F089-F096 — watch-oriented viewer experience · Live chat · reactions · raise hand · stage promotion/demotion · viewer presence atmosphere · Live moderation · recover FD-5 §§8-10 rather than reinvent. 'Authority exi",
+"relatedFindings": [
+"F089",
+"F096"
+],
+"zeroFinding": false
+},
+{
+"id": "CO-RC-C10-006",
+"rc": "RC-C10",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Live public acquisition F097-F107 — public home surfaces real Live, bounded preview, auth wall, one canonical Live truth for both doors. 'Nothing built. F103/F104 must be owned by the shared continuity authority (ties to F059-F070",
+"relatedFindings": [
+"F097",
+"F107",
+"F103",
+"F104",
+"F059",
+"F070"
+],
+"zeroFinding": false
+},
+{
+"id": "CO-RC-C10-007",
+"rc": "RC-C10",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Live scale F108-F111 — mesh bounded (ceiling NEVER MEASURED), mesh != long-term architecture (no enforcement), SFU assessment not written, assessment scope not written",
+"relatedFindings": [
+"F108",
+"F111"
+],
+"zeroFinding": false
+},
+{
+"id": "CO-RC-C10-008",
+"rc": "RC-C10",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Open founder checkpoints: Live moderation policy · audience-scale topology/provider · Thread vs Space Live differences if material",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-009",
+"rc": "RC-C10",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Whether Live ever needs a plural/contextual form (C0 language obligation handed to C10)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-010",
+"rc": "RC-C10",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Replay-as-product, go-live authority formalization, and Live attention/interaction all recorded as backend-missing",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-011",
+"rc": "RC-C10",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Cross-platform completion gate: required C9 platform contracts proven",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-012",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "backendConstructionRequired",
+"obligation": "{\"concern\":\"Role/stage vocabulary (PUBLIC_STAGE, HOST/CO_HOST/MODERATOR/SPEAKER/PARTICIPANT/LISTENER/OBSERVER, hand-raise, per-track publish)\",\"state\":\"already modelled\"}",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-013",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "backendConstructionRequired",
+"obligation": "{\"concern\":\"PUBLIC_STAGE consumption\",\"state\":\"declared but unconsumed\"}",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-014",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "backendConstructionRequired",
+"obligation": "{\"concern\":\"Go-live authority\",\"state\":\"missing\"}",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-015",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "backendConstructionRequired",
+"obligation": "{\"concern\":\"Public observation (distinct from active media participation)\",\"state\":\"missing\"}",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-016",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "backendConstructionRequired",
+"obligation": "{\"concern\":\"Audience scale (SFU/broadcast topology)\",\"state\":\"missing\"}",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-017",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "backendConstructionRequired",
+"obligation": "{\"concern\":\"Live attention/interaction\",\"state\":\"missing\"}",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-018",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "backendConstructionRequired",
+"obligation": "{\"concern\":\"Replay-as-product\",\"state\":\"missing\"}",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-019",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "openCheckpoints",
+"obligation": "Live moderation policy",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-020",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "openCheckpoints",
+"obligation": "audience-scale topology/provider (provider independence preserved; not frozen)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C10-021",
+"rc": "RC-C10",
+"type": "CHARTERED_SCOPE",
+"scope": "openCheckpoints",
+"obligation": "Thread vs Space Live differences if material",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-001",
+"rc": "RC-C11",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Item 17 is a certification/release gate, not a construction chapter, and must not be redefined.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-002",
+"rc": "RC-C11",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "PD-1 Platform Administration and PD-2 Authentication & Account Entry are product disposition checkpoints that must be resolved BEFORE C11.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-003",
+"rc": "RC-C11",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "A lower certification layer passing never implies a higher one.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-004",
+"rc": "RC-C11",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "All nine entry conditions",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-005",
+"rc": "RC-C11",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "PD-1 Platform Administration disposition (11 files / 34 G5 sites) — no owning chapter in the approved roadmap",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-006",
+"rc": "RC-C11",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "PD-2 Authentication & Account Entry disposition (2 files / 3 sites) — STRUCTURAL DISPOSITION STILL OPEN",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-007",
+"rc": "RC-C11",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "SupportScreen ownership disposition",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-008",
+"rc": "RC-C11",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Consolidated Founder Product Acceptance",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-009",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "C0-C9 complete to their FD-13 definition of done (authority + migration + gate + regression + certification)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-010",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "C10 complete OR explicitly excluded from this release candidate by founder decision",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-011",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "Backend frozen baseline intact; approved Live additions certified where included",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-012",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "Cross-platform behaviour verified on mobile, web and MSIX",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-013",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "Real-device / native testing complete",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-014",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "Integrated end-to-end journeys pass",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-015",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "Real-Boundary certification complete",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-016",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "Founder Product Acceptance readiness",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C11-017",
+"rc": "RC-C11",
+"type": "CHARTERED_SCOPE",
+"scope": "entryConditionsAllMustBeTrue",
+"obligation": "A Release Client candidate exists",
+"relatedFindings": [],
+"zeroFinding": true
+}
+]
+}

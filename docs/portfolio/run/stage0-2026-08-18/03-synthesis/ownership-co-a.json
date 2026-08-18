@@ -1,0 +1,2918 @@
+{
+  "type": "ANALYTICAL_PROPOSAL",
+  "artifact": "ownership-co-a.json",
+  "stage": "STAGE 3 - SYNTHESIS (chartered-obligation ownership, RC-C0..RC-C5)",
+  "date": "2026-08-18",
+  "authority": "Founder-authorised for STAGE 3 SYNTHESIS ONLY. No implementation, no migration, no production mutation, no infrastructure change, no protected-boundary modification. The chapter set is FIXED and consumed from chapter-architecture.json; no chapter is invented.",
+  "count": 164,
+  "expectedCount": 164,
+  "reconciliation": {
+    "obligationsInScope": 164,
+    "obligationsAssigned": 164,
+    "eachIdExactlyOnce": true,
+    "unassignableCount": 0,
+    "charteredByPreservedOnEveryRow": true,
+    "axisIndependence": "This artifact reconciles the CHARTERED-OBLIGATION axis only. All 164 rows carry zeroFindingCoverage=true, so no row here is closed, sized or justified by any finding on the F-axis. The 143-finding axis reconciles separately.",
+    "chapterSetUsed": "CH-01..CH-17 exactly as fixed in chapter-architecture.json"
+  },
+  "assignments": [
+    {
+      "id": "CO-RC-C0-001",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-07",
+        "CH-17"
+      ],
+      "ownershipRationale": "RULE 3 - CH-01 owns the Product Language Authority this outcome froze, so it owns the row; every other chapter carries it as a protected boundary. The freeze itself is a completed founder decision; conformance of surfaces to it is separately carried by CO-RC-C0-011/012 and is NOT satisfied by this row.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Final Product Language FROZEN — 13 nouns; 4 stop/abandon/surface intents; 25 actions; IdentityConcept preserves PERSON != INSTITUTION != MEMBERSHIP != ACTING CONTEXT != PRESENCE; Connect · Works · generic Verified not to be introd"
+    },
+    {
+      "id": "CO-RC-C0-002",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-08"
+      ],
+      "ownershipRationale": "The membership-action semantic distinction is a Product Language freeze owned by CH-01. CH-07 (membership/invite flows) and CH-08 (room invitations) consume it as a constraint and may not re-decide it.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Membership actions FROZEN — addMember / invitePerson / manageInvites remain semantically distinct; no action label itself grants authority"
+    },
+    {
+      "id": "CO-RC-C0-003",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-07"
+      ],
+      "ownershipRationale": "PERSON != MEMBER is a canonical-noun ruling inside the frozen product language; CH-01 owns the authority. CH-03 (identity projection) and CH-07 (membership surfaces) are constrained consumers.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "PERSON = canonical human identity. MEMBER = contextual membership/relationship state. A human is never canonically typed as 'Member'"
+    },
+    {
+      "id": "CO-RC-C0-004",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-06"
+      ],
+      "ownershipRationale": "The SEMANTIC freeze on Correspondence is C0's and stays with CH-01. The row itself delegates the rename/convergence to C7, which CH-07 executes as its own obligation - delegation recorded in the row is not loss of ownership and does not create a duplicate programme.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Correspondence FROZEN to one canonical product meaning (governed formal/deliberate communication); the umbrella module meaning is LEGACY / ARCHITECTURAL NAMING DRIFT; C7 owns the rename/convergence but not the semantic decision"
+    },
+    {
+      "id": "CO-RC-C0-005",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-17"
+      ],
+      "ownershipRationale": "Superseding the 2026-07-11 discovery directive is a language/framing ruling owned by CH-01; the historical record is preserved struck-through. CH-14 builds Discover under the superseding framing and must not resurrect the retired wording.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Discovery framing SUPERSEDED — the 2026-07-11 'always trusted discovery / never directory' directive is superseded; historical record preserved struck-through, not deleted"
+    },
+    {
+      "id": "CO-RC-C0-006",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-17",
+        "CH-03"
+      ],
+      "ownershipRationale": "The Representation authority chain is a foundational precedence rule established in C0 and owned by CH-01. CH-17 cites it whenever a certification claim collides with stale Representation wording.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Representation authority chain FROZEN — IMPLEMENTATION/PRODUCT AUTHORITY -> FOUNDER-FROZEN DECISIONS -> REPRESENTATION. Stale Representation wording does not override later founder-frozen product truth"
+    },
+    {
+      "id": "CO-RC-C0-007",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-17",
+        "CH-03",
+        "CH-04",
+        "CH-05",
+        "CH-07",
+        "CH-08",
+        "CH-09"
+      ],
+      "ownershipRationale": "The 181/181 G5 ownership approval is an accounting decision taken and approved in C0; CH-01 owns the approved matrix. Per-site conversion is owned by the named surface chapters and the burn-down accounting by CH-17 - approval of the matrix is not conversion of the sites.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "G5 ownership APPROVED — 181/181 assigned, zero unassigned: C1 42 · C2 21 · C3 44 · C4 26 · C5 16 · C7 26 · C8 3 · C9 3 · C6 0. A 'J' assignment is reasoned, not immutable product truth"
+    },
+    {
+      "id": "CO-RC-C0-008",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-17"
+      ],
+      "ownershipRationale": "The Meetings-preserved rule was frozen in C0 and CH-01 owns it as the foundation-debt exemption. It is PARTIAL rather than complete because the protected G3(16)/G4(14) debt it names still exists and its disposal is reserved to a controlled C6 review executed under CH-04 with PB-01 intact.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Meetings PRESERVED — holds zero G5 sites; its protected debt is G3 (16) and G4 (14), belonging to controlled C6 review; certified Meetings is not modified for foundation debt reduction"
+    },
+    {
+      "id": "CO-RC-C0-009",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "The FD-13 enforcement pattern is the working precedent established at C0 and owned by CH-01. CH-17 applies it as the governing enforcement shape for every later gate but does not own its origin.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Enforcement pattern — the FD-13 precedent: 11 zero-tolerance rules + 5 ratchets + 2 baseline-honesty gates; hard failure; no warning-only structural governance. This is the working precedent every later chapter follows"
+    },
+    {
+      "id": "CO-RC-C0-010",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "The date-correction acceptance is a closed C0 record. The Estonia visa-note dates are explicitly outside C0 and are not imported into any chapter here.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Date correction ACCEPTED — the 2026-08-16 propagation was an authoring error corrected across repositories; Estonia visa-note dates recorded UNRESOLVED FACTUAL DATE, outside C0"
+    },
+    {
+      "id": "CO-RC-C0-011",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-05",
+        "CH-17"
+      ],
+      "ownershipRationale": "Measured foundation debt (24 elapsed-time sites, 47 toLocal(), 26 spinners, 181 state-primitive constructions, 17 screen formatters) is real unconverted construction and CH-01's governing outcome is that it reaches zero. The 14 Meetings spinners remain protected under PB-01; the ratchet accounting is CH-17's.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Measured, enforced debt carried into later chapters: 24 local elapsed-time sites · 47 toLocal() · 26 full-surface spinners (14 in Meetings, protected) · 181 direct state-primitive constructions · 17 screen-declared time formatters"
+    },
+    {
+      "id": "CO-RC-C0-012",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-04",
+        "CH-05",
+        "CH-07",
+        "CH-08",
+        "CH-09",
+        "CH-17"
+      ],
+      "ownershipRationale": "The measured G5 remainder (168 sites / 67 files) is unfinished conversion work. CH-01 owns the remainder as a whole and the PD-1 (34) share lands here directly; the per-chapter shares are executed by the named surface chapters under CH-17's non-shrinking accounting.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "G5 remainder at C2 closeout measured 168 sites / 67 files, chapter-owned per the ownership matrix (C3 44 · C4 26 · C5 16 · C7 26 · C8 3 · C9 3 · PD-1 34 · PD-2 3 · C2 view-profiles 8)"
+    },
+    {
+      "id": "CO-RC-C0-013",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-05",
+        "CH-06"
+      ],
+      "ownershipRationale": "The relative_time.dart shim is a temporal-authority artefact, so CH-01 owns its retirement condition. The named burn-down owners are RC-C4 and RC-C6, whose implementation chapters are CH-05 and CH-04 - an explicit charter-versus-implementation split, not a second programme.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Deprecated relative_time.dart shim: 11 caller files remain; burn-down owners C4 and C6; retirement = last caller converged, shim deleted"
+    },
+    {
+      "id": "CO-RC-C0-014",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "The four-dimension completeness record is C0's own honest state (architecture complete, runtime/visible/legacy partial) and CH-01 must carry it to true completion. CH-17 owns the certification vocabulary that reconciles this record with the layer table.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Chapter-level completeness recorded as ARCHITECTURE complete / RUNTIME ADOPTION partial / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial"
+    },
+    {
+      "id": "CO-RC-C0-015",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-14",
+        "CH-07",
+        "CH-09",
+        "CH-17"
+      ],
+      "ownershipRationale": "The enumerated handoffs are C0's own record of what it deliberately did NOT keep; CH-01 owns the register and must prove each handoff landed. Each named handoff also exists as its own obligation in its receiving chapter (verification labels CH-03, official-designation vocabulary CH-14, Correspondence rename CH-07, Live plural language CH-09) - visibility in both places, ownership in one.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Obligations explicitly handed onward and NOT C0 backlog: C2 verification labels · C5 official-designation vocabulary · C7 legacy Correspondence rename/convergence · C10 Live plural/contextual language · All: measured G2/G3/G4/G5/G"
+    },
+    {
+      "id": "CO-RC-C0-016",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-05"
+      ],
+      "ownershipRationale": "Product Language Authority is CH-01's core build. Architecture is complete per CO-RC-C0-014 but runtime and visible-product adoption are recorded partial, so the obligation is not discharged.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Product Language Authority (canonical nouns, semantic CTA families incl. RETRY and the four distinct CANCEL/DISMISS/CLOSE/DISCARD families, state terminology) — explicitly 'Not a database of every sentence'"
+    },
+    {
+      "id": "CO-RC-C0-017",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-11",
+        "CH-12",
+        "CH-13"
+      ],
+      "ownershipRationale": "The Product State Presentation vocabulary is CH-01's build and is the substrate every honest loading/empty/error/offline claim rests on. Partial: the vocabulary exists, the 26 spinners and 68 SizedBox.shrink() empty states show adoption is incomplete.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Product State Presentation vocabulary: loading, empty, error, retry, offline, reconnecting, expired, unavailable, revoked, deleted, sending, uploading, failed, unauthorized, success"
+    },
+    {
+      "id": "CO-RC-C0-018",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-05",
+        "CH-04"
+      ],
+      "ownershipRationale": "Temporal Presentation is CH-01's build. Partial: 24 local elapsed-time sites, 47 toLocal() calls and 17 screen-declared formatters are still outside the authority.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Temporal Presentation: semantic event type, canonical timestamp selection, relative vs absolute, locale/timezone incl. DST and cross-timezone, humanized formatting, exact-time access, sorting semantics, aging/refresh"
+    },
+    {
+      "id": "CO-RC-C0-019",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-13",
+        "CH-11"
+      ],
+      "ownershipRationale": "RULE 4 - CH-01 is the chapter that would otherwise break AuraLoadingState/AuraErrorState/AuraEmptyState while converting the state-primitive sites. The remaining obligation is regression proof, not construction.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "AuraLoadingState / AuraErrorState / AuraEmptyState"
+    },
+    {
+      "id": "CO-RC-C0-020",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-05"
+      ],
+      "ownershipRationale": "relative_time.dart is preserved as an interface while its shim callers are burned down. CH-01 owns the preserve; the burn-down itself is CO-RC-C0-013.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "relative_time.dart"
+    },
+    {
+      "id": "CO-RC-C0-021",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [],
+      "ownershipRationale": "local_timezone.dart preserve sits inside CH-01's temporal authority; obligation is to not break it while DST and cross-timezone rendering converge.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "local_timezone.dart"
+    },
+    {
+      "id": "CO-RC-C0-022",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [],
+      "ownershipRationale": "The chartered demolition set for C0 is explicitly NOTHING - the chapter is additive and migratory. Vacuously satisfied and recorded so the empty set cannot later be read as an omission.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRetire",
+      "obligationSummary": "NOTHING — the chapter is additive + migratory"
+    },
+    {
+      "id": "CO-RC-C0-023",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-05"
+      ],
+      "ownershipRationale": "Historical Item 6 is split by design: CH-01 continues the temporal half (RULE 5), CH-05 continues the attention/timeline half as CO-RC-C4-028. Both halves remain visible; neither subsumes the other.",
+      "charteredBy": "RC-C0",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 6 (Communication Timeline Authority — temporal half)"
+    },
+    {
+      "id": "CO-RC-C1-001",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-13",
+        "CH-03",
+        "CH-02"
+      ],
+      "ownershipRationale": "The acting-authority freeze (attribution-triggered, never route-derived) is C1's central ruling and CH-01 owns the Acting Context Authority it froze. CH-02 is bound by it precisely because route classification may never manufacture actor identity.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "ACTING AUTHORITY BECOMES EXPLICIT WHEN A CONSEQUENTIAL ACTION REQUIRES ATTRIBUTION — NOT BECAUSE OF THE ROUTE THE PERSON NAVIGATED THROUGH. No global acting mode, no route-derived sender, institutional acting context always person"
+    },
+    {
+      "id": "CO-RC-C1-002",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-13"
+      ],
+      "ownershipRationale": "resolve(act, offerPersonalAlternative:) is the governed contract of the authority CH-01 owns. Surfaces choose whether a personal alternative exists; they do not re-implement the resolution.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "WHETHER A PERSONAL ACTING ALTERNATIVE EXISTS IS A PROPERTY OF THE SURFACE / ACTION CONTEXT, NOT AN INTRINSIC PROPERTY OF THE CONSEQUENTIAL ACT. resolve(act, offerPersonalAlternative: ...) is the governed contract. NO CHOICE WITHOU"
+    },
+    {
+      "id": "CO-RC-C1-003",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03"
+      ],
+      "ownershipRationale": "ProductAction.switchIdentity is a governed extension of the C0 Product Language, which CH-01 owns; the four competing phrasings are gate-prohibited under the same authority.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "ProductAction.switchIdentity added as a governed C0 Product Language extension discovered through C1 implementation — not C0 remediation; four competing phrasings gate-prohibited."
+    },
+    {
+      "id": "CO-RC-C1-004",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-04",
+        "CH-05"
+      ],
+      "ownershipRationale": "'Presence is the person' is an acting-context freeze owned by CH-01. CH-03 projects it and CH-04 consumes it in realtime tiles under the same rule; neither may re-derive it from affiliation or navigation.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Presence is the person. It never inherits institutional identity from affiliation, navigation or membership."
+    },
+    {
+      "id": "CO-RC-C1-005",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-08",
+        "CH-07"
+      ],
+      "ownershipRationale": "Backend convergence on InstitutionAuthorityService is the completed proof that capability is consumed and never computed - the authority CH-01 owns. CH-07/CH-08 consume effective capabilities and must not create an alternate path.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Backend converged — institutions.service.ts delegates to InstitutionAuthorityService; every membership now carries its own effective capabilities."
+    },
+    {
+      "id": "CO-RC-C1-006",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-10"
+      ],
+      "ownershipRationale": "The dead-code ruling closed the six-token client capability injection with no backend correction. CH-10 must extend Capability Projection for the anonymous case without reviving the ruled-dead path.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "The six-token client capability injection was proven UNREACHABLE DEAD CODE; no backend correction warranted; no alternate authority path created."
+    },
+    {
+      "id": "CO-RC-C1-007",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-17",
+        "CH-02",
+        "CH-10"
+      ],
+      "ownershipRationale": "The G5 ownership correction is a completed measurement-based reassignment; CH-01 owns the corrected matrix and inherits the PD-1 34 sites as work. PD-2's 3 sites split structurally to CH-02 and experientially to CH-10, with the disposition decision at CH-17.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "G5 ownership correction — 38 of 42 C1 sites withdrawn on measured evidence to PD-1 Platform Administration (34) and PD-2 Authentication & Account Entry (3); C1 retains 4 on R basis; 181 sites still traceable."
+    },
+    {
+      "id": "CO-RC-C1-008",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-07",
+        "CH-17"
+      ],
+      "ownershipRationale": "R1/R2 accepted exceptions and the named residues are C1 debt CH-01 must retire. resolveActorContext's three consumers retire under CH-03 and CH-07; platform-admin flattening lands in CH-01 via PD-1. Accepted-and-ratcheted is not discharged.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Accepted exceptions, none blocking closeout: R1 (25 files / 85 role-derived booleans, ratcheted) · R2 (3 files / 6 role-literal comparisons, classified) · resolveActorContext 3 consumers -> C3/C7 · platform-admin flattening -> PD-"
+    },
+    {
+      "id": "CO-RC-C1-009",
+      "canonicalChapter": "CH-17",
+      "crossReferencedChapters": [
+        "CH-01",
+        "CH-02",
+        "CH-10"
+      ],
+      "ownershipRationale": "The two product DISPOSITION CHECKPOINTS are decisions that must resolve before C11, and CH-17 owns dispositions and the C11 entry conditions (RULE 6/7). The WORK sized by them lands in CH-01 (PD-1) and CH-02/CH-10 (PD-2 split); the decision itself is founder-only and is the single RC-C1 row that is not CH-01's.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "FOUNDER_ACTION_ONLY",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Two product disposition checkpoints opened before C11: PD-1 Platform Administration (11 files / 34 G5 sites), PD-2 Authentication & Account Entry (2 files / 3 sites). Neither has an owning chapter in the approved roadmap; both nee"
+    },
+    {
+      "id": "CO-RC-C1-010",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-07",
+        "CH-17"
+      ],
+      "ownershipRationale": "Debt register rows 2/3/4 are TRANSITIONAL with named owners and retirement conditions; CH-01 owns the register and the retirement proof. Backend-coupled admin-count gating retires with the capability gating CH-01 already governs.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Debt register rows 2, 3, 4 remain TRANSITIONAL with named owners: actor_context.dart resolveActorContext (retire at C3+C7); member_shell.dart:267 admin count gating (backend-coupled, retire with backend role->capability gating + C"
+    },
+    {
+      "id": "CO-RC-C1-011",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "C1's own four-dimension completeness record (architecture complete, runtime near-complete with 4 named residual sites, visible adoption and legacy retirement partial) is CH-01's to carry to zero.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Chapter-level completeness recorded as ARCHITECTURE complete / RUNTIME ADOPTION near-complete (4 residual named-owner sites) / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial (resolveActorContext awaiting C3/C7)"
+    },
+    {
+      "id": "CO-RC-C1-012",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-13",
+        "CH-09"
+      ],
+      "ownershipRationale": "Acting Context Authority is CH-01's core build. Architecture is complete; visible product adoption is recorded partial, so it stays open.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Acting Context Authority — person = default actor; institutional context entered deliberately and remains attributable"
+    },
+    {
+      "id": "CO-RC-C1-013",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-10",
+        "CH-08"
+      ],
+      "ownershipRationale": "Capability Projection (consumes, never computes) is CH-01's build. Partial while shadow governance (role comparisons, canX derivations) survives in the named files; CH-10 extends the same contract to the anonymous zero-authority case as a new case, not a new authority.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Capability Projection — consumes backend effective capability; NEVER computes it"
+    },
+    {
+      "id": "CO-RC-C1-014",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-10"
+      ],
+      "ownershipRationale": "RULE 4 - the preserve is owned where it would otherwise be broken, i.e. inside the acting/capability rebuild. CH-02 makes session restoration an authority and CH-10 rebuilds account-entry experience; both consume rather than rewrite the preserved flows.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "Existing auth flows"
+    },
+    {
+      "id": "CO-RC-C1-015",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-16"
+      ],
+      "ownershipRationale": "Session handling preserve belongs with the authority that could break it during capability convergence. CH-02 owns destination reconstruction on top of it, not its replacement.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "session handling"
+    },
+    {
+      "id": "CO-RC-C1-016",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-08"
+      ],
+      "ownershipRationale": "Backend contract preserve for the acting/capability surface; the obligation is regression proof under CH-01's convergence work.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "backend contracts"
+    },
+    {
+      "id": "CO-RC-C1-017",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-07"
+      ],
+      "ownershipRationale": "Shadow-governance retirement (role comparisons in 29 files, canX in 20) is CH-01's demolition. Partial: R1 (25 files / 85 booleans) is ratcheted and R2 (3 files / 6 comparisons) is classified but neither is retired.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRetire",
+      "obligationSummary": "Shadow governance: role comparisons in 29 files, canX derivations in 20 files"
+    },
+    {
+      "id": "CO-RC-C1-018",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-10"
+      ],
+      "ownershipRationale": "Fail-closed auth projection is extended C1 scope owned by CH-01. CH-02's fail-CLOSED route classification and CH-10's public-first reconciliation both depend on it and neither may weaken it to make a surface reachable.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "extendedScope",
+      "obligationSummary": "Fail-closed auth projection"
+    },
+    {
+      "id": "CO-RC-C1-019",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-08",
+        "CH-07"
+      ],
+      "ownershipRationale": "The institution capability model is extended C1 scope; every membership now carries its own effective capabilities. CH-07/CH-08 consume it for governed participation.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "extendedScope",
+      "obligationSummary": "institution capability model"
+    },
+    {
+      "id": "CO-RC-C1-020",
+      "canonicalChapter": "CH-01",
+      "crossReferencedChapters": [
+        "CH-03"
+      ],
+      "ownershipRationale": "RULE 5 - CH-01 continues historical Item 4's acting/capability half. The identity half is CO-RC-C2-033 in CH-03. Two halves, two owners, explicitly related.",
+      "charteredBy": "RC-C1",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 4 (Identity Foundation — acting/capability half)"
+    },
+    {
+      "id": "CO-RC-C2-001",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-05",
+        "CH-06",
+        "CH-15",
+        "CH-14"
+      ],
+      "ownershipRationale": "The R1-R10 Follow adjudication is founder-closed relationship doctrine and CH-03 owns Relationship Projection. R1 points at the canonical blocking authority consumed by CH-15 and CH-06 (WG012); R4's Subscribe VOCABULARY was handed to C4 and lives in CH-05 as CO-RC-C4-004/009 - handed vocabulary, not handed relationship ownership.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Founder adjudication R1-R10 on Follow: R1 BLOCKING OUTRANKS FOLLOW/RELATIONSHIP/MESSAGING ELIGIBILITY (use the canonical blocking authority, do not create a second one) · R2 FOLLOW is a governed relationship between an acting Pers"
+    },
+    {
+      "id": "CO-RC-C2-002",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-15"
+      ],
+      "ownershipRationale": "D1 is a frozen semantic about what an established Follow does and does not guarantee; it is a property of the relationship CH-03 owns. CH-14 applies it in feed/discovery without re-deciding it.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "D1 FROZEN FEED SEMANTIC — an established Person->Person Follow makes eligible public participation available to the member feed's existing visibility/ranking rules; it does not guarantee delivery, bypass ranking/visibility/moderat"
+    },
+    {
+      "id": "CO-RC-C2-003",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-17",
+        "CH-14"
+      ],
+      "ownershipRationale": "Trust presentation doctrine (layered never collapsed, subject-explicit, VERIFICATION IS NOT AUTHORITY) is Verification Projection doctrine, owned by CH-03. Frozen by implementation and founder-closed; CH-17 holds only the label-mapping checkpoint.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Trust presentation doctrine frozen by implementation: layered never collapsed ('Verified person' does not exist as a product concept; absence renders nothing) · subject-explicit wording · VERIFICATION IS NOT AUTHORITY · revoked/ex"
+    },
+    {
+      "id": "CO-RC-C2-004",
+      "canonicalChapter": "CH-17",
+      "crossReferencedChapters": [
+        "CH-03"
+      ],
+      "ownershipRationale": "Monetization x Verification decoupling is a COMMERCIAL governance freeze, not an identity build. CH-17 owns commercial/entitlement governance and the deferred-decision register; CH-03 is bound by it and may never render a purchased tier as verification.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Monetization x Verification Decoupling FROZEN — verification is not purchasable; a commercial tier does not establish verification; TRUSTED rejected as a commercial product concept; verification authority and commercial entitlemen"
+    },
+    {
+      "id": "CO-RC-C2-005",
+      "canonicalChapter": "CH-17",
+      "crossReferencedChapters": [
+        "CH-03"
+      ],
+      "ownershipRationale": "Commercial Taxonomy Closeout (FREE + PRO active, VERIFIED retired not renamed, TRUSTED permanently rejected) is commercial governance owned by CH-17. The closeout is complete; the entitlement boundary it deliberately left open is the separate CO-RC-C2-006.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Commercial Taxonomy Closeout FROZEN — active taxonomy = FREE + PRO; the legacy VERIFIED middle tier is retired, not renamed; TRUSTED permanently rejected; NO final Free/Pro entitlement boundary decided; no new payment enforcement "
+    },
+    {
+      "id": "CO-RC-C2-006",
+      "canonicalChapter": "CH-17",
+      "crossReferencedChapters": [
+        "CH-03"
+      ],
+      "ownershipRationale": "The final Free/Pro entitlement boundary is explicitly NOT frozen and is founder-only; CH-17 carries it under the FUTURE COMMERCIALIZATION GOVERNANCE MARKER together with the rule that no payment enforcement is activated or expanded during release-client reconstruction. No chapter may pre-empt it.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "FOUNDER_ACTION_ONLY",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Entitlement boundary deliberately NOT frozen; final Free/Pro commercial entitlement boundary NOT YET FROZEN; payment enforcement not to be activated/expanded during release-client reconstruction"
+    },
+    {
+      "id": "CO-RC-C2-007",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-17"
+      ],
+      "ownershipRationale": "The Availability Off USER-FACING CONTROL is a personal control over presence delivery; CH-05 owns personal controls and GAP-1. The DOCTRINE stays C2/CH-03 and is not reopened. Recorded as FOUNDER-OWNED ROADMAP GAP 1: CH-05's placement still requires founder ratification, which is why the row is construction with an open placement, not an assumed one.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Availability Off user-facing control — C2 doctrine frozen, runtime semantics canonical, control required, IMPLEMENTATION OWNER UNASSIGNED pending founder roadmap placement (recorded as FOUNDER-OWNED ROADMAP GAP 1)"
+    },
+    {
+      "id": "CO-RC-C2-008",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-17"
+      ],
+      "ownershipRationale": "Debt row 12's 'C4 Settings - adjudicated ownership split' wording is superseded by GAP-1's reclassification of it as continuity shorthand; the record is closed as a record. It is owned alongside CO-RC-C2-007 so the reclassification and the control cannot drift apart.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Debt register row 12 records the Availability Off control as 'LEGITIMATELY FUTURE-OWNED (C4 Settings — adjudicated ownership split)' — which GAP 1 later reclassifies as continuity shorthand"
+    },
+    {
+      "id": "CO-RC-C2-009",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "The PresenceScreen disposition is an OPEN C2 implementation checkpoint and CH-03 owns presence surfaces. It is the register row for the chartered CO-RC-C2-020; both remain visible and neither is closed by the other. FD-12 applies - disposition on architecture, never on reference count.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "PresenceScreen disposition (FD-12 §5) is listed as a C2-owned open implementation checkpoint"
+    },
+    {
+      "id": "CO-RC-C2-010",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-05",
+        "CH-07",
+        "CH-01"
+      ],
+      "ownershipRationale": "The six local person-shaped extraction sites are the unconverted consumers of the People & Participation Selection primitive CH-03 owns. Their named future owners execute in CH-05 (conversations_screen, retired with DR1), CH-07 (correspondence_hub / space / invite_member), CH-03 (member_home) and CH-01 (admin_institution_members via PD-1); the primitive contract stays here.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "People Selection — 6 local person-shaped extraction sites classified with future owners (conversations_screen C4-retired; correspondence_hub/space/invite_member C7; member_home C3; admin_institution_members PD-1)"
+    },
+    {
+      "id": "CO-RC-C2-011",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-07"
+      ],
+      "ownershipRationale": "Identity Projection is CH-03's central build. RC-C2 is founder-closed but consumption is the chapter's governing outcome - the canonical identity must be the only identity any surface can render, which is not yet true of every consumer.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Identity Projection (Person/Institution)"
+    },
+    {
+      "id": "CO-RC-C2-012",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-15"
+      ],
+      "ownershipRationale": "Relationship Projection is CH-03's build, carrying the frozen R1-R10 doctrine into every consuming surface.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Relationship Projection"
+    },
+    {
+      "id": "CO-RC-C2-013",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-05"
+      ],
+      "ownershipRationale": "Presence Projection (permitted human-facing only) is CH-03's build. CH-04 consumes it for realtime tiles under 'presence is the person'; CH-05 owns only the Availability Off control over it.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Presence Projection (permitted human-facing only)"
+    },
+    {
+      "id": "CO-RC-C2-014",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-17",
+        "CH-14"
+      ],
+      "ownershipRationale": "Verification Projection LAYERED NEVER BOOLEAN is CH-03's build. Partial while the founder label mapping (CO-RC-C2-034) is undecided - the structure exists, the human-facing labels do not.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Verification Projection — LAYERED, NEVER BOOLEAN"
+    },
+    {
+      "id": "CO-RC-C2-015",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-01"
+      ],
+      "ownershipRationale": "Action Projection (backend-authorised) is CH-03's build and depends on CH-01's Capability Projection; it projects authorised actions, it never derives authority.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Action Projection (backend-authorised)"
+    },
+    {
+      "id": "CO-RC-C2-016",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-07",
+        "CH-08"
+      ],
+      "ownershipRationale": "The People & Participation Selection primitive is CH-03's build; backend-resolved eligibility with no local inference. CH-04 (invite/add flows), CH-07 (membership/invite) and CH-08 (participant selection) are named consumers, and CO-RC-C2-010 measures the sites still outside it.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "People & Participation Selection primitive (backend-resolved eligibility; no local inference)"
+    },
+    {
+      "id": "CO-RC-C2-017",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-12",
+        "CH-14"
+      ],
+      "ownershipRationale": "Rebuilt profile surfaces (IDENTITY FIRST / CONTEXT SECOND / ACTIONS THIRD / METADATA ON DEMAND) are CH-03's build; the visual direction checkpoint (CO-RC-C2-036) is still founder-owned, so the row is not discharged.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Rebuilt profile surfaces: IDENTITY FIRST · CONTEXT SECOND · ACTIONS THIRD · METADATA ON DEMAND"
+    },
+    {
+      "id": "CO-RC-C2-018",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [],
+      "ownershipRationale": "DR5's three parallel profile implementations were demolished within RC-C2, which the founder FINAL CLOSED on 2026-08-16 including reconstruction, data transitions and legacy retirement. CH-03 owns the result and must not let a parallel profile implementation reappear.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "DR5 — three profile implementations (profile/, me/, institutions/profile/; ~4,100 lines of parallel edit screens)"
+    },
+    {
+      "id": "CO-RC-C2-019",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-05"
+      ],
+      "ownershipRationale": "Retiring the six-meaning overload of 'presence' was executed inside founder-closed RC-C2 and CH-03 owns the single surviving meaning. CH-04 and CH-05 consume it and may not reintroduce a second sense.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "Retire the six-meaning overload of 'presence'"
+    },
+    {
+      "id": "CO-RC-C2-020",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "The chartered PresenceScreen disposition is still to be executed and CH-03 owns presence surfaces. FD-12 section 5 governs - decided on architecture, never on reference count. Its open-checkpoint register row is CO-RC-C2-009.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "Disposition PresenceScreen here (FD-12 §5 — never on reference count)"
+    },
+    {
+      "id": "CO-RC-C2-021",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-12"
+      ],
+      "ownershipRationale": "RULE 4 - canonical identity data is preserved by the chapter that would otherwise break it while converging identity consumption. The identity->media relationship (D-1) is an ADDITIVE migration served by CH-12.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "Canonical identity data"
+    },
+    {
+      "id": "CO-RC-C2-022",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-07"
+      ],
+      "ownershipRationale": "Relationship data preserve sits with CH-03's Relationship Projection; the remaining obligation is regression proof through the consumption convergence.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "relationships"
+    },
+    {
+      "id": "CO-RC-C2-023",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-10"
+      ],
+      "ownershipRationale": "Public content preserve is owned where identity/profile surfaces are rebuilt; CH-14 and CH-10 present it publicly without altering the preserved data.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "public content"
+    },
+    {
+      "id": "CO-RC-C2-024",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-08"
+      ],
+      "ownershipRationale": "Institution relationship preserve belongs to the identity/relationship rebuild that could break it.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "institution relationships"
+    },
+    {
+      "id": "CO-RC-C2-025",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "Verification data preserve sits under CH-03's Verification Projection; the label mapping may change presentation but must not change the preserved data.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "verification data"
+    },
+    {
+      "id": "CO-RC-C2-026",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-05",
+        "CH-10"
+      ],
+      "ownershipRationale": "Privacy controls preserve is owned by the identity chapter. The Availability Off control (CH-05) adds a control over presence; it does not replace the preserved privacy set.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "privacy controls"
+    },
+    {
+      "id": "CO-RC-C2-027",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-14"
+      ],
+      "ownershipRationale": "Follow state preserve sits with the frozen Follow doctrine CH-03 owns.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "follow state"
+    },
+    {
+      "id": "CO-RC-C2-028",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [],
+      "ownershipRationale": "Backend contract preserve for the identity/relationship/verification surface; regression proof under CH-03's convergence.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "backend contracts"
+    },
+    {
+      "id": "CO-RC-C2-029",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-10"
+      ],
+      "ownershipRationale": "Conceptually-correct deep links are preserved here because identity/profile surface reconstruction is what would break them. Route CLASSIFICATION and destination reconstruction are CH-02's; CH-14 and CH-10 own public addressability. This row is the identity half of that guarantee.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "conceptually-correct deep links"
+    },
+    {
+      "id": "CO-RC-C2-030",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-01"
+      ],
+      "ownershipRationale": "Canonical person identity projection is extended C2 scope; CH-03 owns it and it is the enabling condition for 'identity drift can no longer reach authority'.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "extendedScope",
+      "obligationSummary": "Canonical person identity projection"
+    },
+    {
+      "id": "CO-RC-C2-031",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "Layered verification as extended scope is CH-03's, held partial by the undecided label mapping.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "extendedScope",
+      "obligationSummary": "layered verification"
+    },
+    {
+      "id": "CO-RC-C2-032",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-10",
+        "CH-17"
+      ],
+      "ownershipRationale": "Account lifecycle states are extended C2 scope owned by CH-03 (revoked / expired / deleted must render truthfully). CH-10's account-entry experience consumes these states rather than defining them.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "extendedScope",
+      "obligationSummary": "account lifecycle states"
+    },
+    {
+      "id": "CO-RC-C2-033",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-01"
+      ],
+      "ownershipRationale": "RULE 5 - CH-03 continues historical Item 4's identity half; CH-01 continues the acting/capability half as CO-RC-C1-020. The split is explicit and neither half is closed by the other.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 4 (Identity Foundation)"
+    },
+    {
+      "id": "CO-RC-C2-034",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "RULE 6 - a founder checkpoint is owned by the chapter that may not proceed past it, and verification label mapping is named in CH-03's founderActions. CH-17 carries it as one of the nine standing checkpoints gating Product-Behavior certification; the checkpoint itself is founder-only.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "FOUNDER_ACTION_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "founderCheckpoints",
+      "obligationSummary": "Verification label mapping (class -> human meaning -> user value -> label -> context)"
+    },
+    {
+      "id": "CO-RC-C2-035",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-05",
+        "CH-17"
+      ],
+      "ownershipRationale": "Presence privacy/visibility policy is a founder checkpoint CH-03 may not proceed past. CH-05 cannot build the Availability Off control's user-facing semantics beyond what this policy decides.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "FOUNDER_ACTION_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "founderCheckpoints",
+      "obligationSummary": "Presence privacy/visibility policy"
+    },
+    {
+      "id": "CO-RC-C2-036",
+      "canonicalChapter": "CH-03",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "Profile visual direction is a founder checkpoint blocking CH-03's rebuilt profile surfaces (CO-RC-C2-017); engineering may not supply it.",
+      "charteredBy": "RC-C2",
+      "zeroFindingCoverage": true,
+      "obligationClass": "FOUNDER_ACTION_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "founderCheckpoints",
+      "obligationSummary": "Profile visual direction"
+    },
+    {
+      "id": "CO-RC-C3-001",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-07",
+        "CH-08"
+      ],
+      "ownershipRationale": "The MIRRORED != OBJECT-LOCAL != PATH-MANUFACTURED distinction is route CLASSIFICATION doctrine, which is exactly what CH-02 owns (CH-02 owns classification; RC-C3 owned shape). The retirement of the 2 mirrored routes to gate-pinned unbuildable aliases is executed; alias retirement is gated by CO-RC-C3-007's evidence trigger.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "MIRRORED ROUTE != OBJECT-LOCAL INSTITUTION DEPTH != PATH-MANUFACTURED CONTEXT. 2 mirrored routes existed and were retired to gate-pinned unbuildable aliases; 34 routes are canonical object-local institution depth; path-manufacture"
+    },
+    {
+      "id": "CO-RC-C3-002",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-05"
+      ],
+      "ownershipRationale": "The FOUNDER-OBSERVED NAVIGATION CORRECTION is about what primary navigation MEANS - a product-meaning ruling - and CH-14 owns domain meaning and the primaries. CH-02 owns how a person returns to a destination, not which destinations are primary. The correction itself is a completed founder amendment; any change to the four primaries reopens Checkpoint 6.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "FOUNDER-OBSERVED NAVIGATION CORRECTION (amends the five-primary freeze). GOVERNING TEST FROZEN: PRIMARY NAVIGATION MUST REPRESENT A FUNDAMENTAL, RECURRING HUMAN INTENTION IN AURA. AUTHENTICATED PRIMARIES — FOUR: HOME · MESSAGES · "
+    },
+    {
+      "id": "CO-RC-C3-003",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-07",
+        "CH-02"
+      ],
+      "ownershipRationale": "DISCOVER as an extensible framework with PEOPLE / INSTITUTIONS / SPACES / ARTICLES is discovery product meaning, owned by CH-14. Partial: the framework and its immediate domains are frozen as intent, and 'verification is never relevance ranking' constrains CH-03's projection, but the domains are not built out.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "DISCOVER = extensible discovery framework; immediate domains PEOPLE · INSTITUTIONS · SPACES · ARTICLES. Verification is never relevance ranking — one activity-ordered list truthfully labeled 'recent activity'. Articles canonically"
+    },
+    {
+      "id": "CO-RC-C3-004",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-05",
+        "CH-09",
+        "CH-08",
+        "CH-02"
+      ],
+      "ownershipRationale": "Header semantic layers are a public-entry/IA meaning decision owned by CH-14, including institution acquisition placement. The invite icon is already RETIRED. The 'attention (bell, until C4)' clause is a named handover to CH-05, which may move attention only on product merits at its own checkpoint.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Header semantic layers frozen: primaries (rail/bottom bar only) · identity/account (avatar) · attention (bell, until C4) · institution acquisition (lifecycle-gated) · Live (justified global) · invite icon RETIRED."
+    },
+    {
+      "id": "CO-RC-C3-005",
+      "canonicalChapter": "CH-17",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-14"
+      ],
+      "ownershipRationale": "'ARCHITECTURE CAN PROPOSE COHERENCE, HUMAN USE VALIDATES MEANING' is a governance lesson about how certification may fail - CH-17 owns the governance and certification record. It is frozen as a lesson and binds every chapter's certification argument, including CH-02's and CH-14's.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "ARCHITECTURE CAN PROPOSE COHERENCE. HUMAN USE VALIDATES MEANING. WHEN THEY CONFLICT, INVESTIGATE THE CONFLICT RATHER THAN PROTECTING THE ARCHITECTURE. A locally certified architecture can be product-wrong; founder observation is e"
+    },
+    {
+      "id": "CO-RC-C3-006",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-05",
+        "CH-07"
+      ],
+      "ownershipRationale": "The explicit-context contract (institutionContextId + correspondAsInstitution) and the fixed Me-depth placement are route/destination contracts C3 handed forward, and CH-02 is the C3 successor authority that must PROVE they were honoured. The CONSUMING work is genuinely two-headed - CH-05 receives settings/attention internals, CH-07 receives membership/invite/join and correspondence sender experience - both recorded as received handoffs in those chapters. This split is flagged in contradictions rather than silently resolved.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Contracts inherited by later chapters — C4: settings/attention internals, Me-depth placement fixed. C7: membership/invite/join lifecycles + correspondence sender experience MUST consume institutionContextId + correspondAsInstituti"
+    },
+    {
+      "id": "CO-RC-C3-007",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-14",
+        "CH-17"
+      ],
+      "ownershipRationale": "C3's remaining-debt register (every remainder carries an owner and a retirement condition, including the alias retirement gated on future link-traffic evidence) is CH-02's to carry. Named-and-owned is not retired.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Remaining C3-owned debt: NONE unexplained — every remainder carries owner + retirement condition (literal baseline per-surface owners; C7 trio; alias retirement gated on link-traffic evidence at a future observed window; G5 C3-own"
+    },
+    {
+      "id": "CO-RC-C3-008",
+      "canonicalChapter": "CH-10",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-17"
+      ],
+      "ownershipRationale": "LoginScreen is the account-entry EXPERIENCE, and PD-2's experience half is CH-10's by the ratified split (structural half CH-02). The disposition must be executed on architecture per FD-12, and its ratification is required before C11 at CH-17.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "LoginScreen disposition is listed as a C3-owned open implementation checkpoint"
+    },
+    {
+      "id": "CO-RC-C3-009",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-14"
+      ],
+      "ownershipRationale": "Navigation/Surface Authority is the destination authority CH-02 governs - no surface reconstructs its own destination. Built as architecture in C3; the classification and reconstruction outcome is CH-02's to complete.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Navigation/Surface Authority"
+    },
+    {
+      "id": "CO-RC-C3-010",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-14"
+      ],
+      "ownershipRationale": "Canonical navigation actions belong to the same authority; partial while literal route strings survive per CO-RC-C3-019.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "canonical navigation actions"
+    },
+    {
+      "id": "CO-RC-C3-011",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-17",
+        "CH-10"
+      ],
+      "ownershipRationale": "The declared surface/route registry is the mechanism by which an unclassified route has a defined meaning - CH-02's core. FD-12 section 8 governs: architecture-aware, naive zero-reference gate FORBIDDEN. The registry's public-route exception policy is a founder ruling held at CH-10.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "declared surface/route registry (FD-12 §8 — architecture-aware; naive zero-reference gate FORBIDDEN)"
+    },
+    {
+      "id": "CO-RC-C3-012",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-08"
+      ],
+      "ownershipRationale": "Object-local contextual depth is route classification; 34 routes are already canonical object-local depth. Partial because the classification must hold for every new institutional surface CH-07/CH-08 add.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "object-local contextual depth"
+    },
+    {
+      "id": "CO-RC-C3-013",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-16"
+      ],
+      "ownershipRationale": "Responsive IA (conceptual before visual) is information-architecture meaning, owned by CH-14; CH-16 proves it at the real device boundary. Partial - the conceptual ordering is frozen, the responsive expression is not complete.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "responsive IA (conceptual before visual)"
+    },
+    {
+      "id": "CO-RC-C3-014",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-02"
+      ],
+      "ownershipRationale": "Room for a universal Find/Go-To that SUPPLEMENTS IA and never patches it is an IA constraint owned by CH-14. The ROOM is preserved by the frozen IA; the capability itself does not exist. Recorded PARTIAL rather than COMPLETE so the unbuilt capability stays visible, and rather than OUTSTANDING so the row is not read as authorising a Find/Go-To build that was never chartered.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "room for universal Find/Go-To that SUPPLEMENTS IA, never patches it"
+    },
+    {
+      "id": "CO-RC-C3-015",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-08"
+      ],
+      "ownershipRationale": "DR4 is CH-02's demolition. The chartered figure of 40 mirrored routes resolved on per-route measurement to 2 genuinely mirrored routes (retired to gate-pinned aliases) and 34 canonical object-local depth routes; the charter estimate versus measured outcome delta is recorded, not erased.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "DR4 — 40 mirrored /institution/:institutionId/... routes, per-route test"
+    },
+    {
+      "id": "CO-RC-C3-016",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-14"
+      ],
+      "ownershipRationale": "Module-oriented destinations are demolished by the chapter that owns destination classification. Partial - CH-14's Create migration off the legacy creation model is the visible remainder of the same pattern.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "module-oriented destinations"
+    },
+    {
+      "id": "CO-RC-C3-017",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-14"
+      ],
+      "ownershipRationale": "Redundant destinations are demolished by CH-02; where two destinations mean the same thing, only one may survive classification.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "redundant destinations"
+    },
+    {
+      "id": "CO-RC-C3-018",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-10"
+      ],
+      "ownershipRationale": "The 27 corrective redirects are CH-02's; they exist as a TRANSITIONAL layer whose retirement is gated on evidence (CO-RC-C3-023), so the demolition is not complete.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "27 corrective redirects"
+    },
+    {
+      "id": "CO-RC-C3-019",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [],
+      "ownershipRationale": "Literal route strings scattered across features are CH-02's demolition; CO-RC-C3-007 records that the literal baseline still has per-surface owners, so the row stays open.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "PARTIALLY_COMPLETED",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "literal route strings scattered across features"
+    },
+    {
+      "id": "CO-RC-C3-020",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-14"
+      ],
+      "ownershipRationale": "RULE 4 - the four shells are preserved where product-correct by the chapter rebuilding destination authority around them.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "Four shells where product-correct"
+    },
+    {
+      "id": "CO-RC-C3-021",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-09"
+      ],
+      "ownershipRationale": "floating_call_widget, incoming_live_overlay and thread_call_lifecycle_host are the session-continuity preserve and CH-02 owns continuity. CH-04 owns rejoin mechanics and CH-09 owns Live semantics; neither may delete the continuity surface, and CH-02 may not open the Meetings lifecycle (PB-01).",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "session continuity (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host)"
+    },
+    {
+      "id": "CO-RC-C3-022",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-10",
+        "CH-14",
+        "CH-03"
+      ],
+      "ownershipRationale": "ALL EXISTING DEEP LINKS MUST CONTINUE TO RESOLVE is a continuity guarantee owned by CH-02 and is the load-bearing regression gate on every route demolition here. CH-10 must not be allowed to turn a legitimately public address into a login wall.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "ALL existing deep links must continue to resolve"
+    },
+    {
+      "id": "CO-RC-C3-023",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-10"
+      ],
+      "ownershipRationale": "Redirects are preserved as a temporary compatibility layer; the obligation is to keep them working until the evidence-gated retirement trigger fires. Retirement without the evidence would break CO-RC-C3-022.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "redirects as a temporary compatibility layer"
+    },
+    {
+      "id": "CO-RC-C3-024",
+      "canonicalChapter": "CH-02",
+      "crossReferencedChapters": [
+        "CH-05",
+        "CH-09",
+        "CH-04"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 11 (legacy global runtime overlay cleanup) continues in the chapter that owns the global runtime overlay layer, which is where the preserved session-continuity overlays live (CH-02). The attention-specific overlays are separately owned by CH-05 (DR1 and the four companion surfaces) and the global Live banner by CH-09; this row is the residual overlay-layer cleanup, deliberately not merged with either.",
+      "charteredBy": "RC-C3",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 11 (Legacy global runtime overlay cleanup)"
+    },
+    {
+      "id": "CO-RC-C4-001",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06",
+        "CH-07",
+        "CH-04"
+      ],
+      "ownershipRationale": "The One Governed Attention Hub direction, with attention as a PROJECTION and domain-owned resolvable actions, is CH-05's founding freeze; Option B (one giant chronological feed) is rejected. The decision is complete; the hub itself is unbuilt and carried by CO-RC-C4-013..020.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "One Governed Attention Hub + Actionable Attention — attention is a projection, never a new owner; domain-owned resolvable actions. Explicitly NOT original Option B ('one giant chronological notification feed' is rejected); partial"
+    },
+    {
+      "id": "CO-RC-C4-002",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06",
+        "CH-09"
+      ],
+      "ownershipRationale": "The badge semantic (unresolved actionable obligations; mentions conditional, never blanket-counted) is frozen and CH-05 owns it. Its construction is CO-RC-C4-016.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "PRIMARY ATTENTION BADGE = UNRESOLVED ACTIONABLE OBLIGATIONS. Contributing: ACTION_REQUIRED, INVITED, MISSED while unresolved, and mentions conditionally where they represent unresolved attention. Mentions are not blanket-counted."
+    },
+    {
+      "id": "CO-RC-C4-003",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-16",
+        "CH-17"
+      ],
+      "ownershipRationale": "ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION is frozen with C4 as PRIMARY OWNER, so CH-05 owns it outright. CH-16 delivers natively under this rule and may never let a disabled channel erase a governed attention item. The scope of the authority to be built is CO-RC-C4-008.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Notification Preference Authority — PRIMARY OWNER: C4. Governing distinction frozen: ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION. Disabling email or push must never erase the underlying governed Attention item."
+    },
+    {
+      "id": "CO-RC-C4-004",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-07"
+      ],
+      "ownershipRationale": "R4 (FOLLOW != SUBSCRIBE) is frozen with C2 recording the semantics and C4 OWNING THE VOCABULARY - an explicit split. CH-05 owns the vocabulary row; CH-03 keeps the relationship semantics. Naming the surface is CO-RC-C4-009.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "R4 — FOLLOW != SUBSCRIBE is frozen; C2 records the semantics and C4 OWNS THE VOCABULARY. Subscribe stays physically in InteractionFollow thread/space rows until C4 names its product surface."
+    },
+    {
+      "id": "CO-RC-C4-005",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-17"
+      ],
+      "ownershipRationale": "NO FIFTH DESTINATION is a standing prohibition owned by the chapter it constrains. It is in force now; whether Attention ever earns primary status is a CH-05 founder checkpoint decided on product merits, with CH-14 owning the primaries themselves.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "NO FIFTH DESTINATION is invented or reserved. Attention may earn primary status only at C4's own founder checkpoint, on product merits — navigation count is not a product requirement. Until C4, attention lives in the header bell."
+    },
+    {
+      "id": "CO-RC-C4-006",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06",
+        "CH-07"
+      ],
+      "ownershipRationale": "Retiring all eight DR1 attention surfaces is unexecuted construction owned by CH-05. conversations_screen.dart is retired HERE per FD-12 even though its subject matter is conversations - the surface is an attention presentation, and CH-06 owns the canonical Conversation it wrongly duplicated.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "All of DR1 — eight attention surfaces retired, including conversations_screen.dart"
+    },
+    {
+      "id": "CO-RC-C4-007",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-04"
+      ],
+      "ownershipRationale": "The legacy global attention presentation (a floating SnackBar pushed through an app-root ScaffoldMessenger GlobalKey) must be retired comprehensively; the founder explicitly prohibited an isolated cosmetic patch. CH-05 owns attention presentation; CH-02 owns the residual overlay-layer cleanup it sits inside.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Retire the legacy global attention presentation comprehensively — founder instruction: no isolated cosmetic patch. Mechanism traced to a global floating SnackBar pushed through an app-root GlobalKey<ScaffoldMessengerState> (notifi"
+    },
+    {
+      "id": "CO-RC-C4-008",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-16",
+        "CH-17"
+      ],
+      "ownershipRationale": "The Notification Preference Authority as a built scope is outstanding construction and is one of the two frozen obligations that gave GAP-1 its owner. CH-05 builds it; CH-16 proves native delivery against it.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Notification Preference Authority scope"
+    },
+    {
+      "id": "CO-RC-C4-009",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-01",
+        "CH-17"
+      ],
+      "ownershipRationale": "Naming the Subscribe product surface and vocabulary is inherited from C2 R4 and is C4's to do. It is construction of product language within CH-01's frozen authority, not a re-decision of the Follow relationship CH-03 owns.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Name the Subscribe product surface / vocabulary (inherited from C2 R4)"
+    },
+    {
+      "id": "CO-RC-C4-010",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-01",
+        "CH-17"
+      ],
+      "ownershipRationale": "The 26 G5 state-primitive sites assigned to C4 are per-site conversion work owned by the surface chapter; CH-01 owns the primitive and CH-17 owns the ratchet accounting.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "26 G5 state-primitive sites assigned to C4"
+    },
+    {
+      "id": "CO-RC-C4-011",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-02"
+      ],
+      "ownershipRationale": "Settings/attention internals and the fixed Me-depth placement were handed forward from C3 to C4, so CH-05 executes them; CH-02 owns the destination contract they must satisfy (CO-RC-C3-006).",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Settings/attention internals and Me-depth placement inherited from C3"
+    },
+    {
+      "id": "CO-RC-C4-012",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-17"
+      ],
+      "ownershipRationale": "RULE 6 - the founder checkpoint on attention interaction direction gates CO-RC-C4-006/021 and is owned by the chapter that may not proceed past it. CH-17 carries it in the standing checkpoint set.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "FOUNDER_ACTION_ONLY",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Founder checkpoint on attention interaction direction BEFORE the eight surfaces are retired"
+    },
+    {
+      "id": "CO-RC-C4-013",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06",
+        "CH-07",
+        "CH-08",
+        "CH-09"
+      ],
+      "ownershipRationale": "Attention Authority (projection, semantic type, owning domain, destination, state, actions, priority, aggregation) is CH-05's central build; every domain chapter supplies attention rather than owning its presentation.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Attention Authority (projection · semantic type · owning domain · destination · state · available actions · priority · aggregation)"
+    },
+    {
+      "id": "CO-RC-C4-014",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06",
+        "CH-07"
+      ],
+      "ownershipRationale": "The four semantic views are CH-05's build and are the concrete rejection of the single chronological feed.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Semantic views: Conversations · Activity · Invitations · Actions"
+    },
+    {
+      "id": "CO-RC-C4-015",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06",
+        "CH-07",
+        "CH-08"
+      ],
+      "ownershipRationale": "Domain-owned resolvable actions (ATTENTION -> CONTEXT -> ACTION -> RESOLUTION -> CONTINUITY) are CH-05's build; the resolution must happen where the work actually is, which is why the owning domains are consumers and not owners of this row.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Domain-owned resolvable actions (ATTENTION -> CONTEXT -> ACTION -> RESOLUTION -> CONTINUITY)"
+    },
+    {
+      "id": "CO-RC-C4-016",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06"
+      ],
+      "ownershipRationale": "The obligation badge (passive unread NEVER contributes; 99+ truncation) is CH-05's build, implementing the frozen semantic of CO-RC-C4-002.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Obligation badge (ACTION_REQUIRED + INVITED + MISSED + qualifying mentions; passive unread NEVER contributes; truncation 99+)"
+    },
+    {
+      "id": "CO-RC-C4-017",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06",
+        "CH-07"
+      ],
+      "ownershipRationale": "Owning-domain clearing semantics are CH-05's build - the badge must clear where the work was actually done, not where it was displayed.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Owning-domain clearing semantics"
+    },
+    {
+      "id": "CO-RC-C4-018",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-04",
+        "CH-09"
+      ],
+      "ownershipRationale": "Deterministic reconciliation with no dead CTAs is CH-05's build; realtime facts arrive from CH-04 and CH-09 but the reconciliation rule is attention's.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Deterministic reconciliation (no dead CTAs)"
+    },
+    {
+      "id": "CO-RC-C4-019",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-16",
+        "CH-04"
+      ],
+      "ownershipRationale": "Cross-device read state is CH-05's build. CH-04 owns multi-device realtime authority and CH-16 proves the behaviour on real devices; the read-state rule itself is attention's.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Cross-device read state"
+    },
+    {
+      "id": "CO-RC-C4-020",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-16"
+      ],
+      "ownershipRationale": "Noise reduction is CH-05's build and is the counterweight to delivery - it reduces interruption without erasing the underlying obligation.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Noise reduction"
+    },
+    {
+      "id": "CO-RC-C4-021",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06",
+        "CH-07"
+      ],
+      "ownershipRationale": "DR1's eight-surface demolition is chartered to C4 and executed by CH-05, including conversations_screen.dart (1,033 lines, unreachable) per FD-12. It is gated behind the founder checkpoint CO-RC-C4-012.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "DR1 — eight attention surfaces: messages hub · notifications · activity · direct inbox · communications centre · correspondence hub · module attention · conversations_screen.dart (1,033 lines, unreachable) RETIRED here per FD-12"
+    },
+    {
+      "id": "CO-RC-C4-022",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-06"
+      ],
+      "ownershipRationale": "RULE 4 - read/unread data where valid is preserved by the chapter demolishing eight attention surfaces on top of it.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "Read/unread data where valid"
+    },
+    {
+      "id": "CO-RC-C4-023",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-08",
+        "CH-06"
+      ],
+      "ownershipRationale": "Invitation state preserve sits with attention because the eight-surface retirement is what would break it; the Invitation canon itself is consumed by CH-06/CH-07 and is not redefined here.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "invitation state"
+    },
+    {
+      "id": "CO-RC-C4-024",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-16"
+      ],
+      "ownershipRationale": "Notification delivery capability preserve is owned here because the Preference Authority is what could disable it; CH-16 owns the native mechanics being preserved.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "notification delivery capability"
+    },
+    {
+      "id": "CO-RC-C4-025",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-16"
+      ],
+      "ownershipRationale": "Notification preferences preserve is owned by the chapter rebuilding the preference authority over them.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "notification preferences"
+    },
+    {
+      "id": "CO-RC-C4-026",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [],
+      "ownershipRationale": "updates/module_attention + notifications_controller are preserved as the AUTHORITY SEED for the hub; destroying them would destroy the starting point of CH-05's own build.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "updates/module_attention + notifications_controller as the authority seed"
+    },
+    {
+      "id": "CO-RC-C4-027",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-16"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 3's CLIENT half continues in CH-05; the native/platform delivery half is CH-16's under RC-C9. Two halves, two owners, explicitly related.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 3 (Notification Delivery Authority — client half)"
+    },
+    {
+      "id": "CO-RC-C4-028",
+      "canonicalChapter": "CH-05",
+      "crossReferencedChapters": [
+        "CH-01"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 6's attention/timeline half continues in CH-05; the temporal-authority half is CO-RC-C0-023 in CH-01.",
+      "charteredBy": "RC-C4",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 6 (Timeline)"
+    },
+    {
+      "id": "CO-RC-C5-001",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-11",
+        "CH-12",
+        "CH-17"
+      ],
+      "ownershipRationale": "COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION is the founding freeze of the composition system CH-13 owns; the boundary it draws is what lets CH-14 own publication and CH-12 own delivery without duplication. The recorded FD-2 numbering hazard is carried forward as a citation risk, not corrected away.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Canonical Composition System + Context-Governed Experience — COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION. Note the recorded numbering hazard: the founder instruction that froze this called it 'FD-2', but register FD-2 is"
+    },
+    {
+      "id": "CO-RC-C5-002",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-12",
+        "CH-14"
+      ],
+      "ownershipRationale": "'Uploading is never sending' is a composition/draft-state freeze owned by CH-13. CH-12 must not treat an uncommitted upload as a committed reference, and CH-14 must not treat it as published.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Upload on selection. UPLOADING AN ATTACHMENT NEVER MEANS THE MESSAGE / POST / PUBLICATION HAS BEEN SENT OR PUBLISHED. An uploaded-but-uncommitted attachment belongs to the composition/draft state."
+    },
+    {
+      "id": "CO-RC-C5-003",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-13",
+        "CH-07"
+      ],
+      "ownershipRationale": "Official designation may only be expressed BEFORE publication as part of the publication COMMITMENT - that places it on the publish flow, which CH-14 owns, not on the composer. Options B and C are rejected; withdrawal remains legitimate and object-local. Charter remains RC-C5; implementation ownership is CH-14 under the founder's charter-versus-implementation ruling.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "COMPLETED_OR_SUPERSEDED",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Official designation may only be expressed BEFORE publication, as part of the publication commitment/publish flow. No post-publication elevation (Options B and C rejected). Withdrawal remains legitimate and is different."
+    },
+    {
+      "id": "CO-RC-C5-004",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-16",
+        "CH-11"
+      ],
+      "ownershipRationale": "Content Intake & Resolution Authority is a founder-surfaced obligation that the original discovery audit missed, and CH-13 is the one governed composition lifecycle every intake must enter. Recorded as OUTSTANDING rather than a completed freeze because its own measurement states 0 drag-and-drop implementations - the authority named here does not exist.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "FROZEN_OUTCOME",
+      "charteredScope": null,
+      "obligationSummary": "Content Intake & Resolution Authority — founder-surfaced cross-product obligation, NOT identified by the original discovery audit. Measured: 25 files touching Clipboard, 25 with paste handling, 0 implementing drag-and-drop."
+    },
+    {
+      "id": "CO-RC-C5-005",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-14",
+        "CH-12",
+        "CH-16",
+        "CH-11"
+      ],
+      "ownershipRationale": "The whole-chapter remainder is owned by CH-13 as the composition lifecycle. It explicitly spans two chapters: DR3, the eleven pipelines, the 25-file paste handling and drag/drop are CH-13's, while 'official designation in the publish flow' is CH-14's under CO-RC-C5-003/013. The split is flagged in contradictions so the row cannot be read as giving CH-13 the publish commitment.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Entire chapter — DR3 six composers, eleven upload pipelines, 25-file paste handling, drag/drop, official designation in the publish flow"
+    },
+    {
+      "id": "CO-RC-C5-006",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-01",
+        "CH-13",
+        "CH-07"
+      ],
+      "ownershipRationale": "Official-designation and institutional-approval VOCABULARY is named explicitly in CH-14's founderActions and was deliberately not pre-empted by C0. It is a founder act constrained by CH-01's Product Language Authority; no chapter may name it unilaterally.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "FOUNDER_ACTION_ONLY",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Official-designation and institutional-approval vocabulary, deliberately not pre-empted by C0"
+    },
+    {
+      "id": "CO-RC-C5-007",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-12"
+      ],
+      "ownershipRationale": "RULE 6 - the orphan-cleanup-window versus canonical-draft-lifetime checkpoint is named in CH-13's founderActions and gates the draft lifecycle CH-13 owns. It is EXECUTED jointly with CH-12's reaper authority, which may not act ahead of the decision (the D-6 seven-step order stands).",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "FOUNDER_ACTION_ONLY",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Open checkpoint: orphan-cleanup windows vs draft lifetime"
+    },
+    {
+      "id": "CO-RC-C5-008",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-01",
+        "CH-17"
+      ],
+      "ownershipRationale": "The 16 G5 state-primitive sites assigned to C5 are per-site conversion inside the composition surfaces CH-13 owns; CH-01 owns the primitive, CH-17 owns the ratchet accounting.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "16 G5 state-primitive sites assigned to C5"
+    },
+    {
+      "id": "CO-RC-C5-009",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-16"
+      ],
+      "ownershipRationale": "Drag/drop is DUAL-CHARTERED by RC-C5 and RC-C9 and is treated as TWO obligations: this row is the INTAKE layer and belongs to CH-13; the platform surface is CO-RC-C9-011 in CH-16. No merge, no shared owner. Founder ratification of the split is named in CH-13's founderActions and the disagreement is preserved in contradictions.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "REMAINING_OBLIGATION",
+      "charteredScope": null,
+      "obligationSummary": "Drag/drop (0 implementations) is jointly owned C5 + C9"
+    },
+    {
+      "id": "CO-RC-C5-010",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-16",
+        "CH-03"
+      ],
+      "ownershipRationale": "Composition Authority (content state, drafts, autosave, mentions, links, formatting, validation, readiness, keyboard, accessibility) is CH-13's central build and is entirely outstanding across the six composers.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Composition Authority: content state · drafts · autosave · mentions · links · formatting · validation · readiness · keyboard · accessibility. COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION"
+    },
+    {
+      "id": "CO-RC-C5-011",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-12",
+        "CH-11"
+      ],
+      "ownershipRationale": "The Attachment Lifecycle SELECT/PASTE/DROP -> ... -> SEND/PUBLISH is CH-13's build. CH-11 decides what the file IS and CH-12 owns custody and release; CH-13 owns the lifecycle state the person actually experiences.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Attachment Lifecycle: SELECT/PASTE/DROP -> VALIDATE -> PREVIEW -> UPLOAD -> PROGRESS -> READY -> SEND/PUBLISH; upload on selection; uncommitted attachments belong to the DRAFT; explicit discard -> immediate release; abandonment ->"
+    },
+    {
+      "id": "CO-RC-C5-012",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-11",
+        "CH-12",
+        "CH-16"
+      ],
+      "ownershipRationale": "Content Intake & Resolution (rich paste that preserves richness without inventing it, image/file paste, drag-and-drop, mixed content, governed link previews) is CH-13's build. Link previews CONSUME backend link intelligence and the SSRF-safe fetcher unchanged; preview-image custody is CH-12's.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Content Intake & Resolution: rich paste (preserve richness, do not invent richness) · image/file paste · drag-and-drop (currently 0 implementations) · mixed content · governed link previews (consume backend link intelligence; do n"
+    },
+    {
+      "id": "CO-RC-C5-013",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-13",
+        "CH-07"
+      ],
+      "ownershipRationale": "FD-8 official designation in the publish flow only is publication-commitment construction owned by CH-14: consequence legible BEFORE commitment, no post-publication elevation, withdrawal object-local, content change invalidates approval. Charter remains RC-C5.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "build",
+      "obligationSummary": "Official designation in the publish flow only (FD-8): no post-publication elevation; consequence legible BEFORE commitment; withdrawal object-local; content change invalidates approval"
+    },
+    {
+      "id": "CO-RC-C5-014",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-14"
+      ],
+      "ownershipRationale": "DR3's six composers collapse into the one governed composition lifecycle CH-13 owns; the measured asymmetry (hashtags in 1 of 6, upload progress in 1 of 6) is exactly the duplication this chapter exists to end.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "DR3 — six composers (hashtags in 1 of 6; upload progress in 1 of 6)"
+    },
+    {
+      "id": "CO-RC-C5-015",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-12",
+        "CH-11"
+      ],
+      "ownershipRationale": "Eleven upload pipelines collapse into one attachment lifecycle owned by CH-13; convergence must not bypass CH-11's single ingestion door or CH-12's custody.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "eleven upload pipelines"
+    },
+    {
+      "id": "CO-RC-C5-016",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-16"
+      ],
+      "ownershipRationale": "Per-composer paste/clipboard handling across 25 files is demolished by the intake authority that replaces it; the platform clipboard surface is CH-16's separate obligation.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "per-composer paste/clipboard handling (25 files)"
+    },
+    {
+      "id": "CO-RC-C5-017",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-02"
+      ],
+      "ownershipRationale": "'Voice implied by route' is demolished by CH-13 - recording intent must be a composition capability, not a destination. CH-02 owns the route classification that must stop carrying that meaning.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "demolishOrRebuild",
+      "obligationSummary": "voice implied by route"
+    },
+    {
+      "id": "CO-RC-C5-018",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-11",
+        "CH-12"
+      ],
+      "ownershipRationale": "RULE 4 - backend contracts are preserved by the chapter collapsing six composers and eleven pipelines on top of them; the obligation is regression proof.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "Backend contracts"
+    },
+    {
+      "id": "CO-RC-C5-019",
+      "canonicalChapter": "CH-11",
+      "crossReferencedChapters": [
+        "CH-13"
+      ],
+      "ownershipRationale": "Supported content BEHAVIOUR is the contract CH-11 must not break while making content truth honest - it is the promise that constrains the 28-type MIME policy and the capability registry. Assigned here per the coverage design rather than to CH-13, because it is CH-11's decisions about what may enter that would break it.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "supported content behaviour"
+    },
+    {
+      "id": "CO-RC-C5-020",
+      "canonicalChapter": "CH-11",
+      "crossReferencedChapters": [
+        "CH-12",
+        "CH-13"
+      ],
+      "ownershipRationale": "Attachment/media capabilities preserve is owned by CH-11 for the same reason: the single governed ingestion door is where a capability would be silently withdrawn. CH-12 must not let a delivery or retention decision withdraw it either.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "attachment/media capabilities"
+    },
+    {
+      "id": "CO-RC-C5-021",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-02",
+        "CH-12"
+      ],
+      "ownershipRationale": "DRAFTS AND DRAFT DATA preserve is CH-13's - it is what the composer rebuild would destroy. CH-02 consumes drafts as the durable-identity half of in-progress work (WG006 per-conversation draft persistence), and CH-12 may not reap draft-owned objects ahead of CO-RC-C5-007.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "DRAFTS AND DRAFT DATA"
+    },
+    {
+      "id": "CO-RC-C5-022",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-11"
+      ],
+      "ownershipRationale": "Proven validation preserve sits with the composition rebuild; validation that already works must survive the collapse into one lifecycle.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "proven validation"
+    },
+    {
+      "id": "CO-RC-C5-023",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-17",
+        "CH-16"
+      ],
+      "ownershipRationale": "Accessibility behaviour preserve is CH-13's; CH-17 enforces WG015 accessibility as a definition-of-done in every chapter rather than deferring it, so this preserve is a floor and not a ceiling.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "accessibility behaviour"
+    },
+    {
+      "id": "CO-RC-C5-024",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-14"
+      ],
+      "ownershipRationale": "Legitimate context differences preserve is the guard against over-collapsing six composers into one that erases real contextual meaning; owned by the chapter doing the collapsing.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "legitimate context differences"
+    },
+    {
+      "id": "CO-RC-C5-025",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-12",
+        "CH-11"
+      ],
+      "ownershipRationale": "Working media rendering preserve is owned by CH-13, which owns the shared client presentation family that replaces it; a rebuild that regresses working rendering fails this row regardless of how much richer it is elsewhere.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "VALIDATION_OR_GATE_ONLY",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "preserve",
+      "obligationSummary": "working media rendering"
+    },
+    {
+      "id": "CO-RC-C5-026",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-12",
+        "CH-11"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 5 (Compose Link Intelligence/OG) continues inside CH-13's governed link previews. The SSRF-safe fetcher is consumed unchanged; preview-image custody is CH-12's.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 5 (Compose Link Intelligence/OG)"
+    },
+    {
+      "id": "CO-RC-C5-027",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-16"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 10 (Selection/Clipboard/Rich Paste) continues in CH-13's intake layer; the platform clipboard/keyboard half is CH-16's.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 10 (Selection/Clipboard/Rich Paste)"
+    },
+    {
+      "id": "CO-RC-C5-028",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-12",
+        "CH-11"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 13 (External Link/OG) continues in CH-13's governed link previews; durability and privacy of the preview image depend on CH-12's mirrored-byte custody.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 13 (External Link/OG)"
+    },
+    {
+      "id": "CO-RC-C5-029",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-03",
+        "CH-02",
+        "CH-14"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 14 (Internal Link Hydration) continues in CH-13. Hydration resolves canonical identity from CH-03 and canonical destinations from CH-02; it never re-derives either.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 14 (Internal Link Hydration)"
+    },
+    {
+      "id": "CO-RC-C5-030",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-14"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 15 (Rich-Text Composition) continues in CH-13's Composition Authority, and is where the world-class obligation that emoji, mentions and rich text survive the round trip is discharged.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 15 (Rich-Text Composition)"
+    },
+    {
+      "id": "CO-RC-C5-031",
+      "canonicalChapter": "CH-13",
+      "crossReferencedChapters": [
+        "CH-14"
+      ],
+      "ownershipRationale": "RULE 5 - historical Item 16 (Content-Length Expansion) continues in CH-13's composition validation; CH-14 owns long-form publication semantics, which consumes but does not define the composition limit.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "historicalItems",
+      "obligationSummary": "Item 16 (Content-Length Expansion)"
+    },
+    {
+      "id": "CO-RC-C5-032",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-13",
+        "CH-07"
+      ],
+      "ownershipRationale": "E_OFFICIAL designation REPRESENTATION is extended C5 scope that lands on the published object, which CH-14 owns; representing a designation that CH-14 commits is not a composition concern.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "extendedScope",
+      "obligationSummary": "E_OFFICIAL designation representation"
+    },
+    {
+      "id": "CO-RC-C5-033",
+      "canonicalChapter": "CH-14",
+      "crossReferencedChapters": [
+        "CH-07",
+        "CH-01"
+      ],
+      "ownershipRationale": "Institutional approval WORKFLOW LANGUAGE is extended C5 scope owned by CH-14 alongside FD-8. It is the constructed expression of the vocabulary the founder must first name in CO-RC-C5-006, and it sits inside CH-01's frozen Product Language Authority.",
+      "charteredBy": "RC-C5",
+      "zeroFindingCoverage": true,
+      "obligationClass": "OUTSTANDING_CONSTRUCTION",
+      "obligationType": "CHARTERED_SCOPE",
+      "charteredScope": "extendedScope",
+      "obligationSummary": "institutional approval workflow language"
+    }
+  ],
+  "byChapter": {
+    "CH-01": 42,
+    "CH-02": 17,
+    "CH-03": 31,
+    "CH-05": 30,
+    "CH-10": 1,
+    "CH-11": 2,
+    "CH-13": 26,
+    "CH-14": 10,
+    "CH-17": 5
+  },
+  "byChapterIds": {
+    "CH-01": [
+      "CO-RC-C0-001",
+      "CO-RC-C0-002",
+      "CO-RC-C0-003",
+      "CO-RC-C0-004",
+      "CO-RC-C0-005",
+      "CO-RC-C0-006",
+      "CO-RC-C0-007",
+      "CO-RC-C0-008",
+      "CO-RC-C0-009",
+      "CO-RC-C0-010",
+      "CO-RC-C0-011",
+      "CO-RC-C0-012",
+      "CO-RC-C0-013",
+      "CO-RC-C0-014",
+      "CO-RC-C0-015",
+      "CO-RC-C0-016",
+      "CO-RC-C0-017",
+      "CO-RC-C0-018",
+      "CO-RC-C0-019",
+      "CO-RC-C0-020",
+      "CO-RC-C0-021",
+      "CO-RC-C0-022",
+      "CO-RC-C0-023",
+      "CO-RC-C1-001",
+      "CO-RC-C1-002",
+      "CO-RC-C1-003",
+      "CO-RC-C1-004",
+      "CO-RC-C1-005",
+      "CO-RC-C1-006",
+      "CO-RC-C1-007",
+      "CO-RC-C1-008",
+      "CO-RC-C1-010",
+      "CO-RC-C1-011",
+      "CO-RC-C1-012",
+      "CO-RC-C1-013",
+      "CO-RC-C1-014",
+      "CO-RC-C1-015",
+      "CO-RC-C1-016",
+      "CO-RC-C1-017",
+      "CO-RC-C1-018",
+      "CO-RC-C1-019",
+      "CO-RC-C1-020"
+    ],
+    "CH-02": [
+      "CO-RC-C3-001",
+      "CO-RC-C3-006",
+      "CO-RC-C3-007",
+      "CO-RC-C3-009",
+      "CO-RC-C3-010",
+      "CO-RC-C3-011",
+      "CO-RC-C3-012",
+      "CO-RC-C3-015",
+      "CO-RC-C3-016",
+      "CO-RC-C3-017",
+      "CO-RC-C3-018",
+      "CO-RC-C3-019",
+      "CO-RC-C3-020",
+      "CO-RC-C3-021",
+      "CO-RC-C3-022",
+      "CO-RC-C3-023",
+      "CO-RC-C3-024"
+    ],
+    "CH-03": [
+      "CO-RC-C2-001",
+      "CO-RC-C2-002",
+      "CO-RC-C2-003",
+      "CO-RC-C2-009",
+      "CO-RC-C2-010",
+      "CO-RC-C2-011",
+      "CO-RC-C2-012",
+      "CO-RC-C2-013",
+      "CO-RC-C2-014",
+      "CO-RC-C2-015",
+      "CO-RC-C2-016",
+      "CO-RC-C2-017",
+      "CO-RC-C2-018",
+      "CO-RC-C2-019",
+      "CO-RC-C2-020",
+      "CO-RC-C2-021",
+      "CO-RC-C2-022",
+      "CO-RC-C2-023",
+      "CO-RC-C2-024",
+      "CO-RC-C2-025",
+      "CO-RC-C2-026",
+      "CO-RC-C2-027",
+      "CO-RC-C2-028",
+      "CO-RC-C2-029",
+      "CO-RC-C2-030",
+      "CO-RC-C2-031",
+      "CO-RC-C2-032",
+      "CO-RC-C2-033",
+      "CO-RC-C2-034",
+      "CO-RC-C2-035",
+      "CO-RC-C2-036"
+    ],
+    "CH-05": [
+      "CO-RC-C2-007",
+      "CO-RC-C2-008",
+      "CO-RC-C4-001",
+      "CO-RC-C4-002",
+      "CO-RC-C4-003",
+      "CO-RC-C4-004",
+      "CO-RC-C4-005",
+      "CO-RC-C4-006",
+      "CO-RC-C4-007",
+      "CO-RC-C4-008",
+      "CO-RC-C4-009",
+      "CO-RC-C4-010",
+      "CO-RC-C4-011",
+      "CO-RC-C4-012",
+      "CO-RC-C4-013",
+      "CO-RC-C4-014",
+      "CO-RC-C4-015",
+      "CO-RC-C4-016",
+      "CO-RC-C4-017",
+      "CO-RC-C4-018",
+      "CO-RC-C4-019",
+      "CO-RC-C4-020",
+      "CO-RC-C4-021",
+      "CO-RC-C4-022",
+      "CO-RC-C4-023",
+      "CO-RC-C4-024",
+      "CO-RC-C4-025",
+      "CO-RC-C4-026",
+      "CO-RC-C4-027",
+      "CO-RC-C4-028"
+    ],
+    "CH-10": [
+      "CO-RC-C3-008"
+    ],
+    "CH-11": [
+      "CO-RC-C5-019",
+      "CO-RC-C5-020"
+    ],
+    "CH-13": [
+      "CO-RC-C5-001",
+      "CO-RC-C5-002",
+      "CO-RC-C5-004",
+      "CO-RC-C5-005",
+      "CO-RC-C5-007",
+      "CO-RC-C5-008",
+      "CO-RC-C5-009",
+      "CO-RC-C5-010",
+      "CO-RC-C5-011",
+      "CO-RC-C5-012",
+      "CO-RC-C5-014",
+      "CO-RC-C5-015",
+      "CO-RC-C5-016",
+      "CO-RC-C5-017",
+      "CO-RC-C5-018",
+      "CO-RC-C5-021",
+      "CO-RC-C5-022",
+      "CO-RC-C5-023",
+      "CO-RC-C5-024",
+      "CO-RC-C5-025",
+      "CO-RC-C5-026",
+      "CO-RC-C5-027",
+      "CO-RC-C5-028",
+      "CO-RC-C5-029",
+      "CO-RC-C5-030",
+      "CO-RC-C5-031"
+    ],
+    "CH-14": [
+      "CO-RC-C3-002",
+      "CO-RC-C3-003",
+      "CO-RC-C3-004",
+      "CO-RC-C3-013",
+      "CO-RC-C3-014",
+      "CO-RC-C5-003",
+      "CO-RC-C5-006",
+      "CO-RC-C5-013",
+      "CO-RC-C5-032",
+      "CO-RC-C5-033"
+    ],
+    "CH-17": [
+      "CO-RC-C1-009",
+      "CO-RC-C2-004",
+      "CO-RC-C2-005",
+      "CO-RC-C2-006",
+      "CO-RC-C3-005"
+    ]
+  },
+  "byClass": {
+    "COMPLETED_OR_SUPERSEDED": 38,
+    "FOUNDER_ACTION_ONLY": 8,
+    "OUTSTANDING_CONSTRUCTION": 47,
+    "PARTIALLY_COMPLETED": 39,
+    "VALIDATION_OR_GATE_ONLY": 32
+  },
+  "byClassIds": {
+    "COMPLETED_OR_SUPERSEDED": [
+      "CO-RC-C0-001",
+      "CO-RC-C0-002",
+      "CO-RC-C0-003",
+      "CO-RC-C0-004",
+      "CO-RC-C0-005",
+      "CO-RC-C0-006",
+      "CO-RC-C0-007",
+      "CO-RC-C0-009",
+      "CO-RC-C0-010",
+      "CO-RC-C0-022",
+      "CO-RC-C1-001",
+      "CO-RC-C1-002",
+      "CO-RC-C1-003",
+      "CO-RC-C1-004",
+      "CO-RC-C1-005",
+      "CO-RC-C1-006",
+      "CO-RC-C1-007",
+      "CO-RC-C2-001",
+      "CO-RC-C2-002",
+      "CO-RC-C2-003",
+      "CO-RC-C2-004",
+      "CO-RC-C2-005",
+      "CO-RC-C2-008",
+      "CO-RC-C2-018",
+      "CO-RC-C2-019",
+      "CO-RC-C3-001",
+      "CO-RC-C3-002",
+      "CO-RC-C3-004",
+      "CO-RC-C3-005",
+      "CO-RC-C3-015",
+      "CO-RC-C4-001",
+      "CO-RC-C4-002",
+      "CO-RC-C4-003",
+      "CO-RC-C4-004",
+      "CO-RC-C4-005",
+      "CO-RC-C5-001",
+      "CO-RC-C5-002",
+      "CO-RC-C5-003"
+    ],
+    "FOUNDER_ACTION_ONLY": [
+      "CO-RC-C1-009",
+      "CO-RC-C2-006",
+      "CO-RC-C2-034",
+      "CO-RC-C2-035",
+      "CO-RC-C2-036",
+      "CO-RC-C4-012",
+      "CO-RC-C5-006",
+      "CO-RC-C5-007"
+    ],
+    "OUTSTANDING_CONSTRUCTION": [
+      "CO-RC-C0-011",
+      "CO-RC-C0-012",
+      "CO-RC-C0-013",
+      "CO-RC-C2-007",
+      "CO-RC-C2-009",
+      "CO-RC-C2-010",
+      "CO-RC-C2-020",
+      "CO-RC-C3-006",
+      "CO-RC-C3-008",
+      "CO-RC-C3-024",
+      "CO-RC-C4-006",
+      "CO-RC-C4-007",
+      "CO-RC-C4-008",
+      "CO-RC-C4-009",
+      "CO-RC-C4-010",
+      "CO-RC-C4-011",
+      "CO-RC-C4-013",
+      "CO-RC-C4-014",
+      "CO-RC-C4-015",
+      "CO-RC-C4-016",
+      "CO-RC-C4-017",
+      "CO-RC-C4-018",
+      "CO-RC-C4-019",
+      "CO-RC-C4-020",
+      "CO-RC-C4-021",
+      "CO-RC-C4-027",
+      "CO-RC-C4-028",
+      "CO-RC-C5-004",
+      "CO-RC-C5-005",
+      "CO-RC-C5-008",
+      "CO-RC-C5-009",
+      "CO-RC-C5-010",
+      "CO-RC-C5-011",
+      "CO-RC-C5-012",
+      "CO-RC-C5-013",
+      "CO-RC-C5-014",
+      "CO-RC-C5-015",
+      "CO-RC-C5-016",
+      "CO-RC-C5-017",
+      "CO-RC-C5-026",
+      "CO-RC-C5-027",
+      "CO-RC-C5-028",
+      "CO-RC-C5-029",
+      "CO-RC-C5-030",
+      "CO-RC-C5-031",
+      "CO-RC-C5-032",
+      "CO-RC-C5-033"
+    ],
+    "PARTIALLY_COMPLETED": [
+      "CO-RC-C0-008",
+      "CO-RC-C0-014",
+      "CO-RC-C0-015",
+      "CO-RC-C0-016",
+      "CO-RC-C0-017",
+      "CO-RC-C0-018",
+      "CO-RC-C0-023",
+      "CO-RC-C1-008",
+      "CO-RC-C1-010",
+      "CO-RC-C1-011",
+      "CO-RC-C1-012",
+      "CO-RC-C1-013",
+      "CO-RC-C1-017",
+      "CO-RC-C1-018",
+      "CO-RC-C1-019",
+      "CO-RC-C1-020",
+      "CO-RC-C2-011",
+      "CO-RC-C2-012",
+      "CO-RC-C2-013",
+      "CO-RC-C2-014",
+      "CO-RC-C2-015",
+      "CO-RC-C2-016",
+      "CO-RC-C2-017",
+      "CO-RC-C2-030",
+      "CO-RC-C2-031",
+      "CO-RC-C2-032",
+      "CO-RC-C2-033",
+      "CO-RC-C3-003",
+      "CO-RC-C3-007",
+      "CO-RC-C3-009",
+      "CO-RC-C3-010",
+      "CO-RC-C3-011",
+      "CO-RC-C3-012",
+      "CO-RC-C3-013",
+      "CO-RC-C3-014",
+      "CO-RC-C3-016",
+      "CO-RC-C3-017",
+      "CO-RC-C3-018",
+      "CO-RC-C3-019"
+    ],
+    "VALIDATION_OR_GATE_ONLY": [
+      "CO-RC-C0-019",
+      "CO-RC-C0-020",
+      "CO-RC-C0-021",
+      "CO-RC-C1-014",
+      "CO-RC-C1-015",
+      "CO-RC-C1-016",
+      "CO-RC-C2-021",
+      "CO-RC-C2-022",
+      "CO-RC-C2-023",
+      "CO-RC-C2-024",
+      "CO-RC-C2-025",
+      "CO-RC-C2-026",
+      "CO-RC-C2-027",
+      "CO-RC-C2-028",
+      "CO-RC-C2-029",
+      "CO-RC-C3-020",
+      "CO-RC-C3-021",
+      "CO-RC-C3-022",
+      "CO-RC-C3-023",
+      "CO-RC-C4-022",
+      "CO-RC-C4-023",
+      "CO-RC-C4-024",
+      "CO-RC-C4-025",
+      "CO-RC-C4-026",
+      "CO-RC-C5-018",
+      "CO-RC-C5-019",
+      "CO-RC-C5-020",
+      "CO-RC-C5-021",
+      "CO-RC-C5-022",
+      "CO-RC-C5-023",
+      "CO-RC-C5-024",
+      "CO-RC-C5-025"
+    ]
+  },
+  "charterVersusImplementation": {
+    "rule": "charteredBy is the RC charter chapter and is preserved on every row without exception. canonicalChapter is the IMPLEMENTING/PROVING chapter. Where they differ, the difference is stated in the rationale (founder ruling: CHARTER != IMPLEMENTATION OWNER). No duplicate programme is created by a divergence.",
+    "distributionByCharter": {
+      "RC-C0": {
+        "CH-01": 23
+      },
+      "RC-C1": {
+        "CH-01": 19,
+        "CH-17": 1
+      },
+      "RC-C2": {
+        "CH-03": 31,
+        "CH-17": 3,
+        "CH-05": 2
+      },
+      "RC-C3": {
+        "CH-02": 17,
+        "CH-14": 5,
+        "CH-17": 1,
+        "CH-10": 1
+      },
+      "RC-C4": {
+        "CH-05": 28
+      },
+      "RC-C5": {
+        "CH-13": 26,
+        "CH-14": 5,
+        "CH-11": 2
+      }
+    },
+    "divergences": {
+      "RC-C0": "0 - all 23 implement in CH-01.",
+      "RC-C1": "1 - CO-RC-C1-009 (PD-1/PD-2 disposition checkpoint) implements as a founder decision in CH-17.",
+      "RC-C2": "5 - CO-RC-C2-004/005/006 to CH-17 (commercial governance), CO-RC-C2-007/008 to CH-05 (Availability Off control as a personal control). The remaining 31 implement in CH-03.",
+      "RC-C3": "7 - CO-RC-C3-002/003/004/013/014 to CH-14 (navigation and discovery MEANING), CO-RC-C3-008 to CH-10 (LoginScreen as account-entry experience), CO-RC-C3-005 to CH-17 (governance lesson). The remaining 17 implement in CH-02, which owns route CLASSIFICATION where RC-C3 owned route SHAPE.",
+      "RC-C4": "0 - all 28 implement in CH-05.",
+      "RC-C5": "7 - CO-RC-C5-003/006/013/032/033 to CH-14 (publication commitment and official designation), CO-RC-C5-019/020 to CH-11 (the preserve set that CH-11's ingestion decisions would break). The remaining 26 implement in CH-13."
+    }
+  },
+  "classificationMethod": {
+    "COMPLETED_OR_SUPERSEDED": "Used for a row whose OWN content is a founder decision, ruling, adjudication or executed demolition that is finished, or a record now superseded. It is never used to imply that work chartered elsewhere in the same RC chapter is finished, and never used because a related finding is closed.",
+    "PARTIALLY_COMPLETED": "Used where the row's own record states partial state - most often C0's and C1's four-dimension completeness record (ARCHITECTURE complete / RUNTIME ADOPTION partial / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial), or where a built authority still has measured unconverted consumers.",
+    "OUTSTANDING_CONSTRUCTION": "Used where the row names a system, demolition, conversion or capability that does not exist or is not executed. Includes rows whose own measurement states zero implementations.",
+    "FOUNDER_ACTION_ONLY": "Used for founderCheckpoints scope rows, disposition decisions, deferred commercial boundaries and vocabulary the founder deliberately reserved. Engineering may not supply these and may not proceed past them.",
+    "VALIDATION_OR_GATE_ONLY": "Used for every CHARTERED_SCOPE:preserve row. A preserve obligation's remaining work is to not break the item and to prove it was not broken - that is regression/gate work, not construction. All 32 preserve rows in this range carry this class.",
+    "UNKNOWN": "Not used in this range. No row in RC-C0..RC-C5 required an UNKNOWN state on the evidence available, and no row was moved OUT of UNKNOWN - none arrived in that state. The founder ruling that UNKNOWN stays UNKNOWN applies to RC-C10's 21 obligations in the B-set, not here."
+  },
+  "unassignable": [],
+  "unassignableNote": "Zero. Every one of the 164 obligations found a chapter in the FIXED set whose governing outcome genuinely contains it. No chapter was invented and no obligation was force-fitted; the two rows that came closest to force-fitting (CO-RC-C3-006 and CO-RC-C5-005) are recorded in contradictions as internally two-headed rather than being split, dropped or silently resolved.",
+  "contradictions": [
+    "CO-RC-C3-006 IS INTERNALLY TWO-HEADED. One obligation records two inherited contracts with two different consumers: settings/attention internals and Me-depth placement (received by CH-05) and the membership/invite/join plus correspondence-sender explicit-context contract (received by CH-07). Canonical ownership is CH-02 as the RC-C3 successor authority that must PROVE both handoffs landed; both consumers are cross-referenced. This is a recorded imperfection of the source row's granularity, not an adjudication that CH-02 performs the consuming work.",
+    "CO-RC-C5-005 SPANS TWO CHAPTERS BY ITS OWN TEXT. It enumerates DR3, eleven upload pipelines, 25-file paste handling and drag/drop (all CH-13) alongside 'official designation in the publish flow' (CH-14, per CO-RC-C5-003 and CO-RC-C5-013). Canonical ownership is CH-13 with CH-14 cross-referenced. The row must not be read as transferring the publish commitment to CH-13.",
+    "DRAG/DROP DUAL CHARTER PRESERVED. RC-C5 and RC-C9 both charter drag/drop. CO-RC-C5-009 is treated as the INTAKE obligation owned by CH-13, distinct from CO-RC-C9-011's platform obligation in CH-16 (B-set). Agent B's D-2 disagreement with the two-obligation reading stands and is not adjudicated here; CH-13's founderActions carry the ratification.",
+    "RC-C5 HARD-GATE SCOPE IS NOT_RECORDED. Whether the founder-frozen gate on C4 live closure also gates the section 12 content stages is unrecorded and founder-only. This artifact assigns RC-C5 obligations to CH-13/CH-14/CH-11 on responsibility boundaries and does NOT assume either answer about when those chapters may run. CO-RC-C5-019 and CO-RC-C5-020 landing in CH-11 makes the unresolved gate scope directly load-bearing for CH-11's start condition.",
+    "CO-RC-C2-007 CARRIES AN UNRATIFIED PLACEMENT. The Availability Off control is recorded as IMPLEMENTATION OWNER UNASSIGNED / FOUNDER-OWNED ROADMAP GAP 1. CH-05 is the proposed owner per the fixed chapter architecture and CH-05's own founderActions require founder ratification of that placement. It is assigned, not settled.",
+    "CO-RC-C2-020 AND CO-RC-C2-009 SIT INSIDE A FOUNDER-CLOSED CHAPTER. RC-C2 is FINAL CLOSED by the founder, yet the PresenceScreen disposition is recorded as an OPEN C2-owned implementation checkpoint. Both rows are carried OUTSTANDING_CONSTRUCTION in CH-03 rather than being closed by the chapter's closure. Closure of a charter chapter is not closure of an obligation it recorded as open.",
+    "CO-RC-C3-015 CHARTER-VERSUS-MEASUREMENT DELTA. DR4 chartered 40 mirrored routes; the C3 outcome records 2 genuinely mirrored routes retired and 34 canonical object-local depth routes. The delta is a measurement resolution and is recorded rather than reconciled away, because the chartered number survives in other documents.",
+    "CO-RC-C3-014 CLASSIFICATION IS DELIBERATELY CONSERVATIVE. 'Room for a universal Find/Go-To' is literally satisfied by the frozen IA not foreclosing it, which would argue COMPLETED; the capability itself does not exist, which would argue OUTSTANDING. PARTIALLY_COMPLETED is recorded so the unbuilt capability stays visible without the row being read as authorising an unchartered build. The alternative readings are preserved.",
+    "FROZEN_OUTCOME ROWS CLASSED COMPLETED_OR_SUPERSEDED MUST NOT BE READ AS SHIPPED PRODUCT. 36 rows in this range are frozen founder decisions. Classing the DECISION as complete says nothing about the SYSTEM it governs - for example CO-RC-C4-001/002/003 are complete as decisions while the entire attention hub they describe is OUTSTANDING_CONSTRUCTION under CO-RC-C4-013..021. This is the single largest misreading risk in this artifact.",
+    "CO-RC-C5-004 IS TYPED FROZEN_OUTCOME BUT CLASSED OUTSTANDING_CONSTRUCTION. Its own measurement states 0 drag-and-drop implementations and it is a founder-surfaced obligation the discovery audit missed. Classing it as a completed freeze would have hidden an entirely unbuilt authority behind a type label. The type/class divergence is deliberate and recorded.",
+    "ALL 32 PRESERVE ROWS CLASSED VALIDATION_OR_GATE_ONLY. This is a methodological choice, not evidence that each preserved item is currently intact. Several preserves sit under heavy rebuild (CO-RC-C5-021 drafts under a six-composer collapse; CO-RC-C5-025 working media rendering under a presentation rebuild; CO-RC-C3-022 all deep links under a route demolition) and are the load-bearing regression gates of their chapters.",
+    "TWO UNRECONCILED CERTIFICATION VOCABULARIES REACH THIS ARTIFACT. Because the RC layer table and the section 12/17 validation classes are not reconciled (CH-17 owns the reconciliation), any statement here that an RC chapter is 'closed' is not interchangeable with a certification claim. CO-RC-C0-014 and CO-RC-C1-011 are the explicit four-dimension records that make this visible.",
+    "PB-01 IS LOAD-BEARING ON CO-RC-C0-008 AND CO-RC-C0-011. The 14 protected Meetings spinners are inside CH-01's measured debt row while the Meetings-preserved rule forbids modifying certified Meetings for foundation debt reduction. The debt row therefore cannot reach zero without either a controlled C6 review under CH-04 or an explicit founder exemption. Recorded, not resolved.",
+    "296 OF 299 OBLIGATIONS HAVE ZERO FINDING COVERAGE, AND ALL 164 IN THIS RANGE DO. No row in this artifact is supported by, sized by, or closed by a finding. A chapter owning only chartered work here is normal and is not evidence of an empty chapter."
+  ],
+  "notes": {
+    "economy": "Consumed index-co-a.json and chapter-architecture.json only. The ~703 MB historical corpus was NOT rescanned and no raw source escalation was required or performed.",
+    "founderRulingsRespected": [
+      "RC-C10 ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED - out of range for this artifact and not touched; no RC-C10 obligation is classed here.",
+      "F139, F043, F051, F122 - finding-axis rulings; no obligation in this artifact is closed, weakened or justified by them.",
+      "F137 ZERO_COVERAGE_SECURITY_GAP - finding-axis; no obligation here is defaulted to any chapter by word similarity, and CH-11/CH-12/CH-15 receive only obligations whose responsibility boundary was proven.",
+      "CHARTER != IMPLEMENTATION OWNER - 20 of 164 rows implement outside their charter chapter; every one states the relationship explicitly and none creates a duplicate programme.",
+      "CONSOLIDATION IS GOOD, LOSSY CONSOLIDATION IS FORBIDDEN - 164 rows in, 164 rows out, each id exactly once, charteredBy never erased."
+    ],
+    "methodOwnershipTest": "RULE 2 governs: an obligation is owned by the chapter that must DO it or PROVE it. RULE 3 (frozen outcome to the chapter owning the frozen authority), RULE 4 (preserve to the chapter that would otherwise break it), RULE 5 (historical item to the chapter continuing that item's work) and RULE 6 (founder checkpoint to the chapter that may not proceed past it) were applied as recorded in chapter-architecture.json, and the coverageAssuranceByRcChapter distribution was honoured exactly.",
+    "historicalItemSplits": "Four historical items are split across two owners each and both halves are recorded: Item 4 (CO-RC-C1-020 acting half in CH-01 / CO-RC-C2-033 identity half in CH-03), Item 6 (CO-RC-C0-023 temporal half in CH-01 / CO-RC-C4-028 timeline half in CH-05), Item 3 (CO-RC-C4-027 client half in CH-05 / RC-C9 native half in CH-16, B-set), drag/drop (CO-RC-C5-009 intake in CH-13 / CO-RC-C9-011 platform in CH-16, B-set). No half subsumes the other.",
+    "productStandard": "Where a preserve or a completed decision still leaves an inadequate product, the inadequacy survives as construction rather than being absorbed. CO-RC-C5-025 (working media rendering preserved) is a floor beneath CH-13's world-class presentation obligations, not a substitute for them; CO-RC-C5-023 accessibility preserve is a floor beneath WG015 enforced as definition-of-done.",
+    "whatThisArtifactDoesNotDo": "It does not certify, close, sequence or authorise any chapter; it does not adjudicate any preserved contradiction; it does not touch the 143-finding axis; and it does not resolve the RC-C5 hard-gate scope question that determines when CH-11 and CH-13 may run."
+  }
+}

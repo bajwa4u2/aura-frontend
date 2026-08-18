@@ -100,5 +100,68 @@
     "note": "Agent A was COMPLYING with its then-current instruction to preserve the dual reading. This record is retained as the preserved historical contradiction the founder required, not corrected away."
    }
   ]
+ },
+ "RC_C10": {
+  "ruling": "ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED",
+  "adjudicatedBy": "FOUNDER",
+  "date": "2026-08-18",
+  "effective": "IMMEDIATELY",
+  "statement": "The governed Live construction performed 2026-08-16/17 CONSTITUTES EXECUTION OF RC-C10. Some of that work was historically conducted under separately frozen Live doctrine rather than explicitly labelled RC-C10 execution. That is reconciled as a framing/history issue, NOT evidence that RC-C10 was never entered.",
+  "dimensions": {
+   "chapterState": "ACTIVE",
+   "structuralState": "PARTIAL",
+   "implementationCompletion": "NO",
+   "productionOrLiveCertification": "NO",
+   "founderCertification": "NO"
+  },
+  "structurallyPartialMeans": "ONLY that material governed architecture exists AND material governed architecture remains outstanding. No percentage-complete estimate may be manufactured.",
+  "supersedes": "Stale summaries describing RC-C10 as OPEN / NOT STARTED, and ONLY to the extent later implementation evidence directly proves construction occurred (CURRENT_STATE.md:19, NEXT_WORK.md:101, NEXT_WORK.md:121).",
+  "preserves": [
+   "the earlier OPEN / NOT STARTED records",
+   "their chronology",
+   "the later implementation evidence",
+   "the founder ruling that reconciles them"
+  ],
+  "isNot": [
+   "RC-C10 completion",
+   "founder certification",
+   "live certification",
+   "production certification",
+   "permission to weaken an exit gate",
+   "permission to infer completion of an unverified CO",
+   "permission to treat historical Live work as automatically satisfying every RC-C10 obligation"
+  ],
+  "exitGatesRemainFrozen": {
+   "constructionExit": "Live operates end-to-end as a governed MODE/STATE of an owning Thread or Space, continuity survives the Live event, canonical reconstructed authorities are consumed, and NO temporary substitute authorities remain.",
+   "crossPlatformCompletion": "Required RC-C9 contracts are proven.",
+   "certificationLayers": [
+    "Architecture",
+    "Implementation",
+    "Product Behavior",
+    "Cross-System",
+    "Real-Boundary / media-scale",
+    "Founder Acceptance"
+   ],
+   "note": "Recognising prior work as RC-C10 execution does NOT satisfy these gates by itself."
+  },
+  "obligations": "The 21 canonical RC-C10 Chartered Obligations remain authoritative and retain their independently evidenced states. UNKNOWN must remain UNKNOWN unless Stage 3 evidence legitimately resolves it.",
+  "charterVersusImplementationOwner": "\"Chartered by RC-C10\" may legitimately differ from \"implemented by CH-H\". That is not loss of ownership where the relationship is explicit. Do NOT create duplicate programmes because charter ownership and implementation ownership differ."
+ },
+ "stage3Authorization": {
+  "authorizedBy": "FOUNDER",
+  "date": "2026-08-18",
+  "scope": "STAGE 3 SYNTHESIS ONLY",
+  "doesNotAuthorize": [
+   "Stage 4",
+   "product implementation",
+   "migrations",
+   "production mutation",
+   "infrastructure changes",
+   "deployment",
+   "destructive cleanup",
+   "R2 changes",
+   "protected-boundary modifications"
+  ],
+  "ownershipRuling": "Stage 3 MUST synthesize ownership across BOTH canonical axes: 143/143 findings AND 299/299 chartered obligations, each independently provable. The CO axis may not be reduced to annotations on findings, nor findings to annotations on COs. Cross-references expected; ownership equivalence never assumed."
  }
 }

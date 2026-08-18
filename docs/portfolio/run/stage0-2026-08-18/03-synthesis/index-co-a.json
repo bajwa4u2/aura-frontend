@@ -1,0 +1,1482 @@
+{
+"range": "RC-C0..RC-C5",
+"count": 164,
+"obligations": [
+{
+"id": "CO-RC-C0-001",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Final Product Language FROZEN — 13 nouns; 4 stop/abandon/surface intents; 25 actions; IdentityConcept preserves PERSON != INSTITUTION != MEMBERSHIP != ACTING CONTEXT != PRESENCE; Connect · Works · generic Verified not to be introd",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-002",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Membership actions FROZEN — addMember / invitePerson / manageInvites remain semantically distinct; no action label itself grants authority",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-003",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "PERSON = canonical human identity. MEMBER = contextual membership/relationship state. A human is never canonically typed as 'Member'",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-004",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Correspondence FROZEN to one canonical product meaning (governed formal/deliberate communication); the umbrella module meaning is LEGACY / ARCHITECTURAL NAMING DRIFT; C7 owns the rename/convergence but not the semantic decision",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-005",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Discovery framing SUPERSEDED — the 2026-07-11 'always trusted discovery / never directory' directive is superseded; historical record preserved struck-through, not deleted",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-006",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Representation authority chain FROZEN — IMPLEMENTATION/PRODUCT AUTHORITY -> FOUNDER-FROZEN DECISIONS -> REPRESENTATION. Stale Representation wording does not override later founder-frozen product truth",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-007",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "G5 ownership APPROVED — 181/181 assigned, zero unassigned: C1 42 · C2 21 · C3 44 · C4 26 · C5 16 · C7 26 · C8 3 · C9 3 · C6 0. A 'J' assignment is reasoned, not immutable product truth",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-008",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Meetings PRESERVED — holds zero G5 sites; its protected debt is G3 (16) and G4 (14), belonging to controlled C6 review; certified Meetings is not modified for foundation debt reduction",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-009",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Enforcement pattern — the FD-13 precedent: 11 zero-tolerance rules + 5 ratchets + 2 baseline-honesty gates; hard failure; no warning-only structural governance. This is the working precedent every later chapter follows",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-010",
+"rc": "RC-C0",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Date correction ACCEPTED — the 2026-08-16 propagation was an authoring error corrected across repositories; Estonia visa-note dates recorded UNRESOLVED FACTUAL DATE, outside C0",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-011",
+"rc": "RC-C0",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Measured, enforced debt carried into later chapters: 24 local elapsed-time sites · 47 toLocal() · 26 full-surface spinners (14 in Meetings, protected) · 181 direct state-primitive constructions · 17 screen-declared time formatters",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-012",
+"rc": "RC-C0",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "G5 remainder at C2 closeout measured 168 sites / 67 files, chapter-owned per the ownership matrix (C3 44 · C4 26 · C5 16 · C7 26 · C8 3 · C9 3 · PD-1 34 · PD-2 3 · C2 view-profiles 8)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-013",
+"rc": "RC-C0",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Deprecated relative_time.dart shim: 11 caller files remain; burn-down owners C4 and C6; retirement = last caller converged, shim deleted",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-014",
+"rc": "RC-C0",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Chapter-level completeness recorded as ARCHITECTURE complete / RUNTIME ADOPTION partial / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-015",
+"rc": "RC-C0",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Obligations explicitly handed onward and NOT C0 backlog: C2 verification labels · C5 official-designation vocabulary · C7 legacy Correspondence rename/convergence · C10 Live plural/contextual language · All: measured G2/G3/G4/G5/G",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-016",
+"rc": "RC-C0",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Product Language Authority (canonical nouns, semantic CTA families incl. RETRY and the four distinct CANCEL/DISMISS/CLOSE/DISCARD families, state terminology) — explicitly 'Not a database of every sentence'",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-017",
+"rc": "RC-C0",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Product State Presentation vocabulary: loading, empty, error, retry, offline, reconnecting, expired, unavailable, revoked, deleted, sending, uploading, failed, unauthorized, success",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-018",
+"rc": "RC-C0",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Temporal Presentation: semantic event type, canonical timestamp selection, relative vs absolute, locale/timezone incl. DST and cross-timezone, humanized formatting, exact-time access, sorting semantics, aging/refresh",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-019",
+"rc": "RC-C0",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "AuraLoadingState / AuraErrorState / AuraEmptyState",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-020",
+"rc": "RC-C0",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "relative_time.dart",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-021",
+"rc": "RC-C0",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "local_timezone.dart",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-022",
+"rc": "RC-C0",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRetire",
+"obligation": "NOTHING — the chapter is additive + migratory",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C0-023",
+"rc": "RC-C0",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 6 (Communication Timeline Authority — temporal half)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-001",
+"rc": "RC-C1",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "ACTING AUTHORITY BECOMES EXPLICIT WHEN A CONSEQUENTIAL ACTION REQUIRES ATTRIBUTION — NOT BECAUSE OF THE ROUTE THE PERSON NAVIGATED THROUGH. No global acting mode, no route-derived sender, institutional acting context always person",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-002",
+"rc": "RC-C1",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "WHETHER A PERSONAL ACTING ALTERNATIVE EXISTS IS A PROPERTY OF THE SURFACE / ACTION CONTEXT, NOT AN INTRINSIC PROPERTY OF THE CONSEQUENTIAL ACT. resolve(act, offerPersonalAlternative: ...) is the governed contract. NO CHOICE WITHOU",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-003",
+"rc": "RC-C1",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "ProductAction.switchIdentity added as a governed C0 Product Language extension discovered through C1 implementation — not C0 remediation; four competing phrasings gate-prohibited.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-004",
+"rc": "RC-C1",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Presence is the person. It never inherits institutional identity from affiliation, navigation or membership.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-005",
+"rc": "RC-C1",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Backend converged — institutions.service.ts delegates to InstitutionAuthorityService; every membership now carries its own effective capabilities.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-006",
+"rc": "RC-C1",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "The six-token client capability injection was proven UNREACHABLE DEAD CODE; no backend correction warranted; no alternate authority path created.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-007",
+"rc": "RC-C1",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "G5 ownership correction — 38 of 42 C1 sites withdrawn on measured evidence to PD-1 Platform Administration (34) and PD-2 Authentication & Account Entry (3); C1 retains 4 on R basis; 181 sites still traceable.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-008",
+"rc": "RC-C1",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Accepted exceptions, none blocking closeout: R1 (25 files / 85 role-derived booleans, ratcheted) · R2 (3 files / 6 role-literal comparisons, classified) · resolveActorContext 3 consumers -> C3/C7 · platform-admin flattening -> PD-",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-009",
+"rc": "RC-C1",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Two product disposition checkpoints opened before C11: PD-1 Platform Administration (11 files / 34 G5 sites), PD-2 Authentication & Account Entry (2 files / 3 sites). Neither has an owning chapter in the approved roadmap; both nee",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-010",
+"rc": "RC-C1",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Debt register rows 2, 3, 4 remain TRANSITIONAL with named owners: actor_context.dart resolveActorContext (retire at C3+C7); member_shell.dart:267 admin count gating (backend-coupled, retire with backend role->capability gating + C",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-011",
+"rc": "RC-C1",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Chapter-level completeness recorded as ARCHITECTURE complete / RUNTIME ADOPTION near-complete (4 residual named-owner sites) / VISIBLE PRODUCT ADOPTION partial / LEGACY RETIREMENT partial (resolveActorContext awaiting C3/C7)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-012",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Acting Context Authority — person = default actor; institutional context entered deliberately and remains attributable",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-013",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Capability Projection — consumes backend effective capability; NEVER computes it",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-014",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Existing auth flows",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-015",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "session handling",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-016",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "backend contracts",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-017",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRetire",
+"obligation": "Shadow governance: role comparisons in 29 files, canX derivations in 20 files",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-018",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "Fail-closed auth projection",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-019",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "institution capability model",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C1-020",
+"rc": "RC-C1",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 4 (Identity Foundation — acting/capability half)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-001",
+"rc": "RC-C2",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Founder adjudication R1-R10 on Follow: R1 BLOCKING OUTRANKS FOLLOW/RELATIONSHIP/MESSAGING ELIGIBILITY (use the canonical blocking authority, do not create a second one) · R2 FOLLOW is a governed relationship between an acting Pers",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-002",
+"rc": "RC-C2",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "D1 FROZEN FEED SEMANTIC — an established Person->Person Follow makes eligible public participation available to the member feed's existing visibility/ranking rules; it does not guarantee delivery, bypass ranking/visibility/moderat",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-003",
+"rc": "RC-C2",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Trust presentation doctrine frozen by implementation: layered never collapsed ('Verified person' does not exist as a product concept; absence renders nothing) · subject-explicit wording · VERIFICATION IS NOT AUTHORITY · revoked/ex",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-004",
+"rc": "RC-C2",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Monetization x Verification Decoupling FROZEN — verification is not purchasable; a commercial tier does not establish verification; TRUSTED rejected as a commercial product concept; verification authority and commercial entitlemen",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-005",
+"rc": "RC-C2",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Commercial Taxonomy Closeout FROZEN — active taxonomy = FREE + PRO; the legacy VERIFIED middle tier is retired, not renamed; TRUSTED permanently rejected; NO final Free/Pro entitlement boundary decided; no new payment enforcement ",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-006",
+"rc": "RC-C2",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Entitlement boundary deliberately NOT frozen; final Free/Pro commercial entitlement boundary NOT YET FROZEN; payment enforcement not to be activated/expanded during release-client reconstruction",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-007",
+"rc": "RC-C2",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Availability Off user-facing control — C2 doctrine frozen, runtime semantics canonical, control required, IMPLEMENTATION OWNER UNASSIGNED pending founder roadmap placement (recorded as FOUNDER-OWNED ROADMAP GAP 1)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-008",
+"rc": "RC-C2",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Debt register row 12 records the Availability Off control as 'LEGITIMATELY FUTURE-OWNED (C4 Settings — adjudicated ownership split)' — which GAP 1 later reclassifies as continuity shorthand",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-009",
+"rc": "RC-C2",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "PresenceScreen disposition (FD-12 §5) is listed as a C2-owned open implementation checkpoint",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-010",
+"rc": "RC-C2",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "People Selection — 6 local person-shaped extraction sites classified with future owners (conversations_screen C4-retired; correspondence_hub/space/invite_member C7; member_home C3; admin_institution_members PD-1)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-011",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Identity Projection (Person/Institution)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-012",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Relationship Projection",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-013",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Presence Projection (permitted human-facing only)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-014",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Verification Projection — LAYERED, NEVER BOOLEAN",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-015",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Action Projection (backend-authorised)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-016",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "People & Participation Selection primitive (backend-resolved eligibility; no local inference)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-017",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Rebuilt profile surfaces: IDENTITY FIRST · CONTEXT SECOND · ACTIONS THIRD · METADATA ON DEMAND",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-018",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "DR5 — three profile implementations (profile/, me/, institutions/profile/; ~4,100 lines of parallel edit screens)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-019",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "Retire the six-meaning overload of 'presence'",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-020",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "Disposition PresenceScreen here (FD-12 §5 — never on reference count)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-021",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Canonical identity data",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-022",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "relationships",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-023",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "public content",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-024",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "institution relationships",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-025",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "verification data",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-026",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "privacy controls",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-027",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "follow state",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-028",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "backend contracts",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-029",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "conceptually-correct deep links",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-030",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "Canonical person identity projection",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-031",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "layered verification",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-032",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "account lifecycle states",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-033",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 4 (Identity Foundation)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-034",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "founderCheckpoints",
+"obligation": "Verification label mapping (class -> human meaning -> user value -> label -> context)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-035",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "founderCheckpoints",
+"obligation": "Presence privacy/visibility policy",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C2-036",
+"rc": "RC-C2",
+"type": "CHARTERED_SCOPE",
+"scope": "founderCheckpoints",
+"obligation": "Profile visual direction",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-001",
+"rc": "RC-C3",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "MIRRORED ROUTE != OBJECT-LOCAL INSTITUTION DEPTH != PATH-MANUFACTURED CONTEXT. 2 mirrored routes existed and were retired to gate-pinned unbuildable aliases; 34 routes are canonical object-local institution depth; path-manufacture",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-002",
+"rc": "RC-C3",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "FOUNDER-OBSERVED NAVIGATION CORRECTION (amends the five-primary freeze). GOVERNING TEST FROZEN: PRIMARY NAVIGATION MUST REPRESENT A FUNDAMENTAL, RECURRING HUMAN INTENTION IN AURA. AUTHENTICATED PRIMARIES — FOUR: HOME · MESSAGES · ",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-003",
+"rc": "RC-C3",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "DISCOVER = extensible discovery framework; immediate domains PEOPLE · INSTITUTIONS · SPACES · ARTICLES. Verification is never relevance ranking — one activity-ordered list truthfully labeled 'recent activity'. Articles canonically",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-004",
+"rc": "RC-C3",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Header semantic layers frozen: primaries (rail/bottom bar only) · identity/account (avatar) · attention (bell, until C4) · institution acquisition (lifecycle-gated) · Live (justified global) · invite icon RETIRED.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-005",
+"rc": "RC-C3",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "ARCHITECTURE CAN PROPOSE COHERENCE. HUMAN USE VALIDATES MEANING. WHEN THEY CONFLICT, INVESTIGATE THE CONFLICT RATHER THAN PROTECTING THE ARCHITECTURE. A locally certified architecture can be product-wrong; founder observation is e",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-006",
+"rc": "RC-C3",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Contracts inherited by later chapters — C4: settings/attention internals, Me-depth placement fixed. C7: membership/invite/join lifecycles + correspondence sender experience MUST consume institutionContextId + correspondAsInstituti",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-007",
+"rc": "RC-C3",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Remaining C3-owned debt: NONE unexplained — every remainder carries owner + retirement condition (literal baseline per-surface owners; C7 trio; alias retirement gated on link-traffic evidence at a future observed window; G5 C3-own",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-008",
+"rc": "RC-C3",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "LoginScreen disposition is listed as a C3-owned open implementation checkpoint",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-009",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Navigation/Surface Authority",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-010",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "canonical navigation actions",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-011",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "declared surface/route registry (FD-12 §8 — architecture-aware; naive zero-reference gate FORBIDDEN)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-012",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "object-local contextual depth",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-013",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "responsive IA (conceptual before visual)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-014",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "room for universal Find/Go-To that SUPPLEMENTS IA, never patches it",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-015",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "DR4 — 40 mirrored /institution/:institutionId/... routes, per-route test",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-016",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "module-oriented destinations",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-017",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "redundant destinations",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-018",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "27 corrective redirects",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-019",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "literal route strings scattered across features",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-020",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Four shells where product-correct",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-021",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "session continuity (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-022",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "ALL existing deep links must continue to resolve",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-023",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "redirects as a temporary compatibility layer",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C3-024",
+"rc": "RC-C3",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 11 (Legacy global runtime overlay cleanup)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-001",
+"rc": "RC-C4",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "One Governed Attention Hub + Actionable Attention — attention is a projection, never a new owner; domain-owned resolvable actions. Explicitly NOT original Option B ('one giant chronological notification feed' is rejected); partial",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-002",
+"rc": "RC-C4",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "PRIMARY ATTENTION BADGE = UNRESOLVED ACTIONABLE OBLIGATIONS. Contributing: ACTION_REQUIRED, INVITED, MISSED while unresolved, and mentions conditionally where they represent unresolved attention. Mentions are not blanket-counted.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-003",
+"rc": "RC-C4",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Notification Preference Authority — PRIMARY OWNER: C4. Governing distinction frozen: ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION. Disabling email or push must never erase the underlying governed Attention item.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-004",
+"rc": "RC-C4",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "R4 — FOLLOW != SUBSCRIBE is frozen; C2 records the semantics and C4 OWNS THE VOCABULARY. Subscribe stays physically in InteractionFollow thread/space rows until C4 names its product surface.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-005",
+"rc": "RC-C4",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "NO FIFTH DESTINATION is invented or reserved. Attention may earn primary status only at C4's own founder checkpoint, on product merits — navigation count is not a product requirement. Until C4, attention lives in the header bell.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-006",
+"rc": "RC-C4",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "All of DR1 — eight attention surfaces retired, including conversations_screen.dart",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-007",
+"rc": "RC-C4",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Retire the legacy global attention presentation comprehensively — founder instruction: no isolated cosmetic patch. Mechanism traced to a global floating SnackBar pushed through an app-root GlobalKey<ScaffoldMessengerState> (notifi",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-008",
+"rc": "RC-C4",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Notification Preference Authority scope",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-009",
+"rc": "RC-C4",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Name the Subscribe product surface / vocabulary (inherited from C2 R4)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-010",
+"rc": "RC-C4",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "26 G5 state-primitive sites assigned to C4",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-011",
+"rc": "RC-C4",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Settings/attention internals and Me-depth placement inherited from C3",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-012",
+"rc": "RC-C4",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Founder checkpoint on attention interaction direction BEFORE the eight surfaces are retired",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-013",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Attention Authority (projection · semantic type · owning domain · destination · state · available actions · priority · aggregation)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-014",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Semantic views: Conversations · Activity · Invitations · Actions",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-015",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Domain-owned resolvable actions (ATTENTION -> CONTEXT -> ACTION -> RESOLUTION -> CONTINUITY)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-016",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Obligation badge (ACTION_REQUIRED + INVITED + MISSED + qualifying mentions; passive unread NEVER contributes; truncation 99+)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-017",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Owning-domain clearing semantics",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-018",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Deterministic reconciliation (no dead CTAs)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-019",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Cross-device read state",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-020",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Noise reduction",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-021",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "DR1 — eight attention surfaces: messages hub · notifications · activity · direct inbox · communications centre · correspondence hub · module attention · conversations_screen.dart (1,033 lines, unreachable) RETIRED here per FD-12",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-022",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Read/unread data where valid",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-023",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "invitation state",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-024",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "notification delivery capability",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-025",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "notification preferences",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-026",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "updates/module_attention + notifications_controller as the authority seed",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-027",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 3 (Notification Delivery Authority — client half)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C4-028",
+"rc": "RC-C4",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 6 (Timeline)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-001",
+"rc": "RC-C5",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Canonical Composition System + Context-Governed Experience — COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION. Note the recorded numbering hazard: the founder instruction that froze this called it 'FD-2', but register FD-2 is",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-002",
+"rc": "RC-C5",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Upload on selection. UPLOADING AN ATTACHMENT NEVER MEANS THE MESSAGE / POST / PUBLICATION HAS BEEN SENT OR PUBLISHED. An uploaded-but-uncommitted attachment belongs to the composition/draft state.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-003",
+"rc": "RC-C5",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Official designation may only be expressed BEFORE publication, as part of the publication commitment/publish flow. No post-publication elevation (Options B and C rejected). Withdrawal remains legitimate and is different.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-004",
+"rc": "RC-C5",
+"type": "FROZEN_OUTCOME",
+"scope": null,
+"obligation": "Content Intake & Resolution Authority — founder-surfaced cross-product obligation, NOT identified by the original discovery audit. Measured: 25 files touching Clipboard, 25 with paste handling, 0 implementing drag-and-drop.",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-005",
+"rc": "RC-C5",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Entire chapter — DR3 six composers, eleven upload pipelines, 25-file paste handling, drag/drop, official designation in the publish flow",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-006",
+"rc": "RC-C5",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Official-designation and institutional-approval vocabulary, deliberately not pre-empted by C0",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-007",
+"rc": "RC-C5",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Open checkpoint: orphan-cleanup windows vs draft lifetime",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-008",
+"rc": "RC-C5",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "16 G5 state-primitive sites assigned to C5",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-009",
+"rc": "RC-C5",
+"type": "REMAINING_OBLIGATION",
+"scope": null,
+"obligation": "Drag/drop (0 implementations) is jointly owned C5 + C9",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-010",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Composition Authority: content state · drafts · autosave · mentions · links · formatting · validation · readiness · keyboard · accessibility. COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-011",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Attachment Lifecycle: SELECT/PASTE/DROP -> VALIDATE -> PREVIEW -> UPLOAD -> PROGRESS -> READY -> SEND/PUBLISH; upload on selection; uncommitted attachments belong to the DRAFT; explicit discard -> immediate release; abandonment ->",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-012",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Content Intake & Resolution: rich paste (preserve richness, do not invent richness) · image/file paste · drag-and-drop (currently 0 implementations) · mixed content · governed link previews (consume backend link intelligence; do n",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-013",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "build",
+"obligation": "Official designation in the publish flow only (FD-8): no post-publication elevation; consequence legible BEFORE commitment; withdrawal object-local; content change invalidates approval",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-014",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "DR3 — six composers (hashtags in 1 of 6; upload progress in 1 of 6)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-015",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "eleven upload pipelines",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-016",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "per-composer paste/clipboard handling (25 files)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-017",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "demolishOrRebuild",
+"obligation": "voice implied by route",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-018",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "Backend contracts",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-019",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "supported content behaviour",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-020",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "attachment/media capabilities",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-021",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "DRAFTS AND DRAFT DATA",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-022",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "proven validation",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-023",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "accessibility behaviour",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-024",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "legitimate context differences",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-025",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "preserve",
+"obligation": "working media rendering",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-026",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 5 (Compose Link Intelligence/OG)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-027",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 10 (Selection/Clipboard/Rich Paste)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-028",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 13 (External Link/OG)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-029",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 14 (Internal Link Hydration)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-030",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 15 (Rich-Text Composition)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-031",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "historicalItems",
+"obligation": "Item 16 (Content-Length Expansion)",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-032",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "E_OFFICIAL designation representation",
+"relatedFindings": [],
+"zeroFinding": true
+},
+{
+"id": "CO-RC-C5-033",
+"rc": "RC-C5",
+"type": "CHARTERED_SCOPE",
+"scope": "extendedScope",
+"obligation": "institutional approval workflow language",
+"relatedFindings": [],
+"zeroFinding": true
+}
+]
+}

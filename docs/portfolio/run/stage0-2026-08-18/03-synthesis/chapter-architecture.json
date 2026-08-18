@@ -1,0 +1,1651 @@
+{
+ "type": "ANALYTICAL_PROPOSAL",
+ "artifact": "chapter-architecture",
+ "stage": "STAGE 3 - SYNTHESIS (CHAPTER ARCHITECT)",
+ "agent": "CHAPTER ARCHITECT",
+ "date": "2026-08-18",
+ "status": "NOT RATIFIED TRUTH. Founder-authorised for STAGE 3 SYNTHESIS ONLY. Defines Implementation Chapter BOUNDARIES; assigns no unit ownership, removes no gate, resolves no preserved conflict, and authorises no implementation.",
+ "baselineConsumed": {
+  "findings": "143 issued F001-F143, contiguous (F097 IS issued)",
+  "charteredObligations": "299, CO-RC-C0-001..CO-RC-C11-017, all 12 chapters (C0 23, C1 20, C2 36, C3 24, C4 28, C5 33, C6 28, C7 24, C8 17, C9 28, C10 21, C11 17)",
+  "wg": "17 issued WG001-WG017; WG018 RESERVED/UNISSUED and never counted as issued",
+  "validationObligations": 82,
+  "protectedBoundaries": "PB-01..PB-12, all BINDING",
+  "founderRulingsConsumed": [
+   "RC-C10 ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED",
+   "F139 STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+   "F043/F051/F122 CONFLICTING_CURRENT_STATE preserved",
+   "F137 ZERO_COVERAGE_SECURITY_GAP",
+   "CHARTER != IMPLEMENTATION OWNER",
+   "UNMAPPED_TO_RC surfaces must not be force-assigned"
+  ]
+ },
+ "chapterCount": 17,
+ "chapters": [
+  {
+   "id": "CH-01",
+   "name": "Product Foundations & Conformance",
+   "governingOutcome": "Every surface speaks the frozen product language and consumes the canonical state, temporal and acting-context authorities, and the measured foundation debt actually reaches zero rather than merely never growing.",
+   "whyOneCoherentBoundary": "RC-C0 and RC-C1 built four closed authorities (Product Language, Product State Presentation, Temporal Presentation, Acting Context / Capability Projection). Everything they left behind is ONE kind of work: adoption of a closed authority plus a gate-enforced burn-down against baselines that already exist and already fail the build if they grow. It is the control case for chartered-obligation ownership: zero findings, 42 obligations. The per-site conversion happens inside the surface chapter that owns the file (the G5 ownership matrix already names them), but the baseline, the ratchets and the accounting need ONE owner or the debt stops shrinking forever (Agent D AD-D-15) and items like the 68 SizedBox.shrink() empty states stay lost (AD-D-16, the only ALREADY_LOST obligation in the corpus).",
+   "expectedFindingFamilies": [
+    "NONE - this chapter carries zero findings by construction and exists on chartered-obligation authority alone. That is deliberate: it is the proof that the set can own work no finding ever described."
+   ],
+   "expectedObligationFamilies": [
+    "RC-C0 frozen outcomes: product language (13 nouns / 4 intents / 25 actions), membership action distinctions, PERSON != MEMBER, Correspondence single canonical meaning, superseded discovery framing, Representation authority chain, G5 ownership approval, Meetings-preserved rule, the FD-13 enforcement pattern, date correction",
+    "RC-C0 chartered scope: Product Language Authority, Product State Presentation vocabulary, Temporal Presentation, preserve AuraLoadingState/AuraErrorState/AuraEmptyState, relative_time.dart, local_timezone.dart, historical Item 6 temporal half",
+    "RC-C0 remaining obligations: 24 elapsed-time sites, 47 toLocal(), 26 spinners (14 protected in Meetings), 181 state-primitive constructions, 17 screen time formatters, G5 remainder 168 sites / 67 files, relative_time shim 11 callers, the four-dimension completeness record, the enumerated handoffs to C2/C5/C7/C10",
+    "RC-C1 all obligations except the PD-1/PD-2 disposition checkpoint CO: Acting Context Authority, Capability Projection (consumes never computes), switchIdentity language extension, presence-is-the-person, backend convergence, dead-code ruling, G5 ownership correction, R1/R2 accepted exceptions, transitional debt rows, shadow-governance retirement (role comparisons 29 files, canX 20 files), fail-closed auth projection, institution capability model, historical Item 4 acting half",
+    "Re-entered lost obligation: the 68 SizedBox.shrink() empty states named in C0's own migration list and never executed, reclassified or dropped",
+    "PD-1 Platform Administration: 11 files / 34 G5 sites conversion (the disposition DECISION is owned by CH-17)"
+   ],
+   "relatedRcChapters": [
+    "RC-C0 (closed, LOCALLY CERTIFIED)",
+    "RC-C1 (closed, LOCALLY CERTIFIED)"
+   ],
+   "repositories": [
+    "aura_final",
+    "docs (governance)"
+   ],
+   "dependsOn": [],
+   "blocks": [
+    "Nothing hard-gated. Supplies vocabulary and ratchets consumed by every other chapter's definition of done."
+   ],
+   "destructiveBoundaries": [
+    "NONE of its own. Hazard: 26 spinner sites and the toLocal()/elapsed-time conversions reach into certified Meetings files, and CO-RC-C0-008 forbids modifying certified Meetings for foundation debt reduction."
+   ],
+   "protectedBoundaries": [
+    "PB-01",
+    "PB-10",
+    "PB-12"
+   ],
+   "certificationRequirements": [
+    "Architecture: the four authorities remain single-source; no second vocabulary is introduced",
+    "Implementation: every ratchet demonstrated to FAIL on a real violation before it counts as enforcement (FD-13 precedent)",
+    "Cross-System: backend and frontend suites reported together; no repository silently diverges (PB-12)",
+    "Product Behavior: state/temporal presentation observed on a real surface, not asserted from a lint count",
+    "Governance: burn-down accounting published per chapter closure; a chapter may not close with an unexplained remainder",
+    "Validation topology: CODE_STATIC + LOCAL_AUTOMATED for the ratchets; SINGLE_AUTHORIZED_BROWSER for the visible state/temporal proofs"
+   ],
+   "founderActions": [
+    "PD-1 Platform Administration product disposition (decision owned by CH-17, work lands here)",
+    "Adjudicate the 68 SizedBox.shrink() line: convert, reclassify or explicitly drop"
+   ],
+   "nonGoals": [
+    "Does not reconstruct any product surface",
+    "Does not reopen C0/C1 frozen semantics",
+    "Does not modify certified Meetings for debt reduction",
+    "Does not own the certification register itself (CH-17)"
+   ],
+   "worldClassObligations": [
+    "Consistent, honest loading / empty / error / offline / retry states everywhere - the substrate every competitive interaction quality claim rests on",
+    "Correct local time, DST and cross-timezone rendering on every surface"
+   ],
+   "sequencePosition": "CONTINUOUS - runs alongside every wave. It gates nothing and is gated by nothing; its ratchets execute inside every other chapter's definition of done."
+  },
+  {
+   "id": "CH-02",
+   "name": "Continuity & Destination Authority",
+   "governingOutcome": "A person who refreshes, cold-loads, exits or authenticates arrives back at the destination they legitimately held, with their in-progress work intact - and no surface reconstructs its own destination.",
+   "whyOneCoherentBoundary": "Sixteen findings across six unrelated surfaces (Conversation, personal profile, institution profile, composers, Meetings, Live auth-return) resolve to TWO shared causes: session-state establishment written at 2 of N call sites (F065/RC1) and route classification maintained as a hand-kept fail-OPEN allowlist (F069/RC6). A founder-frozen platform contract (REFRESH IS NOT NAVIGATION) has no implementing authority. The boundary is coherent because its exit condition is a single testable statement about the whole product, and because distributing it would require each surface chapter to build its own destination reconstruction - the exact temporary architecture the chapter test forbids, and the exact per-surface divergence that produced the sixteen findings.",
+   "expectedFindingFamilies": [
+    "Refresh/cold-load destination loss: F059, F061, F062, F063, F064, F113",
+    "Session-state truth keystone: F065 (KNOWN / UNKNOWN / RESTORING; TokenStore.setSession() contract)",
+    "Route classification as a closed fail-CLOSED authority: F069 (the one continuity finding rc-map DOES attribute to RC-C3 - Stage-2 correction CORR-1)",
+    "Router-boundary continuity: F066, F067, F068",
+    "Durable identity of in-progress work: F027, F070",
+    "Authentication return-intent: F103, F104 (register-stated as belonging to the shared continuity authority, not to Live)",
+    "Systemic statement: F117"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C3 route and destination mechanics: Navigation/Surface Authority, canonical navigation actions, declared surface/route registry (FD-12 architecture-aware, naive zero-reference gate FORBIDDEN), object-local contextual depth, retired mirrored routes and their gate-pinned aliases, the 27 corrective redirects as a transitional layer, literal route strings, ALL EXISTING DEEP LINKS MUST CONTINUE TO RESOLVE, preserve session continuity (floating_call_widget, incoming_live_overlay, thread_call_lifecycle_host), remaining C3 debt with named owners and the alias retirement trigger",
+    "RC-C1 preserve: existing auth flows and session handling - here as the surface being made an authority rather than being rewritten",
+    "RC-C5 preserve: DRAFTS AND DRAFT DATA - consumed as the durable-identity half of in-progress work",
+    "RC-C9 build: active realtime continuity, background/foreground, deep links - the platform expression of the same contract (implementation lands in CH-16, the contract is defined here)",
+    "PD-2 Authentication & Account Entry: the STRUCTURAL half only (what establishes and restores a session; what an unclassified route means)",
+    "RC-C10 remaining obligation CO-RC-C10-006 in part: the F103/F104 auth-return clause, which that CO itself assigns to the shared continuity authority"
+   ],
+   "relatedRcChapters": [
+    "RC-C3 (closed - owns route SHAPE; this chapter owns route CLASSIFICATION and destination reconstruction)",
+    "RC-C1 (closed - preserve)",
+    "RC-C5 (drafts)",
+    "RC-C9 (platform lifecycle)",
+    "RC-C10 (auth-return clause)",
+    "RC-C6 (mid-call continuity, PB-01/PB-02 respected)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend (session/token contract surface)"
+   ],
+   "dependsOn": [
+    "CH-01 (loading/restoring/expired state vocabulary already frozen)"
+   ],
+   "blocks": [
+    "CH-10 (F065 gates F103/F104 - the only acquisition path in the register)",
+    "CH-13 (draft/composition continuity, WG006 per-conversation draft persistence: founder ruled 'coordinate with F063/F070, do not create another store')",
+    "CH-09 (Live continuity survives the Live event - RC-C10 construction exit gate)",
+    "CH-04 (mid-call rejoin has a destination to return to)",
+    "CH-14 (article draft resume)"
+   ],
+   "destructiveBoundaries": [
+    "DB-6 ROUTE CLASSIFICATION: authorization bypass and lockout live in the same file - fail-open left /admin, /articles/* and /realtime/* unclassified (24 routes), and an ORDER-dependent fix would have bounced meeting guests into a login wall. Classes must be DISJOINT, not ordered.",
+    "DB-10 SESSION LOSS: writing the session hint anywhere but the TokenStore.setSession() choke point reintroduces RC1. Guest tokens deliberately do NOT set it - 'fixing' that blindly crosses the guest boundary."
+   ],
+   "protectedBoundaries": [
+    "PB-06",
+    "PB-09",
+    "PB-01 (Meetings guest/booker entry - continuity work reaches Meetings routes; F064/F113 are fixed HERE without opening Meetings)",
+    "PB-02 (mid-call continuity touches realtime primitives)",
+    "PB-10"
+   ],
+   "certificationRequirements": [
+    "F065 live refresh proof is the chapter's FIRST gate: until it passes, no downstream continuity finding may be claimed closed. The keystone relation F065 -> {F059, F061, F062, F063, F064, F103, F104} is preserved as an ordering constraint, not as a merge.",
+    "F064 and F113 remain TWO findings with TWO proof burdens: F064 is provable in a single authorized browser; F113 carries a MULTI_PARTY_REALTIME Meetings topology (VD-031 UNKNOWN). A V2 proof must not silently discharge the V4 obligation (Agent E E-SC-12).",
+    "All 23 navigation gates green plus the literal route ratchet (103 files / 294 sites) after ANY classification change",
+    "The strengthened registry->router integrity gate proves every authority-declared address EXECUTABLE",
+    "A live signed-out probe for F069 and a targeted Meetings regression (97/97) for every router change",
+    "Cross-System: the same destination contract proven on web and on a native binary (Real-Boundary lands in CH-16)"
+   ],
+   "founderActions": [
+    "ADMIT this chapter as a new cross-cutting authority after RC-C0 closed - and rule on the admission mechanism generally, since the roadmap froze 2026-08-15 and REFRESH IS NOT NAVIGATION froze 2026-08-17 (Agent D: the axis has no mechanism for admitting a later authority)",
+    "F069 exception policy: do guest-reachable realtime/meeting routes become a named exception class?",
+    "Ratify the PD-2 structural/experience split (structure here, account-entry experience in CH-10)",
+    "Checkpoint 6: exact primary destinations, if any change is proposed"
+   ],
+   "nonGoals": [
+    "Does not redesign navigation IA or the four authenticated primaries (CH-14 owns domain meaning)",
+    "Does not open the Meetings lifecycle (PB-01) - it repairs the shared cause underneath Meetings' two continuity findings",
+    "Does not build the auth wall or sign-up surfaces (CH-10)",
+    "Does not own realtime rejoin mechanics (CH-04)"
+   ],
+   "worldClassObligations": [
+    "Refresh is never a data-loss event: composition, selection, scroll position and in-progress uploads survive",
+    "A deep link always resolves to the object, never to a login wall for a legitimately public address",
+    "Returning from authentication lands on the intended object, not on a generic home"
+   ],
+   "sequencePosition": "WAVE 1 - highest-leverage unbuilt system. Its keystone is cheap relative to its fan-out and it unblocks the register's only acquisition path."
+  },
+  {
+   "id": "CH-03",
+   "name": "Identity Consumption & Presentation Truth",
+   "governingOutcome": "The canonical identity is the only identity any surface can render or reason about, and identity drift can no longer reach authority.",
+   "whyOneCoherentBoundary": "RC-C2 built and founder-closed the identity AUTHORITY; nothing ever audited CONSUMPTION. F116's own exit condition is a systematic consumer audit, and F057 proved consumption drift is authority-affecting (host detection, Leave-vs-End, role lookup, Go Live eligibility) rather than cosmetic. The boundary is one capability - one canonical projection, consumed everywhere - plus the two group-identity questions (F055, F056) that have no doctrine anywhere in the 64 records and cannot be closed by engineering at all. Agent D showed the chapter is re-entrant because its consumers live on surfaces later chapters build; that is resolved by making this chapter own a CONFORMANCE GATE that every later chapter's definition of done must pass, rather than by dissolving it into a layer with no owner.",
+   "expectedFindingFamilies": [
+    "Consumption hierarchy: F116 (systemic) over F053 (parent) over F050, F051, F052, F054, F057",
+    "Authority-affecting resolver-shape drift: F057 (me['id'] vs me['user']['id'])",
+    "Group identity doctrine gaps: F055 (ordering), F056 (group avatar treatment)",
+    "Preserved conflict: F051 CONFLICTING_CURRENT_STATE - carried forward UNRESOLVED, reported at item level, never rolled up"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C2 chartered scope: Identity Projection (Person/Institution), Relationship Projection, Presence Projection, Verification Projection (LAYERED NEVER BOOLEAN), Action Projection, People & Participation Selection primitive, rebuilt profile surfaces, DR5 three profile implementations, retirement of the six-meaning 'presence' overload, PresenceScreen disposition (FD-12 section 5 - architecture, never reference count)",
+    "RC-C2 frozen outcomes: Follow adjudication R1-R10, D1 feed semantic, trust presentation doctrine, verification/monetization decoupling",
+    "RC-C2 preserve set: canonical identity data, relationships, verification data, privacy controls, follow state, backend contracts, conceptually-correct deep links",
+    "RC-C2 remaining: People Selection extraction sites with future owners; verification label mapping checkpoint",
+    "RC-C0 handoff received: C2 verification labels",
+    "Identity->Media authoritative relationship (D-1) as a CONSUMER of CH-12's custody authority - additive migration only"
+   ],
+   "relatedRcChapters": [
+    "RC-C2 (FINAL CLOSED by founder 2026-08-16 - not reopened)",
+    "RC-C6/RC-C10 (realtime tile consumers)",
+    "RC-C8 (role lookup consumer)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend"
+   ],
+   "dependsOn": [
+    "CH-12 (F058 R2/uploads CORS blocks the VISUAL completion of F051/F052/F056; derivatives feed tile imagery)"
+   ],
+   "blocks": [
+    "CH-04 (participant tiles), CH-06 (message attribution and avatars), CH-09 (host detection and Go Live eligibility), CH-08 (role lookup)"
+   ],
+   "destructiveBoundaries": [
+    "DB-7 IDENTITY CONVERGENCE: a non-additive identity->Media convergence breaks deployed identity consumers and reaches AUTHORITY (F057 precedent). URL equality is permitted for migration/evidence discovery ONLY - treating it as the constitutional identity->Media relationship is prohibited. The six SUPERSEDED identity assets are not authorized for deletion."
+   ],
+   "protectedBoundaries": [
+    "PB-05",
+    "PB-07 (identity media custody)",
+    "PB-10",
+    "PB-02 (identity changes reaching realtime)"
+   ],
+   "certificationRequirements": [
+    "PB-05 rule enforced: F116 must NOT be closed by fixing one consumer - a systematic consumer audit with an enumerated consumer list is the exit condition",
+    "After ANY identity change reaching realtime, re-prove End-vs-Leave, role lookup and Go Live eligibility (F057 precedent)",
+    "TWO_ACCOUNT_TWO_BROWSER proofs for F052, F054, F057",
+    "IDENTITY CONFORMANCE GATE: this chapter publishes a gate that every later chapter building a new identity consumer must pass in its own definition of done - this is how a re-entrant audit terminates",
+    "F051's preserved conflict is reported as a conflict at closure, never resolved by analytical consensus"
+   ],
+   "founderActions": [
+    "Group identity doctrine (F055 ordering, F056 group avatar treatment) - no doctrine exists; engineering cannot supply it",
+    "Checkpoints 3, 4, 5 (identity/verification/profile direction)",
+    "Verification label mapping (class -> human meaning -> user value -> label -> context)",
+    "Cloudflare R2 CORS action (executed under CH-12; the identity band is the visible casualty)"
+   ],
+   "nonGoals": [
+    "Does not reopen RC-C2's founder-closed authority",
+    "Does not rewrite the broader identity system because a consumer needs a relationship (PB-05)",
+    "Does not own the Availability Off control (CH-05) or the commercial entitlement boundary (CH-17)"
+   ],
+   "worldClassObligations": [
+    "Original identity and appearance survive every projection: real name, real avatar, real verification layering on every surface including realtime tiles and native ring",
+    "A group has a truthful, deliberate identity representation rather than an accidental one"
+   ],
+   "sequencePosition": "WAVE 2 - second in the founder stop-order sequence (realtime transport -> identity/avatar certification -> refresh-continuity -> video/screenshare/Live). Its visual completion is externally blocked until the R2 CORS action runs."
+  },
+  {
+   "id": "CH-04",
+   "name": "Realtime Substrate, Devices & Shared Presentation",
+   "governingOutcome": "One realtime session substrate whose existence, participation and termination are the same truth for every party and every device, presented through one shared component family that never owns semantic meaning - including a measured, enforced peer ceiling.",
+   "whyOneCoherentBoundary": "RC-C6 charters the shared presentation family, the device layer and the Meetings presentation convergence over a PROTECTED transport. The twenty-finding lifecycle cluster (RC-A shared-singleton disposal, RC-B root-overlay latch) was built INSIDE that protected layer with no governed record authorizing it (contradiction X2, Agent E E-BV-5). Certification of that construction, the unbuilt device layer with FROZEN backend contracts, the FD-4 convergence (3,890 lines reimplementing participant grid/spotlight/tiles while using 0 of 5 shared widgets) and the unmeasured mesh ceiling are all properties of ONE substrate. Splitting certification from convergence would leave each half unable to prove the other. Meetings' equivalent validation sits here because PB-01 makes it a consequence of Conversation capability certification, not a separate programme.",
+   "expectedFindingFamilies": [
+    "Session lifecycle and terminal-state convergence: F036, F037, F038, F039, F040, F041, F042, F043, F044, F045, F046, F047, F048",
+    "Conversation-owned realtime capability obligations recorded LIVE_CERTIFIED on WEAK provenance: F006, F007, F008, F010, F049 - re-proof required before any completeness claim",
+    "Participation/rejoin truth: F060 (mid-call refresh; Agent A's move from domain G is preserved as a disputed reading)",
+    "Topology and scale: F073, F108, F109, F110, F111",
+    "Meetings under protection: F112 (equivalent validation owed), F114 (protection held on file-level non-modification)",
+    "Preserved conflict: F043 CONFLICTING_CURRENT_STATE - carried forward UNRESOLVED",
+    "NOT owned here: F035 stays with CH-05 under PB-08 until the founder rules"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C6 all 28: frozen conceptual ownership (DM / THREAD / SPACE / INSTITUTION ROOM / MEETING / LIVE each keep their meaning), shared presentation family (participant list, host controls, admission/join-requests, consent), modern invite/add flows consuming the People & Participation primitive, device transfer UI (offer/accept/relinquish/failed), preferred-device visibility, multi-device authority, preferred-first ring with stagger and fallback, durable media ownership, the D2 transfer handshake, PRESERVE/DO-NOT-TOUCH transport + media service + event parser + reconnect/orphan recovery + MEETINGS LIFECYCLE, the FD-4 duplicated-presentation demolition, Meetings G3(16)/G4(14) protected debt, relative_time shim burn-down (C6 half), historical Items 1, 2, 7, 9, 12, and the two founder checkpoints",
+    "RC-C10 scale obligations by implementation ownership (charter remains RC-C10): mesh bounded / mesh is not the long-term architecture / SFU assessment / assessment scope, and the audience-scale topology-and-provider checkpoint",
+    "Conversation Completion Register capability rows (audio, video, screen sharing) proven at the substrate; the register itself is owned by CH-06"
+   ],
+   "relatedRcChapters": [
+    "RC-C6 (charter)",
+    "RC-C10 (scale obligations - charter stays with C10, implementation here per the founder's charter-vs-implementation ruling)",
+    "RC-C7 (Conversation Completion Register consumer)",
+    "RC-C9 (device testing lands there)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend"
+   ],
+   "dependsOn": [
+    "CH-01 (state vocabulary)",
+    "CH-03 (identity on tiles and rosters)",
+    "CH-02 (a rejoin needs a destination)"
+   ],
+   "blocks": [
+    "CH-09 (Live is a state escalation of a session - it cannot be certified over an uncertified substrate)",
+    "CH-08 (Institution Room contextual realtime)",
+    "CH-06 (Conversation final certification needs its realtime attachments certified)",
+    "CH-04's own Meetings slices gate F112"
+   ],
+   "destructiveBoundaries": [
+    "DB-8 MEETINGS: guest/booker entry loss (a near-miss is on record) and recording-retention corruption if the deliberately external Meetings storage universe is merged into Media/ContentReference. Prohibited: fake Media bridge, Meeting deriver, modifying Meeting storage, refactoring recording retention, moving admission rules into the shared component.",
+    "REALTIME REGRESSION: RC-A (509230a) and RC-B (dfc9027) must not regress; both made calls unusable in production. A component-level refactor is the exact shape that violates FD-3 silently."
+   ],
+   "protectedBoundaries": [
+    "PB-02",
+    "PB-01",
+    "PB-03 (session escalation boundary)",
+    "PB-04 (participation is not party membership)",
+    "PB-10",
+    "PB-12"
+   ],
+   "certificationRequirements": [
+    "The four capability rows (F006, F007, F008, F010) are re-proven LIVE before any completeness claim - they are held LIVE_CERTIFIED on single-line WEAK provenance and are simultaneously named UNRESOLVED by the frozen Conversation Completion Register (Agent E E-SC-5). This chapter may not be described as certification-only until that contradiction is discharged.",
+    "MULTI_PARTY_REALTIME coordinated batch: the section-H three-identity session certifies 19 obligations at once; the environmental dependency (founder browser reachability) is recorded as unreliable",
+    "Targeted Meetings regression (97/97) after EVERY slice, with founder sign-off after each slice (CO-RC-C6-028) - non-optional",
+    "F114's evidence form is explicitly weak: it certifies that nothing was touched, not that touching is safe. Any slice that touches Meetings replaces that evidence with a real regression proof.",
+    "Mesh ceiling MEASURED and ENFORCED, not asserted; F073 may not be closed by inference from a symptom",
+    "Real-Boundary device testing lands in CH-16 - this chapter's certification is explicitly PARTIAL until it runs (CO-RC-C9-008)"
+   ],
+   "founderActions": [
+    "CLASSIFY the completed crossing of RC-C6's PRESERVE list / PB-02 (AD-CON-5): four consecutive artifacts declined; this chapter proposes more work in the same layer and cannot start honestly while the question ages",
+    "Checkpoint 10: participation and invite interaction direction",
+    "Checkpoint E: audience-scale topology and provider - deliberately not frozen, provider independence preserved",
+    "Whether coordinated multi-party realtime testing is parked until one uninterrupted session is available",
+    "Meetings sign-off after each convergence slice"
+   ],
+   "nonGoals": [
+    "Does not rewrite realtime transport, media service or event parser (PB-02)",
+    "Does not touch the Meetings LIFECYCLE - presentation convergence only, slice by slice",
+    "Does not own Live semantics (CH-09) or attention presentation of call facts (CH-05)",
+    "Does not decide the SFU purchase - it supplies the measurement the decision needs"
+   ],
+   "worldClassObligations": [
+    "A call that connects, shows who is actually there, and ends the same way for everyone - the baseline every competitor meets",
+    "Device transfer and preferred-device behaviour visible to the person, not implicit",
+    "Four-party video that does not lose the fourth frame"
+   ],
+   "sequencePosition": "WAVE 1 - first in the founder stop-order sequence. Certification slice first, device layer second, Meetings convergence slices last (each with its own sign-off)."
+  },
+  {
+   "id": "CH-05",
+   "name": "Attention, Notification Preference & Personal Controls",
+   "governingOutcome": "What the product says needs a person's attention actually needs it, is resolvable where it is shown, and is governed by controls that change delivery without ever erasing the underlying obligation.",
+   "whyOneCoherentBoundary": "RC-C4 charters the Attention Authority, the obligation badge, owning-domain clearing, DR1's eight-surface retirement and the Notification Preference Authority whose frozen distinction is ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION. GAP-1 Settings has zero findings and two homeless frozen obligations - the Notification Preference Authority and the Availability Off control (owner explicitly UNASSIGNED) - and both are controls over what reaches a person. Placing the personal-controls surface with the authority whose preferences it expresses avoids inventing a 'Settings' bucket chapter with no governing outcome. The retirement is producer-level, not widget deletion: the surfaces to be retired share producers with the incoming-call experience that must survive.",
+   "expectedFindingFamilies": [
+    "Legacy global attention presentation: F030, F031 (app-root ScaffoldMessenger floating SnackBar above the Router)",
+    "Read-state truth and clearing: F032",
+    "Projection semantics and actor filtering: F033, F034",
+    "F035 roster vs actually-connected count - RETAINED here as C4_OWNED_OPEN under PB-08 and the frozen BOUNDARY-REALTIME-LIVE-PROTECTED-FROM-RIC doctrine; Agent A's re-owner proposal is preserved as a founder question, not executed"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C4 all 28: One Governed Attention Hub, obligation badge semantics (ACTION_REQUIRED + INVITED + MISSED + qualifying mentions; passive unread NEVER contributes), semantic views (Conversations / Activity / Invitations / Actions), domain-owned resolvable actions, owning-domain clearing, deterministic reconciliation with no dead CTAs, cross-device read state, noise reduction, DR1 eight-surface retirement including conversations_screen.dart, preserve read/unread + invitation state + delivery capability + preferences + the module_attention/notifications_controller authority seed, historical Items 3 and 6, 26 G5 sites, the NO FIFTH DESTINATION rule and the pre-retirement founder checkpoint",
+    "Notification Preference Authority as its own frozen obligation document (AD-D-04)",
+    "Subscribe product surface and vocabulary, inherited from C2 ruling R4 (AD-D-05)",
+    "The four COMPANION global attention surfaces (orphaned_session_banner, update_gate soft-warn overlay, global_live_banner_layer, active_meeting_return_layer) whose regression proof has NO recorded owner (PBG-4) - owned here",
+    "RC-C2 remaining: Availability Off user-facing control (doctrine frozen, control required, IMPLEMENTATION OWNER UNASSIGNED - FOUNDER-OWNED ROADMAP GAP 1)",
+    "RC-C3 handoff: settings/attention internals and Me-depth placement",
+    "GAP-1 Settings / Personal Controls as a surface: recorded as DOCTRINE-PRESSURE, not finding-pressure"
+   ],
+   "relatedRcChapters": [
+    "RC-C4 (charter)",
+    "RC-C2 (Availability Off doctrine)",
+    "RC-C3 (inherited settings placement)",
+    "RC-C9 (native delivery)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend"
+   ],
+   "dependsOn": [
+    "CH-04 (domain event truth for call-derived attention)",
+    "CH-02 (attention resolves to a destination and returns)",
+    "CH-06 (owning-domain clearing semantics for messages)"
+   ],
+   "blocks": [
+    "CH-13 - the founder-frozen HARD GATE: RC-C5 opens only on C4 live closure declared by the founder. THIS GATE IS NOT WEAKENED HERE.",
+    "CH-16 (native notification presentation consumes the preference authority)"
+   ],
+   "destructiveBoundaries": [
+    "DB-5 C4 ATTENTION RETIREMENT: the retired surfaces share producers with the canonical incoming-call experience, PiP, native call notification channel, auth-drop clear and resume reconciliation. A producer-level retirement executed as a widget deletion kills the incoming-call path. FD-12 forbids a naive zero-reference gate.",
+    "EVIDENCE DESTRUCTION: F030-F035 and the five stale-ACTIVE RealtimeSession rows ARE the C4 evidence and must not be patched or deleted.",
+    "NO WALL OF FALSE UNREADS migration constraint."
+   ],
+   "protectedBoundaries": [
+    "PB-08",
+    "PB-02 (shared producers)",
+    "PB-09 (deep routing to exact context)",
+    "PB-10",
+    "PB-11 (C4 live certification and closure IS the RC-C5 gate)"
+   ],
+   "certificationRequirements": [
+    "Every enumerated MUST-SURVIVE consumer proven alive after retirement (incoming_live_overlay, floating_call_widget PiP, thread_call_lifecycle_controller eviction sites, native_call_notification_channel, auth-drop clear + resume reconciliation, notification_open_reconcile, activity_screen, notifications_screen, module_attention badges, messages_hub, correspondence_hub, since_you_were_here, mark-read call sites, derived providers)",
+    "Proven-dead retirement only (FD-12); a naive zero-reference gate is FORBIDDEN",
+    "Founder checkpoint 7 BEFORE the eight surfaces are retired - a sequencing constraint INSIDE the chapter",
+    "SINGLE_AUTHORIZED_BROWSER for the six attention findings plus a PRODUCTION_READ_ONLY probe for the stale sessions",
+    "Real-Boundary certification is explicitly PARTIAL here because native delivery lands in CH-16 (CO-RC-C9-007)",
+    "C4 live closure is a FOUNDER DECLARATION, not an engineering claim - it is the gate on CH-13"
+   ],
+   "founderActions": [
+    "F035 ownership ruling (PB-08 vs Agent A's substantive argument that attention presentation cannot manufacture a media-connected count)",
+    "Checkpoint 7 before any of the eight DR1 surfaces are retired",
+    "Whether Attention earns primary navigation - on product merits only; navigation count is not a product requirement",
+    "GAP-1 placement ratification: Availability Off control and the personal-controls surface land here",
+    "C4 certified/closed declaration - which opens the RC-C5 hard gate"
+   ],
+   "nonGoals": [
+    "Does not patch the legacy banner cosmetically - explicitly prohibited",
+    "Does not invent a fifth primary destination",
+    "Does not own realtime participation truth (CH-04) or native delivery mechanics (CH-16)",
+    "Does not erase attention items when a delivery channel is disabled"
+   ],
+   "worldClassObligations": [
+    "A badge a person can trust, that clears where the work was actually done",
+    "No self-notifications, no call facts disguised as content interactions, no ungoverned overlay covering the composer"
+   ],
+   "sequencePosition": "WAVE 2 - and it is the gate-holder. Nothing in CH-13's RC-C5 territory proceeds on this chapter's behalf until the founder declares C4 live-closed."
+  },
+  {
+   "id": "CH-06",
+   "name": "Conversation & Messaging Core",
+   "governingOutcome": "One canonical Conversation whose parties and message bodies are durable product facts, carrying the messaging capability set a person expects before they will use it at all.",
+   "whyOneCoherentBoundary": "PB-04 and the frozen Aura Conversation System canon make party membership and message truth constitutional facts rather than surface state; F124 (an ellipsis sentinel transmitted as the message body) is that constitution being violated by a UI flag. The seventeen issued WG items are, on Agent C's own structural finding, all capabilities that belong INSIDE the reconstruction of an existing system - and eleven of them belong to this one. Bundling them here rather than as a WG phase matches the record that the six authorized items were folded into sequencing rather than implemented as isolated patches. The Conversation Completion Register - the frozen obligation that Conversation is NOT final-certified until audio, video, screen sharing, media/attachments, intentional Live and message reporting resolve - is the chapter's own exit condition, executed across CH-04, CH-13, CH-09 and CH-15 and adjudicated here.",
+   "expectedFindingFamilies": [
+    "Party topology as durable relationship fact: F009 (1:1 grows to group; firstJoinedAt immutability)",
+    "Message-level interaction semantics: F020 mentions, F021 reply-to-message, F022 translation - three of the five capabilities recorded as 'completed earlier, then disappeared' from reporting",
+    "Message body truth: F124 (empty-text sends transmit a literal ellipsis sentinel)"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C7 Conversation-core obligations: ONE canonical Conversation system, the CONVERSATION COMPLETION REGISTER as a frozen obligation, Phase 5 legacy retirement (NOT AUTHORIZED - gated additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization), preserve communication histories and Thread/Space content and deep links",
+    "CANON-AURA-CONVERSATION-SYSTEM and CANON-AURA-INVITATION-SYSTEM consumption ('Conversation consumes Invitation first'; Invitation is explicitly NOT a C7 feature)",
+    "WG messaging baseline owned here: WG001 message edit (AUTHORIZED), WG002 delete/retract (AUTHORIZED), WG003 per-message delivery/read truth, WG004 large-history pagination (AUTHORIZED), WG005 failed-send truth + retry (AUTHORIZED, STRONG - silent loss of a user's message on the product's primary action), WG007 in-conversation search, WG008 reactions, WG009 typing/presence indicators (AUTHORIZED, consumes CH-04 presence under the frozen 'presence is the person' rule), WG011 forward/share, WG012 block boundary inside Conversation (consumes the canonical blocking authority C2-R1), WG013 offline queue + reconnect replay, WG016 participant management beyond LEAVE (needs doctrine first), WG017 pin/save",
+    "PB-04 non-collapse rules: joinedAt overwrite mitigation, directKey permanent clearing, party ordering must not revert to the rejected generic approximation"
+   ],
+   "relatedRcChapters": [
+    "RC-C7 (charter, Conversation-core half; the surfaces half is CH-07)",
+    "RC-C4 (attention clearing consumer)",
+    "RC-C6 (realtime attachments)"
+   ],
+   "repositories": [
+    "aura-backend (canon and message model)",
+    "aura_final"
+   ],
+   "dependsOn": [
+    "CH-04 (audio/video/screen-share attachments certified)",
+    "CH-13 (media/attachments attachment of the Completion Register)",
+    "CH-15 (message reporting/moderation attachment)",
+    "CH-03 (attribution and avatars)",
+    "CH-02 (draft persistence, WG006 coordination)"
+   ],
+   "blocks": [
+    "CH-07 (Thread/Space surfaces are built on the canonical Conversation)",
+    "CH-04's Meetings validation batch F112 (PB-01 sequencing: Meetings runs after Conversation's shared capabilities are certified)",
+    "CH-17 (release cannot certify a product whose primary surface is not final-certified)"
+   ],
+   "destructiveBoundaries": [
+    "DB-4 CONVERSATION PHASE 5 LEGACY RETIREMENT: retiring the DirectThread and Space-as-conversation stacks before journey certification removes the working fallback beneath an IMPLEMENTED_NOT_LIVE_CERTIFIED replacement. Demolition != data deletion; every rebuild preserves valid data, state, drafts and deep links.",
+    "WG002 delete/retract interacts with retention truth (F142) - a message deletion must not authorise a storage deletion (CH-12 owns that separation)."
+   ],
+   "protectedBoundaries": [
+    "PB-04",
+    "PB-11 (Phase 5 authorization)",
+    "PB-01 (Meetings sequencing consequence)",
+    "PB-10",
+    "PB-12"
+   ],
+   "certificationRequirements": [
+    "The Conversation Completion Register is discharged item by item with named evidence; 'C4 PROGRESSION DOES NOT ERASE IT' and 'NO FAKE UI SHIPS MEANWHILE' are frozen constraints on this chain",
+    "Phase 5 retirement follows the ONLY fully-executed precedent shape in the corpus (C2's Follow convergence: additive deploy -> healthy observed deploy -> 8/8 equivalence -> legacy retired)",
+    "F020/F021/F022 are re-reported at closure precisely because they already vanished from reporting once (F119)",
+    "TWO_ACCOUNT_TWO_BROWSER for send/receive/refusal journeys; MULTI_PARTY_REALTIME where party topology grows during a live session",
+    "WG items entering scope carry their authorization state explicitly: six AUTHORIZED, eleven NOT_AUTHORIZED - authorization is founder-only and this chapter does not self-authorize"
+   ],
+   "founderActions": [
+    "Authorization decisions for WG003, WG007, WG008, WG011, WG012, WG013, WG016, WG017 before they enter chapter scope",
+    "Doctrine for WG016 ('who may remove whom from a conversation' is a governance question, not a UI question)",
+    "Phase 5 legacy retirement authorization after journey certification",
+    "Checkpoint 12: Correspondence presentation and its convergence verdict (executed in CH-07)"
+   ],
+   "nonGoals": [
+    "Does not build Thread/Space/institutional surfaces (CH-07)",
+    "Does not own attachment ingestion, custody or presentation (CH-11/CH-12/CH-13)",
+    "Does not own the moderation authority it consumes (CH-15)",
+    "Does not re-create Correspondence as a product"
+   ],
+   "worldClassObligations": [
+    "Edit, delete, reactions, search, typing, delivery truth, offline queue and real history - the 2016 baseline the product currently lacks (CD-5)",
+    "Emoji entry as a first-class composition affordance (no WG row exists; recorded from client observation)",
+    "A message that fails to send says so and can be retried - never silent loss"
+   ],
+   "sequencePosition": "WAVE 3 - after the realtime substrate and identity are certifiable and after content intake exists to attach to."
+  },
+  {
+   "id": "CH-07",
+   "name": "Threads, Spaces & Institutional Communication",
+   "governingOutcome": "THREAD (focused conversation continuity) and SPACE (persistent shared context) exist as distinct product surfaces over the one canonical Conversation, and institutional communication is a governed form of it rather than a parallel product.",
+   "whyOneCoherentBoundary": "RC-C7's surface half is a single construction: three thread_screen implementations converge, Space surfaces are built for the first time, four institution messaging entry points collapse, Correspondence's architectural convergence verdict is finally taken, and every sender consumes institutionContextId + correspondAsInstitution so that no route-derived sender survives closure. Agent D records Spaces as the sharpest mismatch in the corpus between what is publicly visible (a Discover domain with a ten-item taxonomy, shipped) and what planning contains (nothing). Separating this from CH-06 is deliberate: CH-06 owns the conversation SUBSTRATE and its capability set; this chapter owns the CONTEXTS built on it. Both trace to the RC-C7 charter with the split stated, which the founder's charter-versus-implementation ruling permits.",
+   "expectedFindingFamilies": [
+    "NONE. This chapter carries zero findings and exists on chartered-obligation authority alone - the second control case, alongside CH-01 and CH-08, proving the set can own work no finding described."
+   ],
+   "expectedObligationFamilies": [
+    "RC-C7 surface obligations: Thread surfaces, SPACE surfaces (persistent shared context, NO EIGHT-TAB INTERFACE, never a large group chat, never forced to contain every Thread), membership/join/invite flows that never expose role enums or permission machinery, object-local management, Correspondence as a distinct governed communication form sharing infrastructure but not semantics",
+    "RC-C7 demolitions: three thread_screen implementations (correspondence/, public/, direct_threads/), duplicated conversation mechanics, four institution messaging entry points, InstitutionCorrespondenceScreen disposition (FD-12 section 4)",
+    "RC-C7 remaining: the Correspondence umbrella rename/migration (choose the correct internal name, migrate safely, preserve compatibility and history - paths may lag, documentation may not), the institutional-inbox quartet route disposition, resolveActorContext residue retirement, 26 G5 sites, debt rows 4/10/11",
+    "RC-C0 handoff received: legacy Correspondence rename/convergence (the semantic decision is NOT reopened)",
+    "RC-C3 handoff received: membership/invite/join lifecycles and correspondence sender experience MUST consume the explicit-context contract",
+    "The institutional Desk experience and institutional participation - the substance of the founder-approved C7 amendment (AD-D-11)"
+   ],
+   "relatedRcChapters": [
+    "RC-C7 (charter, surfaces half)",
+    "RC-C3 (explicit-context contract, route disposition)",
+    "RC-C2 (People & Participation Selection primitive consumer)",
+    "RC-C8 (adjacent institutional realtime, deliberately separate)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend"
+   ],
+   "dependsOn": [
+    "CH-06 (one canonical Conversation)",
+    "CH-03 (People & Participation Selection primitive, institution identity projection)",
+    "CH-02 (institution route classification and destination survival - F066 lives there)",
+    "CH-05 (attention hub replaces the retired hubs these surfaces would otherwise inherit)"
+   ],
+   "blocks": [
+    "CH-08 (Institution Room sits beside the institutional Desk and must not absorb it)",
+    "CH-17 (C11 cannot certify institutional communication that has no surface)"
+   ],
+   "destructiveBoundaries": [
+    "Converging four institution messaging entry points and three thread implementations retires live routes: deep links must continue to resolve and communication histories are preserved. Demolition != data deletion.",
+    "The Correspondence rename is a migration over live data with compatibility and history preservation obligations."
+   ],
+   "protectedBoundaries": [
+    "PB-04",
+    "PB-09",
+    "PB-11 (any retirement follows the deploy/observe/certify/authorize order)",
+    "PB-12 (canons live in aura-backend/docs and are pointed to, never duplicated)"
+   ],
+   "certificationRequirements": [
+    "No route-derived sender survives chapter closure - a gate, not a review",
+    "THREAD != SPACE proven behaviourally, not asserted: a Space is not a large group chat and a Thread is not a message list",
+    "Cross-System certification against the frozen Conversation and Invitation canons resolved from their pointers (PB-12), not from a frontend copy",
+    "The Correspondence convergence verdict is RECORDED as an outcome - Stage 0 found the checkpoint has NO RECORDED OUTCOME; closing the chapter without one repeats the failure",
+    "TWO_ACCOUNT_TWO_BROWSER for institutional sender attribution; SINGLE_AUTHORIZED_BROWSER for surface journeys"
+   ],
+   "founderActions": [
+    "Checkpoint 12: Correspondence presentation and the architectural convergence verdict",
+    "Space product direction (the surface has a public taxonomy and no reconstruction record)",
+    "Ratify the RC-C7 split: substrate to CH-06, surfaces to CH-07"
+   ],
+   "nonGoals": [
+    "Does not recreate Correspondence as a product",
+    "Does not own Invitation (a separate canon, consumed first)",
+    "Does not build the Institution Room (CH-08)",
+    "Does not reopen the frozen semantic ruling on Correspondence's meaning"
+   ],
+   "worldClassObligations": [
+    "A Space that feels like a place, not a tab bar",
+    "Institutional communication that reads as the institution speaking, with the acting person still attributable"
+   ],
+   "sequencePosition": "WAVE 4 - after the Conversation substrate is certifiable."
+  },
+  {
+   "id": "CH-08",
+   "name": "Institution Room",
+   "governingOutcome": "An institution owns persistent, drop-in communication rooms with governed participation, where entitlement to be present never becomes an interruption.",
+   "whyOneCoherentBoundary": "This is the founder's own control case: a full chapter with a FROZEN backend authority (D5), a demolition target (DR2, institution_live_rooms_screen at 1,078 lines that imports neither realtime nor meetings, consumes untyped maps, lists realtime sessions rather than InstitutionRoom, and is currently serving Live discovery while being its own demolition target), a governing rule (ENTITLEMENT != INTERRUPTION) and a named invariant test (10,000 members -> zero recipients absent invitation) - and ZERO findings and zero coverage in every Stage-1 candidate system. Merging it into institutional communication or Live would erase a frozen product semantic: RC-C8 explicitly records that Live is NOT an Institution Room (Option C rejected), so C8 and C10 remain separate constructions. Its own chapter is how it stays visible.",
+   "expectedFindingFamilies": [
+    "NONE. Zero findings on every axis. This chapter is the reason the portfolio is a reconstruction plan rather than a defect plan."
+   ],
+   "expectedObligationFamilies": [
+    "RC-C8 all 17: INSTITUTION ROOM as a distinct realtime product semantic that shared infrastructure may not erase; Live is explicitly NOT an Institution Room; room ownership; invitations; participant states; ring policy (JOIN_ONLY / RING_INVITED / RING_INVITED_AND_PARTICIPANTS); lifecycle; contextual realtime; attention; modern participant selection; DR2 demolition (DO NOT RETROFIT); preserve 'see what is live now' for an institution as card layout only; Institution Room backend D5 extended scope; Live-rooms internals inherited from C3; 3 G5 sites; the large-institution invariant test"
+   ],
+   "relatedRcChapters": [
+    "RC-C8 (charter)",
+    "RC-C6 (shared realtime presentation family consumer)",
+    "RC-C10 (adjacent 'what is live now' territory; deliberately separate)",
+    "RC-C3 (inherited live-rooms internals)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend (D5 frozen)"
+   ],
+   "dependsOn": [
+    "CH-04 (shared presentation family, contextual realtime, participant selection)",
+    "CH-03 (role lookup and institution identity - F057's failure mode)",
+    "CH-05 (attention projection for room activity)",
+    "CH-07 (institutional context and membership semantics)"
+   ],
+   "blocks": [
+    "CH-09 in one respect only: DR2's screen currently serves Live discovery, so Live's discovery door must be canonical before or with its demolition"
+   ],
+   "destructiveBoundaries": [
+    "DR2 demolishes a screen that is CURRENTLY SERVING Live discovery. Retiring it before Live's canonical discovery door exists removes a live capability. DO NOT RETROFIT is explicit - the replacement is built, not patched.",
+    "The 10,000-member invariant is a fan-out hazard: a wrong ring policy notifies an entire institution irreversibly."
+   ],
+   "protectedBoundaries": [
+    "PB-02",
+    "PB-03 (must not become a Live substitute)",
+    "PB-09",
+    "PB-10",
+    "PB-12"
+   ],
+   "certificationRequirements": [
+    "The large-institution invariant test is a named, executed test: 10,000 members produce zero recipients absent invitation",
+    "ENTITLEMENT != INTERRUPTION demonstrated per ring policy, all three modes",
+    "MULTI_PARTY_REALTIME for room participation; PRODUCTION_READ_ONLY for membership-scale probes",
+    "Cross-System certification against the frozen D5 backend authority (CO-RC-C9-003 places Real-Boundary substantially at C9; this chapter's certification is partial until then)"
+   ],
+   "founderActions": [
+    "Chapter authorisation - RC-C8 has never been entered and 'Roadmap approval != chapter authorisation'",
+    "Ring policy defaults per institution size"
+   ],
+   "nonGoals": [
+    "Does not become Live and does not host public audiences",
+    "Does not absorb the institutional Desk (CH-07)",
+    "Does not retrofit institution_live_rooms_screen"
+   ],
+   "worldClassObligations": [
+    "Drop-in presence that respects a person's attention at institutional scale",
+    "A room list that reflects rooms, not raw realtime sessions"
+   ],
+   "sequencePosition": "WAVE 4 - parallel with CH-07; entry requires the realtime substrate and the attention authority."
+  },
+  {
+   "id": "CH-09",
+   "name": "Live as a Governed Mode",
+   "governingOutcome": "An existing realtime human interaction deliberately becomes public, is watched as a broadcast rather than endured as a muted call, and returns to private - with no temporary authorities anywhere and no leak of the owning conversation.",
+   "whyOneCoherentBoundary": "RC-C10 is founder-ruled ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED, and its 2026-08-16/17 construction IS its execution. The three sub-systems are one chapter because they share one object: liveState on the owning RealtimeSession. Origination and state escalation, viewer authority derived from the OBSERVER role, and the audience engagement layer cannot be certified apart - a viewer admitted by F085 arrives into the absence F089-F095 describes, and the model correction (F075) INVALIDATED the proofs F083/F084 relied on. Critically, RC-C10's TWO EXIT GATES are owned HERE and nowhere else: Agent D showed that splitting Live across three systems left both gates ownerless.",
+   "expectedFindingFamilies": [
+    "Live state and origination: F074, F075, F076, F077, F078, F079, F080, F081, F082, F083, F084, F107",
+    "Viewer authority and the privacy boundary: F085, F086, F087, F088",
+    "Audience engagement (unbuilt): F089, F090, F091, F092, F093, F094, F095, F096 - RECOVERED from FD-5 sections 8-10 rather than reinvented, per F096's own instruction",
+    "Eleven of these carry exactly ONE corpus mention each; the register's re-derivation from FD-5 is a precondition of sizing, not a formality"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C10 core: LIVE IS a governed public/stage participation STATE of an owning Thread or Space; the founder-frozen origination correction (LIVE IS NOT SOMETHING A USER CREATES; ORIGINATION IS CONTEXTUAL; DISCOVERY IS GLOBAL; NO ACTIVE REALTIME INTERACTION = NO GO LIVE); liveState NORMAL -> LIVE_PREPARING -> LIVE -> ENDING -> NORMAL never collapsed with accessMode; PUBLIC_STAGE declared but not operationally consumed; go-live authority; public observation distinct from active media participation; Live attention/interaction; REPLAY-AS-PRODUCT and recording state (AD-D-12); the plural/contextual Live language question handed from C0",
+    "RC-C10 engagement obligation (CO-RC-C10-005) and the two open checkpoints it does not pre-empt",
+    "RC-C10 THE TWO EXIT GATES (AD-D-13): the construction exit (Live works end-to-end from a governed context, continuity survives the Live event, canonical reconstructed authorities are consumed, NO TEMPORARY AUTHORITIES REMAIN) and the cross-platform completion gate (required C9 contracts proven, evaluated jointly with CH-16)",
+    "Charter section 26 A-O regression pins",
+    "In-Live moderation surface delivering the policy owned by CH-15 (a second moderation authority is prohibited)"
+   ],
+   "relatedRcChapters": [
+    "RC-C10 (charter; ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED)",
+    "RC-C6 (session substrate)",
+    "RC-C3/C4/C5 (FD-5 makes these PRODUCT dependencies of Live, not merely later chapters)",
+    "RC-C9 (cross-platform completion)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend"
+   ],
+   "dependsOn": [
+    "CH-04 (escalation is a state change of a certified session; audience scale is measured there)",
+    "CH-02 (continuity survives the Live event; F103/F104 are owned there)",
+    "CH-03 (host detection and Go Live eligibility)",
+    "CH-05 (Live attention consumes the hub, not a temporary banner)",
+    "CH-15 (moderation policy)"
+   ],
+   "blocks": [
+    "CH-10 (one canonical Live truth consumed by both the signed-in and signed-out doors - F107)",
+    "CH-17 (C11 entry condition 2: C10 complete OR explicitly excluded from the release candidate by founder decision)"
+   ],
+   "destructiveBoundaries": [
+    "PRIVACY EXPOSURE: F088 - a Live viewer must never become a Conversation party with access to messages, history or attachments. Once disclosed it is not revocable.",
+    "AUTHORIZATION BYPASS: F086 replaced a heuristic with role-derived authority and no viewer has got in since; a permissive 'fix' re-opens admission.",
+    "GOVERNANCE VIOLATION: building a temporary Live authority on surfaces already authorized for demolition - the governing invariant explicitly forbids it and Stage 0 records it as under pressure."
+   ],
+   "protectedBoundaries": [
+    "PB-03",
+    "PB-04",
+    "PB-02",
+    "PB-09",
+    "PB-10",
+    "PB-12 (declared cross-repository construction chapter; backend construction must not be hidden inside it)"
+   ],
+   "certificationRequirements": [
+    "F083/F084 and their neighbours are RE-PROVEN under the corrected model: prior 'proven live' evidence certifies the retired parallel-broadcast model",
+    "Charter section 26 pins all green: same-session escalation, no re-invites, durable NORMAL->LIVE_PREPARING->LIVE trail, observer/non-party refusals, End-Live returning the SAME session to NORMAL with only observers detached, STANDALONE refused, born-public refused, discovery keyed on liveState LIVE",
+    "F088's privacy proof is a JOINT obligation with CH-10 for the anonymous case; this chapter owns the proof and names CH-10 as co-signatory (Agent E E-BV-2 recorded it as ownerless)",
+    "F076/F077 are EXPLICITLY_RETIRED with 'UI unobserved' remains - the observation is completed here rather than inherited as terminal",
+    "MULTI_PARTY_REALTIME for F082/F083/F084/F085/F088; the construction exit gate is evaluated as a single end-to-end journey, not as a sum of sub-system claims",
+    "VD-041 (Live engagement) is reclassified as CONSTRUCTION obligation, not validation debt - the capability is unbuilt; the VD row stays visible on the validation axis"
+   ],
+   "founderActions": [
+    "Checkpoint D: Live moderation policy (expressed through CH-15's authority)",
+    "Checkpoint E: audience-scale topology and provider (measured in CH-04; provider independence preserved)",
+    "Thread vs Space Live differences if material",
+    "Founder acceptance before release inclusion",
+    "A bounded, declared escalation to FD-5 sections 8-10 to re-derive the eight engagement obligations before they are sized (Agent E's single-mention class)"
+   ],
+   "nonGoals": [
+    "Does not become a standalone broadcast product, another Meeting, an expanded Institution Room or a fourth realtime surface",
+    "Does not build the public/anonymous acquisition funnel (CH-10)",
+    "Does not create a second moderation authority",
+    "Does not decide the SFU purchase"
+   ],
+   "worldClassObligations": [
+    "A broadcaster stage that is not call chrome (F074): speaker prominence, viewer framing, a visual language that says broadcast",
+    "Chat, reactions, raise hand, stage promotion and viewer presence - the audience layer that makes admission worth having",
+    "Replay as a product rather than an artifact"
+   ],
+   "sequencePosition": "WAVE 4 - construction entry requires stable consumed authorities; its cross-platform completion gate is evaluated with CH-16."
+  },
+  {
+   "id": "CH-10",
+   "name": "Public Acquisition & Anonymous Access",
+   "governingOutcome": "A person who is not signed in experiences real Aura value under a bounded, expressible, zero-authority grant - and arrives intact on the other side of signing in or signing up.",
+   "whyOneCoherentBoundary": "The chartering argument is an AUTHORITY GAP, not a finding count. RC-C1 chartered Capability Projection for authenticated actors and is closed; there is no anonymous case anywhere in the product, so 'zero participation authority' and 'zero Conversation authority' currently have nothing to be expressed in. F101/F102 are security obligations wearing marketing clothes and cannot be satisfied by a UI convention. DOCTRINE-PUBLIC-FIRST is inherited by every chapter and owned as a surface by none. This chapter is the surface. It also absorbs PD-2's account-entry EXPERIENCE half (LoginScreen disposition, sign-in/sign-up), because the auth wall and the account-entry hinge are the same moment. Six of its eight findings are chartered by RC-C10 (Stage-2 correction CORR-2) - implementation ownership here differs from charter ownership there, explicitly and by founder permission.",
+   "expectedFindingFamilies": [
+    "Public surfacing of real activity: F097 (a Public Home obligation, not a Live surface)",
+    "Bounded preview and its durable budget: F098, F099, F105 (refresh cannot reset the preview - it consumes CH-02's continuity, not a local timer)",
+    "Auth wall and zero-authority projection: F100, F101, F102",
+    "Truthful ended state for visitors: F106",
+    "NOT owned here: F103/F104 (auth-return and sign-up intent preservation) are owned by CH-02 by the register's own statement; this chapter is their most important consumer",
+    "Seven of the eight rows carry exactly ONE corpus mention: the DECOMPOSITION is weak even though the chartering argument is strong. Size is not inherited from the row count."
+   ],
+   "expectedObligationFamilies": [
+    "RC-C10 remaining obligation CO-RC-C10-006 (public acquisition clause) by implementation ownership; charter remains RC-C10",
+    "Anonymous zero-authority capability projection as a new case of the C1 Capability Projection contract (consumes backend effective capability, NEVER computes it) - the enabling authority that exists nowhere",
+    "PD-2 Authentication & Account Entry: the EXPERIENCE half (sign-in / sign-up surfaces, LoginScreen disposition inherited from RC-C3, 3 G5 sites) - the structural half is CH-02",
+    "DOCTRINE-PUBLIC-FIRST given an owning surface: public-first content, the acquisition funnel, and the reconciliation of public-first with a fail-CLOSED route classification",
+    "The founder-frozen preview ruling: 15-second bound, zero authority, auth returns to the SAME Live"
+   ],
+   "relatedRcChapters": [
+    "RC-C10 (charter for six of the eight findings)",
+    "RC-C1 (Capability Projection, closed - extended, not reopened)",
+    "RC-C3 (public surfaces and LoginScreen)",
+    "RC-C11 (PD-2 disposition must resolve before C11)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend"
+   ],
+   "dependsOn": [
+    "CH-02 (F065 gates F103/F104 - without it the visitor is lost at the moment of conversion)",
+    "CH-09 (F107 one canonical Live truth for both doors)",
+    "CH-14 (public content and discovery surfaces the funnel presents)"
+   ],
+   "blocks": [
+    "CH-17 (PD-2 disposition is an explicit pre-C11 condition)"
+   ],
+   "destructiveBoundaries": [
+    "A zero-authority grant that is not an AUTHORITY is an authorization bypass by construction: anonymous access implemented as UI gating exposes participation and conversation surfaces to unauthenticated actors.",
+    "F088's privacy invariant must hold for a non-member visitor: this chapter co-signs the proof owned by CH-09."
+   ],
+   "protectedBoundaries": [
+    "PB-06",
+    "PB-03",
+    "PB-04",
+    "PB-09",
+    "PB-10"
+   ],
+   "certificationRequirements": [
+    "The zero-authority projection is proven by REFUSAL evidence: an anonymous actor is refused participation, refused Conversation access, and refused party membership - not merely shown nothing",
+    "The preview budget survives refresh, tab restore and cold load (it is a continuity property, not a timer)",
+    "SINGLE_AUTHORIZED_BROWSER as a signed-out visitor for the funnel; TWO_ACCOUNT_TWO_BROWSER for the conversion journey",
+    "VD-042 (public preview) is reclassified as CONSTRUCTION obligation rather than validation debt - the capability is unbuilt; the VD row remains visible",
+    "A signed-out visitor must not be shown a confidently false 'live now: 0' (CD-3, corroborated in the released client). Truthfulness of the public index is a certification item, not a polish item."
+   ],
+   "founderActions": [
+    "Ratify PD-2's split disposition (structure to CH-02, experience here) - required before C11",
+    "Rule on which routes are genuinely public, reconciling DOCTRINE-PUBLIC-FIRST with the fail-CLOSED classification (BFI-11: correctness improves and acquisition may worsen)",
+    "Confirm the preview economics: 15 seconds, zero authority, auth returns to the SAME Live"
+   ],
+   "nonGoals": [
+    "Does not build Live itself (CH-09)",
+    "Does not own auth-return mechanics (CH-02)",
+    "Does not weaken route classification to make public surfaces reachable - the exception policy is a founder ruling",
+    "Does not invent an anonymous participation capability beyond the frozen zero-authority bound"
+   ],
+   "worldClassObligations": [
+    "A stranger sees something real within seconds, and the moment they decide to join, nothing is lost",
+    "The public index tells the truth about what is happening, including when nothing is"
+   ],
+   "sequencePosition": "WAVE 5 - the public-index and truthfulness half can begin as soon as CH-09 exposes canonical Live truth; the conversion half cannot be certified before CH-02's keystone passes."
+  },
+  {
+   "id": "CH-11",
+   "name": "Content Truth & Ingestion Governance",
+   "governingOutcome": "The platform knows what a file actually IS, where it actually came from, and whether it may enter at all - decided once, at one governed door, in one vocabulary shared by both repositories.",
+   "whyOneCoherentBoundary": "Today a file is trusted because the client named its type: no signature validation (F127), advisory size limits (F128), a validated DTO that is dead code (F130), one ingestion path that bypasses presign entirely (F129), a wire vocabulary that disagrees with itself across repositories (F122) and provenance hardcoded false (F123). These are one decision point, not six defects. Separating ingestion from custody (CH-12) and from presentation (CH-13) is the split Agent E demanded of the 33-finding bucket, and it is drawn on responsibility and reversibility rather than on the frozen contract's own stage names: ingestion is SYNCHRONOUS, backend-owned, and cheap to correct; custody is ASYNCHRONOUS, irreversible and founder-gated; presentation is client-owned and reversible. F016 - the gate on F011/F014/F015 - sits HERE while the findings it gates sit in CH-13, so the gate is now visible across a chapter boundary and can no longer be silently absorbed by the chapter it gates (Agent E E-SC-12).",
+   "expectedFindingFamilies": [
+    "Resolved-type-class authority: F016 (media-kind honesty; recorded as GATING F011/F014/F015)",
+    "Validation at the door: F127 magic-byte/signature, F128 size limits, F130 dead validated DTO",
+    "One ingestion door: F129 (correspondence-messages bypasses /media/presign entirely)",
+    "One wire vocabulary: F122 (CONFLICTING_CURRENT_STATE - carried forward UNRESOLVED; deliberately cross-repository)",
+    "Provenance and ungoverned fields: F123 (every conversation attachment labelled GALLERY), F133 (ms vs seconds), F134 (Media.aiFlags client-writable, read by nothing)"
+   ],
+   "expectedObligationFamilies": [
+    "The frozen section 12 content-truth authority and its capability registry; the 28-type MIME policy as the single source of PERMISSION, duplicated across repositories and kept honest by media-frontend-mime-compatibility.spec.ts",
+    "Canonical ingestion convergence (every door, including correspondence-messages and legacy Institution Post minting)",
+    "Access context captured AT ingestion, so that visibility is never a later inference",
+    "Layered content truth: declared / transport / signature / container / structural / resolved",
+    "RC-C5 preserve: attachment/media capabilities and supported content behaviour (the contracts this chapter must not break while making them honest)"
+   ],
+   "relatedRcChapters": [
+    "RC-C5 (composition-adjacent charter; the frozen hard gate's scope over this territory is NOT_RECORDED and is a founder question)",
+    "RC-C7 (Correspondence ingestion door)",
+    "RC-C9 (file handling)"
+   ],
+   "repositories": [
+    "aura-backend (primary)",
+    "aura_final (client wire vocabulary and MIME duplicate)"
+   ],
+   "dependsOn": [
+    "CH-01 (state/error vocabulary for honest refusal)"
+   ],
+   "blocks": [
+    "CH-12 (custody and scanning cannot reason about an object whose identity was asserted by its uploader)",
+    "CH-13 (honest presentation is not expressible before the resolved type class exists)",
+    "CH-15 (a scanner needs to know what it is scanning)"
+   ],
+   "destructiveBoundaries": [
+    "Rejecting at the door changes what the product ACCEPTS: an over-strict signature or size policy silently breaks working user journeys. Refusal must be truthful, visible and recoverable rather than silent.",
+    "F129's convergence is the recorded root cause of F143's aliasing; fixing ingestion without CH-12's custody work removes the cause but not the existing exposure."
+   ],
+   "protectedBoundaries": [
+    "PB-07",
+    "PB-12",
+    "PB-10",
+    "PB-11 (any migration deploys under founder observation)"
+   ],
+   "certificationRequirements": [
+    "Every ingestion door proven to pass through the same validation - enumerated, not sampled",
+    "media-frontend-mime-compatibility.spec.ts green after any vocabulary change; backend and frontend evidence reported TOGETHER (PB-12)",
+    "F122's preserved conflict is reported as a conflict at closure; the dispute between the stage table and the implementation checkpoint is not resolved by agreement",
+    "CODE_STATIC + LOCAL_AUTOMATED for validation; TWO_ACCOUNT_TWO_BROWSER for a refused upload journey",
+    "A rejection is demonstrated on a real violating file before the gate counts as enforcement"
+   ],
+   "founderActions": [
+    "RC-C5 hard-gate SCOPE: does C4 live closure gate the section 12 content stages, or only the composer surfaces? Stage 0 records this as NOT_RECORDED; it is founder-only and it determines whether this chapter may run now.",
+    "Any SVG unblocking decision",
+    "Semantic conflicts between repositories go to the founder before resolution (PB-12)"
+   ],
+   "nonGoals": [
+    "Does not own storage lifecycle, retention or delivery (CH-12)",
+    "Does not own presentation of the resolved type (CH-13)",
+    "Does not perform content scanning - it supplies the resolved type the scanner consumes (CH-12/CH-15)",
+    "Does not weaken the SSRF-safe fetcher, which is 'unchanged and un-weakened'"
+   ],
+   "worldClassObligations": [
+    "PDF, DOCX and PPTX are known formats with honest capability disclosure, not bare pills",
+    "A file the product cannot handle fails visibly and recoverably rather than silently"
+   ],
+   "sequencePosition": "WAVE 1 (backend track) - the security-first head of the frozen chain; nothing downstream in content can be honest before it."
+  },
+  {
+   "id": "CH-12",
+   "name": "Media Custody, Delivery & Processing",
+   "governingOutcome": "Every stored object has known authoritative references, a governed and revocable delivery decision, safe truthful derivatives, and an examination verdict - and no logical decision can authorise an irreversible physical one.",
+   "whyOneCoherentBoundary": "This is the irreversibility chapter. Retention truth (what requires an object to exist), governed delivery (who may fetch it), processing (what representations exist) and examination (whether it may be delivered at all) are the four decisions taken over a STORED OBJECT, and all four share the same choke point, the same founder-gated deployment order and the same destructive potential. F143 is the proof that they cannot be separated: a logical per-ROW release authorises an irreversible per-OBJECT deletion because Media identity is not 1:1 with storage objects, with 10 duplicate/canonical pairs in production today. F138 is the proof that delivery performs no authorization at all, so PUBLIC, RESTRICTED and PRIVATE are physically indistinguishable. Splitting these would put logical authority and physical consequence in different chapters - the exact failure Agent B names as the most dangerous sequencing surface in the corpus.",
+   "expectedFindingFamilies": [
+    "Reference and retention truth: F131 article covers, F139 identity media (founder-ruled STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED - structural CLOSED, production remediation and live certification OUTSTANDING), F140 legacy MessageAttachment, F141 inline authored media, F142 cleanup authority omissions, F143 storage-object aliasing, F121 expiring signed URL baked into durable markdown",
+    "Governed delivery and access control: F126 (application-level disclosure closed, storage-level NOT), F138 (storage-level public readability), F058 (R2/uploads CORS - BLOCKED on an external founder action)",
+    "Processing and derivatives: F136 (thumbUrl IS the full-resolution original, null for everything else), F132 (no EXIF stripping - GPS published verbatim)",
+    "Examination: F137 (no moderation or scanning of uploaded media of any kind) - see f137OwnerAndProof"
+   ],
+   "expectedObligationFamilies": [
+    "The ContentReference index as an INDEX, NOT AN ASSERTION; the frozen distinction ACQUISITION != ATTACHMENT != REFERENCE != RETENTION != PRESENTATION",
+    "The D-6 seven-step order before ANY reaper authority change, ending in equivalence and coverage against production reality",
+    "Canonical governed delivery for every visibility class (the PROMOTED SECURITY stage), its four-step safe order, and the CDN/cache placed beneath Aura's authority",
+    "MediaDerivative generation and the rule that A FAILED DERIVATIVE NEVER FAILS THE MEDIA; EXIF/metadata stripping at processing time; posters, waveforms and document first-page renders",
+    "Media safety examination: asynchronous scanning of every stored object with a verdict that gates delivery and retention, a self-hosted tier-0 default under the provider-independence doctrine, and backfill over objects already in the bucket",
+    "Identity->Media authoritative relationship (D-1) as an ADDITIVE migration serving CH-03",
+    "The three committed-but-UNAPPLIED migrations and the post-deployment read-only reconciliation over five cohorts",
+    "Preview-image custody for CH-13's link intelligence (mirrored bytes are served here; custody is defined there)"
+   ],
+   "relatedRcChapters": [
+    "RC-C2 (identity media convergence)",
+    "RC-C5 (orphan-cleanup windows vs draft lifetime is an open C5 checkpoint consumed here)",
+    "RC-C7 (Correspondence media)",
+    "RC-C9 (media scale at Real-Boundary)",
+    "RC-C10 (media scale certification)"
+   ],
+   "repositories": [
+    "aura-backend (primary)",
+    "aura_final (delivery consumers)",
+    "Cloudflare R2 (external, founder-actioned)"
+   ],
+   "dependsOn": [
+    "CH-11 (an object cannot be governed before it is known)",
+    "CH-15 (moderation POLICY, appeal and false-positive consequences - this chapter builds the mechanism, not the policy)"
+   ],
+   "blocks": [
+    "CH-13 (derivatives, governed delivery and safe originals are what presentation renders)",
+    "CH-03 (F058 blocks the visual completion of the identity band)",
+    "CH-06 (WG002 delete/retract must not authorise storage deletion)",
+    "CH-14 (durable publication needs canonical references, not expiring URLs)"
+   ],
+   "destructiveBoundaries": [
+    "DB-1 REAPER / MediaCleanupService: irreversible deletion of real user content. NOT RUN. The isRetentionEligible() asymmetry is the safety property to preserve above all - uncertain/deletable -> KEEP is allowed; protected/keep -> DELETE is NOT; reconcile() REPAIRS NOTHING.",
+    "DB-2 F143 STORAGE-OBJECT ALIASING: a per-ROW logical release authorises a per-OBJECT physical deletion; 10 aliased pairs exist in production.",
+    "DB-3 R2 PUBLIC-READ RATCHET: removing bucket public read while any surface still consumes raw storage URLs breaks delivery product-wide; leaving it means possession of a key or a historical URL IS access. Steps 1-3 are safe; step 4 is the ruling becoming true.",
+    "DB-9 PRIVACY EXPOSURE CLUSTER (F126, F138, F132 GPS, F135 viewer IPs): disclosure is not revocable by a later fix.",
+    "MDR: three committed-but-unapplied migrations; replay-from-empty is not production-safe."
+   ],
+   "protectedBoundaries": [
+    "PB-07",
+    "PB-11",
+    "PB-05 (identity media)",
+    "PB-01 (the meeting-recordings multipart intersection is NOT assumed safe)",
+    "PB-12",
+    "PB-10"
+   ],
+   "certificationRequirements": [
+    "All nine section 15 security gates; the section 14 five-step retirement condition applied to EVERY legacy representation",
+    "D-3 tests prove previously blind relationships PREVENT deletion, not merely that they are visible",
+    "Migrations proven on disposable Postgres 16 across success, refusal and idempotency - never against production; then deployed under founder observation; then read-only reconciliation over five cohorts",
+    "F126's live journey: A sends, B renders, C refused, anonymous refused (two accounts, two browsers)",
+    "F139 is certified on BOTH dimensions separately - structural CLOSED does not discharge production remediation or live certification, and the founder lock forbids returning it to OPEN or promoting it without new authority or evidence",
+    "Media examination: a known-malicious sample is refused delivery end-to-end, a false positive is appealable, and the verdict is proven to apply to objects uploaded BEFORE the scanner existed",
+    "Real-Boundary media-scale certification lands with CH-16/CH-09"
+   ],
+   "founderActions": [
+    "Deployment of the three migrations",
+    "Reaper authority change (after step 7 only)",
+    "The R2 public-read ratchet (standing stop-and-report)",
+    "The Cloudflare CORS action that unblocks F058",
+    "Disposition of the unindexed Media population - 'the disposition of real user content is yours'",
+    "Media examination provider selection and the appeal/false-positive policy consequences (with CH-15)"
+   ],
+   "nonGoals": [
+    "Does not run the reaper, delete investigated objects, or use URL equality as identity authority",
+    "Does not own what a file IS (CH-11) or how it is rendered (CH-13)",
+    "Does not own the human report and adjudication journey (CH-15)",
+    "Does not merge the deliberately external Meetings recording storage universe"
+   ],
+   "worldClassObligations": [
+    "Images, video, audio and documents load fast because real derivatives exist - not because originals are downloaded to draw a grid",
+    "Private means private at the storage boundary, not merely absent from a DTO",
+    "A photo does not publish the sender's home coordinates"
+   ],
+   "sequencePosition": "WAVE 2 (backend track) - immediately after CH-11, and it is the chapter whose steps are most tightly bound to founder-observed deployment."
+  },
+  {
+   "id": "CH-13",
+   "name": "Composition, Intake & Rich Presentation",
+   "governingOutcome": "Anything a person can select, paste, drop, record or type enters ONE governed composition lifecycle on every surface, and what comes back out is presented richly and truthfully by ONE shared client family.",
+   "whyOneCoherentBoundary": "Intake and presentation are the two human-facing ends of the same content lifecycle and they fail together: the composer is implemented six times over eleven upload pipelines with paste handling in 25 files (hashtags in 1 of 6, upload progress in 1 of 6), and the presentation side has no timeline, scrubbing, duration, waveform or speed control ANYWHERE in the product, with Conversation images neither tappable nor saveable. Agent C's most independent structural observation (OPP-2) is that the canonical Conversation consumes NONE of the shared rich primitives that five other surfaces do consume - which is an intake-plus-presentation defect in one surface, not two chapters' worth of work. Link intelligence sits here because hydration is an authoring-time resolution of what a person typed, with its preview-image custody executed in CH-12.",
+   "expectedFindingFamilies": [
+    "Intake doors: F012 drag/drop, F013 clipboard paste including image, F011 attachments lifecycle, F015 video messages",
+    "Editor intake defects that are one absent layer seen from different doors: F025 raw markdown on image insert, F026 title paste oversizing",
+    "Shared presentation primitives: F014 voice-message timeline/playback, F019 rich/selectable text, F125 Conversation images have no viewer and no save",
+    "Link intelligence: F017 internal hydration backfill for pre-existing content, F018 external hydration (live-certified and previously vanished from reporting), F135 hotlinked preview images leaking viewer IPs"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C5 composition half: Composition Authority (content state, drafts, autosave, mentions, links, formatting, validation, readiness, keyboard, accessibility) with COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION; the Attachment Lifecycle SELECT/PASTE/DROP -> VALIDATE -> PREVIEW -> UPLOAD -> PROGRESS -> READY -> SEND/PUBLISH; upload on selection where uploading NEVER means sent; Content Intake & Resolution (rich paste preserving richness without inventing it, image/file paste, drag-and-drop at 0 implementations, mixed content, governed link previews consuming backend link intelligence)",
+    "RC-C5 demolitions DR3: six composers, eleven upload pipelines, per-composer paste handling across 25 files, voice implied by route",
+    "RC-C5 preserve: drafts and draft data, proven validation, accessibility behaviour, legitimate context differences, working media rendering; 16 G5 sites; historical Items 5, 10, 13, 14, 15, 16; the open checkpoint on orphan-cleanup windows versus draft lifetime (executed with CH-12)",
+    "RC-C5 + RC-C9 joint drag/drop obligation - this chapter owns the intake layer, CH-16 owns the platform surface (two distinct obligations, no shared owner)",
+    "Shared client primitives: presentation resolves from resolved type x capabilities x derivatives x access state x role, NEVER from the acquisition door; Conversation as the FIRST COMPLETE REFERENCE; propagation to Articles, Posts, Announcements, Institution Posts and Correspondence",
+    "WG006 per-conversation draft persistence (AUTHORIZED) consuming CH-02 - the founder ruled explicitly: coordinate with F063/F070, do not create another store",
+    "WG010 media/files gallery per conversation; WG014 composer half of keyboard discipline"
+   ],
+   "relatedRcChapters": [
+    "RC-C5 (charter, CLOSED BY A FROZEN HARD GATE on C4 live closure - not weakened here)",
+    "RC-C9 (drag/drop, clipboard, keyboard platform half)",
+    "RC-C7 (composers on institutional surfaces)"
+   ],
+   "repositories": [
+    "aura_final (primary)",
+    "aura-backend (link intelligence, upload contracts)"
+   ],
+   "dependsOn": [
+    "CH-05 - THE FROZEN HARD GATE: RC-C5 opens only on founder-declared C4 live closure",
+    "CH-11 (resolved type class - F016 gates F011/F014/F015 across the chapter boundary)",
+    "CH-12 (derivatives, governed delivery, preview-image custody)",
+    "CH-02 (draft continuity and durable identity of in-progress work)"
+   ],
+   "blocks": [
+    "CH-06 (the media/attachments row of the Conversation Completion Register)",
+    "CH-14 (the authoring surface a publication commits from)"
+   ],
+   "destructiveBoundaries": [
+    "DR3 retires eleven upload pipelines beneath live composers: drafts and draft data are PRESERVED, and an abandoned draft's uploaded attachments must not be released before the orphan-cleanup checkpoint is decided with CH-12.",
+    "The legacy attention banner overlaps the composer and /articles/write: a composer cannot be product-behaviour-certified while an ungoverned global overlay covers it (an inferred edge, MEDIUM confidence, recorded not assumed)."
+   ],
+   "protectedBoundaries": [
+    "PB-11 (the RC-C5 hard gate)",
+    "PB-07",
+    "PB-08 (the overlay covering the composer)",
+    "PB-10",
+    "PB-12"
+   ],
+   "certificationRequirements": [
+    "One intake layer proven on EVERY door on EVERY platform - drag/drop and clipboard have never been exercised live and exist in code",
+    "F016's gate is honoured across the boundary: F011/F014/F015 may not be certified while F016 is OPEN in CH-11 (A-CON-1 records the gate as already appearing crossed)",
+    "Composer features are tested against real production screens, never a minimal harness, with the scope boundary disclosed",
+    "SINGLE_AUTHORIZED_BROWSER for intake journeys; NATIVE_DEVICE for platform intake (executed with CH-16)",
+    "VD-050 (no seek bar, no waveform as capabilities at all) is reclassified as CONSTRUCTION obligation rather than validation debt; the VD row remains visible",
+    "Accessibility (WG015) is inside this chapter's definition of done, not deferred - retrofitted accessibility is the failure mode the register already records"
+   ],
+   "founderActions": [
+    "C4 live closure declaration (held in CH-05) is the precondition for this chapter's RC-C5 territory",
+    "Checkpoint: composition interaction direction",
+    "Checkpoint: orphan-cleanup windows versus canonical draft lifetime",
+    "Drag/drop ownership ratification (RC-C9 also charters it; two obligations, two owners, no merge)"
+   ],
+   "nonGoals": [
+    "Does not decide what a file IS (CH-11) or whether it may be delivered (CH-12)",
+    "Does not own the publish commitment or official designation (CH-14)",
+    "Does not own native platform affordances (CH-16)",
+    "Does not build a second link fetcher - the SSRF-safe fetcher is consumed unchanged"
+   ],
+   "worldClassObligations": [
+    "Typed document cards with real filename, extension, size, page count and a first-page preview - three identical grey pills is the literal worked example of the deficiency (CD-1)",
+    "Voice notes with waveform, scrub, speed and resume; video messages that play inline with a poster",
+    "Select, copy, paste, drag and drop that behave the way every competitor's do",
+    "Emoji, mentions and rich text that survive the round trip",
+    "Link previews that are hydrated, private and durable"
+   ],
+   "sequencePosition": "WAVE 3 - gated by CH-05's founder-declared closure and by CH-11/CH-12 on the content chain. It is the chapter that makes the founder-observed defects visibly better, and it is deliberately not moved ahead of the security-first order."
+  },
+  {
+   "id": "CH-14",
+   "name": "Publication, Discovery & Public Entry",
+   "governingOutcome": "The product's domains and creation intents name real human intentions, a publication commits deliberately with its designation legible before commitment, and it keeps its address and tells the truth about its own history.",
+   "whyOneCoherentBoundary": "RC-C0 froze COMPOSITION != REPRESENTATION != DELIVERY/PUBLICATION, so publication cannot live inside the composer chapter; FD-8 then froze official designation as expressible ONLY in the publish flow. That makes the publish commit a real boundary with its own outcome: what was created, what it is designated, where it lives, and how it is found. GAP-2 Long-Form Publishing is resolved here as a CHARTER rather than a reconstruction chapter - Agent A's negative result stands and is respected: the Articles bug pressure genuinely disperses (F025/F026 to intake, F027/F070 to continuity, F121/F141 to custody), and only the publication lifecycle itself is left. Discover taxonomy and Create intents belong with it because they are the other end of the same act: what a person intends to make, and where it then appears.",
+   "expectedFindingFamilies": [
+    "Taxonomy and entry adoption: F001 People surface institution residue, F002 Create legacy creation model, F003/F004 Add Institution placement, F005 Conversation creation stays simple human messaging, F024 Article as fourth domain",
+    "Publication lifecycle: F028 article create 500 (isolated, terminal), F029 revision keeps URL and truthful history (live-certified; one of the five capabilities that vanished from reporting)"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C3 product-meaning obligations: the FOUNDER-OBSERVED NAVIGATION CORRECTION and the four authenticated primaries, DISCOVER as an extensible framework with PEOPLE / INSTITUTIONS / SPACES / ARTICLES, verification is never relevance ranking, header semantic layers, responsive IA, room for a universal Find/Go-To that SUPPLEMENTS IA and never patches it",
+    "FREEZE-CREATE-INTENT-VOCABULARY: MESSAGE / POST / ARTICLE / ANNOUNCEMENT as intents, and Create's migration off the legacy creation model",
+    "RC-C5 publication obligations by implementation ownership (charter remains RC-C5): FD-8 official designation expressed BEFORE publication as part of the publication commitment, no post-publication elevation, withdrawal object-local, content change invalidates approval; E_OFFICIAL designation representation; institutional approval workflow language handed forward from C0",
+    "GAP-2 Long-Form Publishing charter: publication commit, durable URL across revision, revision snapshot and the 'revised' fact - and its placement in the RC-C11 entry conditions, which currently have no declared home for a shipped, public, live-certified capability",
+    "Institution acquisition placement (header, lifecycle-gated) and public-first surface content"
+   ],
+   "relatedRcChapters": [
+    "RC-C3 (closed - taxonomy and primaries)",
+    "RC-C5 (FD-8 charter)",
+    "RC-C0 (Product Language and the handed-forward designation vocabulary)",
+    "RC-C11 (release-gate placement of GAP-2)"
+   ],
+   "repositories": [
+    "aura_final",
+    "aura-backend"
+   ],
+   "dependsOn": [
+    "CH-13 (the authoring surface a publication commits from)",
+    "CH-12 (durable canonical media references in published bodies - F121/F131/F141)",
+    "CH-02 (draft resume before commit)",
+    "CH-03 (author and institution identity on published content)"
+   ],
+   "blocks": [
+    "CH-10 (the public funnel presents published content and discovery domains)"
+   ],
+   "destructiveBoundaries": [
+    "A durable URL is a promise: revision, withdrawal and designation changes must never break an existing address or silently rewrite history.",
+    "Official designation is an authority statement about an institution - a post-publication elevation path would let content acquire authority it was never approved for (Options B and C were rejected)."
+   ],
+   "protectedBoundaries": [
+    "PB-09",
+    "PB-10",
+    "PB-07 (published bodies reference media)",
+    "PB-12"
+   ],
+   "certificationRequirements": [
+    "Live proof of the People surface residue removal and the Create migration - both are recorded as never exercised live",
+    "Designation is proven legible BEFORE commitment and impossible after it",
+    "A revision keeps the address and states the revised fact truthfully, re-reported at closure because it already vanished from reporting once (F119)",
+    "Provenance caution: F003, F004 and F024 are WEAK - conclusions about them carry no structural weight",
+    "SINGLE_AUTHORIZED_BROWSER for the create/publish/revise journeys"
+   ],
+   "founderActions": [
+    "Grant GAP-2 its charter here and place it in the C11 entry conditions (it is a shipped, public, live-certified capability with no chapter number)",
+    "Official-designation and institutional-approval vocabulary (deliberately not pre-empted by C0)",
+    "Checkpoint 6 if any primary destination changes",
+    "Articles' rendering inside the live experience"
+   ],
+   "nonGoals": [
+    "Does not re-litigate shipped, live-certified publication behaviour",
+    "Does not own the composer (CH-13) or the media it embeds (CH-12)",
+    "Does not reopen the frozen taxonomy or invent a fifth primary",
+    "Does not become an Articles reconstruction chapter - its bug pressure is owned elsewhere and must not be double-counted"
+   ],
+   "worldClassObligations": [
+    "An authoring and publishing experience at the level of the long-form market (CD-8): rendered inline media, sane title behaviour, stable published artifacts",
+    "Discovery that names human intentions rather than backend modules"
+   ],
+   "sequencePosition": "WAVE 5 - the taxonomy-adoption slice can run early and cheaply; the publication and designation slice follows CH-13."
+  },
+  {
+   "id": "CH-15",
+   "name": "Trust, Safety & Moderation Authority",
+   "governingOutcome": "Harm can be reported from anywhere, is adjudicated once by one authority, and every content verdict - including an automated one - has a legible consequence and a route of appeal.",
+   "whyOneCoherentBoundary": "This chapter owns the POLICY and the JOURNEY: what is prohibited, who decides, what happens to the content and the person, and how a wrong decision is corrected. It is deliberately small and deliberately not the owner of the scanning pipeline (see f137OwnerAndProof) - assigning an asynchronous storage-lifecycle capability here because the word 'moderation' appears would be exactly the word-similarity assignment the founder prohibited. It is nonetheless a real boundary: the report journey is wired to a canonical authority and has never been run, the blocking authority (C2-R1) is adjacent and frozen, Live moderation is an open founder checkpoint, and the media verdict policy has no owner at all. Two findings of evidence is thin; 'no uploaded media of any kind is examined' is not a thin consequence.",
+   "expectedFindingFamilies": [
+    "Report and moderation journey: F023 (wired to the canonical authority, never exercised live)",
+    "NOT owned here: F137 (the scanning capability) belongs to CH-12 by the responsibility test; F095 (in-Live moderation surface) belongs to CH-09 and CONSUMES this authority. A second moderation authority is prohibited."
+   ],
+   "expectedObligationFamilies": [
+    "The canonical report/moderation authority the report sheet is already wired to, extended from text-only to every content kind",
+    "Media verdict POLICY consumed by CH-12's examination pipeline: what a positive means, what is quarantined versus removed, what the uploader and the viewer are told, and how false positives are appealed",
+    "RC-C10 open checkpoint: Live moderation policy (expressed in CH-09's surface)",
+    "RC-C7 Conversation Completion Register row: message reporting/moderation as a REQUIRED contextual attachment of canonical Conversation (adjudicated in CH-06, delivered against this authority)",
+    "C2-R1 blocking authority as the adjacent frozen safety authority - consumed, never duplicated (WG012 in CH-06 consumes it too)"
+   ],
+   "relatedRcChapters": [
+    "RC-C7 (Completion Register row)",
+    "RC-C10 (Live moderation checkpoint)",
+    "RC-C2 (blocking authority)"
+   ],
+   "repositories": [
+    "aura-backend (primary)",
+    "aura_final (report journey surfaces)"
+   ],
+   "dependsOn": [
+    "CH-11 (a verdict needs to know what the content is)"
+   ],
+   "blocks": [
+    "CH-12 (the examination pipeline cannot be built against an undefined policy or an absent appeal route)",
+    "CH-09 (in-Live moderation consumes this authority)",
+    "CH-06 (message reporting attachment)"
+   ],
+   "destructiveBoundaries": [
+    "A moderation verdict removes or hides real user content: a wrong automated verdict without an appeal route is an irreversible product harm even when the bytes survive.",
+    "Adjudication data is evidence - it must not be patched or deleted to tidy a queue."
+   ],
+   "protectedBoundaries": [
+    "PB-04",
+    "PB-07 (verdicts act on stored objects through CH-12 only)",
+    "PB-10"
+   ],
+   "certificationRequirements": [
+    "The report journey is EXERCISED live end to end - report, adjudicate, resolve, notify - not merely wired",
+    "An appeal path exists and is proven on a deliberately induced false positive",
+    "One authority proven: no surface (Live, Conversation, Posts, Institution content) resolves a report through a second path",
+    "TWO_ACCOUNT_TWO_BROWSER for reporter/subject journeys; FOUNDER_EXPERIENTIAL for the policy checkpoints"
+   ],
+   "founderActions": [
+    "Checkpoint D: Live moderation policy",
+    "The content policy itself - what is prohibited, and the consequence ladder",
+    "Appeal and false-positive policy for automated media verdicts (jointly with CH-12)",
+    "Whether F095's in-Live surface is delivered by CH-09 consuming this authority (this design's proposal) or owned here"
+   ],
+   "nonGoals": [
+    "Does not build the media scanning pipeline, the storage lifecycle or the delivery gate (CH-12)",
+    "Does not create a second blocking authority",
+    "Does not own the in-Live moderation surface (CH-09)"
+   ],
+   "worldClassObligations": [
+    "Reporting that visibly does something, on every surface a person can be harmed on",
+    "Automated examination that is honest about its limits and reversible when it is wrong"
+   ],
+   "sequencePosition": "WAVE 2 - policy freeze must precede CH-12's examination implementation; the journey certification can follow."
+  },
+  {
+   "id": "CH-16",
+   "name": "Cross-Platform, Native Surfaces & Release Delivery",
+   "governingOutcome": "Every governed behaviour is proven on a real device and a real released binary, and a correction actually reaches the person holding it.",
+   "whyOneCoherentBoundary": "RC-C9 charters the whole platform layer - WNS native Windows push, desktop lifecycle, drag/drop, clipboard, file handling, keyboard, hover/context affordances, window sizing, background/foreground, active realtime continuity, deep links, installation and launch context, iOS/Android native notification presentation - under the governing rule DESKTOP IS NOT WEB WITH A WIDER VIEWPORT. It is also where REAL-BOUNDARY certification substantially lands, which no other chapter provides: CH-04's device testing, CH-05's native delivery and CH-09's cross-platform completion gate are all explicitly PARTIAL until this chapter runs. F071 contributes a class the register otherwise has no vocabulary for - a defect fixed in shared code that remains live for users because the release channel has not run - and only a founder-triggered store release can clear it.",
+   "expectedFindingFamilies": [
+    "Distribution lag: F071 (shared code carries both fixes; the released binaries predate them - BLOCKED on a founder store release)",
+    "Native presentation not consuming canonical truth: F072 (native ring shows an individual, not the group)",
+    "Consumed from other chapters as Real-Boundary obligations: native notification delivery for CH-05, device testing for CH-04, media scale for CH-12, cross-platform completion for CH-09"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C9 all 28 except the SupportScreen row: native Windows notifications (WNS), desktop lifecycle, drag/drop (platform half), clipboard, file handling, keyboard, hover/context affordances, window sizing and responsiveness, background/foreground, active realtime continuity, deep links, installation and launch context, iOS/Android native notification presentation, preserve device registration + notification preferences + session continuity, historical Items 7 and 8, Windows/MSIX native push, 3 G5 sites",
+    "The C9/C10 overlap rule: C10 construction entry needs C0-C8 stable; C10 cross-platform COMPLETION needs the relevant C9 contracts proven",
+    "Real-Boundary certification as a layer, and the recorded statement that C4 and C6 certification are only PARTIAL until it runs",
+    "WG014 platform half (keyboard and desktop discipline); the composer half is CH-13",
+    "The founder-owned release-submission boundary: store submission is triggered by the founder personally; this chapter's role ends at certified artifacts plus instructions"
+   ],
+   "relatedRcChapters": [
+    "RC-C9 (charter)",
+    "RC-C10 (cross-platform completion gate, evaluated jointly with CH-09)",
+    "RC-C4 (native delivery)",
+    "RC-C6 (device testing)",
+    "RC-C5 (drag/drop, clipboard, keyboard)"
+   ],
+   "repositories": [
+    "aura_final",
+    "platform toolchains (MSIX, iOS/Android, Codemagic)"
+   ],
+   "dependsOn": [
+    "CH-02 (the platform expression of the continuity contract)",
+    "CH-05 (the preference authority native delivery must honour)",
+    "CH-04 (what a device is transferring)",
+    "CH-13 (the intake layer whose platform doors it exercises)"
+   ],
+   "blocks": [
+    "CH-09 (cross-platform completion exit gate)",
+    "CH-17 (C11 entry conditions 4 and 5: cross-platform behaviour verified on mobile, web and MSIX; real-device/native testing complete)"
+   ],
+   "destructiveBoundaries": [
+    "A store release is externally irreversible in practice: a defective binary is in the field until the next submission, which is exactly F071's condition today.",
+    "The workstation is windows-arm64 with no Prisma engine and no AppModule smoke boot - environmental constraints must be stated, not worked around silently."
+   ],
+   "protectedBoundaries": [
+    "PB-11",
+    "PB-10",
+    "PB-12",
+    "PB-02 (active realtime continuity across platform lifecycle)"
+   ],
+   "certificationRequirements": [
+    "NATIVE_DEVICE and EXTERNAL_INFRASTRUCTURE topologies executed for real - the register's two NATIVE_DEVICE obligations have never run",
+    "Real-Boundary certification recorded per consuming chapter, and a lower layer passing never implies a higher one (PB-10)",
+    "Per-platform suites plus the cross-platform behaviour matrix on mobile, web and MSIX",
+    "F071 is re-observed only AFTER a founder-triggered release; until then its state is neither OPEN nor closed in an engineering sense and must be reported as distribution-lag debt"
+   ],
+   "founderActions": [
+    "Trigger the store releases (Codemagic / Play Console / Partner Center) - the founder does this personally",
+    "Checkpoint: desktop experience direction",
+    "Provide or authorise real-device access for the native proofs"
+   ],
+   "nonGoals": [
+    "Does not own the shared behaviours it proves - it proves them at the real boundary",
+    "Does not own SupportScreen (explicitly NOT assigned to C9)",
+    "Does not sign or submit on the founder's behalf"
+   ],
+   "worldClassObligations": [
+    "Native ring, native notifications and native file handling that match platform expectations",
+    "Desktop behaviour that is genuinely desktop: keyboard, windowing, drag/drop, hover"
+   ],
+   "sequencePosition": "WAVE 6 - it certifies what the other chapters build, and it holds two of C11's nine entry conditions."
+  },
+  {
+   "id": "CH-17",
+   "name": "Governance, Certification & Release Gate",
+   "governingOutcome": "The programme's own record of what is done cannot lie, every item reaches a terminal state on evidence, and the release gate is entered only when its conditions are true.",
+   "whyOneCoherentBoundary": "RC-C11 is a certification and release gate, not a construction chapter, and must not be redefined. Everything that governs how the other sixteen chapters are allowed to claim completion belongs together: the non-shrinking register rule (which currently lives ONLY in a transcript with no governed-artifact home, while five live-certified capabilities have already vanished from reporting once), terminal-state discipline, the six certification layers with the rule that a lower layer passing never implies a higher one, the two unreconciled certification vocabularies, the ratchet and burn-down accounting structure, the validation-obligation index, the product-disposition decisions that must resolve before C11, and Consolidated Founder Product Acceptance. This chapter is also the carrier for the three deliberately preserved conflicts and for the deferred decisions that were written specifically to survive handoff.",
+   "expectedFindingFamilies": [
+    "Governance integrity: F115 non-shrinking register, F118 C4 findings preserved, F119 implemented capabilities must not vanish from reporting, F120 every item reaches a terminal state - recorded as three angles of one obligation plus one closure gate"
+   ],
+   "expectedObligationFamilies": [
+    "RC-C11 all 17: the nine entry conditions, PD-1 and PD-2 dispositions before C11, SupportScreen ownership disposition, Consolidated Founder Product Acceptance, Item 17 as a gate that must not be redefined, and the frozen rule that a lower certification layer passing never implies a higher one",
+    "RC-C1's PD checkpoint obligation (the two product dispositions opened before C11)",
+    "GOVERNANCE-NON-SHRINKING-REGISTER given a governed-artifact home - it currently has none",
+    "The certification-layer model (Architecture, Implementation, Product Behavior, Cross-System, Real-Boundary, Founder Acceptance) and the reconciliation of the TWO unreconciled certification vocabularies (RC layer table versus the section 12/17 validation classes), which makes every cross-axis 'is this certified?' question ambiguous by construction today",
+    "The 82 validation obligations split THREE ways rather than two: RUNNABLE VALIDATION DEBT, CONSTRUCTION DEBT WEARING A VALIDATION LABEL, and BLOCKED-ON-EXTERNAL - each attached to an owning chapter",
+    "The ratcheted burn-down ACCOUNTING structure (per-site conversion is owned by the surface chapters; the baselines, gates and remainder reporting are owned here so the debt cannot stop shrinking silently)",
+    "The nine standing founder checkpoints that gate Product-Behavior certification and that no implementation may pre-empt",
+    "Deferred decisions written to survive handoff: the final Free/Pro commercial entitlement boundary with its FUTURE COMMERCIALIZATION GOVERNANCE MARKER and the rule that no payment enforcement is activated or expanded during release-client reconstruction; the two gate-pinned legacy route aliases whose retirement trigger (a future observed link-traffic window) has no watcher",
+    "RC-C3's frozen governance lesson: ARCHITECTURE CAN PROPOSE COHERENCE, HUMAN USE VALIDATES MEANING",
+    "WG authorization state as a register: six AUTHORIZED, eleven NOT_AUTHORIZED, WG018 RESERVED/UNISSUED and visible in the accounting layer so its historical appearance stays explained"
+   ],
+   "relatedRcChapters": [
+    "RC-C11 (charter)",
+    "every other RC chapter as a certification subject"
+   ],
+   "repositories": [
+    "docs (governance, both repositories)",
+    "aura_final",
+    "aura-backend"
+   ],
+   "dependsOn": [
+    "Every other chapter"
+   ],
+   "blocks": [
+    "Release"
+   ],
+   "destructiveBoundaries": [
+    "GOVERNANCE CORRUPTION: promoting a state on unit or architectural evidence, or removing an item from the register for being implemented, green or deployed. The register may never shrink.",
+    "Destabilising certified suites to manufacture coverage."
+   ],
+   "protectedBoundaries": [
+    "PB-10",
+    "PB-11",
+    "PB-12",
+    "all others as certification subjects"
+   ],
+   "certificationRequirements": [
+    "Every gate demonstrated to FAIL on a real violation before it counts as enforcement",
+    "FD-13 items 13 and 14 (targeted AND cross-system regression) per chapter",
+    "Chapter closure is a founder declaration; roadmap approval is never chapter authorisation",
+    "The three preserved conflicts (F043, F051, F122) and F139's two dimensions are reported at ITEM level at every closure - a chapter-level roll-up that conceals them is the exact failure F119 records",
+    "All 143 findings and all 299 chartered obligations are reconciled INDEPENDENTLY at closure; neither population may be inferred from the other",
+    "Item 17 is evaluated at C11 only"
+   ],
+   "founderActions": [
+    "Chapter authorisation, individually, for all sixteen construction chapters",
+    "SupportScreen disposition (deliberately unowned as construction; the DECISION is owned here)",
+    "PD-1 and PD-2 disposition ratification",
+    "Consolidated Founder Product Acceptance",
+    "The Free/Pro entitlement boundary when it is due",
+    "Whether C10 is complete or explicitly excluded from this release candidate"
+   ],
+   "nonGoals": [
+    "Does not construct product capability",
+    "Does not adjudicate preserved conflicts by analytical consensus",
+    "Does not redefine Item 17",
+    "Does not assign SupportScreen to a chapter to tidy the map"
+   ],
+   "worldClassObligations": [
+    "A release the founder can stand behind because every claim in it is separately evidenced",
+    "Accessibility (WG015) enforced as a definition-of-done requirement in every chapter rather than deferred to a chapter of its own"
+   ],
+   "sequencePosition": "WAVE 6 / TERMINAL - it runs continuously as a gate and terminally as the release chapter."
+  }
+ ],
+ "designRationale": {
+  "chapterTest": "A valid Implementation Chapter represents a system or outcome that can be understood, implemented, validated and certified coherently, completed WITHOUT manufacturing temporary architecture, and traced back to every finding and every chartered obligation it owns. Seventeen chapters passed that test. The set was NOT organised by finding number, RC chapter number, repository, or frontend/backend split.",
+  "whySeventeen": "Consolidation was applied where it removed a seam and refused where it would have hidden one. Agent A's fifteen candidates collapse to eleven of these chapters; four chapters exist only because the chartered-obligation axis demanded them (CH-01 Foundations, CH-07 Threads/Spaces/Institutional, CH-08 Institution Room, CH-17 Governance) and two exist because a thirty-three finding candidate had to be split on responsibility and reversibility (CH-11, CH-12, CH-13 from CH-F). Three chapters carry ZERO findings. That is the point: 296 of 299 chartered obligations have no finding at all, and a portfolio that could not own them would be a defect plan wearing a reconstruction plan's name.",
+  "howTheSplitOfCHFWasDrawn": "NOT by re-quoting the frozen section 12 stage table - Agent E proved that reproducing the contract's own decomposition carries no independent evidential weight (E-SC-1), and this design withdraws that convergence claim. The split is drawn on three independent axes that the contract does not supply: (1) REVERSIBILITY - ingestion decisions are cheap to correct, custody decisions are irreversible and founder-gated, presentation decisions are client-side and reversible; (2) REPOSITORY AND WORK KIND - CH-11 and CH-12 are backend/infrastructure with EXTERNAL_INFRASTRUCTURE and PB-11 dependencies, CH-13 is client work under a founder-frozen hard gate; (3) GATE VISIBILITY - placing F016 in CH-11 while the findings it gates (F011/F014/F015) sit in CH-13 makes the gate cross a chapter boundary, so it can no longer be silently absorbed by the chapter it gates. The resulting boundaries happen to be compatible with the frozen chain, which is a constraint they must satisfy, not evidence that they are right.",
+  "unitAssignmentRules": [
+   "RULE 1 - A finding is owned by the chapter that owns the system which must become correct for it to stop recurring. Exactly one owner. Cross-references are recorded and never counted as ownership.",
+   "RULE 2 - A chartered obligation is owned by the chapter that must DO it or PROVE it.",
+   "RULE 3 - A FROZEN_OUTCOME obligation whose content is a constraint on future work is owned by the chapter that owns the authority it froze; it appears as a protectedBoundary or nonGoal in every other chapter it constrains.",
+   "RULE 4 - A CHARTERED_SCOPE:preserve obligation is owned by the chapter that would otherwise break it.",
+   "RULE 5 - A historicalItems obligation (roadmap Items 1-17) is owned by the chapter that continues that item's work.",
+   "RULE 6 - A founderCheckpoints obligation is owned by the chapter that must not proceed past it, and appears in that chapter's founderActions.",
+   "RULE 7 - An entryCondition obligation (RC-C11) is owned by CH-17.",
+   "RULE 8 - Where charter ownership and implementation ownership legitimately differ, the obligation is owned by the IMPLEMENTING chapter and the charter relationship is stated explicitly. This is the founder's ruling, not an invention, and it never creates a duplicate programme.",
+   "RULE 9 - No obligation and no finding may be assigned to more than one chapter. Where two chapters both appear to need it, either the obligation is genuinely two obligations (drag/drop: CO-RC-C5-009 intake and CO-RC-C9-011 platform) or one chapter owns it and the other consumes it under a named dependency."
+  ],
+  "coverageAssuranceByRcChapter": {
+   "RC-C0 (23)": "CH-01 (all)",
+   "RC-C1 (20)": "CH-01 (19); CH-17 (the PD-1/PD-2 disposition checkpoint)",
+   "RC-C2 (36)": "CH-03 (identity, relationship, presence, verification, profile, selection, preserve set); CH-05 (Availability Off control and its debt row); CH-17 (monetization decoupling, commercial taxonomy closeout, the deferred Free/Pro entitlement boundary)",
+   "RC-C3 (24)": "CH-02 (navigation authority, route registry, object-local depth, route demolitions, deep-link and redirect preservation, session-continuity preserve, remaining C3 debt); CH-14 (navigation correction and four primaries, Discover domains, header semantic layers, responsive IA, Find/Go-To); CH-10 (LoginScreen disposition); CH-17 (the frozen governance lesson)",
+   "RC-C4 (28)": "CH-05 (all)",
+   "RC-C5 (33)": "CH-13 (composition authority, attachment lifecycle, intake and resolution, DR3 demolitions, preserve set, G5 sites, historical Items 5/10/13/14/15/16, intake half of drag-drop, orphan-window checkpoint); CH-14 (FD-8 official designation, E_OFFICIAL representation, institutional approval vocabulary); CH-11 (preserve of attachment/media capabilities and supported content behaviour)",
+   "RC-C6 (28)": "CH-04 (all)",
+   "RC-C7 (24)": "CH-06 (one canonical Conversation, Completion Register, Phase 5 retirement, history preservation); CH-07 (Thread and Space surfaces, membership/invite, Correspondence convergence and rename, institution entry points, dispositions, G5 sites, explicit-context contract)",
+   "RC-C8 (17)": "CH-08 (all)",
+   "RC-C9 (28)": "CH-16 (27); CH-17 (SupportScreen, explicitly NOT assigned to C9)",
+   "RC-C10 (21)": "CH-09 (Live state, origination, engagement, backend construction list, exit gates, open checkpoints, plural-language question); CH-10 (public acquisition clause); CH-04 (scale and topology obligations); CH-15 (Live moderation policy)",
+   "RC-C11 (17)": "CH-17 (all)"
+  },
+  "findingPartition": {
+   "CH-01": 0,
+   "CH-02": 16,
+   "CH-03": 9,
+   "CH-04": 26,
+   "CH-05": 6,
+   "CH-06": 5,
+   "CH-07": 0,
+   "CH-08": 0,
+   "CH-09": 24,
+   "CH-10": 8,
+   "CH-11": 9,
+   "CH-12": 13,
+   "CH-13": 12,
+   "CH-14": 8,
+   "CH-15": 1,
+   "CH-16": 2,
+   "CH-17": 4,
+   "total": 143,
+   "note": "Indicative partition demonstrating absorbability, computed against the Stage-3 findings index. It is NOT the ownership assignment - three downstream agents perform that. Any deviation they justify on evidence is legitimate; a finding with no chapter able to own it is not."
+  },
+  "wgAbsorption": {
+   "problem": "Agent E E-SC-2: all seventeen issued WG items, including six the founder AUTHORIZED, appear in zero candidate chapters. A portfolio built from those chapters would contain no WG work at all.",
+   "resolution": "No WG phase and no WG chapter. Every issued WG item is absorbed into the reconstruction of the system it belongs to, which is Agent C's own structural finding: CH-06 owns WG001, WG002, WG003, WG004, WG005, WG007, WG008, WG009, WG011, WG012, WG013, WG016, WG017; CH-13 owns WG006 (consuming CH-02, per the founder's explicit coordination ruling), WG010 and the composer half of WG014; CH-16 owns the platform half of WG014; CH-17 enforces WG015 accessibility as a definition-of-done requirement in every chapter and owns the authorization register. WG018 remains RESERVED/UNISSUED and visible in the accounting layer only.",
+   "authorizationDiscipline": "Six items are AUTHORIZED (WG001, WG002, WG004, WG005, WG006, WG009); eleven are NOT_AUTHORIZED. Authorization is founder-only. A chapter may hold an unauthorized WG item in scope-of-record without implementing it."
+  },
+  "validationAxisAttachment": {
+   "problem": "Agent E E-SC-7: none of the 82 validation obligations attaches to any candidate chapter; Agent C's namespace is used by nothing downstream.",
+   "resolution": "Every chapter carries certificationRequirements expressed in the Stage-0 validation topology vocabulary (CODE_STATIC, LOCAL_AUTOMATED, SINGLE_AUTHORIZED_BROWSER, TWO_ACCOUNT_TWO_BROWSER, MULTI_PARTY_REALTIME, NATIVE_DEVICE, PRODUCTION_READ_ONLY, EXTERNAL_INFRASTRUCTURE, FOUNDER_EXPERIENTIAL), and CH-17 owns the index and its three-way split."
+  },
+  "productQualityAxisAttachment": {
+   "problem": "Agent E E-SC-14: roughly 51 product-quality items produced in Stage 1 reduce to 2 by Stage 2, including the single most independent structural observation in the run.",
+   "resolution": "Every chapter carries worldClassObligations sourced from the competitive-deficiency and bug-fixed-but-still-inadequate analyses and from the frozen world-class interaction and content doctrine. OPP-2 - that the canonical Conversation consumes none of the shared rich primitives five other surfaces do consume - is carried explicitly in CH-13's whyOneCoherentBoundary, because it is an argument about chapter shape, not a wish list item."
+  },
+  "constructionDebtVersusValidationDebt": {
+   "question": "Mission item 4: is Agent C right that some validation obligations are CONSTRUCTION DEBT WEARING A VALIDATION LABEL?",
+   "answer": "YES for a named subset, and this design acts on it. VD-041 (Live engagement) sits against F089-F096, which the RC axis records as entirely unbuilt - there is nothing to validate. VD-042 (public preview) sits against F097-F107, recorded as 'Nothing built'. VD-050 records that no seek bar and no waveform exist AS CAPABILITIES AT ALL. These are reclassified in this design as CONSTRUCTION obligations of CH-09, CH-10 and CH-13 respectively. The VD rows themselves remain visible and unedited on the validation axis - reclassification here is an analytical proposal about how the portfolio SIZES the work, not an edit to Stage-0 evidence.",
+   "consequence": "Counting runnable validation, unbuilt construction and externally blocked work in one queue distorts readiness in two opposite directions at once: it makes the programme look closer to done than it is (unbuilt capability counted as pending validation) and simultaneously makes the runnable queue look more expensive than it is (externally blocked items counted as work).",
+   "authorityLimit": "This is an analytical classification, not a founder adjudication. Agent A classified the same items as unbuilt systems and Agent C as mislabelled validation; the disagreement is recorded as resolved-by-design, not as adjudicated."
+  },
+  "sequencingIsNotChapterShape": {
+   "statement": "Agent E stage-3 question 13 is accepted: the sequencing question is separable from the chapter question and the earlier artifacts entangled them. The chapter set above is a shape. The wave numbers are a PROPOSED ordering that respects every frozen gate; they authorise nothing.",
+   "frozenGatesPreservedInTheOrdering": [
+    "The RC-C5 hard gate: CH-13's RC-C5 territory opens only on founder-declared C4 live closure held in CH-05. Whether that gate also extends to the section 12 content stages (CH-11/CH-12) is recorded as NOT_RECORDED and referred to the founder; this design does NOT assume either answer and does not route around the gate.",
+    "The founder stop-order sequence: realtime transport, then identity and avatar certification, then the refresh-continuity contract, then video/screenshare/Live.",
+    "PB-11: every deployment, migration, reaper authority change, R2 ratchet step and store release is founder-actioned.",
+    "RC-C10 exit gates are not weakened by recognising the 2026-08-16/17 construction as RC-C10 execution."
+   ]
+  },
+  "howTheTwoAxesStayIndependent": "Every chapter declares expectedFindingFamilies and expectedObligationFamilies as SEPARATE lists. No chapter claims that owning a related finding discharges an obligation, or that owning an obligation discharges a finding. CH-17 reconciles 143/143 and 299/299 independently at closure. Three chapters exist with zero findings precisely so that the obligation axis cannot be silently reduced to annotations on the finding axis."
+ },
+ "rejectedOrMergedCandidates": [
+  {
+   "candidate": "CH-F Rich Content & Interaction (33 findings, 7 root systems)",
+   "disposition": "SPLIT into CH-11 Content Truth & Ingestion, CH-12 Media Custody/Delivery/Processing, CH-13 Composition/Intake/Rich Presentation",
+   "reason": "It fails the chapter test on its own author's terms: 7 root systems, 10 deficiency classes, 8 register states, 2 repositories, 2 of 5 preserved conflicts, a confirmed security architecture defect at one eleventh of its mass, and a six-verb capability question. No single status token could honestly describe it, and its RS-09 delivery sub-system (holding F138 and F058) and RS-11 intake sub-system (sitting on a frozen hard gate) were structurally invisible at that size. The split is drawn on reversibility, repository and work kind - not on the frozen contract's stage names."
+  },
+  {
+   "candidate": "CH-C Realtime Topology & Scale Decision (5 findings)",
+   "disposition": "MERGED into CH-04",
+   "reason": "Agent A's own honest assessment is that it is a founder architecture decision plus one measurement task, and that recording it as a chapter would dress a decision up as work. The measurement is a property of the transport substrate - F073 is a four-party CALL defect, not a Live defect - so it belongs where the substrate is owned. The Live audience-scale checkpoint remains chartered by RC-C10 and is consumed by CH-09."
+  },
+  {
+   "candidate": "CH-D Attention & Read-State Truth (5 findings)",
+   "disposition": "EXPANDED into CH-05",
+   "reason": "Correct as far as it went, and far too small: RC-C4's charter is roughly a dozen build obligations plus a growing demolition inventory, the Notification Preference Authority, the Subscribe vocabulary and four companion global surfaces with no recorded regression owner. Agent D called sizing C4 at five findings the single largest sizing error available to Stage 3. GAP-1 Settings joins it because the controls and the authority they express are one outcome."
+  },
+  {
+   "candidate": "CH-E Identity Consumption Certification (9 findings)",
+   "disposition": "KEPT as CH-03, with a gate added",
+   "reason": "Agent D showed the evidence supports either a chapter or a certification layer and does not choose. Kept as a chapter because an audit with no owner does not run; made terminable by having it publish an identity-conformance gate that every later chapter's definition of done must pass, which is how a re-entrant audit ends."
+  },
+  {
+   "candidate": "CH-I Product Taxonomy & Public Entry Adoption (6 findings)",
+   "disposition": "MERGED into CH-14",
+   "reason": "Agent A is right that it is adoption residue rather than a system awaiting reconstruction. It is not, however, nothing: it carries RC-C3's product-meaning obligations and the Create-intent migration, which pair naturally with the publication act."
+  },
+  {
+   "candidate": "CH-J Long-Form Publication Lifecycle (2 findings)",
+   "disposition": "MERGED into CH-14 as a CHARTER, not a chapter",
+   "reason": "Agent A's negative result is RESPECTED, not refuted: Articles looks like the clearest orphan chapter and is not one; its bug pressure genuinely disperses to intake, continuity, reference truth and taxonomy. What remains is publication semantics needing an owner and a release-gate placement. Granting it a charter inside CH-14 gives it an owner without double-counting dispersed findings into a chapter that would then look substantial."
+  },
+  {
+   "candidate": "CH-K Trust, Safety & Moderation (2 findings)",
+   "disposition": "KEPT as CH-15, narrowed to POLICY AND JOURNEY",
+   "reason": "Agent A declined to charter it on two findings; Agent D and the founder both recorded that under-evidenced does not mean low-consequence. Kept, but deliberately narrowed: it owns adjudication policy and the report journey, and does NOT own the media examination pipeline - see f137OwnerAndProof."
+  },
+  {
+   "candidate": "CH-L Cross-Platform Distribution Parity (2 findings)",
+   "disposition": "EXPANDED into CH-16",
+   "reason": "Two findings against roughly thirteen chartered build obligations plus the Real-Boundary certification layer that no other chapter provides. Reading CH-L as 'cross-platform covered' would have lost the only chapter where the product is proven on real devices."
+  },
+  {
+   "candidate": "CH-M Meetings Validation Under Protection (2 findings)",
+   "disposition": "MERGED into CH-04",
+   "reason": "Its analytically important contribution was a SUBTRACTION (F064/F113 are continuity work, not Meetings work) and that subtraction is preserved. What remains - the equivalent validation Meetings is owed and the FD-4 convergence of 3,890 duplicated lines - is chartered by RC-C6 and sequenced off Conversation capability certification, so it belongs with the substrate chapter that owns both. Keeping CH-M separate risked exactly what Agent E warned of: reading it as 'Meetings covered' while the frozen FD-4 demolition disappeared."
+  },
+  {
+   "candidate": "CH-N Register & Certification Governance (4 findings)",
+   "disposition": "EXPANDED into CH-17",
+   "reason": "Agent A is right that recording it as a construction chapter would be a category error. Expanded into the closure gate itself so that RC-C11's seventeen obligations, the validation index, the burn-down accounting and the deferred decisions have a home."
+  },
+  {
+   "candidate": "CH-O Conversation Party & Message Model (5 findings)",
+   "disposition": "EXPANDED into CH-06",
+   "reason": "Five findings of model integrity cannot carry the canonical Conversation, the Completion Register, Phase 5 retirement and thirteen WG capabilities. Agent D recorded that leaving CH-O as the only conversation representation would leave the institution-side experience represented by a five-finding model-integrity system with no institutional scope."
+  },
+  {
+   "candidate": "A dedicated Media Safety / Scanning chapter for F137",
+   "disposition": "REJECTED",
+   "reason": "It would need its own copy of the storage lifecycle, the ingestion choke point, the derivative worker and the delivery boundary - manufacturing temporary architecture, which the chapter test forbids. See f137OwnerAndProof."
+  },
+  {
+   "candidate": "A dedicated Settings chapter for GAP-1",
+   "disposition": "REJECTED, folded into CH-05",
+   "reason": "GAP-1 has zero findings and its content is two frozen obligations about what reaches a person and how they control it. A Settings chapter would be a container, not an outcome."
+  },
+  {
+   "candidate": "A dedicated WG / messaging-features phase",
+   "disposition": "REJECTED",
+   "reason": "Every one of the seventeen WG rows names a capability that belongs inside the reconstruction of an existing system; not one is a standalone feature. A WG phase would rebuild composer, message and attention surfaces a second time."
+  },
+  {
+   "candidate": "A dedicated Platform Administration chapter for PD-1",
+   "disposition": "REJECTED, folded into CH-01 with the decision in CH-17",
+   "reason": "Zero finding pressure, and it entered the register by MEASUREMENT (34 G5 sites in 11 admin files) rather than by an observed product failure. Sizing it by code footprint would invent scope the evidence does not support; its only concrete obligations are the G5 conversion and a founder disposition."
+  },
+  {
+   "candidate": "Folding CH-08 Institution Room into CH-07 or CH-09",
+   "disposition": "REJECTED",
+   "reason": "RC-C8 explicitly records that Live is NOT an Institution Room (Option C rejected) and that C8 and C10 remain separate constructions. It is the founder's own control case for whether the portfolio is a reconstruction plan or a defect plan; a chapter is how it stays visible."
+  },
+  {
+   "candidate": "Folding CH-10 Public Acquisition into CH-09 Live or CH-14 Publication",
+   "disposition": "REJECTED",
+   "reason": "Its load-bearing content is an AUTHORITY that exists nowhere - an anonymous, zero-authority capability projection - not a set of Live screens. Folding it into Live would place a security boundary inside a chapter whose exit gates are about Live's own integration; folding it into Publication would place it inside a chapter with no authority-projection scope."
+  }
+ ],
+ "adversarialCriticismsAddressed": [
+  {
+   "id": "E-SC-1",
+   "criticism": "The section 12 convergence is a round trip, not evidence.",
+   "response": "ACCEPTED AND ACTED ON. The convergence claim is withdrawn from this design's evidence column. The CH-F split is drawn on reversibility, repository/work kind and gate visibility - three axes the contract does not supply. Compatibility with the frozen chain is treated as a constraint the boundaries must satisfy, never as corroboration. An independent test is proposed: if the decomposition is right, F016 sitting upstream of F011/F014/F015 must be observable as a real blocking relationship in implementation, not merely in the register."
+  },
+  {
+   "id": "E-SC-2",
+   "criticism": "All 17 issued WG items are absent from the proposed portfolio, including six the founder authorized.",
+   "response": "RESOLVED. Every issued WG item is absorbed by name into CH-06, CH-13, CH-16 or CH-17 (see designRationale.wgAbsorption). No WG phase and no WG chapter is created, because not one WG row is a standalone feature. WG005 - silent loss of a user's message on the product's primary action - is AUTHORIZED and STRONG and sits in CH-06, not four stages downstream."
+  },
+  {
+   "id": "E-SC-3",
+   "criticism": "CH-F is not a chapter.",
+   "response": "ACCEPTED. Split into CH-11, CH-12 and CH-13. F138 is now one of thirteen findings in a chapter whose governing outcome is irreversibility, rather than one of thirty-three in a chapter whose governing outcome had six verbs. F058 sits with the delivery boundary it blocks. The intake sub-system's exposure to the frozen RC-C5 hard gate is now a stated chapter-level dependency instead of a buried sub-system property."
+  },
+  {
+   "id": "E-SC-4",
+   "criticism": "The reconstruction axis is under-represented where it is most fully chartered.",
+   "response": "RESOLVED, and it drove four of the seventeen chapters. RC-C8 has its own chapter with zero findings. RC-C6's device layer is named scope in CH-04. RC-C9 is a full chapter, not two findings. RC-C11's nine entry conditions are CH-17's core. RC-C7's Space surfaces and Correspondence convergence verdict are named obligations of CH-07. All twenty disappeared obligation clusters have a named receiving chapter, including the ALREADY_LOST 68 SizedBox.shrink() item, which is re-entered in CH-01."
+  },
+  {
+   "id": "E-SC-5",
+   "criticism": "CH-B's certification-not-construction framing rests on 9 WEAK rows and is contradicted by a frozen register.",
+   "response": "ACCEPTED. CH-04 does NOT describe itself as certification-only. Its certificationRequirements make live re-proof of F006/F007/F008/F010 a precondition of any completeness claim, and CH-06 owns the Conversation Completion Register that still names those capabilities as unresolved. The two records are reconciled by proof, not by preferring one."
+  },
+  {
+   "id": "E-SC-6",
+   "criticism": "The duplication-retirement class has no carrier.",
+   "response": "RESOLVED. Every chartered demolition has a named owner and appears in that chapter's destructiveBoundaries: DR1 eight surfaces plus four companions in CH-05, DR2 institution_live_rooms_screen in CH-08, DR3 six composers / eleven pipelines / 25 paste files in CH-13, FD-4's 3,890 duplicated Meetings lines in CH-04, RC-C7's three thread implementations and four institution entry points in CH-07, DR5's three profile implementations in CH-03."
+  },
+  {
+   "id": "E-SC-7",
+   "criticism": "None of the 82 validation obligations is attached to any candidate chapter.",
+   "response": "RESOLVED. Each chapter's certificationRequirements are expressed in the Stage-0 validation topology vocabulary, and CH-17 owns the index and the three-way split. The concentration risk is preserved rather than smoothed: the coordinated multi-party batch certifies 19 obligations in one session whose environmental dependency is recorded as unreliable."
+  },
+  {
+   "id": "E-SC-8",
+   "criticism": "F035 has operationally left the C4 set while being labelled a proposal.",
+   "response": "CORRECTED. F035 is carried by CH-05 as C4_OWNED_OPEN under PB-08 and the frozen BOUNDARY-REALTIME-LIVE-PROTECTED-FROM-RIC doctrine. Agent A's substantive argument is recorded as a founder question in CH-05's founderActions and is NOT executed in any table."
+  },
+  {
+   "id": "E-SC-9",
+   "criticism": "The operative tables answer founder questions the prose leaves open.",
+   "response": "ACCEPTED. No chapter's tables assert an answer to the RC-C5 gate-scope question. CH-11 and CH-13 both name it as a blocking founder decision, and CH-13's dependsOn states the gate explicitly rather than routing around it."
+  },
+  {
+   "id": "E-SC-10",
+   "criticism": "F139 is being adjudicated by accumulation.",
+   "response": "SUPERSEDED BY FOUNDER RULING and carried accordingly. F139 is STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED: structural CLOSED, production remediation and live certification OUTSTANDING. CH-12 certifies both dimensions separately and the founder's lock (no return to OPEN, no promotion to LIVE_CERTIFIED without new authority or evidence) is recorded as a certification requirement."
+  },
+  {
+   "id": "E-SC-11",
+   "criticism": "Four of the five preserved conflicts sit inside the three largest chapters; a status roll-up conceals them.",
+   "response": "RESOLVED STRUCTURALLY AND PROCEDURALLY. The largest chapter is now 26 findings rather than 33, and the conflicts are distributed: F043 in CH-04, F051 in CH-03, F122 in CH-11, F139 in CH-12, RC-C10's state in CH-09. CH-17 requires item-level reporting of every preserved conflict at every closure; a chapter-level roll-up that conceals one is a governance failure, not a formatting choice."
+  },
+  {
+   "id": "E-SC-12",
+   "criticism": "Proof-level merges are invisible to identifier accounting.",
+   "response": "RESOLVED for the named cases. F064 and F113 keep separate proof burdens in CH-02 (single-browser versus multi-party Meetings topology, VD-031 UNKNOWN) and a V2 proof may not discharge the V4 obligation. F016 now sits in CH-11 while the findings it gates sit in CH-13, so the gate crosses a chapter boundary and cannot be absorbed."
+  },
+  {
+   "id": "E-SC-13",
+   "criticism": "A completed crossing of a protected boundary has been left unclassified by four consecutive artifacts.",
+   "response": "CARRIED AS CH-04'S FIRST FOUNDER ACTION. This design does not classify it either - it has no authority to - but it refuses to let the chapter start honestly while the question ages, and it names CH-04 as the chapter that cannot proceed without an answer, because it proposes further work in the same protected layer."
+  },
+  {
+   "id": "E-SC-14",
+   "criticism": "Agent C's product lens has no downstream carrier.",
+   "response": "RESOLVED. Every chapter carries worldClassObligations. OPP-2 (the canonical Conversation consumes none of the shared rich primitives that five other surfaces consume) is carried as a chapter-shape argument in CH-13, not as a wish."
+  },
+  {
+   "id": "E-SC-15",
+   "criticism": "The only acquisition path is gated behind a chapter nothing charters, and sequenced last.",
+   "response": "RESOLVED. CH-02 is chartered and sits in Wave 1 with the highest leverage in the set. CH-10 exists as a chapter with its own authority argument, and its public-index truthfulness slice is sequenced early so signed-out visitors stop being shown a confidently false 'live now: 0' while the conversion half waits on the continuity keystone."
+  },
+  {
+   "id": "E-SC-16",
+   "criticism": "Two terminal rows carry unfinished proof and one LIVE_CERTIFIED row certifies a non-event.",
+   "response": "ACCEPTED. F076/F077's outstanding UI observation is a certification requirement of CH-09. F114's evidence form is stated in CH-04 for what it is - it certifies that nothing was touched, not that touching is safe - and any Meetings slice replaces it with a real regression proof."
+  },
+  {
+   "id": "E-SC-17",
+   "criticism": "The coverage aggregate's 126 of 143 is a sum over overlapping sets.",
+   "response": "NOT USED. This design performs a clean 143 partition computed against the Stage-3 findings index, and states that the partition is indicative of absorbability rather than an ownership assignment."
+  },
+  {
+   "id": "E-SC-18",
+   "criticism": "CH-B's justification contains an unverifiable count.",
+   "response": "NOT INHERITED. CH-04's states are re-derived from the Stage-3 findings index; no count is carried forward from Agent A's prose."
+  }
+ ],
+ "continuityResolution": {
+  "verdict": "DEDICATED CHAPTER - CH-02 Continuity & Destination Authority. It is neither distributed across existing chapters nor force-fitted into an RC chapter to remove an orphan.",
+  "evidenceForADedicatedChapter": [
+   "Sixteen findings spanning six unrelated product surfaces resolve to TWO shared causes (F065 session-state establishment fragmented across call sites; F069 route classification maintained as a hand-kept fail-OPEN allowlist). A cause set that produces defects on six surfaces is a system, not a per-surface bug class.",
+   "REFRESH IS NOT NAVIGATION is a founder-frozen PLATFORM CONTRACT with no implementing authority. Contracts without authorities are the failure shape this programme exists to end.",
+   "No RC chapter charters it, and the reason is structural rather than accidental: four chapters touch continuity and three of them touch it as PRESERVATION (RC-C1 preserve session handling, RC-C3 preserve session continuity, RC-C5 preserve drafts) while RC-C9 touches it as a platform build item. Preserving a thing is an instruction NOT to reconstruct it.",
+   "Chronology confirms it: the roadmap froze 2026-08-15; the continuity contract froze 2026-08-17. The reconstruction axis could not have chartered an authority whose governing contract did not yet exist.",
+   "Distribution was tested and rejected: if each surface chapter owned its own continuity findings, each would build its own destination reconstruction and its own session-state reading. That is the temporary architecture the chapter test forbids, and it is the observed cause of the sixteen findings."
+  ],
+  "correctionAccepted": "Stage-2 correction CORR-1 is adopted: F069 IS explicitly attributed to RC-C3 in rc-map. The chapter therefore does not claim that no finding in the cluster has any recorded RC relationship; it claims that no chapter charters the AUTHORITY, which remains true.",
+  "f065KeystonePreserved": {
+   "relation": "F065 -> F059, F061, F062, F063, F064, F103, F104 (recorded keystone, seven-way fan-out) plus the founder-frozen Live auth-return obligations.",
+   "howItIsPreserved": "As an ORDERING CONSTRAINT inside CH-02, not as a merge. F065's live refresh proof is the chapter's first gate; until it passes, no downstream continuity finding may be claimed closed, and no other chapter may close one by local patch. The seven gated findings keep their own identifiers, states and proof burdens - explicitly including F064 (single-browser) and F113 (multi-party Meetings topology, VD-031 UNKNOWN), which must not be discharged by one proof.",
+   "consequenceForLive": "F103 and F104 stay in CH-02 because the register itself states they belong to the shared continuity authority. CH-10 is their most important consumer and cannot certify conversion without them - which is why the register's only acquisition path is sequenced behind this chapter rather than behind Live."
+  },
+  "isItAlsoASharedSystemConstructionBoundary": "Yes, and that is stated rather than hidden: CH-02 builds an authority that CH-04, CH-06, CH-09, CH-10, CH-13, CH-14 and CH-16 all consume. The chapter's exit condition is a product-wide statement - no surface reconstructs its own destination - so its certification is cross-system by construction and is co-signed by the consuming chapters' definitions of done.",
+  "founderDependency": "It requires an explicit founder act to admit a new cross-cutting authority after RC-C0 closed. The roadmap's thesis is AUTHORITIES BEFORE SURFACES and it enumerated the cross-cutting authorities once, at C0, as three presentation authorities. A fourth exists. The admission mechanism itself is missing and will be needed again."
+ },
+ "f137OwnerAndProof": {
+  "finding": "F137 - the moderation service is text-only; NO uploaded media of any kind is scanned. Founder classification: ZERO_COVERAGE_SECURITY_GAP.",
+  "owner": "CH-12 Media Custody, Delivery & Processing",
+  "ownershipTestUsed": "Which system's responsibility boundary must change for an uploaded object to be examined at all, and for that examination to have a consequence? Not: which chapter's name contains a matching word.",
+  "proof": [
+   "AN EXAMINATION IS AN OPERATION OVER A STORED OBJECT. It is asynchronous, it runs after the bytes exist, and it must also cover objects uploaded BEFORE it existed. The only chapter that owns an asynchronous pipeline over stored originals, plus the backfill posture for the existing population, is the custody and processing chapter - it already owns derivative generation, EXIF stripping and the reconciliation cohorts.",
+   "A VERDICT IS ONLY REAL IF IT GATES DELIVERY. F138 establishes that the delivery boundary today performs no authorization of any kind and that possession of a key or a historical URL IS access. A scanner whose verdict cannot stop bytes reaching a viewer is theatre. The delivery decision is owned by CH-12 and by nothing else.",
+   "A VERDICT ALSO GATES RETENTION. Quarantine, hold and removal are retention states over the same object, and the retention authority - with its isRetentionEligible() asymmetry and its D-6 seven-step order - lives in CH-12. Splitting verdicts from retention would create a second actor able to influence deletion, which is precisely the F143 hazard (logical decision authorising physical consequence) in a new place.",
+   "INGESTION SUPPLIES AN INPUT, NOT THE HOME. CH-11 establishes the resolved type class the scanner needs, and rejects at the door - but presign-time rejection is synchronous and per-door, and F129 proves the doors are still plural. A scan bound to one ingestion door would miss objects by construction.",
+   "PRESENTATION CONSUMES ACCESS STATE AND NEVER DECIDES IT (the frozen client-primitive rule), so CH-13 cannot own it.",
+   "A DEDICATED SAFETY CHAPTER WOULD MANUFACTURE TEMPORARY ARCHITECTURE. To act, it would need its own storage lifecycle, ingestion choke point, derivative worker and delivery gate - four systems CH-12 already owns. The chapter test forbids exactly this.",
+   "THE MODERATION CHAPTER IS THE WORD-SIMILARITY TRAP AND IS REFUSED. CH-15 owns no storage lifecycle, no delivery boundary, no worker and no ingestion door. Assigning F137 there would satisfy the vocabulary and defer the capability."
+  ],
+  "whatCH15OwnsInstead": "The POLICY and the CONSEQUENCE: what a positive verdict means, whether the object is quarantined or removed, what the uploader and the viewer are told, how a false positive is appealed, and how an automated verdict relates to a human report. CH-12 cannot build the mechanism against an undefined policy, so CH-15's policy freeze precedes CH-12's implementation. This is a named dependency, not shared ownership.",
+  "scopeConfrontedAsTheFounderRequired": {
+   "maliciousFileAndContentScanning": "Owned by CH-12 as an asynchronous verdict pipeline covering every stored object, including a backfill over the existing population.",
+   "mediaSafetyAndModeration": "Mechanism CH-12; policy, adjudication and appeal CH-15; in-Live surface CH-09 consuming CH-15.",
+   "imageVideoAudioDocumentImplications": "Each kind needs a different examination and a different failure mode; the per-kind capability registry is CH-11's resolved type class, consumed by CH-12. Documents (PDF/DOCX/PPTX) are the highest-risk and least-covered kind and are also the kind F016 shows the product does not yet honestly understand.",
+   "storageLifecycle": "CH-12. Quarantine is a retention state, and the isRetentionEligible() asymmetry must hold for it: uncertain may KEEP, never DELETE.",
+   "privacy": "CH-12 - the same pipeline that strips EXIF (F132) and mirrors preview imagery into custody (F135). Scanning must not itself become a disclosure: third-party providers would receive private user content, which is why provider selection is a founder act.",
+   "providerVersusSelfHosting": "The provider-independence doctrine applies: a self-hosted tier-0 default is required and external providers are optional tier-1 enrichment, never load-bearing. Recorded as a constraint on CH-12, not as a selection.",
+   "falsePositivesAndAppeals": "CH-15 owns the appeal route and the consequence ladder; CH-12 must make a verdict reversible in effect, which means quarantine must be a reversible state and never a deletion.",
+   "existingMimeAndContentTruthBoundaries": "The 28-type MIME policy remains the single source of PERMISSION (CH-11). A scan verdict is a separate axis from permission: a permitted type may still be refused delivery. Collapsing the two would let a scanner silently redefine the accepted-format policy.",
+   "asynchronousProcessing": "CH-12. An upload must not block on examination, and an unexamined object must not be deliverable - which makes the interim state an explicit, product-visible one rather than an implicit gap."
+  },
+  "authorizes": "NOTHING. No implementation, no architecture selection, no provider choice. This records an owner and the boundary that justifies it."
+ },
+ "unmappedSurfaceResolution": {
+  "PD-1 Platform Administration": {
+   "resolution": "Work lands in CH-01 (11 files / 34 G5 sites). The DISPOSITION DECISION is owned by CH-17 and is a founder act.",
+   "evidence": "Zero finding pressure - no finding in F001-F143 maps to platform administration under root-system analysis. It entered the register by MEASUREMENT, not by an observed product failure.",
+   "discipline": "Sized by its authority footprint, not by its code footprint. No scope is invented for it."
+  },
+  "PD-2 Authentication & Account Entry": {
+   "resolution": "SPLIT, with both halves named. STRUCTURAL half (what establishes and restores a session; what an unclassified route means) is owned by CH-02. EXPERIENCE half (sign-in and sign-up surfaces, LoginScreen disposition, 3 G5 sites) is owned by CH-10. The disposition decision itself is owned by CH-17 and must resolve before C11.",
+   "evidence": "HIGH finding pressure that was not obvious: F065, F069, F100, F103, F104 and the router half of F027 all name authentication mechanisms explicitly. PD-2 is not an orphaned pair of screens; the register has been describing its internals under other names.",
+   "note": "Agent A rates the structural link HIGH, Agent B rates the same edge MEDIUM-HIGH inference. Both readings are preserved; the split does not depend on which is right, because each half is independently justified."
+  },
+  "SupportScreen": {
+   "resolution": "DELIBERATELY UNOWNED as construction. No chapter takes it. The DISPOSITION DECISION is owned by CH-17.",
+   "evidence": "Zero finding pressure; explicitly NOT ASSIGNED TO C9; explicitly protected from deletion, isolated modernisation and forced chapter assignment.",
+   "discipline": "Forcing it into a chapter to tidy the map is exactly the ticket-grouping the chapter test forbids. FD-12 applies: it must be dispositioned on architecture, never on reference count - and it is the class of surface that looks dead to tooling and is not."
+  },
+  "GAP-1 Settings / Personal Controls": {
+   "resolution": "Owned by CH-05 Attention, Notification Preference & Personal Controls. Founder placement ratification required (it is recorded as FOUNDER-OWNED ROADMAP GAP 1).",
+   "evidence": "Zero finding pressure from the F-register; NON-ZERO doctrine pressure - two frozen obligations with no owner: the Notification Preference Authority (ATTENTION EXISTENCE != DELIVERY CHANNEL != INTERRUPTION) and the Availability Off control (IMPLEMENTATION OWNER UNASSIGNED).",
+   "caution": "The zero finding-pressure result may be a measurement artefact of what the founder happened to exercise. Absence of findings on an unexercised surface is not evidence of health, and this chapter should expect to generate findings once Settings is actually used."
+  },
+  "GAP-2 Long-Form Publishing (Articles)": {
+   "resolution": "AGENT A'S NEGATIVE RESULT IS RESPECTED, NOT REFUTED. No Articles reconstruction chapter is created. Publication SEMANTICS receive a charter inside CH-14; the dispersed bug pressure stays where root-system analysis placed it (F025/F026 to CH-13 intake, F027/F070 to CH-02 continuity, F121 and F141 to CH-12 custody, F024 to CH-14 taxonomy, F028 isolated and terminal).",
+   "evidenceThatConfirmsTheDispersal": "Each dispersal is individually evidenced and F121 versus F025 was explicitly distinguished at issuance. Articles has been generating findings in OTHER systems because it is a NEW surface exercising shared authorities that were never finished - which is an argument for finishing those authorities, not for chaptering Articles.",
+   "whatIsAddedBeyondAgentA": "A release-gate placement. RC-C11's nine entry conditions enumerate C0-C10 and have NO declared home for a shipped, public, live-certified capability. Granting the charter without placing it in the entry conditions would leave the same gap in a new form, so CH-17 carries that placement as a founder decision.",
+   "preservedContradiction": "GAP-2 remains OPEN AS GOVERNANCE - CONTRADICTED BY IMPLEMENTATION. The charter does not resolve that contradiction; it gives it an owner."
+  }
+ },
+ "contradictions": [
+  "F043 CONFLICTING_CURRENT_STATE - carried forward UNRESOLVED in CH-04. Analytical consensus is not founder adjudication.",
+  "F051 CONFLICTING_CURRENT_STATE - carried forward UNRESOLVED in CH-03.",
+  "F122 CONFLICTING_CURRENT_STATE - carried forward UNRESOLVED in CH-11; the dispute between the RIC stage table and the implementation checkpoint (CR-O3) is preserved, and its cross-repository nature is why it cannot be settled inside one repository's record.",
+  "F139 - founder-ruled STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED. The Stage-0 schema carries one currentState field and cannot express both dimensions; CH-12 certifies them separately. The historical contradiction between the two source documents is preserved, not corrected away.",
+  "RC-C10 - ACTIVE / STRUCTURALLY PARTIAL / NOT CERTIFIED. Recognising the 2026-08-16/17 construction as RC-C10 execution is not completion, not certification, and not permission to weaken either exit gate. Its 21 obligations keep their independently evidenced states and UNKNOWN stays UNKNOWN.",
+  "RC-C5 HARD GATE SCOPE - whether the founder-frozen gate on C4 live closure also gates the section 12 content stages is NOT_RECORDED. This design does not assume either answer, does not route around the gate in its tables, and names it as blocking for CH-11 and CH-13.",
+  "PB-02 / RC-C6 COMPLETED CROSSING - both shared causes of the twenty-finding realtime cluster were repaired inside a PRESERVE / DO-NOT-TOUCH layer with no governed record authorizing the chapter or exempting the boundary. Four consecutive artifacts declined to classify it. Carried, unclassified, as CH-04's first founder action.",
+  "DRAG/DROP DUAL CHARTER - RC-C5 and RC-C9 both charter it. This design treats them as two distinct obligations with two owners (intake layer in CH-13, platform surface in CH-16) rather than adjudicating a single owner; Agent B's D-2 disagreement stands.",
+  "F060 DOMAIN - Agent A moved it from the recorded continuity domain to realtime on the ground that destination, roster and duration ARE preserved. This design follows that placement (CH-04) and preserves the alternative reading as legitimate.",
+  "F073 PLACEMENT - root cause explicitly UNKNOWN; its placement with the topology cluster is an inference from a symptom. Carried in CH-04 with the inference stated, and it may not be closed by that inference.",
+  "F035 OWNERSHIP - retained in CH-05 under PB-08; the re-owner argument is preserved as a founder question and is not executed.",
+  "GAP-2 - OPEN AS GOVERNANCE, CONTRADICTED BY IMPLEMENTATION. The charter grant gives the contradiction an owner; it does not resolve it.",
+  "TWO UNRECONCILED CERTIFICATION VOCABULARIES - the RC layer table and the section 12/17 validation classes coexist, so any cross-axis 'is this certified?' question is ambiguous by construction. CH-17 owns the reconciliation; until it happens, chapter states and finding states are not interchangeable.",
+  "VALIDATION VERSUS CONSTRUCTION DEBT - this design reclassifies VD-041, VD-042 and VD-050 as construction obligations for sizing purposes. Agent A classified the same items as unbuilt systems and Agent C as mislabelled validation; the underlying disagreement (Stage-1 D-4) is recorded as resolved-by-design, not as adjudicated.",
+  "TWELVE SINGLE-MENTION FINDINGS - F092, F093, F094, F095, F098, F099, F100, F101, F102, F105, F106, F109 have exactly one corpus mention each and constitute most of CH-09's engagement slice and CH-10. Their DECOMPOSITION is weak even where the chartering arguments are strong. No chapter is sized on them without the FD-5 re-derivation named in CH-09's founderActions."
+ ],
+ "founderDecisionsRequired": [
+  "ADMIT CH-02 Continuity & Destination Authority as a new cross-cutting authority after RC-C0 closed - and rule on the admission mechanism generally, since the roadmap froze two days before the continuity contract did and the axis has no way to accept a later authority.",
+  "RC-C5 HARD GATE SCOPE: does founder-declared C4 live closure gate only the composer surfaces (CH-13), or also the section 12 content stages (CH-11, CH-12)? This determines whether the content chain may run now. NOT_RECORDED; founder-only.",
+  "F035 ownership: retained in CH-05 under PB-08, or re-owned to CH-04 on the argument that attention presentation cannot manufacture a media-connected count.",
+  "CLASSIFY the completed crossing of RC-C6's PRESERVE list and PB-02 (AD-CON-5) before CH-04 proposes further work in that layer.",
+  "GAP-1 placement: ratify the Notification Preference Authority and the Availability Off control landing in CH-05 (recorded as FOUNDER-OWNED ROADMAP GAP 1, owner explicitly UNASSIGNED).",
+  "PD-1 Platform Administration disposition, and confirmation that it is sized by authority footprint rather than code footprint.",
+  "PD-2 disposition: ratify the structural/experience split (CH-02 / CH-10). Required before C11.",
+  "SupportScreen disposition - it remains deliberately unowned as construction and may not be force-assigned.",
+  "GAP-2: grant the publication-semantics charter to CH-14 and place it in the RC-C11 entry conditions, which today have no home for a shipped, public, live-certified capability.",
+  "F069 exception policy: do guest-reachable realtime and meeting routes become a named exception class, and which routes are genuinely public - the reconciliation of DOCTRINE-PUBLIC-FIRST with fail-CLOSED classification.",
+  "Checkpoint D: Live moderation policy, and confirmation that F095's in-Live surface is delivered by CH-09 consuming CH-15's authority rather than owned by CH-15.",
+  "Checkpoint E: audience-scale topology and provider, with provider independence preserved - measured in CH-04, decided by the founder, consumed by CH-09.",
+  "Media examination (F137): provider selection under the provider-independence doctrine, and the appeal / false-positive consequence policy.",
+  "Group identity doctrine (F055 ordering, F056 group avatar treatment) - no doctrine exists anywhere in the 64 records and engineering cannot supply it.",
+  "WG016 doctrine: who may remove whom from a conversation.",
+  "Authorization decisions for the eleven NOT_AUTHORIZED WG items before they enter any chapter's implementable scope.",
+  "PB-11 acts, each individually: deployment of the three committed migrations, reaper authority change after the seven-step order, the R2 public-read ratchet step 4, the Cloudflare CORS action, Conversation Phase 5 retirement authorization, and the store releases that alone can clear F071.",
+  "Checkpoint 7 before any of the eight DR1 attention surfaces are retired, and whether Attention earns primary navigation.",
+  "Whether coordinated multi-party realtime testing is parked until one uninterrupted session is available - it gates 19 obligations at once.",
+  "A bounded, declared escalation to FD-5 sections 8-10 to re-derive the Live engagement obligations before CH-09's engagement slice is sized.",
+  "The final Free/Pro commercial entitlement boundary, when due - carried by CH-17 with its FUTURE COMMERCIALIZATION GOVERNANCE MARKER and the rule that no payment enforcement is activated or expanded during release-client reconstruction.",
+  "A watcher for the two gate-pinned legacy route aliases whose retirement trigger is 'a future observed link-traffic window' and which currently has no owner.",
+  "CHAPTER AUTHORISATION, individually, for all sixteen construction chapters. Roadmap approval is never chapter authorisation, and this artifact authorises nothing.",
+  "Whether C10 is complete or explicitly excluded from this release candidate (RC-C11 entry condition 2)."
+ ],
+ "notes": {
+  "authority": "ANALYTICAL PROPOSAL. Nothing here is ratified truth. No finding state, obligation state, protected boundary, frozen gate or founder ruling has been altered, merged, resolved or weakened. No implementation, migration, production mutation, infrastructure change or protected-boundary modification was performed or authorised.",
+  "scope": "STAGE 3 SYNTHESIS ONLY - chapter boundaries. Three downstream agents assign all 442 canonical units (143 findings and 299 chartered obligations) to this set. The set was designed to be complete enough to absorb every one of them; the indicative partitions demonstrate absorbability and are not the assignment.",
+  "dualAxisDiscipline": "The two axes are kept independent throughout. Every chapter declares finding families and obligation families separately. Three chapters (CH-01, CH-07, CH-08) carry zero findings and exist on chartered-obligation authority alone; CH-16 and CH-17 are overwhelmingly obligation-driven. 296 of 299 obligations have no finding, and RC-C8's seventeen obligations have none at all - the founder's control case is a chapter, not a footnote.",
+  "consolidationDiscipline": "Fifteen candidate systems and twelve RC chapters became seventeen implementation chapters. Eight candidates were merged or expanded, one was split three ways, five were rejected as chapters while their content was placed. Nothing was dropped: all 143 findings, all 299 obligations, all 17 issued WG items, all 82 validation obligations, all 20 disappeared obligation clusters and all 12 protected boundaries have a named home or a named owner for the decision about their home.",
+  "economy": "Consumed only the normalised Stage-0/1/2 artifacts named in the task plus the three Stage-3 indexes (index-findings.json, index-co-a.json, index-co-b.json) that were prepared for this stage. The ~703 MB historical corpus was NOT rescanned.",
+  "rawSourceEscalations": "NONE performed. One is RECOMMENDED and recorded as a founder decision: a bounded, declared read of FD-5 sections 8-10 before CH-09's engagement slice is sized, because F096 names it as the recovery source and twelve single-mention findings cannot otherwise be corroborated.",
+  "selfContamination": "This artifact is analysis output. It is not historical issuance evidence, and its later appearance in the searchable corpus does not make it so."
+ }
+}
