@@ -1,0 +1,96 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-03 F116 - three-site structural closeout and semantic residue search",
+  "chapter": "CH-03 (Identity Consumption & Presentation Truth)",
+  "date": "2026-08-19",
+  "threeSites": {
+    "post_card:140": {
+      "architectureFinding": "The `_readNestedString` path resolver was NOT a generic JSON utility. Its ONLY two call sites in the entire repository were inside `viewerIdentityProvider`, and both were person identity: it tried `id`/`user.id`/`profile.id`, then `handle`/`user.handle`/`profile.handle`. It was a PRIVATE PERSON PARSER wearing a helper's clothes - the F057 defect class, rebuilt locally, one level of indirection away from being recognisable.",
+      "privateModelFound": "`_ViewerIdentity` (id + handle) - a renamed person reference subset feeding `_isOwnPost` and the card build.",
+      "action": "`viewerIdentityProvider` now returns `AuraPersonIdentity?`; `_ViewerIdentity` DELETED; `_readNestedString` DELETED as dead. `_isOwnPost` compares against `viewer.userId` / `viewer.handle`.",
+      "polymorphicActorQuestion": "PostCard's AUTHOR is polymorphic (person or institution) and was left untouched - only the VIEWER, who is always a person, was migrated. No person semantics were forced onto an institution actor, and no new post-local identity type was created."
+    },
+    "author_profile_screen:471": {
+      "source": "`authMeDataProvider`, unwrapped as `me['user']` by hand.",
+      "defect": "If the payload was not nested exactly that way it resolved nothing, and 'am I looking at my own profile?' silently answered NO - the F057 shape.",
+      "action": "Reads the canonical model; `viewerId` / `viewerHandle` derive from it. Profile-domain state untouched."
+    },
+    "followers_screen:47": {
+      "source": "`authMeDataProvider`, with a nested-or-flat guess `(user is Map ? user['handle'] : me['handle'])`.",
+      "defect": "A second, weaker copy of what the canonical reader already does - one field is still a competing identity authority.",
+      "action": "Reads the canonical model. Follow/relationship state untouched."
+    }
+  },
+  "semanticResidueSearch": {
+    "method": "Repository-wide scan of lib/ for raw person-field map reads - ['displayName'], ['handle'], ['avatarUrl'], ['photoUrl'], ['fullName'] - excluding route parameters and comments.",
+    "result": "72 raw reads remain.",
+    "whereTheyAre": "Almost all sit inside TYPED DOMAIN MODELS - /domain/ files, *_repository.dart, *_models.dart - which the detector classifies as TYPED_DESERIALIZATION_BOUNDARY and therefore does NOT count as gate debt.",
+    "theHonestFinding": "MATERIAL. The previous pass classified those TYPES as legitimate different-domain concepts, which remains true of the types. But their PARSING is still independent person interpretation, and several carry their own competing fallback chains - `m['displayName'] ?? m['name'] ?? handle` (post_model), `_readString(j['displayName']) ?? _readString(j['name'])` (feed/domain/post), `m['avatarUrl'] ?? m['avatar'] ?? m['imageUrl']` (post_model), and a `'Guest'` fallback in meeting_identity.",
+    "examplesOfGenuinePersonParsers": [
+      "lib/core/compliance/blocks_repository.dart - the blocked PERSON",
+      "lib/core/interactions/follows_repository.dart - the requesting PERSON",
+      "lib/features/articles/data/articles_repository.dart - ArticleAuthor",
+      "lib/features/conversation/data/conversations_repository.dart",
+      "lib/features/feed/post_model.dart and feed/domain/post.dart - post author",
+      "lib/features/realtime/domain/realtime_models.dart",
+      "lib/features/updates/updates_repository.dart"
+    ],
+    "consequence": "Criterion 2 is NOT met. The client's SURFACES have converged; the client's TYPED BOUNDARIES have not. Reporting criterion 2 as met on the strength of three cleared detector rows would have been false - the search exists precisely to prevent that."
+  },
+  "f116ClosureTest": {
+    "1_backendProjectionsConverge": "MET",
+    "2_clientDeserializationConverges": "NOT MET - structural residue named and measured: 63 typed boundaries still deserialise person fields independently, several with their own fallback chains.",
+    "3_duplicateFallbackSemanticsEliminated": "MET AT THE SURFACE LAYER; NOT MET inside the typed boundaries, where private alias and fallback chains survive.",
+    "4_privateDuplicateModelsDeletedOrComposed": "MET - `_ViewerIdentity` was the last private person MODEL found; it is gone.",
+    "5_destinationModelsRetainOnlyNonIdentityState": "MET",
+    "6_everyRemainingSiteClassified": "MET - all 26 measured sites classified.",
+    "verdict": "F116 REMAINS PARTIALLY_VALIDATED. Not for lack of classification, and not for a cosmetic count - for a named structural residue: person deserialisation is converged at the surface and not yet at the typed boundary."
+  },
+  "f053Reassessment": {
+    "sameSurfaceNamedDifferently": "Not through a surface-owned fallback any more. Still possible through two different typed boundaries parsing the same person - e.g. a feed post author and an article author use different alias orders.",
+    "handleAvatarNameFromCompetingSources": "At the surface, no. Through domain models, yes.",
+    "inventedLabelsForIdentifiablePeople": "None found at any migrated surface. One survives inside a typed boundary: meeting_identity's `'Guest'` default.",
+    "faceWithoutIdentity": "Prevented by the canonical reader wherever it is used.",
+    "personVsInstitutionDistinct": "Preserved - several remaining measured sites are institution identity precisely because the two were kept apart.",
+    "verdict": "F053 REMAINS PARTIALLY_VALIDATED. Its residue is the same residue as F116 criterion 2, stated in visible terms: two domain models can still name one person differently."
+  },
+  "measurements": {
+    "gateDebt": { "before": "17 files / 29 sites", "after": "14 files / 26 sites" },
+    "typedBoundaries": { "before": 63, "after": 63 },
+    "changeClassification": { "realMigration": "3 sites", "deadCodeRemoval": "1 model (_ViewerIdentity) + 1 helper (_readNestedString)", "governedException": 0, "instrumentCorrection": 0 },
+    "cumulative": "66 files / 202 sites -> 14 / 26"
+  },
+  "remainderByCategory": {
+    "governedBackendExceptions": "2 - auth credential/verification reads, unchanged and deliberately still measured",
+    "specializedCircleAvatarPresentation": "15 - render a person from already-resolved typed/form/meeting values; identity semantics already canonical; presentation-class debt, not identity-semantic debt",
+    "detectorDomainNoise": "9 - institution name (2), institution actor (1), institution logo (2), institution slug (1), external TikTok account label (3). NOT person identity.",
+    "truePersonDebtAtSurfaces": "0",
+    "total": 26
+  },
+  "detectorRefinementQuestion": {
+    "status": "PRESERVED FOR A SEPARATE RULING - deliberately not answered here.",
+    "question": "Should a PERSON-identity conformance detector distinguish person identity from institution identity and from external-platform account identity, rather than flagging the field names displayName / handle / avatarUrl / slug regardless of domain?",
+    "evidence": "9 of the 26 measured sites are known non-person domain matches. They inflate a person-identity metric with institution and third-party-account data.",
+    "whatWasNotDone": "No regex narrowed, no exclusion added, no institution or TikTok field suppressed, no historical baseline semantics altered.",
+    "secondQuestionRaisedByThisPass": "Whether TYPED_DESERIALIZATION_BOUNDARY should become gate debt once a canonical client model exists. It was excluded when there was no alternative to a private typed boundary; now there is one, and the exclusion is what makes criterion 2's residue invisible to the ratchet."
+  },
+  "otherFindings": {
+    "F052": "No new evidence this pass; state unchanged.",
+    "F054/F055/F056/F057": "Unchanged. F057's defect class was found AGAIN inside post_card and eliminated, which supports rather than changes its recorded state.",
+    "F051": "UNTOUCHED. No CircleAvatar was migrated; the chat-avatar question is not adjudicated."
+  },
+  "verification": {
+    "frontendSuite": "787 PASS",
+    "identityTests": "included",
+    "protectedSuites": "identity + product + navigation + authority: 187 PASS",
+    "meetingsFrontend": "31 PASS",
+    "backend": "UNTOUCHED - no backend production code needed modification",
+    "identityConformanceGate": "PASS at the new baseline 14 files / 26 sites",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "analyze": "clean"
+  },
+  "founderDecisionsRequired": [
+    "NONE for the work done.",
+    "TWO instrument questions preserved for a separate ruling, stated above - domain-aware detection, and whether typed boundaries should now count as debt."
+  ]
+}

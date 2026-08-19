@@ -15,6 +15,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../updates/providers.dart';
 import '../providers.dart';
 import '../domain/profile.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 final followersProvider = FutureProvider.family<List<ProfileListItem>, String>((
   ref,
@@ -42,13 +43,14 @@ class _FollowersScreenState extends ConsumerState<FollowersScreen> {
     if (_attentionMarked) return;
     _attentionMarked = true;
     Future.microtask(() async {
-      final me = await ref.read(authMeDataProvider.future);
-      final user = me['user'];
-      final myHandle = (user is Map ? user['handle'] : me['handle'])
-          ?.toString()
-          .trim()
-          .toLowerCase();
-      if (myHandle == null || myHandle != widget.handle.trim().toLowerCase()) {
+      // F053/F116 — one reader for the viewer. The nested-or-flat guess this
+      // replaces was a second, weaker copy of what the canonical model does.
+      final viewer = AuraPersonIdentity.fromJson(
+        await ref.read(authMeDataProvider.future),
+      );
+      final myHandle = viewer.handle.trim().toLowerCase();
+      if (myHandle.isEmpty ||
+          myHandle != widget.handle.trim().toLowerCase()) {
         return;
       }
       await ref.read(notificationsControllerProvider.notifier).markReadForTarget(

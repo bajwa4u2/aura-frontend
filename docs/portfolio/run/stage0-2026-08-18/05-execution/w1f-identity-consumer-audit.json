@@ -27,20 +27,20 @@
   ]
  },
  "totals": {
-  "rows": 142,
+  "rows": 139,
   "byVerdict": {
    "NON_CONFORMANT": 17,
    "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 6,
    "AUTHORITY": 5,
    "TYPED_DESERIALIZATION_BOUNDARY": 63,
    "CONFORMANT": 39,
-   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 12
+   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 9
   },
   "nonConformant": 17,
-  "adhocMapExtractionInSurface": 12,
+  "adhocMapExtractionInSurface": 9,
   "typedDeserializationBoundary": 63,
   "conformant": 39,
-  "frontend": 132,
+  "frontend": 129,
   "backend": 10
  },
  "sixPersonShapedExtractionSites": {
@@ -1056,30 +1056,12 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/posts/presentation/widgets/post_card.dart",
-   "line": 140,
-   "evidence": "['handle'],",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/posts/presentation/widgets/post_card/post_card_parts.dart",
    "line": 98,
    "evidence": "AuraAvatar(",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/profile/presentation/author_profile_screen.dart",
-   "line": 471,
-   "evidence": "viewerHandle = user['handle']?.toString();",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",
@@ -1092,18 +1074,9 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/profile/presentation/followers_screen.dart",
-   "line": 47,
-   "evidence": "final myHandle = (user is Map ? user['handle'] : me['handle'])",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/profile/presentation/followers_screen.dart",
-   "line": 114,
+   "line": 116,
    "evidence": "AuraAvatar(name: label, imageUrl: avatarUrl, size: 40),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."

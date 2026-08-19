@@ -26,6 +26,7 @@ import '../../feed/domain/post.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 import '../domain/profile.dart';
 import '../providers.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class AuthorProfileScreen extends ConsumerStatefulWidget {
   const AuthorProfileScreen({super.key, required this.handle});
@@ -462,15 +463,13 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     final me = ref.watch(authMeDataProvider).valueOrNull;
     String normalizeHandle(String h) =>
         h.trim().replaceAll(RegExp(r'^@+'), '').toLowerCase();
-    String? viewerId;
-    String? viewerHandle;
-    if (me != null) {
-      final user = me['user'];
-      if (user is Map) {
-        viewerId = user['id']?.toString();
-        viewerHandle = user['handle']?.toString();
-      }
-    }
+    // F053/F116 — the VIEWER is a person, read through the one authority.
+    // The local `me['user']` unwrap here is the F057 shape: it resolved
+    // nothing when the payload was not nested exactly that way, and "am I
+    // looking at my own profile?" then silently answered no.
+    final viewer = AuraPersonIdentity.fromJson(me);
+    final String? viewerId = viewer.userId.isEmpty ? null : viewer.userId;
+    final String? viewerHandle = viewer.handle.isEmpty ? null : viewer.handle;
     final isSelf = isAuthed &&
         ((viewerHandle != null &&
                 normalizeHandle(viewerHandle) ==

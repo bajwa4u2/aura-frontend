@@ -31,6 +31,7 @@ import '../post_detail_screen.dart' show postProvider, repliesProvider;
 import 'post_card/post_card_models.dart';
 import 'post_card/post_card_parts.dart';
 import 'post_card/post_card_utils.dart';
+import '../../../../core/identity/person_identity_model.dart';
 
 String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   final url = (raw ?? '').trim();
@@ -66,27 +67,6 @@ Map<String, dynamic> _asMap(dynamic v) {
 
 String _readString(dynamic v) => (v ?? '').toString().trim();
 
-String _readNestedString(
-  Map<String, dynamic> root,
-  List<List<String>> candidatePaths,
-) {
-  for (final path in candidatePaths) {
-    dynamic cur = root;
-    var ok = true;
-    for (final key in path) {
-      if (cur is Map && cur.containsKey(key)) {
-        cur = cur[key];
-      } else {
-        ok = false;
-        break;
-      }
-    }
-    if (!ok) continue;
-    final value = _readString(cur);
-    if (value.isNotEmpty) return value;
-  }
-  return '';
-}
 
 String _normalizeVisibilityLabel(String? raw) {
   final v = (raw ?? '').trim().toUpperCase();
@@ -115,14 +95,19 @@ IconData _visibilityIcon(String? raw) {
   }
 }
 
-class _ViewerIdentity {
-  const _ViewerIdentity({required this.id, required this.handle});
-
-  final String id;
-  final String handle;
-}
-
-final viewerIdentityProvider = FutureProvider<_ViewerIdentity?>((ref) async {
+/// F053/F116 — THE VIEWER IS A PERSON, READ LIKE ONE.
+///
+/// This used to be a private `_ViewerIdentity` model fed by a hand-rolled
+/// nested-path reader that tried `id`, `user.id`, `profile.id` and the same
+/// three for `handle`. That reader was not a generic JSON utility despite
+/// looking like one: its ONLY two call sites were these, and both were person
+/// identity. It was a private person parser wearing a helper's clothes — the
+/// F057 defect class, rebuilt locally.
+///
+/// The canonical model already resolves a person flat or nested under the
+/// envelopes Aura actually uses, so the path list, the model and the helper
+/// are all gone.
+final viewerIdentityProvider = FutureProvider<AuraPersonIdentity?>((ref) async {
   final dio = ref.read(dioProvider);
 
   try {
@@ -130,20 +115,8 @@ final viewerIdentityProvider = FutureProvider<_ViewerIdentity?>((ref) async {
     final root = _asMap(res.data);
     final payload = root['data'] is Map ? _asMap(root['data']) : root;
 
-    final id = _readNestedString(payload, [
-      ['id'],
-      ['user', 'id'],
-      ['profile', 'id'],
-    ]);
-
-    final handle = _readNestedString(payload, [
-      ['handle'],
-      ['user', 'handle'],
-      ['profile', 'handle'],
-    ]);
-
-    if (id.isEmpty && handle.isEmpty) return null;
-    return _ViewerIdentity(id: id, handle: handle);
+    final viewer = AuraPersonIdentity.fromJson(payload);
+    return viewer.isEmpty ? null : viewer;
   } catch (_) {
     return null;
   }
@@ -446,11 +419,13 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
   }
 
-  bool _isOwnPost(dynamic author, _ViewerIdentity? viewer) {
+  bool _isOwnPost(dynamic author, AuraPersonIdentity? viewer) {
     if (viewer == null) return false;
 
     final authorId = _authorId(author);
-    if (authorId.isNotEmpty && viewer.id.isNotEmpty && authorId == viewer.id) {
+    if (authorId.isNotEmpty &&
+        viewer.userId.isNotEmpty &&
+        authorId == viewer.userId) {
       return true;
     }
 
