@@ -35,6 +35,7 @@ import 'widgets/realtime_consent_sheet.dart';
 import 'widgets/realtime_host_controls.dart';
 import 'widgets/realtime_join_requests_panel.dart';
 import 'widgets/realtime_participant_list.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class _CallRouteRedirectingFallback extends StatelessWidget {
   const _CallRouteRedirectingFallback();
@@ -3456,9 +3457,11 @@ class _RoomInviteCard extends StatelessWidget {
             const Text('No matching members found.', style: AuraText.small)
           else
             ...results.map((user) {
-              final id = (user['id'] ?? '').toString();
-              final displayName = (user['displayName'] ?? '').toString().trim();
-              final handle = (user['handle'] ?? '').toString().trim();
+              // F052/F053 — identity in a realtime surface, read canonically.
+              final person = AuraPersonIdentity.fromJson(user);
+              final id = person.userId;
+              final displayName = person.displayName;
+              final handle = person.handle;
               final bio = (user['bio'] ?? '').toString().trim();
               final title = displayName.isNotEmpty
                   ? displayName

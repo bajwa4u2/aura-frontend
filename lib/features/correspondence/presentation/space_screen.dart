@@ -21,6 +21,7 @@ import '../data/correspondence_identity.dart';
 import '../data/correspondence_live_service.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../institutions/data/institutions_repository.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 final _spaceDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, spaceId) async {
@@ -645,10 +646,15 @@ class _AddInstitutionMemberDialogState
               final userMap = m['user'] is Map
                   ? Map<String, dynamic>.from(m['user'] as Map)
                   : m;
-              final userId = _pickString(m, const ['userId', 'id']);
-              final name = _pickString(userMap, const ['displayName', 'name']);
-              final handle = _pickString(userMap, const ['handle']);
-              final avatarUrl = _pickString(userMap, const ['avatarUrl', 'imageUrl']);
+              // F053/F116 — canonical read; this had its own alias lists for
+              // name and avatar.
+              final person = AuraPersonIdentity.fromJson(userMap);
+              final userId = person.userId.isNotEmpty
+                  ? person.userId
+                  : _pickString(m, const ['userId', 'id']);
+              final name = person.displayName;
+              final handle = person.handle;
+              final avatarUrl = person.avatarUrl ?? '';
               final busy = _addingUserId == userId;
               return ListTile(
                 leading: _IdentityAvatar(label: name.isEmpty ? handle : name, imageUrl: avatarUrl),

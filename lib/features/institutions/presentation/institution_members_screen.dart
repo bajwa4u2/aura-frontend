@@ -13,6 +13,7 @@ import '../data/institutions_repository.dart';
 import '../../updates/providers.dart';
 import '../ui/institution_ds.dart';
 import 'institution_page.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class InstitutionMembersScreen extends ConsumerStatefulWidget {
   const InstitutionMembersScreen({super.key, required this.institutionId});
@@ -199,8 +200,11 @@ class _InstitutionMembersScreenState
         ? Map<String, dynamic>.from(member['user'] as Map)
         : <String, dynamic>{};
     final memberId = member['userId']?.toString() ?? '';
-    final displayName = user['displayName']?.toString().trim() ?? '';
-    final handle = user['handle']?.toString().trim() ?? '';
+    // F053/F116 — the person half; `role` and `capabilities` below are
+    // membership state and stay local.
+    final person = AuraPersonIdentity.fromJson(user);
+    final displayName = person.displayName;
+    final handle = person.handle;
     final role = member['role']?.toString().trim() ?? 'MEMBER';
     final caps = <String>{
       if (member['capabilities'] is List)

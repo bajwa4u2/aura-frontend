@@ -12,6 +12,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class InviteCreateScreen extends ConsumerStatefulWidget {
   const InviteCreateScreen({
@@ -746,7 +747,7 @@ class _CandidateRow extends StatelessWidget {
             CircleAvatar(
               radius: 20,
               child: Text(
-                candidate.name.isEmpty ? '?' : candidate.name[0].toUpperCase(),
+                candidate.name[0].toUpperCase(),
                 style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
@@ -1018,46 +1019,45 @@ String _humanizeInviteError(DioException e, {required String fallback}) {
   return fallback;
 }
 
+/// F116 case 2 — PERSON IDENTITY + DESTINATION STATE.
+///
+/// This carried a complete PRIVATE person reader: its own nested-envelope
+/// unwrap, its own alias list, its own `'Member'` invented fallback. The
+/// identity half is now composed; `subtitle` (the relationship state that
+/// makes someone a candidate) stays this model's own.
 class _InviteCandidate {
   const _InviteCandidate({
+    required this.person,
     required this.id,
-    required this.userId,
-    required this.name,
-    required this.handle,
     required this.subtitle,
   });
 
+  final AuraPersonIdentity person;
+
+  /// Selection key — the person's id when there is one, else their handle.
   final String id;
-  final String userId;
-  final String name;
-  final String handle;
   final String subtitle;
+
+  String get userId => person.userId;
+  String get name => person.label;
+  String get handle => person.handle;
 }
 
 _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
-  final user = _unwrapNestedUser(item);
-  final id = _pickString(user, const ['id', 'userId', '_id']);
-  final handle = _cleanHandle(_pickString(user, const ['handle', 'username']));
-  final name = _pickString(user, const [
-    'displayName',
-    'name',
-    'fullName',
-    'username',
-    'handle',
-  ]);
+  // The canonical reader already resolves a person flat or nested, and
+  // already owns the alias list and the fallback order.
+  final person = AuraPersonIdentity.fromJson(_unwrapNestedUser(item));
   final state = _pickString(item, const [
     'state',
     'status',
     'relationship',
   ]).replaceAll('_', ' ');
 
-  if (id.isEmpty && handle.isEmpty && name.isEmpty) return null;
+  if (person.isEmpty) return null;
 
   return _InviteCandidate(
-    id: id.isNotEmpty ? id : handle,
-    userId: id,
-    name: name.isNotEmpty ? name : (handle.isNotEmpty ? handle : 'Member'),
-    handle: handle,
+    person: person,
+    id: person.userId.isNotEmpty ? person.userId : person.handle,
     subtitle: state.isNotEmpty ? state : 'Connected',
   );
 }
@@ -1138,11 +1138,6 @@ Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> item) {
   return item;
 }
 
-String _cleanHandle(String value) {
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) return '';
-  return trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
-}
 
 String _pickString(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {

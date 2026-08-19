@@ -8,6 +8,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../updates/providers.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// Public-UX Phase 6 — re-entry "Since you were here" section.
 ///
@@ -73,9 +74,11 @@ class _SinceYouWereHereSectionState
         (item['type'] ?? item['kind'] ?? '').toString().toUpperCase();
     final actor = item['actor'];
     final actorInst = item['actorInstitution'];
+    // F053/F116 — institution identity keeps its own read; the PERSON half
+    // goes through the canonical model.
     final actorName = actorInst is Map
         ? (actorInst['name'] ?? '').toString()
-        : (actor is Map ? (actor['displayName'] ?? '').toString() : '');
+        : AuraPersonIdentity.fromJson(actor).displayName;
     switch (kind) {
       case 'ACCOUNTABILITY_TAGGED':
         final tag = ((item['payload'] is Map ? item['payload'] : item['data'])

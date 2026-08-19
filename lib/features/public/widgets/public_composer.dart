@@ -10,6 +10,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../domain/public_visibility.dart';
 import 'visibility_selector.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// Public composer entry — the persistent top-of-public-home bar that
 /// invites the user to start a discourse statement.
@@ -51,15 +52,12 @@ class PublicComposer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(authMeDataProvider).valueOrNull;
-    final user =
-        (me?['user'] is Map ? me!['user'] : <String, dynamic>{})
-            as Map<dynamic, dynamic>;
-    final displayName = (user['displayName'] ?? user['name'] ?? '').toString();
-    final handle = (user['handle'] ?? '').toString();
-    final avatarUrl =
-        (user['avatarUrl'] ?? user['photoUrl'] ?? user['imageUrl'] ?? '')
-            .toString()
-            .trim();
+    // F053/F116 — one reader. The three-way avatar alias chain here was a
+    // private copy of what the canonical model already resolves.
+    final person = AuraPersonIdentity.fromJson(me);
+    final displayName = person.displayName;
+    final handle = person.handle;
+    final avatarUrl = person.avatarUrl ?? '';
 
     return Material(
       color: Colors.transparent,

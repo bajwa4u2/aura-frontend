@@ -17,17 +17,13 @@
   "ADHOC_MAP_EXTRACTION_IN_SURFACE"
  ],
  "totals": {
-  "files": 35,
-  "sites": 57
+  "files": 17,
+  "sites": 29
  },
  "perFile": {
   "aura_final:lib/core/tagging/mention_scope_providers.dart": 1,
   "aura_final:lib/features/announcements/presentation/announcement_editor_screen.dart": 3,
-  "aura_final:lib/features/correspondence/presentation/space_screen.dart": 1,
   "aura_final:lib/features/direct_threads/presentation/direct_thread_screen.dart": 2,
-  "aura_final:lib/features/institutions/presentation/institution_invites_screen.dart": 3,
-  "aura_final:lib/features/institutions/presentation/institution_join_requests_screen.dart": 2,
-  "aura_final:lib/features/institutions/presentation/institution_members_screen.dart": 2,
   "aura_final:lib/features/institutions/profile/institution_edit_profile_screen.dart": 2,
   "aura_final:lib/features/institutions/wizard/institution_onboarding_wizard.dart": 1,
   "aura_final:lib/features/invitations/presentation/invite_create_screen.dart": 1,
@@ -41,20 +37,6 @@
   "aura_final:lib/features/posts/presentation/widgets/post_card.dart": 1,
   "aura_final:lib/features/profile/presentation/author_profile_screen.dart": 1,
   "aura_final:lib/features/profile/presentation/followers_screen.dart": 1,
-  "aura_final:lib/features/public/widgets/public_composer.dart": 3,
-  "aura_final:lib/features/public/widgets/since_you_were_here.dart": 1,
-  "aura_final:lib/features/realtime/presentation/realtime_room_screen.dart": 2,
-  "aura-backend:src/auth/auth.controller.ts": 1,
-  "aura-backend:src/auth/auth.service.ts": 2,
-  "aura-backend:src/availability/services/availability-profile.service.ts": 2,
-  "aura-backend:src/communications/communications.service.ts": 2,
-  "aura-backend:src/communications/notification-delivery/notification-delivery-authority.service.ts": 2,
-  "aura-backend:src/conversations/conversation-invitation.adapter.ts": 1,
-  "aura-backend:src/discovery/people-discovery.service.ts": 1,
-  "aura-backend:src/invitations/invitations.service.ts": 1,
-  "aura-backend:src/meetings/participation/meeting-participation-resolver.service.ts": 1,
-  "aura-backend:src/search/search.service.ts": 1,
-  "aura-backend:src/uploads/uploads.controller.ts": 1,
-  "aura-backend:src/users/users.service.ts": 1
+  "aura-backend:src/auth/auth.service.ts": 2
  }
 }

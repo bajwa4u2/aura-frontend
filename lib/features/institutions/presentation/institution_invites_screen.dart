@@ -14,6 +14,7 @@ import '../data/institution_pending_counts.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
 import 'institution_page.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class InstitutionInvitesScreen extends ConsumerStatefulWidget {
   const InstitutionInvitesScreen({super.key, required this.institutionId});
@@ -518,9 +519,9 @@ class _InstitutionInvitesScreenState
                 ),
               if (usedBy != null) ...[
                 _MetaChip(
-                  label: usedBy['displayName']?.toString().trim().isNotEmpty == true
-                      ? usedBy['displayName']!.toString().trim()
-                      : '@${usedBy['handle'] ?? '?'}',
+                  // F053/F116 — the shared fallback order; '@?' was a label
+                  // for someone this screen had failed to resolve.
+                  label: AuraPersonIdentity.fromJson(usedBy).label,
                   icon: Icons.person_rounded,
                 ),
               ],

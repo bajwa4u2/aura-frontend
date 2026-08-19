@@ -13,6 +13,7 @@ import '../data/institution_pending_counts.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
 import 'institution_page.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class InstitutionJoinRequestsScreen extends ConsumerStatefulWidget {
   const InstitutionJoinRequestsScreen({
@@ -176,11 +177,13 @@ class _InstitutionJoinRequestsScreenState
     final user = req['user'] is Map
         ? Map<String, dynamic>.from(req['user'] as Map)
         : <String, dynamic>{};
-    final displayName = user['displayName']?.toString().trim() ?? '';
-    final handle = user['handle']?.toString().trim() ?? '';
+    // F053/F116 — canonical read; 'Unknown' was this screen's own invented
+    // label for a person it failed to resolve.
+    final person = AuraPersonIdentity.fromJson(user);
+    final handle = person.handle;
     final message = req['message']?.toString().trim() ?? '';
     final createdAt = req['createdAt']?.toString() ?? '';
-    final nameOrHandle = displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : 'Unknown');
+    final nameOrHandle = person.label;
     final isActing = _actingOn == reqId;
 
     final date = () {

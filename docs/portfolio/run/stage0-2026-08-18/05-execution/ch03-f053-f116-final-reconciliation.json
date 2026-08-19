@@ -1,0 +1,128 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-03 F053 / F116 - exact reconciliation and closeout pass",
+  "chapter": "CH-03 (Identity Consumption & Presentation Truth)",
+  "date": "2026-08-19",
+  "reconciliationOf57": {
+    "method": "Every gate-debt row read from the live inventory, keyed by (path, line). Unique physical sites = 57; the gate counts unique sites, not category occurrences, so there is no double counting.",
+    "table": [
+      { "category": "backend NON_CONFORMANT person selects", "sites": 16 },
+      { "category": "client ADHOC_MAP_EXTRACTION_IN_SURFACE (USER_SHAPE)", "sites": 26 },
+      { "category": "client NON_CONFORMANT (AVATAR / CircleAvatar)", "sites": 15 },
+      { "category": "TOTAL", "sites": 57 }
+    ],
+    "theMissingEleven": {
+      "cause": "MY REPORTING ERROR, not a detector or inventory problem.",
+      "what": "The previous checkpoint said '5 backend stragglers/exceptions'. Five was the number of backend sites I had NAMED as governed exceptions in prose; the measured backend remainder was 16. 16 - 5 = 11, exactly the gap the founder's arithmetic exposed.",
+      "correction": "The remainder is now reported from the inventory rather than from prose, and every category sums to the gate total."
+    }
+  },
+  "backendSixteenDispositioned": {
+    "B_convergedThisPass": [
+      "src/auth/auth.controller.ts:591 - the account read behind /auth/me; composed reference + account fields",
+      "src/availability/services/availability-profile.service.ts:27 and :60 - profile owner references (+ title, an institutional role line)",
+      "src/communications/communications.service.ts:330 and :338 - actor and recipient references",
+      "src/communications/notification-delivery/notification-delivery-authority.service.ts:63 and :69 - recipient (+ email) and actor",
+      "src/conversations/conversation-invitation.adapter.ts:71 - selected displayName ALONE, so a person with no display name could not be named at all",
+      "src/discovery/people-discovery.service.ts:216 - discovery result references (+ title)",
+      "src/invitations/invitations.service.ts:436 - inviter name, whose 'An Aura member' fallback was a competing invented label",
+      "src/meetings/participation/meeting-participation-resolver.service.ts:234 - entry identity (+ email, emailVerifiedAt, which admission genuinely uses)",
+      "src/search/search.service.ts:135 - person results (+ bio)",
+      "src/uploads/uploads.controller.ts:108 - the user returned after an avatar upload",
+      "src/users/users.service.ts:213 - the public profile select, now composing the canonical reference"
+    ],
+    "A_governedExceptionsRetained": [
+      {
+        "site": "src/auth/auth.service.ts:1311 and :1328",
+        "fieldsSelected": "id, email, handle, displayName, firstName, lastName, emailVerifiedAt, disabledAt",
+        "whyNotPersonProjection": "These read the account row to perform credential and verification-state work. They embed no person in another entity's response and render nothing.",
+        "whyCanonicalWouldBeWrong": "Composing the reference would attach avatarUrl to a credential query for no consumer, and the canonical projection is defined as how a person appears INSIDE another entity's response - which this is not.",
+        "driftRisk": "Low and detectable: if either result ever reached a presentation surface it would arrive as an account object, and the surface reading it would itself register as new debt.",
+        "detectorDecision": "KEEP COUNTING THEM. They stay visible as 2 measured sites with a written rationale rather than being taught away. Teaching the detector to ignore them would make the metric smaller and the inventory less truthful, and the founder's rule is the opposite."
+      }
+    ]
+  },
+  "circleAvatarFifteenClassified": {
+    "A_personIdentityBypass_converged": [
+      {
+        "site": "lib/features/invitations/presentation/invite_create_screen.dart:746",
+        "found": "Behind it sat `_InviteCandidate` + `_candidateFromMap` - a COMPLETE private person reader with its own nested-envelope unwrap, its own alias list, and its own 'Member' invented fallback. The avatar's `'?'` initial was the visible end of it.",
+        "action": "The model composes AuraPersonIdentity; the private reader and its now-dead `_cleanHandle` helper are gone."
+      }
+    ],
+    "C_specializedPersonPresentation_retained": [
+      {
+        "sites": "12 - booking_confirm_screen (2), meeting_live_room_screen (5), public_booking_screen, slot_picker_screen, meeting_device_check, meeting_preparation_panel (2)",
+        "why": "Every one renders a person from an ALREADY-RESOLVED typed value - `identity.avatarUrl` from MeetingIdentityRef, a participant's `avatarUrl`, or an `initial` string handed in. None parses identity from a map; none owns a fallback rule. Their identity truth comes from the meeting domain models, and the visual treatment (branded ring, radius, initial styling) is deliberately local.",
+        "founderRuleApplied": "The problem is competing identity semantics, not the widget class. Forcing these through one widget would change Meetings presentation for a metric."
+      },
+      {
+        "sites": "2 - edit_profile_screen (729, 1534)",
+        "why": "Both render `_initials`, derived from the signed-in person's own edit-form state (a TextEditingController the person is typing into), not from a parsed payload. The identity source is the form, which is correct for an editor."
+      }
+    ],
+    "B_nonPersonVisual": "NONE found - every flagged CircleAvatar does render a person.",
+    "D_falsePositive": "NONE. The detector is measuring something real here, but it is measuring PRESENTATION convergence on AuraAvatar, which is a different concern from identity-semantics duplication. Recorded below.",
+    "measurementNote": "The 15 remain counted as debt. They are honest presentation-class debt: an accurate statement that 15 person visuals bypass the canonical avatar presentation, even though none of them owns competing identity SEMANTICS any more."
+  },
+  "clientAdhocTwentySix": {
+    "converged": [
+      "institution_join_requests_screen (2) - 'Unknown' invented label removed",
+      "institution_members_screen (2) - person half composed, role/capabilities untouched",
+      "institution_invites_screen (3) - '@?' label for an unresolved person removed",
+      "public_composer (3) - a private three-way avatar alias chain removed",
+      "realtime_room_screen (2) - F052 subject; identity in a realtime surface",
+      "space_screen (1) - private alias lists for name and avatar removed",
+      "since_you_were_here (1) - person half canonical, institution half keeps its own authority",
+      "invite_create_screen - the private reader described above"
+    ],
+    "remainingTwelve_classified": [
+      { "sites": "mention_scope_providers:187, direct_thread_screen:524", "class": "INSTITUTION IDENTITY - `inst?['name'] ?? inst?['displayName']`. Institution identity has its own authority and must not merge with person identity. Detector counts them because `displayName` appears; they are not person consumers." },
+      { "sites": "direct_thread_screen:640", "class": "INSTITUTION ACTOR branch of a message header - same reason." },
+      { "sites": "announcement_editor_screen:782, :821, :887", "class": "NOT A PERSON AT ALL - a connected TikTok ACCOUNT label (`data['displayName'] ?? data['username'] ?? data['accountLabel']`). External platform account, not an Aura person." },
+      { "sites": "institution_edit_profile_screen:229, :230", "class": "INSTITUTION LOGO - `inst['logoUrl'] ?? inst['avatarUrl']`. Institution branding." },
+      { "sites": "institution_onboarding_wizard:1252", "class": "INSTITUTION SLUG - `data['slug'] ?? data['handle']` on an institution record." },
+      { "sites": "post_card:140", "class": "NESTED AUTHOR READER - genuinely person, but reads through a shared `_readNestedString` path resolver used for several payload shapes. Converging it means reworking that resolver; classified as REAL REMAINING DEBT, not an exception." },
+      { "sites": "author_profile_screen:471, followers_screen:47", "class": "REAL REMAINING DEBT - both read the VIEWER's own handle to compare against the profile being viewed. Small, genuine, and safe to converge next." }
+    ],
+    "instrumentObservation": "9 of the 12 remaining ad-hoc sites are INSTITUTION identity, an external platform account, or institution branding - not person identity. The detector's field-name test cannot distinguish them. This is a known and now-documented limitation; the rule was NOT changed, because narrowing it to reach a smaller number without reading each site is exactly the count-gaming the instruction forbids. They stay counted, and they stay classified here."
+  },
+  "measurements": {
+    "gateDebt": { "before": "35 files / 57 sites", "after": "17 files / 29 sites" },
+    "typedBoundaries": { "before": 63, "after": 63, "note": "Unchanged this pass - it was surface and producer work, not type work. Reported separately as required." },
+    "cumulativeGateDebt": "66 files / 202 sites -> 17 / 29",
+    "breakdown": { "realMigration": "28 sites", "deadTypeRemoval": "1 helper (_cleanHandle), 0 types", "governedExceptionClassification": "2 backend sites classified and STILL COUNTED", "instrumentCorrection": "0" }
+  },
+  "f116ClosureTest": {
+    "1_backendProjectionsConverge": "MET. 99 -> 17 non-conformant overall; the only backend residue is 2 credential reads with a written rationale.",
+    "2_clientDeserializationConverges": "SUBSTANTIALLY MET. Every surface that resolves a person now uses AuraPersonIdentity. Three genuine person sites remain (post_card's nested resolver, author_profile, followers).",
+    "3_duplicateFallbackSemanticsEliminated": "MET on everything migrated: 'Member', 'Author', 'User', 'Participant', 'Unknown', '@?', '?', 'An Aura member' and every private displayName??handle chain are gone.",
+    "4_privateDuplicateModelsDeletedOrComposed": "MET. 4 retired (AuthorBrief, ModerationActorSummary, ProfileListItem's semantics, _InviteCandidate's reader), 3 composed, the rest classified as different domain concepts.",
+    "5_destinationModelsRetainOnlyNonIdentityState": "MET. No role, membership, capability, follow, availability, moderation, notification, booking or discovery state entered AuraPersonIdentity.",
+    "6_everyRemainingSiteClassified": "MET. All 29 remaining sites are classified: 2 governed backend exceptions, 15 presentation-class CircleAvatar (identity semantics already canonical), 9 non-person (institution / external account / branding), 3 real remaining person debt.",
+    "verdict": "F116 REMAINS PARTIALLY_VALIDATED - but for a materially different reason than before. There are no longer UNCLASSIFIED competing identity semantics; what remains is 3 identified person sites plus a documented instrument limitation. The finding's own test says closure requires zero unclassified competing semantics, and 3 classified-but-unconverged sites are not zero."
+  },
+  "f053Reassessment": {
+    "canDifferentSurfacesStillNamePersonDifferently": "Not through a competing identity SOURCE on any migrated surface - inbox, thread, notifications, activity, search, pickers, mentions, realtime, admin, institution workspace and the shell all read one model. The three remaining person sites could still disagree.",
+    "genericInventedLabels": "Removed everywhere they were found.",
+    "avatarNameHandleDisagreement": "Resolved on migrated surfaces - one read produces all three.",
+    "personVsInstitutionDistinct": "Preserved everywhere; several remaining 'debt' sites are institution identity precisely because the two were kept apart.",
+    "verdict": "F053 REMAINS PARTIALLY_VALIDATED. Its visible-consistency defect is substantially repaired but not provably eliminated while three person sites still resolve identity independently."
+  },
+  "otherFindings": {
+    "F052": "Structural convergence advanced again (realtime_room_screen search results, realtime gateway projection). State unchanged; no certification claimed.",
+    "F054/F055/F056/F057": "Unchanged. No structural remainder exposed.",
+    "F051": "UNTOUCHED. The CircleAvatar pass deliberately did not adjudicate the avatar-in-chat question; the 15 sites were classified on identity SOURCE, and none of them is the chat avatar the conflict concerns."
+  },
+  "identityArchitectureStatement": "Aura now has one person-identity authority per side and they mirror each other: PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT on the backend, AuraPersonIdentity on the client. Producers compose the selects rather than hand-picking fields; consumers read the model rather than the map. Institution identity remains a separate authority, deliberately. Presentation stays local - prose vs mention, compact vs large, initials vs photo - while the identity behind it comes from one place. What is left is a short, named list, not an unknown quantity.",
+  "verification": {
+    "backendSuite": "205 suites / 2577 tests PASS",
+    "frontendSuite": "787 PASS",
+    "meetingsFrontend": "31 PASS",
+    "meetingsBackend": "12 suites / 125 tests PASS",
+    "identityConformanceGate": "PASS at the new baseline 17 files / 29 sites",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "typecheckAndAnalyze": "clean"
+  },
+  "founderDecisionsRequired": ["NONE"]
+}

@@ -27,21 +27,21 @@
   ]
  },
  "totals": {
-  "rows": 171,
+  "rows": 142,
   "byVerdict": {
-   "NON_CONFORMANT": 31,
+   "NON_CONFORMANT": 17,
    "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 6,
    "AUTHORITY": 5,
-   "CONFORMANT": 40,
    "TYPED_DESERIALIZATION_BOUNDARY": 63,
-   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 26
+   "CONFORMANT": 39,
+   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 12
   },
-  "nonConformant": 31,
-  "adhocMapExtractionInSurface": 26,
+  "nonConformant": 17,
+  "adhocMapExtractionInSurface": 12,
   "typedDeserializationBoundary": 63,
-  "conformant": 40,
-  "frontend": 146,
-  "backend": 25
+  "conformant": 39,
+  "frontend": 132,
+  "backend": 10
  },
  "sixPersonShapedExtractionSites": {
   "obligation": "CO-RC-C2-010",
@@ -75,8 +75,8 @@
     "site": "correspondence space",
     "declaredOwner": "C7",
     "match": "/(space|spaces).*\\.dart$/i",
-    "sitesFoundInAudit": 2,
-    "nonConformantOrAdhoc": 1,
+    "sitesFoundInAudit": 1,
+    "nonConformantOrAdhoc": 0,
     "files": [
      "lib/features/correspondence/presentation/space_screen.dart"
     ],
@@ -462,18 +462,9 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/correspondence/presentation/space_screen.dart",
-   "line": 650,
-   "evidence": "final handle = _pickString(userMap, const ['handle']);",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/correspondence/presentation/space_screen.dart",
-   "line": 1748,
+   "line": 1754,
    "evidence": "return AuraAvatar(name: label, imageUrl: imageUrl, size: radius * 2);",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
@@ -714,81 +705,18 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/institutions/presentation/institution_invites_screen.dart",
-   "line": 521,
-   "evidence": "label: usedBy['displayName']?.toString().trim().isNotEmpty == true",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/institutions/presentation/institution_invites_screen.dart",
-   "line": 522,
-   "evidence": "? usedBy['displayName']!.toString().trim()",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/institutions/presentation/institution_invites_screen.dart",
-   "line": 523,
-   "evidence": ": '@${usedBy['handle'] ?? '?'}',",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/institutions/presentation/institution_join_requests_screen.dart",
-   "line": 179,
-   "evidence": "final displayName = user['displayName']?.toString().trim() ?? '';",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/institutions/presentation/institution_join_requests_screen.dart",
-   "line": 180,
-   "evidence": "final handle = user['handle']?.toString().trim() ?? '';",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/institutions/presentation/institution_join_requests_screen.dart",
-   "line": 206,
+   "line": 209,
    "evidence": "AuraAvatar(name: nameOrHandle, size: 36),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/institutions/presentation/institution_members_screen.dart",
-   "line": 202,
-   "evidence": "final displayName = user['displayName']?.toString().trim() ?? '';",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/institutions/presentation/institution_members_screen.dart",
-   "line": 203,
-   "evidence": "final handle = user['handle']?.toString().trim() ?? '';",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/institutions/presentation/institution_members_screen.dart",
-   "line": 228,
+   "line": 232,
    "evidence": "AuraAvatar(name: nameOrHandle, size: 36),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
@@ -833,7 +761,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/invitations/presentation/invite_create_screen.dart",
-   "line": 746,
+   "line": 747,
    "evidence": "CircleAvatar(",
    "verdict": "NON_CONFORMANT",
    "why": "Renders a person image/initial through CircleAvatar instead of the canonical AuraAvatar."
@@ -1191,48 +1119,12 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/public/widgets/public_composer.dart",
-   "line": 57,
-   "evidence": "final displayName = (user['displayName'] ?? user['name'] ?? '').toString();",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/public/widgets/public_composer.dart",
-   "line": 58,
-   "evidence": "final handle = (user['handle'] ?? '').toString();",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/public/widgets/public_composer.dart",
-   "line": 60,
-   "evidence": "(user['avatarUrl'] ?? user['photoUrl'] ?? user['imageUrl'] ?? '')",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/public/widgets/public_composer.dart",
-   "line": 83,
+   "line": 81,
    "evidence": "AuraAvatar(",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/public/widgets/since_you_were_here.dart",
-   "line": 78,
-   "evidence": ": (actor is Map ? (actor['displayName'] ?? '').toString() : '');",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",
@@ -1319,28 +1211,10 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/realtime/presentation/realtime_room_screen.dart",
-   "line": 2518,
+   "line": 2519,
    "evidence": "child: AuraAvatar(name: name, imageUrl: avatarUrl, size: size),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/realtime/presentation/realtime_room_screen.dart",
-   "line": 3460,
-   "evidence": "final displayName = (user['displayName'] ?? '').toString().trim();",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/realtime/presentation/realtime_room_screen.dart",
-   "line": 3461,
-   "evidence": "final handle = (user['handle'] ?? '').toString().trim();",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",
@@ -1435,15 +1309,6 @@
   {
    "repo": "aura-backend",
    "surface": "PROJECTION",
-   "path": "src/auth/auth.controller.ts",
-   "line": 591,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
    "path": "src/auth/auth.service.ts",
    "line": 1311,
    "evidence": "displayName: true,",
@@ -1455,24 +1320,6 @@
    "surface": "PROJECTION",
    "path": "src/auth/auth.service.ts",
    "line": 1328,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/availability-profile.service.ts",
-   "line": 27,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/availability-profile.service.ts",
-   "line": 60,
    "evidence": "displayName: true,",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
@@ -1525,92 +1372,11 @@
   {
    "repo": "aura-backend",
    "surface": "PROJECTION",
-   "path": "src/communications/communications.service.ts",
-   "line": 244,
-   "evidence": "displayName: true,",
-   "verdict": "CONFORMANT",
-   "why": "Composes the canonical person select rather than reconstructing one."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/communications/communications.service.ts",
-   "line": 330,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/communications/communications.service.ts",
-   "line": 338,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/communications/notification-delivery/notification-delivery-authority.service.ts",
-   "line": 63,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/communications/notification-delivery/notification-delivery-authority.service.ts",
-   "line": 69,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/conversations/conversation-invitation.adapter.ts",
-   "line": 71,
-   "evidence": "select: { displayName: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/discovery/people-discovery.service.ts",
-   "line": 216,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
    "line": 1274,
    "evidence": "select: { id: true, email: true, displayName: true },",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
    "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/invitations/invitations.service.ts",
-   "line": 436,
-   "evidence": "select: { displayName: true } as Prisma.UserSelect,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/participation/meeting-participation-resolver.service.ts",
-   "line": 234,
-   "evidence": "select: { id: true, displayName: true, email: true, emailVerifiedAt: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
   },
   {
    "repo": "aura-backend",
@@ -1629,33 +1395,6 @@
    "evidence": "displayName: true,",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
    "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/search/search.service.ts",
-   "line": 135,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/uploads/uploads.controller.ts",
-   "line": 108,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/users/users.service.ts",
-   "line": 213,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
   }
  ]
 }
