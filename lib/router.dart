@@ -441,14 +441,20 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool requiresInstitutionAccess(String path) =>
       requiresInstitutionAccessForPath(path);
 
+  // RC6 — the requirement is DECLARED per workspace section, in
+  // route_classification.dart, and both URL forms of a destination resolve
+  // to the same section. These predicates used to be written here by hand:
+  // the admin one matched exactly two SHORTHAND constants, so the canonical
+  // `/institution/:id/edit-profile` and `/institution/:id/domains` carried
+  // no admin gate at all — and once RC2/RC3 turned the shorthands into pure
+  // redirects, the gate could no longer match anything that rendered.
   bool requiresInstitutionAdminOrSpeaker(String path) {
-    // Announcements require authorized speaker or admin
-    return RegExp(r'^/institution/[^/]+/announcements').hasMatch(path);
+    final policy = institutionRoutePolicyFor(path);
+    return policy == InstitutionRoutePolicy.adminOrSpeaker;
   }
 
   bool requiresInstitutionAdmin(String path) {
-    return path == kInstitutionDomainsRoute ||
-        path == kInstitutionEditProfileRoute;
+    return institutionRoutePolicyFor(path) == InstitutionRoutePolicy.admin;
   }
 
   String bootRedirectFor(String target, {required String fallback}) {

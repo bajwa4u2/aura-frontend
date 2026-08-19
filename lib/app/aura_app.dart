@@ -152,6 +152,12 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       try {
         await setSessionHint(false);
       } catch (_) {}
+      // RC9 — release the once-per-app-load latch first. Without this the
+      // invalidations below are cosmetic: the rebuilt bootstrap returns on
+      // its first line because module state still says it already ran.
+      try {
+        resetSessionBootstrap();
+      } catch (_) {}
       // Invalidate auth-derived providers in one go so the router refresh
       // listenable picks up the unauthed state on the next frame.
       try {
@@ -172,6 +178,14 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // Sibling tab signed in. Re-evaluate session state without forcing a
       // page reload; if a refresh cookie now lives in this browser, the
       // bootstrap on the next provider read will pick it up.
+      //
+      // RC9 — that sentence was FALSE until the latch below was released.
+      // The invalidation rebuilt the provider, whose first line returned
+      // because module state still said the bootstrap had run, so a sibling
+      // login never converged here at all.
+      try {
+        resetSessionBootstrap();
+      } catch (_) {}
       try {
         ref.invalidate(sessionBootstrapProvider);
       } catch (_) {}

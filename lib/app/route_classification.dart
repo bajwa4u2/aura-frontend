@@ -95,6 +95,15 @@ bool isGuestReachablePath(String path) {
 bool isPublicInviteAcceptPath(String path) => path == '/invite/accept';
 
 /// PUBLIC — open to the internet.
+/// True for the authoring/editing tail of an otherwise public object route.
+/// Kept explicit rather than inferred: this names the ACT, not the prefix.
+bool _isEditingPath(String path) {
+  final segments = path.split('?').first.split('/')
+    ..removeWhere((s) => s.isEmpty);
+  return segments.isNotEmpty &&
+      (segments.last == 'edit' || segments.last == 'write');
+}
+
 bool isPublicPath(String path) {
   if (path == '/' || path == '/public') return true;
   if (isBootPath(path)) return true;
@@ -131,7 +140,12 @@ bool isPublicPath(String path) {
       // authorization invariant in the F069 gate.
       path == '/spaces' ||
       path.startsWith('/spaces/') ||
-      path.startsWith('/posts/') ||
+      // RC6 — READING a post is public; EDITING one is not. The broad
+      // `/posts/` prefix classified `/posts/:id/edit` PUBLIC, and because
+      // the public check runs before the member matcher, the post editor was
+      // reachable by classification without a session. A read-only sibling
+      // being public never implies its editor is.
+      (path.startsWith('/posts/') && !_isEditingPath(path)) ||
       path.startsWith('/u/') ||
       path.startsWith('/author/') ||
       path.startsWith('/support/') ||
@@ -238,6 +252,13 @@ bool isMemberShellPath(String path) {
       // no login redirect and no destination preservation.
       path == '/articles/write' ||
       path.startsWith('/articles/write/') ||
+      // RC6 — POST AUTHORING, the same shape one object over. Reading a post
+      // is public; editing one is a member act. Excluding it from the public
+      // prefix is only half the correction: the F069 invariant is that every
+      // route matches an EXPLICIT predicate, never that it merely lands on
+      // member by fall-through. (The F069 gate caught exactly that omission
+      // when this fix was first written.)
+      _isEditingPath(path) && path.startsWith('/posts/') ||
       // ── F069 sweep (2026-08-17): routes the router declares that the
       // classification allowlist never covered. Every one of them used to
       // fail OPEN — `requiresAuth` returned false, so an unauthenticated
@@ -279,4 +300,131 @@ bool isMemberShellPath(String path) {
 /// correspondence thread live route (`.../live/:sessionId`) or `/live-rooms`.
 bool isMeetingFocusPath(String path) {
   return path.endsWith('/live') && path.contains('/meetings/');
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// RC6 — INSTITUTION ROUTE POLICY, DECLARED PER SECTION
+// ─────────────────────────────────────────────────────────────────────────
+//
+// THE DEFECT. `requiresInstitutionAdmin` in the router matched exactly two
+// SHORTHAND constants — `/institution/edit-profile` and
+// `/institution/domains`. The canonical forms of the same destinations,
+// `/institution/:id/edit-profile` and `/institution/:id/domains`, matched
+// nothing and carried NO admin gate at all.
+//
+// That was already a hole. RC2/RC3 made it total: the shorthand routes are
+// now pure redirects to the canonical form, so the only two paths the admin
+// gate could ever match stopped rendering anything. An institution member
+// without admin standing could open the institution's profile editor.
+//
+// THE CORRECTION. Policy is declared once per SECTION, and both URL forms of
+// a destination resolve to the same section — so an equivalence that used to
+// depend on someone remembering to list two strings is now structural.
+//
+// AUTHORITY BOUNDARY. This declares WHICH policy applies, never who the
+// actor is or whether they satisfy it. `"/institution/" means admin` is
+// exactly the inference this replaces: the section is looked up in an
+// explicit table, and a section nobody declared FAILS CLOSED to the
+// strictest institutional policy rather than to none.
+
+/// What an institution destination requires of the acting member. Evaluated
+/// by the router against the canonical institution authorities — this enum
+/// names the requirement, it does not decide it.
+enum InstitutionRoutePolicy {
+  /// Not an institution workspace destination at all.
+  notInstitutional,
+
+  /// Institution access only — any member of the institution may be here.
+  member,
+
+  /// Speaking for the institution, or operational leadership.
+  adminOrSpeaker,
+
+  /// Operational leadership only.
+  admin,
+}
+
+/// Declared policy per workspace section. A section absent from this map is
+/// NOT assumed harmless — see `institutionRoutePolicyFor`.
+const Map<String, InstitutionRoutePolicy> kInstitutionSectionPolicy = {
+  // Owner/admin-held configuration: editing the institution's public identity
+  // and proving ownership of its domains.
+  'edit-profile': InstitutionRoutePolicy.admin,
+  'domains': InstitutionRoutePolicy.admin,
+
+  // Speaking in the institution's voice, or administering what it says.
+  'announcements': InstitutionRoutePolicy.adminOrSpeaker,
+  'live-rooms': InstitutionRoutePolicy.adminOrSpeaker,
+  'request-verification': InstitutionRoutePolicy.adminOrSpeaker,
+
+  // Ordinary workspace surfaces: membership is the requirement.
+  'dashboard': InstitutionRoutePolicy.member,
+  'profile': InstitutionRoutePolicy.member,
+  'messages': InstitutionRoutePolicy.member,
+  'correspondence': InstitutionRoutePolicy.member,
+  'members': InstitutionRoutePolicy.member,
+  'invites': InstitutionRoutePolicy.member,
+  'join-requests': InstitutionRoutePolicy.member,
+  'units': InstitutionRoutePolicy.member,
+  'spaces': InstitutionRoutePolicy.member,
+  'posts': InstitutionRoutePolicy.member,
+  'public-engagement': InstitutionRoutePolicy.member,
+  'meetings': InstitutionRoutePolicy.member,
+  'activity': InstitutionRoutePolicy.member,
+  'settings': InstitutionRoutePolicy.member,
+  'analytics': InstitutionRoutePolicy.member,
+  'billing': InstitutionRoutePolicy.member,
+  'materials': InstitutionRoutePolicy.member,
+  'summaries': InstitutionRoutePolicy.member,
+  'recordings': InstitutionRoutePolicy.member,
+  'availability': InstitutionRoutePolicy.member,
+  'bookings': InstitutionRoutePolicy.member,
+
+  // Member surfaces viewed from inside the institution shell — browsing,
+  // a person's profile, an institution page, a direct thread. Being in the
+  // workspace is the requirement; none of them is a leadership act. Found by
+  // the RC6 gate rather than by memory, which is the point of the gate.
+  'explore': InstitutionRoutePolicy.member,
+  'u': InstitutionRoutePolicy.member,
+  'institutions': InstitutionRoutePolicy.member,
+  'direct': InstitutionRoutePolicy.member,
+};
+
+/// The workspace section a path addresses, in either URL form:
+/// `/institution/<section>` (legacy shorthand) or
+/// `/institution/:id/<section>` (canonical). Null when the path is not an
+/// institution workspace destination.
+String? institutionSectionOf(String path) {
+  final segments = path.split('?').first.split('/')
+    ..removeWhere((s) => s.isEmpty);
+  if (segments.length < 2 || segments.first != 'institution') return null;
+
+  // `/institution/<something>`: a declared section is the shorthand form;
+  // anything else is an institution id addressed without a section.
+  if (segments.length == 2) {
+    return kInstitutionSectionPolicy.containsKey(segments[1])
+        ? segments[1]
+        : null;
+  }
+  // `/institution/:id/<section>/...`
+  return segments[2];
+}
+
+/// The policy a path declares. A section that exists but was never declared
+/// fails CLOSED to `admin` — the strictest institutional requirement — so a
+/// new workspace surface cannot ship ungated because nobody remembered it.
+/// The RC6 gate makes that failure loud rather than silent.
+InstitutionRoutePolicy institutionRoutePolicyFor(String path) {
+  final section = institutionSectionOf(path);
+  if (section == null) {
+    // `/institution/:id` alone is the workspace root: membership.
+    final segments = path.split('?').first.split('/')
+      ..removeWhere((s) => s.isEmpty);
+    if (segments.length == 2 && segments.first == 'institution') {
+      return InstitutionRoutePolicy.member;
+    }
+    return InstitutionRoutePolicy.notInstitutional;
+  }
+  return kInstitutionSectionPolicy[section] ?? InstitutionRoutePolicy.admin;
 }

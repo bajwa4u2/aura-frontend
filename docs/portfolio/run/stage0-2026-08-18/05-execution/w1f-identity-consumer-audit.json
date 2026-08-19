@@ -2165,7 +2165,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 986,
+   "line": 992,
    "evidence": "final handle = state.pathParameters['handle'] ?? '';",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2174,7 +2174,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 993,
+   "line": 999,
    "evidence": "handle: state.pathParameters['handle'] ?? '',",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2183,7 +2183,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 999,
+   "line": 1005,
    "evidence": "FollowersScreen(handle: state.pathParameters['handle'] ?? ''),",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2192,7 +2192,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 1004,
+   "line": 1010,
    "evidence": "FollowingScreen(handle: state.pathParameters['handle'] ?? ''),",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2201,7 +2201,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 1009,
+   "line": 1015,
    "evidence": "handle: state.pathParameters['handle'] ?? '',",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2210,7 +2210,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 1928,
+   "line": 1934,
    "evidence": "'/u/${state.pathParameters['handle'] ?? ''}',",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."

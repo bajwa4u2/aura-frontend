@@ -1,0 +1,81 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-02 refresh continuity - RC6 (route policy authority) and RC9 (cross-tab reconstruction)",
+  "chapter": "CH-02 (Continuity & Destination Authority)",
+  "date": "2026-08-19",
+  "RC6": {
+    "routePopulationEstablishedFromCode": {
+      "registeredRoutes": 182,
+      "institutionRoutes": 53,
+      "note": "Counted from lib/router.dart with shorthand constants resolved, not taken from the audit's '~16'."
+    },
+    "unclassifiedRoutesFound": {
+      "reachabilityClassification": 0,
+      "why": "The audit's ~16 unclassified routes were already closed by F069 (founder ruling 2026-08-17), whose gate reads the router as its source and asserts every declared route matches an EXPLICIT predicate. The audit and that ruling are same-day; the audit's list was stale by the time this pass reached it. Verified by running the gate, not assumed.",
+      "institutionPolicyDeclaration": 4,
+      "found": [
+        "/institution/:institutionId/explore",
+        "/institution/:institutionId/u/:handle",
+        "/institution/:institutionId/institutions/:slug",
+        "/institution/:institutionId/direct/:threadId"
+      ],
+      "foundBy": "The new RC6 gate, on its first run - not by memory. All four are member surfaces viewed from inside the workspace shell and were declared as member, preserving today's behaviour exactly."
+    },
+    "securityDefectCorrected": {
+      "defect": "requiresInstitutionAdmin matched exactly two SHORTHAND constants - /institution/edit-profile and /institution/domains. The CANONICAL forms of the same destinations, /institution/:id/edit-profile and /institution/:id/domains, matched nothing and carried NO admin gate.",
+      "howItBecameTotal": "RC2/RC3 turned those shorthands into pure redirects to the canonical form, so the only two paths the admin gate could ever match stopped rendering anything. The gate could no longer fire at all: an institution member without admin standing could open the institution's profile editor and its domain configuration.",
+      "correction": "Policy is DECLARED once per workspace SECTION in route_classification.dart, and both URL forms of a destination resolve to the same section - so the equivalence that used to depend on remembering to list two strings is now structural. The router's two predicates delegate to it.",
+      "authorityBoundaryHeld": "The table declares WHICH policy applies; it never decides who the actor is or whether they satisfy it. '/institution/ means admin' is precisely the inference this replaces - the section is looked up explicitly, and an undeclared section fails CLOSED to the strictest institutional policy."
+    },
+    "publicPrefixDefectCorrected": {
+      "defect": "isPublicPath matched path.startsWith('/posts/'), and classifyRoute evaluates public BEFORE the member matcher, so /posts/:id/edit classified PUBLIC. A read-only sibling being public never implies its editor is.",
+      "correction": "Editing/authoring tails are excluded from the public prefix AND explicitly classified member. Both halves were needed: the F069 invariant is that every route matches an EXPLICIT predicate, not merely that it lands on member by fall-through.",
+      "caughtByExistingGate": "The F069 gate FAILED on the half-correction and named the exact route. Recorded because it is evidence the gate works, not an embarrassment to hide."
+    },
+    "ratchet": {
+      "proves": [
+        "every registered institution route has a declared section policy",
+        "no registered edit/write route is publicly reachable",
+        "shorthand and canonical forms of a section resolve to the same policy, structurally",
+        "an undeclared section fails closed to admin",
+        "the router no longer hand-writes institution admin policy as string equality against shorthand constants"
+      ],
+      "fd13": "PROVEN ENFORCING. The seed is a public-prefixed editor (/spaces/civic/edit) that is NOT a registered route today: the scanner flags it, and a companion assertion keeps the seed hypothetical - if that route is ever registered, the gate fails until it is classified."
+    },
+    "deprecatedAuthorityRetired": "The hand-written admin predicates are gone rather than left alive 'for compatibility'; the gate asserts the deprecated form cannot return."
+  },
+  "RC9": {
+    "rootCauseEstablished": "The cross-tab transport already existed and worked: AuthBroadcast publishes login/logout and aura_app invalidates the auth-derived providers on receipt. What did NOT work was the bootstrap itself. sessionBootstrapProvider begins `if (_bootstrapDone) return;` against MODULE state, which survives provider invalidation - so the rebuilt provider returned on its first line. The invalidation was a NO-OP, and the call site's own comment ('the bootstrap on the next provider read will pick it up') described something that could not happen.",
+    "correction": "resetSessionBootstrap() separates one-time process initialisation from repeatable session reconstruction. The cross-tab handler calls it before invalidating, on BOTH the login and logout branches. The latch keeps doing its real job - one speculative /auth/refresh per app load, not one per widget rebuild - but no longer outlives an authoritative session change.",
+    "eventIsATriggerNotAnAuthority": "The reset performs no network work and asserts nothing about identity. It only permits the question to be asked again; the answer still comes from /auth/refresh and the canonical session authorities, with RC1's rules deciding whether asking is warranted at all.",
+    "noPolling": "None introduced. The mechanism remains event-driven through the existing broadcast channel.",
+    "noDuplicateAuthority": "No second token store, no cross-tab identity cache, no route-local login state, no duplicated logout logic. The existing TokenStore, DeviceService and session providers are reused unchanged.",
+    "idempotence": "The reset is a state flip; repeated events cannot stack. The in-flight completer is deliberately left alone so concurrent readers still coalesce onto a run already happening.",
+    "logoutOrdering": "Unchanged and still correct: sockets are torn down, tokens cleared and the session hint dropped BEFORE the reset, so a subsequent reconstruction asks a browser whose refresh cookie the server has already invalidated - and RC1 keeps it from asking at all on a public landing without a hint."
+  },
+  "findingReassessment": {
+    "F059": "IMPLEMENTED_NOT_LIVE_CERTIFIED - unchanged. RC6 removes no named remainder of it.",
+    "F061": "IMPLEMENTED_NOT_LIVE_CERTIFIED - unchanged.",
+    "F062": "IMPLEMENTED_NOT_LIVE_CERTIFIED - unchanged. RC6 strengthens the AUTHORIZATION of its destination without changing its continuity remainder; the correction is recorded against RC6, not claimed as finding progress.",
+    "F063": "IMPLEMENTED_NOT_LIVE_CERTIFIED - unchanged.",
+    "discipline": "No finding advanced or closed by RC6/RC9. The route-policy hole was an authorization defect discovered while executing a continuity root cause; it is recorded here, and no new finding was invented for it (boundary rule 18). If the founder wants it carried as its own canonical unit, that is a founder decision, not mine.",
+    "chapterEffect": "All nine ranked shared causes of the refresh-continuity audit (RC1-RC9) are now repaired. What remains for CH-02's four findings is live certification only."
+  },
+  "verification": {
+    "newAssertions": 22,
+    "frontendSuite": "769 PASS (747 before this batch)",
+    "backendSuite": "205 suites / 2577 tests PASS - untouched by this batch",
+    "protectedSuites": "meetings + navigation + authority + product: 200 PASS",
+    "identityConformanceGate": "PASS - 66 files / 202 sites, at baseline",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "analyze": "clean"
+  },
+  "protectedBoundaries": {
+    "meetings": "UNTOUCHED by RC6/RC9. Its suites are run as a shared-boundary health check only.",
+    "rcC5": "Untouched - remains a founder-declared hard gate.",
+    "ch13": "Not reopened. F135 and F017 untouched."
+  },
+  "founderDecisionsRequired": [
+    "NONE for execution. One OPTIONAL accounting question is surfaced, not decided: whether the institution-admin route-policy hole should be carried as its own canonical finding rather than living only in this execution record."
+  ]
+}

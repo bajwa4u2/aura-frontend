@@ -26,9 +26,29 @@ export 'session_hint.dart';
 /// - Uses the stored refresh token only when access token is missing/expired.
 ///
 /// Important:
-/// - Runs at most once per app load.
+/// - Runs at most once per app load — see the RC9 note below for what
+///   "once" actually means now.
 /// - Uses a dedicated Dio instance with no interceptors.
 /// - Never throws. It always settles.
+///
+/// RC9 — ONCE PER APP LOAD IS NOT ONCE FOR ALL TIME.
+///
+/// `_bootstrapDone` is module state, so it survived provider invalidation.
+/// A sibling tab signing in published a login event, this tab invalidated
+/// `sessionBootstrapProvider` in response — and the rebuilt provider returned
+/// on its first line because the flag was still set. The invalidation was a
+/// NO-OP, and the comment at the call site ("the bootstrap on the next
+/// provider read will pick it up") described something that could not happen.
+///
+/// The guard is still right for what it was for: one speculative
+/// `/auth/refresh` per app load, not one per widget rebuild. What it must not
+/// do is outlive an AUTHORITATIVE session change. `resetSessionBootstrap()`
+/// separates the two — initialisation stays once, reconstruction stays
+/// repeatable — and the cross-tab handler calls it before invalidating.
+///
+/// The event is a TRIGGER, never the authority: resetting only permits the
+/// question to be asked again. The answer still comes from `/auth/refresh`
+/// and the canonical session authorities.
 final sessionBootstrapProvider = FutureProvider<void>((ref) async {
   if (_bootstrapDone) return;
 
@@ -228,3 +248,23 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
 
 bool _bootstrapDone = false;
 Completer<void>? _bootstrapInFlight;
+
+/// RC9 — allow session reconstruction to run again after an authoritative
+/// session change (a sibling tab signing in or out, a revocation).
+///
+/// Idempotent, and safe to call while a bootstrap is in flight: the in-flight
+/// completer is left alone so concurrent readers still coalesce onto the run
+/// already happening, and only the "already done" latch is released. It does
+/// NOT itself perform a refresh — the next read of the provider decides that,
+/// through the same RC1 rules as any other cold load.
+void resetSessionBootstrap() {
+  _bootstrapDone = false;
+}
+
+/// Test seam: whether a further reconstruction would be attempted at all.
+bool debugSessionBootstrapWouldRun() => !_bootstrapDone;
+
+/// Test seam: restore the module latch, so one test cannot leak into another.
+void debugSetSessionBootstrapDone(bool value) {
+  _bootstrapDone = value;
+}
