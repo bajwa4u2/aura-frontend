@@ -29,37 +29,40 @@ import 'mention_scope.dart';
 import 'tag_entities.dart';
 import '../identity/person_identity_model.dart';
 
+/// Test seam for the member-row person resolution. The rule this pins — that a
+/// person the canonical reader cannot name is skipped rather than offered under
+/// an invented label — is identity behaviour, not widget behaviour, so it is
+/// worth reaching directly.
+List<TagSuggestion> memberTagSuggestionsForTest(dynamic rows) =>
+    _suggestionsFromMemberRows(rows);
+
 List<TagSuggestion> _suggestionsFromMemberRows(dynamic rows) {
   if (rows is! List) return const [];
   final out = <TagSuggestion>[];
   for (final raw in rows) {
     if (raw is! Map) continue;
     final row = Map<String, dynamic>.from(raw);
-    final userMap = row['user'] is Map
-        ? Map<String, dynamic>.from(row['user'] as Map)
-        : row;
-    final userId = CorrespondenceIdentity.pickString(row, const [
-      'userId',
-      'id',
-    ]);
+    // F053/F116 — this file is `lib/core/tagging`, and it serves a LIVE
+    // surface: DirectThreadScreen at `/direct/:threadId`. It was reading its
+    // person through `CorrespondenceIdentity`, which belongs to the family
+    // governed for retirement under CO-RC-C7-005 — so its debt was NOT
+    // retirement-owned and could not be left to be discharged by a deletion
+    // that will never reach this file. The private reader here carried the
+    // same two defects the member directory did: an avatar order that accepted
+    // `avatar` and `image` but never `photoUrl`, and 'Member' invented as a
+    // name for someone it had failed to resolve.
+    final person = AuraPersonIdentity.fromJson(row);
+    final userId = person.userId.isNotEmpty
+        ? person.userId
+        : CorrespondenceIdentity.pickString(row, const ['userId']);
     if (userId.isEmpty) continue;
-    final handle = CorrespondenceIdentity.pickString(userMap, const [
-      'handle',
-      'username',
-    ]);
-    final name = CorrespondenceIdentity.pickString(userMap, const [
-      'displayName',
-      'name',
-      'fullName',
-    ]);
-    final display = name.isNotEmpty
-        ? name
-        : (handle.isNotEmpty ? handle : 'Member');
-    final avatarUrl = CorrespondenceIdentity.pickString(userMap, const [
-      'avatarUrl',
-      'avatar',
-      'image',
-    ]);
+    final handle = person.handle;
+    // A mention must be insertable, so a person with no resolvable name is
+    // skipped rather than offered as 'Member' — the neutral word is for
+    // RENDERING someone, and '@Someone' is not a mention anyone can act on.
+    if (person.displayName.trim().isEmpty && handle.isEmpty) continue;
+    final display = person.proseName;
+    final avatarUrl = person.avatarUrl ?? '';
     out.add(
       TagSuggestion(
         kind: TagKind.member,

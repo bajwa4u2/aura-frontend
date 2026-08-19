@@ -545,3 +545,36 @@ from the 11 real migrations, which the metric did not reflect at all.
 messages family, which is pending retirement (`MessagesHubScreen` is parked at `/messages/legacy-hub`).
 Converging identity inside surfaces scheduled for removal is a founder call, not an engineering one,
 and F116 criterion 2 cannot close either way until it is made.
+
+---
+
+## FOUNDER RULING - RETIREMENT-OWNED STRUCTURAL DEBT (2026-08-19)
+
+**Ruled.** Do not invest reconstruction effort in canonicalizing person identity inside code already
+governed for removal. Such sites become **RETIREMENT_OWNED STRUCTURAL DEBT**. They are not governed
+exceptions, not false positives, not certification-only, not conformant, not cleared, and not eligible
+for detector exclusion merely because retirement is planned. **Planned retirement is not completed
+structural convergence.** While the code can execute, the debt stays visible in F053/F116 accounting and
+is discharged only when deletion physically removes it.
+
+**Ownership must be concrete, and here it already was.** The 17 legacy sites trace to **CO-RC-C7-005**
+(Phase 5 legacy retirement NOT AUTHORIZED; legacy hub parked at `/messages/legacy-hub`), with per-file
+owners already assigned by **CO-RC-C2-010** (`conversations_screen` C4-retired; `correspondence_hub` and
+`space` C7). No new retirement program was invented.
+
+**Two sites were rejected from the bucket, on a distinction worth keeping:** *depending on retiring code
+is not the same as being retired by it.* `lib/core/tagging/mention_scope_providers.dart` read its person
+through `CorrespondenceIdentity` but serves a live route, so no deletion would ever discharge it. It was
+converged. `conversations_screen` is unreferenced by route, library and test, and was still NOT deleted -
+**FD-12** forbids exactly that naive zero-reference gate.
+
+**RoutedRecord - a union that did not exist.** The model read `['handle', 'handleOrSlug']`, which looked
+like an actor union with no discriminator. The producer selects the author from a `User` relation with
+`PERSON_REFERENCE_SELECT` and never emits `handleOrSlug`. The client had invented an ambiguity the server
+never had, so the repair was to stop reading a field that is never sent - **not** to add an actorType to
+discriminate a union of one, and not to invent a universal Actor model. Recorded because the instinct to
+model a union on seeing a union-shaped field name is exactly what created the defect.
+
+**Result.** Active executable person debt 2 -> 0: every person-identity site in the SURVIVING product now
+resolves through one canonical reader. **F116 and F053 remain PARTIALLY_VALIDATED** while 15 retirement-
+owned parsers remain physically executable. F051 preserved and untouched.

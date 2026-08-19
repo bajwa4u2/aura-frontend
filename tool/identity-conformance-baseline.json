@@ -18,10 +18,10 @@
  ],
  "totals": {
   "files": 16,
-  "sites": 29
+  "sites": 28
  },
  "perFile": {
-  "aura_final:lib/core/tagging/mention_scope_providers.dart": 2,
+  "aura_final:lib/core/tagging/mention_scope_providers.dart": 1,
   "aura_final:lib/features/conversations/presentation/conversations_screen.dart": 2,
   "aura_final:lib/features/correspondence/presentation/correspondence_hub_screen.dart": 2,
   "aura_final:lib/features/correspondence/presentation/space_screen.dart": 1,
@@ -42,11 +42,10 @@
   "NON_CANONICAL_PERSON_DESERIALIZATION"
  ],
  "typedPersonTotals": {
-  "files": 2,
-  "sites": 8
+  "files": 1,
+  "sites": 7
  },
  "typedPersonPerFile": {
-  "aura_final:lib/features/correspondence/data/correspondence_identity.dart": 7,
-  "aura_final:lib/features/institutions/engagement/engagement_models.dart": 1
+  "aura_final:lib/features/correspondence/data/correspondence_identity.dart": 7
  }
 }

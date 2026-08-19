@@ -255,3 +255,58 @@ remaining client work to surviving surfaces and let retirement discharge the res
 unasked would be work in territory whose disposition is already pending.
 
 Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/ch03-f116-f053-promotion-reconciliation.json`.
+
+## 2026-08-19 — Retirement-owned debt ruled; RoutedRecord resolved; active person debt is ZERO
+
+**Founder ruling applied.** Person-identity debt inside code already governed for removal is
+**RETIREMENT_OWNED STRUCTURAL DEBT** — still real, still measured, discharged only by physical deletion.
+Not a governed exception, not a false positive, not eligible for detector exclusion.
+
+**The retirement owner already existed and only needed tracing** — no new retirement program invented:
+- **CO-RC-C7-005** (RC-C7): *Phase 5 legacy retirement NOT AUTHORIZED — gate: additive deploy → migration
+  → founder live observation → journey certification → explicit authorization. Legacy hub parked at
+  `/messages/legacy-hub`.*
+- **CO-RC-C2-010** (RC-C2) had **already assigned per-file owners**: `conversations_screen` → C4-retired;
+  `correspondence_hub` / `space` → C7.
+
+**15 of 17 sites are retirement-owned.** `correspondence_identity` 7, `messages_hub` 3,
+`correspondence_hub` 2, `conversations_screen` 2, `space_screen` 1.
+
+**2 were rejected from the bucket** — and the reason matters: `mention_scope_providers` *looked*
+retirement-owned because it read its person through `CorrespondenceIdentity`, but it lives in
+`lib/core/tagging` and serves `DirectThreadScreen` at `/direct/:threadId`. **Depending on retiring code is
+not the same as being retired by it** — no deletion would ever reach that file, so its debt could never be
+discharged by waiting. It carried the same two defects as the member directory (an avatar order accepting
+`avatar`/`image` but never `photoUrl`, and `'Member'` invented for an unresolved person) and is converged.
+Its second site is institution identity, not person.
+
+**`conversations_screen` is unreachable but NOT proven dead** — one file, no route, no importer, no test.
+Recorded, not deleted: **FD-12** forbids precisely the naive zero-reference gate that would justify it.
+
+**RoutedRecord: the union did not exist.** It read `['handle', 'handleOrSlug']`, and `handleOrSlug` is the
+field a person's handle and an institution's slug share — so a consumer could not tell which authority
+owned the value. The producer settles it: `InstitutionEngagementService.toDto` builds the author from a
+`User` relation selected with **`PERSON_REFERENCE_SELECT`**, and never emits `handleOrSlug` on this
+contract at all. **The client had invented an ambiguity the server never had.** The repair is to stop
+reading a field that is never sent — **not** to add an actorType to discriminate a union of one. The author
+is now `AuraPersonIdentity`. No Actor model invented, no identity authorities merged, and no route work:
+`authorHandle` is never navigated.
+
+**ACTIVE EXECUTABLE PERSON DEBT: 2 → 0.** Every person-identity site in the *surviving* product now
+resolves through the one canonical reader. Surface **29 → 28**, typed-person **8 → 7**, both real
+migration. **The detector was not touched** — no legacy exclusions, no suppressions, no baseline tricks.
+
+**F116 and F053 remain PARTIALLY_VALIDATED.** Criteria 2, 3, 4, 6 NOT MET while 15 competing person
+parsers are physically present and executable. This is a real milestone even though the finding is not
+implementation-complete: what blocks it is not architecture that is wrong, but architecture that is
+scheduled for deletion and has not been deleted.
+
+**Observed and deliberately not fixed** (not identity, so out of this task's authorization): engagement
+`postBody` reads `['body']` while the DTO emits `text`, so the post body never renders on either
+engagement screen.
+
+**Next frontier — the only thing that discharges the 15:** CO-RC-C7-005 Phase 5 legacy retirement, in its
+recorded order. When those files are removed the sites disappear from the audit by deletion, the baseline
+falls, and F116 criteria 2/3/4/6 are reassessed. Nothing here starts that retirement.
+
+Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/ch03-retirement-owned-debt-and-routedrecord.json`.

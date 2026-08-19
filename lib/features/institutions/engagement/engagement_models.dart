@@ -1,3 +1,4 @@
+import '../../../core/identity/person_identity_model.dart';
 import '../../topics/topic.dart';
 
 enum RoutedRecordStatus {
@@ -66,6 +67,24 @@ enum RecordIntent {
   }
 }
 
+/// A post routed to an institution for engagement.
+///
+/// F053/F116 — the author here used to be read as `['handle', 'handleOrSlug']`,
+/// which made it look like an ACTOR UNION: `handleOrSlug` is the normalised
+/// field a person's handle and an institution's slug share, so a consumer
+/// holding this value could not tell which authority owned it.
+///
+/// The producer settles it. `InstitutionEngagementService.toDto` builds the
+/// author from `row.post.author` — a User relation — selected with
+/// `PERSON_REFERENCE_SELECT`, and emits `{ id, handle, displayName, avatarUrl }`.
+/// There is no institution branch and `handleOrSlug` is never emitted on this
+/// contract at all. The union was not lossy and it was not deliberate: it did
+/// not exist. The client had invented an ambiguity the server never had, and
+/// the correct repair is to stop reading a field that is never sent, not to add
+/// an actorType to discriminate a union of one.
+///
+/// So the author is a PERSON, read by the canonical reader. No Actor model was
+/// invented, and no person and institution authority was merged.
 class RoutedRecord {
   const RoutedRecord({
     required this.id,
@@ -75,8 +94,7 @@ class RoutedRecord {
     required this.intent,
     this.topic,
     this.participationMode,
-    this.authorName,
-    this.authorHandle,
+    this.author = AuraPersonIdentity.unknown,
     this.postBody,
     this.createdAt,
     this.updatedAt,
@@ -89,8 +107,29 @@ class RoutedRecord {
   final RecordIntent intent;
   final AuraTopic? topic;
   final String? participationMode;
-  final String? authorName;
-  final String? authorHandle;
+
+  /// The person who wrote the routed post.
+  final AuraPersonIdentity author;
+
+  /// The author's name for a byline, or null when the producer named nobody.
+  ///
+  /// The ORDER is canonical — their name, then their handle. The nullability is
+  /// this surface's own: both engagement screens hide the byline row when this
+  /// is empty, and answering with the shared neutral word would put 'Someone'
+  /// under a post instead of omitting a line nobody can fill. Naming an
+  /// unresolved person stays the renderer's decision; the order is not.
+  String? get authorName {
+    if (author.displayName.trim().isEmpty && author.handle.trim().isEmpty) {
+      return null;
+    }
+    return author.label;
+  }
+
+  String? get authorHandle {
+    final handle = author.handle.trim();
+    return handle.isEmpty ? null : handle;
+  }
+
   final String? postBody;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -133,8 +172,7 @@ class RoutedRecord {
         _opt(postRaw, ['primaryTopic']) ?? _opt(m, ['topic', 'primaryTopic']),
       ),
       participationMode: _opt(m, ['participationMode']),
-      authorName: _opt(authorRaw, ['name', 'displayName']),
-      authorHandle: _opt(authorRaw, ['handle', 'handleOrSlug']),
+      author: AuraPersonIdentity.fromJson(authorRaw),
       postBody: _opt(postRaw, ['body']) ?? _opt(m, ['postBody']),
       createdAt: readDate(m['createdAt']),
       updatedAt: readDate(m['updatedAt']),

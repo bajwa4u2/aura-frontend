@@ -1,0 +1,148 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-03 / F053 / F116",
+  "title": "Retirement-owned person debt, and RoutedRecord's actor domain",
+  "date": "2026-08-19",
+  "founderRuling": "Do not invest reconstruction effort in canonicalizing person identity inside code already governed for removal. Those sites become RETIREMENT_OWNED STRUCTURAL DEBT: still real debt, still visible, discharged only by physical deletion — not by bookkeeping, not by detector exclusion.",
+
+  "retirementAuthority": {
+    "primary": "CO-RC-C7-005 (RC-C7 THREADS, SPACES & CORRESPONDENCE) — 'Phase 5 legacy retirement NOT AUTHORIZED — gate: additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization. Legacy conversation surfaces NOT yet retired; legacy hub parked at /messages/legacy-hub.' A chartered obligation inside the 451-unit register, not an inline comment.",
+    "perFileOwners": "CO-RC-C2-010 (RC-C2 IDENTITY, PRESENCE & PROFILE) already assigned future owners for person-shaped extraction sites: 'conversations_screen C4-retired; correspondence_hub/space/invite_member C7; member_home C3; admin_institution_members PD-1'. The retirement ownership asked for here was already governed; it did not need inventing, only tracing.",
+    "corroborating": ["lib/router.dart:1383 — MessagesHubScreen parked at '/messages/legacy-hub'", "lib/router.dart:1322-1330 — 'the legacy hub and its routes retire in the transition phase after history migration; until then their addresses remain reachable'", "docs/CURRENT_STATE.md — Phase 5 retirement NOT authorized, gated on verified production migration"],
+    "obligationStateNote": "Both obligations record currentState NOT_RECORDED_AT_OBLIGATION_LEVEL with the explicit warning that chapter-level status must not be read as the obligation being satisfied. Neither is discharged."
+  },
+
+  "seventeenSitesTraced": {
+    "startingCount": 17,
+    "retirementOwned": {
+      "count": 15,
+      "sites": [
+        { "file": "lib/features/correspondence/data/correspondence_identity.dart", "lines": [82, 84, 95, 108, 112, 361, 578], "count": 7, "surface": "the data layer beneath every C7 correspondence surface", "owner": "CO-RC-C7-005", "dependency": "deleted when the correspondence family retires", "whatItIs": "A second, complete person authority: identityLabel owns its own order and invents 'Member {id}'; memberDisplayName invents 'Member'; identityAvatarUrl and identityHandle own their own alias orders.", "whyNotConverged": "Every consumer of its person readers is a C7 surface. Converging it would rewrite a class that is deleted whole.", "stillExecutable": "YES — reachable through the routed C7 surfaces below." },
+        { "file": "lib/features/correspondence/presentation/correspondence_hub_screen.dart", "lines": [656, 660], "count": 2, "surface": "Correspondence hub", "owner": "CO-RC-C2-010 declares owner C7; CO-RC-C7-005 governs the retirement", "dependency": "route kCorrespondenceHubRoute = '/me/correspondence' retires with the family", "whyNotConverged": "Named C7 by the register before this pass.", "stillExecutable": "YES — routed at lib/router.dart:1534." },
+        { "file": "lib/features/correspondence/presentation/space_screen.dart", "lines": [1687], "count": 1, "surface": "Correspondence space", "owner": "CO-RC-C2-010 declares owner C7", "dependency": "'/me/correspondence/:spaceId' retires with the family", "whyNotConverged": "Named C7 by the register before this pass.", "stillExecutable": "YES — routed at lib/router.dart:1566 and 1847." },
+        { "file": "lib/features/messages/presentation/messages_hub_screen.dart", "lines": [1196, 1220, 1224], "count": 3, "surface": "Legacy messages hub", "owner": "CO-RC-C7-005 names this surface and this route explicitly", "dependency": "'/messages/legacy-hub' retires after history migration", "whyNotConverged": "The single most explicitly retirement-governed surface in the tree.", "stillExecutable": "YES — routed at lib/router.dart:1383, reachable today." },
+        { "file": "lib/features/conversations/presentation/conversations_screen.dart", "lines": [840, 845], "count": 2, "surface": "Legacy conversations list", "owner": "CO-RC-C2-010 declares owner 'C4-retired'", "dependency": "removal of the file", "whyNotConverged": "Owner already declared as a retirement. See unreachableButNotProvenDead — this file is additionally unreferenced, which is a stronger statement than retirement-pending and a weaker one than deletable.", "stillExecutable": "NOT REACHABLE — no route, no importer, no test reference. It compiles and ships, so its code is present, but nothing can execute it." }
+      ]
+    },
+    "rejectedFromRetirementOwnership": {
+      "count": 2,
+      "sites": [
+        { "site": "lib/core/tagging/mention_scope_providers.dart:46", "whyRejected": "It LOOKED retirement-owned because it read its person through CorrespondenceIdentity.pickString — a class inside the retiring family. But the file is lib/core/tagging, and its consumers are thread_composer AND DirectThreadScreen, which is routed at '/direct/:threadId' and '/institution/:institutionId/direct/:threadId'. No correspondence retirement deletes this file, so no deletion discharges its debt. Depending on retiring code is not the same as being retired by it.", "classification": "ACTIVE EXECUTABLE PERSON DEBT", "action": "CONVERGED this pass. It carried the same two defects as the member directory: an avatar order accepting `avatar` and `image` but never `photoUrl`, and 'Member' invented as a name for someone it failed to resolve." },
+        { "site": "lib/core/tagging/mention_scope_providers.dart:82 (now :78)", "whyRejected": "Same file, but the line is inside _institutionSuggestionFromMap, which reads an INSTITUTION's name and slug.", "classification": "NON-PERSON / DIFFERENT IDENTITY DOMAIN", "action": "None. Remains measured — the classifier's naming signals cannot resolve a generically named local map inside a top-level function, and no path or filename exclusion was added to hide it." }
+      ]
+    },
+    "unreachableButNotProvenDead": {
+      "site": "lib/features/conversations/presentation/conversations_screen.dart",
+      "observed": "The whole lib/features/conversations/ feature is one file. It is referenced by no route, no other library file and no test.",
+      "whyNotDeleted": "FD-12 — 'proven-dead retirement only + surface reachability principle; naïve zero-reference gate forbidden'. A grep returning zero references is exactly the gate FD-12 names as insufficient. Deleting it is also outside this task's authorization (§M).",
+      "recorded": "Its 2 sites stay in the retirement-owned bucket under its declared owner (C4-retired) and remain measured. This is stated rather than acted on, because 'nothing references it' is an observation, not a proof."
+    }
+  },
+
+  "routedRecord": {
+    "producerGraph": {
+      "endpoints": ["GET /institutions/:institutionId/engagement (list)", "GET /institutions/:institutionId/engagement/:recordId (detail)"],
+      "backendFile": "aura-backend:src/institutions/engagement/institution-engagement.service.ts",
+      "singleProducer": "Both endpoints project through one method, toDto. There is one producer variant, not several.",
+      "authorProjection": "row.post.author — a User relation — selected with PERSON_REFERENCE_SELECT (service line ~61), emitted as { id, handle, displayName, avatarUrl } (service lines ~166-171).",
+      "actorTypeUpstream": "NONE, and none is needed: there is no institution branch on this contract. The author is a person or it is null.",
+      "handleOrSlugEmitted": "NO. `handleOrSlug` appears in feed-projection.service.ts and tag-references.ts; it is not part of the engagement contract at all."
+    },
+    "consumerGraph": {
+      "repository": "lib/features/institutions/engagement/engagement_repository.dart — list() and getDetail() both construct RoutedRecord.fromJson",
+      "providers": "engagement_providers.dart — FutureProvider.family for the list and for one record",
+      "surfaces": ["engagement_list_screen.dart:310-312 — renders record.authorName as a byline", "engagement_detail_screen.dart:180-190 — renders record.authorName as a byline, with authorHandle appearing only in a null-check"],
+      "assumesPerson": "No consumer asserts either domain; both simply print the name.",
+      "assumesInstitution": "None.",
+      "routeConstruction": "NONE. authorHandle is never used to build a route and never navigated. Per §H this is recorded rather than turned into route work — no route pattern was normalised, and the person and institution route contracts were not merged."
+    },
+    "exactAmbiguityBefore": "`authorHandle: _opt(authorRaw, ['handle', 'handleOrSlug'])`. Because `handleOrSlug` is the normalised field a PERSON's handle and an INSTITUTION's slug share, a consumer holding this value could not know which authority owned it — and the model carried no actorType to say.",
+    "resolution": {
+      "finding": "The union did not exist. The producer has one branch, and it is a person selected with the canonical person projection. `handleOrSlug` is never sent on this contract. The client had invented an ambiguity the server never had.",
+      "action": "The author is now `AuraPersonIdentity`, read by the canonical reader. `authorName` and `authorHandle` remain as accessors, so no consumer changed.",
+      "authorityReused": "AuraPersonIdentity — preferred order option 1/3: consume the existing canonical authority, and preserve the producer's single person branch rather than flattening it into an ambiguous value.",
+      "whatWasNotDone": "No universal Actor model was invented. No actorType was added to discriminate a union of one. PERSON and INSTITUTION identity authorities were not merged. No new representation was introduced.",
+      "semanticPropertyMet": "A consumer now determines the identity domain from the TYPE — `RoutedRecord.author` is an `AuraPersonIdentity`. Nothing is inferred from string shape, route prefix, avatar presence, fallback values or UI context.",
+      "governedNonPromotion": "`authorName` returns null when the producer named nobody, because both screens hide the byline row when it is empty and the shared neutral word would print 'Someone' under a post. The ORDER is canonical; only the nullability is the surface's."
+    },
+    "nonIdentityDefectObserved": {
+      "site": "engagement_models.dart — `postBody: _opt(postRaw, ['body']) ?? _opt(m, ['postBody'])`",
+      "observation": "The producer emits the post text as `text`, not `body`, and no `postBody` key exists on the DTO. On the real contract `record.postBody` therefore resolves to null and both engagement screens omit the post body entirely.",
+      "action": "NOT FIXED. It is not identity, and this task authorizes an identity correction. Reported so it is not lost."
+    }
+  },
+
+  "structuralRemainderBuckets": {
+    "1_activeExecutablePersonDebt": { "count": 0, "note": "RoutedRecord and mention_scope_providers:46 were the last two and are converged. This is the milestone: every person-identity site that is NOT owned by a governed retirement now resolves through the one canonical reader." },
+    "2_retirementOwnedPersonDebt": { "count": 15, "note": "correspondence_identity 7, messages_hub 3, correspondence_hub 2, conversations_screen 2, space_screen 1. Owner CO-RC-C7-005, with per-file owners already assigned by CO-RC-C2-010. Real debt; discharged only by deletion." },
+    "3_governedExceptions": { "count": 2, "note": "aura-backend src/auth/auth.service.ts:1311 and :1328 — credential-path account selects, not person projections." },
+    "4_presentationOnlyNonSemantic": { "count": 15, "note": "The CircleAvatar population: person visuals that bypass AuraAvatar while consuming an already-canonical person. A presentation concern, not an identity one." },
+    "5_nonPersonDifferentIdentityDomain": { "count": 3, "note": "direct_thread_screen:640 (institution branch of a ternary), institution_profile_screen:151 (institution name inside a generically named _ProfileBody), mention_scope_providers:78 (institution suggestion)." },
+    "6_instrumentLimitations": { "count": 1, "note": "meeting_device_check:326 — _buildPlaceholder(String initial) reads no identity data; the CircleAvatar rule's window matches the token `initial`." },
+    "unidentifiedRemainder": 0,
+    "reconciliation": "15 + 2 + 15 + 3 + 1 = 36 measured rows across the surface metric (28) and the typed-person metric (7), plus the one converged RoutedRecord row that has left both. Bucket 4 and bucket 6 are AVATAR-class rows; buckets 1, 2 and 5 are USER_SHAPE and typed rows."
+  },
+
+  "measurements": {
+    "surfacePersonDebt": { "before": "16 files / 29 sites", "after": "16 files / 28 sites", "delta": "-1 — mention_scope_providers:46 converged. The file remains counted for its institution site." },
+    "typedPersonDebt": { "before": "2 files / 8 sites", "after": "1 file / 7 sites", "delta": "-1 — RoutedRecord converged. The remaining 7 are correspondence_identity.dart, all retirement-owned." },
+    "typedBoundaryInventory": { "before": 16, "after": 15 },
+    "classification": { "realMigration": 2, "deadCodeRemoval": 0, "semanticReclassification": 0, "governedException": 0, "instrumentCorrection": 0 }
+  },
+
+  "detectorUnchanged": {
+    "statement": "The detector was NOT modified in this pass. No legacy path exclusions, no `deprecated` suppression, no comment-based suppression, no baseline trick. The 15 retirement-owned sites remain fully visible in the audit output and in the frozen baseline.",
+    "theProofMechanism": "When the correspondence family is physically retired the files disappear, the audit stops finding those sites, and the baseline falls. Removal is the only thing that clears them, which is exactly the property the ruling asks for.",
+    "baseline": "Re-frozen at 16 files / 28 sites surface and 1 file / 7 sites typed-person — a REDUCTION, reflecting the two real migrations and nothing else.",
+    "domainProof": "23/23 PASS, unchanged."
+  },
+
+  "f116": {
+    "state": "PARTIALLY_VALIDATED",
+    "notPromoted": "Correct and deliberate. RoutedRecord's repair does not promote the finding; 15 competing person parsers remain physically present and executable.",
+    "criteria": {
+      "1": "MET — backend producers canonical; the engagement author is itself selected with PERSON_REFERENCE_SELECT, which is what settled the actor-domain question.",
+      "2": "NOT MET — correspondence_identity.dart is a second complete person authority, still present and still reachable.",
+      "3": "NOT MET — 7 typed sites in that class independently own person fallback, alias and envelope semantics.",
+      "4": "NOT MET — CorrespondenceIdentity is an undeleted duplicate person model.",
+      "5": "MET — every converged model keeps its own domain state beside the person; RoutedRecord retains id, status, intent, topic and participationMode.",
+      "6": "NOT MET — all remaining hits are classified, but 15 of them ARE competing."
+    },
+    "activeExecutableRemainder": 0,
+    "retirementOwnedRemainder": 15,
+    "milestoneStatement": "Every person-identity site in the SURVIVING product now resolves through AuraPersonIdentity. What blocks the finding is not architecture that is wrong, but architecture that is scheduled for deletion and has not been deleted."
+  },
+
+  "f053": {
+    "state": "PARTIALLY_VALIDATED",
+    "structuralTest": "Can one Aura person acquire different identity semantics across surfaces? In the surviving product, NO. In the legacy correspondence and messages surfaces, YES — CorrespondenceIdentity names an unresolved person 'Member' and 'Member {id}' where the canonical reader says 'Someone', and it accepts alias orders the canonical reader does not.",
+    "dimensionalReport": "SURVIVING-PRODUCT PERSON IDENTITY: canonical. LEGACY-RETIREMENT DEBT: 15 sites, blocking finding-level completion. Both dimensions are reported here without inventing a new finding state; the finding itself stays PARTIALLY_VALIDATED.",
+    "notInvisible": "The legacy semantics are not treated as absent merely because product direction says the surfaces will retire. They can execute today."
+  },
+
+  "otherFindingEffects": {
+    "F052": { "effect": "NONE — neither RoutedRecord nor the retirement classification touches its exact contract." },
+    "F054": { "effect": "The removed 'Member' evidence is preserved, and this pass adds a THIRD instance of the invented-label class — mention_scope_providers offered 'Member' as a mention name, now skipped instead. Evidence only; NO promotion." },
+    "F055": { "effect": "NONE." },
+    "F056": { "effect": "NONE." },
+    "F057": { "effect": "NONE. RoutedRecord is not an F057 instance: F057 is two hand-written readers of the same payload disagreeing, whereas RoutedRecord read a field the producer never sends. Recorded as a distinct shape rather than folded into F057 by resemblance." },
+    "F051": { "effect": "PRESERVED CONFLICT, UNTOUCHED. No avatar-in-chat adjudication. Confirmed still CONFLICTING_CURRENT_STATE by validate-stage0.mjs." }
+  },
+
+  "verification": {
+    "frontendTests": "821 pass / 1 skipped (811 before; +10 new — 6 RoutedRecord actor-domain, 4 mention-scope person identity)",
+    "flutterAnalyze": "clean",
+    "identityGate": "PASS at the re-frozen baseline",
+    "domainProof": "23/23 PASS both directions",
+    "meetingsRatchetProof": "PASS both directions",
+    "meetingsRegression": "52 meetings tests pass — no shared identity infrastructure reached Meetings in this pass",
+    "backend": "UNTOUCHED — working tree clean; the producer contract was read, not changed, so no backend test run or tsc pass was required",
+    "stage0Validator": "PASS — FOUNDER_RATIFIED_CANONICAL_BASELINE",
+    "portfolioValidator": "PASS — 451 canonical units across 17 chapters",
+    "production": "NOT polled, NOT mutated"
+  },
+
+  "founderDecisionsRequired": "NONE",
+
+  "nextFrontierThatDischargesTheFifteen": "CO-RC-C7-005 Phase 5 legacy retirement, in its recorded order: additive deploy -> history migration -> founder live observation -> journey certification -> explicit authorization. When the correspondence and legacy-messages surfaces are physically removed, the 15 sites disappear from the audit by deletion, the baseline falls, and F116 criteria 2, 3, 4 and 6 are reassessed. Nothing in this task starts that retirement."
+}
