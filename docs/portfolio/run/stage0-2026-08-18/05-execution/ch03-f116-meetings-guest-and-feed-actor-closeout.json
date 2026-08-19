@@ -1,0 +1,232 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-03 / F053 / F116",
+  "title": "FINAL PROTECTED MEETINGS PERSON-IDENTITY CONVERGENCE — 16 typed-person sites, Guest semantics, and the final feed-polymorphism proof",
+  "date": "2026-08-19",
+  "authorization": "NARROW founder authorization: the four protected Meetings domain models, solely for F053/F116 person-deserialization convergence, plus the founder ruling on MeetingIdentityRef 'Guest'. No meeting lifecycle, booking, availability, admission, waiting-room, host/participant authorization, realtime/session, invitation/reminder, navigation, external-guest product-semantics or UI change was made.",
+  "findingsAddressed": ["F053", "F116"],
+
+  "theFourProtectedModels": [
+    {
+      "file": "aura_final:lib/features/meetings/domain/meeting_identity.dart",
+      "model": "MeetingIdentityRef",
+      "startingSites": 6,
+      "represents": "POLYMORPHIC MIXTURE — AURA_USER | CONTACT | GUEST",
+      "identityBranches": [
+        "AURA_USER — a person who holds an Aura identity (fromUserJson, and fromJson when identityType is AURA_USER or auraUserId is present)",
+        "CONTACT — a saved external contact with no Aura identity",
+        "GUEST — an external participant with no Aura identity at all"
+      ],
+      "personFields": ["auraUserId", "displayName (AURA_USER branch)", "handle", "avatarUrl"],
+      "meetingDomainState": ["identityType", "memberId", "contactId", "email", "verifiedEmail", "title"],
+      "fallbackChainsBefore": [
+        "_requiredString(j['displayName'], fallback: 'Guest') — applied to EVERY branch, Aura user included",
+        "_requiredString(j['identityType'], fallback: 'GUEST')"
+      ],
+      "disposition": "CONVERGED (person branch) + PRESERVED (external branch)"
+    },
+    {
+      "file": "aura_final:lib/features/meetings/domain/meeting.dart",
+      "model": "MeetingHost (3 sites) + MeetingOutcome owner (1 site)",
+      "startingSites": 4,
+      "represents": "AURA USER — a meeting's host is always a person; an institution OWNS meetings through MeetingInstitutionRef, it does not host them as a person",
+      "identityBranches": ["single person branch"],
+      "personFields": ["id", "displayName", "handle", "avatarUrl", "outcome owner id/displayName"],
+      "meetingDomainState": ["title (institutional role line)", "outcome type/text/status/dueDate"],
+      "fallbackChainsBefore": ["displayName ?? handle ?? 'Unknown'"],
+      "disposition": "CONVERGED"
+    },
+    {
+      "file": "aura_final:lib/features/meetings/domain/availability_profile.dart",
+      "model": "ProfileOwner",
+      "startingSites": 3,
+      "represents": "AURA USER — the person who owns an availability profile",
+      "identityBranches": ["single person branch"],
+      "personFields": ["id", "displayName", "handle", "avatarUrl"],
+      "meetingDomainState": ["title (institutional role line)"],
+      "fallbackChainsBefore": ["displayName ?? handle ?? 'Unknown'"],
+      "disposition": "CONVERGED"
+    },
+    {
+      "file": "aura_final:lib/features/meetings/domain/meeting_entry_resolution.dart",
+      "model": "MeetingEntryHost (2 sites) + MeetingEntryResolution entrant identity (1 site)",
+      "startingSites": 3,
+      "represents": "MIXED — MeetingEntryHost is a reduced PERSON projection; the entrant identity summary is a MEMBER | GUEST_SESSION | ANONYMOUS union",
+      "identityBranches": [
+        "MeetingEntryHost — person only, deliberately reduced (no id, no handle) because this is an unauthenticated pre-join screen",
+        "entrant MEMBER — an Aura person",
+        "entrant GUEST_SESSION / ANONYMOUS — an external entrant whose name, when present, came from the evidence they presented"
+      ],
+      "personFields": ["host displayName", "host avatarUrl", "entrant displayName when kind == MEMBER"],
+      "meetingDomainState": ["identityKind", "identityEmail", "requirements", "participation role", "admission", "context ids", "prefill", "presentation", "host title"],
+      "fallbackChainsBefore": ["none in this file; the private interpretation was the direct alias read itself"],
+      "disposition": "CONVERGED (person branches) + PRESERVED (external entrant branch)"
+    }
+  ],
+
+  "sixteenSiteClassification": [
+    { "site": "meeting_identity.dart:31", "before": "displayName: _requiredString(j['displayName'], fallback: 'Guest')", "class": "A_TRUE_AURA_PERSON + B_EXTERNAL — one line served BOTH branches", "disposition": "SPLIT. AURA_USER delegates to AuraPersonIdentity.fromJson and is named by the canonical order; CONTACT/GUEST keep externalName and the meeting domain's own 'Guest'." },
+    { "site": "meeting_identity.dart:33", "before": "avatarUrl: _optionalString(j['avatarUrl'])", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED — avatarUrl now comes only from the person. Verified non-lossy: buildContactBookerIdentity and buildGuestBookerIdentity both emit avatarUrl: null unconditionally." },
+    { "site": "meeting_identity.dart:35", "before": "handle: _optionalString(j['handle'])", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED — handle now comes only from the person. Verified non-lossy: both external builders emit handle: null unconditionally." },
+    { "site": "meeting_identity.dart:45", "before": "displayName: _requiredString(j['displayName'], fallback: 'Guest')  // fromUserJson, identityType hardcoded AURA_USER", "class": "A_TRUE_AURA_PERSON — THE FOUNDER-NAMED DEFECT", "disposition": "CONVERGED. This site named an authenticated Aura person by an external participant type they do not hold." },
+    { "site": "meeting_identity.dart:47", "before": "avatarUrl: _optionalString(j['avatarUrl'])  // fromUserJson", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED" },
+    { "site": "meeting_identity.dart:49", "before": "handle: _optionalString(j['handle'])  // fromUserJson", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED" },
+    { "site": "meeting.dart:22", "before": "displayName: j['displayName'] as String?  // MeetingHost", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED" },
+    { "site": "meeting.dart:23", "before": "handle: j['handle'] as String?  // MeetingHost", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED" },
+    { "site": "meeting.dart:24", "before": "avatarUrl: j['avatarUrl'] as String?  // MeetingHost", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED" },
+    { "site": "meeting.dart:541", "before": "ownerName: ownerMap?['displayName'] as String?  // MeetingOutcome", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED — an outcome's owner is the PERSON accountable for it; the outcome's own state stays with the outcome." },
+    { "site": "availability_profile.dart:72", "before": "displayName: j['displayName'] as String?  // ProfileOwner", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED" },
+    { "site": "availability_profile.dart:73", "before": "handle: j['handle'] as String?  // ProfileOwner", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED" },
+    { "site": "availability_profile.dart:74", "before": "avatarUrl: j['avatarUrl'] as String?  // ProfileOwner", "class": "A_TRUE_AURA_PERSON", "disposition": "CONVERGED" },
+    { "site": "meeting_entry_resolution.dart:108", "before": "displayName: j['displayName'] as String?  // MeetingEntryHost", "class": "A_TRUE_AURA_PERSON (reduced projection)", "disposition": "CONVERGED — reduced or not, it is a person, and it is read canonically. Nullability preserved so the pre-join surface still renders nothing when there is no host name." },
+    { "site": "meeting_entry_resolution.dart:109", "before": "avatarUrl: j['avatarUrl'] as String?  // MeetingEntryHost", "class": "A_TRUE_AURA_PERSON (reduced projection)", "disposition": "CONVERGED" },
+    { "site": "meeting_entry_resolution.dart:244", "before": "identityName: identity['displayName'] as String?", "class": "A_TRUE_AURA_PERSON (kind == MEMBER) + B_EXTERNAL (kind == GUEST_SESSION | ANONYMOUS)", "disposition": "SPLIT. Proven from the producer: meeting-participation-resolver.service.ts emits identity.displayName ?? winning?.subjectName, and subjectName is a guest session's guestName, a booking's bookerName or an invitation's inviteeName (participation-evidence.service.ts). MEMBER delegates to AuraPersonIdentity; the external branch keeps the evidence's own name. Deliberately NOT converged to the canonical LABEL — see governedNonPromotion." }
+  ],
+
+  "governedNonPromotion": {
+    "site": "MeetingEntryResolution.identityName",
+    "rule": "The canonical label is for RENDERING a person. This field is not rendered as a name: pre_join_screen pre-fills the entrant's own name box from it and reads absence as 'we do not know who you are'. Returning 'Someone' here would type that word into a stranger's name field and suppress the question that surface exists to ask.",
+    "consequence": "identityName stays nullable and reports what the resolver actually resolved. Naming an unresolved person remains the renderer's job. This is a person/presentation boundary, not retained person debt: no alias order, envelope unwrap or fallback is decided here — the parsing itself delegates."
+  },
+
+  "meetingIdentityRefBeforeAfter": {
+    "defect": "fromUserJson hardcoded identityType 'AURA_USER' and, on the very next line, defaulted displayName to 'Guest'. An identifiable Aura person was named by an EXTERNAL PARTICIPANT TYPE they do not hold, because their display identity was incomplete. fromJson did the same to any AURA_USER payload with a blank displayName.",
+    "before": {
+      "shape": "one flat bag: auraUserId, memberId, contactId, displayName, email, avatarUrl, title, handle, identityType, verifiedEmail",
+      "personNaming": "displayName ?? 'Guest' — for every branch, Aura user included",
+      "boundary": "person identity and external participant type answered by the same field"
+    },
+    "after": {
+      "shape": "identityType + AuraPersonIdentity? person + String? externalName + memberId/contactId/email/title/verifiedEmail",
+      "personNaming": "person.label — the canonical order (own name, then @handle, then the one neutral word the whole product shares)",
+      "externalNaming": "externalName, else the meeting domain's own 'Guest'",
+      "boundary": "PERSON IDENTITY != MEETING ROLE / EXTERNAL PARTICIPANT TYPE — a person cannot be named by a role, and a role is not stored inside the person"
+    },
+    "publicShapeStability": "displayName, handle, avatarUrl and auraUserId remain readable accessors with the same types and nullability, so no meetings surface changed. What changed is which authority answers them."
+  },
+
+  "externalGuestSemanticsPreserved": {
+    "ruling": "'Guest' is legitimate meeting-domain semantics for a genuine external participant and was deliberately left alone.",
+    "clientEvidence": "MeetingIdentityRef.displayName returns 'Guest' for an unnamed CONTACT or GUEST; the test 'an unnamed GUEST is still called Guest' pins it.",
+    "backendEvidence": "buildContactBookerIdentity and buildGuestBookerIdentity in meeting-booker-identity.ts still normalize(name, 'Guest'). Untouched.",
+    "notDone": "No guest was converted to 'Someone' to align strings."
+  },
+
+  "auraUserFallbackCorrection": {
+    "client": "The MeetingIdentityRef AURA_USER branch delegates to AuraPersonIdentity, including its unknown-person semantics. No meetings-specific person fallback was created.",
+    "backend": "buildAuraUserBookerIdentity no longer emits 'Guest' as the AURA_USER displayName fallback. This is the producer half of the same defect: no client-side fix can undo a literal 'Guest' already written into an Aura person's displayName on the wire. The projection now carries what it knows — name, else handle, else empty — and the client's canonical authority decides how an unnamed person is addressed. This is the ONLY backend change in this pass, and it sits inside the shared identity authority CH-03 has been operating under for three prior commits."
+  },
+
+  "feedActorDisposition": {
+    "premiseCorrection": "The brief describes both actors as consuming handleOrSlug / avatarOrLogoUrl. Verified against source: those normalized union fields are emitted by feed-projection.service.ts for the POST AUTHOR. Neither of these two actor DTOs is built there — FeedSignalActorDto and FeedReplyAuthorDto both carry plainly named displayName / handle / avatarUrl. The client's avatarOrLogoUrl alias was dead tolerance, never a live contract. Recorded because the disposition below rests on the producer, not on field names.",
+    "FeedSignalActor": {
+      "classification": "1 — TRUE PERSON | INSTITUTION ACTOR UNION",
+      "proof": "feed-signal.service.ts builds actors through two separate builders: userActor(r.author, ...) sets type 'USER' from a person's displayName/handle/avatarUrl; institutionActor(r.actorInstitution, ...) sets type 'INSTITUTION' from an institution's name/slug/logoUrl. Both reach the same DTO. The union is the producer's, not the client's invention.",
+      "outcome": "UNION RETAINED. The person branch delegates to AuraPersonIdentity; the institution branch keeps institutionName / institutionSlug / institutionLogoUrl in its own domain's terms. No code path can now read an institution's slug through a person-shaped accessor, because an institution actor holds no person at all.",
+      "fallbackSeparation": "label names a person by the canonical order and an institution by its own (name, then /slug) — two orders because there are two identity domains, not because a surface re-decided one of them. _SignalLabel in unified_feed_card.dart previously re-decided this per actor type and now asks the actor.",
+      "noNewAbstraction": "No new actor abstraction was invented. The existing FeedSignalActor type and FeedAuthorType tag were kept."
+    },
+    "FeedReplyAuthor": {
+      "classification": "2 — A PERSON MODEL THAT WAS ACCEPTING INSTITUTION ALIASES",
+      "proof": "feed-reply.service.ts builds EVERY reply author through one builder, userAuthor(row.author, ...), which reads a person and routes to /u/:handle. An institution never authors a reply; institutional affiliation is expressed through the separate context field. The union aliases the client accepted — 'name', 'avatarOrLogoUrl' — are never emitted on this DTO.",
+      "outcome": "FULLY CONVERGED to AuraPersonIdentity. profileRoute keeps an explicit backend-supplied override and otherwise derives from the canonical person. context and presence remain their own state.",
+      "note": "This is the brief's warning in the other direction: reading union aliases here was a private PERSON interpretation dressed as tolerance."
+    }
+  },
+
+  "meetingsPreservation": {
+    "checkpoint": "MEETINGS BEHAVIOR PRESERVED",
+    "basis": [
+      "Every public accessor the Meetings surfaces read — displayName, handle, avatarUrl, name, id, title — still exists with the same type and nullability. No meetings call site was changed.",
+      "Non-lossy external branch proven against the producer: contact and guest booker identities emit avatarUrl: null and handle: null unconditionally, so routing those two fields through the person cannot drop a value that was ever sent.",
+      "identityName nullability preserved, so pre-join prefill, the ANONYMOUS branch and the name box behave exactly as before.",
+      "Frontend: 810 pass / 1 skipped (787 pass / 1 skipped before; +23 new tests, 0 changed, 0 removed). flutter analyze clean.",
+      "Backend: 205 suites / 2577 tests pass; meetings suite 7 suites / 86 tests.",
+      "Not modified: instant and scheduled meetings, booking, reschedule, availability, institution-owned meeting model, invitation-only participation, external participant behavior, waiting room, admission, host determination, participant roles, live room, realtime/session behavior, reminders and timing, notes/agenda/materials, recording, follow-up/summary/calendar behavior."
+    ]
+  },
+
+  "instrumentMeasurements": {
+    "surfacePersonDebt": { "before": "11 files / 19 sites", "after": "11 files / 19 sites", "delta": "unchanged — this pass touched typed boundaries only" },
+    "typedPersonDebt": { "before": "5 files / 18 sites", "after": "0 files / 0 sites" },
+    "typedBoundaryInventory": { "before": 20, "after": 7, "note": "The inventory counts typed boundaries carrying person content, debt and conformant alike. It falls because converged models now delegate through a single AuraPersonIdentity.fromJson call instead of enumerating three or four person fields each — fewer measured lines for the same number of models." },
+    "reductionClassification": {
+      "realMigration": { "sites": 18, "detail": "14 fully converged Meetings sites; 2 split sites whose person branch converged (meeting_identity.dart:31, meeting_entry_resolution.dart:244); feed_item.dart:771 (FeedSignalActor person branch) and feed_item.dart:1262 (FeedReplyAuthor)." },
+      "deadCodeRemoval": { "sites": 0 },
+      "semanticReclassification": { "sites": 0, "detail": "No site was reclassified out of person debt. The two split sites retain a preserved external branch, but their person branch was genuinely migrated, so they are counted as migration, not reclassification." },
+      "governedException": { "sites": 0, "detail": "MeetingEntryResolution.identityName is recorded as a governed NON-PROMOTION of the canonical label, not a governed exception to delegation: its parsing does delegate." },
+      "instrumentCorrection": { "sites": 0, "detail": "No detector change was made in this pass. The route-parameter correction belongs to the prior batch." }
+    }
+  },
+
+  "ratchetProof": {
+    "tool": "tool/meetings_person_ratchet_proof.mjs",
+    "result": "PASS (both directions)",
+    "trueNegative": "The tree as it stands — external GUEST fallback present, meeting roles present, the feed actor union present, institution identity separate — is GREEN. None of those four is debt.",
+    "truePositives": [
+      "Seeding the founder-named defect back into meeting_identity.dart (an AURA_USER named by a private 'Guest' fallback) makes the gate FAIL.",
+      "Seeding a private person alias chain into MeetingHost makes the gate FAIL.",
+      "Seeding raw person envelope parsing into the entry resolver makes the gate FAIL."
+    ],
+    "nonMutating": "Each seed is reverted inside its own step and the harness asserts no seed text survives in any protected Meetings model.",
+    "statedLimit": "The detector's verdict is at model-window granularity (8 lines either side), not per-branch. A model whose person branch delegates reads as conformant across that window, so an external branch beside it is not separately re-judged. The branch separation itself is proven by tests, not by the detector — test/meetings/meeting_person_identity_boundary_test.dart. Recorded rather than smoothed over, because a detector that overstates its precision is worse than a blunt one.",
+    "domainProof": "tool/identity_domain_proof.mjs — 13/13, PASS both directions, unchanged.",
+    "gate": "node tool/identity_conformance_gate.mjs — PASS; baseline re-frozen at 11 files / 19 sites surface, 0 / 0 typed-person."
+  },
+
+  "auraPersonIdentityChanges": "NONE. The canonical authority was not modified in this pass. Every convergence consumed it as it stands.",
+
+  "f116Criteria": {
+    "1": { "criterion": "Backend standard person/reference producers use canonical selectors", "status": "MET", "evidence": "Established in the three prior CH-03 backend commits and unchanged here. The one backend edit in this pass removes a fallback string; it does not add or reinvent a projection." },
+    "2": { "criterion": "Client standard PERSON deserialization converges on AuraPersonIdentity", "status": "MET", "evidence": "Typed-person debt 18 -> 0. The four protected Meetings models were the stated blocker on this criterion and are now dispositioned." },
+    "3": { "criterion": "No typed boundary independently owns canonical PERSON fallback/alias/envelope semantics except governed exceptions", "status": "MET", "evidence": "Ratchet enforcing at zero with a seeded failure proof over the protected models. One governed NON-PROMOTION is recorded (MeetingEntryResolution.identityName), which delegates parsing and declines only the render-time label." },
+    "4": { "criterion": "Private duplicate person models deleted or composed", "status": "MET", "evidence": "Prior batches removed the competing post_model.dart and dispositioned the private typed models; this pass composed the last four Meetings models and both feed actors." },
+    "5": { "criterion": "Domain models retain legitimate non-person state outside AuraPersonIdentity", "status": "MET", "evidence": "identityType, memberId, contactId, email, verifiedEmail, title, outcome status and due date, participation role, admission state, presentation and prefill all remain on their own models. Institution identity on FeedSignalActor stays in institution terms." },
+    "6": { "criterion": "All remaining measured hits fully classified and not competing PERSON authority", "status": "MET", "evidence": "All 16 Meetings sites and both feed sites carry an explicit disposition above. Typed-person residue is zero. The 19 remaining SURFACE sites are a different, separately measured class and are not typed-boundary person authority." }
+  },
+
+  "f116ResultingState": {
+    "from": "PARTIALLY_VALIDATED",
+    "to": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "vocabularyNote": "Uses the repository's existing state vocabulary as validated by docs/portfolio/tools/validate-stage0.mjs. No live certification is claimed; production was neither polled nor mutated."
+  },
+
+  "f053ResultingState": {
+    "from": "PARTIALLY_VALIDATED",
+    "to": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "structuralTest": "Can one Aura person still acquire a different name, handle, avatar or fallback because different domain models interpret them differently? NO for typed boundaries: every typed client boundary now resolves a person through the one tolerant reader, so alias order, envelope unwrap and fallback are decided in exactly one place.",
+    "namedResidue": "19 SURFACE sites across 11 files still read person fields off untyped maps inside widgets. That is the F057-class surface defect, separately measured and separately ratcheted. It does not create a competing person AUTHORITY — those surfaces read payloads a converged boundary has not yet been threaded into. Presentation may differ by destination; identity semantics no longer do.",
+    "remaining": "Only live exercise remains for the typed-boundary claim."
+  },
+
+  "otherFindingEffects": {
+    "F052": { "effect": "Additional structural evidence recorded; NO promotion. Meetings and realtime person parsing now resolve through one authority, which supports F052 structurally. That is not certification and is not claimed as such." },
+    "F054": { "effect": "The 'Guest' correction intersects F054's defect class — a surface inventing a label for a person it failed to resolve. This is ADDITIONAL IMPLEMENTATION EVIDENCE, not structural completion. F054 is not promoted from association: the meetings instance is fixed, but the finding's own scope was not re-audited in this pass." },
+    "F055": { "effect": "NONE — contract not materially affected." },
+    "F056": { "effect": "NONE — contract not materially affected." },
+    "F057": { "effect": "NONE in this pass. F057's parsing-divergence class is what the canonical reader absorbs, and the Meetings models now consume it, but F057's own contract was not re-adjudicated here." },
+    "F051": { "effect": "PRESERVED CONFLICT, UNTOUCHED. No chat avatar redesign, no universal avatar treatment, no conversation-avatar adjudication. The MeetingIdentityRef correction was deliberately not used to decide F051. Confirmed still CONFLICTING_CURRENT_STATE by validate-stage0.mjs." }
+  },
+
+  "verification": {
+    "frontendTests": "810 pass / 1 skipped (was 787 pass / 1 skipped)",
+    "newTests": [
+      "test/meetings/meeting_person_identity_boundary_test.dart — 15 tests: the AURA_USER branch, external participants keeping their own semantics, the linked-contact shape, the entrant union, and canonical naming on host and profile owner",
+      "test/feed/feed_actor_person_disposition_test.dart — 9 tests: the FeedSignalActor union in both directions, and FeedReplyAuthor as a person model"
+    ],
+    "flutterAnalyze": "clean",
+    "identityGate": "PASS (11 files / 19 sites surface, 0 / 0 typed-person)",
+    "domainProof": "13/13 PASS",
+    "meetingsRatchetProof": "PASS both directions",
+    "backendTests": "205 suites / 2577 tests PASS",
+    "stage0Validator": "PASS — FOUNDER_RATIFIED_CANONICAL_BASELINE, 143 findings F001-F143 contiguous, WG001-WG017 issued with WG018 reserved",
+    "portfolioValidator": "PASS — 451 canonical units across 17 chapters (143 findings + 308 obligations)",
+    "production": "NOT polled, NOT mutated"
+  },
+
+  "finalClientPersonDeserializationArchitecture": "The client has exactly ONE person reader, AuraPersonIdentity.fromJson, and exactly one naming order behind it — own name, then handle, then the shared neutral word. Every typed boundary that carries a person delegates to it and keeps its own domain state beside the person rather than inside it. Polymorphic models stay polymorphic: an actor union keeps a person branch and an institution branch that cannot be read through each other, and a meeting identity keeps a person branch and an external-participant branch whose 'Guest' is a truthful statement of what that participant is. Person identity is never answered by a role, a participant type, a session state or an institution, and no surface re-decides how an unresolved person is addressed.",
+
+  "founderDecisionsRequired": "NONE",
+
+  "nextExecutableFrontier": "The 19 remaining SURFACE person-debt sites across 11 files — widgets reading person fields off untyped maps. Separately measured, separately ratcheted, and the last named residue on F053."
+}

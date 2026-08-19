@@ -720,22 +720,61 @@ class FeedReplyPreviewAuthor {
 /// The actor is **not** the post's author — that lives on `FeedItem.author`.
 /// Signal actors are people the viewer follows (or themselves) whose
 /// repost surfaced the parent.
+/// F116 - PROVEN a TRUE ACTOR UNION, not a person model with institution
+/// aliases: the backend DTO is `type: 'USER' | 'INSTITUTION'` and its
+/// normalized `displayName` / `handle` / `avatarUrl` are filled from a
+/// person's name/handle/avatar OR an institution's name/slug/logo
+/// (feed-signal.service.ts userActor / institutionActor).
+///
+/// The union therefore STAYS. What changes is that the person branch no
+/// longer sits in a shared bag of normalized strings that any caller could
+/// read as person identity without knowing the actor type - the person is
+/// delegated, and the institution keeps its own fields, so no code path can
+/// read an institution's slug through a person-shaped accessor.
 class FeedSignalActor {
   const FeedSignalActor({
     required this.id,
     required this.type,
-    required this.displayName,
-    this.handle,
-    this.avatarUrl,
+    this.person,
+    this.institutionName,
+    this.institutionSlug,
+    this.institutionLogoUrl,
     this.isViewer = false,
     this.commentary,
   });
 
   final String id;
   final FeedAuthorType type;
-  final String displayName;
-  final String? handle;
-  final String? avatarUrl;
+
+  /// Present only when this actor is a person.
+  final AuraPersonIdentity? person;
+
+  /// Institution identity, kept in its own domain's terms.
+  final String? institutionName;
+  final String? institutionSlug;
+  final String? institutionLogoUrl;
+
+  bool get isInstitution => type == FeedAuthorType.institution;
+
+  String get displayName =>
+      isInstitution ? (institutionName ?? '') : (person?.displayName ?? '');
+
+  String? get handle =>
+      isInstitution ? institutionSlug : _blankToNull(person?.handle ?? '');
+
+  String? get avatarUrl =>
+      isInstitution ? institutionLogoUrl : person?.avatarUrl;
+
+  /// What to call this actor. A person is named by the canonical order; an
+  /// institution by its own (name, then `/slug`) - two orders because there
+  /// are two identity domains, not because a surface re-decided one of them.
+  String get label {
+    if (!isInstitution) return (person ?? AuraPersonIdentity.unknown).label;
+    final name = (institutionName ?? '').trim();
+    if (name.isNotEmpty) return name;
+    final slug = (institutionSlug ?? '').trim();
+    return slug.isEmpty ? 'Someone' : '/$slug';
+  }
 
   /// True when this actor is the viewer — clients render "You reposted"
   /// instead of the displayName.
@@ -764,12 +803,16 @@ class FeedSignalActor {
       return null;
     }
 
+    final type = FeedAuthorType.fromWire(m['type']);
+    final isInstitution = type == FeedAuthorType.institution;
     return FeedSignalActor(
       id: s(['id']),
-      type: FeedAuthorType.fromWire(m['type']),
-      displayName: s(['displayName', 'name']),
-      handle: opt(['handle']),
-      avatarUrl: opt(['avatarUrl', 'avatarOrLogoUrl']),
+      type: type,
+      person: isInstitution ? null : AuraPersonIdentity.fromJson(m),
+      institutionName: isInstitution ? opt(['displayName', 'name']) : null,
+      institutionSlug: isInstitution ? opt(['handle', 'slug']) : null,
+      institutionLogoUrl:
+          isInstitution ? opt(['avatarUrl', 'avatarOrLogoUrl', 'logoUrl']) : null,
       isViewer: m['isViewer'] == true,
       commentary: opt(['commentary']),
     );
@@ -1180,7 +1223,7 @@ class FeedReply {
     final authorRaw = m['author'];
     final author = authorRaw is Map
         ? FeedReplyAuthor.fromJson(Map<String, dynamic>.from(authorRaw))
-        : const FeedReplyAuthor(id: '', displayName: '', handle: '');
+        : const FeedReplyAuthor();
 
     return FeedReply(
       id: s(['id']),
@@ -1206,22 +1249,29 @@ class FeedReply {
   }
 }
 
+/// F116 - PROVEN a PERSON model, not an actor union. `feed-reply.service`
+/// builds every reply author through ONE builder, `userAuthor(row.author)`,
+/// and routes it to `/u/:handle`; an institution affiliation on a reply is
+/// expressed through `context`, never by swapping the author ("for replies we
+/// keep the human author and just affiliate them"). The union aliases this
+/// model used to accept - `name`, `avatarOrLogoUrl` - are never emitted here,
+/// so reading them was a private person interpretation dressed as tolerance.
 class FeedReplyAuthor {
   const FeedReplyAuthor({
-    required this.id,
-    required this.displayName,
-    required this.handle,
-    this.avatarUrl,
-    this.profileRoute,
+    this.person = AuraPersonIdentity.unknown,
+    this.explicitProfileRoute,
     this.context,
     this.presence,
   });
 
-  final String id;
-  final String displayName;
-  final String handle;
-  final String? avatarUrl;
-  final String? profileRoute;
+  final AuraPersonIdentity person;
+  final String? explicitProfileRoute;
+
+  String get id => person.userId;
+  String get displayName => person.displayName;
+  String get handle => person.handle;
+  String? get avatarUrl => person.avatarUrl;
+  String? get profileRoute => explicitProfileRoute ?? person.profileRoute;
 
   /// Phase 6.1.1 — optional identity context. Renders nothing when absent.
   final FeedIdentityContext? context;
@@ -1230,14 +1280,6 @@ class FeedReplyAuthor {
   final FeedPresence? presence;
 
   factory FeedReplyAuthor.fromJson(Map<String, dynamic> m) {
-    String s(List<String> keys) {
-      for (final k in keys) {
-        final v = m[k]?.toString().trim() ?? '';
-        if (v.isNotEmpty) return v;
-      }
-      return '';
-    }
-
     String? opt(List<String> keys) {
       for (final k in keys) {
         final v = m[k]?.toString().trim() ?? '';
@@ -1257,11 +1299,8 @@ class FeedReplyAuthor {
         : null;
 
     return FeedReplyAuthor(
-      id: s(['id']),
-      displayName: s(['displayName', 'name']),
-      handle: s(['handle']),
-      avatarUrl: opt(['avatarUrl', 'avatarOrLogoUrl']),
-      profileRoute: opt(['profileRoute']),
+      person: AuraPersonIdentity.fromJson(m),
+      explicitProfileRoute: opt(['profileRoute']),
       context: ctx,
       presence: presence,
     );

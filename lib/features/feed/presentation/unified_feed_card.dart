@@ -1485,27 +1485,16 @@ class _SignalLabel extends StatelessWidget {
   String _label() {
     if (signal.actors.isEmpty) return '';
     final first = signal.actors.first;
-    final firstName = first.isViewer
-        ? 'You'
-        : (first.displayName.trim().isNotEmpty
-              ? first.displayName.trim()
-              : (first.handle ?? '').trim().isNotEmpty
-              ? first.type == FeedAuthorType.institution
-                    ? '/${first.handle}'
-                    : '@${first.handle}'
-              : 'Someone');
+    // F053 - this label used to re-decide, per actor type, what to call
+    // someone whose name was missing. The actor answers that now: a person by
+    // the canonical order, an institution by its own.
+    final firstName = first.isViewer ? 'You' : first.label;
     final verb = first.isViewer ? 'reposted' : 'reposted';
     final more = signal.actors.length - 1;
     if (more <= 0) return '$firstName $verb';
     if (more == 1) {
       final second = signal.actors[1];
-      final secondName = second.isViewer
-          ? 'you'
-          : (second.displayName.trim().isNotEmpty
-                ? second.displayName.trim()
-                : (second.handle ?? '').trim().isNotEmpty
-                ? '@${second.handle}'
-                : 'someone');
+      final secondName = second.isViewer ? 'you' : second.label;
       return '$firstName and $secondName $verb';
     }
     return '$firstName and $more others $verb';

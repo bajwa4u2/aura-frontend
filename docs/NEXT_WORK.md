@@ -173,3 +173,42 @@ boundaries migrated: **62 -> 18 typed-person sites**, three measurements kept se
 consume the union projection (`handleOrSlug` / `avatarOrLogoUrl`) emitted for a user OR an
 institution. Composing person identity onto them would force person semantics onto institutions.
 They stay measured so the decision stays visible.
+
+## 2026-08-19 — CH-03 CLOSED: the protected Meetings pass, Guest semantics, and the feed actors
+
+Both decisions above were granted. Both are now executed, and **typed-person debt is zero**.
+
+**The founder ruling, on both sides of the wire.** An AURA_USER is never named `'Guest'` — the client
+delegates that branch to `AuraPersonIdentity` and `buildAuraUserBookerIdentity` stops emitting the
+string, which is the only backend change in the pass and the only one that could work (no client fix
+undoes a literal `'Guest'` already written into a person's `displayName`). A genuine external CONTACT
+or GUEST **keeps** `'Guest'`, because for them it is a truthful statement of what they are.
+**PERSON IDENTITY ≠ MEETING ROLE / EXTERNAL PARTICIPANT TYPE.**
+
+**All 16 Meetings sites dispositioned** — 14 converged outright, 2 split (one line each in
+`meeting_identity` and `meeting_entry_resolution` was serving both a person branch and an external
+branch). Every public accessor kept its type and nullability, so no Meetings surface changed:
+**MEETINGS BEHAVIOR PRESERVED.**
+
+**The two feed actors were classified from their producers, not their field names** — and the brief's
+premise needed one correction: `handleOrSlug` / `avatarOrLogoUrl` are emitted by
+`feed-projection.service.ts` for the **post author**, not for either of these DTOs, both of which carry
+plainly named fields. `FeedSignalActor` is a **true PERSON | INSTITUTION union** (two backend builders,
+`userActor` / `institutionActor`): union retained, person branch delegated, institution identity kept in
+institution terms so no slug can be read through a person-shaped accessor. `FeedReplyAuthor` is a
+**person model** — every reply author comes from one builder, `userAuthor`, routed to `/u/:handle` — that
+had been accepting institution aliases it is never sent. Fully converged.
+
+**One governed non-promotion, recorded not hidden.** `MeetingEntryResolution.identityName` delegates its
+parsing but deliberately does not answer with the canonical label: the pre-join screen pre-fills the
+entrant's own name box from it, so 'Someone' would be typed into a stranger's name field.
+
+**States.** F116 and F053 both advance **PARTIALLY_VALIDATED → IMPLEMENTED_NOT_LIVE_CERTIFIED**; all six
+F116 criteria met. F052 gains structural evidence without promotion. F054 gains implementation evidence
+only — not promoted from association. F055–F057 unaffected. **F051 preserved untouched as a conflict.**
+
+**Next executable frontier: the 19 SURFACE sites across 11 files** — widgets reading person fields off
+untyped maps. Separately measured, separately ratcheted, and the last named residue on F053.
+
+Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/ch03-f116-meetings-guest-and-feed-actor-closeout.json`.
+Ratchet proof: `tool/meetings_person_ratchet_proof.mjs` (PASS both directions).

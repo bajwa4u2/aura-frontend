@@ -1,4 +1,5 @@
 import 'meeting_identity.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class AvailabilityWindow {
   final String id;
@@ -52,30 +53,29 @@ class AvailabilityOverride {
       );
 }
 
+/// The person who owns an availability profile — always an Aura person.
+/// F116: the person portion is delegated; `title` is an institutional role
+/// line, which is meeting-domain state and stays here.
 class ProfileOwner {
-  final String id;
-  final String? displayName;
-  final String? handle;
-  final String? avatarUrl;
+  const ProfileOwner({required this.person, this.title});
+
+  final AuraPersonIdentity person;
   final String? title;
 
-  const ProfileOwner({
-    required this.id,
-    this.displayName,
-    this.handle,
-    this.avatarUrl,
-    this.title,
-  });
+  String get id => person.userId;
+  String? get displayName => _blankToNull(person.displayName);
+  String? get handle => _blankToNull(person.handle);
+  String? get avatarUrl => person.avatarUrl;
 
   factory ProfileOwner.fromJson(Map<String, dynamic> j) => ProfileOwner(
-    id: j['id'] as String,
-    displayName: j['displayName'] as String?,
-    handle: j['handle'] as String?,
-    avatarUrl: j['avatarUrl'] as String?,
+    person: AuraPersonIdentity.fromJson(j),
     title: j['title'] as String?,
   );
 
-  String get name => displayName ?? handle ?? 'Unknown';
+  /// The canonical order replaces the private `displayName ?? handle ??
+  /// 'Unknown'` chain - 'Unknown' was this model inventing a label for a
+  /// person it had failed to resolve.
+  String get name => person.label;
 }
 
 class InstitutionRef {
@@ -296,4 +296,9 @@ class BookingConfirmation {
             : null,
         meetingTitle: j['meetingTitle'] as String? ?? '',
       );
+}
+
+String? _blankToNull(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

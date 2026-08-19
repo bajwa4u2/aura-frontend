@@ -37,14 +37,8 @@
   "NON_CANONICAL_PERSON_DESERIALIZATION"
  ],
  "typedPersonTotals": {
-  "files": 5,
-  "sites": 18
+  "files": 0,
+  "sites": 0
  },
- "typedPersonPerFile": {
-  "aura_final:lib/features/feed/domain/feed_item.dart": 2,
-  "aura_final:lib/features/meetings/domain/availability_profile.dart": 3,
-  "aura_final:lib/features/meetings/domain/meeting_entry_resolution.dart": 3,
-  "aura_final:lib/features/meetings/domain/meeting_identity.dart": 6,
-  "aura_final:lib/features/meetings/domain/meeting.dart": 4
- }
+ "typedPersonPerFile": {}
 }

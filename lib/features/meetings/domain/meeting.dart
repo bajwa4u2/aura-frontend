@@ -1,31 +1,30 @@
 import 'meeting_identity.dart';
 import 'meeting_asset.dart';
 import 'meeting_room.dart';
+import '../../../core/identity/person_identity_model.dart';
 
+/// A meeting's host — always an Aura person (an institution OWNS meetings
+/// through `MeetingInstitutionRef`; it does not host them as a person).
+/// F116: person portion delegated, institutional `title` retained.
 class MeetingHost {
-  final String id;
-  final String? displayName;
-  final String? handle;
-  final String? avatarUrl;
+  const MeetingHost({required this.person, this.title});
+
+  final AuraPersonIdentity person;
   final String? title;
 
-  const MeetingHost({
-    required this.id,
-    this.displayName,
-    this.handle,
-    this.avatarUrl,
-    this.title,
-  });
+  String get id => person.userId;
+  String? get displayName => _blankToNull(person.displayName);
+  String? get handle => _blankToNull(person.handle);
+  String? get avatarUrl => person.avatarUrl;
 
   factory MeetingHost.fromJson(Map<String, dynamic> j) => MeetingHost(
-    id: j['id'] as String,
-    displayName: j['displayName'] as String?,
-    handle: j['handle'] as String?,
-    avatarUrl: j['avatarUrl'] as String?,
+    person: AuraPersonIdentity.fromJson(j),
     title: j['title'] as String?,
   );
 
-  String get name => displayName ?? handle ?? 'Unknown';
+  /// Canonical order, replacing the private `displayName ?? handle ??
+  /// 'Unknown'` chain.
+  String get name => person.label;
 }
 
 class MeetingParticipant {
@@ -526,8 +525,10 @@ class MeetingOutcome {
   });
 
   factory MeetingOutcome.fromJson(Map<String, dynamic> j) {
-    final owner = j['owner'];
-    final ownerMap = owner is Map ? Map<String, dynamic>.from(owner) : null;
+    final ownerRaw = j['owner'];
+    final owner = ownerRaw is Map
+        ? AuraPersonIdentity.fromJson(Map<String, dynamic>.from(ownerRaw))
+        : AuraPersonIdentity.unknown;
     final meeting = j['meeting'];
     final meetingMap =
         meeting is Map ? Map<String, dynamic>.from(meeting) : null;
@@ -537,8 +538,11 @@ class MeetingOutcome {
       type: j['type'] as String? ?? '',
       text: j['text'] as String? ?? '',
       status: _parseOutcomeStatus(j['status']),
-      ownerId: ownerMap?['id'] as String?,
-      ownerName: ownerMap?['displayName'] as String?,
+      // F116 - an outcome's owner is the PERSON accountable for it. Read
+      // canonically; the outcome's own state (type, text, status, due date)
+      // stays this model's business.
+      ownerId: _blankToNull(owner.userId),
+      ownerName: _blankToNull(owner.displayName),
       dueDate: j['dueDate'] != null
           ? DateTime.tryParse(j['dueDate'] as String)
           : null,
@@ -551,4 +555,9 @@ class MeetingOutcome {
       updatedAt: DateTime.parse(j['updatedAt'] as String),
     );
   }
+}
+
+String? _blankToNull(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

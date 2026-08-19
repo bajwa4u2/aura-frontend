@@ -1,3 +1,5 @@
+import '../../../core/identity/person_identity_model.dart';
+
 /// Participation Architecture — the backend resolver's entry outcome.
 ///
 /// Doctrine: policy never lives in the UI. The frontend calls the canonical
@@ -98,15 +100,29 @@ enum MeetingEntryAction {
   }
 }
 
+/// The host shown on a pre-join surface. The backend selects the host with
+/// PERSON_REFERENCE_SELECT and deliberately projects only a reduced view of
+/// them here (no id, no handle) because this is an unauthenticated entry
+/// screen. F116: reduced or not, it is a person, and it is read canonically -
+/// `title` is the institutional role line and stays meeting-domain state.
 class MeetingEntryHost {
-  final String? displayName;
-  final String? avatarUrl;
+  const MeetingEntryHost({
+    this.person = AuraPersonIdentity.unknown,
+    this.title,
+  });
+
+  final AuraPersonIdentity person;
   final String? title;
-  const MeetingEntryHost({this.displayName, this.avatarUrl, this.title});
+
+  String? get displayName {
+    final name = person.displayName.trim();
+    return name.isEmpty ? null : name;
+  }
+
+  String? get avatarUrl => person.avatarUrl;
 
   factory MeetingEntryHost.fromJson(Map<String, dynamic> j) => MeetingEntryHost(
-        displayName: j['displayName'] as String?,
-        avatarUrl: j['avatarUrl'] as String?,
+        person: AuraPersonIdentity.fromJson(j),
         title: j['title'] as String?,
       );
 }
@@ -183,9 +199,39 @@ class MeetingEntryResolution {
   final String reasonCode;
 
   /// Resolved identity summary (kind: MEMBER | GUEST_SESSION | ANONYMOUS).
+  ///
+  /// F053 / F116 — this summary spans two genuinely different kinds of
+  /// entrant, and the resolver says which. Only MEMBER holds an Aura identity;
+  /// GUEST_SESSION and ANONYMOUS are external entrants whose name, when there
+  /// is one, came from the evidence they presented — a guest session's
+  /// `guestName`, a booking's `bookerName`, an invitation's `inviteeName`
+  /// (`participation-evidence.service.ts`). So the person branch is read
+  /// through the canonical authority and the external branch keeps its own
+  /// name; neither is forced into the other.
   final String identityKind;
-  final String? identityName;
+
+  /// The entrant as an Aura person — present only for a MEMBER.
+  final AuraPersonIdentity? identityPerson;
+
+  /// The name external evidence supplied for a non-member entrant.
+  final String? externalEntrantName;
+
   final String? identityEmail;
+
+  /// The name the resolver actually RESOLVED, or null when it resolved none.
+  ///
+  /// Deliberately NOT the canonical label. `label` names a person the product
+  /// must RENDER, and falling back to the shared neutral word is right there.
+  /// This field is not rendered as a name: `pre_join_screen` pre-fills the
+  /// entrant's own name box from it and reads absence as "we do not know who
+  /// you are". Answering 'Someone' here would type that word into a stranger's
+  /// name field and suppress the question. Naming an unresolved person stays
+  /// the renderer's job; this reports what was resolved.
+  String? get identityName => identityPerson != null
+      ? _blankToNull(identityPerson!.displayName)
+      : externalEntrantName;
+
+  bool get identityIsAuraPerson => identityPerson != null;
 
   final bool emailVerificationRequired;
   final bool loginRequired;
@@ -211,7 +257,8 @@ class MeetingEntryResolution {
     required this.action,
     required this.reasonCode,
     required this.identityKind,
-    this.identityName,
+    this.identityPerson,
+    this.externalEntrantName,
     this.identityEmail,
     this.emailVerificationRequired = false,
     required this.loginRequired,
@@ -229,6 +276,8 @@ class MeetingEntryResolution {
 
   factory MeetingEntryResolution.fromJson(Map<String, dynamic> j) {
     final identity = j['identity'] as Map<String, dynamic>? ?? const {};
+    final identityKind = identity['kind'] as String? ?? 'ANONYMOUS';
+    final isMember = identityKind == 'MEMBER';
     final requirements =
         j['requirements'] as Map<String, dynamic>? ?? const {};
     final participation =
@@ -240,8 +289,12 @@ class MeetingEntryResolution {
       outcome: MeetingEntryOutcome.parse(j['outcome'] as String?),
       action: MeetingEntryAction.parse(j['action'] as String?),
       reasonCode: j['reasonCode'] as String? ?? '',
-      identityKind: identity['kind'] as String? ?? 'ANONYMOUS',
-      identityName: identity['displayName'] as String?,
+      identityKind: identityKind,
+      // The person branch delegates to the canonical authority; the external
+      // branch is left exactly as the evidence stated it.
+      identityPerson: isMember ? AuraPersonIdentity.fromJson(identity) : null,
+      externalEntrantName:
+          isMember ? null : _blankToNull(identity['displayName']?.toString()),
       identityEmail: identity['email'] as String?,
       emailVerificationRequired:
           requirements['emailVerificationRequired'] as bool? ?? false,
@@ -261,4 +314,9 @@ class MeetingEntryResolution {
           : null,
     );
   }
+}
+
+String? _blankToNull(String? value) {
+  final trimmed = (value ?? '').trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

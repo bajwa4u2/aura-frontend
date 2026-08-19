@@ -27,22 +27,21 @@
   ]
  },
  "totals": {
-  "rows": 101,
+  "rows": 88,
   "byVerdict": {
    "NON_CONFORMANT": 17,
    "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 15,
    "AUTHORITY": 5,
    "CONFORMANT": 39,
    "OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY": 3,
-   "CANONICAL_PERSON_DESERIALIZATION": 2,
-   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 2,
-   "NON_CANONICAL_PERSON_DESERIALIZATION": 18
+   "CANONICAL_PERSON_DESERIALIZATION": 7,
+   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 2
   },
   "nonConformant": 17,
   "adhocMapExtractionInSurface": 2,
   "typedDeserializationBoundary": 0,
   "conformant": 39,
-  "frontend": 91,
+  "frontend": 78,
   "backend": 10
  },
  "sixPersonShapedExtractionSites": {
@@ -391,26 +390,6 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 771,
-   "evidence": "handle: opt(['handle']),",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 1262,
-   "evidence": "handle: s(['handle']),",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/feed/presentation/quoted_post_preview.dart",
    "line": 47,
@@ -523,162 +502,52 @@
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/availability_profile.dart",
-   "line": 72,
-   "evidence": "displayName: j['displayName'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/availability_profile.dart",
-   "line": 73,
-   "evidence": "handle: j['handle'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/availability_profile.dart",
-   "line": 74,
-   "evidence": "avatarUrl: j['avatarUrl'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
    "path": "lib/features/meetings/domain/meeting_entry_resolution.dart",
-   "line": 108,
-   "evidence": "displayName: j['displayName'] as String?,",
+   "line": 297,
+   "evidence": "isMember ? null : _blankToNull(identity['displayName']?.toString()),",
    "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/meeting_entry_resolution.dart",
-   "line": 109,
-   "evidence": "avatarUrl: j['avatarUrl'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/meeting_entry_resolution.dart",
-   "line": 244,
-   "evidence": "identityName: identity['displayName'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+   "verdict": "CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/meetings/domain/meeting_identity.dart",
-   "line": 31,
-   "evidence": "displayName: _requiredString(j['displayName'], fallback: 'Guest'),",
+   "line": 93,
+   "evidence": "'displayName': j['displayName'],",
    "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+   "verdict": "CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/meetings/domain/meeting_identity.dart",
-   "line": 33,
-   "evidence": "avatarUrl: _optionalString(j['avatarUrl']),",
+   "line": 94,
+   "evidence": "'handle': j['handle'],",
    "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+   "verdict": "CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/meetings/domain/meeting_identity.dart",
-   "line": 35,
-   "evidence": "handle: _optionalString(j['handle']),",
+   "line": 95,
+   "evidence": "'avatarUrl': j['avatarUrl'],",
    "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+   "verdict": "CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/meetings/domain/meeting_identity.dart",
-   "line": 45,
-   "evidence": "displayName: _requiredString(j['displayName'], fallback: 'Guest'),",
+   "line": 98,
+   "evidence": "externalName: isAuraUser ? null : _optionalString(j['displayName']),",
    "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/meeting_identity.dart",
-   "line": 47,
-   "evidence": "avatarUrl: _optionalString(j['avatarUrl']),",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/meeting_identity.dart",
-   "line": 49,
-   "evidence": "handle: _optionalString(j['handle']),",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/meeting.dart",
-   "line": 22,
-   "evidence": "displayName: j['displayName'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/meeting.dart",
-   "line": 23,
-   "evidence": "handle: j['handle'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/meeting.dart",
-   "line": 24,
-   "evidence": "avatarUrl: j['avatarUrl'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/domain/meeting.dart",
-   "line": 541,
-   "evidence": "ownerName: ownerMap?['displayName'] as String?,",
-   "identityDomain": "PERSON",
-   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
-   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+   "verdict": "CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics."
   },
   {
    "repo": "aura_final",

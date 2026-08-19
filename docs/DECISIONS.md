@@ -466,3 +466,50 @@ new instances.
 
 **No finding state was rewritten.** Stage-0 evidence is never modified by execution. F129/F133/F134
 are implemented but not live-certified, and CH-11 has not closed.
+
+---
+
+## FOUNDER RULING — "GUEST" IS A PARTICIPANT TYPE, NOT A PERSON'S NAME (2026-08-19)
+
+**Ruled.** `'Guest'` may remain as legitimate meeting-domain semantics for a genuine external
+participant. It may **not** be the person-name fallback for an `AURA_USER`. An Aura user is not a guest
+merely because their display identity is incomplete. Aura-user person identity delegates to the
+canonical `AuraPersonIdentity` semantics, and person identity stays separate from meeting role and
+external participant type:
+
+> **PERSON IDENTITY ≠ MEETING ROLE / EXTERNAL PARTICIPANT TYPE**
+
+**Authorized, narrowly.** The four protected Meetings domain models holding the last 16 typed-person
+sites — `meeting_identity.dart`, `meeting.dart`, `availability_profile.dart`,
+`meeting_entry_resolution.dart` — solely for F053/F116 person-deserialization convergence: delegate the
+Aura-user person parsing, remove local alias/fallback chains, and separate person identity from meeting
+role, participant type, external contact state and session state. Explicitly **not** authorized: meeting
+lifecycle, booking, availability, admission, waiting room, host/participant authorization, realtime and
+session behavior, invitations and reminders, navigation, external-guest product semantics, UI, or any
+opportunistic Meetings refactor.
+
+**Executed the same day.** Both halves of the wire were corrected — the client delegates the AURA_USER
+branch, and `buildAuraUserBookerIdentity` stops emitting `'Guest'` as a displayName fallback. That
+backend edit is the only one in the pass and the only one that could work: no client-side fix undoes a
+literal `'Guest'` already written into an Aura person's `displayName`. `buildContactBookerIdentity` and
+`buildGuestBookerIdentity` still emit `'Guest'` and were deliberately left alone. No guest was converted
+to "Someone" to align strings.
+
+**The two feed actors were classified from their producers, not their field names.** `FeedSignalActor`
+is a **true PERSON | INSTITUTION union** — the backend builds it through two separate builders — so the
+union was retained and only its person branch delegated; institution identity keeps its own fields, and
+an institution actor now holds no person at all, so no slug can be read through a person-shaped
+accessor. `FeedReplyAuthor` is **not** a union: every reply author comes from one builder and routes to
+`/u/:handle`, so the institution aliases it was accepting were a private person interpretation dressed
+as tolerance. Fully converged.
+
+**One governed non-promotion.** `MeetingEntryResolution.identityName` delegates its parsing but does not
+answer with the canonical label. The pre-join screen pre-fills the entrant's own name box from it and
+reads absence as "we do not know who you are"; answering "Someone" would type that word into a
+stranger's name field and suppress the question that surface exists to ask. Naming an unresolved person
+stays the renderer's job.
+
+**Result.** Typed-person debt 18 → 0. **MEETINGS BEHAVIOR PRESERVED.** F116 and F053 advance
+PARTIALLY_VALIDATED → IMPLEMENTED_NOT_LIVE_CERTIFIED — implementation only; no live certification is
+claimed and no production was polled or mutated. **F051 remains a preserved conflict and was
+deliberately not decided by this correction.**
