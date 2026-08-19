@@ -34,14 +34,14 @@
   "superseded": "This artifact previously recorded the defect as NOT FIXED pending founder admission. The founder admitted and authorized bounded closure on 2026-08-18; the repair is recorded above. The original reasoning is retained as history."
  },
  "consequenceForG1Leg5": {
-  "enumeration": "COMPLETE — 6 doors.",
-  "commonValidation": "NOT ESTABLISHED — 5 of 6 doors validated. G1 leg 5 requires doors 'ENUMERATED and proven to pass through the same validation', so leg 5(A) is COMPLETE ON ENUMERATION and INCOMPLETE ON COVERAGE.",
-  "correctionToEarlierRecord": "An earlier artifact in this pass recorded 5(A) as 'ESTABLISHED'. That overstated it. Enumeration is established; common validation is not, and D7 is the reason."
+  "atDiscovery": "COMPLETE ON ENUMERATION, INCOMPLETE ON COVERAGE — 5 of 6 doors validated; D7 was the exception.",
+  "afterClosure": "5(A) COMPLETE on both halves — 6 doors enumerated, 6 validated.",
+  "leg5Overall": "STILL OPEN. 5(B), the live violating-file refusal against an attributable deployed artifact, is not attempted and local rejection tests do not substitute for it.",
+  "ch12": "Remains BLOCKED_BY_G1_LEG_5.",
+  "correctionHistory": "An earlier artifact recorded 5(A) as simply ESTABLISHED before the coverage half was examined. That overstatement was corrected at discovery and is retained here as history."
  },
  "founderDecisionRequired": {
-  "decision": "Admit D7-DEFECT into the canonical register as a new finding (and authorize its closure), or dispose of it otherwise.",
-  "whyItIsFounderAuthority": "The canonical accounting is founder-ratified at 451 units, and the non-shrinking register rule makes admission a governance act.",
-  "blocking": "G1 leg 5 cannot be fully discharged while a known ingestion door bypasses the common validation. CH-12 remains BLOCKED_BY_G1_LEG_5 as a consequence."
+  "resolved": "RULED 2026-08-18 — admitted as D7-DEFECT and bounded closure authorized. Retained as the record of what was asked."
  },
  "admission": {
   "by": "FOUNDER RULING 2026-08-18",
