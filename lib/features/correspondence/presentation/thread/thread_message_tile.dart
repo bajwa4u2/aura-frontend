@@ -9,6 +9,7 @@ import '../../../../core/media/attachment.dart';
 import '../../../../core/media/aura_attachment_image.dart';
 import '../../../../core/media/media_mime.dart';
 import '../../../../core/media/aura_attachment_card.dart';
+import '../../../../core/media/aura_voice_player.dart';
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
@@ -891,16 +892,25 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
         );
         break;
       case AttachmentKind.audio:
-        mediaSurface = _AudioAttachmentSurface(
+        // F014 — Correspondence had NO inline playback: its audio surface was
+        // a StatelessWidget that handed the file to the browser. It now
+        // consumes the same canonical player as Conversation, so both
+        // destinations answer "how does a voice message play" once.
+        //
+        // Voice-vs-audio comes from the canonical Media.source where the
+        // payload carries it, never inferred from the MIME.
+        mediaSurface = AuraVoicePlayer(
           url: url,
-          borderColor: borderColor,
-          surfaceColor: surfaceColor,
-          primaryTextColor: primaryTextColor,
-          secondaryTextColor: secondaryTextColor,
+          isVoiceMessage: isVoiceMessageSource(
+            pickString(attachment, const ['source', 'mediaSource']),
+          ),
           fileName: fileName,
-          sizeBytes: sizeBytes,
-          mimeType: mimeType,
-          hovering: _hovering,
+          durationMs: pickInt(attachment, const ['durationMs']) ??
+              (pickInt(attachment, const ['durationSec']) != null
+                  // durationSec is SECONDS (F133); the player takes ms.
+                  ? pickInt(attachment, const ['durationSec'])! * 1000
+                  : null),
+          width: 300,
         );
         break;
       case AttachmentKind.document:
@@ -1167,112 +1177,6 @@ class _VideoAttachmentSurface extends StatelessWidget {
                     formatBytes(sizeBytes!),
                     style: AuraText.small.copyWith(color: secondaryTextColor),
                   ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AudioAttachmentSurface extends StatelessWidget {
-  const _AudioAttachmentSurface({
-    required this.url,
-    required this.borderColor,
-    required this.surfaceColor,
-    required this.primaryTextColor,
-    required this.secondaryTextColor,
-    required this.fileName,
-    required this.sizeBytes,
-    required this.mimeType,
-    required this.hovering,
-  });
-
-  final String url;
-  final Color borderColor;
-  final Color surfaceColor;
-  final Color primaryTextColor;
-  final Color secondaryTextColor;
-  final String fileName;
-  final int? sizeBytes;
-  final String mimeType;
-  final bool hovering;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      transform: Matrix4.identity()
-        ..scaleByDouble(
-          hovering ? 1.01 : 1.0,
-          hovering ? 1.01 : 1.0,
-          hovering ? 1.01 : 1.0,
-          1,
-        ),
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        border: Border.all(color: borderColor),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Container(
-            height: 48,
-            width: 48,
-            decoration: BoxDecoration(
-              color: hovering
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.transparent,
-              border: Border.all(color: borderColor),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.graphic_eq_outlined, color: secondaryTextColor),
-          ),
-          const SizedBox(width: AuraSpace.s10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName.isEmpty ? 'Audio' : fileName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: primaryTextColor,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s4),
-                Text(
-                  [
-                    // Was the RAW mime string: a person should never be
-                    // shown `application/vnd.openxmlformats-officedocument…`
-                    // to learn what they were sent.
-                    if (mimeType.isNotEmpty)
-                      attachmentKindFrom(mimeType: mimeType).label,
-                    if (sizeBytes != null) formatBytes(sizeBytes!),
-                  ].join(' • '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(color: secondaryTextColor),
-                ),
-                const SizedBox(height: AuraSpace.s6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.open_in_new,
-                      size: 14,
-                      color: secondaryTextColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      url.isNotEmpty ? 'Open audio' : 'Audio unavailable',
-                      style: AuraText.small.copyWith(color: secondaryTextColor),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

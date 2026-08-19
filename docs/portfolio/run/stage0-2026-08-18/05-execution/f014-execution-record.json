@@ -1,0 +1,70 @@
+{
+ "type": "EXECUTION_RECORD",
+ "unit": "F014 — Voice messages (timeline/playback presentation)",
+ "chapter": "CH-13",
+ "date": "2026-08-19",
+ "priorState": "PARTIALLY_VALIDATED — 'Voice-note pills render live in the thread; the timeline/playback presentation (tracked as #171) is outstanding.'",
+ "newState": "IMPLEMENTED_AWAITING_CERTIFICATION (execution layer; Stage-0 not promoted)",
+ "authorityEstablishedBeforeChanging": {
+  "existingPlaybackImplementations": [
+   {
+    "site": "conversation_screen _MediaPlayback",
+    "shape": "VideoPlayerController serving BOTH audio and video. For audio: play/pause plus the hardcoded literal 'Voice note'. NO progress, NO timeline, NO duration, NO error state."
+   },
+   {
+    "site": "thread_message_tile _AudioAttachmentSurface",
+    "shape": "A StatelessWidget. NO playback at all — it rendered a row and handed the file to the browser."
+   },
+   {
+    "site": "aura_media_viewer",
+    "shape": "VideoPlayerController for VIDEO inside the fullscreen viewer. Legitimately different responsibility; left untouched."
+   }
+  ],
+  "verdict": "The product held two competing answers to 'how does a voice message play', and one of them was 'it does not'. That is accidental duplication, not destination policy: nothing in Correspondence's charter makes audio behave differently, and its surface simply never received playback.",
+  "strongestCandidate": "Neither. Conversation's was closer but lacked the entire half F014 names, so the canonical capability was built from the two and consumed by both."
+ },
+ "productDefectsRemoved": [
+  "No progress or timeline anywhere — the literal subject of F014.",
+  "No duration shown, although Media.duration is authoritative.",
+  "The label 'Voice note' was hardcoded for ALL audio, so an uploaded MP3 was announced as a recording it was not.",
+  "Correspondence had no inline playback at all.",
+  "A failed load was silent — a broken voice note looked identical to one that had not started."
+ ],
+ "voiceIsNotMerelyAudio": {
+  "groundedIn": "Media.source == RECORDING, stamped by the composer at capture (conversation_screen sets source RECORDING for AUDIO kind).",
+  "notFoldedIntoTheMimeResolver": "attachmentKindFrom answers a MIME-shaped question; voice-vs-audio is SOURCE-shaped. Collapsing them would make an uploaded audio/m4a indistinguishable from a recording again — the exact false claim being removed.",
+  "presentationDiffers": "A recording is announced as 'Voice message'; an uploaded file keeps its own filename.",
+  "playbackDoesNotDiffer": "Nothing in the product makes their playback semantics differ, so they were not split for the sake of splitting."
+ },
+ "nothingInvented": [
+  "Duration comes from Media.duration (MILLISECONDS, F133) and, once loaded, from the media element itself.",
+  "When neither knows, position is shown WITHOUT a total rather than against a fabricated one. A zero or negative duration is treated as unknown, because a confident '0:00' claims the recording is empty.",
+  "NO waveform is drawn. The product computes no amplitude data and a decorative one would assert a shape the bytes never had.",
+  "No transcription, recording quality or inferred characteristic is displayed.",
+  "Seeking is offered ONLY once a real duration is known, because seeking against an unknown total cannot be honoured. No dead controls."
+ ],
+ "backendChange": "conversations.service.ts — the message media projection now also selects source and duration, emitted as source and durationMs. Additive; no schema change, no migration, no production data.",
+ "consolidation": {
+  "created": "lib/core/media/aura_voice_player.dart — AuraVoicePlayer, formatPlaybackPosition, isVoiceMessageSource.",
+  "adoptedBy": [
+   "Conversation (proving surface)",
+   "Correspondence"
+  ],
+  "removed": "thread_message_tile _AudioAttachmentSurface — 106 lines of legacy surface deleted once dead.",
+  "preserved": "Conversation's _MediaPlayback retained for VIDEO only. The fullscreen viewer's video controller is a different responsibility and was not touched.",
+  "legitimateDestinationDifferences": "Correspondence renders the player at a wider width to match its message column. That is composition, not competing semantics."
+ },
+ "boundariesObserved": [
+  "CH-11 content truth consumed, never re-decided — source and duration are read, never recomputed.",
+  "No acquisition path touched: F012 drag/drop, F013 paste and F019 selectable text untouched.",
+  "Composer/RC-C5 findings F123, F025, F026, F135 untouched.",
+  "Meetings untouched.",
+  "G1 leg 5(B) not re-entered."
+ ],
+ "canonicalRemainder": "F014 is NOT closed. Its closure needs the live playback journey — a real voice message played, scrubbed and completed on a running client. That is certification debt, not product debt.",
+ "regression": {
+  "frontend": "652 passed, 1 skipped",
+  "gatesMeetingsMedia": "177 passed",
+  "backend": "200 suites / 2504 tests"
+ }
+}

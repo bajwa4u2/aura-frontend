@@ -166,6 +166,10 @@ class ConversationMessage {
                 fileSizeBytes: m['fileSizeBytes'] is num
                     ? (m['fileSizeBytes'] as num).toInt()
                     : null,
+                source: _ns(m['source']),
+                durationMs: m['durationMs'] is num
+                    ? (m['durationMs'] as num).toInt()
+                    : null,
               ))
           .toList(),
       replyTo: json['replyTo'] is Map<String, dynamic>
@@ -256,6 +260,8 @@ class MessageMediaRef {
     required this.mimeType,
     this.fileName,
     this.fileSizeBytes,
+    this.source,
+    this.durationMs,
   });
   final String mediaId;
   final String? kind; // IMAGE | AUDIO | VIDEO | OTHER | null
@@ -267,6 +273,13 @@ class MessageMediaRef {
 
   /// F011 — size is the other fact a person needs before opening something.
   final int? fileSizeBytes;
+
+  /// F014 — canonical Media.source. RECORDING marks a captured voice message,
+  /// which is a different product object from an uploaded audio file.
+  final String? source;
+
+  /// F014 — authoritative length in MILLISECONDS (F133).
+  final int? durationMs;
 
   bool get isImage =>
       (kind ?? '').toUpperCase() == 'IMAGE' ||

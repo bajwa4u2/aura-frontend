@@ -16,6 +16,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/media/aura_attachment_card.dart';
+import '../../../core/media/aura_voice_player.dart';
 import '../../../core/media/aura_media_viewer.dart';
 import '../../../core/media/aura_attachment_open.dart';
 import '../../../core/compliance/report_content_sheet.dart';
@@ -1375,12 +1376,20 @@ class _ConversationAttachment extends ConsumerWidget {
           );
         }
 
-        if (kind == AttachmentPresentationKind.audio ||
-            kind == AttachmentPresentationKind.video) {
+        if (kind == AttachmentPresentationKind.audio) {
+          // F014 — the canonical player. Conversation is the proving surface
+          // for this capability, not its owner: the same widget serves
+          // Correspondence, which previously had no inline playback at all.
+          return AuraVoicePlayer(
+            url: url,
+            isVoiceMessage: isVoiceMessageSource(media.source),
+            fileName: media.fileName,
+            durationMs: media.durationMs,
+          );
+        }
+        if (kind == AttachmentPresentationKind.video) {
           return _MediaPlayback(
-              url: url,
-              isVideo: kind == AttachmentPresentationKind.video,
-              mediaId: media.mediaId);
+              url: url, isVideo: true, mediaId: media.mediaId);
         }
 
         // Everything else — PDF, document, spreadsheet, presentation,
