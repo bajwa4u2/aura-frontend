@@ -1,0 +1,56 @@
+{
+ "type": "OWED_PRODUCTION_DATA_REMEDIATION",
+ "id": "F133-LEGACY",
+ "finding": "F133",
+ "date": "2026-08-18",
+ "recordedBy": "FOUNDER DIRECTION 2026-08-18 — preserve legacy F133 rows as an explicit OWED production-data remediation item.",
+
+ "separation": {
+  "newWritesAndProjections": {
+   "status": "CORRECTED",
+   "evidence": "src/media/duration-units.ts; messages.service.ts write site and projection site both converted; duration-units.spec.ts (15 tests) covers both directions, rounding, null-vs-zero, nonsense refusal and round-trip stability.",
+   "scope": "PROSPECTIVE ONLY — applies to writes and projections made after this change."
+  },
+  "historicalAffectedRows": {
+   "status": "POTENTIALLY_1000X_INCORRECT_AS_EVIDENCED",
+   "mechanism": "Media.duration is MILLISECONDS; MessageAttachment.durationSec is SECONDS. messages.service copied one into the other in BOTH directions.",
+   "consequence": [
+    "Rows written through the correspondence attachment path hold a Media.duration that is 1000x TOO SMALL (a 30-second clip stored as 30 instead of 30000).",
+    "Those same rows project a durationSec that is 1000x TOO LARGE when read back through the ms-to-seconds site (30000 ms read as 30000 seconds)."
+   ],
+   "populationSize": "NOT MEASURED. Measuring it means querying production, which is not authorized. No count is asserted, and no count is estimated.",
+   "detectability": "Nothing crashed and nothing errored. The value was simply wrong wherever it was displayed, which is why the defect survived to become a finding."
+  },
+  "remediation": {
+   "status": "NOT_AUTHORIZED",
+   "rule": "The prospective implementation correction does NOT authorize historical production-data mutation.",
+   "notScheduled": true,
+   "notDesigned": "No migration is authored, sketched or planned here. Designing one would make it look scheduled.",
+   "admissionPath": "Must be separately ADMITTED and AUTHORIZED through the applicable production-data governance boundary before any migration is written or executed."
+  },
+  "productionMutation": {
+   "status": "NOT_PERFORMED",
+   "verified": [
+    "No migration authored or applied.",
+    "No production database read or written.",
+    "No backfill script created.",
+    "No existing Media or MessageAttachment row touched by the F133 change — the conversion applies at the write and projection sites only."
+   ]
+  }
+ },
+
+ "whyThisIsHarderThanItLooks": {
+  "note": "Recorded so a future remediation does not begin from a false assumption.",
+  "points": [
+   "A blind multiply-by-1000 would be WRONG. Rows written before the defect existed, rows written through paths that never had the bug, and rows written after this correction all hold CORRECT millisecond values. A remediation must first distinguish affected rows from unaffected ones.",
+   "The two error directions are not symmetric: the stored value is wrong, and the projection of an already-correct stored value is also wrong. Only the stored side is data; the projection side was code and is now fixed.",
+   "There may be no reliable discriminator in the data itself — a stored 30 could be a genuinely 30 ms clip or a mis-stored 30-second one. Whether the affected population is identifiable at all is an open question, not an assumption."
+  ]
+ },
+
+ "standingState": {
+  "F133findingState": "NOT PROMOTED. Stage-0 evidence unchanged.",
+  "canonicalUnitsAffected": 0,
+  "chapterClosed": false
+ }
+}
