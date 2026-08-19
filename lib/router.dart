@@ -15,6 +15,7 @@ import 'core/product/product_state_view.dart';
 import 'core/auth/session_providers.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
+import 'core/institutions/institution_route_authority.dart';
 import 'features/meetings/application/meetings_provider.dart';
 import 'features/realtime/application/realtime_providers.dart';
 import 'features/realtime/domain/realtime_enums.dart';
@@ -245,37 +246,61 @@ bool requiresInstitutionAccessForPath(String path) {
   return institutionSubPath.hasMatch(path);
 }
 
-/// Routing-hardening — convert a legacy `/institution/<section>`
-/// shorthand into a canonical `/institution/:id/<section>` URL using
-/// the active institution identity. Falls back to the global
-/// dashboard selector when no id can be resolved.
-String _redirectShorthandToCanonical(Ref ref, String section) {
-  final id = ref.read(institutionIdentityProvider)?.id ?? '';
-  if (id.isNotEmpty) return '/institution/$id/$section';
-  return kInstitutionDashboardRoute;
+/// INSTITUTION ROUTE RESTORATION — RC2 + RC3.
+///
+/// Both helpers ask ONE authority (`decideInstitutionRoute`) instead of
+/// reading the active identity directly, and map its outcome through the
+/// pure mappers beside it. See institution_route_authority.dart: the old
+/// code could not tell "still loading" from "no institution", and treated
+/// the URL's institution id as something ambient state could overrule.
+///
+/// The two entry points remain because the two route shapes genuinely
+/// differ — one carries no id and has no builder, so it must resolve to
+/// some address; the other carries a claim and can simply stay put.
+String _redirectShorthandToCanonical(
+  Ref ref,
+  GoRouterState state,
+  String section,
+) {
+  return institutionShorthandRedirect(
+    decideInstitutionRoute(
+      snapshot: ref.read(institutionAuthoritySnapshotProvider),
+      pathId: null,
+    ),
+    section: section,
+    dashboardRoute: kInstitutionDashboardRoute,
+    parkRoute: _bootParkFor(state.uri.toString()),
+  );
 }
 
-/// Enforce "path id dominates provider" for canonical workspace
-/// routes. If the URL carries an institution id that doesn't match the
-/// active identity (or carries no id at all), rewrite to the active
-/// identity's URL — or to the global dashboard if no identity exists.
-/// Returning `null` means the route may proceed unchanged.
-String? _enforceCanonicalIdMatch(Ref ref, String? pathId, String section) {
-  final pathTrim = (pathId ?? '').trim();
-  final activeId = ref.read(institutionIdentityProvider)?.id ?? '';
-  if (pathTrim.isEmpty) {
-    return activeId.isNotEmpty
-        ? '/institution/$activeId/$section'
-        : kInstitutionDashboardRoute;
-  }
-  // When the active identity is known and disagrees with the URL,
-  // canonicalize. When no active identity is resolved (e.g. transient
-  // bootstrap state on a deep link), trust the URL — the auth gate
-  // higher up has already verified institution access.
-  if (activeId.isNotEmpty && pathTrim != activeId) {
-    return '/institution/$activeId/$section';
-  }
-  return null;
+/// Validate the institution id the URL carries. Returning `null` means the
+/// route may proceed unchanged — which is also how "still resolving" is
+/// expressed, because deciding nothing is the correct response to not
+/// knowing yet.
+String? _enforceCanonicalIdMatch(
+  Ref ref,
+  GoRouterState state,
+  String? pathId,
+  String section,
+) {
+  return institutionCanonicalRedirect(
+    decideInstitutionRoute(
+      snapshot: ref.read(institutionAuthoritySnapshotProvider),
+      pathId: pathId,
+    ),
+    section: section,
+    dashboardRoute: kInstitutionDashboardRoute,
+  );
+}
+
+/// Destination-preserving park for the shorthand shape. Mirrors
+/// `bootRedirectFor` inside the router closure; kept out here so the redirect
+/// helpers stay independent of it.
+String _bootParkFor(String target) {
+  final encoded = Uri.encodeComponent(
+    _normalizeRedirectDest(target, fallback: kInstitutionDashboardRoute),
+  );
+  return '$kRouterBootRoute?redirect=$encoded';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -1628,12 +1653,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionDomainsRoute,
             redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, 'domains'),
+                _redirectShorthandToCanonical(ref, state, 'domains'),
           ),
           GoRoute(
             path: '/institution/:institutionId/domains',
             redirect: (context, state) => _enforceCanonicalIdMatch(
               ref,
+              state,
               state.pathParameters['institutionId'],
               'domains',
             ),
@@ -1673,12 +1699,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionProfileRoute,
             redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, 'profile'),
+                _redirectShorthandToCanonical(ref, state, 'profile'),
           ),
           GoRoute(
             path: '/institution/:institutionId/profile',
             redirect: (context, state) => _enforceCanonicalIdMatch(
               ref,
+              state,
               state.pathParameters['institutionId'],
               'profile',
             ),
@@ -1689,12 +1716,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionEditProfileRoute,
             redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, 'edit-profile'),
+                _redirectShorthandToCanonical(ref, state, 'edit-profile'),
           ),
           GoRoute(
             path: '/institution/:institutionId/edit-profile',
             redirect: (context, state) => _enforceCanonicalIdMatch(
               ref,
+              state,
               state.pathParameters['institutionId'],
               'edit-profile',
             ),
@@ -1705,12 +1733,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionVerificationRoute,
             redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, 'request-verification'),
+                _redirectShorthandToCanonical(ref, state, 'request-verification'),
           ),
           GoRoute(
             path: '/institution/:institutionId/request-verification',
             redirect: (context, state) => _enforceCanonicalIdMatch(
               ref,
+              state,
               state.pathParameters['institutionId'],
               'request-verification',
             ),
@@ -1726,7 +1755,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionCorrespondenceRoute,
             redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, 'messages'),
+                _redirectShorthandToCanonical(ref, state, 'messages'),
           ),
           GoRoute(
             path: '/institution/:institutionId/correspondence',
@@ -1743,19 +1772,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionAnnouncementsRoute,
             redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, 'announcements'),
+                _redirectShorthandToCanonical(ref, state, 'announcements'),
           ),
 
           // Live rooms.
           GoRoute(
             path: kInstitutionLiveRoomsRoute,
             redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, 'live-rooms'),
+                _redirectShorthandToCanonical(ref, state, 'live-rooms'),
           ),
           GoRoute(
             path: '/institution/:institutionId/live-rooms',
             redirect: (context, state) => _enforceCanonicalIdMatch(
               ref,
+              state,
               state.pathParameters['institutionId'],
               'live-rooms',
             ),

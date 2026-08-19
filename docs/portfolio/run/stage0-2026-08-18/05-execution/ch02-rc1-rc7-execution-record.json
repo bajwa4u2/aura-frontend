@@ -1,9 +1,14 @@
 {
   "type": "EXECUTION_RECORD",
-  "unit": "CH-02 refresh continuity — RC1 and RC7 shared-cause corrections",
+  "unit": "CH-02 refresh continuity - RC1, RC7-articles, RC2 and RC3",
   "chapter": "CH-02 (Continuity & Destination Authority)",
   "date": "2026-08-19",
-  "servesFindings": ["F059", "F061", "F062", "F063"],
+  "servesFindings": [
+    "F059",
+    "F061",
+    "F062",
+    "F063"
+  ],
   "contract": "REFRESH IS NOT NAVIGATION — reloading on a legitimate destination must reconstruct that destination (founder-frozen).",
   "method": "Executed against the existing shared-cause audit (docs/2026-08-17-refresh-continuity-shared-causes.md), which ranks nine root causes and orders the widest-leverage corrections. Corrections 1 and 7 were taken; the audit was not re-derived.",
   "RC1": {
@@ -28,35 +33,71 @@
     "authorityReused": "NavigationAuthority.articleEditorRoute — the canonical builder, which the audit noted existed and was simply unused here."
   },
   "deliberatelyNotDone": {
-    "RC2_RC3": "Institution route redirects and path-id dominance. Genuinely available, materially larger, and touching institution routing — kept out of a batch whose corrections are provably independent.",
-    "RC4_RC5_RC6_RC8_RC9": "Not attempted this pass. Recorded as remaining, not silently dropped.",
-    "RC7_compose_half": "Remaining."
+    "RC4": "One governed gateRedirect for destructive exits. NOT absorbed: RC2/RC3's contract does not necessarily own it, and preserving a ?redirect= the gate screens do not yet consume would be inert. Remains the next coherent step.",
+    "RC5_RC6_RC8_RC9": "Not attempted. Recorded as remaining, not dropped.",
+    "RC7_compose_half": "Remaining, under its own ownership - the article solution is not to be copied blindly across unrelated composers.",
+    "RC3_screen_binding": "The AUTHORIZED_ELSEWHERE half described above."
   },
   "filesChanged": [
     "aura_final/lib/core/auth/session_hint.dart (tri-state status)",
-    "aura_final/lib/core/auth/web_session_restore.dart (new — the pure decision)",
-    "aura_final/lib/core/auth/session_bootstrap.dart (consumes the decision, landing path from Uri.base)",
+    "aura_final/lib/core/auth/web_session_restore.dart (new - the pure restore decision)",
+    "aura_final/lib/core/auth/session_bootstrap.dart (consumes the decision)",
+    "aura_final/lib/core/institutions/institution_route_authority.dart (new - the pure route decision + mappers)",
+    "aura_final/lib/router.dart (both institution redirect helpers migrated onto the authority)",
     "aura_final/lib/features/articles/presentation/article_editor_screen.dart (draft URL write-back)",
-    "aura_final/test/refresh_continuity_rc1_rc7_test.dart (new — 10 assertions)"
+    "aura_final/test/refresh_continuity_rc1_rc7_test.dart (new - 10 assertions)",
+    "aura_final/test/institution_route_authority_test.dart (new - 19 assertions)"
   ],
   "stateTransitions": {
-    "F059": "OPEN — unchanged. RC1 removes one of its three root causes (RC1 of RC1/RC2/RC3); RC2 and RC3 remain.",
-    "F061": "OPEN — unchanged. RC4/RC8 remain.",
-    "F062": "OPEN — unchanged. RC2/RC4 remain.",
-    "F063": "OPEN — unchanged. The Article surface is corrected; the Compose surface (RC7's other half) and RC8 remain.",
-    "honesty": "NO finding is claimed closed or advanced by this batch. A shared root cause was removed; the findings above it stay OPEN until their remaining causes are corrected and certified. Claiming otherwise would be exactly the state inflation the register forbids."
+    "F059": "OPEN - unchanged. RC1, RC2 and RC3 corrected; RC4 remains, and the conversation-destination half still needs its own certification.",
+    "F061": "OPEN - unchanged. RC4/RC8 remain.",
+    "F062": "OPEN - unchanged. RC2 and RC3 were its named causes and are corrected; RC4 remains, as does the AUTHORIZED_ELSEWHERE screen-binding half of RC3.",
+    "F063": "OPEN - unchanged. Article surface corrected; compose surface (RC7's other half) and RC8 remain.",
+    "honesty": "NO finding is claimed closed or advanced. Root-cause repairs are recorded separately from finding closure, exactly as the register requires."
   },
   "verification": {
-    "newAssertions": 10,
-    "frontendSuite": "685 PASS (was 675)",
-    "identityConformanceGate": "PASS — 66 files / 202 sites, at baseline",
-    "flutterAnalyze": "clean on every touched directory",
-    "backendUntouched": true
+    "newAssertions": 29,
+    "frontendSuite": "704 PASS (675 before this chapter's work; 685 after RC1/RC7)",
+    "meetings": "PASS - protected, untouched",
+    "routerInstitutionAccessRegression": "24 PASS",
+    "identityConformanceGate": "PASS - 66 files / 202 sites, at baseline",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "flutterAnalyze": "clean on every touched directory"
   },
   "protectedBoundaries": {
     "meetings": "UNTOUCHED — no meeting route, guard or session path modified",
     "guestSessions": "UNCHANGED — guest tokens still deliberately do not write the hint",
     "authenticationAuthority": "Reused, not bypassed: the decision governs only WHETHER the cold refresh is attempted, never who is authenticated"
   },
-  "founderDecisionsRequired": ["NONE"]
+  "founderDecisionsRequired": [
+    "NONE"
+  ],
+  "RC2": {
+    "auditFinding": "Route-level redirects run without the top-level still-resolving discipline: _redirectShorthandToCanonical read institutionIdentityProvider synchronously and, while it was still loading, six institution shorthand routes hard-landed on the dashboard. Cold-load of /institution/edit-profile could never survive.",
+    "rootCauseTraced": "institutionIdentityProvider is a SYNCHRONOUS view over an ASYNC source - it reads institutionAccessProvider.valueOrNull and returns null. That null collapses three different facts: still loading, no affiliation, no access. The route redirects read it as the second. The top-level redirect already had the right discipline (it returns null while institution access loads on institution paths); the ROUTE-level redirects did not, and they run after it.",
+    "correction": "InstitutionAuthoritySnapshot keeps resolved-ness separate from what is held, and UNRESOLVED is a first-class outcome. A canonical route expresses decide-nothing literally - return null, stay put, let the screen show its own loading state; the router re-runs redirects when the provider settles. A shorthand route has no builder and must resolve to an address, so it parks on the EXISTING destination-preserving /_boot?redirect= decision point that F068 already governs.",
+    "noRaceHiding": "No timers, no delays, no retry loops, no polling. The only new state is a distinction that already existed in the AsyncValue and was being discarded.",
+    "errorIsNotLoading": "An error is RESOLVED-but-unknown, not still-loading. Parking forever on a failed load would replace a lost destination with an eternal spinner, which F068 forbids; it falls through to the governed fallback."
+  },
+  "RC3": {
+    "auditFinding": "Provider identity outranks the URL: _enforceCanonicalIdMatch rewrote any path id that disagreed with the active identity to the active one. Refreshing on institution B delivered institution A.",
+    "correction": "The path id is now a CLAIM, validated against the memberships the backend reports (access.memberships[], the per-institution source C1 built). Only a validated claim is honoured. A stale, removed, unknown or foreign id is NOT silently swapped for whichever institution happens to be active - it goes to the governed dashboard, because quietly showing someone a different institution than the one they asked for is a truthfulness defect, not a convenience.",
+    "notAnAuthority": "This does not make the path an authority. It makes the path a claim that resolved membership either supports or refuses - the same discipline ActingContextAuthority applies to acting identity (a path can never make someone an institution). Group identity doctrine was consumed, not re-decided.",
+    "honestLimitationNamed": "AUTHORIZED_ELSEWHERE - the path names an institution the person genuinely holds but NOT the one the workspace is bound to. The four canonical workspace screens (profile, edit-profile, domains, request-verification) read the AMBIENT institution identity, so proceeding would render one institution's data under another institution's URL - a worse defect than the rewrite it replaces. The router therefore still canonicalises this case, but it is now a NAMED, TESTED outcome with its cause recorded rather than an accident. The remaining half of RC3 is: bind those screens to the URL's institution (per-institution capabilities already exist on MemberAffiliation) and provide an institution context to switch into. RECORDED AS OWED, not faked."
+  },
+  "canonicalAuthorityIntroduced": {
+    "file": "aura_final/lib/core/institutions/institution_route_authority.dart",
+    "shape": "One pure decision - decideInstitutionRoute(snapshot, pathId) - over the outcomes unresolved / proceed / canonicalize / authorizedElsewhere / notAuthorized / noAffiliation, plus two pure mappers for the two route shapes.",
+    "whyNotElevenPatches": "The eleven institution route families were manifestations of ONE authority defect. Patching each redirect callback would have multiplied the defect's surface. Equally, one route god-function was avoided: the decision is shared, the composition is per-shape.",
+    "routeFamiliesMigrated": [
+      "domains",
+      "profile",
+      "edit-profile",
+      "request-verification",
+      "messages",
+      "announcements",
+      "live-rooms"
+    ],
+    "routesUnchanged": "Families that already pass institutionId into their screens (units, public-engagement and its children) were left alone - they never had the defect."
+  }
 }

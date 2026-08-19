@@ -103,9 +103,19 @@
   },
   "certificationDebt": "Live certification is OWED and NOT claimed: observing on the live system that a preview image renders through the Aura delivery URL and that no request reaches the third-party host. Recorded as debt, which by frozen doctrine does not block construction — the mistake this re-adjudication corrects.",
   "deploymentNote": {
-    "required": "Set AURA_API_PUBLIC_URL on the deployed API (e.g. https://api.auraplatform.org).",
-    "ifOmitted": "RAILWAY_PUBLIC_DOMAIN is used automatically; if neither exists, preview images render as absent rather than leaking. Fails closed either way.",
-    "notPerformed": "No production environment was modified by this pass."
+    "resolved": "NO FOUNDER DEPLOYMENT STEP IS OWED. The API now DETERMINES its own public origin.",
+    "order": [
+      "AURA_API_PUBLIC_URL — explicit override, never required (a CDN in front, a domain migration).",
+      "The origin clients actually reach us on, observed from the request (X-Forwarded-Proto + Host, behind the platform proxy with trust-proxy already set). Most truthful source available: by definition an address that works, and same-origin with every other API call.",
+      "RAILWAY_PUBLIC_DOMAIN, injected by the platform — covers contexts with no request in scope, e.g. a projection built for a socket event before any HTTP request has been seen.",
+      "Null — and then no image, never the third-party URL."
+    ],
+    "hostPoisoning": "Host is client input, so an observed origin is remembered only when its host is one this service could legitimately answer on (the Aura registrable domain, a railway.app host, or localhost). A forged header is ignored, and a previously remembered trusted origin survives it.",
+    "localDevelopment": "Honest — http://localhost:PORT is derived from the request, so preview images work locally with no configuration.",
+    "failClosedStillHolds": "With no override, no request seen and no platform domain, the delivery URL is null and no image is emitted. Asserted by test.",
+    "productionEnvironmentModified": false
   },
-  "founderDecisionsRequired": ["NONE — existing doctrine settled every choice this remedy required."]
+  "founderDecisionsRequired": [
+    "NONE — existing doctrine settled every choice this remedy required."
+  ]
 }
