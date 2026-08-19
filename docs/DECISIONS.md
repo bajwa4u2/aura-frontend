@@ -509,7 +509,39 @@ reads absence as "we do not know who you are"; answering "Someone" would type th
 stranger's name field and suppress the question that surface exists to ask. Naming an unresolved person
 stays the renderer's job.
 
-**Result.** Typed-person debt 18 → 0. **MEETINGS BEHAVIOR PRESERVED.** F116 and F053 advance
-PARTIALLY_VALIDATED → IMPLEMENTED_NOT_LIVE_CERTIFIED — implementation only; no live certification is
-claimed and no production was polled or mutated. **F051 remains a preserved conflict and was
-deliberately not decided by this correction.**
+**Result.** Typed-person debt 18 to 0 on the measurement as it then stood. **MEETINGS BEHAVIOR
+PRESERVED.** **F051 remains a preserved conflict and was deliberately not decided by this correction.**
+
+**The F116/F053 promotion claimed here was HELD by the founder and is WITHDRAWN (2026-08-19).** Both
+findings return to PARTIALLY_VALIDATED. The Meetings and feed work above is accepted and stands
+unchanged; what does not stand is the state promotion, because reconciling the 19 measured surface
+sites showed the measurement itself was understating. See the reconciliation entry below.
+
+---
+
+## F116/F053 PROMOTION RECONCILIATION - THE METRIC WAS NOT THE FINDING (2026-08-19)
+
+**Held, then withdrawn.** The founder declined to accept F116/F053 at
+IMPLEMENTED_NOT_LIVE_CERTIFIED while 19 surface sites still read person fields off untyped maps. All 19
+were traced to their producers and classified: 11 presentation over already-canonical identity, 4
+institution, 3 governed, 1 detector window catch. **Zero class A.** The inconsistency as posed did not
+exist.
+
+**The promotion fails for the opposite reason.** The detector matched a single bracketed key and could
+not see an alias LIST - which is the stronger form of the same defect, because a list is a private
+order of preference. Real person debt sat outside the count: a complete private person reader in the
+app-shell header, and a member directory that addressed people at `/handle` when the router only
+declares `/u/:handle`, so "open profile" from the member picker reached nothing. Eleven such sites were
+converged and the gate still reported the same 19. A gate that cannot see the debt just removed is
+decoration.
+
+**Ruling recorded for future instrument work.** Widening a detector to see a defect class it was always
+meant to measure is not the prohibited move; narrowing it, excluding paths or filenames, or redefining
+the category after seeing results are. The baseline was re-frozen UPWARD - surface 19 to 29,
+typed-person 0 to 8 - and the whole delta is classified as INSTRUMENT CORRECTION, kept strictly apart
+from the 11 real migrations, which the metric did not reflect at all.
+
+**Open decision.** 17 of the 18 remaining class-A sites live in the correspondence / conversations /
+messages family, which is pending retirement (`MessagesHubScreen` is parked at `/messages/legacy-hub`).
+Converging identity inside surfaces scheduled for removal is a founder call, not an engineering one,
+and F116 criterion 2 cannot close either way until it is made.

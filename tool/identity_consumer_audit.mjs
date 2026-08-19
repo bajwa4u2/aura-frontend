@@ -111,6 +111,12 @@ export function statementTargetName(lines, i) {
  * counted as person debt.
  */
 export function statementSubjectName(lines, i) {
+  // When the flagged line NAMES its own map — `opt(inst, ['name', ...])` —
+  // that is the subject, full stop. Walking back from inside a multi-line
+  // constructor call otherwise anchors on the constructor's first line and
+  // reports an institution's own name as person debt.
+  const local = lines[i].match(/\w+\(\s*(\w+)\s*,/)
+  if (local) return local[1]
   let j = i
   while (j > 0) {
     const prev = lines[j - 1].replace(/\/\/.*$/, '').trimEnd()
@@ -121,8 +127,64 @@ export function statementSubjectName(lines, i) {
   return m?.[1] ?? ''
 }
 
+/**
+ * The TYPE a line sits inside — the nearest enclosing `class`/`extension`.
+ *
+ * INSTRUMENT CORRECTION (2026-08-19, F116 promotion reconciliation). Added
+ * because the receiver/target/subject signals all go blank on a very common
+ * shape: a model that reads its own fields through a key-path helper —
+ *
+ *     name: readString(['name', 'displayName', 'organizationName']),
+ *
+ * names no map, assigns into a bare `name`, and passes a LIST as its first
+ * argument, so `statementSubjectName` finds nothing. Inside
+ * `class Institution` that line is unambiguous, and the class name is the
+ * code's own naming — not a path, not a filename, not an allowlist.
+ */
+export function enclosingTypeName(lines, i) {
+  for (let j = i; j >= 0; j--) {
+    const m = lines[j].match(/^\s*(?:abstract\s+)?class\s+(\w+)/)
+    // A private widget/state class is written `_InstitutionProfileScreenState`;
+    // the leading underscore is Dart's privacy marker, not part of the name.
+    if (m) return m[1].replace(/^_+/, '')
+  }
+  return ''
+}
+
+/**
+ * A person read expressed as an ALIAS LIST rather than a single key.
+ *
+ * INSTRUMENT CORRECTION (2026-08-19). The single-key matcher below sees
+ * `map['displayName']` and misses `pick(map, const ['displayName', 'name'])`
+ * — which is the STRONGER form of the same defect, because a list IS a
+ * private alias order. The reconciliation of the 19 measured sites found real
+ * person debt in this shape (an app-shell header with its own nested-envelope
+ * unwrap; a directory reader with its own avatar aliases, its own invented
+ * 'Member' label and its own '/handle' address for a person that the router
+ * does not declare). Removing that debt moved the metric by zero, which is
+ * how a gate becomes decoration. Two or more canonical person keys quoted
+ * together count; one does not, because a single-key list is just a lookup.
+ */
+const PERSON_ALIAS_KEYS = new Set([
+  'displayName', 'fullName', 'name', 'handle', 'username',
+  'avatarUrl', 'photoUrl', 'imageUrl', 'avatar', 'image',
+])
+export function personAliasListKeys(lines, i) {
+  if (!/\[/.test(lines[i])) return null
+  const win = lines.slice(i, i + 4).join(' ')
+  const m = win.match(/\[\s*((?:'[A-Za-z_]+'\s*,\s*){1,7}'[A-Za-z_]+')\s*,?\s*\]/)
+  // The literal must OPEN on this line. Without this anchor a list that
+  // begins two lines down is charged to whatever line happened to contain the
+  // nearest '[' — which reported `title: s(['title'])` as person debt because
+  // an institution's alias list sat three lines below it.
+  if (!m || m.index >= lines[i].length) return null
+  const keys = [...m[1].matchAll(/'([A-Za-z_]+)'/g)].map((x) => x[1])
+  const person = keys.filter((k) => PERSON_ALIAS_KEYS.has(k))
+  return person.length >= 2 ? keys : null
+}
+
 /** Which identity domain does this field read belong to? */
-export function classifyIdentityDomain(line, win, target = '', subject = '') {
+export function classifyIdentityDomain(line, win, target = '', subject = '', enclosingType = '') {
   const recv = line.match(
     /(\w+)\s*(?:\?|!)?\s*\[\s*['"](?:displayName|handle|avatarUrl|photoUrl|fullName|name|slug|logoUrl)['"]\s*\]/,
   )
@@ -143,6 +205,25 @@ export function classifyIdentityDomain(line, win, target = '', subject = '') {
 
   // An institution read through a nested key rather than a named variable.
   if (/\['(institution|actorInstitution|owningInstitution)'\]\s*(?:\?|!)?\s*\[/.test(line)) {
+    return 'INSTITUTION'
+  }
+
+  // The enclosing TYPE, when every other signal went blank. Lowest
+  // precedence on purpose: a named receiver is stronger evidence than the
+  // class a line happens to sit in.
+  // ...and it is VETOED whenever any nearer signal names a person. A person
+  // read inside an institution screen is still a person; the class a line
+  // sits in is the weakest evidence available and must never outrank the
+  // code's own naming of the thing being read.
+  const namesAPerson = [receiver, target, subject].some(
+    (n) => n && PERSON_ROLE_WORD.test(n),
+  )
+  if (
+    enclosingType &&
+    !namesAPerson &&
+    INSTITUTION_RECEIVER.test(enclosingType.toLowerCase()) &&
+    !PERSON_ROLE_WORD.test(enclosingType)
+  ) {
     return 'INSTITUTION'
   }
 
@@ -206,6 +287,12 @@ for (const f of walk(join(BACKEND, 'src'), '.ts')) {
 const FRONT_AUTHORITY = [
   'lib/core/ui/aura_platform_components.dart',
   'lib/core/ui/aura_identity_surface.dart',
+  // The canonical PERSON model itself. It is the file that is ALLOWED to own
+  // an alias order — that is what makes it the authority — and counting it as
+  // debt would mean the answer scores as the problem. Declared here for the
+  // same reason the backend declares person-identity.ts, and nowhere else is
+  // exempted.
+  'lib/core/identity/person_identity_model.dart',
 ]
 for (const f of walk(join(FRONTEND, 'lib'), '.dart')) {
   const path = norm(FRONTEND, f)
@@ -247,7 +334,10 @@ for (const f of walk(join(FRONTEND, 'lib'), '.dart')) {
     // repository is the legitimate typed boundary — every client needs one
     // somewhere. Reading the same raw map inside a WIDGET is a surface
     // resolving identity for itself, which is the defect F053 names.
-    const m = line.match(/\['(displayName|avatarUrl|handle|fullName|photoUrl)'\]/)
+    const single = line.match(/\['(displayName|avatarUrl|handle|fullName|photoUrl)'\]/)
+    // The same defect written as an alias LIST. See personAliasListKeys.
+    const aliasKeys = single ? null : personAliasListKeys(lines, i)
+    const m = single ?? (aliasKeys ? [line, aliasKeys.join('/')] : null)
     // INSTRUMENT CORRECTION (F053 convergence, 2026-08-19). A ROUTE parameter
     // that happens to be named `handle` is not a person payload — reading
     // `state.pathParameters['handle']` resolves a URL segment, and no identity
@@ -269,6 +359,7 @@ for (const f of walk(join(FRONTEND, 'lib'), '.dart')) {
         personWindow,
         statementTargetName(lines, i),
         statementSubjectName(lines, i),
+        enclosingTypeName(lines, i),
       )
       if (domain !== 'PERSON') {
         add({ repo: 'aura_final', surface: 'USER_SHAPE', path, line: i + 1,

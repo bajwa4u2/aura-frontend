@@ -15,6 +15,8 @@
 // itself is not — regardless of how legitimate the surrounding type is.
 import {
   classifyIdentityDomain,
+  enclosingTypeName,
+  personAliasListKeys,
   statementSubjectName,
   statementTargetName,
   typedPersonVerdict,
@@ -169,6 +171,75 @@ check(
           blockedAt: DateTime.parse(j['blockedAt']),
         );`),
   'NON_CANONICAL_PERSON_DESERIALIZATION',
+)
+
+// ── ALIAS LISTS: the same defect, written as a list ──
+// Added 2026-08-19 during the F116 promotion reconciliation. The single-key
+// matcher could not see `pick(map, const ['displayName', 'name'])`, which is
+// the STRONGER form of the defect - a list IS a private alias order. Real
+// person debt was removed from the app shell and the member directory and the
+// metric moved by ZERO, which is how a gate becomes decoration.
+console.log('')
+console.log('-- ALIAS LISTS: a private alias ORDER must be visible --')
+
+check(
+  'two person keys quoted together are an alias order',
+  (personAliasListKeys(["final n = pick(m, const ['displayName', 'name']);"], 0) ?? []).join(','),
+  'displayName,name',
+)
+check(
+  'a single-key list is a lookup, not an alias order',
+  personAliasListKeys(["final n = pick(m, const ['displayName']);"], 0),
+  null,
+)
+check(
+  'a non-person list is not person debt',
+  personAliasListKeys(["final s = pick(m, const ['status', 'state']);"], 0),
+  null,
+)
+check(
+  'a list that OPENS on a later line is not charged to this one',
+  personAliasListKeys(
+    ["title: s(['title']),", 'body: s([]),', "name: opt(i, ['name', 'displayName']),"],
+    0,
+  ),
+  null,
+)
+check(
+  'a same-line receiver decides the domain, even inside a multi-line call',
+  statementSubjectName(
+    ['return ExploreFeedItem(', 'id: s([]),', "institutionName: opt(inst, ['name', 'displayName']),"],
+    2,
+  ),
+  'inst',
+)
+
+console.log('')
+console.log('-- ENCLOSING TYPE: the last signal, and the weakest --')
+check(
+  'a model that names itself an institution',
+  enclosingTypeName(['class Institution {', "    name: readString(['name', 'displayName']),"], 1),
+  'Institution',
+)
+check(
+  "Dart's privacy underscore is not part of the name",
+  enclosingTypeName(['class _InstitutionProfileState {', "  final n = _str(['name', 'displayName']);"], 1),
+  'InstitutionProfileState',
+)
+check(
+  'an institution class reading its own name is not person debt',
+  classifyIdentityDomain("name: readString(['name', 'displayName']),", '', 'name', '', 'Institution'),
+  'INSTITUTION',
+)
+check(
+  'a PERSON inside an institution-named class is still a person',
+  classifyIdentityDomain("final n = pick(member, const ['displayName', 'name']);", '', 'n', 'member', 'InstitutionMemberTile'),
+  'PERSON',
+)
+check(
+  'a class name never outranks a named receiver',
+  classifyIdentityDomain("final n = pick(user, const ['displayName', 'name']);", '', 'n', 'user', 'InstitutionProfileState'),
+  'PERSON',
 )
 
 console.log(

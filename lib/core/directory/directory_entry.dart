@@ -10,6 +10,8 @@
 /// class of divergence bug this chapter fixed once already.
 library;
 
+import '../identity/person_identity_model.dart';
+
 /// A resolved, canonical member/person entry for selection surfaces.
 ///
 /// `id` is always derived from [userId] (never an independent, differently
@@ -46,15 +48,6 @@ class DirectoryEntry {
   final String? profileRoute;
 }
 
-String pickDirectoryString(Map<String, dynamic> map, List<String> keys) {
-  for (final key in keys) {
-    final value = map[key];
-    final s = (value ?? '').toString().trim();
-    if (s.isNotEmpty) return s;
-  }
-  return '';
-}
-
 String normalizeDirectoryHandle(String? handle) {
   final value = (handle ?? '').trim().toLowerCase();
   if (value.startsWith('@')) return value.substring(1);
@@ -73,27 +66,33 @@ String normalizeDirectoryHandle(String? handle) {
 /// values for the same real person depending on which listing produced
 /// the entry.
 DirectoryEntry? memberEntryFromMap(Map<String, dynamic> map) {
-  final userId = pickDirectoryString(map, const ['userId', 'id', '_id']);
-  final handle = pickDirectoryString(map, const ['handle', 'username']);
-  final name = pickDirectoryString(map, const [
-    'displayName',
-    'name',
-    'fullName',
-  ]);
-  final avatarUrl = pickDirectoryString(map, const [
-    'avatarUrl',
-    'avatar',
-    'image',
-  ]);
+  // F053/F116 — this function was written to stop member pickers each
+  // re-implementing field precedence, and it succeeded at that. What it could
+  // not do was agree with the REST of the product: it kept its own alias list
+  // (`avatar`, `image`, but never `photoUrl`), its own invented label
+  // ('Member'), and its own address for a person ('/$handle', which the router
+  // does not declare — only '/u/:handle' exists, so "open profile" from a
+  // member picker resolved to nothing). One shared reader for four surfaces is
+  // still a second person authority. The person is now read canonically; what
+  // stays here is the DIRECTORY's own business — the stable selection key, the
+  // subtitle line, and the de-duplication invariant.
+  // Payload hygiene, not an identity decision: directory listings have
+  // historically carried a rendered handle ('@carol'). The backend performs
+  // the same strip on the way IN (users.service, invites, follows), so the
+  // map is made well-formed first and the canonical reader then decides
+  // everything that is actually about identity.
+  final person = _bareHandle(AuraPersonIdentity.fromJson(map));
+  if (person.isEmpty) return null;
 
-  final displayName = name.isNotEmpty
-      ? name
-      : (handle.isNotEmpty ? handle.replaceFirst('@', '') : 'Member');
+  final userId = person.userId;
+  final handle = person.handle;
+  final displayName = person.label;
+  final avatarUrl = person.avatarUrl ?? '';
 
   final subtitle = handle.isNotEmpty
       ? '@${handle.replaceFirst('@', '')}'
       : 'Member';
-  final profileRoute = handle.isNotEmpty ? '/$handle' : null;
+  final profileRoute = person.profileRoute;
 
   final stableId = userId.isNotEmpty
       ? userId
@@ -129,4 +128,21 @@ List<DirectoryEntry> dedupeDirectoryEntries(List<DirectoryEntry> entries) {
     }
   }
   return out;
+}
+
+/// Payload hygiene applied AFTER the canonical read, never instead of it:
+/// directory listings have historically carried a rendered handle ('@carol'),
+/// and the backend performs the same strip on the way IN (users.service,
+/// invites, follows). One field is normalised; nothing about who the person is
+/// is re-decided here.
+AuraPersonIdentity _bareHandle(AuraPersonIdentity person) {
+  final handle = person.handle.trim();
+  if (!handle.startsWith('@')) return person;
+  return AuraPersonIdentity(
+    userId: person.userId,
+    displayName: person.displayName,
+    handle: handle.substring(1),
+    avatarUrl: person.avatarUrl,
+    accountStatus: person.accountStatus,
+  );
 }

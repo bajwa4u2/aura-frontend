@@ -8,6 +8,7 @@ import '../../core/auth/admin_access_provider.dart';
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/institutions/institution_access_provider.dart';
+import '../../core/identity/person_identity_model.dart';
 import '../../core/media/aura_attachment_image.dart';
 import '../../core/navigation/navigation_authority.dart';
 import '../../core/net/dio_provider.dart';
@@ -621,12 +622,14 @@ class _HeaderAccountBtn extends StatelessWidget {
       );
     }
 
-    final avatarUrl = _pickMeString(
-      me,
-      const ['avatarUrl', 'photoUrl', 'imageUrl'],
-    );
+    // F053/F116 — the shell header is the most globally visible person in
+    // the product, and it used to resolve that person itself: its own alias
+    // list, its own nested-`user` unwrap. That private reader was written to
+    // fix exactly the divergence the canonical reader now owns for everyone.
+    final person = AuraPersonIdentity.fromJson(me);
+    final avatarUrl = (person.avatarUrl ?? '').trim();
     if (avatarUrl.isNotEmpty) {
-      final userId = _pickMeString(me, const ['id', 'userId']);
+      final userId = person.userId;
       return AuraAttachmentImage(
         url: avatarUrl,
         attachmentId: userId.isNotEmpty ? 'user:$userId' : null,
@@ -641,10 +644,14 @@ class _HeaderAccountBtn extends StatelessWidget {
   }
 
   Widget _initialsOrIcon() {
-    final name = _pickMeString(
-      me,
-      const ['displayName', 'name', 'handle'],
-    );
+    final person = AuraPersonIdentity.fromJson(me);
+    // The canonical order, and deliberately NOT the canonical label: when a
+    // person resolves to nothing this surface falls back to an ICON, not to a
+    // word. Which order to try is identity's decision and is delegated; what
+    // to show when there is nothing to show is this surface's.
+    final name = person.displayName.trim().isNotEmpty
+        ? person.displayName.trim()
+        : person.handle.trim();
     if (name.isNotEmpty) {
       final initial = name.trim().isNotEmpty
           ? name.trim().substring(0, 1).toUpperCase()
@@ -696,24 +703,3 @@ class _HeaderAccountBtn extends StatelessWidget {
   }
 }
 
-/// Reads a value from the `/auth/me` shape, tolerating both the
-/// top-level promotion and the nested-`user` wrapper. The backend
-/// returns `{ user: { id, displayName, avatarUrl, ... }, accountType,
-/// emailVerified }` — older code paths that read the avatar at the
-/// top level produced a generic icon for every authed user. Keep
-/// trying nested fields per key so the shell renders the user's
-/// avatar/initials regardless of which envelope the response uses.
-String _pickMeString(Map<String, dynamic> map, List<String> keys) {
-  final nested = (map['user'] is Map)
-      ? Map<String, dynamic>.from(map['user'] as Map)
-      : null;
-  for (final key in keys) {
-    final top = (map[key] ?? '').toString().trim();
-    if (top.isNotEmpty) return top;
-    if (nested != null) {
-      final inside = (nested[key] ?? '').toString().trim();
-      if (inside.isNotEmpty) return inside;
-    }
-  }
-  return '';
-}

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/identity/person_identity_model.dart';
 import '../../../core/directory/directory_entry.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/net/dio_provider.dart';
@@ -154,17 +155,21 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     try {
       final dio = ref.read(dioProvider);
       final me = await _loadMe(dio);
-      final handle = _pickString(me, const ['handle', 'username']);
+      // F053/F116 — the viewer is a person, and who they are is the canonical
+      // reader's answer. `_pickString` stays for the thread/space payloads
+      // below, which are not people.
+      final mePerson = AuraPersonIdentity.fromJson(me);
+      final handle = mePerson.handle;
 
       final relationshipEntries = await _loadRelationshipEntries(
         dio,
         handle: handle,
       );
 
-      final meId = _pickString(me, const ['id', 'userId']);
-      final meHandle = _normalizeHandle(
-        _pickString(me, const ['handle', 'username']),
-      );
+      final meId = mePerson.userId;
+      // Lower-casing and stripping '@' is a COMPARISON normalization for
+      // self-detection, not a second reading of who the viewer is.
+      final meHandle = _normalizeHandle(mePerson.handle);
 
       final deduped =
           dedupeDirectoryEntries(

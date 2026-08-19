@@ -158,7 +158,11 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
       final dio = ref.read(dioProvider);
       final meRes = await dio.get('/users/me');
       final me = _extractMap(meRes.data);
-      final handle = _pickString(me, const ['handle', 'username']);
+      // F053/F116 — the viewer's handle is read by the canonical reader, the
+      // same one `_candidateFromMap` already uses for everyone else on this
+      // screen. Two readers on one screen is how the same person came to be
+      // addressed two ways.
+      final handle = AuraPersonIdentity.fromJson(me).handle;
       if (handle.isEmpty) {
         throw Exception('Could not identify the current member.');
       }

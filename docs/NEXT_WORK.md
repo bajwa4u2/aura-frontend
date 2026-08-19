@@ -212,3 +212,46 @@ untyped maps. Separately measured, separately ratcheted, and the last named resi
 
 Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/ch03-f116-meetings-guest-and-feed-actor-closeout.json`.
 Ratchet proof: `tool/meetings_person_ratchet_proof.mjs` (PASS both directions).
+
+## 2026-08-19 — F116/F053 promotion WITHDRAWN; one decision blocks closure
+
+The founder held the promotion because 19 measured surface sites looked inconsistent with criterion 2.
+**The hold was right and the stated reason was not.** All 19 are non-competing — 11 presentation over
+already-canonical identity, 4 institution, 3 governed, 1 detector window catch, **zero class A**.
+
+**The promotion fails because the detector understated.** Its matcher saw `map['displayName']` and could
+not see `pick(map, const ['displayName', 'name'])` — and a list *is* a private alias order. Tracing the
+19 to their producers, as the task required, found real debt that was never in the count:
+
+- **the app-shell header** — `_pickMeString` was a complete private person reader (nested-`user`
+  envelope unwrap plus its own name order), on the most globally visible person in the product. Its own
+  docstring described the F057-shaped bug it had been written to patch.
+- **the member directory** — `memberEntryFromMap`, built in an earlier chapter to stop four pickers
+  re-implementing precedence, was still a *second authority*: its own avatar aliases (`avatar`, `image`,
+  never `photoUrl`), an invented `'Member'` label, and its own `/handle` address for a person. **The
+  router only declares `/u/:handle`**, so "open profile" from the member picker pushed an address that
+  does not exist. A live navigation defect, found by asking where a person's identity comes from.
+- the profile editor's hydration, and two viewer-identity reads.
+
+**11 class-A sites converged. The gate then still read 11 files / 19 sites — unchanged.** A gate that
+cannot see the debt just removed is decoration, so the instrument was widened: alias-list detection,
+same-line receiver, enclosing type as the weakest and person-vetoed signal, and the canonical person
+model declared as authority. Proof **13/13 → 23/23** — and it caught a precedence bug in the extension
+(a person inside an institution-named class) before the baseline was frozen.
+
+**Honest measurement:** surface **19 → 29** sites / 16 files, typed-person **0 → 8** sites / 2 files.
+**Entirely instrument correction — zero new debt**, recorded separately from the 11 real migrations.
+
+**F116 and F053 remain PARTIALLY_VALIDATED.** Criteria 2, 3, 4, 6 NOT MET.
+
+**Exact residue — 18 class-A sites:** 17 in the correspondence / conversations / messages family
+(including `CorrespondenceIdentity`, a second complete person authority) and 1 actor union in
+`RoutedRecord`, which reads `handleOrSlug` with no actorType to tell it which side of the union it holds.
+
+**FOUNDER DECISION — the only thing blocking F116 criterion 2:** `MessagesHubScreen` is parked at
+`/messages/legacy-hub` and the router says plainly that the legacy hub and its routes retire after
+history migration. Converge person identity inside those retirement-pending surfaces now, or scope the
+remaining client work to surviving surfaces and let retirement discharge the rest? Converging them
+unasked would be work in territory whose disposition is already pending.
+
+Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/ch03-f116-f053-promotion-reconciliation.json`.

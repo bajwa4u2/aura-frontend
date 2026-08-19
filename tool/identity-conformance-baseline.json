@@ -17,12 +17,16 @@
   "ADHOC_MAP_EXTRACTION_IN_SURFACE"
  ],
  "totals": {
-  "files": 11,
-  "sites": 19
+  "files": 16,
+  "sites": 29
  },
  "perFile": {
+  "aura_final:lib/core/tagging/mention_scope_providers.dart": 2,
+  "aura_final:lib/features/conversations/presentation/conversations_screen.dart": 2,
+  "aura_final:lib/features/correspondence/presentation/correspondence_hub_screen.dart": 2,
+  "aura_final:lib/features/correspondence/presentation/space_screen.dart": 1,
   "aura_final:lib/features/direct_threads/presentation/direct_thread_screen.dart": 1,
-  "aura_final:lib/features/institutions/wizard/institution_onboarding_wizard.dart": 1,
+  "aura_final:lib/features/institutions/profile/institution_profile_screen.dart": 1,
   "aura_final:lib/features/invitations/presentation/invite_create_screen.dart": 1,
   "aura_final:lib/features/me/presentation/edit_profile_screen.dart": 2,
   "aura_final:lib/features/meetings/presentation/booking_confirm_screen.dart": 2,
@@ -31,14 +35,18 @@
   "aura_final:lib/features/meetings/presentation/slot_picker_screen.dart": 1,
   "aura_final:lib/features/meetings/presentation/widgets/meeting_device_check.dart": 1,
   "aura_final:lib/features/meetings/presentation/widgets/meeting_preparation_panel.dart": 2,
+  "aura_final:lib/features/messages/presentation/messages_hub_screen.dart": 3,
   "aura-backend:src/auth/auth.service.ts": 2
  },
  "typedPersonDebtVerdicts": [
   "NON_CANONICAL_PERSON_DESERIALIZATION"
  ],
  "typedPersonTotals": {
-  "files": 0,
-  "sites": 0
+  "files": 2,
+  "sites": 8
  },
- "typedPersonPerFile": {}
+ "typedPersonPerFile": {
+  "aura_final:lib/features/correspondence/data/correspondence_identity.dart": 7,
+  "aura_final:lib/features/institutions/engagement/engagement_models.dart": 1
+ }
 }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/identity/person_identity_model.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -206,7 +207,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final res = await dio.get('/users/me');
       final data = _unwrapResponseMap(res.data);
 
-      _initialDisplayName = _readString(data, const ['displayName', 'name']);
+      // F053/F116 — hydrating this form means DESERIALISING a person, and the
+      // canonical reader owns which aliases count and which envelope the
+      // payload arrived in. What stays local is everything that is not
+      // canonical person identity: title, bio, location, website, cover,
+      // first/last name, email. Note the old avatar list accepted `avatar` and
+      // never `photoUrl`, so this screen could resolve an avatar the rest of
+      // the product would not — the exact F057 shape.
+      final person = AuraPersonIdentity.fromJson(data);
+      _initialDisplayName = person.displayName;
       _initialTitle = _readString(data, const ['title']);
       _initialBio = _readString(data, const ['bio', 'headline', 'summary']);
       _initialLocation = _readString(data, const ['location', 'place']);
@@ -225,9 +234,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'site',
         'url',
       ]);
-      _initialAvatarUrl = _emptyToNull(
-        _readString(data, const ['avatarUrl', 'avatar', 'photoUrl']),
-      );
+      _initialAvatarUrl = _emptyToNull(person.avatarUrl);
       _initialCoverUrl = _emptyToNull(
         _readString(data, const ['coverUrl', 'bannerUrl']),
       );
@@ -240,7 +247,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _avatarUrl = _initialAvatarUrl;
       _coverUrl = _initialCoverUrl;
 
-      _handle = _readString(data, const ['handle', 'username']);
+      _handle = person.handle;
       _email = _readString(data, const ['email']);
       _firstName = _readString(data, const ['firstName']);
       _lastName = _readString(data, const ['lastName']);

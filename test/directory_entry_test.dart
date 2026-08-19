@@ -38,28 +38,33 @@ void main() {
       expect(entry!.id, 'Nameless Person');
     });
 
-    test('falls back all the way to the generic "Member" id/label when no identity field exists at all', () {
-      final entry = memberEntryFromMap({'bio': 'no identity fields here'});
-
-      // stableId's fallback chain (userId -> handle -> displayName) never
-      // hits an empty string because displayName itself already defaults
-      // to 'Member' -- so this never returns null, it degrades to a
-      // generic placeholder entry. Documenting the actual behavior here,
-      // not asserting it should be different.
-      expect(entry, isNotNull);
-      expect(entry!.id, 'Member');
-      expect(entry.userId, isEmpty);
+    test('an entry with NO identity field at all is dropped, not invented', () {
+      // F053/F116 — this used to degrade to a row labelled 'Member' with
+      // 'Member' as its own selection id: a picker row for nobody, named by a
+      // word the directory invented. The canonical reader answers "there is no
+      // person here", and the sibling `_candidateFromMap` on the invite screen
+      // already dropped such rows. One behaviour, one authority.
+      final entry = memberEntryFromMap(const <String, dynamic>{});
+      expect(entry, isNull);
     });
 
-    test('displayName falls back to handle, then to "Member"', () {
+    test('a handle-only person is named the way the whole product names one',
+        () {
       final withHandleOnly = memberEntryFromMap({
         'userId': 'user-1',
         'handle': '@carol',
       });
-      expect(withHandleOnly!.displayName, 'carol');
+      // The canonical order and the canonical decoration — '@carol', not the
+      // directory's own bare 'carol'. The rendered '@' the payload carried is
+      // stripped first as payload hygiene, so it is never doubled.
+      expect(withHandleOnly!.displayName, '@carol');
+      expect(withHandleOnly.handle, 'carol');
+      expect(withHandleOnly.profileRoute, '/u/carol');
 
       final withNeither = memberEntryFromMap({'userId': 'user-1'});
-      expect(withNeither!.displayName, 'Member');
+      // The one neutral word the whole product shares — not 'Member'.
+      expect(withNeither!.displayName, 'Someone');
+      expect(withNeither.profileRoute, isNull);
     });
   });
 

@@ -27,21 +27,22 @@
   ]
  },
  "totals": {
-  "rows": 88,
+  "rows": 112,
   "byVerdict": {
    "NON_CONFORMANT": 17,
-   "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 15,
+   "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 20,
    "AUTHORITY": 5,
    "CONFORMANT": 39,
+   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 12,
    "OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY": 3,
-   "CANONICAL_PERSON_DESERIALIZATION": 7,
-   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 2
+   "CANONICAL_PERSON_DESERIALIZATION": 8,
+   "NON_CANONICAL_PERSON_DESERIALIZATION": 8
   },
   "nonConformant": 17,
-  "adhocMapExtractionInSurface": 2,
+  "adhocMapExtractionInSurface": 12,
   "typedDeserializationBoundary": 0,
   "conformant": 39,
-  "frontend": 78,
+  "frontend": 102,
   "backend": 10
  },
  "sixPersonShapedExtractionSites": {
@@ -52,8 +53,8 @@
     "site": "conversations_screen",
     "declaredOwner": "C4-retired",
     "match": "/conversations_screen\\.dart$/",
-    "sitesFoundInAudit": 1,
-    "nonConformantOrAdhoc": 0,
+    "sitesFoundInAudit": 3,
+    "nonConformantOrAdhoc": 2,
     "files": [
      "lib/features/conversations/presentation/conversations_screen.dart"
     ],
@@ -64,8 +65,8 @@
     "site": "correspondence_hub",
     "declaredOwner": "C7",
     "match": "/correspondence.*hub.*\\.dart$/i",
-    "sitesFoundInAudit": 1,
-    "nonConformantOrAdhoc": 0,
+    "sitesFoundInAudit": 3,
+    "nonConformantOrAdhoc": 2,
     "files": [
      "lib/features/correspondence/presentation/correspondence_hub_screen.dart"
     ],
@@ -76,8 +77,8 @@
     "site": "correspondence space",
     "declaredOwner": "C7",
     "match": "/(space|spaces).*\\.dart$/i",
-    "sitesFoundInAudit": 1,
-    "nonConformantOrAdhoc": 0,
+    "sitesFoundInAudit": 2,
+    "nonConformantOrAdhoc": 1,
     "files": [
      "lib/features/correspondence/presentation/space_screen.dart"
     ],
@@ -139,12 +140,42 @@
   },
   {
    "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/core/institutions/institution_access_provider.dart",
+   "line": 314,
+   "evidence": "name: readStr(inst, ['name', 'displayName', 'title', 'organizationName']),",
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'name/displayName/title/organizationName' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
+  },
+  {
+   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/core/tagging/governed_tag_field.dart",
    "line": 359,
    "evidence": "AuraAvatar(",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/core/tagging/mention_scope_providers.dart",
+   "line": 46,
+   "evidence": "final handle = CorrespondenceIdentity.pickString(userMap, const [",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'handle/username' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/core/tagging/mention_scope_providers.dart",
+   "line": 82,
+   "evidence": "final name = CorrespondenceIdentity.pickString(map, const [",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'name/displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",
@@ -307,12 +338,132 @@
   },
   {
    "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/conversations/presentation/conversations_screen.dart",
+   "line": 840,
+   "evidence": "final avatarDirect = _pickString(space, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'avatarUrl/imageUrl/photoUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/conversations/presentation/conversations_screen.dart",
+   "line": 845,
+   "evidence": "final u = _pickString(m, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'avatarUrl/imageUrl/photoUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/data/correspondence_identity.dart",
+   "line": 82,
+   "evidence": "final display = pickString(entity, const ['displayName', 'fullName', 'name']);",
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName/fullName/name' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/data/correspondence_identity.dart",
+   "line": 84,
+   "evidence": "final handle = pickString(entity, const ['handle', 'username']);",
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'handle/username' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/data/correspondence_identity.dart",
+   "line": 95,
+   "evidence": "final handle = pickString(entity, const ['handle', 'username']);",
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'handle/username' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/data/correspondence_identity.dart",
+   "line": 108,
+   "evidence": "return pickString(entity, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'avatarUrl/imageUrl/photoUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/data/correspondence_identity.dart",
+   "line": 112,
+   "evidence": "final value = pickString(member, const ['displayName', 'fullName', 'name', 'username', 'handle']);",
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName/fullName/name/username/handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/data/correspondence_identity.dart",
+   "line": 361,
+   "evidence": "final explicit = pickString(thread, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'avatarUrl/imageUrl/photoUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/data/correspondence_identity.dart",
+   "line": 578,
+   "evidence": "final directAvatar = pickString(thread, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'avatarUrl/imageUrl/photoUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
+  },
+  {
+   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/correspondence/presentation/correspondence_hub_screen.dart",
    "line": 408,
    "evidence": "leading: AuraAvatar(name: title, imageUrl: avatarUrl, size: 42),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/presentation/correspondence_hub_screen.dart",
+   "line": 656,
+   "evidence": "final direct = _pickString(space, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'avatarUrl/imageUrl/photoUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/presentation/correspondence_hub_screen.dart",
+   "line": 660,
+   "evidence": "final url = _pickString(member, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'avatarUrl/imageUrl/photoUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/correspondence/presentation/space_screen.dart",
+   "line": 1687,
+   "evidence": "return _pickString(member, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'avatarUrl/imageUrl/photoUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",
@@ -345,7 +496,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/create/presentation/new_conversation_screen.dart",
-   "line": 1043,
+   "line": 1048,
    "evidence": "AuraAvatar(",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
@@ -354,7 +505,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/create/presentation/new_conversation_screen.dart",
-   "line": 1109,
+   "line": 1114,
    "evidence": "AuraAvatar(name: label, imageUrl: avatarUrl, size: 20),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
@@ -390,6 +541,16 @@
   },
   {
    "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/feed/domain/feed_item.dart",
+   "line": 812,
+   "evidence": "institutionName: isInstitution ? opt(['displayName', 'name']) : null,",
+   "identityDomain": "PERSON",
+   "verdict": "CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics."
+  },
+  {
+   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/feed/presentation/quoted_post_preview.dart",
    "line": 47,
@@ -405,6 +566,36 @@
    "evidence": "AuraAvatar(name: actorName.isNotEmpty ? actorName : event.kind, size: 32),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/institutions/domain/explore_feed_item.dart",
+   "line": 152,
+   "evidence": "institutionName: opt(inst, ['name', 'displayName']) ?? '',",
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'name/displayName' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/institutions/domain/institution.dart",
+   "line": 192,
+   "evidence": "name: readString(['name', 'displayName', 'title', 'organizationName']),",
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'name/displayName/title/organizationName' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/institutions/engagement/engagement_models.dart",
+   "line": 136,
+   "evidence": "authorName: _opt(authorRaw, ['name', 'displayName']),",
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'name/displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -437,6 +628,16 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/institutions/profile/institution_edit_profile_screen.dart",
+   "line": 222,
+   "evidence": "_nameCtrl.text = s(['name', 'displayName', 'organizationName']);",
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'name/displayName/organizationName' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/institutions/profile/institution_edit_profile_screen.dart",
    "line": 229,
    "evidence": ": (inst['avatarUrl']?.toString().trim().isNotEmpty == true",
    "identityDomain": "INSTITUTION",
@@ -456,12 +657,22 @@
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
+   "path": "lib/features/institutions/profile/institution_profile_screen.dart",
+   "line": 151,
+   "evidence": "final name = _str(['name', 'displayName', 'organizationName']);",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'name/displayName/organizationName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
    "path": "lib/features/institutions/wizard/institution_onboarding_wizard.dart",
    "line": 1252,
    "evidence": "final slug = (data['slug'] ?? data['handle'] ?? '').toString().trim();",
-   "identityDomain": "PERSON",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'handle' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
@@ -476,7 +687,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/invitations/presentation/invite_create_screen.dart",
-   "line": 747,
+   "line": 751,
    "evidence": "CircleAvatar(",
    "verdict": "NON_CONFORMANT",
    "why": "Renders a person image/initial through CircleAvatar instead of the canonical AuraAvatar."
@@ -485,7 +696,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/me/presentation/edit_profile_screen.dart",
-   "line": 729,
+   "line": 736,
    "evidence": "child: CircleAvatar(",
    "verdict": "NON_CONFORMANT",
    "why": "Renders a person image/initial through CircleAvatar instead of the canonical AuraAvatar."
@@ -494,7 +705,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/me/presentation/edit_profile_screen.dart",
-   "line": 1534,
+   "line": 1541,
    "evidence": "child: CircleAvatar(",
    "verdict": "NON_CONFORMANT",
    "why": "Renders a person image/initial through CircleAvatar instead of the canonical AuraAvatar."
@@ -674,6 +885,36 @@
    "evidence": "AuraAvatar(name: title, imageUrl: avatarUrl, size: 44),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/messages/presentation/messages_hub_screen.dart",
+   "line": 1196,
+   "evidence": "(m) => _pickString(m, const ['displayName', 'name', 'handle']),",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'displayName/name/handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/messages/presentation/messages_hub_screen.dart",
+   "line": 1220,
+   "evidence": "const ['avatarUrl', 'imageUrl', 'photoUrl'],",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'avatarUrl/imageUrl/photoUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+  },
+  {
+   "repo": "aura_final",
+   "surface": "USER_SHAPE",
+   "path": "lib/features/messages/presentation/messages_hub_screen.dart",
+   "line": 1224,
+   "evidence": "final url = _pickString(m, const ['avatarUrl', 'imageUrl', 'photoUrl']);",
+   "identityDomain": "PERSON",
+   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
+   "why": "A presentation surface reads the person field 'avatarUrl/imageUrl/photoUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",
