@@ -7,10 +7,10 @@
    {
     "unit": "CH-12 examination mechanism",
     "blocker": [
-     "G1 leg 5(B) live refusal",
-     "CH-15 D1/D3/D4"
+     "G1 leg 5(B) live refusal"
     ],
-    "note": "Two independent blockers; neither alone would release it."
+    "note": "CH-12 now has exactly ONE remaining blocker. It was two.",
+    "blockerCleared": "CH-15 D1/D3/D4 — RESOLVED by founder ruling 2026-08-18. The policy blocker is gone; CH-12's scope, verdict vocabulary and appeal route are now specifiable."
    },
    {
     "unit": "CH-05 attention authorities + DR1 retirement",
@@ -40,19 +40,14 @@
   ],
   "FOUNDER_INPUT_REQUIRED": [
    {
-    "unit": "CH-15 policy freeze",
-    "decisions": [
-     "D1 prohibited taxonomy",
-     "D2 consequence ladder",
-     "D3 appeal/false-positive route",
-     "D4 F137 scope and timing"
-    ],
-    "pack": "docs/portfolio/CH15_FOUNDER_POLICY_DECISION_PACK_2026-08-18.md"
+    "unit": "AI-report taxonomy divergence",
+    "decision": "whether AI-response reports fall inside CH-15's one-authority requirement, and if so which vocabulary survives",
+    "blocking": "NOTHING today"
    },
    {
     "unit": "F095 in-Live ownership",
-    "decision": "D5",
-    "blocking": "NOTHING today — F095 held under 'LIVE — HOLD IMPLEMENTATION FOR NOW'"
+    "status": "RESOLVED by D5",
+    "blocking": "NOTHING"
    }
   ],
   "CERTIFICATION_PREPARABLE": [
@@ -120,5 +115,11 @@
   "obligations": 308,
   "units": 451,
   "chapters": 17
+ },
+ "singleChokePoint": {
+  "statement": "After the CH-15 rulings the programme narrows to ONE choke point: deploying the backend so G1 leg 5(B) can be observed against an attributable artifact.",
+  "why": "CH-12 was blocked by two independent things — CH-15 policy and G1 leg 5(B). The policy blocker is now cleared by founder ruling. Leg 5(B) remains, and it cannot be observed because the F129 and D7 doors are not pushed (origin/main has zero occurrences of verifyClientSuppliedObject; backend is 7 commits ahead).",
+  "whatUnblocksIt": "A backend deploy through the normal authorized path. Deployment is a founder act; it was neither performed nor polled.",
+  "sideEffect": "The build-identity mechanism implemented in this pass also becomes live at that deploy, which is what makes the certification attributable at all."
  }
 }
