@@ -18,6 +18,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../updates/providers.dart';
 import '../../correspondence/data/threads_repository.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -107,7 +108,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final actor = _mapOf(item['actor']);
     final data = _mapOf(item['data']);
 
-    final actorHandle = _stringOf(actor['handle']);
+    // F053/F116 — the canonical reader, so Activity addresses a person by
+    // the same handle the notification and profile surfaces resolve.
+    final actorHandle = AuraPersonIdentity.fromJson(actor).handle;
     final targetHandle = _stringOf(data['targetHandle']);
     final handle = targetHandle.isNotEmpty ? targetHandle : actorHandle;
 
@@ -713,12 +716,9 @@ String _actorDisplayName(Map<String, dynamic> item) {
     final name = _stringOf(inst['name']);
     if (name.isNotEmpty) return name;
   }
-  final actor = _mapOf(item['actor']);
-  return _firstNonEmpty([
-    _stringOf(actor['displayName']),
-    _stringOf(actor['handle']),
-    'Someone',
-  ]);
+  // F053/F116 — one reader and one fallback order, shared with every other
+  // surface that has to name a person.
+  return AuraPersonIdentity.fromJson(item['actor']).label;
 }
 
 String _actorAvatarUrl(Map<String, dynamic> item) {
@@ -727,8 +727,7 @@ String _actorAvatarUrl(Map<String, dynamic> item) {
     final logo = _stringOf(inst['logoUrl']);
     if (logo.isNotEmpty) return logo;
   }
-  final actor = _mapOf(item['actor']);
-  return _stringOf(actor['avatarUrl']);
+  return AuraPersonIdentity.fromJson(item['actor']).avatarUrl ?? '';
 }
 
 String _firstNonEmpty(List<String> values) {

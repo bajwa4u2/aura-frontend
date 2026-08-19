@@ -15,6 +15,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// Phase-3 Inbox — actor-aware list of every direct thread the active
 /// actor participates in, sorted by last-message-at desc with unread
@@ -41,13 +42,14 @@ class InboxScreen extends ConsumerWidget {
   /// destination ([institutionContextId]) and the loaded workspace
   /// identity matches; otherwise the signed-in Person.
   ActorContext? _explicitActorContext(WidgetRef ref) {
-    final me = ref.watch(authMeDataProvider).valueOrNull;
-    final user = me?['user'];
-    final uid = user is Map ? (user['id']?.toString().trim() ?? '') : '';
-    final uname = user is Map
-        ? (user['displayName']?.toString() ?? user['handle']?.toString())
-        : null;
-    final uavatar = user is Map ? user['avatarUrl']?.toString() : null;
+    // F053/F116 — the same canonical reader the thread screen uses, so the
+    // inbox and the thread it opens cannot disagree about who the viewer is.
+    final me = AuraPersonIdentity.fromJson(
+      ref.watch(authMeDataProvider).valueOrNull,
+    );
+    final uid = me.userId;
+    final uname = me.displayName.isNotEmpty ? me.displayName : me.handle;
+    final uavatar = me.avatarUrl;
 
     final instId = (institutionContextId ?? '').trim();
     if (instId.isNotEmpty) {
@@ -259,14 +261,17 @@ class _InboxTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final other = _other();
     final isInstitution = other.type == ActorType.institution;
+    // F053/F116 — the counterpart is resolved once, through the canonical
+    // model, and named by its canonical fallback order. The old inline
+    // chain ended in the literal 'User', which is the F054 class of defect:
+    // a surface inventing a label for someone it failed to resolve.
+    final person = AuraPersonIdentity.fromJson(other.user);
     final name = isInstitution
         ? (other.institution?['name']?.toString() ?? 'Institution')
-        : (other.user?['displayName']?.toString() ??
-            other.user?['handle']?.toString() ??
-            'User');
+        : person.label;
     final logoUrl = isInstitution
         ? (other.institution?['logoUrl']?.toString() ?? '')
-        : (other.user?['avatarUrl']?.toString() ?? '');
+        : (person.avatarUrl ?? '');
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     final unread = thread.unreadCount;
     final preview = (thread.lastMessageSnippet ?? '').trim();

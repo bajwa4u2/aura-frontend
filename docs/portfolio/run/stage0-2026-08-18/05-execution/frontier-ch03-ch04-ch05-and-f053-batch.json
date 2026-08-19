@@ -1,0 +1,111 @@
+{
+  "type": "FRONTIER_DERIVATION_AND_EXECUTION_RECORD",
+  "date": "2026-08-19",
+  "part1_rc6AccountingRuling": {
+    "ruling": "NO NEW FINDING for the institution-admin route-policy hole (founder, 2026-08-19).",
+    "recordedIn": "ch02-rc6-rc9-execution-record.json under the execution-defect mechanism.",
+    "accountingUnchanged": "143 findings + 308 obligations = 451 units / 17 chapters.",
+    "stage0": "Untouched. The audit's stale '~16 unclassified routes' is preserved verbatim; current evidence (182 registered routes, 0 reachability-unclassified, 4 policy-undeclared institution routes corrected) is recorded forward."
+  },
+  "part2_frontierDerivation": {
+    "method": "Every open unit in CH-03/CH-04/CH-05 classified against the register, the execution records and current code. Chapter size was deliberately NOT the selector.",
+    "CH-03": {
+      "name": "Identity Consumption & Presentation Truth",
+      "findings": 9,
+      "classification": {
+        "A_EXECUTABLE_NOW": [
+          "F053 - canonical identity not consumed consistently (PARTIALLY_VALIDATED)",
+          "F116 - identity as a shared-consumption problem (PARTIALLY_VALIDATED)"
+        ],
+        "B_AWAITING_CERTIFICATION": [
+          "F054 video tiles say Participant",
+          "F055 group identity ordering",
+          "F056 group avatar treatment",
+          "F057 me[id] vs me[user][id] drift",
+          "F050 LIVE_CERTIFIED - terminal"
+        ],
+        "G_COVERED_BY_SHARED_CAUSE": [
+          "F052 avatar in realtime surfaces - a consumer of the same absent client identity model"
+        ],
+        "PRESERVED_CONFLICT_NOT_ADJUDICATED": [
+          "F051 avatar missing in chat (CONFLICTING_CURRENT_STATE) - founder ruling is PRESERVE BOTH READINGS; not touched"
+        ]
+      },
+      "obligations": "32 - 5 completed/superseded, 11 partially completed, 9 validation-or-gate-only, 4 founder-action-only, 3 outstanding construction."
+    },
+    "CH-04": {
+      "name": "Realtime Substrate, Devices & Shared Presentation",
+      "findings": 26,
+      "classification": {
+        "B_AWAITING_CERTIFICATION_OR_TERMINAL": "18 of 26 - 10 LIVE_CERTIFIED, 6 IMPLEMENTED_NOT_LIVE_CERTIFIED, plus F037/F060/F073 PARTIALLY_VALIDATED. This is certification debt, not construction debt.",
+        "D_FOUNDER_DECISION_REQUIRED": [
+          "F110 SFU assessment - an architecture decision about the long-term transport, explicitly not an implementation",
+          "F111 assessment scope - the same decision's boundary",
+          "F108/F109 mesh bounded / mesh is not the long-term architecture - the same question stated as findings"
+        ],
+        "E_PROTECTED_BOUNDARY": [
+          "F112 Meetings equivalent validation - Meetings is protected; F114 (Meetings protected) is LIVE_CERTIFIED and must stay so"
+        ],
+        "PRESERVED_CONFLICT_NOT_ADJUDICATED": ["F043 timer before establishment"]
+      },
+      "verdict": "NO executable construction batch. What looks like the largest chapter is almost entirely certification debt plus one founder architecture decision."
+    },
+    "CH-05": {
+      "name": "Attention, Notification Preference & Personal Controls",
+      "findings": 6,
+      "classification": {
+        "C_CONSTRUCTION_BLOCKED": "All six (F030-F035) carry the register state C4_OWNED_OPEN - they are owned by frontend chapter C4, which is a separate authorized-but-unstarted chapter. Building them here would execute another chapter's work under a CH-05 label.",
+        "evidence": "The C4 DR1 record already traces the legacy 'started a call' banner to the NotificationBridge floating SnackBar and states C4 retires it rather than patching it cosmetically."
+      },
+      "verdict": "NOT executable in this chapter. Blocked by chapter ownership, which is a real blocker and not certification debt."
+    },
+    "selectedBatch": {
+      "unit": "CH-03 F053 + F116",
+      "why": [
+        "SECURITY/AUTHORITY-CORRECTNESS-ADJACENT and TRUTH-critical: it is about whether the product names the right human being.",
+        "SHARED ROOT CAUSE affecting multiple findings - F052, F054 and F057 are consumers of the same absence.",
+        "The only candidate with genuine construction debt that is executable with no founder decision and no protected boundary.",
+        "It already has a MEASURING INSTRUMENT: the identity conformance gate, which ratchets in both directions."
+      ],
+      "notChosen": "CH-04, despite having 26 findings - the largest chapter by count is the smallest by executable construction."
+    }
+  },
+  "part3_implementation": {
+    "rootCauseNamedByTheAuditItself": "\"it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT.\" 103 ad-hoc surface extractions and 75 private typed boundaries are symptoms of ONE absence.",
+    "built": "lib/core/identity/person_identity_model.dart - AuraPersonIdentity, the client counterpart to the backend's PERSON_IDENTITY_SELECT. Field for field: userId, displayName, handle, avatarUrl, accountStatus. It adds nothing the projection does not carry and renames nothing - a client shape that disagreed with the projection would simply be the 104th private person model.",
+    "tolerantByDesign": "F057's defect was two hand-written readers of one payload disagreeing about where the id lived (me['id'] vs me['user']['id']), so the realtime surface resolved an EMPTY id and host detection said 'not host'. One shared reader accepts the person flat or nested under any envelope Aura actually uses, and accepts the field aliases the API actually emits. It cannot disagree with itself.",
+    "honestFallback": "label is name, then @handle, then 'Someone' - never 'Participant' (F054's exact defect) and never 'User'. A payload carrying a face but NO identity resolves to unknown rather than rendering an avatar with nobody behind it.",
+    "surfacesMigrated": [
+      "direct_thread_screen.dart - 9 sites, including the /auth/me nesting that F057 was issued for",
+      "inbox_screen.dart - 5 sites; its counterpart label used to end in the literal 'User'",
+      "notifications_screen.dart - 6 sites, including the profile route it composed for itself",
+      "activity_screen.dart - 4 sites"
+    ],
+    "measuredEffect": {
+      "before": "66 files / 202 sites",
+      "after": "63 files / 180 sites",
+      "cleared": "22 sites, 3 files entirely",
+      "gateBehaviour": "The gate FAILED on the reduction until the baseline was re-frozen - by design, so the register can never overstate remaining identity debt. Re-frozen at 63/180."
+    },
+    "institutionIdentityUntouched": "Institution identity keeps its own authority everywhere. Only the PERSON half was migrated; mixing the two readers is how a message came to be labelled differently from its own thread header."
+  },
+  "findingStates": {
+    "F053": "PARTIALLY_VALIDATED - unchanged. The shared cause now HAS its authority and 22 of the enumerated sites are cleared, but PB-05 forbids closing it on a partial migration and the remaining 180 sites are real.",
+    "F116": "PARTIALLY_VALIDATED - unchanged, same reason.",
+    "F052/F054/F057": "Unchanged. They are consumers of this authority and will be discharged by migration plus certification, not by its existence.",
+    "F051": "UNTOUCHED - preserved conflict, founder ruling is PRESERVE BOTH READINGS.",
+    "discipline": "No finding advanced. Progress is recorded as a MEASURED debt reduction with a ratchet behind it, which is the only honest claim available."
+  },
+  "verification": {
+    "newAssertions": 17,
+    "frontendSuite": "786 PASS (769 before)",
+    "identityConformanceGate": "PASS at the NEW baseline 63 files / 180 sites",
+    "protectedSuites": "meetings + navigation + product: 146 PASS",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "analyze": "clean",
+    "backend": "untouched by this batch"
+  },
+  "founderDecisionsRequired": [
+    "NONE for the work done. Recorded for the future, not asked now: CH-04's F108/F109/F110/F111 are one architecture decision (mesh vs SFU) wearing four finding numbers, and CH-05 is blocked behind frontend chapter C4's ownership."
+  ]
+}

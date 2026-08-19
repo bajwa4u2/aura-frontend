@@ -16,6 +16,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../updates/app_notification.dart';
 import '../../updates/providers.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// Phase-3 actor-aware notifications list. Each row carries enough data to
 /// route on tap (post detail, institution-post detail, direct thread,
@@ -119,8 +120,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         final slug = n.actorInstitution?['slug']?.toString() ?? '';
         if (slug.isNotEmpty) return '/institutions/$slug';
       } else {
-        final handle = n.actor?['handle']?.toString() ?? '';
-        if (handle.isNotEmpty) return '/u/$handle';
+        // F053/F116 — the canonical model owns both the reading and the
+        // route, so a notification cannot address someone by a path this
+        // screen composed for itself.
+        final route = AuraPersonIdentity.fromJson(n.actor).profileRoute;
+        if (route != null) return route;
       }
     }
     return null;
@@ -289,11 +293,12 @@ class _Tile extends StatelessWidget {
   AppNotification get notification => group.representative;
 
   String _label() {
+    // F053/F116 — one reader, one fallback order. The chain this replaces
+    // ended in a literal 'Someone' composed here; the canonical model
+    // supplies the same honest fallback everywhere instead.
     final actorName = notification.isInstitutionVoice
         ? (notification.actorInstitution?['name']?.toString() ?? 'Institution')
-        : (notification.actor?['displayName']?.toString() ??
-            notification.actor?['handle']?.toString() ??
-            'Someone');
+        : AuraPersonIdentity.fromJson(notification.actor).label;
     // Rollup label first — overrides per-type wording when multiple.
     if (group.isGroup) {
       final n = group.items.length;
@@ -365,18 +370,17 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // F053/F116 — the person half resolves once; the institution half keeps
+    // its own authority.
+    final person = AuraPersonIdentity.fromJson(notification.actor);
     final imageUrl = notification.isInstitutionVoice
         ? (notification.actorInstitution?['logoUrl']?.toString() ?? '')
-        : (notification.actor?['avatarUrl']?.toString() ?? '');
+        : (person.avatarUrl ?? '');
     final fallback = notification.isInstitutionVoice
         ? ((notification.actorInstitution?['name']?.toString() ?? 'I')
             .substring(0, 1)
             .toUpperCase())
-        : ((notification.actor?['displayName']?.toString() ??
-                notification.actor?['handle']?.toString() ??
-                'U')
-            .substring(0, 1)
-            .toUpperCase());
+        : person.label.substring(0, 1).toUpperCase();
     final snippet = notification.payload['snippet']?.toString() ??
         // Meeting rows carry the meeting title as their supporting line.
         (notification.type.toUpperCase().startsWith('MEETING_')

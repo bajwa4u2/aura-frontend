@@ -27,20 +27,20 @@
   ]
  },
  "totals": {
-  "rows": 335,
+  "rows": 313,
   "byVerdict": {
    "NON_CONFORMANT": 99,
    "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 12,
    "AUTHORITY": 5,
    "CONFORMANT": 41,
-   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 103,
+   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 81,
    "TYPED_DESERIALIZATION_BOUNDARY": 75
   },
   "nonConformant": 99,
-  "adhocMapExtractionInSurface": 103,
+  "adhocMapExtractionInSurface": 81,
   "typedDeserializationBoundary": 75,
   "conformant": 41,
-  "frontend": 235,
+  "frontend": 213,
   "backend": 100
  },
  "sixPersonShapedExtractionSites": {
@@ -378,42 +378,6 @@
    "evidence": "const AuraAvatar({",
    "verdict": "AUTHORITY",
    "why": "Definition site of the canonical avatar."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/activity/presentation/activity_screen.dart",
-   "line": 110,
-   "evidence": "final actorHandle = _stringOf(actor['handle']);",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/activity/presentation/activity_screen.dart",
-   "line": 718,
-   "evidence": "_stringOf(actor['displayName']),",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/activity/presentation/activity_screen.dart",
-   "line": 719,
-   "evidence": "_stringOf(actor['handle']),",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/activity/presentation/activity_screen.dart",
-   "line": 731,
-   "evidence": "return _stringOf(actor['avatarUrl']);",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",
@@ -806,25 +770,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 156,
-   "evidence": "? (user['displayName']?.toString() ?? user['handle']?.toString())",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 158,
-   "evidence": "final uavatar = user is Map ? user['avatarUrl']?.toString() : null;",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 519,
+   "line": 524,
    "evidence": "final name = (inst?['name'] ?? inst?['displayName'] ?? '')",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -833,100 +779,10 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 528,
-   "evidence": "final display = (user?['displayName'] ?? user?['name'] ?? '')",
+   "line": 640,
+   "evidence": "? ((actorMap?['name'] ?? actorMap?['displayName'] ?? '')",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 531,
-   "evidence": "final handle = (user?['handle'] ?? '').toString().trim();",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 634,
-   "evidence": "actorMap?['displayName']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 635,
-   "evidence": "actorMap?['handle']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 638,
-   "evidence": "? (message.senderUser?['handle']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
-   "line": 639,
-   "evidence": "message.senderUser?['displayName']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/inbox_screen.dart",
-   "line": 48,
-   "evidence": "? (user['displayName']?.toString() ?? user['handle']?.toString())",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/inbox_screen.dart",
-   "line": 50,
-   "evidence": "final uavatar = user is Map ? user['avatarUrl']?.toString() : null;",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/inbox_screen.dart",
-   "line": 264,
-   "evidence": ": (other.user?['displayName']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/inbox_screen.dart",
-   "line": 265,
-   "evidence": "other.user?['handle']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/direct_threads/presentation/inbox_screen.dart",
-   "line": 269,
-   "evidence": ": (other.user?['avatarUrl']?.toString() ?? '');",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",
@@ -1683,60 +1539,6 @@
    "evidence": "AuraAvatar(name: title, imageUrl: avatarUrl, size: 44),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/notifications/presentation/notifications_screen.dart",
-   "line": 122,
-   "evidence": "final handle = n.actor?['handle']?.toString() ?? '';",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/notifications/presentation/notifications_screen.dart",
-   "line": 294,
-   "evidence": ": (notification.actor?['displayName']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/notifications/presentation/notifications_screen.dart",
-   "line": 295,
-   "evidence": "notification.actor?['handle']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/notifications/presentation/notifications_screen.dart",
-   "line": 370,
-   "evidence": ": (notification.actor?['avatarUrl']?.toString() ?? '');",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/notifications/presentation/notifications_screen.dart",
-   "line": 375,
-   "evidence": ": ((notification.actor?['displayName']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/notifications/presentation/notifications_screen.dart",
-   "line": 376,
-   "evidence": "notification.actor?['handle']?.toString() ??",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
   {
    "repo": "aura_final",

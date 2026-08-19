@@ -32,6 +32,7 @@ import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../public/widgets/mention_text.dart';
 import '../../translation/translation_repository.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// Phase-2 direct-message thread surface — works for both
 /// `/direct/:threadId` (member shell) and
@@ -149,13 +150,17 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
   /// loaded workspace identity matches. The sender-choice EXPERIENCE
   /// remains C7-owned (see actor_context.dart retirement note).
   ActorContext? _explicitActorContext() {
-    final me = ref.watch(authMeDataProvider).valueOrNull;
-    final user = me?['user'];
-    final uid = user is Map ? (user['id']?.toString().trim() ?? '') : '';
-    final uname = user is Map
-        ? (user['displayName']?.toString() ?? user['handle']?.toString())
-        : null;
-    final uavatar = user is Map ? user['avatarUrl']?.toString() : null;
+    // F053/F116 — ONE reader. This is the exact site F057 was issued for:
+    // `/auth/me` nests the person under `user`, and every surface that
+    // unpacked it by hand disagreed with the next one about where the id
+    // lived. The canonical model resolves the person whether the payload
+    // nests them or not.
+    final me = AuraPersonIdentity.fromJson(
+      ref.watch(authMeDataProvider).valueOrNull,
+    );
+    final uid = me.userId;
+    final uname = me.displayName.isNotEmpty ? me.displayName : me.handle;
+    final uavatar = me.avatarUrl;
 
     final instId = (widget.institutionContextId ?? '').trim();
     if (instId.isNotEmpty) {
@@ -524,13 +529,11 @@ class _ThreadHeader extends StatelessWidget {
         if (slug.isNotEmpty) return '/$slug';
         return 'Institution';
       }
-      final user = p.user;
-      final display = (user?['displayName'] ?? user?['name'] ?? '')
-          .toString()
-          .trim();
-      final handle = (user?['handle'] ?? '').toString().trim();
-      if (display.isNotEmpty) return display;
-      if (handle.isNotEmpty) return '@$handle';
+      // F053/F116 — the canonical reader and its canonical fallback order,
+      // so this thread cannot name someone differently from the inbox row
+      // that opened it.
+      final person = AuraPersonIdentity.fromJson(p.user);
+      if (person.isNotEmpty) return person.label;
       return 'Direct message';
     }
     return 'Direct thread';
@@ -630,14 +633,16 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
     final actorMap = isInstitution
         ? message.actorInstitution
         : message.senderUser;
-    final actorName = actorMap?['name']?.toString() ??
-        actorMap?['displayName']?.toString() ??
-        actorMap?['handle']?.toString() ??
-        '';
+    // F053/F116 — institution identity keeps its own authority; the PERSON
+    // half is read canonically. Mixing the two readers here is how a message
+    // came to be labelled differently from its own thread header.
+    final actorName = isInstitution
+        ? ((actorMap?['name'] ?? actorMap?['displayName'] ?? '')
+            .toString()
+            .trim())
+        : AuraPersonIdentity.fromJson(actorMap).label;
     final speakerName = isInstitution
-        ? (message.senderUser?['handle']?.toString() ??
-            message.senderUser?['displayName']?.toString() ??
-            '')
+        ? AuraPersonIdentity.fromJson(message.senderUser).label
         : null;
 
     final align = _mine ? Alignment.centerRight : Alignment.centerLeft;

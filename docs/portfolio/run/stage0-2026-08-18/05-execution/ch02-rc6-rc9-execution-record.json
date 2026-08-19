@@ -76,6 +76,24 @@
     "ch13": "Not reopened. F135 and F017 untouched."
   },
   "founderDecisionsRequired": [
-    "NONE for execution. One OPTIONAL accounting question is surfaced, not decided: whether the institution-admin route-policy hole should be carried as its own canonical finding rather than living only in this execution record."
-  ]
+    "NONE - the one open accounting question was ruled: no new finding."
+  ],
+  "founderAccountingRuling_2026_08_19": {
+    "ruling": "NO NEW FINDING for the institution-admin route-policy hole.",
+    "reason": "It was a concrete manifestation of the already-authorized RC6 shared cause (route-policy classification drifted from the actual registered route graph): discovered during RC6 implementation, inside RC6's ownership, repaired in the same batch, and mechanically prevented from recurring by the RC6 anti-drift gate. After the repair it is not independent unresolved product debt.",
+    "disposition": "Recorded under the EXECUTION-DEFECT mechanism: exact evidence preserved, repair recorded, anti-drift proof preserved, NO CHANGE to canonical accounting.",
+    "accountingUnchanged": "143 findings + 308 obligations = 451 units across 17 chapters.",
+    "stage0": "Untouched. The original audit is preserved verbatim, including its stale '~16 unclassified routes' figure; the current evidence is recorded FORWARD, not by rewriting it."
+  },
+  "currentEvidenceVsStaleAudit": {
+    "auditFigure": "~16 unclassified routes (docs/2026-08-17-refresh-continuity-shared-causes.md, RC6)",
+    "preservedAs": "HISTORICAL. Not edited.",
+    "currentEvidence": {
+      "registeredRoutes": 182,
+      "institutionRoutes": 53,
+      "reachabilityUnclassified": 0,
+      "policyUndeclaredInstitutionRoutesFound": 4,
+      "why": "F069 (founder ruling, same day as the audit) had already closed the reachability gap; the audit's list was stale before this pass reached it."
+    }
+  }
 }

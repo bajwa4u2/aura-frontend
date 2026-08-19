@@ -17,8 +17,8 @@
   "ADHOC_MAP_EXTRACTION_IN_SURFACE"
  ],
  "totals": {
-  "files": 66,
-  "sites": 202
+  "files": 63,
+  "sites": 180
  },
  "perFile": {
   "aura_final:lib/app/shell/member_shell.dart": 4,
@@ -26,14 +26,12 @@
   "aura_final:lib/core/notifications/notification_presentation.dart": 2,
   "aura_final:lib/core/tagging/mention_scope_providers.dart": 4,
   "aura_final:lib/core/tagging/tag_suggest_service.dart": 4,
-  "aura_final:lib/features/activity/presentation/activity_screen.dart": 4,
   "aura_final:lib/features/announcements/presentation/announcement_editor_screen.dart": 3,
   "aura_final:lib/features/conversation/presentation/add_people_sheet.dart": 2,
   "aura_final:lib/features/conversation/presentation/new_conversation_picker.dart": 3,
   "aura_final:lib/features/correspondence/presentation/correspondence_hub_screen.dart": 1,
   "aura_final:lib/features/correspondence/presentation/space_screen.dart": 1,
-  "aura_final:lib/features/direct_threads/presentation/direct_thread_screen.dart": 9,
-  "aura_final:lib/features/direct_threads/presentation/inbox_screen.dart": 5,
+  "aura_final:lib/features/direct_threads/presentation/direct_thread_screen.dart": 2,
   "aura_final:lib/features/discover/presentation/people_discovery_screen.dart": 2,
   "aura_final:lib/features/institutions/activity/institution_activity_screen.dart": 5,
   "aura_final:lib/features/institutions/presentation/institution_invites_screen.dart": 3,
@@ -52,7 +50,6 @@
   "aura_final:lib/features/meetings/presentation/slot_picker_screen.dart": 1,
   "aura_final:lib/features/meetings/presentation/widgets/meeting_device_check.dart": 1,
   "aura_final:lib/features/meetings/presentation/widgets/meeting_preparation_panel.dart": 2,
-  "aura_final:lib/features/notifications/presentation/notifications_screen.dart": 6,
   "aura_final:lib/features/posts/presentation/widgets/post_card.dart": 1,
   "aura_final:lib/features/profile/presentation/author_profile_screen.dart": 1,
   "aura_final:lib/features/profile/presentation/followers_screen.dart": 1,
