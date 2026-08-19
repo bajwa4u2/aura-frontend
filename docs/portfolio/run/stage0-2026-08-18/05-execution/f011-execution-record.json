@@ -1,0 +1,46 @@
+{
+ "type": "EXECUTION_RECORD",
+ "unit": "F011 — Attachments (attachment presentation reconstruction)",
+ "chapter": "CH-13 Composition, Intake & Rich Presentation",
+ "date": "2026-08-18",
+ "priorState": "PARTIALLY_VALIDATED — 'Attachment pills render live in thread, but the send/open/download journey per attachment type has not been exercised.'",
+ "newState": "IMPLEMENTED_AWAITING_CERTIFICATION (execution layer; Stage-0 not promoted)",
+ "freshLiveEvidence": "Founder live observation on attributable artifact 36036643: generic Attachment pills, document identity not surfaced, attachments not openable from the visible object, generic message actions substituting for attachment actions.",
+ "theDefect": "Every attachment that was not an image, voice note or video rendered as _fileChip('Attachment') — a grey pill with a paperclip, the literal word 'Attachment', and nothing else: no file name, no type, no size, no tap target. A PDF, a spreadsheet, a deck and a zip were indistinguishable from one another AND from the failure state, which used the same chip. Images rendered but had no open action.",
+ "rootCauseOfTheNamelessness": "The backend conversation projection selected only { id, type, mimeType }. The client could not show a file name because it was never sent one. CH-11 had already resolved the media truth from the bytes; it simply never reached the surface.",
+ "implementation": {
+  "backend": "src/conversations/conversations.service.ts — the media projection now also selects fileName and fileSizeBytes and carries them through kindOf. Additive; no schema change, no migration.",
+  "clientModel": "MessageMediaRef gains fileName and fileSizeBytes.",
+  "newWidget": "lib/core/media/aura_attachment_card.dart — AttachmentPresentationKind (10 kinds), attachmentKindFrom() resolving from the RESOLVED mime with the coarse canonical kind only as fallback, humanFileSize(), and AuraAttachmentCard rendering icon + file name + kind label + size + kind-appropriate action.",
+  "newHelper": "lib/core/media/aura_attachment_open.dart — one place that hands a non-renderable file to the platform, with a visible failure message instead of a silent no-op.",
+  "conversationRenderer": "Images now open in the canonical AuraMediaViewer on tap (the 'seen but cannot be opened' observation). Audio/video keep playback. Everything else renders the card with its real identity and action. The unavailable state keeps the file's identity instead of degrading to the word 'Attachment'."
+ },
+ "honestyRules": [
+  "An archive offers Download, not Open — nothing in-app can open a zip and offering to would be a false offer.",
+  "An unrecognised type is labelled 'File', which states that the kind is unrecognised. 'Attachment' stated nothing at all.",
+  "Size is omitted when unknown rather than printed as 0 B.",
+  "No action is rendered when the file cannot be opened — a button that does nothing is worse than no button.",
+  "The unavailable state keeps the file name, so a person still knows what is missing.",
+  "No document preview or thumbnail is invented — rendering a preview the client cannot verify would be the same dishonesty in a nicer shape."
+ ],
+ "boundaryDiscipline": {
+  "ch11NotReopened": "CH-11 media truth is CONSUMED, not re-decided. attachmentKindFrom reads the resolved mime; it never re-classifies bytes.",
+  "unrelatedSurfaces": "Only the Conversation attachment renderer was changed. Correspondence, posts, announcements and article composers were not touched.",
+  "meetings": "Untouched. 137 frontend gate/Meetings tests and 120 backend meeting/conversation tests pass.",
+  "noSchemaChange": true,
+  "noMigration": true,
+  "noProductionData": true
+ },
+ "tests": "test/media/aura_attachment_card_test.dart — 13 assertions covering kind resolution across every permitted document family, mime-wins-over-coarse-kind, honest action labels, size formatting and omission, real identity rendering, tappability, and the two failure presentations.",
+ "regression": {
+  "frontend": "625 passed, 1 skipped",
+  "backend": "200 suites / 2504 tests",
+  "gatesAndMeetings": "137 passed",
+  "backendMeetingConversation": "120 passed"
+ },
+ "notClaimed": [
+  "F011 is NOT closed. Its canonical remainder is the send/open/download journey EXERCISED per type, which is live evidence.",
+  "Stage-0 state not promoted.",
+  "No live certification claimed."
+ ]
+}

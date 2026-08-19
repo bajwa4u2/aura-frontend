@@ -162,6 +162,10 @@ class ConversationMessage {
                 mediaId: _s(m['mediaId']),
                 kind: _ns(m['kind']),
                 mimeType: _ns(m['mimeType']),
+                fileName: _ns(m['fileName']),
+                fileSizeBytes: m['fileSizeBytes'] is num
+                    ? (m['fileSizeBytes'] as num).toInt()
+                    : null,
               ))
           .toList(),
       replyTo: json['replyTo'] is Map<String, dynamic>
@@ -250,10 +254,19 @@ class MessageMediaRef {
     required this.mediaId,
     required this.kind,
     required this.mimeType,
+    this.fileName,
+    this.fileSizeBytes,
   });
   final String mediaId;
-  final String? kind; // IMAGE | AUDIO | VIDEO | DOCUMENT | null
+  final String? kind; // IMAGE | AUDIO | VIDEO | OTHER | null
   final String? mimeType;
+
+  /// F011 — a file's own name is its identity. Without it every document
+  /// rendered as the bare word "Attachment".
+  final String? fileName;
+
+  /// F011 — size is the other fact a person needs before opening something.
+  final int? fileSizeBytes;
 
   bool get isImage =>
       (kind ?? '').toUpperCase() == 'IMAGE' ||

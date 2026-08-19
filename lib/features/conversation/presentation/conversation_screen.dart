@@ -15,6 +15,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/media/aura_attachment_card.dart';
+import '../../../core/media/aura_media_viewer.dart';
+import '../../../core/media/aura_attachment_open.dart';
 import '../../../core/compliance/report_content_sheet.dart';
 import '../../../core/compliance/report_repository.dart';
 import '../../../core/media/aura_attachment_image.dart';
@@ -1320,48 +1323,94 @@ class _ConversationAttachment extends ConsumerWidget {
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2))),
       ),
-      error: (e, _) => _fileChip('Attachment unavailable'),
+      error: (e, _) => _unavailable(),
       data: (url) {
-        if (url == null) return _fileChip('Attachment unavailable');
-        if (media.isImage) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AuraAttachmentImage(
-              url: url,
-              attachmentId: media.mediaId,
-              width: 260,
-              fit: BoxFit.cover,
-              errorWidget: (_) => _fileChip('Attachment'),
+        if (url == null) return _unavailable();
+
+        // F011 — the presentation kind comes from the RESOLVED mime, which
+        // content truth has already corrected against the bytes. The coarse
+        // canonical kind cannot tell a PDF from a zip (both are OTHER), which
+        // is why every document used to collapse into one nameless pill.
+        final kind = attachmentKindFrom(
+          mimeType: media.mimeType,
+          canonicalKind: media.kind,
+        );
+
+        if (kind == AttachmentPresentationKind.image) {
+          // F011 — an image was renderable but not openable. It now opens in
+          // the canonical viewer, which is what "seen but cannot be opened"
+          // meant in the founder observation.
+          return Semantics(
+            button: true,
+            label: media.fileName?.trim().isNotEmpty == true
+                ? 'Open image ${media.fileName}'
+                : 'Open image',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => showAuraMediaViewer(
+                context,
+                items: [
+                  AuraViewerItem(
+                    originalUrl: url,
+                    mediaId: media.mediaId,
+                    isPublic: false,
+                    caption: media.fileName,
+                    downloadContext: 'conversation-attachment',
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: AuraAttachmentImage(
+                  url: url,
+                  attachmentId: media.mediaId,
+                  width: 260,
+                  fit: BoxFit.cover,
+                  // Even a failed image keeps its identity rather than
+                  // degrading to the word "Attachment".
+                  errorWidget: (_) => _card(kind, null),
+                ),
+              ),
             ),
           );
         }
-        if (media.isAudio || media.isVideo) {
+
+        if (kind == AttachmentPresentationKind.audio ||
+            kind == AttachmentPresentationKind.video) {
           return _MediaPlayback(
-              url: url, isVideo: media.isVideo, mediaId: media.mediaId);
+              url: url,
+              isVideo: kind == AttachmentPresentationKind.video,
+              mediaId: media.mediaId);
         }
-        return _fileChip('Attachment');
+
+        // Everything else — PDF, document, spreadsheet, presentation,
+        // archive, text, unrecognised — is presented with its real identity
+        // and the action appropriate to its kind.
+        return _card(kind, () => openAuraAttachment(context, url: url));
       },
     );
   }
 
-  Widget _fileChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s10, vertical: AuraSpace.s8),
-      decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        borderRadius: BorderRadius.circular(10),
+  Widget _card(AttachmentPresentationKind kind, VoidCallback? onOpen) {
+    return AuraAttachmentCard(
+      kind: kind,
+      fileName: media.fileName,
+      sizeBytes: media.fileSizeBytes,
+      onOpen: onOpen,
+    );
+  }
+
+  Widget _unavailable() {
+    // Honest: this states that the attachment cannot be reached, and offers
+    // no action that would fail. It keeps the file's identity where known.
+    return AuraAttachmentCard(
+      kind: attachmentKindFrom(
+        mimeType: media.mimeType,
+        canonicalKind: media.kind,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.insert_drive_file_outlined,
-              size: 16, color: AuraSurface.muted),
-          const SizedBox(width: AuraSpace.s6),
-          Text(label,
-              style: AuraText.micro.copyWith(color: AuraSurface.muted)),
-        ],
-      ),
+      fileName: media.fileName,
+      sizeBytes: media.fileSizeBytes,
+      unavailableReason: 'Unavailable',
     );
   }
 }
