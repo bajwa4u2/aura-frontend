@@ -10,6 +10,8 @@ import 'app/route_targets.dart';
 import 'core/auth/admin_access_provider.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
+import 'core/product/product_state.dart';
+import 'core/product/product_state_view.dart';
 import 'core/auth/session_providers.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
@@ -2094,18 +2096,87 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _RouterBootScreen extends StatelessWidget {
+/// F068 — `/_boot` MUST NOT BE A PERMANENT SPINNER (root cause RC5).
+///
+/// `/_boot` is the destination-resolution decision point: the router parks a
+/// cold load here, holds the intended destination in `?redirect=`, and waits
+/// for `sessionBootstrapProvider` to settle. While it is settling the router
+/// deliberately returns null for this path, so nothing moves the person off it.
+///
+/// That is correct while bootstrap is PROGRESSING and wrong the moment it is
+/// not. If the bootstrap request hangs — a stalled network, an unreachable
+/// API, a provider that never completes — the person sits on a bare spinner
+/// with no explanation, no recovery and no way back. The destination is not
+/// lost, but it is unreachable, which for the person is the same thing.
+///
+/// WHY THIS IS NOT FIXED BY REDIRECTING AFTER A TIMEOUT. A silent redirect
+/// would have to decide what the person's authentication state is, and at this
+/// exact moment it is genuinely UNKNOWN. F065's founder-frozen doctrine is
+/// "AUTHENTICATION UNKNOWN/RESTORING IS NOT UNAUTHENTICATED" — resolving a
+/// still-restoring session to signed-out is the defect F065 exists to prevent,
+/// and doing it here would also discard the destination the boot route is
+/// holding. So the wait is BOUNDED and made HONEST rather than being resolved
+/// by a guess.
+///
+/// After the deadline the surface states what is true — restoring did not
+/// finish — and offers recovery. Retrying re-runs the bootstrap; the
+/// `?redirect=` destination is untouched throughout, so a successful retry
+/// still lands where the person was going.
+class _RouterBootScreen extends ConsumerStatefulWidget {
   const _RouterBootScreen();
 
   @override
+  ConsumerState<_RouterBootScreen> createState() => _RouterBootScreenState();
+}
+
+class _RouterBootScreenState extends ConsumerState<_RouterBootScreen> {
+  /// Long enough that a slow-but-working cold load is never interrupted,
+  /// short enough that a hang does not become an indefinite spinner.
+  static const Duration _deadline = Duration(seconds: 12);
+
+  Timer? _timer;
+  bool _overdue = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_deadline, () {
+      if (mounted) setState(() => _overdue = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _retry() {
+    setState(() => _overdue = false);
+    _timer?.cancel();
+    _timer = Timer(_deadline, () {
+      if (mounted) setState(() => _overdue = true);
+    });
+    // Re-run the bootstrap. The router is listening, so a successful retry
+    // resolves the boot path and consumes the preserved destination.
+    ref.invalidate(sessionBootstrapProvider);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: SizedBox(
-          width: 28,
-          height: 28,
-          child: CircularProgressIndicator(strokeWidth: 2.4),
-        ),
+    if (!_overdue) {
+      return const Scaffold(
+        body: AuraProductState(state: ProductState.loading),
+      );
+    }
+    return Scaffold(
+      body: AuraProductState(
+        state: ProductState.unavailable,
+        headline: 'Still restoring your session',
+        detail:
+            'This is taking longer than expected. Your place has been kept — '
+            'try again to pick up where you left off.',
+        onRecover: _retry,
       ),
     );
   }

@@ -1,0 +1,37 @@
+{
+ "type": "EXECUTION_RECORD",
+ "unit": "F068 — /_boot permanent spinner",
+ "chapter": "CH-02",
+ "rootCause": "RC5",
+ "date": "2026-08-18",
+ "authorization": "Standing execution authority. Tested against the eight readiness dimensions: construction READY (CH-02 owns /_boot outright), dependency READY (F065's live proof passed, discharging the keystone ordering constraint over its seven dependents), founder decision NONE, protected boundary NONE (no Meetings, no realtime, no identity, no composer), migration NOT_APPLICABLE, validation V1 - validatable by the agent alone, certification local, release NOT_EARNABLE_HERE.",
+ "whyThisUnitAndNotItsSiblings": {
+  "F068": "Chosen. /_boot is CH-02's own boot route, named in the S3 contract, owned by no other chapter, crossing no boundary.",
+  "F063": "NOT chosen — compose systems continuity is composition territory, adjacent to the RC-C5 frozen scope.",
+  "F070": "NOT chosen — draft identity; DRAFTS AND DRAFT DATA sit in RC-C5's preserve list.",
+  "F061_F062": "NOT chosen — profile edit surfaces are CH-03 identity territory.",
+  "F066": "NOT chosen this pass — institution routes, where the protected Meetings institution-context routes live. Executable in principle; it needs its own boundary analysis first.",
+  "F067": "NOT chosen this pass — eight call sites spread across features owned by other chapters.",
+  "F059": "NOT chosen this pass — Conversation surface is CH-06 territory even though the destination is CH-02's."
+ },
+ "theDefect": "The router deliberately returns null for /_boot while bootstrap settles, so nothing moves the person off it. That is correct while bootstrap is PROGRESSING and wrong the moment it is not. On a hung bootstrap the person sat on a bare spinner with no explanation, no recovery and no way back. The destination was not lost, but it was unreachable — which for the person is the same thing.",
+ "theFix": "A BOUNDED, HONEST wait. A 12-second deadline; before it, the canonical AuraProductState loading state; after it, an honest recoverable state that says restoring did not finish and offers a retry which re-runs sessionBootstrapProvider.",
+ "whyNotATimeoutRedirect": "A redirect would have to decide the person's authentication state at the exact moment it is genuinely UNKNOWN. F065's founder-frozen doctrine is 'AUTHENTICATION UNKNOWN/RESTORING IS NOT UNAUTHENTICATED' — resolving a still-restoring session to signed-out is the defect F065 exists to prevent. It would also discard the destination the boot route is holding. The wait is bounded and made honest rather than resolved by a guess.",
+ "contractPreserved": [
+  "The router still parks cold loads on /_boot while bootstrapping — only the duration and the honesty changed, not the location.",
+  "The ?redirect= destination is untouched throughout, so a successful retry still lands where the person was going.",
+  "The boot screen performs no navigation and reads no auth state — asserted by gate."
+ ],
+ "gate": "test/navigation/ch02_f068_boot_deadline_test.dart — 7 assertions across three properties: the wait is bounded, it ends honestly rather than by guessing, and the destination contract is untouched.",
+ "stateHandling": {
+  "stage0Promoted": false,
+  "newState": "IMPLEMENTED_NOT_LIVE_CERTIFIED (execution layer)",
+  "note": "A live proof would require observing a hung bootstrap on production, which is not producible on demand. Recorded as owed rather than claimed."
+ },
+ "regression": {
+  "frontendSuite": "612 passed, 1 skipped",
+  "gatesAndMeetings": "137 passed",
+  "c0AntiDriftRatchet": "green — the AuraProductState usage is compliant with the state authority",
+  "meetings": "unchanged, untouched"
+ }
+}

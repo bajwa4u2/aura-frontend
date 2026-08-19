@@ -1,0 +1,53 @@
+{
+ "type": "CH02_BOUNDED_KEYSTONE_VERSUS_CHAPTER_CLOSURE",
+ "date": "2026-08-18",
+ "ruling": "FOUNDER DIRECTION 2026-08-18 — record precisely what 'S1-S4 complete' means. CH-02 KEYSTONE COMPLETE must never become CH-02 CHAPTER CLOSED by implication.",
+
+ "verdict": {
+  "boundedKeystone": "S1-S4 COMPLETE AND LOCALLY CERTIFIED",
+  "chapterClosure": "CH-02 IS NOT CLOSED",
+  "findingsClosedByS1toS4": 0,
+  "statement": "S1-S4 is the bounded keystone subset Stage 5 defined. It touched 8 of CH-02's 16 findings and CLOSED NONE OF THEM. Not one CH-02 finding has reached a terminal state."
+ },
+
+ "sixteenFindings": {
+  "touchedByAKeystoneSlice": [
+   { "id": "F065", "slice": "S1", "stage0State": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "executionLayer": "LIVE_CERTIFIED against v1.3.0+24 / cdbae96", "closed": false, "note": "Stage-0 state deliberately NOT promoted; certification lives in the execution layer until chapter closure." },
+   { "id": "F069", "slice": "S2", "stage0State": "IMPLEMENTED_NOT_LIVE_CERTIFIED", "executionLayer": "signed-out live probe PASS 6/6", "closed": false },
+   { "id": "F064", "slice": "S2", "stage0State": "OPEN", "closed": false, "note": "Fixed HERE without opening Meetings; live Meetings-refresh proof not performed." },
+   { "id": "F113", "slice": "S2", "stage0State": "OPEN", "closed": false, "note": "Separate canonical finding from F064; multi-party, VD-031 UNKNOWN." },
+   { "id": "F117", "slice": "S2", "stage0State": "PARTIALLY_VALIDATED", "closed": false },
+   { "id": "F027", "slice": "S3", "stage0State": "OPEN", "closed": false, "note": "Named in the contract so no second draft store is built. Publishing a contract closes nothing." },
+   { "id": "F103", "slice": "S3", "stage0State": "OPEN", "closed": false, "note": "Gated by F065's live proof, which has now passed — workable, not closed." },
+   { "id": "F104", "slice": "S3", "stage0State": "OPEN", "closed": false, "note": "Same." }
+  ],
+  "untouchedByAnySlice": [
+   { "id": "F059", "state": "OPEN", "title": "Conversation destination lost on refresh", "rootCauses": "RC1/RC2/RC3" },
+   { "id": "F061", "state": "OPEN", "title": "Personal profile edit continuity", "rootCauses": "RC4/RC8" },
+   { "id": "F062", "state": "OPEN", "title": "Institution profile edit continuity", "rootCauses": "RC2/RC4" },
+   { "id": "F063", "state": "OPEN", "title": "Compose systems continuity", "rootCauses": "RC7/RC8" },
+   { "id": "F066", "state": "OPEN", "title": "Institution routes redirect while loading", "rootCauses": "RC2" },
+   { "id": "F067", "state": "OPEN", "title": "Destination-destroying exits (8 call sites)", "rootCauses": "RC4" },
+   { "id": "F068", "state": "OPEN", "title": "/_boot permanent spinner", "rootCauses": "RC5", "updated": "IMPLEMENTED THIS PASS — see f068 record. Stage-0 state NOT promoted." },
+   { "id": "F070", "state": "OPEN", "title": "Draft identity absent from URL", "rootCauses": "RC7" }
+  ],
+  "accounting": "8 touched + 8 untouched = 16. All sixteen remain inside CH-02, as earlier governance explicitly preserved. None disappeared behind S1-S4."
+ },
+
+ "whatRemainsForCH02Closure": [
+  "Seven of the eight untouched findings remain unimplemented (F068 is now implemented but not certified).",
+  "ZERO findings have reached a terminal state. Implemented, deployed and test-green are not terminal.",
+  "F103/F104 remain OPEN; the S3 contract governs them but does not satisfy them.",
+  "F064 and F113 remain separate proof burdens; neither has its live Meetings-refresh proof.",
+  "F117 is PARTIALLY_VALIDATED.",
+  "The C1 anti-drift ratchet still carries its one baselined site (interaction_service), whose clearance belongs to C7.",
+  "PB-11 founder observation applies to any live authentication behaviour change.",
+  "Chapter closure is a founder declaration. None is proposed."
+ ],
+
+ "noPromotionByImplication": {
+  "rule": "No finding is promoted because a slice touched it, a contract named it, or a gate protects it.",
+  "stage0Untouched": true,
+  "certificationsRecordedWhere": "Execution layer only — w1-live-certification-adjudication.json and the Reconstruction Register's LIVE CERTIFICATIONS section. They become register state transitions at chapter closure, and no chapter has closed."
+ }
+}
