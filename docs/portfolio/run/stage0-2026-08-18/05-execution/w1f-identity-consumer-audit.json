@@ -779,7 +779,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/correspondence/presentation/thread/thread_message_tile.dart",
-   "line": 545,
+   "line": 546,
    "evidence": "? AuraAvatar(name: author, imageUrl: avatarUrl, size: 28)",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."

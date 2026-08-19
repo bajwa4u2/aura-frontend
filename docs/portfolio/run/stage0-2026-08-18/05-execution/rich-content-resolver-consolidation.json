@@ -1,0 +1,61 @@
+{
+ "type": "ARCHITECTURE_CONSOLIDATION",
+ "date": "2026-08-18",
+ "authority": "FOUNDER DIRECTION 2026-08-18 — support extensible content handlers/resolvers rather than allowing destination-specific MIME/category switches to become the architecture. Conversation is a proving/reference surface, not the owner of the capability.",
+ "findingsAdvanced": [
+  "F011 (CH-13)",
+  "F125 (CH-13)"
+ ],
+ "notANewFinding": true,
+ "theDefectFound": {
+  "statement": "The product held THREE independent answers to one question — what is this file and how should it be presented.",
+  "switches": [
+   {
+    "id": "1",
+    "site": "lib/core/media/media_mime.dart kindFromMime -> AttachmentKind",
+    "shape": "Coarse, four kinds. Everything non-media collapses into `document`.",
+    "disposition": "KEPT — it answers a DIFFERENT question: which allow-list applies at ACQUISITION. Acquisition and presentation are separate lifecycle stages and keep separate vocabularies deliberately."
+   },
+   {
+    "id": "2",
+    "site": "thread_message_tile.dart _docTypeLabel / _docIcon",
+    "shape": "Private substring matching inside the Correspondence document surface — lower.contains('spreadsheet'), contains('powerpoint'), etc.",
+    "disposition": "REMOVED. It had NO archive kind, so a zip fell through to a generic 'File' with a document icon and an Open action nothing could honour."
+   },
+   {
+    "id": "3",
+    "site": "lib/core/media/aura_attachment_card.dart attachmentKindFrom -> AttachmentPresentationKind",
+    "shape": "Ten kinds resolved from the resolved mime.",
+    "disposition": "PROMOTED to the single canonical presentation resolver, consumed by both destinations."
+   }
+  ]
+ },
+ "changes": [
+  "Correspondence's document surface now consumes attachmentKindFrom for its label, icon and action verb.",
+  "Correspondence's audio surface no longer renders the RAW MIME STRING as product copy. A person was being shown application/vnd.openxmlformats-officedocument… to learn what they had been sent.",
+  "Conversation already consumed the canonical resolver from the F011 work."
+ ],
+ "productImprovementOnASecondDestination": [
+  "Correspondence gains the ARCHIVE kind it never had — a zip now says Archive and offers Download instead of a false Open.",
+  "Correspondence subtitles now read 'PDF document', 'Presentation', 'Spreadsheet' instead of a raw MIME string.",
+  "Both destinations present the same resolved truth the same way."
+ ],
+ "lifecycleRespected": {
+  "acquisition": "kindFromMime / isMimeAllowedFor — untouched. No composer, paste, drop or upload path was modified.",
+  "contentResolution": "CH-11 content truth — consumed, never re-decided.",
+  "richPresentation": "attachmentKindFrom — now single-sited.",
+  "interactionsActions": "kind-appropriate verb (Open vs Download), single-sited."
+ },
+ "gate": "test/media/attachment_presentation_single_authority_test.dart — 5 assertions: no destination re-implements MIME-to-presentation dispatch; every attachment destination consumes the canonical resolver; no destination renders a raw MIME as product copy; every permitted MIME class resolves to a DISTINCT kind; an archive is never presented as a document. It deliberately does NOT forbid kindFromMime, whose job is acquisition validation.",
+ "boundariesObserved": [
+  "No composer-surface work. F123, F025, F026, F135 untouched.",
+  "No acquisition/intake path modified — F012 drag-drop and F013 paste code untouched.",
+  "CH-11 ingestion not reopened.",
+  "Meetings untouched.",
+  "No schema change, no migration, no production data."
+ ],
+ "regression": {
+  "frontend": "639 passed, 1 skipped",
+  "gatesAndMeetings": "137 passed"
+ }
+}

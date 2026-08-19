@@ -8,6 +8,7 @@ import '../../../../core/link_preview/display_link_preview.dart';
 import '../../../../core/media/attachment.dart';
 import '../../../../core/media/aura_attachment_image.dart';
 import '../../../../core/media/media_mime.dart';
+import '../../../../core/media/aura_attachment_card.dart';
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
@@ -1246,7 +1247,11 @@ class _AudioAttachmentSurface extends StatelessWidget {
                 const SizedBox(height: AuraSpace.s4),
                 Text(
                   [
-                    if (mimeType.isNotEmpty) mimeType,
+                    // Was the RAW mime string: a person should never be
+                    // shown `application/vnd.openxmlformats-officedocument…`
+                    // to learn what they were sent.
+                    if (mimeType.isNotEmpty)
+                      attachmentKindFrom(mimeType: mimeType).label,
                     if (sizeBytes != null) formatBytes(sizeBytes!),
                   ].join(' • '),
                   maxLines: 1,
@@ -1300,34 +1305,24 @@ class _DocumentAttachmentSurface extends StatelessWidget {
   final String mimeType;
   final bool hovering;
 
-  String get _docTypeLabel {
-    final lower = mimeType.toLowerCase();
-    if (lower == 'application/pdf') return 'PDF';
-    if (lower.contains('spreadsheet') || lower.contains('excel')) {
-      return 'Spreadsheet';
-    }
-    if (lower.contains('presentation') || lower.contains('powerpoint')) {
-      return 'Presentation';
-    }
-    if (lower.contains('wordprocessingml') || lower.contains('msword')) {
-      return 'Document';
-    }
-    if (lower.startsWith('text/')) return 'Text';
-    return 'File';
-  }
+  /// F011 / rich-content doctrine — resolved ONCE, platform-wide.
+  ///
+  /// This surface used to carry its own substring-matching MIME switch
+  /// (`lower.contains('spreadsheet')` and friends) alongside two others in the
+  /// product: the coarse `kindFromMime` and Conversation's own resolution.
+  /// Three switches for one question is how a destination-specific MIME
+  /// dispatch becomes the architecture.
+  ///
+  /// It now consumes the canonical presentation resolver, which also gives
+  /// this surface the ARCHIVE kind it never had — a zip previously fell
+  /// through to a generic "File" with a document icon and an Open action that
+  /// nothing could honour.
+  AttachmentPresentationKind get _kind =>
+      attachmentKindFrom(mimeType: mimeType);
 
-  IconData get _docIcon {
-    final lower = mimeType.toLowerCase();
-    if (lower == 'application/pdf') return Icons.picture_as_pdf_outlined;
-    if (lower.contains('spreadsheet') || lower.contains('excel')) {
-      return Icons.table_chart_outlined;
-    }
-    if (lower.contains('presentation') || lower.contains('powerpoint')) {
-      return Icons.slideshow_outlined;
-    }
-    if (lower.startsWith('text/')) return Icons.article_outlined;
-    return Icons.description_outlined;
-  }
+  String get _docTypeLabel => _kind.label;
+
+  IconData get _docIcon => _kind.icon;
 
   @override
   Widget build(BuildContext context) {
