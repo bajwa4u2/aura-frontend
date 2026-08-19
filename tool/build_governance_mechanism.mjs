@@ -129,6 +129,41 @@ const liveCertSection = liveCerts.length === 0 ? '' : [
   ...liveCerts.map((c) => '| **' + c.id + '** | ' + BT + c.verdict + BT + ' | ' + c.against + ' | ' + (c.limit || '-') + ' |'),
 ].join(NL)
 
+// Terminal closures ruled by the founder are recorded in the EXECUTION layer
+// for exactly the same reason live certifications are: Stage-0 evidence is
+// never rewritten. The vocabulary is the existing terminal set — this section
+// SURFACES a state that already exists, it does not invent one. Both the
+// structural and the live-certification dimension are printed, because
+// FOUNDER_CLOSED is terminal by authority and must never be misread as proof
+// of live certification.
+let terminalClosures = []
+try {
+  const tc = rd('05-execution/founder-terminal-closures.json')
+  terminalClosures = Object.entries(tc.closures || {}).map(([id, c]) => ({ id, ...c }))
+} catch { terminalClosures = [] }
+
+const terminalSection = terminalClosures.length === 0 ? '' : [
+  '',
+  '---',
+  '',
+  '## TERMINAL CLOSURES BY FOUNDER RULING (execution layer)',
+  '',
+  'Recorded here rather than by editing Stage-0 evidence. The Stage-0 state column is the ratified',
+  'baseline and stays as it was; the terminal column is the later evidenced transition. Every state',
+  'used below is already in the register vocabulary — **no new terminal state exists**.',
+  '',
+  '**`FOUNDER_CLOSED` is terminal by founder authority. It does NOT mean `LIVE_CERTIFIED`,** which is',
+  'why the certification dimension is printed separately on every row.',
+  '',
+  '| Item | Stage-0 state | Terminal state | Basis | Structural | Live certification |',
+  '|---|---|---|---|---|---|',
+  ...terminalClosures.map((c) => '| **' + c.id + '** | ' + BT + c.stage0State + BT + ' | ' + BT +
+    c.terminalState + BT + ' | ' + (c.ruledBy || '-') + ' | ' +
+    ((c.dimensionsReportedSeparately || {}).structural || '-').split('—')[0].trim() + ' | ' +
+    ((c.dimensionsReportedSeparately || {}).liveCertification || '-').split('—')[0].trim() + ' |'),
+  '',
+].join(NL)
+
 const register = `# AURA RECONSTRUCTION REGISTER — NON-SHRINKING
 
 > **GENERATED — DO NOT EDIT BY HAND.**
@@ -209,7 +244,7 @@ Reporting one dimension as "F139 status" is a governance violation.
 |---|---|---:|---:|
 ${chapters.map((c) => `| ${c.id} | ${c.name} | ${c.findings.count} | ${c.obligations.count} |`).join('\n')}
 
-${dispositionSection}${liveCertSection}
+${dispositionSection}${liveCertSection}${terminalSection}
 ---
 
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER

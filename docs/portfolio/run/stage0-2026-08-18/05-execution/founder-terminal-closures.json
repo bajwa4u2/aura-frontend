@@ -1,0 +1,70 @@
+{
+  "type": "FOUNDER_TERMINAL_CLOSURES",
+  "layer": "EXECUTION",
+  "rule": "Terminal closures are recorded HERE, never by editing Stage-0 evidence. Stage-0 currentState is the ratified baseline and is preserved verbatim; this file records the later, evidenced transition. The vocabulary is the register's existing terminal set (LIVE_CERTIFIED / RETIRED_BY_RULING / SUPERSEDED_BY_RULING / FOUNDER_CLOSED) — no new terminal state is invented.",
+  "closures": {
+    "F017": {
+      "title": "Internal Aura-link hydration",
+      "chapter": "CH-13",
+      "stage0State": "PARTIALLY_VALIDATED",
+      "terminalState": "FOUNDER_CLOSED",
+      "ruledBy": "FOUNDER RULING 2026-08-19",
+      "basis": "PRODUCTION EVIDENCE — not unit tests, not architecture. A read-only audit of the live production database found ZERO eligible rows on the authorized surface and zero on all four sibling surfaces carrying the same trigger.",
+      "dimensionsReportedSeparately": {
+        "structural": "CLOSED — the runtime/parser correction plus the backfill mechanism close the logical defect in code.",
+        "liveCertification": "NOT CERTIFIED — no live founder observation of internal-link hydration was performed, and none is claimed. FOUNDER_CLOSED is terminal by founder authority; it does NOT assert LIVE_CERTIFIED, and this row must never be read as one."
+      },
+      "dischargingEvidence": [
+        "Runtime/parser correction — /p/, /p/i/, /p/a/ added to the canonical internal-reference parser.",
+        "Mechanism implementation — scripts/f017-backfill.ts, dry-run default, --apply gated, 22 assertions.",
+        "Production read-only audit — 69 Message rows examined, session default_transaction_read_only = on.",
+        "0 eligible rows on the authorized surface; 0 on DirectMessage, Post, InstitutionPost, Announcement.",
+        "Complete classification invariant — bucket sum 69 equals 69 examined; every row in exactly one bucket.",
+        "Zero mutation requirement — no historical data repair exists to perform."
+      ],
+      "productionMutation": {
+        "authorized": false,
+        "required": false,
+        "performed": false,
+        "rowsWritten": 0,
+        "ruling": "npm run f017:apply is NOT to be run."
+      },
+      "architecturalCorrectionPreserved": [
+        "Hydration is READ-TIME and PER-VIEWER. Nothing is frozen at send.",
+        "A reference is a CARRIER, NOT AN AUTHORITY — the owning authority re-decides visibility on every read.",
+        "The F017 historical asymmetry concerned the MISSING linkSourceUrl TRIGGER ONLY, never stale hydration and never a frozen authorization decision.",
+        "Current production contains NO rows exhibiting that condition. The defect is real in code and LATENT IN DATA."
+      ],
+      "instrumentDisposition": {
+        "status": "RETAINED AS A GOVERNED RECOVERY / CONVERGENCE UTILITY",
+        "mustNotBecome": [
+          "a recurring job",
+          "an automatic production process",
+          "a background migration",
+          "a reason to maintain another interpretation authority"
+        ],
+        "role": "Repair future imported / restored / legacy data if the already-defined historical condition is ever encountered. It delegates to the canonical parser and therefore adds no second interpretation authority.",
+        "files": [
+          "aura-backend/src/messages/f017-internal-reference-backfill.ts",
+          "aura-backend/src/messages/f017-internal-reference-backfill.spec.ts",
+          "aura-backend/scripts/f017-backfill.ts",
+          "aura-backend/scripts/f017-evidence-readonly.ts",
+          "aura-backend/scripts/f017-adjacent-surface-survey.ts"
+        ]
+      },
+      "environmentLimitationRecorded": {
+        "limitation": "Prisma 6.19.3 ships no windows-arm64 query engine; prisma.message.findMany fails at engine load on this workstation, so neither f017:dry-run nor f017:apply can execute here.",
+        "founderRuling": "NO F017 WORK IS REQUIRED TO SOLVE THIS. Production mutation is not needed, so no execution environment is to be created merely so a zero-row apply could run.",
+        "consequenceIfEverNeeded": "Should the instrument ever be needed for imported/restored data, it must run in an environment with a compatible Prisma engine (the deployed Railway container or a linux runner)."
+      }
+    }
+  },
+  "observationsPreserved": {
+    "MEET_LINK_IN_MESSAGE_HISTORY": {
+      "observation": "The only internal Aura link in the entire production Message history is https://auraplatform.org/meet/founder-conversation. parseInternalReference does not treat /meet/ as a referenceable object, so the message renders bare.",
+      "ownership": "NO CANONICAL FINDING GOVERNS INTERNAL MEETING-LINK HYDRATION OR PRESENTATION. The nearest Meetings findings — F064 and F113 (refresh continuity) and F114 (Meetings protected) — govern different subjects and do NOT own this.",
+      "disposition": "PRESERVED AS AN OBSERVATION FOR RECONSTRUCTION ACCOUNTING / GOVERNANCE REVIEW ONLY. No finding was created, parseInternalReference was NOT extended, and Meetings was NOT touched. Meetings remains a protected surface.",
+      "wouldRequire": "Explicit founder authorization, both to admit a finding and to cross the Meetings boundary."
+    }
+  }
+}

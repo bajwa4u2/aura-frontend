@@ -57,7 +57,9 @@
     "bodyOver4kb": 0,
     "canonicalDiffersFromRaw": 0,
     "externalHosts": {},
-    "unsupportedAuraPathPrefixes": { "/meet/founder-conversation": 1 }
+    "unsupportedAuraPathPrefixes": {
+      "/meet/founder-conversation": 1
+    }
   },
   "targetResolution": {
     "evaluated": false,
@@ -67,10 +69,28 @@
     "status": "READ-ONLY, OUT OF AUTHORIZED SCOPE, NOT WIRED INTO THE BACKFILL",
     "reason": "Message returned zero eligible rows; the founder needs to know whether the defect is absent from production or merely lives in a sibling table. Five models carry the same nullable linkSourceUrl trigger.",
     "results": {
-      "Message": { "rows": 69, "wouldBeEligible": 0, "unsupportedAuraRoute": 1, "softDeleted": 26 },
-      "DirectMessage": { "rows": 9, "wouldBeEligible": 0, "urlsInAnyBody": 0 },
-      "Post": { "rows": 90, "wouldBeEligible": 0, "urlsInAnyBody": 0, "softDeleted": 37 },
-      "InstitutionPost": { "rows": 20, "wouldBeEligible": 0, "urlsInAnyBody": 0 },
+      "Message": {
+        "rows": 69,
+        "wouldBeEligible": 0,
+        "unsupportedAuraRoute": 1,
+        "softDeleted": 26
+      },
+      "DirectMessage": {
+        "rows": 9,
+        "wouldBeEligible": 0,
+        "urlsInAnyBody": 0
+      },
+      "Post": {
+        "rows": 90,
+        "wouldBeEligible": 0,
+        "urlsInAnyBody": 0,
+        "softDeleted": 37
+      },
+      "InstitutionPost": {
+        "rows": 20,
+        "wouldBeEligible": 0,
+        "urlsInAnyBody": 0
+      },
       "Announcement": {
         "rows": 12,
         "wouldBeEligible": 0,
@@ -93,9 +113,15 @@
     "localChanges": "two read-only evidence scripts added under aura-backend/scripts/; no src change, no schema change, no migration"
   },
   "founderDecisionsRequired": [
-    "Production-mutation authorization for npm run f017:apply — now known to be a NO-OP against current data.",
-    "NEW, created by the evidence: whether an apply that writes zero rows should be run at all, or whether F017 closes as MECHANISM-COMPLETE / DATA-CLEAN with the instrument retained for future data.",
-    "NEW, created by the evidence: if an apply is still wanted, which execution environment runs it, since Prisma has no windows-arm64 engine on this workstation.",
-    "NEW, observation only: whether /meet/ links should become a supported internal reference kind. Out of F017 scope; not acted on."
-  ]
+    "NONE - all F017 decisions are ruled and recorded."
+  ],
+  "founderDisposition_2026_08_19": {
+    "evidenceAccepted": true,
+    "productionMutation": "NOT REQUIRED - npm run f017:apply is not to be run",
+    "historicalRemainder": "DISCHARGED BY PRODUCTION EVIDENCE",
+    "terminalState": "FOUNDER_CLOSED (existing register vocabulary)",
+    "instrument": "RETAINED as a governed recovery/convergence utility; never a recurring job, automatic process, or background migration",
+    "windowsArm64Prisma": "Environment limitation recorded; no work authorized to solve it",
+    "meetObservation": "Outside F017; Meetings untouched and protected; preserved as an observation only, no finding invented"
+  }
 }

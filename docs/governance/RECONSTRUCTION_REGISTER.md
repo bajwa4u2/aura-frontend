@@ -167,6 +167,21 @@ state transition at chapter closure. **No chapter has closed.**
 | **S2_S3_LIVE_PROBE** | `PASS 6/6` | deployed artifact v1.3.0+24 / code cdbae96 | - |
 ---
 
+## TERMINAL CLOSURES BY FOUNDER RULING (execution layer)
+
+Recorded here rather than by editing Stage-0 evidence. The Stage-0 state column is the ratified
+baseline and stays as it was; the terminal column is the later evidenced transition. Every state
+used below is already in the register vocabulary — **no new terminal state exists**.
+
+**`FOUNDER_CLOSED` is terminal by founder authority. It does NOT mean `LIVE_CERTIFIED`,** which is
+why the certification dimension is printed separately on every row.
+
+| Item | Stage-0 state | Terminal state | Basis | Structural | Live certification |
+|---|---|---|---|---|---|
+| **F017** | `PARTIALLY_VALIDATED` | `FOUNDER_CLOSED` | FOUNDER RULING 2026-08-19 | CLOSED | NOT CERTIFIED |
+
+---
+
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER
 
 - Removing an item because it is implemented, green, deployed or merged.
