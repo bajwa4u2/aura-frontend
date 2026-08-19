@@ -1,5 +1,5 @@
 {
- "type": "DISCOVERED_DEFECT_CANDIDATE",
+ "type": "ADMITTED_EXECUTION_DEFECT",
  "id": "D7-DEFECT",
  "date": "2026-08-18",
  "discoveredBy": "G1 leg 5(A) — the ingestion-door enumeration. This is what the enumeration was for.",
@@ -8,10 +8,8 @@
   "whyNotNumbered": "Admitting a new canonical finding changes the founder-ratified 143/451 accounting. The register may never shrink, and adding to it is a governance act, not an engineering one. No F144 has been invented. Recorded in the execution layer for founder disposition.",
   "accountingUnchanged": "143 findings + 308 obligations = 451 units"
  },
-
  "location": "aura-backend/src/institutions/posts/institution-posts.service.ts — linkLegacyMediaUrl(), called from line 810 and line 1121",
  "callerSupplied": "YES — line 1119 reads dto.mediaUrl?.trim(), so the URL originates with the caller.",
-
  "twoDistinctDefects": [
   {
    "branch": "CREATE (no existing Media row matches the URL)",
@@ -27,27 +25,54 @@
    "relatedCanonicalContext": "F143 already records that Media identity is not 1:1 with storage objects and that 10 production aliasing pairs exist. URL-equality matching is exactly the aliasing surface F143 describes, and DB-7 states that URL equality is permitted for migration/evidence DISCOVERY ONLY and may never be treated as the constitutional identity relationship."
   }
  ],
-
  "whatIsNotClaimed": [
   "No exploitation is asserted. Whether any production row has been re-anchored this way was NOT investigated — that would require querying production data, which is not authorized.",
   "No severity rating is assigned. Severity is a product judgement.",
   "The legitimate purpose of the path is real: the comment records that the normal case is reusing a row the frontend already uploaded via /media/presign, and that the create branch covers legacy URLs from before the canonical pipeline existed. This is not dead or careless code; it is a reconciliation path whose authorization assumptions were never stated."
  ],
-
  "notFixed": {
-  "reason": "Closing it is CH-11 construction against a defect that is not a canonical unit. Fixing it silently would put unrecorded security work into the tree and would pre-empt the founder's decision about whether it enters the register at all.",
-  "alsoRelevant": "The EXISTING branch's correct behaviour is a product question, not only a technical one: whether an institution post may reuse a Media row uploaded by a different person, and if so under whose visibility, is a governance decision about content ownership."
+  "superseded": "This artifact previously recorded the defect as NOT FIXED pending founder admission. The founder admitted and authorized bounded closure on 2026-08-18; the repair is recorded above. The original reasoning is retained as history."
  },
-
  "consequenceForG1Leg5": {
   "enumeration": "COMPLETE — 6 doors.",
   "commonValidation": "NOT ESTABLISHED — 5 of 6 doors validated. G1 leg 5 requires doors 'ENUMERATED and proven to pass through the same validation', so leg 5(A) is COMPLETE ON ENUMERATION and INCOMPLETE ON COVERAGE.",
   "correctionToEarlierRecord": "An earlier artifact in this pass recorded 5(A) as 'ESTABLISHED'. That overstated it. Enumeration is established; common validation is not, and D7 is the reason."
  },
-
  "founderDecisionRequired": {
   "decision": "Admit D7-DEFECT into the canonical register as a new finding (and authorize its closure), or dispose of it otherwise.",
   "whyItIsFounderAuthority": "The canonical accounting is founder-ratified at 451 units, and the non-shrinking register rule makes admission a governance act.",
   "blocking": "G1 leg 5 cannot be fully discharged while a known ingestion door bypasses the common validation. CH-12 remains BLOCKED_BY_G1_LEG_5 as a consequence."
+ },
+ "admission": {
+  "by": "FOUNDER RULING 2026-08-18",
+  "as": "D7-DEFECT",
+  "mechanism": "Execution-defect record — CH-11 assignedDefects[] plus this artifact. The mechanism CAN represent a discovered execution defect without altering canonical accounting, so no governance-schema deficiency is reported.",
+  "canonicalAccountingUnchanged": "143 findings + 308 obligations = 451 units",
+  "notNumbered": "No F144 created; the Stage-0 finding population is untouched."
+ },
+ "closure": {
+  "state": "CLOSED_LOCALLY_NOT_LIVE_CERTIFIED",
+  "proofSuite": "institution-posts.d7-media-authority.spec.ts — 11 assertions",
+  "requirementsCovered": {
+   "A": "arbitrary external URL cannot manufacture governed READY media — no Media row created, governed door not even reached",
+   "B": "another user's Media URL cannot re-anchor that Media — refused, and nothing is written at all",
+   "C": "another user's Media URL cannot change its visibility — asserted independently of B (requirement G)",
+   "D": "unauthorized lookup discloses nothing — the refusal payload and status are byte-identical whether the foreign row exists or not, and storage is never reached for a foreign key",
+   "E": "legitimate same-authority reuse still works — the caller's own existing row re-anchors, and their own key still creates governed media",
+   "F": "creation passes through MediaService.verifyClientSuppliedObject; type, MIME and size come from storage. A PDF now resolves to OTHER with its real MIME instead of IMAGE with mimeType null",
+   "G": "attachment authority and visibility authority tested independently",
+   "H": "nothing narrowed incidentally — an external URL does not throw; the post keeps its legacy mediaUrl, which is what unbackfilled renderers read",
+   "I": "targeted backend regression — 197 suites / 2471 tests pass",
+   "J": "shared-system health reported below"
+  },
+  "seededViolations": "Every refusal test seeds a real violating case: a foreign-owned row, a foreign storage key, an external URL, and a door that refuses.",
+  "notInvented": "No cross-owner media-sharing capability. No Content Truth expansion. No acceptance-policy change."
+ },
+ "sharedSystemHealth": {
+  "backend": "197 suites / 2471 tests PASS",
+  "institutionPostsExistingSuites": "50/50 PASS — the pre-existing institution-post specs are unchanged in behaviour",
+  "ingestionDoorRegister": "7/7 PASS; D7 now records CLIENT_KEY_DOOR coverage",
+  "mediaSuites": "client-supplied-key 12/12, aiflags-gating 5/5, duration-units 15/15",
+  "protectedSurfaces": "Meetings untouched; SSRF-safe fetcher untouched and un-weakened; no protected/shared boundary crossed"
  }
 }

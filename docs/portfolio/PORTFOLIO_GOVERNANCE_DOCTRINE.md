@@ -288,3 +288,36 @@ chapter or dependency it actually proves, and remains fail-closed there.
 
 The original G1 remains unedited in `s5-execution-architecture.json` as historical Stage-5 architecture.
 
+## 13. DISCOVERY DURING EXECUTION *(founder ruling, 2026-08-18)*
+
+> **DISCOVERY DURING EXECUTION DOES NOT REWRITE THE RATIFIED EVIDENCE BASELINE.
+> A NEWLY DISCOVERED DEFECT IS GOVERNED FOR CLOSURE THROUGH EXECUTION PROVENANCE
+> UNLESS FOUNDER ACTION EXPLICITLY REOPENS THE CANONICAL FINDING POPULATION.**
+
+A defect found while executing is real and must be governed. It is **not** retroactively a Stage-0
+finding, because Stage 0 did not know it. Admitting it as one would rewrite what the ratified baseline
+knew and would move the canonical-unit count, which is founder-ratified.
+
+**The mechanism** is the execution-defect record: an entry under the owning chapter's `assignedDefects`
+plus an execution-layer artifact carrying discovery provenance. `isNewCanonicalUnit: false` and an
+explicit `accountingNote` are required, so a reader can never mistake it for a canonical unit.
+
+**Precedents:** `DEFECT-1` (realtime room goldens, discovered by W1-000's health report, assigned to
+CH-04) and `D7-DEFECT` (institution-post media authority, discovered by G1 leg 5(A)'s enumeration,
+assigned to CH-11).
+
+**Accounting is unchanged by admission.** 143 findings + 308 obligations = 451 units, always.
+
+### 13.1 The authority rule D7 established *(frozen)*
+
+> **URL POSSESSION ≠ MEDIA OWNERSHIP · URL MATCH ≠ ATTACHMENT AUTHORITY · URL MATCH ≠ VISIBILITY AUTHORITY**
+
+Knowing a media URL confers no authority over the media. Cross-owner reuse is **not** implicitly
+authorized; if Aura ever supports it, it must be an explicit governed capability with its own
+authority, custody, provenance and visibility semantics.
+
+**Preserving `ownerUserId` does not make re-anchoring safe.** Attachment and visibility are
+independently consequential — delivery is governed by the anchor and the visibility, not by ownership.
+
+**Refusal must not become an oracle.** Where unauthorized media is supplied, the refusal must be
+identical whether the foreign media exists or not.

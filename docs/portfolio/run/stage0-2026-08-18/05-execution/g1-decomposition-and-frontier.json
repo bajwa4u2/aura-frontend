@@ -55,7 +55,7 @@
   {
    "leg": 5,
    "name": "Violating file refused live + every ingestion door enumerated",
-   "state": "OPEN — 5(A) enumeration complete, 5(A) common-validation incomplete, 5(B) not attempted",
+   "state": "OPEN — 5(A) COMPLETE (enumeration AND common validation coverage); 5(B) live refusal NOT ATTEMPTED",
    "owner": "CH-11",
    "dependencyClass": "CONSTRUCTION + CERTIFICATION",
    "attachedTo": "CH-11 and every downstream unit relying on governed ingestion completeness — CH-12 first."
@@ -70,7 +70,7 @@
  "leg5Split": {
   "5A_enumeration": {
    "question": "Can 'every ingestion door ENUMERATED' be established deterministically from repository/runtime architecture without production mutation?",
-   "answer": "ENUMERATION ESTABLISHED; COMMON VALIDATION NOT ESTABLISHED",
+   "answer": "ESTABLISHED — enumeration complete AND every enumerated door now passes through a governed validation boundary, following the D7-DEFECT closure.",
    "artifact": "aura-backend/src/media/ingestion-doors.spec.ts (7 assertions)",
    "definition": "An ingestion door is any code path by which caller-supplied bytes, or a caller-supplied reference to stored bytes, becomes a persisted Media row or a stored object. Reading, projecting and deleting are not ingestion.",
    "doors": [
@@ -123,10 +123,11 @@
      "finding": "institution-posts.service.ts:728 creates Media at status=READY from a caller-supplied URL, mimeType left null, type defaulted to IMAGE. No ownership proof, no headObject, no MIME or size check — structurally the shape F129 had before it was closed."
     }
    ],
-   "result": "ENUMERATION COMPLETE (6 doors). COVERAGE INCOMPLETE — 5 of 6 validated; D7 is not.",
+   "result": "COMPLETE — 6 doors, 6 validated.",
    "closureIsBidirectional": "The suite re-derives the door set from source and fails if a media.create appears off-register, AND fails if a registered door does not actually ingest. The second check exists because an earlier draft listed a seventh door, 'D6-POST-MEDIA', on the strength of a grep that matched `media.createdAt`. posts.service.ts ATTACHES existing media by id and creates nothing; it is now recorded as an explained NON-door. The register is trustworthy only because it is re-derived rather than trusted.",
    "notClaimed": "5(A) does not discharge leg 5. Enumeration proved coverage is incomplete; it did not create coverage.",
-   "correction": "An earlier line in this artifact recorded 5(A) as simply ESTABLISHED. That overstated it. G1 leg 5 requires doors 'ENUMERATED and proven to pass through the same validation'. Enumeration is complete at 6 doors; common validation is not, because D7 bypasses it. See d7-discovered-defect-candidate.json."
+   "correction": "An earlier line in this artifact recorded 5(A) as simply ESTABLISHED. That overstated it. G1 leg 5 requires doors 'ENUMERATED and proven to pass through the same validation'. Enumeration is complete at 6 doors; common validation is not, because D7 bypasses it. See d7-discovered-defect-candidate.json.",
+   "d7Closure": "D7 was the single uncovered door. Admitted as an execution defect and closed under the founder ruling of 2026-08-18; the door register now records CLIENT_KEY_DOOR coverage for it."
   },
   "5B_liveRefusal": {
    "state": "OPEN",
@@ -192,7 +193,8 @@
      "CH-15 moderation policy (founder-authored, absent)",
      "the three committed-but-unapplied migrations, which deploy only under PB-11 founder observation",
      "CORS for delivery legs"
-    ]
+    ],
+    "whyStillBlocked": "Leg 5 remains OPEN on its LIVE half (5B). The construction half that concerned CH-12 — an object whose identity was asserted by its uploader — is now closed at every enumerated door, but leg 5 is not discharged and CH-12's canonical dependency on CH-11 is not satisfied by local proof alone."
    },
    {
     "unit": "CH-15 — policy freeze",

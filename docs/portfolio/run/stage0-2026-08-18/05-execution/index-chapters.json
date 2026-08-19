@@ -1357,7 +1357,36 @@
      "CO-RC-C5-019",
      "CO-RC-C5-020"
     ]
-   }
+   },
+   "assignedDefects": [
+    {
+     "id": "D7-DEFECT",
+     "title": "Institution-post media authority — URL match treated as attachment and visibility authority",
+     "admittedBy": "FOUNDER RULING 2026-08-18",
+     "discoveredBy": "G1 leg 5(A) deterministic ingestion-door enumeration",
+     "classification": "DISCOVERED_EXECUTION_DEFECT",
+     "isNewCanonicalUnit": false,
+     "accountingNote": "Admitted through the execution-defect mechanism. NOT a Stage-0 finding and NOT numbered F144. The ratified baseline of 143 findings + 308 obligations = 451 units is unchanged.",
+     "discoveryProvenance": {
+      "notPresentAsStage0Finding": true,
+      "structurallyRelatedTo": [
+       "F143 (Media identity is not 1:1 with storage objects; 10 production aliasing pairs)",
+       "DB-7 (URL equality is discovery only, never the constitutional identity relationship)"
+      ],
+      "admissionDoesNotRewriteStage0": true
+     },
+     "state": "CLOSED_LOCALLY_NOT_LIVE_CERTIFIED",
+     "closure": {
+      "existingBranch": "A Media row not owned by the caller is refused. Attachment and visibility are both refused together.",
+      "createBranch": "An external URL creates no governed media at all; the post keeps its legacy mediaUrl so renderers are unaffected. A key belonging to the caller is routed through MediaService.verifyClientSuppliedObject, so type, MIME and size come from storage instead of being manufactured.",
+      "oracleDefence": "One refusal serves both the foreign-row and foreign-key cases, byte-identical, so the endpoint cannot disclose whether foreign media exists.",
+      "notInvented": "No cross-owner media-sharing capability was created.",
+      "proof": "institution-posts.d7-media-authority.spec.ts — 11 assertions covering founder requirements A-H, each seeding a real violating case.",
+      "regression": "197 suites / 2471 tests pass."
+     },
+     "notClosed": "Live certification. The repair is not deployed."
+    }
+   ]
   },
   {
    "id": "CH-12",
