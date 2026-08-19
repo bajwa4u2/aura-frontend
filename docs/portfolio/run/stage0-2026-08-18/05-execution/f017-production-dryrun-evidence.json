@@ -1,0 +1,101 @@
+{
+  "unit": "F017",
+  "artifact": "PRODUCTION READ-ONLY IMPACT EVIDENCE",
+  "date": "2026-08-19",
+  "authorization": {
+    "granted": "READ-ONLY PRODUCTION DRY-RUN",
+    "withheld": "PRODUCTION MUTATION (npm run f017:apply) — NOT AUTHORIZED",
+    "mutationPerformed": false,
+    "rowsWritten": 0
+  },
+  "commandDeviation": {
+    "authorizedCommand": "cd aura/aura-backend && npm run f017:dry-run",
+    "attempted": true,
+    "outcome": "FAILED BEFORE ANY QUERY REACHED THE DATABASE",
+    "cause": "PrismaClientInitializationError — node_modules/.prisma/client/query_engine-windows.dll.node 'is not a valid Win32 application'. Node is arm64/win32 (v22.22.0); Prisma 6.19.3 ships no windows-arm64 query engine. The failure is at engine load, inside prisma.message.findMany, before connection.",
+    "substitute": "scripts/f017-evidence-readonly.ts — same production database, same canonical classifyMessage/accumulate imported (not reimplemented), rows read through pg. Session set to default_transaction_read_only = on so a write would be refused by the database itself. No write path exists in the collector.",
+    "materialConsequence": "npm run f017:apply CANNOT EXECUTE ON THIS WORKSTATION EITHER. Authorizing the mutation also requires choosing an execution environment with a compatible Prisma engine (Railway container / linux runner)."
+  },
+  "database": {
+    "host": "ballast.proxy.rlwy.net:47513",
+    "database": "railway",
+    "sessionReadOnly": "on",
+    "recencyEvidence": {
+      "Message.newestCreatedAt": "2026-08-13T21:54:59.554Z",
+      "Post.newestCreatedAt": "2026-08-14T11:06:24.242Z"
+    }
+  },
+  "impactAuthoritative": {
+    "scope": "Message (the authorized F017 surface)",
+    "examined": 69,
+    "eligible": 0,
+    "alreadyHydrated": 0,
+    "noUrl": 42,
+    "malformedUrl": 0,
+    "externalUrl": 0,
+    "unsupportedAuraRoute": 1,
+    "deletedMessage": 26,
+    "eligibleWithMultipleUrls": 0,
+    "byReferenceKind": {},
+    "bucketSum": 69,
+    "bucketInvariant": "HOLDS"
+  },
+  "diagnosticsObservationOnly": {
+    "bodiesWithAnyUrl": 1,
+    "internalFirstUrl": 1,
+    "internalAnywhere": 1,
+    "externalFirstWithInternalLater": 0,
+    "mixedInternalAndExternal": 0,
+    "multipleUrls": 0,
+    "supportedReferenceAnywhere": 0,
+    "unsupportedAuraAnywhere": 1,
+    "trailingPunctuationOnFirstUrl": 0,
+    "triggerPresentButBodyHasNoUrl": 0,
+    "triggerPresentAndDiffersFromFirstUrl": 0,
+    "emptyStringTrigger": 0,
+    "nullBody": 0,
+    "bodyOver4kb": 0,
+    "canonicalDiffersFromRaw": 0,
+    "externalHosts": {},
+    "unsupportedAuraPathPrefixes": { "/meet/founder-conversation": 1 }
+  },
+  "targetResolution": {
+    "evaluated": false,
+    "reason": "The dry-run deliberately does not resolve targets. Existence-probing every referenced object would turn the backfill into the existence oracle D7 forbids, and resolution is a read-time per-viewer decision that the backfill must never freeze. Unresolved/deleted-target counts are therefore NOT AVAILABLE and are not estimated."
+  },
+  "adjacentSurfaceSurvey": {
+    "status": "READ-ONLY, OUT OF AUTHORIZED SCOPE, NOT WIRED INTO THE BACKFILL",
+    "reason": "Message returned zero eligible rows; the founder needs to know whether the defect is absent from production or merely lives in a sibling table. Five models carry the same nullable linkSourceUrl trigger.",
+    "results": {
+      "Message": { "rows": 69, "wouldBeEligible": 0, "unsupportedAuraRoute": 1, "softDeleted": 26 },
+      "DirectMessage": { "rows": 9, "wouldBeEligible": 0, "urlsInAnyBody": 0 },
+      "Post": { "rows": 90, "wouldBeEligible": 0, "urlsInAnyBody": 0, "softDeleted": 37 },
+      "InstitutionPost": { "rows": 20, "wouldBeEligible": 0, "urlsInAnyBody": 0 },
+      "Announcement": {
+        "rows": 12,
+        "wouldBeEligible": 0,
+        "unsupportedAuraRoute": 1,
+        "note": "One row carries 9 URL tokens (app-store and sibling-product links). Its FIRST token is https://auraplatform.org/ — the site root, which the canonical parser correctly refuses as a referenceable object. First-URL-wins classifies the row UNSUPPORTED_AURA_ROUTE, matching runtime."
+      }
+    }
+  },
+  "findings": [
+    "PRODUCTION HAS ZERO F017-ELIGIBLE ROWS. The prepared apply would write nothing today, on any of the five surfaces.",
+    "The asymmetry F017 names is REAL IN CODE but LATENT IN DATA: no historical message has ever carried a parser-supported internal Aura URL.",
+    "The only internal Aura link in the entire Message history is https://auraplatform.org/meet/founder-conversation, which parseInternalReference does not treat as a referenceable object. Reported as an observation; eligibility was NOT extended to cover it."
+  ],
+  "eligibilityModelVsData": "CONSISTENT. Every observed row classified into exactly one bucket, bucket sum equals rows examined, and no ambiguous, malformed, or contradictory shape was encountered. No parser/runtime disagreement was observed.",
+  "applySafetyInLightOfData": "Determinism, idempotence, first-URL-wins and the NULL-guarded UPDATE are all unchallenged by the observed data. The only new material fact is that the apply is a no-op on current production data, and that it cannot execute on this workstation.",
+  "continuity": {
+    "portfolioValidator": "PASS — 143 findings + 308 obligations = 451 canonical units across 17 chapters",
+    "f017Spec": "22/22 PASS",
+    "typecheck": "tsc --noEmit clean",
+    "localChanges": "two read-only evidence scripts added under aura-backend/scripts/; no src change, no schema change, no migration"
+  },
+  "founderDecisionsRequired": [
+    "Production-mutation authorization for npm run f017:apply — now known to be a NO-OP against current data.",
+    "NEW, created by the evidence: whether an apply that writes zero rows should be run at all, or whether F017 closes as MECHANISM-COMPLETE / DATA-CLEAN with the instrument retained for future data.",
+    "NEW, created by the evidence: if an apply is still wanted, which execution environment runs it, since Prisma has no windows-arm64 engine on this workstation.",
+    "NEW, observation only: whether /meet/ links should become a supported internal reference kind. Out of F017 scope; not acted on."
+  ]
+}
