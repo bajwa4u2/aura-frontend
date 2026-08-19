@@ -1,0 +1,82 @@
+{
+ "type": "FOUNDER_LIVE_OBSERVATION_RECORD",
+ "observationRound": 1,
+ "date": "2026-08-18",
+ "procedure": "docs/governance/W1_LIVE_CERTIFICATION_PROCEDURES.md",
+ "recordedVerbatim": true,
+
+ "reportedAsGiven": {
+  "LIVE_BUILD": "[commit/build identifier, or NOT ESTABLISHED]",
+  "A1": "PASS — remained /home after F5, signed in.",
+  "A2": "PASS — institution sign-in → [destination] → F5 → remained [destination], signed in; no /login observed.",
+  "A3": "PASS — guest meeting → F5 → remained guest; no member session acquired.",
+  "A3_NOTE": "[meeting destination was/was not preserved].",
+  "B1": "PASS — /home → /login?redirect=%2Fhome",
+  "B2": "PASS — sign-in returned to /home",
+  "B3": "PASS — /zzz-not-a-route → /login",
+  "B4": "PASS — /admin → /login; admin surface not exposed",
+  "B5": "PASS — /public rendered without redirect",
+  "B6": "PASS — invalid redirect → /home; no blank/raw destination"
+ },
+
+ "unfilledFields": {
+  "count": 3,
+  "fields": [
+   { "field": "LIVE_BUILD", "value": "[commit/build identifier, or NOT ESTABLISHED]", "status": "UNFILLED_TEMPLATE_PLACEHOLDER", "blocking": true },
+   { "field": "A2.destination", "value": "[destination]", "status": "UNFILLED_TEMPLATE_PLACEHOLDER", "blocking": false },
+   { "field": "A3_NOTE", "value": "[meeting destination was/was not preserved]", "status": "UNFILLED_TEMPLATE_PLACEHOLDER", "blocking": false }
+  ],
+  "interpretation": "These are the square-bracket prompts from the response template, returned unedited. They are NOT a founder statement of 'NOT ESTABLISHED' and they are NOT a value. They are absent data.",
+  "notInferred": "No build identifier was guessed. No destination was assumed. Whether the meeting destination survived was not inferred from A3's PASS — A3 tests only that no member session was acquired."
+ },
+
+ "adjudication": {
+  "rule": "Predeclared in the procedure, Step 0, before any observation: 'A PASS recorded against a build that lacks the fix certifies nothing. If you are unsure which build is live, say so and I will treat the result as NOT_ESTABLISHED rather than PASS.'",
+  "appliedAsPredeclared": true,
+  "criteriaNotAdjustedAfterTheFact": true,
+
+  "F065_PB11_LIVE_CERTIFICATION": {
+   "verdict": "NOT_ESTABLISHED",
+   "basis": "BUILD ATTRIBUTION ONLY — not a failure, and not a doubt about the observations.",
+   "whyThisMatters": "F065's recorded implementation state is 'structural fix PUSHED' — pushed, not confirmed deployed — and the Part-1/Part-2 refinements are committed locally and are certainly not deployed. Certification attaches to an artifact. Without knowing which artifact was exercised, a PASS records that some build behaved correctly, which cannot be carried forward as certification of this one.",
+   "whatWasNonethelessObserved": "A1, A2 and A3 all report PASS with concrete detail, and A2 reports the proof-critical elements: a NON-PASSWORD establishment path (institution sign-in), no /login at any point, and the session surviving the reload. That is exactly the behaviour F065 predicts. It is held as OBSERVED, not as CERTIFIED."
+  },
+
+  "S2_S3_SIGNED_OUT_PROBE": {
+   "verdict": "LIVE_BEHAVIOUR_OBSERVED_PASS_6_OF_6",
+   "certificationVerdict": "NOT_ESTABLISHED — same build-attribution reason",
+   "note": "Every B step matched its predeclared expectation, including the two counter-checks that make the set meaningful rather than self-confirming: B4 (/admin refuses unauthenticated entry — PD-1 scope exclusion is not a security bypass) and B5 (/public still renders — the fail-closed contract has not over-closed and broken acquisition). B1 reports the exact preserved destination string.",
+   "strength": "B1-B6 are self-describing observations of live behaviour and stand on their own as evidence that the live site currently enforces fail-closed routing with destination preservation."
+  },
+
+  "G1_GATE": {
+   "status": "NOT_OPENED",
+   "consequence": "W2 is NOT entered.",
+   "reason": "G1 requires F065's live refresh proof to PASS. The proof is NOT_ESTABLISHED, which is not a pass."
+  }
+ },
+
+ "stateChanges": {
+  "made": "NONE",
+  "F065": "IMPLEMENTED_NOT_LIVE_CERTIFIED — unchanged",
+  "F103": "OPEN — unchanged",
+  "F104": "OPEN — unchanged",
+  "F064": "OPEN — unchanged; the A3 note that would have carried evidence toward it was not filled in",
+  "F113": "OPEN — unchanged; same reason",
+  "chaptersClosed": 0,
+  "canonicalUnits": "451/451 unchanged",
+  "chapters": "17/17 unchanged"
+ },
+
+ "whatIsNeededToResolve": {
+  "blocking": [
+   "The build/commit identifier that was live during this observation — or an explicit statement that it cannot be established."
+  ],
+  "nonBlockingButOwed": [
+   "A2's destination — which member address was held across the refresh, and confirmation that institution sign-in was the establishment path used.",
+   "A3's note — whether the guest's meeting destination survived the refresh. This is F064/F113 evidence and is the only reason that note exists; A3's PASS does not answer it."
+  ],
+  "reRunRequired": false,
+  "note": "No step needs repeating. Three values complete the record."
+ }
+}
