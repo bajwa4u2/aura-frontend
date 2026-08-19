@@ -1,0 +1,65 @@
+{
+ "type": "STALE_BLOCKER_CORRECTION",
+ "subject": "GROUP IDENTITY DOCTRINE",
+ "date": "2026-08-18",
+ "requestedAction": "Founder asked for a bounded decision pack, on the recorded basis that the group identity doctrine does not exist and lies on CH-02 S4's critical path.",
+ "result": "NO DECISION PACK IS OWED. The doctrine EXISTS, was FOUNDER-RULED on 2026-08-17, and is IMPLEMENTED. The recorded blocker is stale.",
+ "whyThisIsReportedRatherThanRuled": "The founder's own instruction is explicit: do not return matters already deterministically resolvable from frozen doctrine. Presenting options for a question already answered would invite re-deciding a settled ruling.",
+
+ "evidence": {
+  "F055": {
+   "title": "Group identity ordering",
+   "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "founderDecision": "RULED",
+   "rulingText": "Founder instruction (transcript line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject generic joinedAt+alphabetical ordering; require immutable admission chronology (founding counterpart first)'.",
+   "subDecisionAlsoResolved": "'authorize the additive immutable-admission-order field, or accept approximate ordering?' — resolved in favour of the field, per the migration at line 31884.",
+   "stateTransition": "line 32009 — 'F055: INLC (rejected doctrine) -> INLC (correct model, backend + frontend pushed)'",
+   "implementationVerifiedInCode": "aura_final/lib/features/conversation/presentation/conversation_identity.dart:19-38 carries the ruling verbatim: 'FOUNDER RULING (2026-08-17, F055)'; 'founding parties (no entry invitation) sort ahead of admitted ones, then firstJoinedAt — the IMMUTABLE admission chronology — orders each band. Mutable joinedAt is deliberately NOT [used]'."
+  },
+  "F056": {
+   "title": "Group avatar treatment",
+   "state": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "founderDecision": "RULED",
+   "rulingText": "Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' Prior open sub-decision — 'implement composite avatars now with initials fallback, or wait for F058?' — resolved as implement now.",
+   "stateTransition": "line 32009 — 'F056: INLC (letter tile) -> INLC (composite architecture; cannot reach LIVE_CERTIFIED while F058 blocks image delivery)'",
+   "implementationVerifiedInCode": "aura_final/lib/features/conversation/presentation/conversation_avatar.dart — 'group — a compact composite of canonical participant identities'.",
+   "certificationCaveat": "F056 may NOT be recorded LIVE_CERTIFIED while F058 (R2/uploads CORS) blocks image delivery. That is a CERTIFICATION blocker on F056 itself, NOT a doctrine blocker on anything downstream."
+  }
+ },
+
+ "staleRecord": {
+  "artifact": "05-execution/s5-execution-architecture.json — readinessMatrix CH-03 founderDecisionReadiness",
+  "staleText": "Group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it.",
+  "whyItWasWrittenThatWay": "Stage 5 was authored against the register row at transcript line 31798, which recorded the PRE-RULING state ('judgment call, flagged in code for your ruling'). The rulings at lines 31804 / 32223 / 32009 superseded that row and the readiness note was never updated.",
+  "treatment": "SUPERSEDED_BY_EARLIER_FOUNDER_RULING. The Stage-5 artifact is NOT edited — it is historical architecture, and the four-layer doctrine says rulings apply forward while history is not rewritten to look cleaner. This record is the correction.",
+  "noStateChanged": "F055 and F056 keep IMPLEMENTED_NOT_LIVE_CERTIFIED. Nothing is promoted."
+ },
+
+ "correctionAgainstMyOwnEarlierClaim": {
+  "claim": "In the first-wave derivation I recorded W1-X3 (CH-02 S4) as depending on 'the group identity doctrine that does not exist'.",
+  "status": "TWO ERRORS, both mine.",
+  "error1": "The doctrine did exist — it had been ruled the day before Stage 5 was authored. I inherited a stale readiness note without checking the finding records behind it.",
+  "error2": "The attribution was also mine rather than canonical. CH-02 S4's canonical obligation is CO-RC-C3-006 — the explicit-context contract (institutionContextId + correspondAsInstitution) and fixed Me-depth placement — which is ACTING-CONTEXT identity, not group presentation. The group-identity dependency appears in CH-03's readiness note, not CH-02's.",
+  "consequence": "Either way the conclusion is the same and it is not a founder question: no group-identity ruling is owed."
+ },
+
+ "executionEffect": {
+  "CH-02_S4": {
+   "blockersAtDerivation": ["CH-03 identity conformance gate (W2)", "group identity doctrine", "PD-2"],
+   "nowDischarged": ["CH-03 conformance gate — PUBLISHED and proven enforcing this programme", "group identity doctrine — RULED 2026-08-17 and implemented", "PD-2 — RESOLVED by founder ruling 2026-08-18"],
+   "remaining": "NONE identified from canonical evidence.",
+   "status": "APPEARS FULLY UNBLOCKED — NOT EXECUTED. The founder instructed a stop for ruling after the pack; the pack turned out not to be owed, so the honest action is to report the discharge rather than to start construction on my own reading of a record I am simultaneously correcting."
+  },
+  "CH-03_actOnAudit": {
+   "statedBlocker": "the same group identity doctrine",
+   "status": "That blocker is discharged. Other CH-03 conditions are unaffected — the VISUAL half remains externally blocked by F058/CORS and returns NOT_DISCHARGED_BLOCKED_EXTERNAL, never FAIL."
+  }
+ },
+
+ "whatIsNotClaimed": [
+  "F055 and F056 are NOT live-certified. F056 explicitly cannot be while F058 blocks image delivery.",
+  "No finding state was changed by this correction.",
+  "The Stage-5 artifact was not edited.",
+  "CH-02 S4 was not executed."
+ ]
+}

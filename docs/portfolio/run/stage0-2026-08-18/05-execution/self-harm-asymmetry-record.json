@@ -1,0 +1,38 @@
+{
+ "type": "RECORDED_POLICY_ASYMMETRY",
+ "id": "SELF-HARM-REPORTING-ASYMMETRY",
+ "classification": "RECORDED_POLICY_ASYMMETRY · NON_BLOCKING_CURRENT_FRONTIER",
+ "date": "2026-08-18",
+ "ruledBy": "FOUNDER DIRECTION 2026-08-18 — keep it explicitly recorded, change nothing.",
+
+ "theAsymmetry": {
+  "aiOutputReporting": "AIReportCategory includes VIOLENCE_OR_SELF_HARM — a person can report an AI response for self-harm content.",
+  "userContentReporting": "The canonical content taxonomy has no dedicated self-harm category. Its nearest neighbour, VIOLENCE_OR_THREAT, covers threats to OTHERS — harm directed outward, not inward.",
+  "currentBehaviour": "User-content self-harm material reaches OTHER when no existing governed category applies.",
+  "whyItIsNotAMappingProblem": "VIOLENCE_OR_THREAT and VIOLENCE_OR_SELF_HARM share the word VIOLENCE and are close to disjoint in meaning. Treating one as covering the other would be exactly the false equivalence the taxonomy-relationship ruling forbids."
+ },
+
+ "explicitlyNotDone": [
+  "SELF_HARM was NOT added to the content taxonomy.",
+  "The two taxonomies were NOT merged.",
+  "Self-harm was NOT artificially mapped onto VIOLENCE_OR_THREAT or any other category.",
+  "AIReportCategory is NOT treated as authority for ordinary content.",
+  "No current reporting behaviour was changed."
+ ],
+
+ "enforcement": "src/moderation/taxonomy-relationship.spec.ts fails if a future contributor adds SELF_HARM or MISINFORMATION to the content taxonomy without a governed policy change. The asymmetry cannot be quietly closed by inference.",
+
+ "natureOfTheQuestion": "This is a substantive moderation-policy question — whether Aura offers a first-class route to report self-harm material about a person — not taxonomy normalisation. It belongs to CH-15 / content-safety policy adjudication.",
+
+ "blockingStatus": {
+  "blocksAnyExecutableUnitToday": false,
+  "returnedAsFounderBlocker": false,
+  "condition": "Return it for ruling only when a concrete executable unit actually requires it — for example when CH-15's report journey is constructed and the category set becomes a build input."
+ },
+
+ "visibility": [
+  "docs/governance/CH15_MODERATION_POLICY_FOUNDER_AUTHORED.md — recorded in the D1 section",
+  "aura-backend/src/moderation/taxonomy-relationship.ts — COVERAGE_ASYMMETRIES, first entry, marked the most safety-relevant",
+  "this record"
+ ]
+}
