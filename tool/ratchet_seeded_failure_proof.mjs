@@ -22,6 +22,7 @@ const C0 = 'test/product/c0_anti_drift_gate_test.dart'
 const C1 = 'test/authority/c1_anti_drift_gate_test.dart'
 const C3 = 'test/navigation/c3_route_integrity_gate_test.dart'
 const S1 = 'test/authority/ch02_s1_session_choke_point_test.dart'
+const S4 = 'test/authority/ch02_s4_acting_context_contract_test.dart'
 
 const header = `// TEMPORARY FD-13 SEED PROBE — created and deleted by
 // tool/ratchet_seeded_failure_proof.mjs. If this file is committed, the
@@ -171,6 +172,37 @@ const SEEDS = [
   Future<void> probe() async {
     await setSessionHint(true);
   }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+`,
+  },
+  {
+    id: 'S4-SENDER',
+    rule: 'CH-02 S4',
+    suite: S4,
+    test: 'no file turns institutionContextId into an acting identity',
+    imports: `import '../core/interactions/actor_context.dart';
+`,
+    body: `
+  ActorContext probe(String? institutionContextId) {
+    return const ActorContext(
+      type: ActorType.institution,
+      canSpeakAsInstitution: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+`,
+  },
+  {
+    id: 'S4-RETIRED',
+    rule: 'CH-02 S4',
+    suite: S4,
+    test: 'the route-inferring resolvers are still deleted',
+    body: `
+  bool _pathIsInstitutionShell(String p) => p.startsWith('/institution');
 
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();

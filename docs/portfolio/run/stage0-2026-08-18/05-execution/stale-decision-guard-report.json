@@ -1,0 +1,199 @@
+{
+ "type": "STALE_DECISION_GUARD",
+ "rule": "HISTORICAL READINESS NOTE != CURRENT FOUNDER DECISION STATE",
+ "date": "2026-08-18",
+ "findingsChecked": 143,
+ "suspectsFound": 18,
+ "suspects": [
+  {
+   "artifact": "01-analysis/agent-a-root-systems.json",
+   "line": 4480,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"Group identity doctrine: party ordering (F055) and group visual representation (F056) are documented judgment calls flagged in code awaiting a founder ruling.\",",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "01-analysis/agent-a-root-systems.json",
+   "line": 4480,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"Group identity doctrine: party ordering (F055) and group visual representation (F056) are documented judgment calls flagged in code awaiting a founder ruling.\",",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "01-analysis/stage1-comparison.json",
+   "line": 436,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"item\": \"Group identity doctrine: party ordering (F055) and group visual representation (F056) are documented judgment calls flagged in code explicitly awaiting a founder ruling.\"",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "01-analysis/stage1-comparison.json",
+   "line": 436,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"item\": \"Group identity doctrine: party ordering (F055) and group visual representation (F056) are documented judgment calls flagged in code explicitly awaiting a founder ruling.\"",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "02-reconcile/agent-d-rc-reconciliation.json",
+   "line": 218,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"exposedBy\": \"F055 (party ordering) and F056 (group visual representation) are group-identity questions. RC-C2's build list contains no group-identity concept, and Agent A records both as documented j",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "02-reconcile/agent-d-rc-reconciliation.json",
+   "line": 218,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"exposedBy\": \"F055 (party ordering) and F056 (group visual representation) are group-identity questions. RC-C2's build list contains no group-identity concept, and Agent A records both as documented j",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "02-reconcile/agent-d-rc-reconciliation.json",
+   "line": 972,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"Two of the nine cannot be closed by engineering at all: F055 (party ordering) and F056 (group visual representation) are group-identity questions, RC-C2 chartered no group-identity concept, and both ",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "02-reconcile/agent-d-rc-reconciliation.json",
+   "line": 972,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"Two of the nine cannot be closed by engineering at all: F055 (party ordering) and F056 (group visual representation) are group-identity questions, RC-C2 chartered no group-identity concept, and both ",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/first-wave-v2.json",
+   "line": 566,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"evidence\": \"CH-03 BLOCKED_FOUNDER concerns GROUP IDENTITY DOCTRINE (F055 ordering, F056 group avatar) and the verification-label mapping. Those are load-bearing when ACTING on the audit, not when ENU",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/first-wave-v2.json",
+   "line": 566,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"evidence\": \"CH-03 BLOCKED_FOUNDER concerns GROUP IDENTITY DOCTRINE (F055 ordering, F056 group avatar) and the verification-label mapping. Those are load-bearing when ACTING on the audit, not when ENU",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/g1-decomposition-and-frontier.json",
+   "line": 168,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"gate\": \"FOUNDER — group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it.\",",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/g1-decomposition-and-frontier.json",
+   "line": 168,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"gate\": \"FOUNDER — group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it.\",",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/group-identity-doctrine-status.json",
+   "line": 32,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"staleText\": \"Group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it.\",",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/group-identity-doctrine-status.json",
+   "line": 32,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"staleText\": \"Group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it.\",",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/s5-execution-architecture.json",
+   "line": 195,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"note\": \"Group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it. Also open: the verification label mapping (class -> human meaning -> user",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/s5-execution-architecture.json",
+   "line": 195,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"note\": \"Group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it. Also open: the verification label mapping (class -> human meaning -> user",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/s5-risk-and-timing.json",
+   "line": 547,
+   "finding": "F055",
+   "findingTitle": "Group identity ordering",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"evidence\": \"Group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it. Checkpoints 3, 4 and 5. Verification label mapping. The R2 CORS actio",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804): 'F055 / F056 - DO NOT SHIP THE CURRENT JUDGMENT CALL ... Do NOT freeze generic joinedAt + alphabetical tiebreak as Aura's product doctrine.' Ruling summary (line 32223): 'reject g",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  },
+  {
+   "artifact": "05-execution/s5-risk-and-timing.json",
+   "line": 547,
+   "finding": "F056",
+   "findingTitle": "Group avatar treatment",
+   "findingState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+   "claimExcerpt": "\"evidence\": \"Group identity doctrine (F055 ordering, F056 group avatar treatment) does not exist and engineering cannot supply it. Checkpoints 3, 4 and 5. Verification label mapping. The R2 CORS actio",
+   "canonicalRulingExcerpt": "RULED. Founder instruction (line 31804) held f518024 unshipped. Ruling summary (line 32223): 'Reject letter tile; require composite group avatar.' The prior open decision (line 31827) was: 'implement composite avatars no",
+   "verdict": "CLAIM_ASSERTS_AN_OUTSTANDING_DECISION_BUT_THE_FINDING_RECORDS_A_RULING"
+  }
+ ],
+ "treatment": [
+  "Preserve the historical artifact UNCHANGED — it is evidence of what was known when it was written.",
+  "Record the supersession/correction FORWARD, alongside it.",
+  "Do NOT resurrect the founder decision.",
+  "Do NOT return alternative options for a settled doctrine."
+ ],
+ "limits": [
+  "A hit is a SUSPECT, not a verdict. A ruling may answer part of a claim and leave a real residue; only a human can judge that.",
+  "Detection is textual. A claim that names no finding id, or an artifact that phrases it in words not listed here, is not caught — the guard reduces recurrence, it does not eliminate it."
+ ]
+}

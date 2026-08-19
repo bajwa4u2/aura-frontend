@@ -4,8 +4,8 @@
  "date": "2026-08-18",
  "doctrine": "A ratchet counts as enforcement ONLY after it is demonstrated to FAIL on a deliberately introduced real violation (FD-13 precedent).",
  "harnessError": null,
- "ratchetsProven": 11,
- "ratchetsAttempted": 11,
+ "ratchetsProven": 13,
+ "ratchetsAttempted": 13,
  "results": [
   {
    "id": "G2",
@@ -102,6 +102,26 @@
    "rule": "CH-02 S1",
    "suite": "test/authority/ch02_s1_session_choke_point_test.dart",
    "test": "no path establishes a hint for a guest token",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "S4-SENDER",
+   "rule": "CH-02 S4",
+   "suite": "test/authority/ch02_s4_acting_context_contract_test.dart",
+   "test": "no file turns institutionContextId into an acting identity",
+   "failedWhenSeeded": true,
+   "greenWhenClean": true,
+   "failureNamedTheRule": true,
+   "verdict": "ENFORCING"
+  },
+  {
+   "id": "S4-RETIRED",
+   "rule": "CH-02 S4",
+   "suite": "test/authority/ch02_s4_acting_context_contract_test.dart",
+   "test": "the route-inferring resolvers are still deleted",
    "failedWhenSeeded": true,
    "greenWhenClean": true,
    "failureNamedTheRule": true,

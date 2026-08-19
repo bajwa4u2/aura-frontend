@@ -321,3 +321,44 @@ independently consequential — delivery is governed by the anchor and the visib
 
 **Refusal must not become an oracle.** Where unauthorized media is supplied, the refusal must be
 identical whether the foreign media exists or not.
+
+## 14. STALE-DECISION GUARD *(founder ruling, 2026-08-18)*
+
+> **A HISTORICAL READINESS NOTE IS NOT A CURRENT FOUNDER DECISION STATE.**
+
+Before any artifact declares an item **`FOUNDER_DECISION_REQUIRED`**, the claim must be reconciled against:
+
+1. the canonical finding's **`founderDecisions`** field;
+2. **subsequent** founder rulings;
+3. operative execution/governance records that **supersede** the earlier readiness state.
+
+**Where a later ruling resolves it:** preserve the historical artifact **unchanged** · record the
+supersession **forward** · **do not resurrect** the decision · **do not return options for settled
+doctrine**.
+
+### Origin
+
+A Stage-5 readiness note stated that *"the group identity doctrine (F055 ordering, F056 group avatar
+treatment) does not exist and engineering cannot supply it."* Both had been **founder-ruled on
+2026-08-17** — the day before Stage 5 was authored — and both were implemented, with the rulings quoted
+verbatim in the source. The note was written against the pre-ruling register row and never updated.
+
+It then propagated into a wave derivation as a blocker and very nearly produced a founder decision pack
+for a question the founder had already answered.
+
+### Mechanical enforcement
+
+`tools/stale-decision-guard.mjs` reads every execution/synthesis artifact, extracts claims that a
+founder decision is outstanding, and reports any naming a finding whose canonical record already carries
+a ruling.
+
+**Its first run found 18 hits across 8 artifacts spanning Stages 1, 2 and 5** — the belief entered at
+Stage 1 analysis and survived four stages. Only F055/F056 are implicated; no other stale
+founder-decision claim exists in the corpus.
+
+**Limits, stated rather than assumed:** a hit is a **suspect**, not a verdict — a ruling may answer part
+of a claim and leave a real residue, and only a human can judge that. Detection is textual, so a claim
+naming no finding id escapes it. The guard reduces recurrence; it does not eliminate it. One hit is the
+correction record itself quoting the claim it corrects.
+
+**No history is edited.** Stage-1, Stage-2 and Stage-5 artifacts remain exactly as written.
