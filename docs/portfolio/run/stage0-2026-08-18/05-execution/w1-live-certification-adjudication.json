@@ -1,0 +1,135 @@
+{
+ "type": "W1_LIVE_CERTIFICATION_ADJUDICATION",
+ "date": "2026-08-18",
+ "supersedes": "w1-live-certification-observation-1.json verdict of BUILD_ATTRIBUTION_NOT_ESTABLISHED",
+ "correctionAccepted": "Build/deployment provenance is an ENGINEERING obligation. The prior response wrongly delegated it to founder observation. It has now been established technically, from the repository and the live artifact, without asking the founder for a commit identifier.",
+
+ "buildProvenance": {
+  "verdict": "ESTABLISHED",
+  "deployedArtifact": {
+   "host": "https://auraplatform.org",
+   "server": "railway-hikari (Railway edge ord1)",
+   "versionJson": { "app_name": "aura", "version": "1.3.0", "build_number": "24" },
+   "mainDartJs": {
+    "contentLength": 7413890,
+    "etag": "6a84dab3-712082",
+    "lastModified": "Tue, 18 Aug 2026 22:20:35 GMT"
+   }
+  },
+  "evidenceChain": [
+   { "step": 1, "fact": "Repository remote is github.com/bajwa4u2/aura-frontend; local branch main is AHEAD OF origin/main BY 7 COMMITS. Therefore none of the Part-1/Part-2/W1-X1 work can be deployed.", "method": "git remote -v; git status -sb" },
+   { "step": 2, "fact": "origin/main HEAD is 90dc15f, committed 2026-08-18 18:17:40 -0400 = 22:17:40 GMT.", "method": "git log -1 origin/main" },
+   { "step": 3, "fact": "The live main.dart.js carries last-modified 22:20:35 GMT — under three minutes AFTER 90dc15f's commit timestamp. An artifact cannot precede its source, and the build is contemporaneous with the push of origin/main HEAD.", "method": "HTTP HEAD on the live bundle" },
+   { "step": 4, "fact": "pubspec.yaml declares version 1.3.0+24, which matches the live version.json exactly ({version: 1.3.0, build_number: 24}).", "method": "file read vs live fetch" },
+   { "step": 5, "fact": "90dc15f is DOCUMENTATION ONLY. The last commit on origin/main touching lib/ is cdbae96 (2026-08-17 17:53:02 -0400) 'fix(routing): Spaces are PUBLIC discovery destinations (F069 founder ruling)'. The deployed CODE is therefore cdbae96.", "method": "git log origin/main -- lib/" },
+   { "step": 6, "fact": "DIRECT ARTIFACT TEST: the live main.dart.js contains the string literal 'aura_session_hint' (6 occurrences) and 'aura_session_hint_at' (3). dart2js preserves string literals, and these keys exist only in lib/core/auth/session_hint.dart, introduced by 28b098e 'session-hint contract (F065/RC1)'. The F065 structural fix IS in the deployed artifact.", "method": "download live bundle, grep for the SharedPreferences keys" },
+   { "step": 7, "fact": "The route-classification contract (S2) is likewise deployed: 4bafb1a introduced it and cdbae96 refined it; both are ancestors of the deployed code, and the live bundle carries 'complete-identity' and 'verify-pending' route literals.", "method": "git ancestry + string presence" }
+  ],
+  "deployedCodeCommit": "cdbae96",
+  "deployedArtifactBranchHead": "90dc15f (docs-only delta over cdbae96 for lib/ purposes)",
+  "unpushedLocalDelta": {
+   "commitsAheadTouchingLib": ["56c1510 (realtime lobby spinner -> AuraProductState)", "f8daae7 (removed two redundant setSessionHint(true) call sites)"],
+   "materialityToTheseProofs": "NONE. 56c1510 is a loading-state widget swap on the realtime lobby, untouched by either procedure. f8daae7 REMOVED redundant writes; the choke-point write from 28b098e already performed them, so the session-hint behaviour exercised live is the SAME contract the local tree enforces structurally. The local change makes the contract single-sited; it does not alter runtime behaviour on the tested paths."
+  }
+ },
+
+ "accountContextReEvaluation": {
+  "given": { "normalChrome": "founder account", "incognito": "Muhammad Zakria account" },
+  "procedureAssumed": "review@auraplatform.org",
+  "effectOnA1": "NONE — A1 requires a real member session established by password login. The founder account satisfies that identically.",
+  "effectOnA2": "NONE, and arguably STRONGER — A2 requires a session established through a NON-PASSWORD path (institution sign-in). The founder account genuinely holds institution authority, so the path exercised is real rather than simulated.",
+  "effectOnB": "NONE — B1/B2 require any valid member sign-in returning to the preserved destination. B3-B6 are signed-out and account-independent.",
+  "effectOnA3": {
+   "material": true,
+   "issue": "A3 was specified as GUEST entry with NO Aura account. The incognito profile is associated with a member account (Muhammad Zakria), so the guest-exclusion property is not fully ISOLATED by this run.",
+   "disposition": "A3 is recorded as OBSERVED and CORROBORATING, not as certification of the guest exclusion. It is a negative control and forms no part of G1's condition set, so this does not affect the gate.",
+   "notEscalated": "No re-run is requested. Whether a guest JWT was issued is a production-runtime fact, and querying production data is not authorized."
+  }
+ },
+
+ "evidenceSeparation": {
+  "founderObservationEstablishes": [
+   "A1: /home held across F5, still signed in.",
+   "A2: a non-password (institution sign-in) session held its destination across F5 with no /login observed at any point.",
+   "A3: no member session was acquired from guest meeting entry (scope-caveated above).",
+   "B1-B6: the six live routing behaviours, including the exact preserved destination string /login?redirect=%2Fhome."
+  ],
+  "runtimeApplicationEvidenceEstablishes": [
+   "classifyRoute values for every probed path, verified locally before the procedure was written, so the expected results were derived rather than guessed.",
+   "The session-hint contract, its guest exclusion and its single establishment site, proven by the CH-02 S1 gate (7 assertions) and the S3 contract gate (12 assertions).",
+   "Meetings 118 and realtime 333 regression baselines."
+  ],
+  "deploymentProvenanceEstablishes": [
+   "The observed behaviour belongs to deployed code cdbae96, artifact v1.3.0+24, built 2026-08-18 22:20:35 GMT.",
+   "That artifact contains the F065 session-hint contract and the F069 route classification.",
+   "It does NOT contain the seven unpushed local commits, whose lib/ delta is immaterial to these proofs."
+  ],
+  "whatNoOneEstablished": [
+   "Whether the guest's meeting destination survived the refresh (A3 note unfilled). This is F064/F113 evidence and neither finding changes state.",
+   "The specific member address held in A2. IMMATERIAL: what A2 proves is the non-password path, the absence of /login, and destination identity across the reload — none of which depends on which address it was. The prior response over-required this."
+  ]
+ },
+
+ "certifications": {
+  "F065": {
+   "verdict": "LIVE_CERTIFIED",
+   "against": "deployed artifact v1.3.0+24 / code cdbae96",
+   "basis": "A1 PASS and A2 PASS, adjudicated against criteria predeclared before observation, on an artifact independently proven to contain the fix.",
+   "provenLimit": "Certifies the deployed contract. The unpushed S1 refinement is behaviour-neutral on these paths and is not separately certified.",
+   "stage0Untouched": true
+  },
+  "S2_S3_LIVE_PROBE": {
+   "verdict": "PASS 6/6",
+   "against": "deployed artifact v1.3.0+24 / code cdbae96",
+   "notablyIncludes": [
+    "B4 — /admin refuses unauthenticated entry live, so the PD-1 scope exclusion is confirmed NOT to be a security bypass.",
+    "B5 — /public still renders, so the fail-closed contract has not over-closed and broken acquisition."
+   ]
+  },
+  "notCertified": {
+   "F103": "OPEN — not tested by these procedures.",
+   "F104": "OPEN — not tested.",
+   "F064": "OPEN — the A3 note that would have carried evidence was not filled.",
+   "F113": "OPEN — same.",
+   "guestExclusion": "OBSERVED ONLY — A3's isolation is compromised by the incognito account context."
+  }
+ },
+
+ "G1_ADJUDICATION": {
+  "vocabulary": "PASS | FAIL | NOT_DISCHARGED_BLOCKED_EXTERNAL | NOT_DISCHARGEABLE_NO_DATA | NOT_ATTEMPTED (as frozen in W1 exitCriteria)",
+  "legs": [
+   { "leg": 1, "requirement": "F065's LIVE REFRESH PROOF PASSES FIRST", "result": "PASS", "evidence": "A1 + A2 on proven artifact" },
+   { "leg": 2, "requirement": "Live signed-out probe certifies the route-classification contract fail-closed; 23 navigation gates and literal route ratchet green AFTER the change; targeted Meetings regression for every router change", "result": "PASS", "evidence": "B1-B6 live; route gates 12/12 green; Meetings 118/118 (97/97 superseded by founder ruling 2)" },
+   { "leg": 3, "requirement": "A call lifecycle observed across at least THREE sequential calls within ONE page lifetime with no reload (F045 accept-freeze root cause)", "result": "NOT_ATTEMPTED", "owner": "CH-04", "why": "CH-04 PHASE 1 was REFUSED from this wave on its own evidence (AD-CON-5 outstanding, SU-5 unsettled, VS-02 environmental, real devices unavailable). No realtime call lifecycle work was performed or authorized." },
+   { "leg": 4, "requirement": "F006/F007/F008/F010 RE-PROVEN LIVE on the Conversation realtime surface", "result": "NOT_ATTEMPTED", "owner": "CH-04 (with CH-06)", "why": "Same refusal. Additionally, under founder Ruling 3 the canonical Conversation attachment contract does not yet exist — CH-06 is W3 — so 'on the Conversation realtime surface' is not yet a surface that can be proven against." },
+   { "leg": 5, "requirement": "A deliberately violating file REFUSED at the ingestion door with a truthful, visible, RECOVERABLE refusal, with every ingestion door ENUMERATED and proven to pass through the same validation", "result": "NOT_ATTEMPTED", "owner": "CH-11", "why": "Two halves are owed. The REFUSAL half has strong local evidence — six real rejections with machine-readable codes and recoverable messages (media.service.client-supplied-key.spec.ts) — but has not been demonstrated LIVE. The ENUMERATION half has not been performed at all: the ingestion doors are not yet exhaustively enumerated. Recorded as not attempted rather than partial, because a half-answered leg is not a discharged one." },
+   { "leg": 6, "requirement": "PBCR conditions 7 and 8 discharged and reported RETROSPECTIVELY, LABELLED as evidence for the HISTORICAL crossing and kept separate from any new crossing", "result": "PASS", "evidence": "W1-000 discharge, recorded at PORTFOLIO_GOVERNANCE_DOCTRINE.md §7.1 and labelled explicitly as the historical PB-02/RC-C6 crossing." }
+  ],
+  "verdict": "G1_DOES_NOT_OPEN",
+  "legsPassed": 3,
+  "legsNotAttempted": 3,
+  "legsFailed": 0,
+  "structuralFinding": {
+   "statement": "G1 was written to terminate STAGE-5's W1, which included CH-04 PHASE 1 and the CH-11 chapter head. The wave actually derived and authorized EXCLUDED CH-04 PHASE 1 (refused on its own evidence) and admitted CH-11 only conditionally, later bounded further to its ungated portion. The executed wave is therefore NARROWER than the gate that terminates it.",
+   "consequence": "G1 cannot open on the strength of the executed wave, no matter how the live proofs went. This is not a failure of the live certification and not a defect in the observation.",
+   "notResolvedHere": "Whether G1 should be re-scoped to the wave actually executed, or the wave extended to satisfy G1 as frozen, is a FOUNDER decision. Re-scoping a frozen gate to fit the work done is exactly the weakening this programme forbids, so it is not proposed.",
+   "properOwners": {
+    "legs3and4": "CH-04 — blocked on AD-CON-5 (founder classification), SU-5, VS-02's three-sequential-call environmental condition, and real-device access (LANE-W0 long lead).",
+    "leg5": "CH-11 — the live refusal demonstration and the ingestion-door enumeration."
+   }
+  }
+ },
+
+ "W2": { "entered": false, "reason": "G1 did not open. Entering W2 would require either the missing legs or a re-scoping of a frozen gate." },
+
+ "standingState": {
+  "canonicalUnits": "451/451",
+  "chapters": "17/17",
+  "chaptersClosed": 0,
+  "F065": "LIVE_CERTIFIED against cdbae96 (recorded in the execution layer; Stage-0 evidence untouched)",
+  "F103": "OPEN", "F104": "OPEN", "F064": "OPEN", "F113": "OPEN",
+  "F123": "RC-C5 GATED", "F122": "GATED + PRESERVED CONFLICT",
+  "W1-X2": "REFUSED", "W1-X3": "REFUSED",
+  "CH-04 DEFECT-1": "OPEN_ASSIGNED, not waived"
+ }
+}

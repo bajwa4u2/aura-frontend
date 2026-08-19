@@ -102,6 +102,33 @@ ${dispositions.map((d) => {
 }).join(NL + NL)}
 `
 
+// Live certifications are recorded in the EXECUTION layer, never by editing
+// Stage-0 evidence (stage4-proof R7). The register surfaces them so a reader
+// sees proven state without the canonical evidence being rewritten.
+const BT = String.fromCharCode(96)
+let liveCerts = []
+try {
+  const adj = rd('05-execution/w1-live-certification-adjudication.json')
+  liveCerts = Object.entries(adj.certifications || {})
+    .filter(([, v]) => v && typeof v === 'object' && v.verdict)
+    .map(([k, v]) => ({ id: k, verdict: v.verdict, against: v.against || '', limit: v.provenLimit || '' }))
+} catch { liveCerts = [] }
+
+const liveCertSection = liveCerts.length === 0 ? '' : [
+  '',
+  '---',
+  '',
+  '## LIVE CERTIFICATIONS (execution layer)',
+  '',
+  'Recorded from founder-observed live evidence bound to a technically established deployed artifact.',
+  'Stage-0 evidence is NOT rewritten; a certification is a new evidenced fact, and it becomes a register',
+  'state transition at chapter closure. **No chapter has closed.**',
+  '',
+  '| Item | Verdict | Against artifact | Limit of what is proven |',
+  '|---|---|---|---|',
+  ...liveCerts.map((c) => '| **' + c.id + '** | ' + BT + c.verdict + BT + ' | ' + c.against + ' | ' + (c.limit || '-') + ' |'),
+].join(NL)
+
 const register = `# AURA RECONSTRUCTION REGISTER — NON-SHRINKING
 
 > **GENERATED — DO NOT EDIT BY HAND.**
@@ -182,7 +209,7 @@ Reporting one dimension as "F139 status" is a governance violation.
 |---|---|---:|---:|
 ${chapters.map((c) => `| ${c.id} | ${c.name} | ${c.findings.count} | ${c.obligations.count} |`).join('\n')}
 
-${dispositionSection}
+${dispositionSection}${liveCertSection}
 ---
 
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER

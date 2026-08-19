@@ -155,6 +155,18 @@ retained verbatim and superseded only as to current status.
 
 ---
 
+## LIVE CERTIFICATIONS (execution layer)
+
+Recorded from founder-observed live evidence bound to a technically established deployed artifact.
+Stage-0 evidence is NOT rewritten; a certification is a new evidenced fact, and it becomes a register
+state transition at chapter closure. **No chapter has closed.**
+
+| Item | Verdict | Against artifact | Limit of what is proven |
+|---|---|---|---|
+| **F065** | `LIVE_CERTIFIED` | deployed artifact v1.3.0+24 / code cdbae96 | Certifies the deployed contract. The unpushed S1 refinement is behaviour-neutral on these paths and is not separately certified. |
+| **S2_S3_LIVE_PROBE** | `PASS 6/6` | deployed artifact v1.3.0+24 / code cdbae96 | - |
+---
+
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER
 
 - Removing an item because it is implemented, green, deployed or merged.
