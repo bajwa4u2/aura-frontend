@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -85,8 +86,19 @@ dynamic _unwrapData(dynamic v) {
 /// re-fires on ANY token swap — including institution re-login while a
 /// personal session is already active.
 ///
-/// Never throws; returns {} on any error. Consumed by emailVerifiedProvider
-/// and institutionAccessProvider so /auth/me is called only once per session.
+/// RC5 — "COULD NOT ASK" IS NOT "ASKED AND GOT NOTHING".
+///
+/// This used to answer `{}` for every failure, so a transient 500, a dropped
+/// connection or a timeout was indistinguishable from a signed-out visitor.
+/// Everything downstream then reasoned from a confident empty identity that
+/// was never established, and the state never corrected itself because
+/// nothing was ever in error.
+///
+/// Now the two are kept apart. A 401/403 genuinely means "no member session"
+/// and still answers `{}`. Anything else propagates, so the provider is in
+/// ERROR — a state consumers and the router can see, and one the boot
+/// surface already bounds (F068: a bounded wait with an honest retry, never
+/// an eternal spinner).
 final authMeDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final store = ref.watch(tokenStoreProvider);
   if (!store.isAuthed) return {};
@@ -104,8 +116,13 @@ final authMeDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
     final level1 = _unwrapData(raw);
     final level2 = _unwrapData(level1);
     return _toMap(level2);
-  } catch (_) {
-    return {};
+  } on DioException catch (e) {
+    final code = e.response?.statusCode ?? 0;
+    // The server answered, and its answer was "not you": that IS the result.
+    if (code == 401 || code == 403) return {};
+    // Anything else — 5xx, timeout, offline — leaves identity UNKNOWN.
+    // Answering {} here would state something that was never established.
+    rethrow;
   }
 });
 

@@ -17,6 +17,7 @@ import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
 import 'core/institutions/institution_route_authority.dart';
 import 'core/navigation/destination_continuity.dart';
+import 'features/meetings/presentation/booking_route_entry.dart';
 import 'features/meetings/application/meetings_provider.dart';
 import 'features/realtime/application/realtime_providers.dart';
 import 'features/realtime/domain/realtime_enums.dart';
@@ -125,8 +126,6 @@ import 'features/invitations/presentation/contact_import_screen.dart';
 import 'features/realtime/presentation/realtime_lobby_screen.dart';
 import 'features/realtime/presentation/realtime_room_screen.dart';
 import 'features/meetings/presentation/booking_cancel_screen.dart';
-import 'features/meetings/presentation/booking_confirm_screen.dart';
-import 'features/meetings/presentation/booking_reschedule_screen.dart';
 import 'features/meetings/presentation/create_meeting_screen.dart';
 import 'features/meetings/presentation/guest_waiting_room_screen.dart';
 import 'features/meetings/presentation/institution_availability_screen.dart';
@@ -137,9 +136,7 @@ import 'features/meetings/presentation/meeting_join_fallback_screen.dart';
 import 'features/meetings/presentation/meeting_live_room_screen.dart';
 import 'features/meetings/presentation/pre_join_screen.dart';
 import 'features/meetings/presentation/public_booking_screen.dart';
-import 'features/meetings/presentation/slot_picker_screen.dart';
 import 'features/meetings/presentation/meetings_home_screen.dart';
-import 'features/meetings/domain/availability_profile.dart';
 
 // Static screens
 import 'screens/support_fallback_screen.dart';
@@ -359,13 +356,27 @@ final routerProvider = Provider<GoRouter>((ref) {
     }
   });
 
+  // RC5 — FIRE ON THE ASYNC VALUE'S IDENTITY, NOT ONLY ITS VALUE.
+  //
+  // Comparing materialised values alone means a transition INTO ERROR never
+  // re-runs the redirect: loading -> error is null -> null, and data -> error
+  // keeps the previous value through `copyWithPrevious`. The router then goes
+  // on standing by a decision it made against state that has since failed,
+  // with nothing left to correct it.
+  //
+  // The key below carries whether the provider is loading or in error as well
+  // as what it holds, so every genuine transition is seen — and a reload that
+  // lands on the same value still fires nothing, which is the property the
+  // original tightening was for.
+  String institutionKey(AsyncValue<InstitutionAccess>? v) =>
+      '${v?.isLoading ?? true}/${v?.hasError ?? false}/${v?.valueOrNull?.state.name ?? '-'}';
+
   ref.listen<AsyncValue<InstitutionAccess>>(institutionAccessProvider, (
     prev,
     next,
   ) {
-    final prevState = prev?.valueOrNull?.state;
     final nextState = next.valueOrNull?.state;
-    if (prevState != nextState) {
+    if (institutionKey(prev) != institutionKey(next)) {
       refresh.value++;
       RuntimeTrace.emit(
         'router.refresh',
@@ -375,10 +386,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     }
   });
 
+  String adminKey(AsyncValue<AppAdminAccess>? v) =>
+      '${v?.isLoading ?? true}/${v?.hasError ?? false}/${v?.valueOrNull?.isAdmin ?? '-'}';
+
   ref.listen<AsyncValue<AppAdminAccess>>(appAdminAccessProvider, (prev, next) {
-    final prevAdmin = prev?.valueOrNull?.isAdmin;
     final nextAdmin = next.valueOrNull?.isAdmin;
-    if (prevAdmin != nextAdmin) {
+    if (adminKey(prev) != adminKey(next)) {
       refresh.value++;
       RuntimeTrace.emit(
         'router.refresh',
@@ -901,28 +914,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) =>
                 PublicBookingScreen(slug: state.pathParameters['slug'] ?? ''),
           ),
+          // RC8 — the subject of this route lives in the ROUTE, not in the
+          // in-memory object the previous screen was holding. It used to fall
+          // through to a booking page for NOBODY on any refresh, bookmark or
+          // shared link — with the slug sitting right there in the path it
+          // was standing on.
           GoRoute(
             path: '/meet/:slug/book',
-            builder: (context, state) {
-              final extra = state.extra;
-              if (extra is Map<String, dynamic>) {
-                final profile = extra['profile'] as AvailabilityProfile?;
-                final slot = extra['slot'] as TimeSlot?;
-                final duration = extra['duration'] as int? ?? 30;
-                if (profile != null && slot != null) {
-                  return BookingConfirmScreen(
-                    profile: profile,
-                    slot: slot,
-                    durationMinutes: duration,
-                  );
-                }
-              }
-              if (extra is AvailabilityProfile) {
-                // Arrived from booking page without pre-selecting a slot
-                return SlotPickerScreen(profile: extra);
-              }
-              return const PublicBookingScreen(slug: '');
-            },
+            builder: (context, state) => BookingRouteEntry(
+              slug: state.pathParameters['slug'] ?? '',
+              slot: slotFromQuery(state.uri.queryParameters),
+              durationMinutes:
+                  int.tryParse(state.uri.queryParameters['duration'] ?? ''),
+            ),
           ),
 
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
@@ -1276,57 +1280,38 @@ final routerProvider = Provider<GoRouter>((ref) {
           // H4: reschedule routes
           GoRoute(
             path: '/i/:institutionSlug/meet/reschedule/:token',
-            builder: (context, state) {
-              final extra = state.extra;
-              final profile = extra is AvailabilityProfile ? extra : null;
-              if (profile != null) {
-                return BookingRescheduleScreen(
-                  token: state.pathParameters['token'] ?? '',
-                  profile: profile,
-                );
-              }
-              return const BookingCancelScreen(token: ''); // fallback
-            },
+            // RC8 — reached from a confirmation EMAIL, which carries no
+            // in-app state, so this route never worked at all: it fell
+            // through to a CANCEL screen with the token discarded. The token
+            // now names the booking, and the BOOKING's own state decides
+            // whether a reschedule is offered.
+            builder: (context, state) => RescheduleRouteEntry(
+              token: state.pathParameters['token'] ?? '',
+            ),
           ),
           GoRoute(
             path: '/meet/reschedule/:token',
-            builder: (context, state) {
-              final extra = state.extra;
-              final profile = extra is AvailabilityProfile ? extra : null;
-              if (profile != null) {
-                return BookingRescheduleScreen(
-                  token: state.pathParameters['token'] ?? '',
-                  profile: profile,
-                );
-              }
-              return const BookingCancelScreen(token: ''); // fallback
-            },
+            // RC8 — reached from a confirmation EMAIL, which carries no
+            // in-app state, so this route never worked at all: it fell
+            // through to a CANCEL screen with the token discarded. The token
+            // now names the booking, and the BOOKING's own state decides
+            // whether a reschedule is offered.
+            builder: (context, state) => RescheduleRouteEntry(
+              token: state.pathParameters['token'] ?? '',
+            ),
           ),
           GoRoute(
             path: '/i/:institutionSlug/meet/:bookingSlug/book',
-            builder: (context, state) {
-              final extra = state.extra;
-              if (extra is Map<String, dynamic>) {
-                final profile = extra['profile'] as AvailabilityProfile?;
-                final slot = extra['slot'] as TimeSlot?;
-                final duration = extra['duration'] as int? ?? 30;
-                if (profile != null && slot != null) {
-                  return BookingConfirmScreen(
-                    profile: profile,
-                    slot: slot,
-                    durationMinutes: duration,
-                  );
-                }
-              }
-              if (extra is AvailabilityProfile) {
-                return SlotPickerScreen(profile: extra);
-              }
-              // Fallback: reload the institution booking page
-              return InstitutionPublicBookingScreen(
-                institutionSlug: state.pathParameters['institutionSlug'] ?? '',
-                bookingSlug: state.pathParameters['bookingSlug'] ?? '',
-              );
-            },
+            // RC8 — same correction as the personal booking route: the
+            // subject lives in the route, not in whatever object the previous
+            // screen was holding.
+            builder: (context, state) => BookingRouteEntry(
+              slug: state.pathParameters['bookingSlug'] ?? '',
+              institutionSlug: state.pathParameters['institutionSlug'],
+              slot: slotFromQuery(state.uri.queryParameters),
+              durationMinutes:
+                  int.tryParse(state.uri.queryParameters['duration'] ?? ''),
+            ),
           ),
           // /messages — restored to MessagesHubScreen (existing
           // conversations/spaces/invites). The new actor-aware direct

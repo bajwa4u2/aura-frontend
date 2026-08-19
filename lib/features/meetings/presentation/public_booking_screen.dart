@@ -330,7 +330,9 @@ class _BookingActionPanel extends StatelessWidget {
               icon: const Icon(Icons.calendar_month_rounded),
               label: const Text('Book a time'),
               onPressed: () =>
-                  context.push('${profile.publicUrl}/book', extra: profile),
+                  // RC8 — no `extra`: the route already names the profile,
+                  // and the booking entry resolves it from there.
+                  context.push('${profile.publicUrl}/book'),
             ),
             const SizedBox(height: AuraSpace.s18),
             const _ReassuranceRow(

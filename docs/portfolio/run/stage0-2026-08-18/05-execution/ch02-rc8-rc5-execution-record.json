@@ -1,0 +1,125 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-02 refresh continuity - RC8 (protected Meetings boundary, narrowly authorized) and RC5",
+  "chapter": "CH-02 (Continuity & Destination Authority)",
+  "date": "2026-08-19",
+  "authorization": "FOUNDER RULING 2026-08-19 - narrow crossing of the protected Meetings boundary for booking, reschedule and meeting-entry NAVIGATION only.",
+  "RC8_enumeration": [
+    {
+      "site": "/meet/:slug/book",
+      "carried": "profile (AvailabilityProfile), slot (TimeSlot), duration (int) in state.extra",
+      "classification": {
+        "profile": "RECONSTRUCTABLE TRANSIENT - the public profile for the :slug already in the path",
+        "slot": "DURABLE SELECTION - a start time the person chose",
+        "duration": "DURABLE SELECTION"
+      },
+      "defectBefore": "No extra meant PublicBookingScreen(slug: '') - a booking page for NOBODY, with the slug sitting in the path it was standing on."
+    },
+    {
+      "site": "/i/:institutionSlug/meet/:bookingSlug/book",
+      "carried": "same three values",
+      "classification": "same",
+      "defectBefore": "Fell back to the institution booking page, losing the chosen slot."
+    },
+    {
+      "site": "/meet/reschedule/:token",
+      "carried": "profile (AvailabilityProfile) in state.extra",
+      "classification": {
+        "profile": "RECONSTRUCTABLE TRANSIENT - resolvable from the token's own booking",
+        "token": "DURABLE ROUTE IDENTITY - already in the path"
+      },
+      "defectBefore": "Fell back to BookingCancelScreen(token: '') - the WRONG SCREEN with the token discarded. This route is only ever reached from a confirmation EMAIL, which never carries in-app state, so it never worked at all. Not merely refresh-fragile: broken."
+    },
+    {
+      "site": "/i/:institutionSlug/meet/reschedule/:token",
+      "carried": "profile",
+      "classification": "same",
+      "defectBefore": "same"
+    },
+    {
+      "site": "/meetings/:meetingId/live and /institution/:institutionId/meetings/:meetingId/live",
+      "carried": "sessionId and isHost as QUERY parameters (not state.extra)",
+      "classification": {
+        "sessionId": "SENSITIVE / EPHEMERAL RUNTIME STATE - already survives refresh because query strings do; deliberately NOT expanded, NOT reconstructed-and-auto-joined",
+        "isHost": "MUST NOT BE ROUTE AUTHORITY - it was read back as permission"
+      },
+      "defectBefore": "An empty sessionId on the PERSONAL live route self-navigated to /home, discarding the destination although :meetingId was in the path. The institution variant already returned to the meeting."
+    }
+  ],
+  "RC8_changes": {
+    "booking": "The route carries identity; everything else is read back from the authority that owns it. WHO the booking is with comes from the :slug (or :institutionSlug + :bookingSlug) resolved through the EXISTING public-profile providers; WHICH slot was chosen comes from ?start= and ?duration=. A booking URL with no slot now offers the picker, which is what a person who bookmarked 'book with X' means.",
+    "reschedule": "New read: GET /book/reschedule/:token returns the booking's IDENTITY (profile slug, institution slug, current state) so the client re-reads the profile through the same public-profile authority. The token is already the bearer credential for cancelling and rescheduling the same booking, so reading with it is strictly less powerful than what it can already do.",
+    "meetingEntry": "isHost is now DERIVED from the meeting - its own host, or a participant row with the HOST role for the current person - with the query parameter surviving only as the first-frame hint it always really was, overruled the moment the meeting loads. An empty sessionId returns to /meetings/:meetingId instead of /home.",
+    "deliberatelyNotDone": "Rediscovering a live session and joining it. Which session a person enters is an ENTRY decision owned by the meeting's own flow; a continuity repair must not make it on their behalf. Returning them to the meeting hands the decision back to the authority that owns it, unchanged."
+  },
+  "whatIsNowInRouteIdentity": [
+    ":slug / :institutionSlug / :bookingSlug - who the booking is with",
+    ":token - which booking a reschedule link means",
+    ":meetingId - which meeting",
+    "?start= and ?duration= - the slot the person selected"
+  ],
+  "whatIsReconstructedFromAuthority": [
+    "AvailabilityProfile - publicProfileProvider / institutionPublicProfileProvider",
+    "Booking state and reschedulability - the booking itself, via the token read",
+    "Host standing - the meeting record and its participants",
+    "Availability, minimum notice, maximum advance, capacity - re-decided server-side on every read and write, unchanged"
+  ],
+  "noSensitiveStateMadeRouteAuthoritative": {
+    "confirmed": true,
+    "detail": "Nothing was ADDED to a URL except a start time and a duration - values the person chose, meaningless to anyone who did not choose them. No session credential, no admission decision, no host claim, no realtime token. isHost was REMOVED as authority rather than made durable. The token read returns no attendee identity and no credential, asserted field-by-field in its spec.",
+    "unchangedAuthorities": "Every host-only operation was, and remains, authorised by the backend on its own terms."
+  },
+  "RC5": {
+    "half1": "authMeDataProvider answered {} for EVERY failure, so a transient 500, a dropped connection or a timeout was indistinguishable from a signed-out visitor - and nothing downstream could tell. A 401/403 is a real answer and still returns {}; anything else now propagates, leaving identity UNKNOWN rather than falsely EMPTY. The boot surface already bounds unknown (F068: bounded wait, honest retry, never an eternal spinner).",
+    "half2": "The router's refresh listeners compared materialised VALUES only, so a transition INTO error never re-ran the redirect - loading to error is null to null, and data to error retains the previous value through copyWithPrevious. They now key on the AsyncValue's identity (loading / error / value), so every genuine transition is seen while a reload landing on the same value still fires nothing, which is the property the original tightening existed for.",
+    "notClaimed": "RC5's third element - the eternal /_boot spinner - was ALREADY repaired under F068 and is not re-claimed here."
+  },
+  "findingReassessment": {
+    "F063": {
+      "canonicalDefect": "Compose systems lose in-progress composition across refresh/navigation.",
+      "rc8AttributionTested": "REMOVED FORWARD. RC8's entire surface is booking, reschedule and meeting entry; no compose surface carries a state.extra destination. The Stage-0 attribution is preserved verbatim and superseded only as to current causal status.",
+      "repairedCauses": "RC7, both halves - article draft identity in the route, post-composer draft identity restored on rehydration, composer context preserved through the sign-in round trip.",
+      "auditedAndNotDefective": "Institution post composer (device-local draft store) and announcement editor (draft created at publish time).",
+      "remainingConstruction": "NONE ESTABLISHED",
+      "remainingCertification": "Live proof that an in-progress composition survives a refresh on each composer.",
+      "newState": "IMPLEMENTED_NOT_LIVE_CERTIFIED"
+    },
+    "F061": {
+      "canonicalDefect": "Editing a personal profile does not survive a refresh.",
+      "namedCauses": "RC4, RC8",
+      "rc4": "REPAIRED.",
+      "rc8": "PROVEN INAPPLICABLE - its whole surface is booking and meeting entry; /me/edit carries no state.extra destination.",
+      "whatActuallyMadeItSurvive": "RC1. The route is stable and the screen reloads the saved profile on mount, so once the session restores the destination reconstructs.",
+      "residualObservation": "Unsaved keystrokes in the form are still lost on reload. No RC in the shared-cause audit addresses that, and the frozen contract promises destination reconstruction, not form-draft persistence. Recorded as an observation; NO new finding was invented for it.",
+      "ambiguityDeclared": "The finding's wording does not distinguish 'the page does not come back' from 'my typing is lost'. Live certification is where that is settled by observation, which is exactly why the state below is non-terminal.",
+      "newState": "IMPLEMENTED_NOT_LIVE_CERTIFIED"
+    }
+  },
+  "meetingsCertification": {
+    "verdict": "MEETINGS BEHAVIOR PRESERVED",
+    "frontend": "test/meetings - 31 PASS (was 20; +11 RC8 assertions)",
+    "backend": "meeting / availability / booking suites - 12 suites, 125 tests PASS",
+    "coverage": [
+      "booking route opened cold reaches the right booking",
+      "booking route with no slot offers the picker rather than a page for nobody",
+      "reschedule link from an email reaches the reschedule flow",
+      "cancelled booking is refused a reschedule, by the booking's own state",
+      "unknown token is honest and reveals nothing",
+      "empty token asks for the email link again",
+      "slot selection round-trips through the address bar and carries no credential",
+      "unknown/removed/foreign booking - no data disclosed",
+      "existing waiting-room, admission, join-error precedence, realtime-semantics and meeting-entry suites all retained and green"
+    ],
+    "unchanged": "Instant and scheduled meetings, institution-owned model, invitation-only external participation, booking and rescheduling lifecycle, waiting room, admission, live room, participant roles, agenda/notes, materials, recording, follow-up/summary/calendar share, institution workspace ownership, realtime session semantics."
+  },
+  "verification": {
+    "newAssertions": 31,
+    "frontendSuite": "747 PASS (727 before this batch)",
+    "backendSuite": "205 suites / 2577 tests PASS (204 / 2570 before)",
+    "identityConformanceGate": "PASS - 66 files / 202 sites, at baseline",
+    "c0AntiDriftRatchet": "PASS - it CAUGHT a new toLocal() in the booking route entry during this batch; corrected to parse-as-received, presentation localises through the temporal authority",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "typecheckAndAnalyze": "clean"
+  },
+  "founderDecisionsRequired": ["NONE"]
+}

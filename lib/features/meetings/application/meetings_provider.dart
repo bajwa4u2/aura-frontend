@@ -303,6 +303,18 @@ class InstitutionBookingKey {
   int get hashCode => Object.hash(institutionSlug, bookingSlug);
 }
 
+/// RC8 — the booking a reschedule token refers to.
+///
+/// A reschedule link arrives from an email and carries nothing but the token,
+/// so the destination has to be rebuilt from it. The profile itself is then
+/// read through the SAME public-profile authority every other booking surface
+/// uses — this provider supplies identity, not a second profile source.
+final rescheduleContextProvider =
+    FutureProvider.family<Map<String, dynamic>, String>((ref, token) async {
+      final repo = ref.watch(availabilityRepositoryProvider);
+      return repo.getBookingByRescheduleToken(token);
+    });
+
 final institutionPublicProfileProvider =
     FutureProvider.family<AvailabilityProfile, InstitutionBookingKey>((
       ref,

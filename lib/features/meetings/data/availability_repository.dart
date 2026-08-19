@@ -77,6 +77,17 @@ class AvailabilityRepository {
     await _dio.patch<void>('/book/cancel/$token');
   }
 
+  /// RC8 — what booking does this reschedule link refer to?
+  ///
+  /// Returns IDENTITY, not a second copy of the profile: the profile slug is
+  /// re-read through the existing public-profile authority. The booking's own
+  /// current state comes back too, so a cancelled or stale link is stated
+  /// honestly rather than offering a reschedule the server would refuse.
+  Future<Map<String, dynamic>> getBookingByRescheduleToken(String token) async {
+    final res = await _dio.get<Map<String, dynamic>>('/book/reschedule/$token');
+    return Map<String, dynamic>.from(res.data!['data'] as Map);
+  }
+
   Future<Map<String, dynamic>> rescheduleBookingByToken(
     String token, {
     required DateTime scheduledAt,

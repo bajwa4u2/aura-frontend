@@ -84,6 +84,22 @@
       "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
       "date": "2026-08-19",
       "basis": "Named causes RC2 and RC4 repaired, plus the RC3 screen-binding half its destination depends on. Live certification owed and NOT claimed."
+    },
+    "F061": {
+      "title": "Personal profile edit continuity",
+      "chapter": "CH-02",
+      "stage0State": "OPEN",
+      "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "date": "2026-08-19",
+      "basis": "RC4 repaired; RC8 proven inapplicable (its whole surface is booking/meeting entry). RC1 is what actually made the destination reconstruct. Residual observation recorded: unsaved keystrokes are still lost, which no RC addresses and the frozen contract does not promise. The finding's wording does not distinguish the two readings; live certification settles it, which is why this state is non-terminal."
+    },
+    "F063": {
+      "title": "Compose systems continuity",
+      "chapter": "CH-02",
+      "stage0State": "OPEN",
+      "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "date": "2026-08-19",
+      "basis": "RC7 repaired in both halves. RC8 attribution tested and REMOVED FORWARD - no compose surface carries a state.extra destination. Stage-0 attribution preserved verbatim, superseded only as to current causal status."
     }
   }
 }

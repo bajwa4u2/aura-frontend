@@ -7,6 +7,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
+import 'booking_route_entry.dart';
 
 class SlotPickerScreen extends ConsumerStatefulWidget {
   final AvailabilityProfile profile;
@@ -684,13 +685,15 @@ class _TimesPanel extends StatelessWidget {
                                     bottom: AuraSpace.s8,
                                   ),
                                   child: OutlinedButton(
+                                    // RC8 — the chosen slot goes into the
+                                    // ADDRESS, so the confirmation step
+                                    // survives a refresh and can be shared or
+                                    // bookmarked. A start time and a duration
+                                    // are values the person chose, not
+                                    // credentials.
                                     onPressed: () => context.push(
-                                      '${profile.publicUrl}/book',
-                                      extra: {
-                                        'profile': profile,
-                                        'slot': slot,
-                                        'duration': selectedDuration,
-                                      },
+                                      '${profile.publicUrl}/book'
+                                      '${bookingSelectionQuery(slot: slot, duration: selectedDuration)}',
                                     ),
                                     style: OutlinedButton.styleFrom(
                                       alignment: Alignment.centerLeft,

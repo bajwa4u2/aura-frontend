@@ -31,6 +31,7 @@ import '../../realtime/data/realtime_event_parser.dart';
 import '../../realtime/domain/realtime_enums.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
+import '../../conversation/presentation/conversation_identity.dart';
 
 // E1 — MeetingTransportBridge: sole interface between meeting UI and WebRTC layer.
 // All mic/camera/screen operations from meeting widgets MUST go through this bridge.
@@ -313,7 +314,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   // shared gets a quiet toast instead of an empty panel.
   Future<void> _openFilesSurface(Meeting? meeting) async {
     ref.invalidate(meetingAssetsProvider(widget.meetingId));
-    if (!widget.isHost) {
+    if (!_isHost) {
       try {
         final assets = await ref
             .read(meetingsRepositoryProvider)
@@ -490,7 +491,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   // Socket history carries no promoted state (transport untouched) — the
   // host merges it from the member REST transcript, best-effort.
   Future<void> _hydratePromotedState() async {
-    if (!widget.isHost) return;
+    if (!_isHost) return;
     try {
       final rows = await ref
           .read(meetingsRepositoryProvider)
@@ -765,7 +766,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     // different realtime room and can never see the other.
     debugPrint(
       '[meeting-live] mounted meetingId=${widget.meetingId}'
-      ' sessionId=${widget.sessionId} isHost=${widget.isHost}'
+      ' sessionId=${widget.sessionId} isHost=$_isHost'
       ' guestId=${(widget.guestUserId ?? '').trim()} code=${(widget.meetingCode ?? '').trim()}',
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -1025,16 +1026,57 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     ref.read(activeMeetingReturnProvider.notifier).state = null;
   }
 
+  /// RC8 — HOST STATUS IS NOT SOMETHING A URL CAN CONFER.
+  ///
+  /// `?isHost=true` was written by whichever screen navigated here, and read
+  /// back as authority. A durable URL may carry identity; it cannot carry
+  /// permission, and a hand-edited query string is not a promotion.
+  ///
+  /// Host standing is therefore taken from the MEETING: its own host, or a
+  /// participant row with the HOST role for the current person. The query
+  /// parameter survives only as the first-frame hint it always really was —
+  /// used before the meeting has loaded, and overruled by the meeting the
+  /// moment it arrives.
+  ///
+  /// This changes no server behaviour: every host-only operation was, and
+  /// remains, authorised by the backend on its own terms.
+  bool _hostFromMeeting(Meeting? meeting) {
+    if (meeting == null) return widget.isHost;
+    final me = ref.read(myUserIdProvider).trim();
+    if (me.isEmpty) return widget.isHost;
+    if ((meeting.host?.id ?? '').trim() == me) return true;
+    for (final p in meeting.participants) {
+      if ((p.userId ?? '').trim() == me) return p.isHost;
+    }
+    return false;
+  }
+
+  /// Host standing as currently known. Falls back to the route hint only
+  /// while the meeting is still loading.
+  late bool _isHost = widget.isHost;
+
   @override
   Widget build(BuildContext context) {
     // Restoration guard: a live URL that lost its sessionId must never
     // render a dead room — the Meeting Record is the doorway back in.
     if (widget.sessionId.trim().isEmpty) {
+      // RC8 — WITHOUT A SESSION, THE MEETING IS STILL KNOWN.
+      //
+      // A personal live route with no session id used to send the person to
+      // /home, discarding the destination although :meetingId was right
+      // there in the path they were standing on. The institution variant
+      // already returned to the meeting; both now do.
+      //
+      // Deliberately NOT rediscovering a session and joining it here: which
+      // session a person enters is an ENTRY decision owned by the meeting's
+      // own flow, not something a continuity repair should make on their
+      // behalf. Returning them to the meeting hands the decision back to the
+      // authority that owns it, unchanged.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
         context.go(
           widget.institutionId == null
-              ? '/home'
+              ? '/meetings/${widget.meetingId}'
               : '/institution/${widget.institutionId}/meetings/${widget.meetingId}',
         );
       });
@@ -1062,6 +1104,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         : null;
     final meeting = meetingAsync.valueOrNull ?? codeAsync?.valueOrNull ?? contextAsync?.valueOrNull;
     _owningInstitutionId = meeting?.owningInstitutionId;
+    _isHost = _hostFromMeeting(meeting);
 
     // Persistent-session UX: publish where this live meeting lives so the
     // shells can offer a "return to meeting" pill anywhere in the app.
@@ -1127,7 +1170,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         // party's participant.joined actually reached this side.
         debugPrint(
           '[meeting-live] roster sessionId=${widget.sessionId}'
-          ' isHost=${widget.isHost} count=${next.length}'
+          ' isHost=$_isHost count=${next.length}'
           ' ids=${next.map((p) => '${p.userId}/${(p.displayName ?? '').trim()}').join(',')}',
         );
         if (next.length > prevList.length) {
@@ -1237,7 +1280,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 ),
                 child: _RoomReadyPanel(
                   meeting: meeting,
-                  isHost: widget.isHost,
+                  isHost: _isHost,
                   onInvite: () => _showInviteSheet(meeting),
                   onAgenda: (meeting?.preparationNotes ?? '').trim().isNotEmpty
                       ? () => setState(() => _showNotes = true)
@@ -1275,7 +1318,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 
           // Guest-approval — host-only "waiting to join" panel (polls /pending;
           // renders nothing when no one is knocking).
-          if (widget.isHost)
+          if (_isHost)
             Positioned(
               top: 64,
               left: 16,
@@ -1290,14 +1333,14 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               bottom: 0,
               child: _MeetingParticipantPanel(
                 participants: state.participants,
-                isHost: widget.isHost,
+                isHost: _isHost,
                 localUserId: myUserId,
                 raisedHands: _raisedHands,
                 onClose: () => setState(() => _showParticipants = false),
-                onRemoveParticipant: widget.isHost
+                onRemoveParticipant: _isHost
                     ? (userId) => _bridge.removeParticipantFromMeeting(userId)
                     : null,
-                onMuteParticipant: widget.isHost ? _requestMute : null,
+                onMuteParticipant: _isHost ? _requestMute : null,
               ),
             ),
 
@@ -1325,7 +1368,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               bottom: 0,
               child: _MeetingFilesDrawer(
                 meetingId: widget.meetingId,
-                isHost: widget.isHost,
+                isHost: _isHost,
                 onClose: () => setState(() => _showFiles = false),
               ),
             ),
@@ -1340,14 +1383,14 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               child: MeetingConversationPanel(
                 messages: _conversation,
                 localUserId: _myUserId,
-                isHost: widget.isHost,
+                isHost: _isHost,
                 chatEnabled: meeting?.chatEnabled ?? true,
                 onClose: () => setState(() => _showChat = false),
                 onSend: _sendConversationMessage,
                 onDelete:
-                    widget.isHost ? _deleteConversationMessage : null,
+                    _isHost ? _deleteConversationMessage : null,
                 onPromote:
-                    widget.isHost ? _promoteConversationMessage : null,
+                    _isHost ? _promoteConversationMessage : null,
               ),
             ),
 
@@ -1477,7 +1520,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 ignoring: !_controlsVisible,
                 child: _MeetingControlBar(
               state: state,
-              isHost: widget.isHost,
+              isHost: _isHost,
               showParticipants: _showParticipants,
               showNotes: _showNotes,
               endingMeeting: _endingMeeting,
@@ -1519,7 +1562,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               }),
               onInvite: () => _showInviteSheet(meeting),
               onFiles: () => _openFilesSurface(meeting),
-              recordingSupported: widget.isHost && _recorder.isSupported,
+              recordingSupported: _isHost && _recorder.isSupported,
               recording: _recording,
               savingRecording: _savingRecording,
               onToggleRecording: () => _toggleRecording(meeting),
