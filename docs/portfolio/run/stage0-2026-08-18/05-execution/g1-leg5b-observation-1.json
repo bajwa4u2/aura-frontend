@@ -1,0 +1,72 @@
+{
+ "type": "G1_LEG5B_LIVE_OBSERVATION_ADJUDICATION",
+ "round": 1,
+ "date": "2026-08-18",
+ "procedure": "docs/governance/G1_LEG5B_LIVE_CERTIFICATION_PROCEDURE.md",
+ "artifactAttribution": {
+  "commit": "36036643a4d30b5376632271e34e110481020ae1",
+  "matchesOriginMainHead": true,
+  "establishedBy": "GET /v1/health build.commit, attributable:true — established technically, not requested from the founder",
+  "verdict": "ATTRIBUTABLE. The observation binds to exactly one artifact."
+ },
+ "observationAsGiven": {
+  "caseA": "A PDF renamed by extension only to .png was attached in Aura Messages. Result: FAIL. The file was NOT visibly refused; Aura accepted it into the conversation and rendered/sent it as a generic 'Attachment' message.",
+  "caseB": "A genuine PNG attached in the same conversation. Result: PASS. Uploaded normally and rendered as an image preview.",
+  "additional": "A genuine PDF attached and sent also becomes an attachment pill. A sent image can be seen as an image but cannot be opened — 'locked preview sent only'.",
+  "additional2": "Every attached file is sent/rendered as an image or a bare attachment rather than as rich content with a preview and its respective action. Founder characterises this as THE LEGACY PRODUCT GAP."
+ },
+ "adjudication": {
+  "verdict": "FAIL — as predeclared, without reinterpretation",
+  "legStatus": "G1 LEG 5(B) REMAINS OPEN. NOT DISCHARGED.",
+  "noReinterpretation": "The predeclared criteria required the upload to be REFUSED, visibly, truthfully and recoverably. It was accepted. Generic attachment acceptance is NOT a refusal and is not recorded as one.",
+  "counterCheck": "Case B PASS — legitimate ingestion still works, so the failure is not an over-closed door.",
+  "noteOnCaseA": "The same observation carries three distinct facts that must not be collapsed: (1) leg 5(B) FAILS as predeclared — no refusal occurred; (2) the item presenting as a document rather than a broken image is positive evidence that type resolution RAN; (3) it presenting as a BARE attachment without its respective action is F016's presentation half, re-confirmed live."
+ },
+ "implicatedBoundary": {
+  "conclusion": "THE IMPLICATED BOUNDARY IS THE TEST CASE I DESIGNED, NOT THE INGESTION BOUNDARY.",
+  "why": "A PDF renamed to .png is not a violating file. It is a MISLABELLED PERMITTED file, and the frozen Content Truth contract answers that case with CORRECTED, not REJECTED — deliberately.",
+  "codeEvidence": {
+   "file": "aura-backend/src/media/content-truth.ts",
+   "rejectRule": "if (!isAllowed(detected)) -> REJECTED, reason ACTUAL_CONTENT_NOT_PERMITTED. Its own comment: 'This is where a renamed SVG or executable is stopped even though the client claimed an allowed type.'",
+   "correctRule": "otherwise -> CORRECTED, reason DECLARED_TYPE_CORRECTED_BY_SIGNATURE. Its own comment: 'Declared wrongly but the real type is permitted: correct it rather than rejecting a legitimate upload. The RESOLVED type is what Aura stores.'",
+   "consequence": "application/pdf IS a permitted type. A PDF declared as image/png therefore resolves to CORRECTED by design."
+  },
+  "evidenceTheDoorACTUALLYRAN": "The founder observed the file rendering as a generic 'Attachment' rather than as an image. That is the signature of CORRECTION: the declared image/png was overridden by the detected application/pdf, so the client presented a document pill. Had Content Truth not run, the stored type would have remained image/png and the item would have rendered as a broken image. The observation is therefore CONSISTENT WITH THE DOOR WORKING AS DESIGNED.",
+  "whatIsNotClaimed": "This does NOT establish that the door works. Consistency is not proof, and leg 5(B) requires an actual refusal to be observed. The leg stays OPEN and the door stays UNPROVEN LIVE."
+ },
+ "myError": {
+  "statement": "I chose a test case that the frozen contract answers with correction, and then predeclared that correction would count as failure. The procedure was internally inconsistent with the contract it was meant to certify.",
+  "whatIShouldHaveDone": "Selected a file whose ACTUAL type is not permitted, which is what 'violating file' means in the contract's own vocabulary.",
+  "notHidden": "The predeclared criteria are not being adjusted after the fact to convert this into a PASS. The result stands as FAIL and the leg stays open."
+ },
+ "correctedTestCase": {
+  "requirement": "A file whose ACTUAL content type is NOT PERMITTED, renamed to a permitted extension.",
+  "recommended": "A .zip archive renamed to photo.png. A plain ZIP has no word/, ppt/ or xl/ member paths, so container inspection resolves it as application/zip — not permitted — and it should be REJECTED with ACTUAL_CONTENT_NOT_PERMITTED. This also exercises layer 4 (container inspection), the layer that distinguishes DOCX/PPTX from a plain archive.",
+  "alternative": "An .svg renamed to photo.png. SVG is blocked unconditionally by the canonical MIME policy.",
+  "expectedIfTheDoorWorks": "Visible, truthful, recoverable refusal.",
+  "expectedIfItDoesNot": "Acceptance — which would then be a genuine ingestion defect, and the implicated boundary would be confirmUpload / the Content Truth invocation."
+ },
+ "separateObservationRecorded": {
+  "id": "F016-LIVE-RECONFIRMATION",
+  "notANewDefect": true,
+  "mapsTo": "F016 — Honest document/media formats — OPEN, owned by CH-11",
+  "canonicalText": "'Honest media/document format handling. Founder observed PDFs rendered as bare attachments and docx/pptx unsupported; the whole media-kind honesty model is missing.'",
+  "whyThisIsTheSameFinding": "The founder's live observations — a PDF becoming a bare 'Attachment' pill, an image that can be seen but not opened, and every attachment presented without its respective action — are the exact behaviours F016 already describes. No new finding is created; the non-shrinking register already carries this, and the execution-defect mechanism is for defects nothing canonical covers.",
+  "evidentialValue": "F016 now has FRESH LIVE EVIDENCE against an attributable artifact (36036643). It was OPEN on historical founder observation; it is now re-confirmed on the current deployed build.",
+  "theArchitecturalSplit": {
+   "typeResolution": "WORKING. The PDF was correctly resolved from its bytes despite a lying extension — that is CH-11's half of F016, and it is why the item presented as a document rather than as a broken image.",
+   "honestPresentation": "MISSING. Presenting the resolved kind with its respective action is explicitly a CH-11 NON-GOAL: 'Does not own presentation of the resolved type (CH-13).'",
+   "consequence": "F016 spans two chapters. Its ingestion half is satisfied; its presentation half is CH-13's and is not built. The founder's 'legacy product gap' is precisely the presentation half."
+  },
+  "notTriaged": "No cause is asserted for the locked-preview behaviour specifically. It may be the same presentation gap or a delivery matter (F138 governed delivery / F058 CORS). Not investigated, not fixed, no code changed.",
+  "owner": "F016 stays with CH-11 as canonically assigned; its presentation half depends on CH-13.",
+  "blocking": "Does not block leg 5(B). Recorded for CH-11/CH-13 disposition."
+ },
+ "boundariesObserved": [
+  "No code changed.",
+  "No criteria adjusted after observation.",
+  "G1 not weakened; the leg remains OPEN.",
+  "Generic attachment acceptance was not reinterpreted as refusal.",
+  "The separate preview observation was not folded into the leg result."
+ ]
+}
