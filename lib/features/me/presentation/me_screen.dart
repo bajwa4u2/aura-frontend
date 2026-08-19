@@ -26,6 +26,7 @@ import '../../../core/ui/profile_header.dart' show PresenceHeaderAction;
 import 'me/me_participation_continuity.dart';
 import 'me/me_widgets.dart';
 import 'widgets/me_connected_accounts_panel.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
   const MeScreen({super.key});
@@ -141,7 +142,9 @@ class _MeScreenState extends ConsumerState<MeScreen>
       final meResponse = await dio.get('/users/me');
       final user = _unwrapUser(meResponse.data);
 
-      final handle = _value(user['handle']);
+      // F053/F116 — canonical read, so the profile fetches follows for the
+      // same handle the profile header renders.
+      final handle = AuraPersonIdentity.fromJson(user).handle;
       // C2 closeout — Follow reads go through the canonical Follow
       // repository. Counts come from the profile authority (D4), never
       // from fetching whole lists and counting them client-side.
@@ -605,12 +608,15 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
   Map<String, dynamic> get _resolvedUser => _user ?? <String, dynamic>{};
 
-  String get _displayName => _firstNonEmpty([
-        _value(_resolvedUser['displayName']),
-        _value(_resolvedUser['name']),
-      ]);
+  // F053/F116 — one reader for the person half of this profile. The fields
+  // BELOW it (title, bio, headline, summary) are profile content, not person
+  // identity, and deliberately stay where they are: AuraPersonIdentity must
+  // remain person identity, not a universal profile DTO.
+  AuraPersonIdentity get _person => AuraPersonIdentity.fromJson(_resolvedUser);
 
-  String get _handle => _value(_resolvedUser['handle']);
+  String get _displayName => _person.displayName;
+
+  String get _handle => _person.handle;
 
   String get _titleText => _value(_resolvedUser['title']);
 
@@ -620,11 +626,13 @@ class _MeScreenState extends ConsumerState<MeScreen>
         _value(_resolvedUser['summary']),
       ]);
 
+  // `avatar` is a legacy alias this surface alone still receives; it is
+  // adapted AT the boundary rather than widening the canonical model to
+  // accept arbitrary payload shapes.
   String get _avatarUrl => _resolveMediaUrl(
         _firstNonEmpty([
-          _value(_resolvedUser['avatarUrl']),
+          _person.avatarUrl ?? '',
           _value(_resolvedUser['avatar']),
-          _value(_resolvedUser['photoUrl']),
         ]),
       );
 

@@ -12,6 +12,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// DISCOVER → PEOPLE = personalized human discovery, with search always
 /// available (founder-frozen 2026-08-16). Suggestions come from the
@@ -142,10 +143,13 @@ final _peopleDiscoveryProvider =
     coldStart: data['coldStart'] == true,
     suggestions: (data['suggestions'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
+        // F053/F116 — the identity half of a suggestion is read canonically;
+        // `reasons` and `followState` are discovery state, not identity, and
+        // stay on the suggestion. Composition, not flattening.
         .map((j) => _PersonSuggestion(
-              userId: (j['userId'] ?? '').toString(),
-              handle: j['handle']?.toString(),
-              displayName: (j['displayName'] ?? '').toString(),
+              userId: AuraPersonIdentity.fromJson(j).userId,
+              handle: AuraPersonIdentity.fromJson(j).handle,
+              displayName: AuraPersonIdentity.fromJson(j).displayName,
               reasons: (j['reasons'] as List<dynamic>? ?? const [])
                   .map((r) => r.toString())
                   .toList(),

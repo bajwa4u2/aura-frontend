@@ -20,6 +20,7 @@ import '../domain/realtime_enums.dart';
 import '../domain/realtime_state.dart';
 import 'widgets/floating_call_widget.dart';
 import '../../../router.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 // ── TRACE BYPASS FLAGS — flip one at a time, hot-restart, reproduce scenario ──
 // Trace 5: bypass entire overlay → if blank clears, overlay is root cause
@@ -590,17 +591,17 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final data = _mapOf(item['data']);
     final actor = _mapOf(item['actor']);
 
-    final actorName = _firstNonEmpty([
-      _stringOf(actor['displayName']),
-      _stringOf(actor['handle']),
-      'Someone',
-    ]);
+    // F052/F053 — a ringing call names the caller through the canonical
+    // model. This is the surface class F057 broke: it resolved identity by
+    // hand and could disagree with the thread the call belongs to.
+    final person = AuraPersonIdentity.fromJson(actor);
+    final actorName = person.label;
     // Caller identity hydration: the canonical actor payload
     // (buildCanonicalIncomingCallNotification, aura-backend) already
     // carries a real avatarUrl end to end — it was resolved but never
     // rendered here, falling back to a generic initial-letter avatar even
     // when the caller's real photo was available.
-    final actorAvatarUrl = _stringOf(actor['avatarUrl']);
+    final actorAvatarUrl = person.avatarUrl ?? '';
 
     final target = _resolver.resolveFromPayload({...item, ...data});
     final mode = _firstNonEmpty([

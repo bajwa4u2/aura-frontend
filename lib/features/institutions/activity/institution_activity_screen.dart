@@ -14,15 +14,15 @@ import '../../feed/domain/feed_item.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution_activity_event.dart';
 import '../ui/institution_ds.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// Human-readable summary for known activity event kinds. Unknown kinds
 /// fall back to the raw `kind` string verbatim.
 String _summaryForKind(InstitutionActivityEvent e) {
-  final actorName = (e.actor?['displayName']?.toString().trim().isNotEmpty ?? false)
-      ? e.actor!['displayName'].toString().trim()
-      : (e.actor?['handle']?.toString().trim().isNotEmpty ?? false)
-          ? '@${e.actor!['handle']}'
-          : 'Someone';
+  // F053/F116 — the same reader and the same fallback order as every other
+  // surface. This chain already ended in 'Someone', which is what the shared
+  // fallback now supplies from one place instead of being re-derived here.
+  final actorName = AuraPersonIdentity.fromJson(e.actor).label;
 
   switch (e.kind.toUpperCase()) {
     case 'MEMBER_JOINED':
@@ -460,7 +460,7 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actorName = event.actor?['displayName']?.toString().trim() ?? '';
+    final actorName = AuraPersonIdentity.fromJson(event.actor).displayName;
     final summary = _summaryForKind(event);
     final time = event.createdAt != null ? _formatTime(event.createdAt!) : '';
 

@@ -24,6 +24,7 @@ import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
 import '../../features/meetings/presentation/widgets/active_meeting_return_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
 import 'rail/rail_composition.dart';
+import '../../core/identity/person_identity_model.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION COLOR PALETTE — teal authority, calm workspace
@@ -888,13 +889,18 @@ class _MemberIdentityHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // F053/F116 — the shell names the signed-in person through the canonical
+    // model, so the nav and every surface it opens agree. `title` is NOT
+    // person identity (it is an institutional role line) and stays a local
+    // read: destination-specific composition is preserved, not absorbed.
     final me = ref.watch(authMeDataProvider).valueOrNull;
     final user = (me?['user'] is Map)
         ? Map<String, dynamic>.from(me!['user'] as Map)
         : const <String, dynamic>{};
-    final name = (user['displayName'] ?? '').toString().trim();
+    final person = AuraPersonIdentity.fromJson(me);
+    final name = person.displayName;
     final title = (user['title'] ?? '').toString().trim();
-    final avatarUrl = (user['avatarUrl'] ?? '').toString().trim();
+    final avatarUrl = person.avatarUrl ?? '';
     final initials = name.isNotEmpty ? name[0].toUpperCase() : '';
     final affiliations = ref.watch(myAffiliationsProvider);
 
@@ -1096,15 +1102,13 @@ class _MemberMobileBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final me = ref.watch(authMeDataProvider).valueOrNull;
-    final user = (me?['user'] is Map)
-        ? Map<String, dynamic>.from(me!['user'] as Map)
-        : const <String, dynamic>{};
-    final name = (user['displayName'] ?? '').toString().trim();
-    final handle = (user['handle'] ?? '').toString().trim();
-    final label = name.isNotEmpty
-        ? name
-        : (handle.isNotEmpty ? '@$handle' : 'Menu');
+    // F053/F116 — same reader, same fallback order. 'Menu' is kept as the
+    // label of a CONTROL for a person who could not be resolved: it names the
+    // affordance, it does not pretend to identify anyone.
+    final person = AuraPersonIdentity.fromJson(
+      ref.watch(authMeDataProvider).valueOrNull,
+    );
+    final label = person.isEmpty ? 'Menu' : person.label;
 
     return Container(
       decoration: const BoxDecoration(

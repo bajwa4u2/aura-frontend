@@ -11,6 +11,7 @@ import '../auth/session_providers.dart';
 import '../institutions/institution_access_provider.dart';
 import 'acting_context.dart';
 import 'capability_projection.dart';
+import '../identity/person_identity_model.dart';
 
 /// The person's standing in the institution currently in context, built from
 /// the backend's effective capability set.
@@ -93,23 +94,21 @@ final actingContextAuthorityProvider =
     Provider<ActingContextAuthority?>((ref) {
   if (ref.watch(authStatusProvider) != AuthStatus.authed) return null;
 
-  final me = ref.watch(authMeDataProvider).valueOrNull;
-  final user = me?['user'];
-  if (user is! Map) return null;
-
-  final personId = (user['id'] ?? '').toString().trim();
-  if (personId.isEmpty) return null;
-
-  final displayName = (user['displayName'] ?? user['handle'] ?? '')
-      .toString()
-      .trim();
+  // F053/F116 — the ACTING authority reads the person through the canonical
+  // model. It previously insisted the person be nested under `user` and
+  // unpacked the fields itself, so a payload shaped even slightly differently
+  // produced no acting context at all — the F057 failure mode, in the one
+  // place that decides who an act is attributed to.
+  final me = AuraPersonIdentity.fromJson(
+    ref.watch(authMeDataProvider).valueOrNull,
+  );
+  if (me.userId.isEmpty) return null;
 
   return ActingContextAuthority(
-    personId: personId,
-    personDisplayName: displayName,
-    personAvatarUrl: (user['avatarUrl'] ?? '').toString().trim().isEmpty
-        ? null
-        : user['avatarUrl'].toString(),
+    personId: me.userId,
+    // Acting attribution names a person; `label` is the shared honest order.
+    personDisplayName: me.label,
+    personAvatarUrl: me.avatarUrl,
     institution: ref.watch(institutionStandingProvider),
   );
 });

@@ -1,0 +1,80 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-03 F053 / F116 - person-identity convergence, batch 2",
+  "chapter": "CH-03 (Identity Consumption & Presentation Truth)",
+  "date": "2026-08-19",
+  "objective": "Make AuraPersonIdentity the canonical deserialisation and identity-semantics boundary for person identity on the client - not merely to lower a count.",
+  "slicesMigrated": [
+    { "file": "lib/core/authority/authority_providers.dart", "sites": 3, "note": "The ACTING authority. It insisted the person be nested under `user` and unpacked the fields itself, so a differently-shaped payload produced NO acting context at all - the F057 failure mode in the one place that decides who an act is attributed to." },
+    { "file": "lib/app/shell/member_shell.dart", "sites": 4, "note": "The nav names the signed-in person canonically. `title` (an institutional role line) stays a local read - destination-specific composition preserved, not absorbed." },
+    { "file": "lib/features/me/presentation/me_screen.dart", "sites": 5, "note": "Profile header and the follows fetch now resolve the same handle. `bio`/`headline`/`summary`/`title` are profile CONTENT and deliberately stay put." },
+    { "file": "lib/core/tagging/tag_suggest_service.dart", "sites": 4, "note": "A mention suggestion now describes the same person the mention resolves to." },
+    { "file": "lib/core/tagging/mention_scope_providers.dart", "sites": 4, "note": "Bounded mention scope. The literal 'Member' stand-in for an unresolved person is gone." },
+    { "file": "lib/features/institutions/activity/institution_activity_screen.dart", "sites": 5, "note": "Its inline chain already ended in 'Someone'; the shared fallback now supplies that from one place." },
+    { "file": "lib/features/realtime/presentation/incoming_live_overlay.dart", "sites": 3, "note": "F052's subject - identity in a REALTIME surface. A ringing call now names the caller through the same model the thread does." },
+    { "file": "lib/features/search/presentation/search_screen.dart", "sites": 3, "note": "'Author' was an invented label for an unresolved person. `bio` stays local." },
+    { "file": "lib/features/conversation/presentation/new_conversation_picker.dart", "sites": 3, "note": "The picker names a person exactly as the conversation it starts will." },
+    { "file": "lib/features/conversation/presentation/add_people_sheet.dart", "sites": 2 },
+    { "file": "lib/features/discover/presentation/people_discovery_screen.dart", "sites": 2, "note": "Identity read canonically; `reasons` and `followState` are discovery state and stay on the suggestion. Composition, not flattening." },
+    { "file": "lib/core/notifications/notification_presentation.dart", "sites": 2, "note": "`actorName` survives as a LEGACY flattened field, consulted only when the canonical person cannot be resolved - it no longer competes with the canonical read." }
+  ],
+  "privateTypedBoundaryConverged": {
+    "deleted": "lib/models/author_brief.dart",
+    "why": "AuthorBrief was id + handle + displayName + avatarUrl - a byte-for-byte subset of AuraPersonIdentity with a different name, and it had ZERO consumers. Section C case 1 exactly: a renamed subset of person identity. Deleted rather than wrapped.",
+    "identifiedButNotConverged": {
+      "type": "lib/models/author.dart (Author)",
+      "state": "LIVE via AuthorTile in search. Carries `bio` alongside identity, so the honest convergence is `Author { AuraPersonIdentity person; String bio; }` rather than deletion. It reads no person fields off maps, so it carries NO measured debt; converging it is available refactoring, not debt repair, and was left alone rather than churned."
+    }
+  },
+  "instrumentCorrection": {
+    "what": "The audit counted `state.pathParameters['handle']` in lib/router.dart as identity debt - SIX sites.",
+    "why it was wrong": "A ROUTE PARAMETER named `handle` is not a person payload. Reading a URL segment performs no identity interpretation, so no migration could ever have cleared those sites: the measurement OVERSTATED the remaining work.",
+    "correction": "The detector now excludes `(path|query)Parameters[` reads.",
+    "declaredSeparately": "This is a measurement fix, NOT a migration, and is reported apart from the migrated sites so the two are never confused. It reduces the count without changing any product code.",
+    "gamingCheck": "No local parsing was moved into a helper to hide it. Every other cleared site had its competing person interpretation actually removed."
+  },
+  "authorityChange": {
+    "added": "AuraPersonIdentity.proseName",
+    "why": "A real destination-specific need found by an existing test: notification copy is a SENTENCE. 'amjad sent you a message' reads correctly; '@amjad sent you a message' does not. The FALLBACK ORDER stays canonical (name, then handle, then the neutral word) - only the decoration belongs to the sentence. Two renderings of one order, never two orders.",
+    "notWidened": "No payload shapes were added to the reader to absorb odd inputs. `me_screen`'s legacy `avatar` alias is adapted AT that boundary instead."
+  },
+  "identityDebt": {
+    "atBatchStart": "63 files / 180 sites",
+    "atBatchEnd": "49 files / 131 sites",
+    "cleared": "49 sites, 14 files",
+    "ofWhichInstrumentCorrection": "6 sites (router route-parameters)",
+    "ofWhichRealMigration": "43 sites",
+    "cumulativeFromF053Start": "66 files / 202 sites -> 49 / 131",
+    "ratchet": "FAILED on every reduction until explicitly re-frozen, as designed. Re-frozen at 49 / 131."
+  },
+  "protectedSitesRemaining": {
+    "files": [
+      "lib/features/meetings/presentation/create_meeting_screen.dart",
+      "lib/features/meetings/presentation/institution_availability_screen.dart"
+    ],
+    "disposition": "LEFT PROTECTED AND UNTOUCHED. Migrating them would improve the count while crossing the Meetings boundary for convenience, which the boundary exists to prevent. They are not blocked by anything technical: a narrow founder authorization of the kind granted for RC8 would make them executable in minutes.",
+    "founderAuthorizationRequired": true
+  },
+  "findingStates": {
+    "F053": "PARTIALLY_VALIDATED - unchanged. The authority now exists and 71 of the enumerated sites are cleared, but 131 remain and PB-05 forbids closing on a partial migration.",
+    "F116": "PARTIALLY_VALIDATED - unchanged, same reason. Its exact remainder is now measurable rather than narrative: 32 ad-hoc surface sites, 99 non-conformant (mostly BACKEND select sites), 75 private typed boundaries.",
+    "F052": "Advanced in substance, unchanged in state: the realtime incoming-call surface it names now consumes the canonical model. Certification remains owed and is not claimed.",
+    "F054/F055/F056/F057": "Unchanged. No new structural debt was exposed by this migration; F057's defect class is now structurally impossible in the migrated surfaces because they share one reader.",
+    "F051": "UNTOUCHED - preserved conflict, not adjudicated, not implicitly resolved by any model migration.",
+    "discipline": "No finding advanced or closed. Progress is a measured debt reduction behind a ratchet."
+  },
+  "verification": {
+    "newAssertions": 1,
+    "frontendSuite": "787 PASS",
+    "identityConformanceGate": "PASS at the new baseline 49 files / 131 sites",
+    "protectedSuites": "meetings + navigation + product + authority: 200 PASS",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "analyze": "clean",
+    "backend": "UNTOUCHED by this batch",
+    "realConsumingSurfaceTests": "The existing notification-presentation suite caught the prose/mention distinction on its own - a real consuming-surface test doing exactly what it exists for."
+  },
+  "founderDecisionsRequired": [
+    "NONE for the work done.",
+    "OPTIONAL, surfaced not asked: two Meetings files still hold 5 identity sites. A narrow authorization like RC8's would let them converge; without it they stay protected and the debt figure keeps them."
+  ]
+}

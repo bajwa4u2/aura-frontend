@@ -109,7 +109,14 @@ for (const f of walk(join(FRONTEND, 'lib'), '.dart')) {
     // somewhere. Reading the same raw map inside a WIDGET is a surface
     // resolving identity for itself, which is the defect F053 names.
     const m = line.match(/\['(displayName|avatarUrl|handle|fullName|photoUrl)'\]/)
-    if (m && !isAuthority) {
+    // INSTRUMENT CORRECTION (F053 convergence, 2026-08-19). A ROUTE parameter
+    // that happens to be named `handle` is not a person payload — reading
+    // `state.pathParameters['handle']` resolves a URL segment, and no identity
+    // interpretation occurs. Six router lines were being counted as identity
+    // debt that no migration could ever clear, which made the measurement
+    // overstate the remaining work rather than understate it.
+    const isRouteParameter = /(path|query)Parameters\s*\[/.test(line)
+    if (m && !isAuthority && !isRouteParameter) {
       const isTypedBoundary =
         /\/(domain|data)\//.test(path) ||
         /_repository\.dart$|_models?\.dart$|_model\.dart$/.test(path)

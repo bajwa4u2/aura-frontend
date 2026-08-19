@@ -83,6 +83,18 @@ class AuraPersonIdentity {
     return 'Someone';
   }
 
+  /// The same identity, named for PROSE — no `@`.
+  ///
+  /// "amjad sent you a message" reads correctly; "@amjad sent you a message"
+  /// does not. The FALLBACK ORDER stays canonical (name, then handle, then
+  /// the neutral word); only the decoration is the sentence's business. Two
+  /// renderings of one order, rather than two orders.
+  String get proseName {
+    if (displayName.trim().isNotEmpty) return displayName.trim();
+    if (handle.trim().isNotEmpty) return handle.trim();
+    return 'Someone';
+  }
+
   /// The canonical route to this person, or null when there is no handle to
   /// address them by.
   String? get profileRoute =>

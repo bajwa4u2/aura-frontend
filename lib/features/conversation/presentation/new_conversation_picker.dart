@@ -14,6 +14,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../search/search_repository.dart';
 import '../data/conversations_repository.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// NEW CONVERSATION — the one canonical creation flow (canon §10/§13):
 /// choose a PERSON → the conversation opens → talk immediately. People
@@ -94,14 +95,17 @@ class _NewConversationPickerState extends ConsumerState<NewConversationPicker> {
             Text('No people found.',
                 style: AuraText.small.copyWith(color: AuraSurface.muted))
           else
+            // F053/F116 — the picker names a person exactly as the
+            // conversation it starts will name them.
             for (final u in _results.take(20))
+              if (AuraPersonIdentity.fromJson(u) case final person)
               ListTile(
                 leading: AuraAvatar(
-                    name: (u['displayName'] ?? '').toString(), size: 40),
-                title: Text((u['displayName'] ?? u['handle'] ?? '').toString(),
-                    style: AuraText.body),
-                subtitle: Text('@${(u['handle'] ?? '').toString()}',
-                    style: AuraText.micro),
+                    name: person.displayName,
+                    imageUrl: person.avatarUrl,
+                    size: 40),
+                title: Text(person.label, style: AuraText.body),
+                subtitle: Text('@${person.handle}', style: AuraText.micro),
                 onTap: _opening
                     ? null
                     : () => _open((u['id'] ?? '').toString()),

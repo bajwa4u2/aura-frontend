@@ -110,6 +110,17 @@ void main() {
       expect(label, isNot('User'));
     });
 
+    test('prose names a person WITHOUT the @ — a sentence is not a mention', () {
+      // "amjad sent you a message" reads correctly; "@amjad sent you a
+      // message" does not. Same fallback ORDER, different decoration.
+      final p = AuraPersonIdentity.fromJson({'handle': 'amjad'});
+      expect(p.proseName, 'amjad');
+      expect(p.label, '@amjad');
+      expect(AuraPersonIdentity.fromJson({'displayName': 'Ada'}).proseName,
+          'Ada');
+      expect(AuraPersonIdentity.unknown.proseName, 'Someone');
+    });
+
     test('whitespace-only fields do not count as a name', () {
       expect(
         AuraPersonIdentity.fromJson({'displayName': '   ', 'handle': 'ada'})

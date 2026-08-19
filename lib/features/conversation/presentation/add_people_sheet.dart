@@ -7,6 +7,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../search/search_repository.dart';
 import '../../../core/net/dio_provider.dart';
 import '../data/conversations_repository.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// ADD PEOPLE — the conversation's contextual entry into the canonical
 /// Invitation System. Pick people (or type an email for someone not on
@@ -115,12 +116,14 @@ class _AddPeopleSheetState extends ConsumerState<_AddPeopleSheet> {
               title: Text('Invite $typedEmail to Aura and this conversation'),
               onTap: _busy ? null : () => _invite(email: typedEmail),
             ),
+          // F053/F116 — the people you add are named the way the
+          // conversation will name them.
           for (final u in _results.take(8))
+            if (AuraPersonIdentity.fromJson(u) case final person)
             ListTile(
               leading: const Icon(Icons.person_outline_rounded),
-              title: Text((u['displayName'] ?? u['handle'] ?? '').toString()),
-              subtitle: Text('@${(u['handle'] ?? '').toString()}',
-                  style: AuraText.micro),
+              title: Text(person.label),
+              subtitle: Text('@${person.handle}', style: AuraText.micro),
               onTap: _busy
                   ? null
                   : () => _invite(userId: (u['id'] ?? '').toString()),

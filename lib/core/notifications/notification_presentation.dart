@@ -1,5 +1,6 @@
 import '../../features/realtime/application/incoming_call_projection.dart'
     as call_kinds;
+import '../identity/person_identity_model.dart';
 
 /// Release-Client Cross-System Quality Doctrine — Legacy Global Runtime
 /// Overlay Cleanup (roadmap item 11).
@@ -184,12 +185,14 @@ String _resolveKind(Map<String, dynamic> payload) {
 }
 
 String _actorName(Map<String, dynamic> payload) {
-  final actor = _mapOf(payload['actor']);
-  return _firstNonEmpty([
-    _stringOf(actor['displayName']),
-    _stringOf(actor['handle']),
-    _stringOf(payload['actorName']),
-  ]);
+  // F053/F116 — one reader. `actorName` remains as a legacy flattened field
+  // some payloads still carry; it is consulted only when the canonical
+  // person cannot be resolved, rather than competing with it.
+  final person = AuraPersonIdentity.fromJson(payload['actor']);
+  // Notification copy is a SENTENCE, so the prose rendering is used: the
+  // fallback order is the canonical one, the '@' is not.
+  if (person.isNotEmpty) return person.proseName;
+  return _stringOf(payload['actorName']);
 }
 
 String _capitalize(String value) {

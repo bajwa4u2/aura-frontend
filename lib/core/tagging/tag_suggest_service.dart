@@ -13,6 +13,7 @@ import '../../features/search/providers.dart';
 import '../../features/search/search_repository.dart';
 import '../../features/topics/topic.dart';
 import 'tag_entities.dart';
+import '../identity/person_identity_model.dart';
 
 final tagSuggestServiceProvider = Provider<TagSuggestService>((ref) {
   return TagSuggestService(ref.watch(searchRepositoryProvider));
@@ -77,19 +78,24 @@ class TagSuggestService {
 
     final out = <TagSuggestion>[];
     for (final u in result.users) {
-      final handle = (u['handle'] ?? '').toString().trim();
-      if (handle.isEmpty) continue;
-      final displayName = (u['displayName'] ?? '').toString().trim();
+      // F053/F116 — a mention suggestion must describe the SAME person the
+      // mention will resolve to. Reading the suggestion's identity by hand
+      // here, while the destination read it somewhere else, is how a
+      // suggestion could name someone differently from the surface that
+      // received the mention.
+      final person = AuraPersonIdentity.fromJson(u);
+      if (person.handle.isEmpty) continue;
+      final shown = person.displayName.isEmpty
+          ? person.handle
+          : person.displayName;
       out.add(
         TagSuggestion(
           kind: TagKind.member,
-          canonicalId: (u['id'] ?? '').toString(),
-          display: displayName.isEmpty ? handle : displayName,
-          insertText: '@${displayName.isEmpty ? handle : displayName}',
-          subtitle: '@$handle',
-          imageUrl: (u['avatarUrl'] ?? '').toString().trim().isEmpty
-              ? null
-              : (u['avatarUrl'] as Object).toString(),
+          canonicalId: person.userId,
+          display: shown,
+          insertText: '@$shown',
+          subtitle: '@${person.handle}',
+          imageUrl: person.avatarUrl,
         ),
       );
     }

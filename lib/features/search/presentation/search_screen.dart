@@ -15,6 +15,7 @@ import '../../feed/domain/feed_item.dart' show FeedRouting;
 import '../../feed/domain/post.dart';
 import '../providers.dart';
 import '../search_repository.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 final searchResultProvider = FutureProvider<SearchResult>((ref) async {
   final q = ref.watch(searchQueryProvider);
@@ -376,13 +377,17 @@ class _AuthorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final handle = (u['handle'] ?? '').toString().trim();
-    final name = (u['displayName'] ?? '').toString().trim();
+    // F053/F116 — a search result must describe the same person the profile
+    // it opens describes. `bio` is profile content, not person identity, and
+    // stays a local read.
+    final person = AuraPersonIdentity.fromJson(u);
+    final handle = person.handle;
+    final name = person.displayName;
     final bio = (u['bio'] ?? '').toString().trim();
-    final avatarUrl = (u['avatarUrl'] ?? '').toString().trim();
-    final display = name.isNotEmpty
-        ? name
-        : (handle.isNotEmpty ? handle : 'Author');
+    final avatarUrl = person.avatarUrl ?? '';
+    // 'Author' was an invented label for an unresolved person; the shared
+    // fallback replaces it.
+    final display = name.isNotEmpty ? name : person.label;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s8),

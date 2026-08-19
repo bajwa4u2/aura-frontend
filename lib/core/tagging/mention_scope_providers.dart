@@ -27,6 +27,7 @@ import '../../features/correspondence/data/threads_repository.dart';
 import '../../features/institutions/data/institutions_repository.dart';
 import 'mention_scope.dart';
 import 'tag_entities.dart';
+import '../identity/person_identity_model.dart';
 
 List<TagSuggestion> _suggestionsFromMemberRows(dynamic rows) {
   if (rows is! List) return const [];
@@ -199,15 +200,16 @@ MentionScope directThreadMentionScope(
       ]);
     }
     if (p.type == ActorType.user && (p.userId ?? '').isNotEmpty) {
-      final user = p.user;
-      final display = (user?['displayName'] ?? user?['name'] ?? '')
-          .toString()
-          .trim();
-      final handle = (user?['handle'] ?? '').toString().trim();
-      final avatarUrl = (user?['avatarUrl'] ?? '').toString().trim();
-      final resolvedDisplay = display.isNotEmpty
-          ? display
-          : (handle.isNotEmpty ? handle : 'Member');
+      // F053/F116 — the mention scope resolves the counterpart through the
+      // canonical model, so a bounded mention offers the same person the
+      // thread header names. 'Member' as a stand-in for an unresolved person
+      // is exactly the invented-label defect; the shared fallback replaces it.
+      final person = AuraPersonIdentity.fromJson(p.user);
+      final handle = person.handle;
+      final avatarUrl = person.avatarUrl ?? '';
+      final resolvedDisplay = person.displayName.isNotEmpty
+          ? person.displayName
+          : (handle.isNotEmpty ? handle : person.label);
       return MentionScope.bounded([
         TagSuggestion(
           kind: TagKind.member,
