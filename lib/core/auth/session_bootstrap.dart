@@ -8,6 +8,7 @@ import '../../config.dart';
 import '../net/platform_http_adapter.dart';
 import 'auth_providers.dart';
 import 'session_hint.dart';
+import 'web_session_restore.dart';
 
 // Session-hint primitives now live in session_hint.dart so BOTH the token
 // store (the universal session choke point) and this bootstrap can depend
@@ -139,16 +140,23 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
       }
 
       if (kIsWeb) {
-        // Public-route hygiene: skip the speculative refresh entirely when
-        // there is no record of a prior successful sign-in on this device.
-        // Without this, every fresh-tab landing on /, /public, /privacy etc.
-        // produced a `POST /v1/auth/refresh 401 Missing refresh token`
-        // console line because the HttpOnly cookie can't be read from Dart
-        // and the bootstrap had to ask blindly. The hint flag closes that
-        // gap for users who have never authenticated on this browser; users
-        // who have signed in keep the cookie-based silent refresh.
-        final hasHint = await hasSessionHint();
-        if (!hasHint) return;
+        // RC1 — REFRESH IS NOT NAVIGATION. The hint remains a hygiene
+        // optimisation for the one case it was added for (a fresh tab
+        // landing on a public page, where asking blindly produces nothing
+        // but `401 Missing refresh token` in the console). Everywhere else
+        // — a member destination, an unclassified route, an identity
+        // ceremony, or a device whose storage cannot be read at all — Aura
+        // asks, because skipping states the false premise "not
+        // authenticated" and the router then correctly discards a
+        // destination the person had every right to keep.
+        //
+        // `Uri.base` is the address bar: on a reload it is the destination
+        // being reconstructed, which is exactly what the decision needs.
+        final decision = decideWebSessionRestore(
+          status: await readSessionHintStatus(),
+          landingPath: Uri.base.path,
+        );
+        if (!decision.attempt) return;
 
         final res = await bootstrapDio.post(
           '/auth/refresh',

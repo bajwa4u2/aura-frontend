@@ -62,6 +62,21 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       _wasPublished = article.isPublished;
       _title.text = article.title;
       _body.text = article.bodyMarkdown;
+
+      // RC7 / F063 — WRITE THE DRAFT'S IDENTITY INTO THE URL.
+      //
+      // `/articles/write` carries no id, so every mount of it minted a NEW
+      // draft. Reloading the page therefore did not reopen the article being
+      // written — it created another empty one and left the real work
+      // unreachable, one orphan row per refresh. The address bar is the only
+      // thing a reload preserves, so the draft's identity has to live there.
+      //
+      // `replace`, not `push`: the id-less address was never a place worth
+      // going back to, and Back should leave the editor rather than return
+      // to a route that would mint yet another draft.
+      if (widget.articleId == null && mounted) {
+        context.replace(NavigationAuthority.articleEditorRoute(article.id));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

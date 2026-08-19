@@ -31,6 +31,49 @@ const String kSessionHintAtPrefKey = 'aura_session_hint_at';
 /// Refresh-cookie max-age set by the backend (`auth.controller.ts`): 30 days.
 const Duration kSessionHintMaxAge = Duration(days: 30);
 
+/// What the device can actually tell us about a prior session.
+///
+/// RC1, second half. `hasSessionHint()` collapsed three different facts into
+/// one boolean: "there was a session", "there was never a session", and "this
+/// browser will not tell me". The third is the dangerous one — private
+/// browsing makes SharedPreferences throw, and answering `false` there turned
+/// "I cannot know" into "definitely never signed in", which skipped the
+/// restore and declared a signed-in person unauthenticated on every reload.
+enum SessionHintStatus {
+  /// A member session existed on this device, recently enough that the
+  /// refresh cookie can still be alive.
+  present,
+
+  /// This device says, reliably, that no usable session was established here.
+  absent,
+
+  /// The device could not be asked. Never treat this as `absent`.
+  unavailable,
+}
+
+/// The tri-state read. `hasSessionHint()` remains as the boolean view for
+/// callers that genuinely only care about the positive case.
+Future<SessionHintStatus> readSessionHintStatus() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final flag = prefs.getBool(kSessionHintPrefKey) ?? false;
+    if (!flag) return SessionHintStatus.absent;
+    // Entries written before the timestamp existed carry none; treat them
+    // as valid so existing users are never signed out by an upgrade.
+    final at = prefs.getInt(kSessionHintAtPrefKey);
+    if (at == null) return SessionHintStatus.present;
+    final age = DateTime.now().millisecondsSinceEpoch - at;
+    if (age < 0 || age > kSessionHintMaxAge.inMilliseconds) {
+      // Older than the cookie can possibly be: the device is now reliably
+      // telling us there is nothing to restore.
+      return SessionHintStatus.absent;
+    }
+    return SessionHintStatus.present;
+  } catch (_) {
+    return SessionHintStatus.unavailable;
+  }
+}
+
 Future<bool> hasSessionHint() async {
   try {
     final prefs = await SharedPreferences.getInstance();
