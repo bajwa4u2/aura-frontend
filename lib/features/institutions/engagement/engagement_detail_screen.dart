@@ -150,7 +150,7 @@ class _DetailBody extends StatelessWidget {
         const SizedBox(height: AuraSpace.s20),
 
         // Post body
-        if ((record.postBody ?? '').trim().isNotEmpty) ...[
+        if ((record.postText ?? '').trim().isNotEmpty) ...[
           Text(
             'Public post',
             style: AuraText.small.copyWith(
@@ -171,14 +171,14 @@ class _DetailBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  record.postBody!.trim(),
+                  record.postText!.trim(),
                   style: AuraText.body.copyWith(
                     color: AuraSurface.ink,
                     height: 1.6,
                   ),
                 ),
                 if ((record.authorName ?? '').isNotEmpty ||
-                    record.createdAt != null) ...[
+                    record.postCreatedAt != null) ...[
                   const SizedBox(height: AuraSpace.s12),
                   Row(
                     children: [
@@ -190,9 +190,9 @@ class _DetailBody extends StatelessWidget {
                         ),
                         const SizedBox(width: AuraSpace.s8),
                       ],
-                      if (record.createdAt != null)
+                      if (record.postCreatedAt != null)
                         Text(
-                          formatRelative(record.createdAt!),
+                          formatRelative(record.postCreatedAt!),
                           style: AuraText.micro
                               .copyWith(color: AuraSurface.faint),
                         ),

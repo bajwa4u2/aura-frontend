@@ -83,7 +83,6 @@ void main() {
       });
 
       expect(r.id, 'rec-1');
-      expect(r.institutionId, 'inst-1');
       expect(r.status, RoutedRecordStatus.pending);
       expect(r.participationMode, 'OPEN');
       expect(r.authorName, 'Layla');

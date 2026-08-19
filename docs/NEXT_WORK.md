@@ -310,3 +310,42 @@ recorded order. When those files are removed the sites disappear from the audit 
 falls, and F116 criteria 2/3/4/6 are reassessed. Nothing here starts that retirement.
 
 Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/ch03-retirement-owned-debt-and-routedrecord.json`.
+
+## 2026-08-19 — Engagement content contract repaired (non-identity)
+
+The defect surfaced by the RoutedRecord trace and deliberately left for its own task. **The routed post
+rendered on neither engagement screen.**
+
+**Canonical field: `text`** — established from the producer chain, not from naming preference:
+`Post.text` (prisma) → `post.text` (`EngagementRecordDto`) → `json['text']` (the client's own
+`feed/domain/post.dart`). The engagement model read `post['body']` with a `postBody` fallback — **two keys
+no producer has ever emitted**. The client was disagreeing with itself as much as with the server.
+
+**Why it survived an alignment pass.** Commit 3dac187 ("align engagement repository and models with live
+API response shape") corrected four sibling mismatches — `records`/`data`, `record`/`data`,
+`needsResponse`/`pending`, `post.id`/`postId` — and walked past this one. All four had visible symptoms.
+This one does not: every consumer guards with `if (content.isNotEmpty)`, so **a wrong key looks exactly
+like a post with no text**. Worth remembering as a shape — a nullable field read through a key nobody
+sends, consumed behind an emptiness guard, is invisible.
+
+**No compatibility alias.** `body ?? text` would preserve the appearance of a dual contract where only
+one has ever existed, and would make the mismatch permanently invisible rather than fixed.
+
+**Two same-class stale reads fixed in the same parse:** `createdAt` read a top-level key the DTO does not
+emit, so **both bylines were dateless** — now `post.createdAt`, and deliberately **not** `routedAt`, which
+is a genuinely different fact (when the post reached the institution) and stays separate and unconsumed.
+`institutionId` and `updatedAt` were always-empty-by-contract and were removed — the backend spec already
+asserts institutionId is *deliberately* not exposed, so keeping a field that can only ever be `''` is the
+same trap that produced this defect.
+
+**Backend source unchanged** — the producer was never the defective side. Its spec gained two assertions
+so the two contracts cannot drift apart in silence again.
+
+**Tests:** 8 frontend (5 model + 3 widget), 2 backend. The widget tests drive the *real* list and detail
+screens, because model tests could not have caught a defect that hides behind an emptiness guard. Seeded
+proof: restoring `body` fails 4 of them.
+
+Frontend **829 pass**, analyze clean, backend **205 suites / 2579**, tsc clean, Meetings **52 pass**,
+identity gate unchanged, 451/451, 17/17. **No finding effects** — this was never an identity defect.
+
+Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/engagement-content-contract-repair.json`.

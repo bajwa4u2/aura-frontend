@@ -89,20 +89,17 @@ class RoutedRecord {
   const RoutedRecord({
     required this.id,
     required this.postId,
-    required this.institutionId,
     required this.status,
     required this.intent,
     this.topic,
     this.participationMode,
     this.author = AuraPersonIdentity.unknown,
-    this.postBody,
-    this.createdAt,
-    this.updatedAt,
+    this.postText,
+    this.postCreatedAt,
   });
 
   final String id;
   final String postId;
-  final String institutionId;
   final RoutedRecordStatus status;
   final RecordIntent intent;
   final AuraTopic? topic;
@@ -130,9 +127,25 @@ class RoutedRecord {
     return handle.isEmpty ? null : handle;
   }
 
-  final String? postBody;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  /// The routed post's content.
+  ///
+  /// CONTRACT REPAIR 2026-08-19. This read `post['body']`, falling back to a
+  /// top-level `postBody`. The producer emits neither: `Post.text` in the
+  /// schema becomes `post.text` on `EngagementRecordDto`, and the client's own
+  /// canonical post model (`feed/domain/post.dart`) already reads `text`. So
+  /// `body` was never a second contract to be tolerant of — it was a key
+  /// nothing has ever sent, and the screens guard with
+  /// `if (content.isNotEmpty)`, so the post rendered as absent rather than as
+  /// broken. One canonical field, no alias: `text`.
+  final String? postText;
+
+  /// When the post was WRITTEN — `post.createdAt`, not the record's `routedAt`.
+  ///
+  /// Same repair, same cause: this read a top-level `createdAt` the DTO does
+  /// not emit. Both screens render it immediately after the author's name, so
+  /// it is a byline timestamp; `routedAt` (when the post reached this
+  /// institution) is a different fact and deliberately not substituted here.
+  final DateTime? postCreatedAt;
 
   static String? _opt(Map<String, dynamic> m, List<String> keys) {
     for (final k in keys) {
@@ -163,7 +176,6 @@ class RoutedRecord {
     return RoutedRecord(
       id: (m['id'] ?? '').toString(),
       postId: _opt(m, ['postId']) ?? (postRaw['id']?.toString() ?? ''),
-      institutionId: _opt(m, ['institutionId']) ?? '',
       status: RoutedRecordStatus.fromWire(m['status']),
       intent: RecordIntent.fromWire(
         _opt(postRaw, ['intent']) ?? _opt(m, ['intent']),
@@ -173,9 +185,8 @@ class RoutedRecord {
       ),
       participationMode: _opt(m, ['participationMode']),
       author: AuraPersonIdentity.fromJson(authorRaw),
-      postBody: _opt(postRaw, ['body']) ?? _opt(m, ['postBody']),
-      createdAt: readDate(m['createdAt']),
-      updatedAt: readDate(m['updatedAt']),
+      postText: _opt(postRaw, ['text']),
+      postCreatedAt: readDate(postRaw['createdAt']),
     );
   }
 }

@@ -292,10 +292,10 @@ class _RecordCard extends StatelessWidget {
                 ),
               ],
             ),
-            if ((record.postBody ?? '').trim().isNotEmpty) ...[
+            if ((record.postText ?? '').trim().isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
               Text(
-                record.postBody!.trim(),
+                record.postText!.trim(),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: AuraText.body.copyWith(
@@ -314,9 +314,9 @@ class _RecordCard extends StatelessWidget {
                   ),
                   const SizedBox(width: AuraSpace.s8),
                 ],
-                if (record.createdAt != null)
+                if (record.postCreatedAt != null)
                   Text(
-                    formatRelative(record.createdAt!),
+                    formatRelative(record.postCreatedAt!),
                     style: AuraText.micro.copyWith(color: AuraSurface.faint),
                   ),
               ],

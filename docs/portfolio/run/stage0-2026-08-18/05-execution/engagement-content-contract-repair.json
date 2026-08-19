@@ -1,0 +1,91 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "Institution Engagement — content contract",
+  "title": "The engagement post that rendered on neither screen",
+  "date": "2026-08-19",
+  "relationToF053F116": "NONE. Surfaced during the RoutedRecord producer/consumer trace and deliberately not absorbed into that task. This is a content-contract defect, not an identity one, and it neither advances nor blocks F116/F053.",
+
+  "canonicalField": {
+    "field": "text",
+    "determinedFrom": "the producer chain, not naming preference",
+    "evidence": [
+      "prisma/schema.prisma:2465 — `model Post { ... text String ... }`. The domain field is `text`. There is no `body` column.",
+      "institution-engagement.service.ts:56 — the select takes `text: true`.",
+      "institution-engagement.service.ts:14-33 — `EngagementRecordDto.post.text: string | null`.",
+      "institution-engagement.service.ts:161 — `text: row.post.text`.",
+      "aura_final:lib/features/feed/domain/post.dart:182 — the client's OWN canonical post model already reads `json['text']`, so the client was disagreeing with itself, not only with the server.",
+      "aura_final:lib/features/activity/presentation/activity_screen.dart:1314 — `post['text']`."
+    ],
+    "isBodyADistinctConcept": "NO, not for posts. `body` does appear in the correspondence family (`pickString(message, const ['body','text','content'])` in thread_composer and thread_message_tile) but that reads a correspondence MESSAGE, a different entity in a different domain. No post producer anywhere emits `body`. There is no semantic collision to preserve and nothing was collapsed."
+  },
+
+  "beforeAfter": {
+    "producerBefore": "post.text — CORRECT, and unchanged. The producer was never the defective side.",
+    "producerAfter": "post.text — unchanged. No backend source file was modified; only its spec gained assertions.",
+    "consumerBefore": "`postBody: _opt(postRaw, ['body']) ?? _opt(m, ['postBody'])` — two keys, neither of which the producer has ever emitted.",
+    "consumerAfter": "`postText: _opt(postRaw, ['text'])` — one key, the canonical one."
+  },
+
+  "rootCause": {
+    "how": "The model was written against an assumed response shape when the engagement workspace was first wired (d615d4f). A later pass, 3dac187 'align engagement repository and models with live API response shape', corrected four real mismatches against the live API — `records` vs `data`, `record` vs `data`, `needsResponse` vs `pending`, and `post.id` vs a top-level `postId` — and did not catch this one.",
+    "whyItSurvived": "Every consumer guards the content with `if ((record.postBody ?? '').trim().isNotEmpty)`. A wrong key therefore did not throw, did not warn, and did not render a placeholder — the post simply was not there. The failure mode of a missing contract field is indistinguishable from a post with no text, which is exactly why an alignment pass looking for visible breakage walked past it.",
+    "generalShape": "A nullable field read through a key nobody sends, consumed behind an emptiness guard, is invisible. The other three fixed in 3dac187 all had visible symptoms (empty list, empty detail, dead button)."
+  },
+
+  "sameClassDefectsFoundInTheSameParse": [
+    { "field": "createdAt", "before": "`readDate(m['createdAt'])` — a TOP-LEVEL key the DTO does not emit.", "after": "`readDate(postRaw['createdAt'])` → exposed as `postCreatedAt`.", "userVisible": "YES — both screens render it with `formatRelative` immediately after the author's name, so both bylines were dateless.", "semanticCare": "The DTO carries two timestamps that are genuinely different facts: `routedAt` (when the post reached this institution) and `post.createdAt` (when the person wrote it). They were NOT collapsed. Render position decided it: the value sits in the same row as the author's name on both screens, which is a byline, so it is the post's own time. `routedAt` remains unconsumed and available if a queue-age display is ever wanted." },
+    { "field": "institutionId", "before": "`_opt(m, ['institutionId']) ?? ''` — always the empty string.", "after": "REMOVED from the model.", "userVisible": "NO — every consumer uses the route parameter `widget.institutionId`, never `record.institutionId`.", "why": "The producer omits it deliberately: the existing backend spec asserts `expect((record as any).institutionId).toBeUndefined()` under the heading 'without exposing participationId or institutionId'. A field that is always empty by contract is the same trap that produced this defect, so it was removed rather than left for someone to trust." },
+    { "field": "updatedAt", "before": "`readDate(m['updatedAt'])` — not on the DTO at all.", "after": "REMOVED from the model.", "userVisible": "NO — no consumer reads it." }
+  ],
+
+  "compatibilityAlias": {
+    "used": false,
+    "why": "A transitional read is only justified when deployed producer versions genuinely differ. They do not: no producer, in any version, has ever emitted `body` on this contract. `body ?? text` would have preserved the appearance of a dual contract where only one has ever existed, and would have made the mismatch permanently invisible instead of fixed."
+  },
+
+  "affectedSurfaces": {
+    "engagementListScreen": "Renders the post content truncated — `maxLines: 3`, ellipsis overflow — followed by the author byline and the post time. Now populated.",
+    "engagementDetailScreen": "Renders the full post content, then the same byline and time. Now populated.",
+    "presentationDifferencePreserved": "The list truncates and the detail does not. That is a deliberate presentation difference and is untouched; what they now share is the SOURCE."
+  },
+
+  "otherConsumers": {
+    "searched": "All references to RoutedRecord across lib/ and test/.",
+    "found": ["engagement_repository.dart — constructs RoutedRecord for both list() and getDetail()", "engagement_providers.dart — list, detail and summary providers", "engagement_list_screen.dart", "engagement_detail_screen.dart"],
+    "stale": "No consumer outside those two screens read the content or timestamp fields. `EngagementSummary` is a separate DTO and was already aligned by 3dac187 (`needsResponse`).",
+    "fixturesEncodingEitherField": "None existed — the engagement feature had no tests before this pass, which is the second reason the defect survived."
+  },
+
+  "tests": {
+    "added": [
+      "aura_final:test/institutions/engagement_content_contract_test.dart — 5 tests. Parses the exact producer shape; asserts a payload carrying ONLY the old `body` key does NOT resolve (so reintroducing a tolerant alias fails); asserts a genuinely null post stays null rather than becoming an empty string; asserts the byline timestamp is `post.createdAt` and explicitly NOT `routedAt`.",
+      "aura_final:test/institutions/engagement_screens_render_content_test.dart — 3 widget tests driving the REAL list and detail screens with the real producer payload. Model tests alone would not have caught this: the defect was invisible precisely because the screens guard on emptiness, so the proof has to be that the text is on the screen.",
+      "aura-backend:institution-engagement.spec.ts — 2 tests. Pins that the DTO exposes content as `text` and emits no `body` alias, and that `post.createdAt` and `routedAt` remain separate values with no top-level `createdAt`."
+    ],
+    "seededProof": "Reverting the client read to `['body']` fails 4 of the new tests across both files, including both screen-render tests. Restoring returns them to green. The wrong-field assumption cannot return quietly the way it arrived.",
+    "adjusted": "routed_record_actor_domain_test.dart — dropped its `institutionId` assertion, since the field was removed as always-empty-by-contract."
+  },
+
+  "scope": {
+    "backendSourceChanged": "NO — the producer was already correct. Only its spec gained assertions.",
+    "notDone": ["engagement feature redesign", "recommendation or ranking changes", "moderation changes", "post identity changes", "comments or replies changes", "route changes", "notification changes", "legacy correspondence retirement"],
+    "meetings": "UNTOUCHED — 52 meetings tests pass, verified after the change."
+  },
+
+  "verification": {
+    "frontendTests": "829 pass / 1 skipped (821 before; +8 new)",
+    "flutterAnalyze": "clean",
+    "backendTests": "205 suites / 2579 tests pass (2577 before; +2 new)",
+    "tscNoEmit": "clean",
+    "meetingsRegression": "52 pass",
+    "identityGate": "PASS — 16 files / 28 sites surface, 1 file / 7 sites typed-person, unchanged by this repair",
+    "domainProof": "23/23 PASS",
+    "stage0Validator": "PASS — FOUNDER_RATIFIED_CANONICAL_BASELINE",
+    "portfolioValidator": "PASS — 451 canonical units across 17 chapters",
+    "production": "NOT polled, NOT mutated"
+  },
+
+  "findingEffects": "NONE. F053, F116, F051, F052 and F054-F057 are all unaffected; this defect was never an identity defect and is recorded as unrelated.",
+  "founderDecisionsRequired": "NONE",
+  "nextFrontier": "Unchanged and untouched by this repair: CO-RC-C7-005 Phase 5 legacy retirement, which is the only thing that discharges the 15 retirement-owned person-identity sites."
+}
