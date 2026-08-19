@@ -1,0 +1,96 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-03 F053 / F116 - backend producer convergence + narrow Meetings identity crossing",
+  "chapter": "CH-03 (Identity Consumption & Presentation Truth)",
+  "date": "2026-08-19",
+  "orderingRationale": "Backend first, per founder direction: the client boundary cannot become canonical while producers keep hand-selecting person fields. PERSON_IDENTITY_SELECT -> producer consistency -> AuraPersonIdentity.fromJson -> consumer consistency.",
+  "backendMigrated": [
+    { "service": "src/admin/admin-hub.service.ts", "sitesBefore": 21, "sitesAfter": 0, "note": "The highest-density cluster. TWO person shapes repeated ~20 times: a bare reference {id, handle, displayName} and an admin view {id, email, handle, displayName [, disabledAt]}. Both now compose PERSON_REFERENCE_SELECT plus their admin domain fields." },
+    { "service": "src/auth/auth.service.ts", "sitesBefore": 7, "sitesAfter": 2, "note": "Account records compose the person reference alongside credential/lifecycle fields (passwordHash, emailVerifiedAt, disabledAt, accountType). Two sites remain and are recorded below as a governed exception." },
+    { "service": "src/support/support.service.ts", "sitesBefore": 5, "sitesAfter": 0, "note": "assignedAdmin / user / admin references. One of them selected {id, displayName} with NO handle - a person projected without the field needed to address them." },
+    { "service": "src/invites/invites.service.ts", "sitesBefore": 3, "sitesAfter": 0 },
+    { "service": "src/institutions/institutions.service.ts", "sitesBefore": 6, "sitesAfter": 3 },
+    { "service": "src/institutions/authority/institution-authority.service.ts", "sitesBefore": 3, "sitesAfter": 0 }
+  ],
+  "backendNonConformant": { "before": 99, "after": 60, "note": "45 of the remaining 60 are backend; the rest are client NON_CONFORMANT avatar sites." },
+  "personIdentitySelectAuthority": {
+    "changed": false,
+    "why": "No field was added, renamed or forked. Every migration COMPOSES the existing PERSON_REFERENCE_SELECT; no SECOND_PERSON_IDENTITY_SELECT was created and no service-specific person subset was invented.",
+    "referenceVsIdentity": "PERSON_REFERENCE_SELECT was the correct composition for every site touched: they embed a person inside another entity's response and need addressing, not lifecycle/verification. PERSON_IDENTITY_SELECT remains for surfaces that genuinely project the full person."
+  },
+  "governedExceptionsRetained": [
+    {
+      "site": "src/auth/auth.service.ts - 2 remaining selects",
+      "classification": "D - deliberately narrower",
+      "why": "They read the account record for CREDENTIAL work (password verification, verification-state transitions), not to embed a person in another entity's response. Composing full identity there would attach avatar/verification data to a login query for no consumer. The person subset they do carry was converged; what remains is account state."
+    },
+    {
+      "site": "src/availability/services/booking.service.ts (8), src/meetings/services/meeting.service.ts (8), src/availability/services/meeting-reminder.service.ts (4)",
+      "classification": "PROTECTED - Meetings family backend",
+      "why": "The narrow founder authorization named exactly two CLIENT files. Backend Meetings services were NOT authorized and were not touched. 20 sites, executable in minutes under an equivalent narrow authorization.",
+      "founderAuthorizationRequired": true
+    },
+    {
+      "site": "src/institutions/institutions.service.ts - 3 remaining",
+      "classification": "To be re-examined next pass",
+      "why": "Not yet classified; left rather than guessed."
+    }
+  ],
+  "privateTypedBoundaries": {
+    "deletedThisBatch": [],
+    "deletedPreviously": ["lib/models/author_brief.dart"],
+    "note": "The 75 typed-boundary sites are unchanged by this batch, which was producer-side. They remain the architectural remainder and the closure path for F116."
+  },
+  "narrowMeetingsCrossing": {
+    "authorization": "FOUNDER RULING 2026-08-19 - exactly two client files, for F053/F116 person-identity convergence only.",
+    "create_meeting_screen.dart": {
+      "sites": 2,
+      "genuineDebt": true,
+      "change": "The PERSON half of an institution member row is read canonically. `title`, `role` and `canSpeakOfficially` are membership state, not identity, and were left untouched."
+    },
+    "institution_availability_screen.dart": {
+      "sites": 4,
+      "genuineDebt": true,
+      "change": "The SAME `_memberName` resolver existed TWICE in this file, byte for byte, each ending in the literal 'Unknown'. Both now read the canonical model with the shared fallback order - two duplicate person interpretations removed, not merely renamed.",
+      "discovery": "A duplicated private resolver inside one file is the F053 defect in miniature: the same payload read twice, by two copies of the same code, in the same screen."
+    },
+    "boundaryRespected": "No Meetings lifecycle, booking, availability, navigation, admission, waiting-room, realtime, participant-role or UI change. Only person-identity interpretation.",
+    "regressionResult": "MEETINGS BEHAVIOR PRESERVED - frontend meetings 31 PASS, backend meeting/availability/booking 12 suites / 125 tests PASS."
+  },
+  "identityDebt": {
+    "batchStart": "49 files / 131 sites",
+    "batchEnd": "43 files / 86 sites",
+    "cleared": "45 sites, 6 files",
+    "instrumentCorrections": "NONE this batch - every cleared site is a real migration.",
+    "cumulativeFromFindingStart": "66 files / 202 sites -> 43 / 86",
+    "ratchet": "FAILED on each reduction until re-frozen; re-frozen at 43 / 86."
+  },
+  "remainderShape": {
+    "backendNonConformant": "45 sites / 20 files - of which 20 are protected Meetings-family backend",
+    "clientAdhocSurface": "26 sites",
+    "clientNonConformant": "15 sites (mostly CircleAvatar person rendering)",
+    "privateTypedBoundaries": "75 sites - the architectural remainder",
+    "f116ClosureTest": "Not yet met. Producers are substantially converged; the private typed boundaries are not, so arbitrary private readers still exist and F116 remains PARTIAL by its own stated test."
+  },
+  "findingStates": {
+    "F053": "PARTIALLY_VALIDATED - unchanged.",
+    "F116": "PARTIALLY_VALIDATED - unchanged. Criteria 1 (backend producers converge) is now substantially met; criterion 4 (private duplicate models retired or composed) is not.",
+    "F052": "Unchanged. No further realtime identity surface was touched this batch.",
+    "F054/F055/F056/F057": "Unchanged. No new structural debt exposed.",
+    "F051": "UNTOUCHED - preserved conflict, not adjudicated, not implicitly resolved."
+  },
+  "verification": {
+    "backendSuite": "205 suites / 2577 tests PASS",
+    "touchedServiceSuites": "admin 26, auth+support+invites 92, institutions 259",
+    "typecheck": "tsc --noEmit clean (it also caught an arity error in the RC8 spec, now corrected)",
+    "frontendSuite": "787 PASS",
+    "identityConformanceGate": "PASS at the new baseline 43 files / 86 sites",
+    "meetingsRegression": "PASS - frontend 31, backend 125",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "analyze": "clean"
+  },
+  "founderDecisionsRequired": [
+    "NONE for the work done.",
+    "OPTIONAL, surfaced not asked: 20 backend Meetings-family person selects (booking, meeting, meeting-reminder services) would converge under an authorization equivalent to the one granted for the two client files."
+  ]
+}

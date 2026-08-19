@@ -27,21 +27,21 @@
   ]
  },
  "totals": {
-  "rows": 264,
+  "rows": 216,
   "byVerdict": {
-   "NON_CONFORMANT": 99,
-   "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 12,
+   "NON_CONFORMANT": 60,
+   "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 9,
    "AUTHORITY": 5,
    "CONFORMANT": 41,
    "TYPED_DESERIALIZATION_BOUNDARY": 75,
-   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 32
+   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 26
   },
-  "nonConformant": 99,
-  "adhocMapExtractionInSurface": 32,
+  "nonConformant": 60,
+  "adhocMapExtractionInSurface": 26,
   "typedDeserializationBoundary": 75,
   "conformant": 41,
-  "frontend": 164,
-  "backend": 100
+  "frontend": 158,
+  "backend": 58
  },
  "sixPersonShapedExtractionSites": {
   "obligation": "CO-RC-C2-010",
@@ -1074,60 +1074,6 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/presentation/create_meeting_screen.dart",
-   "line": 43,
-   "evidence": "displayName: (user['displayName'] ?? '').toString().trim(),",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/presentation/create_meeting_screen.dart",
-   "line": 44,
-   "evidence": "handle: (user['handle'] ?? '').toString().trim(),",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/presentation/institution_availability_screen.dart",
-   "line": 756,
-   "evidence": "final displayName = user is Map ? (user['displayName'] as String?) : null;",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/presentation/institution_availability_screen.dart",
-   "line": 757,
-   "evidence": "final handle = user is Map ? (user['handle'] as String?) : null;",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/presentation/institution_availability_screen.dart",
-   "line": 977,
-   "evidence": "final displayName = user is Map ? (user['displayName'] as String?) : null;",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/meetings/presentation/institution_availability_screen.dart",
-   "line": 978,
-   "evidence": "final handle = user is Map ? (user['handle'] as String?) : null;",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/meetings/presentation/meeting_detail_screen.dart",
    "line": 912,
@@ -1597,213 +1543,6 @@
   {
    "repo": "aura-backend",
    "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 176,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 219,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 252,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 334,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 470,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 544,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 552,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 612,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 620,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 649,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 657,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 708,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 716,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 777,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 785,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 839,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 877,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 916,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 950,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 991,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 1029,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 1454,
-   "evidence": "select: { id: true, handle: true, displayName: true, email: true },",
-   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
-   "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/admin/admin-hub.service.ts",
-   "line": 1473,
-   "evidence": "select: { id: true, handle: true, displayName: true, email: true },",
-   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
-   "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
    "path": "src/auth/auth.controller.ts",
    "line": 591,
    "evidence": "displayName: true,",
@@ -1814,7 +1553,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/auth/auth.service.ts",
-   "line": 276,
+   "line": 1311,
    "evidence": "displayName: true,",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
@@ -1823,52 +1562,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/auth/auth.service.ts",
-   "line": 702,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/auth/auth.service.ts",
-   "line": 881,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/auth/auth.service.ts",
-   "line": 1043,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/auth/auth.service.ts",
-   "line": 1290,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/auth/auth.service.ts",
-   "line": 1320,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/auth/auth.service.ts",
-   "line": 1337,
+   "line": 1328,
    "evidence": "displayName: true,",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
@@ -2155,62 +1849,8 @@
   {
    "repo": "aura-backend",
    "surface": "PROJECTION",
-   "path": "src/institutions/authority/institution-authority.service.ts",
-   "line": 148,
-   "evidence": "user: { select: { id: true, displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/institutions/authority/institution-authority.service.ts",
-   "line": 149,
-   "evidence": "grantedBy: { select: { id: true, displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/institutions/authority/institution-authority.service.ts",
-   "line": 750,
-   "evidence": "select: { displayName: true, handle: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
-   "line": 410,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/institutions/institutions.service.ts",
-   "line": 443,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/institutions/institutions.service.ts",
-   "line": 857,
-   "evidence": "displayName: true,",
-   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
-   "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/institutions/institutions.service.ts",
-   "line": 1276,
+   "line": 1270,
    "evidence": "select: { id: true, email: true, displayName: true },",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
    "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
@@ -2219,7 +1859,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
-   "line": 1554,
+   "line": 1548,
    "evidence": "usedBy: { select: { id: true, displayName: true, handle: true } },",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
@@ -2228,7 +1868,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
-   "line": 1555,
+   "line": 1549,
    "evidence": "createdBy: { select: { id: true, displayName: true, handle: true } },",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
@@ -2248,33 +1888,6 @@
    "path": "src/invitations/invitations.service.ts",
    "line": 435,
    "evidence": "select: { displayName: true } as Prisma.UserSelect,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/invites/invites.service.ts",
-   "line": 120,
-   "evidence": "select: { id: true, handle: true, displayName: true, email: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/invites/invites.service.ts",
-   "line": 135,
-   "evidence": "select: { id: true, handle: true, displayName: true, email: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/invites/invites.service.ts",
-   "line": 1133,
-   "evidence": "select: { displayName: true, handle: true },",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
   },
@@ -2428,51 +2041,6 @@
    "path": "src/search/search.service.ts",
    "line": 135,
    "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/support/support.service.ts",
-   "line": 199,
-   "evidence": "assignedAdmin: { select: { id: true, displayName: true, email: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/support/support.service.ts",
-   "line": 200,
-   "evidence": "user: { select: { id: true, displayName: true, email: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/support/support.service.ts",
-   "line": 219,
-   "evidence": "include: { admin: { select: { id: true, displayName: true } } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/support/support.service.ts",
-   "line": 221,
-   "evidence": "assignedAdmin: { select: { id: true, displayName: true, email: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/support/support.service.ts",
-   "line": 222,
-   "evidence": "user: { select: { id: true, displayName: true, email: true } },",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
   },

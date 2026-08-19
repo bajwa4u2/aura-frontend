@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../institutions/data/institutions_repository.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 Future<void> _refreshInstitutionProfiles(WidgetRef ref, String institutionId) {
   return ref.refresh(institutionProfilesProvider(institutionId).future);
@@ -751,14 +752,13 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
     } catch (_) {}
   }
 
-  String _memberName(Map<String, dynamic> m) {
-    final user = m['user'];
-    final displayName = user is Map ? (user['displayName'] as String?) : null;
-    final handle = user is Map ? (user['handle'] as String?) : null;
-    if (displayName?.isNotEmpty == true) return displayName!;
-    if (handle?.isNotEmpty == true) return handle!;
-    return 'Unknown';
-  }
+  // F053/F116 (narrow Meetings authorization, founder 2026-08-19) — this
+  // resolver existed TWICE in this file, byte for byte, each ending in the
+  // literal 'Unknown'. Both now read the canonical model and use the shared
+  // fallback order. Nothing about availability, booking or meeting behaviour
+  // changes.
+  String _memberName(Map<String, dynamic> m) =>
+      AuraPersonIdentity.fromJson(m['user']).proseName;
 
   @override
   void dispose() {
@@ -972,14 +972,13 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
     } catch (_) {}
   }
 
-  String _memberName(Map<String, dynamic> m) {
-    final user = m['user'];
-    final displayName = user is Map ? (user['displayName'] as String?) : null;
-    final handle = user is Map ? (user['handle'] as String?) : null;
-    if (displayName?.isNotEmpty == true) return displayName!;
-    if (handle?.isNotEmpty == true) return handle!;
-    return 'Unknown';
-  }
+  // F053/F116 (narrow Meetings authorization, founder 2026-08-19) — this
+  // resolver existed TWICE in this file, byte for byte, each ending in the
+  // literal 'Unknown'. Both now read the canonical model and use the shared
+  // fallback order. Nothing about availability, booking or meeting behaviour
+  // changes.
+  String _memberName(Map<String, dynamic> m) =>
+      AuraPersonIdentity.fromJson(m['user']).proseName;
 
   @override
   Widget build(BuildContext context) {

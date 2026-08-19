@@ -15,6 +15,7 @@ import '../../institutions/domain/institution.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 final _institutionDetailProvider =
     FutureProvider.family<Institution, String>((ref, institutionId) {
@@ -37,11 +38,17 @@ final _institutionMembersProvider = FutureProvider.family<_InstitutionMembersDat
           : const <String, dynamic>{};
       final userId = (member['userId'] ?? '').toString().trim();
       if (userId.isEmpty) continue;
+      // F053/F116 (narrow Meetings authorization, founder 2026-08-19) — the
+      // PERSON half of an institution member row is read canonically. `title`,
+      // `role` and `canSpeakOfficially` are membership state, not identity,
+      // and stay exactly where they are. No Meetings behaviour changes: this
+      // replaces a duplicate interpretation, nothing else.
+      final person = AuraPersonIdentity.fromJson(user);
       members.add(
         _InstitutionMember(
           userId: userId,
-          displayName: (user['displayName'] ?? '').toString().trim(),
-          handle: (user['handle'] ?? '').toString().trim(),
+          displayName: person.displayName,
+          handle: person.handle,
           title: (member['title'] ?? '').toString().trim(),
           role: (member['role'] ?? 'MEMBER').toString().trim(),
           canSpeakOfficially: member['canSpeakOfficially'] == true,

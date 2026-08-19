@@ -17,8 +17,8 @@
   "ADHOC_MAP_EXTRACTION_IN_SURFACE"
  ],
  "totals": {
-  "files": 49,
-  "sites": 131
+  "files": 43,
+  "sites": 86
  },
  "perFile": {
   "aura_final:lib/core/tagging/mention_scope_providers.dart": 1,
@@ -33,8 +33,6 @@
   "aura_final:lib/features/invitations/presentation/invite_create_screen.dart": 1,
   "aura_final:lib/features/me/presentation/edit_profile_screen.dart": 2,
   "aura_final:lib/features/meetings/presentation/booking_confirm_screen.dart": 2,
-  "aura_final:lib/features/meetings/presentation/create_meeting_screen.dart": 2,
-  "aura_final:lib/features/meetings/presentation/institution_availability_screen.dart": 4,
   "aura_final:lib/features/meetings/presentation/meeting_live_room_screen.dart": 5,
   "aura_final:lib/features/meetings/presentation/public_booking_screen.dart": 1,
   "aura_final:lib/features/meetings/presentation/slot_picker_screen.dart": 1,
@@ -46,9 +44,8 @@
   "aura_final:lib/features/public/widgets/public_composer.dart": 3,
   "aura_final:lib/features/public/widgets/since_you_were_here.dart": 1,
   "aura_final:lib/features/realtime/presentation/realtime_room_screen.dart": 2,
-  "aura-backend:src/admin/admin-hub.service.ts": 21,
   "aura-backend:src/auth/auth.controller.ts": 1,
-  "aura-backend:src/auth/auth.service.ts": 7,
+  "aura-backend:src/auth/auth.service.ts": 2,
   "aura-backend:src/availability/services/availability-profile.service.ts": 2,
   "aura-backend:src/availability/services/booking.service.ts": 8,
   "aura-backend:src/availability/services/meeting-reminder.service.ts": 4,
@@ -58,16 +55,13 @@
   "aura-backend:src/communications/notification-delivery/notification-delivery-authority.service.ts": 2,
   "aura-backend:src/conversations/conversation-invitation.adapter.ts": 1,
   "aura-backend:src/discovery/people-discovery.service.ts": 1,
-  "aura-backend:src/institutions/authority/institution-authority.service.ts": 3,
-  "aura-backend:src/institutions/institutions.service.ts": 4,
+  "aura-backend:src/institutions/institutions.service.ts": 2,
   "aura-backend:src/invitations/invitations.service.ts": 2,
-  "aura-backend:src/invites/invites.service.ts": 3,
   "aura-backend:src/meetings/participation/meeting-participation-resolver.service.ts": 2,
   "aura-backend:src/meetings/services/meeting.service.ts": 8,
   "aura-backend:src/notifications/actor-notifications.service.ts": 1,
   "aura-backend:src/realtime/realtime.gateway.ts": 1,
   "aura-backend:src/search/search.service.ts": 1,
-  "aura-backend:src/support/support.service.ts": 5,
   "aura-backend:src/uploads/uploads.controller.ts": 1,
   "aura-backend:src/users/users.service.ts": 1
  }
