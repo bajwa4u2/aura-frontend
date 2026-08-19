@@ -256,3 +256,35 @@ RC-C7 does **not** recreate Correspondence as a separate product. The original c
 2026-08-16 amendment **coexist** — they use different nouns. `CO-RC-C7-015` is reconciled on this basis and is
 no longer UNKNOWN. The ruling does not extend to unrelated Correspondence architecture.
 
+## 12. G1 DECOMPOSITION — PROOF GATES FOLLOW DEPENDENCIES *(founder ruling, 2026-08-18)*
+
+> **PROOF GATES FOLLOW DEPENDENCIES; THEY DO NOT GLOBALLY FREEZE UNRELATED WORK MERELY BECAUSE THEY
+> ONCE SHARED A WAVE.**
+
+**What was superseded.** The *aggregate* reading of G1 — "all six legs must pass before any W2 work may
+begin" — is superseded as an **execution-sequencing rule**.
+
+**What was NOT superseded.** No individual G1 proof obligation is deleted, weakened, waived or
+discharged. No unattempted leg became PASS by decomposition.
+
+**Why the aggregate reading became impossible.** G1 was written to terminate Stage-5's W1, which
+contained CH-04 PHASE 1 and the CH-11 chapter head. The first executable wave was later re-derived from
+canonical evidence, and CH-04 PHASE 1 was **refused on its own evidence**. The executed wave is
+therefore narrower than the gate that terminates it, so G1 retained prerequisites belonging to branches
+the evidence correctly excluded. It could never have opened — not because a proof failed.
+
+**A wave is an execution-planning construct.** It cannot manufacture a technical dependency, and
+historical wave membership is not itself a prerequisite. Each leg now attaches to the capability,
+chapter or dependency it actually proves, and remains fail-closed there.
+
+| Leg | State | Attached to |
+|---|---|---|
+| 1 F065 live refresh | **PASS** | CH-02 continuity keystone |
+| 2 signed-out probe + gates + Meetings regression | **PASS** | CH-02 route classification |
+| 3 F045 three sequential calls | **OPEN** | CH-04 — AD-CON-5, SU-5, VS-02, real devices |
+| 4 F006–F010 live on the Conversation surface | **OPEN** | CH-04 / CH-06 boundary |
+| 5 violating file refused live + doors enumerated | **5(A) ESTABLISHED · 5(B) OPEN** | CH-11 and everything downstream of governed ingestion |
+| 6 PBCR 7 and 8 | **PASS** | the historical PB-02/RC-C6 crossing (§7.1) |
+
+The original G1 remains unedited in `s5-execution-architecture.json` as historical Stage-5 architecture.
+
