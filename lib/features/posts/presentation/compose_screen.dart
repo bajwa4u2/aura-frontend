@@ -564,6 +564,29 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       params['mode'] = mode;
     }
 
+    // RC4 x RC7 — the sign-in round trip must return to THIS composer, not to
+    // a generic one. Without the context below, someone bounced to /login
+    // while replying in an institution's voice came back to a blank personal
+    // post: the draft body survived (it is the author's held draft) while
+    // everything that made it that particular composition did not.
+    if (_editPostId.isNotEmpty) {
+      params['edit'] = _editPostId;
+    }
+    final replyToInstitutionPostId =
+        (widget.replyToInstitutionPostId ?? '').trim();
+    if (replyToInstitutionPostId.isNotEmpty) {
+      params['replyToInstitutionPostId'] = replyToInstitutionPostId;
+      final parentInstitutionId = (widget.parentInstitutionId ?? '').trim();
+      if (parentInstitutionId.isNotEmpty) {
+        params['parentInstitutionId'] = parentInstitutionId;
+      }
+    }
+    final institutionId = (widget.institutionId ?? '').trim();
+    if (widget.asInstitution && institutionId.isNotEmpty) {
+      params['asInstitution'] = 'true';
+      params['institutionId'] = institutionId;
+    }
+
     final uri = Uri(
       path: '/compose',
       queryParameters: params.isEmpty ? null : params,
@@ -884,7 +907,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               imageUrl: _str(draft['linkImageUrl']).isEmpty ? null : _str(draft['linkImageUrl']),
             );
 
+      // RC7 (compose half) — RESTORE THE DRAFT'S IDENTITY, NOT ONLY ITS
+      // CONTENT.
+      //
+      // The post composer's lifecycle is deliberately unlike the article
+      // editor's: `PUT /posts/draft` upserts the author's ONE held draft, so
+      // a remount can never mint a duplicate and the route needs no id. What
+      // the restore dropped was the identity of the draft it had just loaded
+      // — `_draftPostId` stayed null after every refresh.
+      //
+      // Everything keyed to that id therefore reported a draft that plainly
+      // existed as absent: the governance panel read "Not yet reviewed" for
+      // work already assessed, and acknowledging a pending action silently
+      // did nothing. This is the backend's own id, never a client-minted
+      // stand-in.
+      final restoredId = _str(draft['id']).trim();
+
       setState(() {
+        if (restoredId.isNotEmpty) _draftPostId = restoredId;
         _textController.text = hydrated.text;
         _visibility = visibility;
         _primaryTopic = AuraTopic.fromWire(_str(draft['primaryTopic']));
@@ -903,6 +943,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           _showTextError = false;
         }
       });
+
+      // With the draft's identity back, ambient governance can speak about
+      // the real draft again instead of about nothing.
+      if (restoredId.isNotEmpty) _scheduleGovernanceCheck();
     } catch (_) {
       // best-effort
     }

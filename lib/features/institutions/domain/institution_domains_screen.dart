@@ -17,7 +17,11 @@ import 'institution_domains_providers.dart';
 import 'institution_domains_repository.dart';
 
 class InstitutionDomainsScreen extends ConsumerStatefulWidget {
-  const InstitutionDomainsScreen({super.key});
+  const InstitutionDomainsScreen({super.key, this.institutionId});
+
+  /// RC3 — the institution this route names, already validated against the
+  /// person's memberships. Null means "whichever institution is in context".
+  final String? institutionId;
 
   @override
   ConsumerState<InstitutionDomainsScreen> createState() =>
@@ -47,7 +51,12 @@ class _InstitutionDomainsScreenState
   /// sees a read-only view instead of controls that would 403 on submit.
   bool get canManageDomains =>
       institutionId.isNotEmpty &&
-      (ref.read(institutionIdentityProvider)?.canManageDomains ?? false);
+      (ref
+              .read(institutionWorkspaceIdentityProvider(
+                widget.institutionId ?? '',
+              ))
+              ?.canManageDomains ??
+          false);
 
   void _showSnack(String message) {
     if (!mounted) return;
@@ -89,7 +98,10 @@ class _InstitutionDomainsScreenState
     }
 
     try {
-      final stateData = await repo.getMyInstitutionState();
+      // RC3 — ask about the institution this route named, when it named one.
+      final stateData = await repo.getMyInstitutionState(
+        institutionId: widget.institutionId,
+      );
       final stateName = stateData['state']?.toString();
       final membership = stateData['membership'];
 

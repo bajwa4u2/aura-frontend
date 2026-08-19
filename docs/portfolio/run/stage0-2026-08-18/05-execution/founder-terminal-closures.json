@@ -66,5 +66,24 @@
       "disposition": "PRESERVED AS AN OBSERVATION FOR RECONSTRUCTION ACCOUNTING / GOVERNANCE REVIEW ONLY. No finding was created, parseInternalReference was NOT extended, and Meetings was NOT touched. Meetings remains a protected surface.",
       "wouldRequire": "Explicit founder authorization, both to admit a finding and to cross the Meetings boundary."
     }
+  },
+  "nonTerminalTransitions": {
+    "note": "States recorded here are NOT terminal. They are execution-layer transitions on non-terminal register states, kept beside the terminal closures so a reader sees every recorded movement in one place. Stage-0 currentState is preserved verbatim for each.",
+    "F059": {
+      "title": "Conversation destination lost on refresh",
+      "chapter": "CH-02",
+      "stage0State": "OPEN",
+      "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "date": "2026-08-19",
+      "basis": "Named causes RC1, RC2 and RC3 all repaired. Live certification owed and NOT claimed."
+    },
+    "F062": {
+      "title": "Institution profile edit continuity",
+      "chapter": "CH-02",
+      "stage0State": "OPEN",
+      "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "date": "2026-08-19",
+      "basis": "Named causes RC2 and RC4 repaired, plus the RC3 screen-binding half its destination depends on. Live certification owed and NOT claimed."
+    }
   }
 }

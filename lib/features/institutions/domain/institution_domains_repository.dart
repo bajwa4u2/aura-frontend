@@ -22,8 +22,18 @@ class InstitutionDomainsRepository {
     return <Map<String, dynamic>>[];
   }
 
-  Future<Map<String, dynamic>> getMyInstitutionState() async {
-    final res = await _dio.get('/institutions/me');
+  /// RC3 — [institutionId] scopes the answer to one institution the caller
+  /// holds. Omitted, the endpoint answers about whichever institution is in
+  /// context, exactly as before. The claim is validated server-side against
+  /// the caller's own membership.
+  Future<Map<String, dynamic>> getMyInstitutionState({
+    String? institutionId,
+  }) async {
+    final id = (institutionId ?? '').trim();
+    final res = await _dio.get(
+      '/institutions/me',
+      queryParameters: id.isEmpty ? null : <String, dynamic>{'institutionId': id},
+    );
     return _asMap(res.data) ?? <String, dynamic>{};
   }
 

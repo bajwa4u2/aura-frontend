@@ -216,6 +216,22 @@ void main() {
       );
     });
 
+    test('AUTHORIZED ELSEWHERE now PROCEEDS — the person asked for it', () {
+      // Previously rewritten to the ambient institution, because the screens
+      // read ambient state and proceeding would have shown A's data under
+      // B's URL. The screens are now bound to the institution the URL names,
+      // so substituting a different one would be the defect.
+      expect(
+        canonical(
+          resolved: true,
+          activeId: 'inst-1',
+          authorized: ['inst-1', 'inst-2'],
+          pathId: 'inst-2',
+        ),
+        isNull,
+      );
+    });
+
     test('a shorthand canonicalises to a real URL', () {
       expect(shorthand(resolved: true, activeId: 'inst-1'),
           '/institution/inst-1/edit-profile');

@@ -1256,7 +1256,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/institutions/profile/institution_edit_profile_screen.dart",
-   "line": 225,
+   "line": 229,
    "evidence": ": (inst['avatarUrl']?.toString().trim().isNotEmpty == true",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -1265,7 +1265,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/institutions/profile/institution_edit_profile_screen.dart",
-   "line": 226,
+   "line": 230,
    "evidence": "? inst['avatarUrl'].toString().trim()",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2165,7 +2165,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 956,
+   "line": 982,
    "evidence": "final handle = state.pathParameters['handle'] ?? '';",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2174,7 +2174,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 963,
+   "line": 989,
    "evidence": "handle: state.pathParameters['handle'] ?? '',",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2183,7 +2183,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 969,
+   "line": 995,
    "evidence": "FollowersScreen(handle: state.pathParameters['handle'] ?? ''),",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2192,7 +2192,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 974,
+   "line": 1000,
    "evidence": "FollowingScreen(handle: state.pathParameters['handle'] ?? ''),",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2201,7 +2201,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 979,
+   "line": 1005,
    "evidence": "handle: state.pathParameters['handle'] ?? '',",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2210,7 +2210,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/router.dart",
-   "line": 1911,
+   "line": 1943,
    "evidence": "'/u/${state.pathParameters['handle'] ?? ''}',",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -2840,7 +2840,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
-   "line": 834,
+   "line": 857,
    "evidence": "displayName: true,",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
    "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
@@ -2849,7 +2849,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
-   "line": 1253,
+   "line": 1276,
    "evidence": "select: { id: true, email: true, displayName: true },",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
    "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
@@ -2858,7 +2858,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
-   "line": 1531,
+   "line": 1554,
    "evidence": "usedBy: { select: { id: true, displayName: true, handle: true } },",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
@@ -2867,7 +2867,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
-   "line": 1532,
+   "line": 1555,
    "evidence": "createdBy: { select: { id: true, displayName: true, handle: true } },",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."

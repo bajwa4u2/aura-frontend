@@ -16,6 +16,7 @@ import 'core/auth/session_providers.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
 import 'core/institutions/institution_route_authority.dart';
+import 'core/navigation/destination_continuity.dart';
 import 'features/meetings/application/meetings_provider.dart';
 import 'features/realtime/application/realtime_providers.dart';
 import 'features/realtime/domain/realtime_enums.dart';
@@ -689,15 +690,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
+      // RC4 — TERMINAL DENIAL. A non-admin does not become an admin by
+      // visiting /home, so there is nothing to return from and nothing worth
+      // remembering. Classified deliberately, not by omission.
       if (requiresAppAdmin(path) && !appAdmin.isAdmin) {
-        return '/home';
+        return gateRedirect(
+          gate: '/home',
+          target: currentLocation,
+          kind: ExitKind.terminalDenial,
+        );
       }
 
       // Platform admins bypass all institution membership gates — the backend
       // enforces INSTITUTIONS_READ/WRITE via its own bypass logic.
       if (!appAdmin.isAdmin) {
+        // RC4 — TEMPORARY GATE. Institution access is something the person
+        // can obtain: this is the one institution exit they can pass, so the
+        // destination travels with them and the gate returns them to it.
         if (requiresInstitutionAccess(path) && !institutionAccess.hasAccess) {
-          return kEnterInstitutionRoute;
+          return gateRedirect(
+            gate: kEnterInstitutionRoute,
+            target: currentLocation,
+          );
         }
 
         final isInstitutionAdmin =
@@ -707,13 +721,25 @@ final routerProvider = Provider<GoRouter>((ref) {
                 InstitutionAccessState.authorizedSpeaker ||
             institutionAccess.state == InstitutionAccessState.verifiedMember;
 
+        // RC4 — TERMINAL DENIAL, both. Standing inside an institution is
+        // granted by that institution, never by arriving at the dashboard.
+        // Remembering the destination would only redirect the person back
+        // into the same refusal.
         if (requiresInstitutionAdmin(path) && !isInstitutionAdmin) {
-          return kInstitutionDashboardRoute;
+          return gateRedirect(
+            gate: kInstitutionDashboardRoute,
+            target: currentLocation,
+            kind: ExitKind.terminalDenial,
+          );
         }
 
         if (requiresInstitutionAdminOrSpeaker(path) &&
             !isInstitutionSpeakerOrAdmin) {
-          return kInstitutionDashboardRoute;
+          return gateRedirect(
+            gate: kInstitutionDashboardRoute,
+            target: currentLocation,
+            kind: ExitKind.terminalDenial,
+          );
         }
       }
 
@@ -1663,7 +1689,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'domains',
             ),
-            builder: (_, __) => const InstitutionDomainsScreen(),
+            builder: (_, state) => InstitutionDomainsScreen(
+              institutionId: state.pathParameters['institutionId'],
+            ),
           ),
 
           // Units (already canonical, kept here for proximity).
@@ -1709,7 +1737,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'profile',
             ),
-            builder: (_, __) => const InstitutionProfileScreen(),
+            builder: (_, state) => InstitutionProfileScreen(
+              institutionId: state.pathParameters['institutionId'],
+            ),
           ),
 
           // Edit profile.
@@ -1726,7 +1756,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'edit-profile',
             ),
-            builder: (_, __) => const InstitutionEditProfileScreen(),
+            builder: (_, state) => InstitutionEditProfileScreen(
+              institutionId: state.pathParameters['institutionId'],
+            ),
           ),
 
           // Request verification.

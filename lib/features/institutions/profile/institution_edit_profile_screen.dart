@@ -38,7 +38,11 @@ import '../ui/institution_ds.dart';
 ///   3. Sticky save bar pinned to the bottom of the viewport so the save
 ///      action is always one click away.
 class InstitutionEditProfileScreen extends ConsumerStatefulWidget {
-  const InstitutionEditProfileScreen({super.key});
+  const InstitutionEditProfileScreen({super.key, this.institutionId});
+
+  /// RC3 — the institution this route names, already validated against the
+  /// person's memberships. Null means "whichever institution is in context".
+  final String? institutionId;
 
   @override
   ConsumerState<InstitutionEditProfileScreen> createState() =>
@@ -333,7 +337,7 @@ class _InstitutionEditProfileScreenState
       };
 
       await repo.updateInstitutionProfile(institutionId, fields);
-      ref.invalidate(institutionAccessProvider);
+      _invalidateBoundWorkspace();
 
       setState(() {
         _saving = false;
@@ -362,14 +366,39 @@ class _InstitutionEditProfileScreenState
   /// its own — it must not depend on the operator then clicking "Save changes"
   /// or on the rest of the form passing validation. Branding fields are a
   /// targeted partial PATCH.
+  /// RC3 — the institution this editor is bound to: the one the route named
+  /// when it named one, otherwise whichever is in context. The route id
+  /// reached here only after being validated against real membership, and
+  /// the backend re-validates every write regardless.
+  String get _boundInstitutionId {
+    final routeId = (widget.institutionId ?? '').trim();
+    if (routeId.isNotEmpty) return routeId;
+    return ref.read(institutionIdentityProvider)?.id ?? '';
+  }
+
+  bool get _isRouteBound {
+    final routeId = (widget.institutionId ?? '').trim();
+    return routeId.isNotEmpty &&
+        ref.read(institutionIdentityProvider)?.id != routeId;
+  }
+
+  void _invalidateBoundWorkspace() {
+    if (_isRouteBound) {
+      ref.invalidate(institutionWorkspaceProvider(_boundInstitutionId));
+    }
+    // The ambient workspace is invalidated either way: a change to any
+    // institution the person holds can change what the ambient read returns.
+    ref.invalidate(institutionAccessProvider);
+  }
+
   Future<void> _persistBranding(Map<String, dynamic> patch) async {
-    final id = ref.read(institutionIdentityProvider)?.id ?? '';
+    final id = _boundInstitutionId;
     if (id.isEmpty) return;
     try {
       await ref
           .read(institutionsRepositoryProvider)
           .updateInstitutionProfile(id, patch);
-      ref.invalidate(institutionAccessProvider);
+      _invalidateBoundWorkspace();
       if (mounted) {
         setState(() {
           _error = null;
@@ -493,8 +522,19 @@ class _InstitutionEditProfileScreenState
 
   @override
   Widget build(BuildContext context) {
-    final accessAsync = ref.watch(institutionAccessProvider);
-    final identity = ref.watch(institutionIdentityProvider);
+    final routeId = (widget.institutionId ?? '').trim();
+    final ambient = ref.watch(institutionIdentityProvider);
+    final bound = routeId.isNotEmpty && ambient?.id != routeId;
+
+    // RC3 — when the route names an institution the person holds, this editor
+    // edits THAT one. Before, it read the ambient workspace regardless, so
+    // institution B's URL opened institution A's profile for editing.
+    final accessAsync = bound
+        ? ref.watch(institutionWorkspaceProvider(routeId))
+        : ref.watch(institutionAccessProvider);
+    final identity = bound
+        ? ref.watch(institutionWorkspaceIdentityProvider(routeId))
+        : ambient;
 
     // C2 §9 — the gate asks the CAPABILITY question, not the role question.
     //

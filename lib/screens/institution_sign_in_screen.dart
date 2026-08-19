@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/institutions/institution_access_provider.dart';
+import '../core/navigation/destination_continuity.dart';
 import '../core/net/dio_provider.dart';
 import '../core/ui/aura_platform_components.dart';
 import '../core/ui/aura_radius.dart';
@@ -108,7 +109,17 @@ class _InstitutionSignInScreenState
       if (!access.hasAccess) {
         throw Exception('Institution access could not be confirmed. Please try again.');
       }
-      context.go(_institutionDashboardRoute);
+      // RC4 — CONSUME what the exit preserved. Someone sent here from an
+      // institution destination is returned to it; a preserved target that
+      // fails validation, or an arrival with none, still lands on the
+      // dashboard. The target is re-validated here rather than trusted: it
+      // survived a round trip through the address bar.
+      context.go(
+        consumeReturnTarget(
+          GoRouterState.of(context).uri.queryParameters['redirect'],
+          fallback: _institutionDashboardRoute,
+        ),
+      );
     } on DioException catch (e) {
       String message = 'Institution sign in failed.';
 

@@ -223,7 +223,13 @@ class InstitutionIdentity {
 }
 
 final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
-  final access = ref.watch(institutionAccessProvider).valueOrNull;
+  return _identityFrom(ref.watch(institutionAccessProvider).valueOrNull);
+});
+
+/// The identity derivation, shared by the ambient provider and the
+/// route-bound one so a workspace screen reads the SAME shape whichever
+/// institution it was pointed at.
+InstitutionIdentity? _identityFrom(InstitutionAccess? access) {
   if (access == null || !access.hasAccess) return null;
 
   // Institution data may be at access.institution or inside access.membership['institution'].
@@ -316,7 +322,7 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
     institutionType: readOpt(inst, ['institutionType']),
     domainTags: tagList,
   );
-});
+}
 
 /// All institutions the current member is affiliated with (primary-first).
 /// Derived from the session-cached [institutionAccessProvider] — no extra
@@ -327,7 +333,46 @@ final myAffiliationsProvider = Provider<List<MemberAffiliation>>((ref) {
   return access?.memberships ?? const <MemberAffiliation>[];
 });
 
+/// RC3 (screen-binding half) — the workspace record for a SPECIFIC
+/// institution the person holds.
+///
+/// `/institutions/me` used to describe whichever institution the backend
+/// picked (the oldest membership), so a member of two institutions could
+/// route to institution B while every payload described institution A. The
+/// client's only truthful option was to rewrite B's URL to A.
+///
+/// This is a SCOPED READ of that same endpoint, not a second "active
+/// institution" authority. Nothing here selects, stores or mutates which
+/// institution is current; it answers "what is my standing in THIS one", and
+/// the backend validates the claim against the caller's own membership. An
+/// institution the person does not hold comes back as no standing at all —
+/// the identical payload a stranger receives.
+final institutionWorkspaceProvider =
+    FutureProvider.family<InstitutionAccess, String>((ref, institutionId) async {
+  return _readInstitutionState(ref, institutionId: institutionId.trim());
+});
+
+/// Per-institution identity for a workspace screen bound to a route.
+///
+/// Falls back to the ambient identity when the id is empty or names the
+/// institution already in context, so a screen with no route id behaves
+/// exactly as before.
+final institutionWorkspaceIdentityProvider =
+    Provider.family<InstitutionIdentity?, String>((ref, institutionId) {
+  final id = institutionId.trim();
+  final ambient = ref.watch(institutionIdentityProvider);
+  if (id.isEmpty || ambient?.id == id) return ambient;
+  return _identityFrom(ref.watch(institutionWorkspaceProvider(id)).valueOrNull);
+});
+
 final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async {
+  return _readInstitutionState(ref, institutionId: null);
+});
+
+Future<InstitutionAccess> _readInstitutionState(
+  Ref ref, {
+  required String? institutionId,
+}) async {
   await ref.watch(sessionBootstrapProvider.future);
 
   final authStatus = ref.watch(authStatusProvider);
@@ -351,7 +396,12 @@ final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async 
   }
 
   try {
-    final res = await dio.get('/institutions/me');
+    final res = await dio.get(
+      '/institutions/me',
+      queryParameters: (institutionId ?? '').isEmpty
+          ? null
+          : <String, dynamic>{'institutionId': institutionId},
+    );
     final data = Map<String, dynamic>.from(res.data);
     final stateRaw = (data['state'] ?? '').toString().trim();
 
@@ -416,4 +466,4 @@ final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async 
 
     rethrow;
   }
-});
+}

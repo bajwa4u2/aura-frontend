@@ -34,12 +34,26 @@ import '../ui/institution_ds.dart';
 /// Data + behaviour parity with the prior screen: same `/institutions/me`
 /// pull, same copy/share callbacks, same routing.
 class InstitutionProfileScreen extends ConsumerWidget {
-  const InstitutionProfileScreen({super.key});
+  const InstitutionProfileScreen({super.key, this.institutionId});
+
+  /// RC3 — the institution this route names, already validated against the
+  /// person's memberships by `institution_route_authority.dart`. Null means
+  /// "whichever institution is in context", which is how every caller
+  /// behaved before the route carried one.
+  final String? institutionId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accessAsync = ref.watch(institutionAccessProvider);
-    final identity = ref.watch(institutionIdentityProvider);
+    final routeId = (institutionId ?? '').trim();
+    final ambient = ref.watch(institutionIdentityProvider);
+    final bound = routeId.isNotEmpty && ambient?.id != routeId;
+
+    final accessAsync = bound
+        ? ref.watch(institutionWorkspaceProvider(routeId))
+        : ref.watch(institutionAccessProvider);
+    final identity = bound
+        ? ref.watch(institutionWorkspaceIdentityProvider(routeId))
+        : ambient;
 
     return AuraScaffold(
       showHeader: false,

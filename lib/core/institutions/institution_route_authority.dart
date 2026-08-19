@@ -64,14 +64,15 @@ enum InstitutionRouteOutcome {
   canonicalize,
 
   /// The path names an institution this person genuinely holds, but NOT the
-  /// one the workspace is bound to.
+  /// one the ambient workspace is bound to.
   ///
-  /// Proceeding would render the active institution's data under the other
-  /// institution's URL — a worse defect than the rewrite it replaces. The
-  /// honest resolution needs the workspace screens to bind to the URL's
-  /// institution (they read the ambient identity today) and an institution
-  /// context to switch into. Both are recorded as the remaining half of RC3
-  /// rather than faked here.
+  /// This used to canonicalise to the ambient institution, because the
+  /// workspace screens read ambient state and proceeding would have rendered
+  /// institution A's data under institution B's URL. That half is now closed:
+  /// `/institutions/me` answers about a NAMED institution the caller holds,
+  /// and the bound screens read it through
+  /// `institutionWorkspaceProvider`. So this outcome now PROCEEDS — the
+  /// person asked for an institution they hold, and they get it.
   authorizedElsewhere,
 
   /// The path names an institution this person does not hold — stale,
@@ -210,8 +211,12 @@ String? institutionCanonicalRedirect(
     case InstitutionRouteOutcome.unresolved:
     case InstitutionRouteOutcome.proceed:
       return null;
-    case InstitutionRouteOutcome.canonicalize:
     case InstitutionRouteOutcome.authorizedElsewhere:
+      // The URL asked for an institution this person holds, and the screens
+      // are now bound to the institution the URL names. Rewriting it would
+      // be substituting a different institution for the one requested.
+      return null;
+    case InstitutionRouteOutcome.canonicalize:
       return '/institution/${decision.institutionId}/$section';
     case InstitutionRouteOutcome.notAuthorized:
     case InstitutionRouteOutcome.noAffiliation:

@@ -1,0 +1,113 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-02 refresh continuity - RC4, RC7 compose half, RC3 screen-binding half",
+  "chapter": "CH-02 (Continuity & Destination Authority)",
+  "date": "2026-08-19",
+  "servesFindings": ["F059", "F061", "F062", "F063"],
+  "RC4": {
+    "defect": "Destination preservation was per-exit, not a rule. Four call sites remembered to write ?redirect= (/login, /complete-identity, /verify-pending, /_boot); every other destructive exit discarded the destination. The institution-access gate sent people to /enter-institution and, on success, to the dashboard - never back to the page they had asked for.",
+    "bothHalves": "A gate has two halves and needs both: PRESERVE on the way out, VALIDATE AND RETURN on the way back. A preserved parameter nothing consumes is decoration; a consumed parameter nothing validates is an open redirect. Both live in one authority so neither can drift from the other.",
+    "authority": "aura_final/lib/core/navigation/destination_continuity.dart - validatedReturnTarget / gateRedirect / consumeReturnTarget. It answers only the redirect-continuity question; authentication, membership and policy stay where they already live.",
+    "exitsClassified": {
+      "appAdminDenial": "TERMINAL DENIAL - a non-admin does not become an admin by visiting /home. Nothing to return from; nothing preserved. Classified deliberately rather than by omission.",
+      "institutionAccessGate": "TEMPORARY GATE - the one institution exit a person can pass. Destination preserved on exit and CONSUMED on success by institution_sign_in_screen.",
+      "institutionAdminGate": "TERMINAL DENIAL - standing inside an institution is granted by that institution, never by arriving at the dashboard.",
+      "institutionSpeakerGate": "TERMINAL DENIAL - same reasoning.",
+      "realtimeUnauthenticated": "NOT TOUCHED - the exit lands on /meetings/join, a Meetings surface. Classified, deliberately left alone, and recorded.",
+      "screenLevelGoHome": "Audited. The remaining sites are ordinary navigation (a Home button, a post-publish return) or Meetings screens, not destination-destroying gate exits. The article editor's pop-on-load-failure has no destination to preserve - the draft it was opening could not be read."
+    },
+    "openRedirectDefence": [
+      "Absolute URLs and any scheme are refused.",
+      "Protocol-relative //evil.example.com/x is refused - a different origin wearing a path's clothes.",
+      "Backslashes are refused: a path separator to some browsers and not to others, which is the ambiguity these payloads live in.",
+      "The claim is percent-decoded ONCE before inspection, so /%2f%2fevil and /%09//evil are seen for what they are.",
+      "Control characters are refused.",
+      "Gates themselves are refused as targets, and a gate never encodes itself - that corridor has no end.",
+      "The normalised result is re-checked rather than trusted, because that is the value actually navigated to."
+    ],
+    "claimNotAuthority": "Validation is of SHAPE only: worth attempting, never authorised. The router's own gates re-evaluate the destination on arrival, which is where authority belongs - a person without institution standing is still refused at the destination."
+  },
+  "RC7_composeHalf": {
+    "method": "Each remaining composer's ACTUAL lifecycle was established first. The article solution was deliberately not copied.",
+    "audit": {
+      "postComposer": {
+        "lifecycle": "PUT /posts/draft upserts the author's ONE held draft (saveLatestHeld finds the existing DRAFT and updates it). A remount therefore CANNOT mint a duplicate, and the route needs no id - forcing one would invent a per-URL identity the backend does not have.",
+        "defectFound": "The restore rehydrated the draft's CONTENT but dropped its IDENTITY: _draftPostId stayed null after every refresh. Everything keyed to that id then reported a draft that plainly existed as absent - ambient governance never ran, so the panel read 'Not yet reviewed' for work already assessed, and acknowledging a pending action silently did nothing.",
+        "fix": "Bind _draftPostId from the restored draft's own id (the backend's, never a client-minted stand-in) and re-run the ambient governance check.",
+        "second": "_currentComposeRedirect() carried only four parameters, so someone bounced to /login while replying in an institution's voice came back to a blank personal composer: the body survived (it is the author's held draft) while everything that made it that particular composition did not. It now carries edit, reply targets and institution voice."
+      },
+      "institutionPostComposer": {
+        "lifecycle": "Device-local draft store (SharedPreferences), scoped by (institution, user, visibility). Survives refresh already.",
+        "verdict": "NO DEFECT. The limitation - it cannot rehydrate from the server because no 'list my drafts' endpoint exists - is already documented at the source. Forcing server draft semantics here would need a backend surface that does not exist and was not asked for."
+      },
+      "announcementEditor": {
+        "lifecycle": "Creates the draft AT PUBLISH TIME; content is in memory until then.",
+        "verdict": "NO DEFECT of this class. No identity is minted early, so nothing can be orphaned and there is nothing to carry in the route. Ephemeral-until-submit is a legitimate lifecycle, not a bug to fix."
+      },
+      "messageComposers": "Message text, ephemeral by nature. No persistent authored object, no identity to preserve."
+    }
+  },
+  "RC3_screenBindingHalf": {
+    "priorLimitation": "The route authority could establish that path institution B was genuinely held, but the workspace screens read the AMBIENT institution, so proceeding would have rendered A's data under B's URL. Canonicalising to A was safer than lying - and still wrong: the person asked for an institution they hold and did not get it.",
+    "rootCause": "/institutions/me described the caller's OLDEST membership (orderBy createdAt asc), always, with no way to ask about another. The active institution was chosen by the backend, arbitrarily, and could not be selected. That is missing INFRASTRUCTURE with SETTLED POLICY - membership already governs access - so it was implementation work, not a founder decision.",
+    "backend": "GET /institutions/me now accepts an optional institutionId. The caller's own membership of THAT institution is what authorises the answer, validated in the where-clause alongside userId and removedAt. An institution the caller does not hold returns the identical SIGNED_IN_NO_STANDING payload a stranger receives - fail closed, no new error contract, nothing disclosed.",
+    "frontend": "institutionWorkspaceProvider(institutionId) is a SCOPED READ of that same endpoint - not a second 'active institution' authority. Nothing selects, stores or mutates which institution is current. institutionWorkspaceIdentityProvider derives the same InstitutionIdentity shape through the shared derivation, so a bound screen reads exactly what an unbound one reads.",
+    "screensBound": ["InstitutionProfileScreen", "InstitutionEditProfileScreen", "InstitutionDomainsScreen"],
+    "screenNotBound": "InstitutionRequestVerificationScreen consumes no institution context at all (it posts a verification request from form data), so there was nothing to bind. Verified before editing rather than assumed.",
+    "authorizedElsewhereNow": "PROCEEDS. The person asked for an institution they hold and the screens are bound to the institution the URL names, so substituting a different one would now be the defect.",
+    "staleOrRemovedUnchanged": "Still refused: a stale, removed, unknown or foreign id goes to the governed dashboard, and the bound read independently returns no standing. Two independent refusals, neither relying on the other."
+  },
+  "findingReassessment": {
+    "F059": {
+      "namedCauses": "RC1, RC2, RC3",
+      "repaired": "ALL THREE",
+      "remainingConstruction": "NONE ESTABLISHED",
+      "remainingCertification": "Live proof that a refresh inside a Conversation returns to it.",
+      "newState": "IMPLEMENTED_NOT_LIVE_CERTIFIED"
+    },
+    "F062": {
+      "namedCauses": "RC2, RC4",
+      "repaired": "BOTH, plus the RC3 screen-binding half its destination depends on",
+      "remainingConstruction": "NONE ESTABLISHED",
+      "remainingCertification": "Live proof that a refresh on an institution profile-edit destination reconstructs it, including for a second institution.",
+      "newState": "IMPLEMENTED_NOT_LIVE_CERTIFIED"
+    },
+    "F061": {
+      "namedCauses": "RC4, RC8",
+      "repaired": "RC4",
+      "remainingConstruction": "RC8, whose entire remaining surface is booking/meeting-entry - PROTECTED. Whether F061 carries residue BEYOND RC8 (e.g. unsaved form state on /me/edit, which no RC in the audit addresses) was NOT established by this pass and is not claimed either way.",
+      "newState": "OPEN - unchanged"
+    },
+    "F063": {
+      "namedCauses": "RC7, RC8",
+      "repaired": "RC7 - both halves",
+      "remainingConstruction": "RC8's attribution to this finding was not re-established this pass; the four surviving state.extra sites are booking/reschedule, not compose.",
+      "newState": "OPEN - unchanged"
+    },
+    "discipline": "Root-cause repairs are recorded separately from finding closure. No finding is claimed closed, and the two moved states are non-terminal by definition."
+  },
+  "RC8": {
+    "status": "NOT EXECUTED - PROTECTED BOUNDARY",
+    "exactSurface": "All four surviving state.extra destinations are booking and reschedule routes under /meet/:slug and /i/:institutionSlug/meet/… , and the audit's other named case is meeting-live isHost/sessionId. Every one is a Meetings / meeting-entry surface.",
+    "whyNotDone": "Meetings is a protected surface and giving these flows durable route identity is a redesign of meeting-entry navigation, not a continuity patch. Founder authorization is required before crossing it - this is the one thing in this batch that could not proceed under execution-first authority."
+  },
+  "verification": {
+    "newAssertions": 29,
+    "frontendSuite": "727 PASS (704 before this batch)",
+    "backendSuite": "204 suites / 2570 tests PASS (203 / 2564 before)",
+    "meetings": "PASS - untouched, frontend and backend",
+    "institutionSuites": "253 PASS",
+    "identityConformanceGate": "PASS - 66 files / 202 sites, at baseline",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "typecheckAndAnalyze": "clean"
+  },
+  "protectedBoundaries": {
+    "meetings": "UNTOUCHED. The realtime-unauthenticated exit and every RC8 site were classified and left alone.",
+    "authenticationAuthority": "Reused. The redirect authority decides continuity only; who is authenticated is decided where it always was.",
+    "institutionAuthority": "Consumed, not redefined. The route id remains a claim, validated against membership by the backend on every scoped read.",
+    "rcC5": "Untouched - remains a founder-declared hard gate."
+  },
+  "founderDecisionsRequired": [
+    "RC8 - authorization to modify booking / reschedule / meeting-entry routes, which are the whole of its remaining surface and sit inside the protected Meetings family."
+  ]
+}
