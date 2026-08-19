@@ -1,29 +1,28 @@
 import '../../../core/tagging/tag_entities.dart';
+import '../../../core/identity/person_identity_model.dart';
 
+/// The person who wrote a post. F116: the NAME survives because every caller
+/// speaks of a post's author, but the INTERPRETATION does not — the person is
+/// read by the one canonical reader, so a post author and an article author
+/// can no longer be named by two different fallback orders. A post author is
+/// always a person here; institution-authored posts are polymorphic and are
+/// modelled by `FeedAuthor`, which is deliberately a different type.
 class PostAuthor {
-  const PostAuthor({
-    required this.id,
-    required this.handle,
-    required this.displayName,
-    this.avatarUrl,
-  });
+  const PostAuthor({required this.person});
 
-  final String id;
-  final String handle;
-  final String displayName;
-  final String? avatarUrl;
+  final AuraPersonIdentity person;
 
-  factory PostAuthor.fromJson(Map<String, dynamic> j) {
-    final rawAvatar = _readString(j['avatarUrl']);
+  String get id => person.userId;
+  String get handle => person.handle;
+  String get displayName => person.displayName;
+  String? get avatarUrl => person.avatarUrl;
 
-    return PostAuthor(
-      id: _readString(j['id']) ?? '',
-      handle: _readString(j['handle']) ?? '',
-      displayName:
-          _readString(j['displayName']) ?? _readString(j['name']) ?? '',
-      avatarUrl: rawAvatar,
-    );
-  }
+  /// What to render when this author must be named — the shared order, not a
+  /// feed-local one.
+  String get label => person.label;
+
+  factory PostAuthor.fromJson(Map<String, dynamic> j) =>
+      PostAuthor(person: AuraPersonIdentity.fromJson(j));
 
   Map<String, dynamic> toJson() => {
     'id': id,

@@ -1,4 +1,5 @@
 import 'realtime_enums.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 Map<String, dynamic> _asMap(dynamic value) {
   if (value is Map<String, dynamic>) return value;
@@ -459,9 +460,18 @@ class RealtimeParticipant {
     final audio = (normalized['audioState'] ?? '').toString().toUpperCase() == 'ON';
     final video = (normalized['videoState'] ?? '').toString().toUpperCase() == 'ON';
     final screen = (normalized['screenState'] ?? '').toString().toUpperCase() == 'ON';
-    final displayName = _readString(normalized['displayName']) ?? _readString(user['displayName']);
-    final handle = _readString(normalized['handle']) ?? _readString(user['handle']);
-    final avatarUrl = _readString(normalized['avatarUrl']) ?? _readString(user['avatarUrl']);
+    // F116 - the PERSON half of a participant is read by the one canonical
+    // reader. What stays here is payload FLATTENING, not identity
+    // interpretation: realtime delivers a participant either flattened or
+    // wrapped in a `user` envelope, sometimes half of each, so the two are
+    // merged into a single person payload with the flattened value winning -
+    // the same precedence this code used to hand-write field by field. Which
+    // field names count, which aliases are accepted and what happens when a
+    // name is missing are the canonical reader's decisions, not this model's.
+    final person = AuraPersonIdentity.fromJson(_mergePersonPayload(normalized, user));
+    final displayName = _emptyToNull(person.displayName);
+    final handle = _emptyToNull(person.handle);
+    final avatarUrl = person.avatarUrl;
     final institutionName = _readString(normalized['institutionName']) ??
         _readString(institutionAdmin['name']) ??
         _readString(topLevelInstitutionAdmin['name']) ??
@@ -704,4 +714,26 @@ class RealtimeSessionSnapshot {
       artifacts: _asList(artifactsRaw).map(RealtimeArtifact.fromJson).toList(),
     );
   }
+}
+
+/// Realtime participant payloads arrive flattened, or nested under `user`, or
+/// partly both. This produces ONE person payload for the canonical reader,
+/// with the flattened value preferred. It deliberately decides nothing about
+/// which fields name a person or what to do when they are absent.
+Map<String, dynamic> _mergePersonPayload(
+  Map<String, dynamic> flattened,
+  Map<String, dynamic> nested,
+) {
+  final merged = Map<String, dynamic>.from(nested);
+  flattened.forEach((key, value) {
+    if (value == null) return;
+    if (value is String && value.trim().isEmpty) return;
+    merged[key] = value;
+  });
+  return merged;
+}
+
+String? _emptyToNull(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

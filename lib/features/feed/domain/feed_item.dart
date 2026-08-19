@@ -10,6 +10,7 @@ library;
 
 import 'feed_media.dart';
 import '../../../core/tagging/tag_entities.dart';
+import '../../../core/identity/person_identity_model.dart';
 export 'feed_media.dart';
 
 enum FeedItemType {
@@ -325,32 +326,34 @@ enum FeedSecondaryAttributionType {
 
 class FeedSecondaryActor {
   const FeedSecondaryActor({
-    required this.id,
-    required this.displayName,
-    this.handle,
-    this.avatarUrl,
-    this.profileRoute,
+    this.person = AuraPersonIdentity.unknown,
+    this.explicitProfileRoute,
     this.context,
     this.presence,
   });
 
-  final String id;
-  final String displayName;
-  final String? handle;
-  final String? avatarUrl;
-  final String? profileRoute;
+  /// F116 - backend evidence: this actor is ALWAYS a person. The feed
+  /// projection builds it from the post's human author ("surface the human
+  /// author when the institution is the primary voice"), and the reply
+  /// preview hydrator routes it to `/u/:handle`. Institution actors in the
+  /// feed travel through the polymorphic `FeedAuthor` / `FeedSignalActor`
+  /// shape instead, which is why those types are deliberately NOT composed.
+  final AuraPersonIdentity person;
+
+  /// The route the backend chose, when it sent one. Falls back to the
+  /// canonical route rather than a second local construction of it.
+  final String? explicitProfileRoute;
+
   final FeedIdentityContext? context;
   final FeedPresence? presence;
 
-  factory FeedSecondaryActor.fromJson(Map<String, dynamic> m) {
-    String s(List<String> keys) {
-      for (final k in keys) {
-        final v = m[k]?.toString().trim() ?? '';
-        if (v.isNotEmpty) return v;
-      }
-      return '';
-    }
+  String get id => person.userId;
+  String get displayName => person.displayName;
+  String? get handle => _blankToNull(person.handle);
+  String? get avatarUrl => person.avatarUrl;
+  String? get profileRoute => explicitProfileRoute ?? person.profileRoute;
 
+  factory FeedSecondaryActor.fromJson(Map<String, dynamic> m) {
     String? opt(List<String> keys) {
       for (final k in keys) {
         final v = m[k]?.toString().trim() ?? '';
@@ -370,11 +373,8 @@ class FeedSecondaryActor {
         : null;
 
     return FeedSecondaryActor(
-      id: s(['id']),
-      displayName: s(['displayName']),
-      handle: opt(['handle']),
-      avatarUrl: opt(['avatarUrl']),
-      profileRoute: opt(['profileRoute']),
+      person: AuraPersonIdentity.fromJson(m),
+      explicitProfileRoute: opt(['profileRoute']),
       context: ctx,
       presence: presence,
     );
@@ -391,7 +391,7 @@ class FeedSecondaryAttribution {
     final actorRaw = m['actor'];
     final actor = actorRaw is Map
         ? FeedSecondaryActor.fromJson(Map<String, dynamic>.from(actorRaw))
-        : const FeedSecondaryActor(id: '', displayName: '');
+        : const FeedSecondaryActor();
     return FeedSecondaryAttribution(
       type: FeedSecondaryAttributionType.fromWire(m['type']),
       actor: actor,
@@ -643,7 +643,7 @@ class FeedReplyPreviewItem {
     final authorRaw = m['author'];
     final author = authorRaw is Map
         ? FeedReplyPreviewAuthor.fromJson(Map<String, dynamic>.from(authorRaw))
-        : const FeedReplyPreviewAuthor(id: '', displayName: '');
+        : const FeedReplyPreviewAuthor();
 
     return FeedReplyPreviewItem(
       id: s(['id']),
@@ -659,20 +659,27 @@ class FeedReplyPreviewItem {
 
 class FeedReplyPreviewAuthor {
   const FeedReplyPreviewAuthor({
-    required this.id,
-    required this.displayName,
-    this.handle,
-    this.avatarUrl,
-    this.profileRoute,
+    this.person = AuraPersonIdentity.unknown,
+    this.explicitProfileRoute,
     this.context,
     this.presence,
   });
 
-  final String id;
-  final String displayName;
-  final String? handle;
-  final String? avatarUrl;
-  final String? profileRoute;
+  /// F116 - backend evidence: this actor is ALWAYS a person. The feed
+  /// projection builds it from the post's human author ("surface the human
+  /// author when the institution is the primary voice"), and the reply
+  /// preview hydrator routes it to `/u/:handle`. Institution actors in the
+  /// feed travel through the polymorphic `FeedAuthor` / `FeedSignalActor`
+  /// shape instead, which is why those types are deliberately NOT composed.
+  final AuraPersonIdentity person;
+
+  final String? explicitProfileRoute;
+
+  String get id => person.userId;
+  String get displayName => person.displayName;
+  String? get handle => _blankToNull(person.handle);
+  String? get avatarUrl => person.avatarUrl;
+  String? get profileRoute => explicitProfileRoute ?? person.profileRoute;
 
   /// Phase 6.1.1 — optional identity context. Renders nothing when absent.
   final FeedIdentityContext? context;
@@ -681,14 +688,6 @@ class FeedReplyPreviewAuthor {
   final FeedPresence? presence;
 
   factory FeedReplyPreviewAuthor.fromJson(Map<String, dynamic> m) {
-    String s(List<String> keys) {
-      for (final k in keys) {
-        final v = m[k]?.toString().trim() ?? '';
-        if (v.isNotEmpty) return v;
-      }
-      return '';
-    }
-
     String? opt(List<String> keys) {
       for (final k in keys) {
         final v = m[k]?.toString().trim() ?? '';
@@ -708,11 +707,8 @@ class FeedReplyPreviewAuthor {
         : null;
 
     return FeedReplyPreviewAuthor(
-      id: s(['id']),
-      displayName: s(['displayName']),
-      handle: opt(['handle']),
-      avatarUrl: opt(['avatarUrl']),
-      profileRoute: opt(['profileRoute']),
+      person: AuraPersonIdentity.fromJson(m),
+      explicitProfileRoute: opt(['profileRoute']),
       context: ctx,
       presence: presence,
     );
@@ -1369,4 +1365,9 @@ class FeedRouting {
     if (!canonical.startsWith('/')) return canonical;
     return '/institution/$institutionId$canonical';
   }
+}
+
+String? _blankToNull(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

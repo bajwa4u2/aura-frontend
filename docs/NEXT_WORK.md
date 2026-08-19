@@ -148,3 +148,28 @@ CH-11 has not been started.
 pre-existing rot, so realtime *rendered* presentation has no automated visual proof. Assigned to
 CH-04, not waived; restoration/replacement is a CH-04 closure requirement. The 333-pass realtime suite
 must never be represented as covering it.
+
+---
+
+## 2026-08-19 — CH-03 typed-person convergence complete; two founder decisions owed
+
+**Done.** The two instrument rulings executed (domain-aware detector · enforcing
+`NON_CANONICAL_PERSON_DESERIALIZATION`, proven enforcing by a seeded violation), then the typed
+boundaries migrated: **62 -> 18 typed-person sites**, three measurements kept separate. Full record:
+`docs/portfolio/run/stage0-2026-08-18/05-execution/ch03-f116-typed-person-convergence.json`.
+
+**Owed before F116 / F053 can move past PARTIALLY_VALIDATED — both are founder decisions, not work:**
+
+1. **NARROW RULING — the `'Guest'` default in `MeetingIdentityRef`.** Legitimate on the GUEST branch
+   (an external non-Aura contact; GUEST is a meeting ROLE). The F054 invented-label defect on the
+   **AURA_USER** branch, where an identifiable Aura person is named by a role they do not hold.
+   Correcting it decides what an unnamed Aura participant is called in the meeting UI — protected
+   Meetings semantics, so it was returned rather than changed.
+2. **AUTHORIZATION — the four protected Meetings domain models** (`meeting_identity`, `meeting`,
+   `availability_profile`, `meeting_entry_resolution`, **16 sites**). They are the remaining half of
+   F116 criterion 2. Measured, not excluded; no Meetings file was modified.
+
+**Retained by design, not owed:** 2 polymorphic feed actors (`FeedSignalActor`, `FeedReplyAuthor`)
+consume the union projection (`handleOrSlug` / `avatarOrLogoUrl`) emitted for a user OR an
+institution. Composing person identity onto them would force person semantics onto institutions.
+They stay measured so the decision stays visible.

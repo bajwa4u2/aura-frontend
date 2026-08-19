@@ -40,15 +40,22 @@ const BASELINE = resolve(HERE, 'identity-conformance-baseline.json')
 /// hand-picks person fields instead of composing the canonical shape.
 const DEBT_VERDICTS = ['NON_CONFORMANT', 'ADHOC_MAP_EXTRACTION_IN_SURFACE']
 
+/// Founder ruling 2 (2026-08-19) — a typed domain model is NOT debt for
+/// containing a person. It is debt when it independently decides canonical
+/// PERSON semantics. This is ratcheted SEPARATELY from surface debt, because
+/// they are different defects with different remedies and collapsing them
+/// into one number is what let the typed residue stay invisible.
+const TYPED_PERSON_DEBT_VERDICTS = ['NON_CANONICAL_PERSON_DESERIALIZATION']
+
 function runAudit() {
   execFileSync(process.execPath, [AUDIT], { cwd: ROOT, stdio: 'pipe' })
   return JSON.parse(readFileSync(AUDIT_OUT, 'utf8'))
 }
 
-function measure(audit) {
+function measure(audit, verdicts = DEBT_VERDICTS) {
   const perFile = {}
   for (const row of audit.consumers) {
-    if (!DEBT_VERDICTS.includes(row.verdict)) continue
+    if (!verdicts.includes(row.verdict)) continue
     const key = `${row.repo}:${row.path}`
     perFile[key] = (perFile[key] || 0) + 1
   }
@@ -57,6 +64,10 @@ function measure(audit) {
 
 const audit = runAudit()
 const actual = measure(audit)
+const actualTyped = measure(audit, TYPED_PERSON_DEBT_VERDICTS)
+const typedInventory = audit.consumers.filter((r) =>
+  ['NON_CANONICAL_PERSON_DESERIALIZATION', 'CANONICAL_PERSON_DESERIALIZATION'].includes(r.verdict),
+).length
 
 if (process.argv.includes('--freeze')) {
   writeFileSync(
@@ -70,12 +81,19 @@ if (process.argv.includes('--freeze')) {
         debtVerdicts: DEBT_VERDICTS,
         totals: { files: Object.keys(actual).length, sites: Object.values(actual).reduce((a, b) => a + b, 0) },
         perFile: actual,
+        typedPersonDebtVerdicts: TYPED_PERSON_DEBT_VERDICTS,
+        typedPersonTotals: {
+          files: Object.keys(actualTyped).length,
+          sites: Object.values(actualTyped).reduce((a, b) => a + b, 0),
+        },
+        typedPersonPerFile: actualTyped,
       },
       null,
       1,
     ),
   )
-  console.log('FROZEN:', Object.keys(actual).length, 'files /', Object.values(actual).reduce((a, b) => a + b, 0), 'sites')
+  console.log('FROZEN surface:', Object.keys(actual).length, 'files /', Object.values(actual).reduce((a, b) => a + b, 0), 'sites')
+  console.log('FROZEN typed-person:', Object.keys(actualTyped).length, 'files /', Object.values(actualTyped).reduce((a, b) => a + b, 0), 'sites')
   process.exit(0)
 }
 
@@ -83,7 +101,9 @@ if (!existsSync(BASELINE)) {
   console.error('FAIL-CLOSED: no identity conformance baseline. Run with --freeze to create it.')
   process.exit(1)
 }
-const baseline = JSON.parse(readFileSync(BASELINE, 'utf8')).perFile
+const baselineFile = JSON.parse(readFileSync(BASELINE, 'utf8'))
+const baseline = baselineFile.perFile
+const baselineTyped = baselineFile.typedPersonPerFile ?? {}
 
 const appeared = Object.keys(actual).filter((k) => !(k in baseline)).sort()
 const rose = Object.entries(actual)
@@ -118,8 +138,44 @@ if (fell.length) {
   console.error('\nRe-freeze so the register stays truthful: node tool/identity_conformance_gate.mjs --freeze\n')
 }
 
+// ── Typed-person ratchet, measured and enforced independently ──
+const typedAppeared = Object.keys(actualTyped).filter((k) => !(k in baselineTyped)).sort()
+const typedRose = Object.entries(actualTyped)
+  .filter(([k, v]) => k in baselineTyped && v > baselineTyped[k])
+  .map(([k, v]) => `${k}: ${baselineTyped[k]} -> ${v}`)
+  .sort()
+const typedFell = Object.entries(baselineTyped)
+  .filter(([k, v]) => (actualTyped[k] ?? 0) < v)
+  .map(([k, v]) => `${k}: ${v} -> ${actualTyped[k] ?? 0}`)
+  .sort()
+
+if (typedAppeared.length) {
+  failed = true
+  console.error('[TYPED PERSON] a typed boundary began interpreting person semantics itself:')
+  for (const a of typedAppeared) console.error('  ' + a)
+  console.error(
+    'Delegate the person portion to AuraPersonIdentity.fromJson. The TYPE may ' +
+      'stay; the private PERSON interpretation may not.',
+  )
+}
+if (typedRose.length) {
+  failed = true
+  console.error('[TYPED PERSON] typed person debt ROSE in:')
+  for (const r of typedRose) console.error('  ' + r)
+}
+if (typedFell.length) {
+  failed = true
+  console.error('[TYPED PERSON] debt was REDUCED (good) but the baseline now overstates it:')
+  for (const f of typedFell) console.error('  ' + f)
+  console.error('Re-freeze: node tool/identity_conformance_gate.mjs --freeze')
+}
+
 const files = Object.keys(actual).length
 const sites = Object.values(actual).reduce((a, b) => a + b, 0)
-console.log(`identity debt: ${files} files / ${sites} sites   (baseline ${Object.keys(baseline).length} / ${Object.values(baseline).reduce((a, b) => a + b, 0)})`)
+const tFiles = Object.keys(actualTyped).length
+const tSites = Object.values(actualTyped).reduce((a, b) => a + b, 0)
+console.log(`surface person debt: ${files} files / ${sites} sites   (baseline ${Object.keys(baseline).length} / ${Object.values(baseline).reduce((a, b) => a + b, 0)})`)
+console.log(`typed person debt:   ${tFiles} files / ${tSites} sites   (baseline ${Object.keys(baselineTyped).length} / ${Object.values(baselineTyped).reduce((a, b) => a + b, 0)})`)
+console.log(`typed boundary inventory: ${typedInventory} (debt + conformant; a model may CONTAIN a person)`)
 console.log(failed ? 'IDENTITY CONFORMANCE GATE: FAIL' : 'IDENTITY CONFORMANCE GATE: PASS')
 process.exit(failed ? 1 : 0)

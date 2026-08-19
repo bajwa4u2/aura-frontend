@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import '../../core/identity/person_identity_model.dart';
 
 class UpdatesRepository {
   UpdatesRepository(this._dio);
@@ -170,39 +171,50 @@ class UpdatesRepository {
     };
   }
 
+  /// Who an update is FROM.
+  ///
+  /// F116 - an update's actor is polymorphic: a person, an institution, or
+  /// Aura itself for platform notices. It used to be resolved by ONE alias
+  /// chain across all three, which would name a person by an institution's
+  /// `title` and an institution by a person's `handle`. Each domain now
+  /// answers for itself, and the person half is the canonical reader's.
   Map<String, dynamic> _extractActor(Map<String, dynamic> raw) {
-    final actorCandidates = <Map<String, dynamic>>[];
-
-    for (final key in const ['actor', 'author', 'user', 'profile', 'institution']) {
+    for (final key in const ['actor', 'author', 'user', 'profile']) {
       final value = raw[key];
-      if (value is Map) {
-        actorCandidates.add(Map<String, dynamic>.from(value));
-      }
-    }
-
-    for (final actor in actorCandidates) {
-      final displayName = _extractFirstString(actor, const [
-        ['displayName'],
-        ['name'],
-        ['fullName'],
-        ['title'],
-        ['handle'],
-      ]).trim();
-
-      final handle = _extractFirstString(actor, const [
-        ['handle'],
-        ['username'],
-        ['slug'],
-      ]).trim();
-
-      if (displayName.isNotEmpty || handle.isNotEmpty) {
+      if (value is! Map) continue;
+      final person = AuraPersonIdentity.fromJson(value);
+      // An id with no name is not yet a resolvable actor - keep looking,
+      // exactly as the previous chain did.
+      if (person.displayName.isNotEmpty || person.handle.isNotEmpty) {
         return <String, dynamic>{
-          'displayName': displayName.isNotEmpty ? displayName : handle,
-          'handle': handle,
+          'displayName': person.proseName,
+          'handle': person.handle,
         };
       }
     }
 
+    final institution = raw['institution'];
+    if (institution is Map) {
+      final inst = Map<String, dynamic>.from(institution);
+      final name = _extractFirstString(inst, const [
+        ['displayName'],
+        ['name'],
+        ['title'],
+      ]).trim();
+      final slug = _extractFirstString(inst, const [
+        ['slug'],
+        ['handle'],
+        ['username'],
+      ]).trim();
+      if (name.isNotEmpty || slug.isNotEmpty) {
+        return <String, dynamic>{
+          'displayName': name.isNotEmpty ? name : slug,
+          'handle': slug,
+        };
+      }
+    }
+
+    // Aura's own notices are authored by the product, not by a person.
     return const <String, dynamic>{
       'displayName': 'Aura',
       'handle': '',

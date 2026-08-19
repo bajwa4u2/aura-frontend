@@ -31,6 +31,145 @@ const norm = (root, p) => relative(root, p).replace(/\\/g, '/')
 const windowOf = (lines, i, r = 12) =>
   lines.slice(Math.max(0, i - r), Math.min(lines.length, i + r)).join('\n')
 
+
+// ─────────────────────────────────────────────────────────────────────────
+// DOMAIN-AWARE IDENTITY CLASSIFICATION (founder ruling 1, 2026-08-19)
+// ─────────────────────────────────────────────────────────────────────────
+//
+// The old rule was: a person field NAME appears, therefore person debt. That
+// is what made `inst['displayName']`, an institution logo, an institution
+// slug and a connected TikTok account label count against a PERSON identity
+// metric. Nine measured sites were not people at all.
+//
+// The new rule asks what the code is ABOUT before asking what it reads:
+//
+//     object / domain semantics -> identity domain -> person conformance
+//
+// The domain is taken from the RECEIVER of the field read and from the
+// surrounding declaration — the code's own naming — never from a path or a
+// file allowlist. A file is not trusted or excluded for where it lives.
+//
+// LIMITS, stated because a detector that overstates its precision is worse
+// than a blunt one: the receiver name is a strong signal in this codebase
+// (`inst`, `institution`, `actorInstitution`) but it is a heuristic. Every
+// row still carries file, line and evidence so any verdict is checkable, and
+// both directions are proven by seeded cases in
+// `tool/identity_domain_proof.mjs`.
+
+const INSTITUTION_RECEIVER = /^(inst|institution|actorinstitution|institutionadmin|org|organisation|organization|owninginstitution|instmap|institutionmap)/
+const EXTERNAL_PLATFORM_TOKENS = /(tiktok|linkedin|youtube|instagram|facebook|externalaccount|external_account|platformaccount)/i
+
+// A name that begins with an institution word but ENDS in a person word is a
+// PERSON who stands in an institutional relationship - an institution member,
+// an institution admin, a host. Institution identity and the identity of the
+// people attached to an institution are different things, and this guard is
+// what keeps the classifier from quietly swallowing the second.
+//
+// `admin` is deliberately NOT in this list. In this client `institutionAdmin`
+// and `adminInstitution` both name the INSTITUTION a person administers - the
+// admin PERSON is always named `adminUser` / `...UserId`, which never begins
+// with an institution word. Reading it as a person would have mislabelled an
+// institution's own handle as person debt.
+const PERSON_ROLE_WORD = /(member|user|person|people|owner|contact|host|speaker|participant|author|sender|guest|staff|employee)/i
+
+// Institution identity is also detectable from where a value is GOING. A
+// multi-line expression whose target is `institutionHandle` is resolving an
+// institution's handle no matter which map the last line happened to read.
+const INSTITUTION_TARGET = /^(inst|institution|org|organisation|organization)[A-Za-z]*$/
+
+/**
+ * The name a (possibly multi-line) statement assigns into.
+ *
+ * Field reads in this codebase are frequently continuation lines of a
+ * `final institutionHandle = a ?? b ?? c;` chain. Judging such a line on its
+ * own text alone reads the tail of a sentence and calls it the sentence.
+ */
+export function statementTargetName(lines, i) {
+  let j = i
+  while (j > 0) {
+    const prev = lines[j - 1].replace(/\/\/.*$/, '').trimEnd()
+    // A previous line that closed its statement means this line starts one.
+    if (/[;{}]$/.test(prev) || prev === '') break
+    j--
+  }
+  const m = lines[j].match(/(?:final|const|var)?\s*(?:[\w<>,?\s]+\s+)?(\w+)\s*(?::|=(?!=))/)
+  return m?.[1] ?? ''
+}
+
+/**
+ * The SUBJECT a statement is reading from, when the flagged line carries no
+ * receiver of its own.
+ *
+ * Key-path helpers put the field names on their own lines:
+ *
+ *     final name = _extractFirstString(inst, const [
+ *       ['displayName'],
+ *     ]);
+ *
+ * The line `['displayName'],` names no map at all. Judging it without the
+ * subject of its own statement is how an institution's name came to be
+ * counted as person debt.
+ */
+export function statementSubjectName(lines, i) {
+  let j = i
+  while (j > 0) {
+    const prev = lines[j - 1].replace(/\/\/.*$/, '').trimEnd()
+    if (/[;}]$/.test(prev) || prev === '') break
+    j--
+  }
+  const m = lines[j].match(/\w+\(\s*(\w+)\s*,/)
+  return m?.[1] ?? ''
+}
+
+/** Which identity domain does this field read belong to? */
+export function classifyIdentityDomain(line, win, target = '', subject = '') {
+  const recv = line.match(
+    /(\w+)\s*(?:\?|!)?\s*\[\s*['"](?:displayName|handle|avatarUrl|photoUrl|fullName|name|slug|logoUrl)['"]\s*\]/,
+  )
+  const receiver = (recv?.[1] ?? '').toLowerCase()
+  if (receiver && INSTITUTION_RECEIVER.test(receiver) && !PERSON_ROLE_WORD.test(receiver)) {
+    return 'INSTITUTION'
+  }
+
+  // Where the value is going, when the line itself is a continuation.
+  if (target && INSTITUTION_TARGET.test(target) && !PERSON_ROLE_WORD.test(target)) {
+    return 'INSTITUTION'
+  }
+
+  // What the statement is reading FROM, when the flagged line names no map.
+  if (subject && INSTITUTION_RECEIVER.test(subject.toLowerCase()) && !PERSON_ROLE_WORD.test(subject)) {
+    return 'INSTITUTION'
+  }
+
+  // An institution read through a nested key rather than a named variable.
+  if (/\['(institution|actorInstitution|owningInstitution)'\]\s*(?:\?|!)?\s*\[/.test(line)) {
+    return 'INSTITUTION'
+  }
+
+  // An external platform ACCOUNT: the surrounding declaration names the
+  // platform, and the value being read is that account's label, not a person.
+  if (EXTERNAL_PLATFORM_TOKENS.test(win) && /accountLabel|username|connected|account/i.test(win)) {
+    if (EXTERNAL_PLATFORM_TOKENS.test(win)) return 'EXTERNAL_PLATFORM'
+  }
+
+  return 'PERSON'
+}
+
+/**
+ * Founder ruling 2: a typed domain model is NOT defective for containing a
+ * person. It is defective when it independently decides canonical PERSON
+ * semantics instead of delegating them.
+ *
+ * CONFORMANT means the person portion goes through AuraPersonIdentity;
+ * the model keeps its own role / relationship / post / meeting / follow /
+ * block / article / conversation / update state.
+ */
+export function typedPersonVerdict(win) {
+  return /AuraPersonIdentity\s*\.\s*fromJson/.test(win)
+    ? 'CANONICAL_PERSON_DESERIALIZATION'
+    : 'NON_CANONICAL_PERSON_DESERIALIZATION'
+}
+
 const rows = []
 const add = (r) => rows.push(r)
 
@@ -120,11 +259,49 @@ for (const f of walk(join(FRONTEND, 'lib'), '.dart')) {
       const isTypedBoundary =
         /\/(domain|data)\//.test(path) ||
         /_repository\.dart$|_models?\.dart$|_model\.dart$/.test(path)
+
+      // Founder ruling 1 — ask what the code is ABOUT before asking what it
+      // reads. An institution's displayName and an external account's label
+      // are not person identity, however identical the field name looks.
+      const personWindow = windowOf(lines, i, 8)
+      const domain = classifyIdentityDomain(
+        line,
+        personWindow,
+        statementTargetName(lines, i),
+        statementSubjectName(lines, i),
+      )
+      if (domain !== 'PERSON') {
+        add({ repo: 'aura_final', surface: 'USER_SHAPE', path, line: i + 1,
+          evidence: line.trim().slice(0, 120),
+          identityDomain: domain,
+          verdict: domain === 'INSTITUTION'
+            ? 'OUT_OF_SCOPE_INSTITUTION_IDENTITY'
+            : 'OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY',
+          why: domain === 'INSTITUTION'
+            ? `Reads '${m[1]}' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing.`
+            : `Reads '${m[1]}' from an EXTERNAL PLATFORM ACCOUNT (a connected third-party account label). Not an Aura person.` })
+        continue
+      }
+
+      if (isTypedBoundary) {
+        // Founder ruling 2 — a typed domain model is not defective for
+        // CONTAINING a person. It is defective when it independently decides
+        // canonical person semantics instead of delegating them.
+        const typed = typedPersonVerdict(personWindow)
+        add({ repo: 'aura_final', surface: 'USER_SHAPE', path, line: i + 1,
+          evidence: line.trim().slice(0, 120),
+          identityDomain: 'PERSON',
+          verdict: typed,
+          why: typed === 'CANONICAL_PERSON_DESERIALIZATION'
+            ? `Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics.`
+            : `Typed boundary that independently interprets the person field '${m[1]}' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not.` })
+        continue
+      }
+
       add({ repo: 'aura_final', surface: 'USER_SHAPE', path, line: i + 1, evidence: line.trim().slice(0, 120),
-        verdict: isTypedBoundary ? 'TYPED_DESERIALIZATION_BOUNDARY' : 'ADHOC_MAP_EXTRACTION_IN_SURFACE',
-        why: isTypedBoundary
-          ? `Deserialises the person field '${m[1]}' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT.`
-          : `A presentation surface reads the person field '${m[1]}' straight off an untyped map. This is the F057 class of defect and the direct subject of F053.` })
+        identityDomain: 'PERSON',
+        verdict: 'ADHOC_MAP_EXTRACTION_IN_SURFACE',
+        why: `A presentation surface reads the person field '${m[1]}' straight off an untyped map. This is the F057 class of defect and the direct subject of F053.` })
     }
   }
 }

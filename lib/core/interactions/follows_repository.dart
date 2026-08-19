@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/session_providers.dart';
 import '../net/dio_provider.dart';
 import 'actor_context.dart';
+import '../identity/person_identity_model.dart';
 
 /// Identifies a follow target (or actor) on the wire.
 class ActorRef {
@@ -231,22 +232,23 @@ class FollowsRepository {
 }
 
 /// A pending Person→Person follow request (consent lifecycle item).
+/// F116 — a follow REQUEST is relationship state that contains a requesting
+/// person. The request is this model's own; the person is delegated.
 class PersonFollowRequest {
   const PersonFollowRequest({
     required this.id,
     required this.createdAt,
-    required this.requesterId,
-    required this.handle,
-    required this.displayName,
-    required this.avatarUrl,
+    required this.requester,
   });
 
   final String id;
   final DateTime? createdAt;
-  final String requesterId;
-  final String handle;
-  final String displayName;
-  final String avatarUrl;
+  final AuraPersonIdentity requester;
+
+  String get requesterId => requester.userId;
+  String get handle => requester.handle;
+  String get displayName => requester.displayName;
+  String get avatarUrl => requester.avatarUrl ?? '';
 
   factory PersonFollowRequest.fromJson(Map<String, dynamic> json) {
     final requesterRaw = json['requester'];
@@ -261,10 +263,7 @@ class PersonFollowRequest {
     return PersonFollowRequest(
       id: (json['id'] ?? '').toString().trim(),
       createdAt: createdAt,
-      requesterId: (requester['id'] ?? '').toString().trim(),
-      handle: (requester['handle'] ?? '').toString().trim(),
-      displayName: (requester['displayName'] ?? '').toString().trim(),
-      avatarUrl: (requester['avatarUrl'] ?? '').toString().trim(),
+      requester: AuraPersonIdentity.fromJson(requester),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../net/dio_provider.dart';
+import '../identity/person_identity_model.dart';
 
 /// Apple Store §1.2 UGC compliance — client-side block plumbing.
 ///
@@ -50,29 +51,31 @@ class BlocksRepository {
   }
 }
 
+/// F116 — a BLOCK is a relationship, and it CONTAINS a person. The block
+/// state is this model's own; the person portion is delegated, so a blocked
+/// person is named here exactly as they are named anywhere else.
 class BlockedUser {
   const BlockedUser({
-    required this.id,
-    required this.handle,
-    required this.displayName,
-    this.avatarUrl,
+    required this.person,
     this.createdAt,
   });
 
-  final String id;
-  final String handle;
-  final String displayName;
-  final String? avatarUrl;
+  final AuraPersonIdentity person;
   final DateTime? createdAt;
 
+  String get id => person.userId;
+  String get handle => person.handle;
+  String get displayName => person.displayName;
+  String? get avatarUrl => person.avatarUrl;
+
   factory BlockedUser.fromJson(Map j) {
-    final blocked = (j['blocked'] is Map) ? j['blocked'] as Map : j;
     final created = j['createdAt'];
     return BlockedUser(
-      id: blocked['id'] as String,
-      handle: (blocked['handle'] ?? '') as String,
-      displayName: (blocked['displayName'] ?? '') as String,
-      avatarUrl: blocked['avatarUrl'] as String?,
+      // The canonical reader already resolves `blocked` as a nested person
+      // envelope or the row itself.
+      person: AuraPersonIdentity.fromJson(
+        (j['blocked'] is Map) ? j['blocked'] : j,
+      ),
       createdAt: created is String ? DateTime.tryParse(created) : null,
     );
   }

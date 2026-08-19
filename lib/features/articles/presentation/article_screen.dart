@@ -15,6 +15,7 @@ import '../../../core/ui/publication/aura_publication_title.dart';
 import '../../conversation/presentation/conversation_identity.dart';
 import '../data/articles_repository.dart';
 import '../../../core/navigation/navigation_authority.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// PUBLISHED ARTICLE — the durable long-form reading experience: author
 /// attribution, published time, canonical link identity (/articles/:slug),
@@ -51,18 +52,20 @@ class ArticleScreen extends ConsumerWidget {
                 Row(
                   children: [
                     AuraAvatar(
-                        name: article.author?.displayName ?? '', size: 32),
+                        name: article.author?.proseName ?? '', size: 32),
                     const SizedBox(width: AuraSpace.s10),
                     Expanded(
                       child: InkWell(
-                        onTap: article.author?.handle == null
+                        onTap: article.author?.profileRoute == null
                             ? null
                             : () => context
-                                .push('/u/${article.author!.handle}'),
+                                .push(article.author!.profileRoute!),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(article.author?.displayName ?? 'Aura member',
+                            Text(
+                                (article.author ?? AuraPersonIdentity.unknown)
+                                    .proseName,
                                 style: AuraText.small.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: AuraSurface.ink)),
@@ -155,7 +158,7 @@ class ArticlesDiscoveryScreen extends ConsumerWidget {
                             style: AuraText.headline
                                 .copyWith(fontWeight: FontWeight.w700)),
                         subtitle: Text(
-                          a.author?.displayName ?? 'Aura member',
+                          (a.author ?? AuraPersonIdentity.unknown).proseName,
                           style: AuraText.small
                               .copyWith(color: AuraSurface.muted),
                         ),

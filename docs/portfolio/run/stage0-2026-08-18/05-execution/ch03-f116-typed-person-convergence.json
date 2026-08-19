@@ -1,0 +1,167 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-03 F053 / F116 - domain-aware detector, enforcing typed-person semantics, and the typed-boundary migration",
+  "chapter": "CH-03 (Identity Consumption & Presentation Truth)",
+  "date": "2026-08-19",
+  "founderRulingsExecuted": {
+    "ruling1_domainAwareDetector": "APPROVED and implemented. NOT as a path or file allowlist, and not by excluding the nine lines that prompted it.",
+    "ruling2_typedBoundariesAreNotAutomaticallyDebt": "REJECTED proposal implemented as rejected. `TYPED_DESERIALIZATION_BOUNDARY == debt` was NOT adopted. The enforcing concept NON_CANONICAL_PERSON_DESERIALIZATION was introduced instead, and it is now ratcheted."
+  },
+
+  "1_detectorSemanticsBeforeAndAfter": {
+    "before": {
+      "rule": "Any Dart line reading one of the field names displayName / handle / avatarUrl / photoUrl / fullName / name / slug / logoUrl off a map was person-identity debt, except route parameters and the identity authority itself.",
+      "typedBoundaries": "ENUMERATED but NEVER ratcheted - TYPED_DESERIALIZATION_BOUNDARY was excluded from the gate number, which is exactly what made F116 criterion 2's residue invisible.",
+      "consequence": "An institution's name, an institution's logo, and a connected TikTok account label all counted as PERSON debt. The metric was measuring field names, not identity."
+    },
+    "after": {
+      "question1_whoseFieldIsThis": "classifyIdentityDomain returns PERSON | INSTITUTION | EXTERNAL_PLATFORM from three independent signals: (a) the RECEIVER the field is read from, (b) the DESTINATION the statement assigns into - which is what a continuation line of a multi-line resolution actually belongs to, and (c) the SUBJECT of the enclosing call, for key-path helpers whose flagged line names no map at all.",
+      "question2_whoOwnsPersonSemantics": "typedPersonVerdict splits a typed boundary into CANONICAL_PERSON_DESERIALIZATION (person portion delegated to AuraPersonIdentity.fromJson) and NON_CANONICAL_PERSON_DESERIALIZATION (the type decides person semantics itself). The second is now GATE DEBT with its own ratchet.",
+      "personRoleGuard": "A receiver or target that begins with an institution word but contains a PERSON word - institutionMember, institutionOwner, institutionHost - stays PERSON. Institution identity and the identity of the people attached to an institution are different things, and the guard is what stops the classifier quietly swallowing the second.",
+      "adminIsDeliberatelyNotAPersonWord": "In this client `institutionAdmin` and `adminInstitution` both name the INSTITUTION a person administers; the admin PERSON is always `adminUser` / `...UserId`, which never begins with an institution word. Recorded because it is the one genuinely ambiguous name in the rule.",
+      "whatWasNotDone": "No path exclusion. No file allowlist. No regex narrowing of which person fields count. No suppression of a known problem relation. No parsing moved into an unmeasured helper."
+    }
+  },
+
+  "2_seededEnforcementEvidence": {
+    "detectorProof": {
+      "tool": "tool/identity_domain_proof.mjs",
+      "result": "PASS (both directions), 13 cases",
+      "truePositives": "a person on a plain map; a nested person envelope; an avatar alias chain; a member payload; a person who stands in an institutional relationship (institutionMember); a person name resolved on a continuation line; a key-path read whose subject is `actor`.",
+      "falsePositives": "an institution display name; an institution logo through an avatar-shaped field; an institution actor; an institution admin handle inside a realtime model; a connected TikTok account label; an institution handle resolved on a continuation line; the identical key-path line whose subject is `inst`.",
+      "typedBoundaryCases": "a model that DELEGATES its person portion is conformant; the same model deciding person semantics itself is not."
+    },
+    "gateRatchetProof_FD13": {
+      "method": "The migrated blocks_repository was seeded with a private person parse - AuraPersonIdentity constructed field-by-field from raw map reads instead of AuraPersonIdentity.fromJson.",
+      "gateOutput": "[TYPED PERSON] a typed boundary began interpreting person semantics itself: aura_final:lib/core/compliance/blocks_repository.dart",
+      "measured": "6 files / 20 sites against baseline 5 / 18",
+      "exitCode": 1,
+      "restored": "File restored from backup; gate PASS re-confirmed at 5 / 18.",
+      "verdict": "The typed-person ratchet is ENFORCING under the FD-13 doctrine, not merely present."
+    }
+  },
+
+  "3_threeMeasurementsHeldSeparate": {
+    "surfacePersonDebt": { "start": "11 files / 19 sites", "end": "11 files / 19 sites", "note": "Untouched this batch by design - the surfaces were exhausted in the previous pass." },
+    "typedPersonDebt": { "start": "17 files / 62 sites", "end": "5 files / 18 sites" },
+    "typedBoundaryInventory": { "start": 62, "end": 20, "meaning": "debt + conformant. A file leaves the inventory entirely when it no longer reads person fields off maps at all - which is what composition does." }
+  },
+
+  "4_typedBoundaryClassification": {
+    "note": "All 62 measured typed-person sites, by file, in the six founder categories. Site counts are the pre-batch measurement.",
+    "A_renamedPersonSubset_retiredOrComposed": [
+      { "file": "lib/features/articles/data/articles_repository.dart", "sites": 2, "type": "ArticleAuthor", "action": "RETIRED. userId + handle + displayName was the canonical person reference under another name. Article.author is now AuraPersonIdentity." },
+      { "file": "lib/features/feed/domain/post.dart", "sites": 3, "type": "PostAuthor", "action": "COMPOSED. The NAME survives - every caller speaks of a post's author - but the interpretation does not." },
+      { "file": "lib/features/admin/data/admin_models.dart", "sites": 9, "types": "AdminAccess, AdminUserSummary, OwnershipRecoveryCandidate, AdminVerificationRequest.requester, InstitutionOwnershipRecoveryState.ownerOfRecord", "action": "COMPOSED. Admin authorization - role, permissions, grants, status - deliberately stayed out of identity." },
+      { "file": "lib/features/institutions/domain/explore_feed_item.dart", "sites": 1, "type": "ExploreUserPost", "action": "COMPOSED. Explore routes institution-authored posts through a different type, so this one is always a person." }
+    ],
+    "B_identityPlusDestinationState_composed": [
+      { "file": "lib/core/compliance/blocks_repository.dart", "sites": 3, "shape": "BlockedUser { AuraPersonIdentity person; DateTime? createdAt }", "note": "Exactly the founder's desired shape: the block state stays, the person is delegated." },
+      { "file": "lib/core/interactions/follows_repository.dart", "sites": 3, "shape": "PersonFollowRequest { id, createdAt, AuraPersonIdentity requester }" },
+      { "file": "lib/features/realtime/domain/realtime_models.dart", "sites": 3, "shape": "RealtimeParticipant - person half canonical; role, join state, device, audio/video/screen, institution affiliation all untouched." },
+      { "file": "lib/features/support/support_models.dart", "sites": 1, "shape": "SupportCaseSummary.assignedAdminDisplayName - only the assigned admin's NAME is carried on a case summary, and it is now read canonically." },
+      { "file": "lib/features/feed/domain/feed_item.dart", "sites": 6, "types": "FeedSecondaryActor, FeedReplyPreviewAuthor", "evidence": "BACKEND EVIDENCE, not assumption: feed-projection.service builds the secondary actor from the post's human author ('surface the human author when the institution is the primary voice'), and feed-reply-preview-hydrator routes its author to /u/:handle. Both are always people." }
+    ],
+    "C_differentDomainConcept_retained": [
+      { "file": "lib/features/feed/domain/feed_item.dart", "sites": 2, "types": "FeedSignalActor, FeedReplyAuthor", "why": "POLYMORPHIC by construction - they consume the union projection whose fields are handleOrSlug and avatarOrLogoUrl, emitted for a user's handle/avatarUrl OR an institution's slug/logoUrl (feed-projection.service.ts:436-455), and FeedSignalActor additionally carries a FeedAuthorType discriminator. Composing person identity would force person semantics onto an institution. RETAINED, and still MEASURED - not excluded." },
+      { "file": "lib/features/conversation/data/conversations_repository.dart", "sites": 2, "type": "ConversationParty", "action": "POLYMORPHIC AND MIGRATED - the better outcome. The union stays (kind PERSON | INSTITUTION); the person branch delegates to AuraPersonIdentity; the institution branch keeps its own separate institutionName / institutionLogoUrl fields, so no code path can read an institution's name through a person-shaped accessor. This is now the pattern for a polymorphic actor." },
+      { "file": "lib/features/updates/updates_repository.dart", "sites": 4, "type": "_extractActor", "action": "SPLIT. It resolved person, institution and Aura-itself through ONE alias chain, which would name a person by an institution's `title` and an institution by a person's `handle`. Each domain now answers for itself; 2 of the 4 sites are the institution branch and are now correctly out of scope for a PERSON metric." }
+    ],
+    "D_deadCode_removed": [
+      { "file": "lib/features/feed/post_model.dart", "sites": 4, "action": "DELETED - 312 lines, ZERO importers anywhere in lib/ or test/. It was a second, competing Post + PostAuthor model carrying the exact alias chains the founder named: displayName ?? name ?? handle and avatarUrl ?? avatar ?? imageUrl. Reported as dead-code removal, NOT as migration." }
+    ],
+    "E_governedException_retained": [
+      { "file": "lib/features/admin/data/admin_models.dart", "sites": "2 label fallbacks", "what": "OwnershipRecoveryCandidate.label and InstitutionOwnershipRecoveryState.ownerLabel fall back to the raw userId when a person has neither name nor handle, where the canonical order would say 'Someone'.", "why": "An ownership-recovery screen must give a governor something they can act on. The canonical order is used for everything above that floor; the exception is written at both sites." }
+    ],
+    "F_protectedAndUnauthorized_measured": [
+      { "file": "lib/features/meetings/domain/meeting_identity.dart", "sites": 6 },
+      { "file": "lib/features/meetings/domain/meeting.dart", "sites": 4 },
+      { "file": "lib/features/meetings/domain/availability_profile.dart", "sites": 3 },
+      { "file": "lib/features/meetings/domain/meeting_entry_resolution.dart", "sites": 3 },
+      { "note": "16 sites. Meetings remains protected and this batch's authorization did not extend to these four domain models. They are counted as debt, not excluded, and no Meetings file was modified." }
+    ],
+    "instrumentReclassification_notMigration": [
+      { "file": "lib/features/realtime/domain/realtime_models.dart", "sites": 2, "what": "institutionName / institutionHandle resolution chains whose continuation lines read maps not themselves named for an institution." },
+      { "file": "lib/features/updates/updates_repository.dart", "sites": 2, "what": "key-path lines inside _extractFirstString(inst, ...) - the flagged line names no map at all." },
+      { "honesty": "These 4 sites left the PERSON metric because they are institution identity, not because any code was migrated. Counted here as instrument evolution and nowhere else." }
+    ]
+  },
+
+  "5_guestFallbackDisposition": {
+    "site": "lib/features/meetings/domain/meeting_identity.dart - MeetingIdentityRef",
+    "finding": "The word is used in TWO different senses by the SAME field, and only one of them is legitimate.",
+    "legitimate": "MeetingIdentityRef.fromJson (line 31) defaults displayName to 'Guest' on a ref whose identityType also defaults to 'GUEST'. For an external, non-Aura contact attending a meeting, GUEST is a real meeting-domain ROLE, not an invented person name. AuraPersonIdentity deliberately does not model non-Aura contacts.",
+    "defective": "MeetingIdentityRef.fromUserJson (line 45) builds a ref with identityType 'AURA_USER' and STILL defaults displayName to 'Guest'. That names an identifiable Aura person by a role they do not hold - the F054 invented-label class, inside a protected model.",
+    "whyNotCorrectedHere": "Correcting it means deciding what an unnamed AURA_USER participant is called in the meeting UI. That is protected Meetings semantics, not shared deserialisation, and this batch's authorization does not reach it. Per the founder's own instruction, it is returned as a discrete narrow ruling rather than changed.",
+    "narrowRulingRequested": "May the AURA_USER branch of MeetingIdentityRef resolve its person portion through AuraPersonIdentity - making an unnamed Aura participant fall back to their handle, then to the canonical neutral word - while the GUEST branch keeps 'Guest' as a meeting role? No booking, scheduling, entry, admission or participation semantics would change."
+  },
+
+  "6_migrationDetail": {
+    "group1_pureFersonReferences": {
+      "blocks_repository": "BlockedUser now holds `AuraPersonIdentity person` + createdAt; the nested-or-flat `blocked` unwrap is the canonical reader's job now. Forwarding getters keep every consumer intact.",
+      "follows_repository": "PersonFollowRequest holds `AuraPersonIdentity requester` + request state.",
+      "articles_repository": "ArticleAuthor RETIRED. The article screen's two 'Aura member' fallbacks are gone - product_language permits that phrase only where someone truly holds the membership relationship, so naming an unresolved author by it was the invented-label defect. The screen now asks the identity for its own name, and routes by profileRoute rather than rebuilding '/u/$handle'.",
+      "conversations_repository": "ConversationParty split by kind, as described above. conversation_identity's _partyName no longer answers 'Aura member' for an unresolved person - it uses the canonical order, which reaches their handle before any neutral word."
+    },
+    "group2_competingAliasChains": {
+      "post_model": "DELETED (dead).",
+      "feed_domain_post": "PostAuthor composed; quoted_post_preview no longer re-decides the name/handle/neutral-word order for itself.",
+      "realtime_models": "The person half of RealtimeParticipant is canonical. What remains local is payload FLATTENING - realtime delivers a participant flattened, or under a `user` envelope, or half of each - and that merge is documented as shape normalisation, explicitly not identity interpretation: which field names count, which aliases are accepted and what happens when a name is missing are all the canonical reader's decisions.",
+      "updates_repository": "_extractActor split by domain."
+    },
+    "group3_continuedWhileUnambiguous": "admin_models (9), explore_feed_item (1), support_models (1), realtime_repository (1 - an untitled broadcast is named after the person broadcasting), feed_item (6 person-only actors). Stopped at the two polymorphic feed actors and the four protected Meetings models, where continuing would have required either forcing person semantics onto an institution or editing protected Meetings."
+  },
+
+  "7_measurements": {
+    "typedPersonDebt": "17 files / 62 sites -> 5 files / 18 sites",
+    "changeClassification": {
+      "realMigration": "34 sites across 12 files",
+      "deadCodeRemoval": "4 sites (post_model.dart, 312 lines, zero importers)",
+      "instrumentReclassification": "4 sites (2 realtime institution chains, 2 updates institution key-paths)",
+      "governedExceptionRetained": "2 label floors, still counted as canonical-order deviations and written at the site",
+      "unauthorizedProtected": "16 sites (Meetings), measured not excluded",
+      "retainedByDesign": "2 sites (polymorphic feed actors), measured not excluded"
+    },
+    "surfacePersonDebt": "11 files / 19 sites, unchanged - no surface work was in scope this batch",
+    "cumulativeFromFindingStart": "66 files / 202 sites (original single-axis measure) -> surface 11/19 + typed-person 5/18"
+  },
+
+  "8_findingReassessment": {
+    "F116": {
+      "1_backendProducersConverge": "MET (unchanged) - 17 backend NON_CONFORMANT remain, all previously classified governed exceptions or protected-surface reads.",
+      "2_clientDeserializationConverges": "SUBSTANTIALLY MET, NOT COMPLETE. The residue named in the previous pass has been measured and largely cleared: 62 -> 18 typed-person sites. What remains is 16 protected-and-unauthorized Meetings sites and 2 deliberately polymorphic feed actors. For the first time the residue is RATCHETED, so it can no longer grow silently.",
+      "3_duplicateFallbackSemanticsEliminated": "MET for every migrated boundary. The named chains are gone: displayName ?? name ?? handle, avatarUrl ?? avatar ?? imageUrl, the two 'Aura member' fallbacks, the article route rebuild, the quoted-preview label order, and the updates one-chain-for-three-domains resolver.",
+      "4_privateDuplicateModelsRetiredOrComposed": "MET - ArticleAuthor retired, PostAuthor (dead duplicate) deleted, PostAuthor (live) composed, 5 admin types composed.",
+      "5_destinationModelsRetainOnlyNonIdentityState": "MET - no block, follow, article, conversation, post, participation, admin-authorization, support or explore state entered AuraPersonIdentity. The canonical model was not widened by one field.",
+      "6_everyRemainingSiteClassified": "MET - all 18 remaining typed-person sites and all 19 surface sites carry a verdict and a reason.",
+      "verdict": "F116 REMAINS PARTIALLY_VALIDATED. Two of its remaining 18 sites are retained by design and 16 are behind an authorization boundary this batch does not hold. It is not closed on a low count, and closure is now blocked only by a founder decision, not by unfound work."
+    },
+    "F053": {
+      "twoModelsNamingOnePersonDifferently": "Substantially eliminated. The clearest instance in the codebase - TWO classes both called PostAuthor, in two files, with two different alias orders - is gone: one was dead and is deleted, the other delegates.",
+      "invented_labels": "'Aura member' removed from the article surfaces and from conversation party naming. The remaining invented label in the product is meeting_identity's 'Guest' on the AURA_USER branch, disposed above.",
+      "personVsInstitutionDistinct": "Strengthened, not blurred - ConversationParty and the updates actor resolver now keep the two domains structurally apart rather than merely parsing them together.",
+      "verdict": "F053 REMAINS PARTIALLY_VALIDATED, with the same two dependencies as F116 criterion 2."
+    },
+    "F052": "No new evidence; state unchanged.",
+    "F054": "Its defect class was found again (the 'Aura member' fallbacks, the 'Guest' AURA_USER default) and cleared where authorized. State unchanged.",
+    "F055_F056_F057": "Unchanged. No new structural debt exposed.",
+    "F051": "UNTOUCHED. No CircleAvatar was migrated; the chat-avatar question remains unadjudicated."
+  },
+
+  "9_verification": {
+    "frontendSuite": "787 PASS",
+    "analyze": "clean (lib)",
+    "identityDomainProof": "PASS (both directions), 13 cases",
+    "identityConformanceGate": "PASS at surface 11/19, typed-person 5/18",
+    "gateSeededFailure": "PROVEN ENFORCING - seeded typed-boundary violation produced FAIL + exit 1, then restored",
+    "ratchetSeededFailureProof": "13/13 ENFORCING",
+    "portfolioValidator": "PASS - 143 findings + 308 obligations = 451 units across 17 chapters",
+    "backend": "UNTOUCHED - `git status` clean in aura-backend. No backend production code needed modification this batch.",
+    "meetings": "NO Meetings file modified. The 16 Meetings typed-person sites are measured and left in place."
+  },
+
+  "10_founderDecisionsRequired": [
+    "NARROW RULING - the AURA_USER branch of MeetingIdentityRef and its 'Guest' default (section 5).",
+    "AUTHORIZATION - whether the four protected Meetings domain models (meeting_identity, meeting, availability_profile, meeting_entry_resolution - 16 sites) may have their person portions converged, which is the remaining half of F116 criterion 2."
+  ]
+}

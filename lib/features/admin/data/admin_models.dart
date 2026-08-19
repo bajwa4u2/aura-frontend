@@ -5,18 +5,25 @@ import '../../../core/identity/person_identity_model.dart';
 
 class AdminAccess {
   const AdminAccess({
-    required this.id,
+    required this.person,
     required this.email,
-    required this.displayName,
     required this.role,
     required this.permissions,
     required this.status,
     required this.grants,
   });
 
-  final String id;
+  /// WHO the administrator is. Their authorization - role, permissions,
+  /// grants, status - is this model's own and deliberately stays out of
+  /// identity: identity is not authorization.
+  final AuraPersonIdentity person;
+
+  /// Account credential state, not part of the person projection.
   final String email;
-  final String displayName;
+
+  String get id => person.userId;
+  String get displayName => person.displayName;
+
   final String role;
   final List<String> permissions;
   final String status;
@@ -31,9 +38,8 @@ class AdminAccess {
   factory AdminAccess.fromJson(Map<String, dynamic> json) {
     final data = _unwrap(json);
     return AdminAccess(
-      id: _str(data['id']),
+      person: AuraPersonIdentity.fromJson(data),
       email: _str(data['email']),
-      displayName: _str(data['displayName'] ?? data['name']),
       role: _str(data['role']),
       permissions: _strList(data['permissions']),
       status: _str(data['status'] ?? 'active'),
@@ -158,20 +164,23 @@ class AdminGrant {
 
 class AdminUserSummary {
   const AdminUserSummary({
-    required this.id,
-    required this.handle,
+    required this.person,
     required this.email,
-    required this.displayName,
     required this.role,
     required this.status,
     required this.createdAt,
     this.lastActiveAt,
   });
 
-  final String id;
-  final String handle;
+  /// The person this row is about - named the way they are named everywhere
+  /// else in the product, including inside the Admin Hub.
+  final AuraPersonIdentity person;
   final String email;
-  final String displayName;
+
+  String get id => person.userId;
+  String get handle => person.handle;
+  String get displayName => person.displayName;
+
   final String role;
   final String status;
   final DateTime createdAt;
@@ -181,10 +190,8 @@ class AdminUserSummary {
 
   factory AdminUserSummary.fromJson(Map<String, dynamic> json) {
     return AdminUserSummary(
-      id: _str(json['id']),
-      handle: _str(json['handle']),
+      person: AuraPersonIdentity.fromJson(json),
       email: _str(json['email']),
-      displayName: _str(json['displayName'] ?? json['name']),
       role: _str(json['role']),
       status: _str(json['status'] ?? 'active'),
       createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
@@ -557,7 +564,7 @@ class AdminVerificationRequest {
     this.domain,
     this.websiteUrl,
     this.workEmail,
-    this.requesterHandle,
+    this.requester,
     this.requesterEmail,
     this.institutionSlug,
     this.reviewNotes,
@@ -570,8 +577,12 @@ class AdminVerificationRequest {
   final String? domain;
   final String? websiteUrl;
   final String? workEmail;
-  final String? requesterHandle;
+  /// The PERSON who asked for verification. Their work email stays separate:
+  /// it is contact state on the request, not part of who they are.
+  final AuraPersonIdentity? requester;
   final String? requesterEmail;
+
+  String? get requesterHandle => _orNull(requester?.handle ?? '');
   final String? institutionSlug;
   final String? reviewNotes;
 
@@ -592,7 +603,7 @@ class AdminVerificationRequest {
       domain: _str(json['domain']).let((s) => s.isEmpty ? null : s),
       websiteUrl: _str(json['websiteUrl']).let((s) => s.isEmpty ? null : s),
       workEmail: _str(json['workEmail']).let((s) => s.isEmpty ? null : s),
-      requesterHandle: req != null ? _str(req['handle']).let((s) => s.isEmpty ? null : s) : null,
+      requester: req == null ? null : AuraPersonIdentity.fromJson(req),
       requesterEmail: req != null ? _str(req['email']).let((s) => s.isEmpty ? null : s) : null,
       institutionSlug: inst != null ? _str(inst['slug']).let((s) => s.isEmpty ? null : s) : null,
       reviewNotes: _str(json['reviewNotes']).let((s) => s.isEmpty ? null : s),
@@ -681,41 +692,35 @@ class AdminInstitutionMember {
 /// surface cannot offer a choice the backend would reject.
 class OwnershipRecoveryCandidate {
   const OwnershipRecoveryCandidate({
-    required this.userId,
+    required this.person,
     required this.role,
-    this.displayName,
-    this.handle,
-    this.avatarUrl,
   });
 
-  final String userId;
+  /// A candidate is a PERSON holding a membership role. The role is recovery
+  /// state; the person is identity.
+  final AuraPersonIdentity person;
   final String role;
-  final String? displayName;
-  final String? handle;
-  final String? avatarUrl;
 
-  String get label {
-    final name = (displayName ?? '').trim();
-    if (name.isNotEmpty) return name;
-    final h = (handle ?? '').trim();
-    if (h.isNotEmpty) return '@$h';
-    return userId;
-  }
+  String get userId => person.userId;
+  String? get displayName => _orNull(person.displayName);
+  String? get handle => _orNull(person.handle);
+  String? get avatarUrl => person.avatarUrl;
+
+  /// The canonical order, with one governed addition: when a candidate has
+  /// neither name nor handle, an ownership-recovery screen must still show
+  /// something a governor can act on, so the user id stands in rather than
+  /// the neutral word.
+  String get label =>
+      person.displayName.trim().isEmpty && person.handle.trim().isEmpty
+          ? userId
+          : person.label;
 
   static String _str(dynamic v) => (v ?? '').toString().trim();
 
   factory OwnershipRecoveryCandidate.fromJson(Map<String, dynamic> json) {
-    String? orNull(dynamic v) {
-      final s = _str(v);
-      return s.isEmpty ? null : s;
-    }
-
     return OwnershipRecoveryCandidate(
-      userId: _str(json['userId']),
+      person: AuraPersonIdentity.fromJson(json),
       role: _str(json['role'] ?? 'MEMBER'),
-      displayName: orNull(json['displayName']),
-      handle: orNull(json['handle']),
-      avatarUrl: orNull(json['avatarUrl']),
     );
   }
 }
@@ -759,13 +764,15 @@ class InstitutionOwnershipRecoveryState {
     String? ownerLabel;
     if (ownerOfRecord is Map) {
       final map = Map<String, dynamic>.from(ownerOfRecord);
+      final owner = AuraPersonIdentity.fromJson(map);
       final id = (map['userId'] ?? '').toString().trim();
       ownerId = id.isEmpty ? null : id;
-      final name = (map['displayName'] ?? '').toString().trim();
-      final handle = (map['handle'] ?? '').toString().trim();
-      ownerLabel = name.isNotEmpty
-          ? name
-          : (handle.isNotEmpty ? '@$handle' : ownerId);
+      // Same governed exception as the candidate label above: an owner with
+      // no name and no handle is still identified for a governor by id.
+      ownerLabel =
+          owner.displayName.trim().isEmpty && owner.handle.trim().isEmpty
+              ? ownerId
+              : owner.label;
     }
 
     final rawCandidates = json['candidates'];
@@ -1324,4 +1331,9 @@ class AdminPersonVerification {
     ];
     return AdminPersonVerification(activeClasses: active, history: history);
   }
+}
+
+String? _orNull(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

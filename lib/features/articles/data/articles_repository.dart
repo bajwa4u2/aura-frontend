@@ -2,26 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// AURA ARTICLES — canonical client for the durable long-form publication
 /// domain (founder addendum 2026-08-16). ARTICLE ≠ POST ≠ ANNOUNCEMENT.
-
-class ArticleAuthor {
-  const ArticleAuthor({
-    required this.userId,
-    required this.handle,
-    required this.displayName,
-  });
-  final String userId;
-  final String? handle;
-  final String displayName;
-
-  factory ArticleAuthor.fromJson(Map<String, dynamic> json) => ArticleAuthor(
-        userId: _s(json['userId']),
-        handle: _ns(json['handle']),
-        displayName: _s(json['displayName']),
-      );
-}
 
 class Article {
   const Article({
@@ -43,7 +27,9 @@ class Article {
   final String? coverMediaId;
   final String status; // DRAFT | PUBLISHED
   final DateTime? publishedAt;
-  final ArticleAuthor? author;
+  /// The person who wrote it — the canonical identity, not an
+  /// article-local retelling of it. Null when the payload embeds no author.
+  final AuraPersonIdentity? author;
 
   /// True when the published article has been revised (durable history
   /// preserved server-side; presentation shows an honest edited marker).
@@ -61,8 +47,8 @@ class Article {
         publishedAt: json['publishedAt'] == null
             ? null
             : DateTime.tryParse(json['publishedAt'].toString()),
-        author: json['author'] is Map<String, dynamic>
-            ? ArticleAuthor.fromJson(json['author'] as Map<String, dynamic>)
+        author: json['author'] is Map
+            ? AuraPersonIdentity.fromJson(json['author'])
             : null,
         revised: json['revised'] == true,
       );

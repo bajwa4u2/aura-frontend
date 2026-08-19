@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../domain/realtime_models.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class RealtimeRepository {
   RealtimeRepository(this._dio);
@@ -297,8 +298,13 @@ class RealtimeRepository {
       final broadcaster = map['broadcaster'];
       final title = (map['title'] ?? '').toString().trim();
       if (title.isEmpty && broadcaster is Map) {
-        final name = (broadcaster['displayName'] ?? '').toString().trim();
-        if (name.isNotEmpty) map['title'] = '$name — Live';
+        // A broadcast with no title is named after the person broadcasting -
+        // by the canonical reader, not by a second reading of the same field.
+        final person = AuraPersonIdentity.fromJson(broadcaster);
+        if (person.displayName.trim().isNotEmpty ||
+            person.handle.trim().isNotEmpty) {
+          map['title'] = '${person.proseName} — Live';
+        }
       }
       return RealtimeSession.fromJson(map);
     }).toList();

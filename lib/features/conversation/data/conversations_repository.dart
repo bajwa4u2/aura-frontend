@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// AURA CONVERSATION SYSTEM — canonical client.
 /// Canon: aura-backend/docs/2026-08-16-aura-conversation-system-canon.md
@@ -10,23 +11,36 @@ import '../../../core/net/dio_provider.dart';
 /// semantics only — no thread/space/direct/correspondence vocabulary
 /// anywhere in this module.
 
+/// A party to a conversation — POLYMORPHIC by product design: a person or an
+/// institution can both hold a seat. F116: the polymorphism is real and stays,
+/// but the PERSON half is no longer interpreted here. When the party is a
+/// person they are read by the one canonical reader; when the party is an
+/// institution its name and logo remain institution identity, which must never
+/// be collapsed into person identity.
 class ConversationParty {
   const ConversationParty({
     required this.kind,
-    required this.userId,
     required this.institutionId,
     required this.leftAt,
+    this.person,
+    this.institutionName,
+    this.institutionLogoUrl,
     this.joinedAt,
     this.firstJoinedAt,
     this.enteredByInvitation = false,
-    this.displayName,
-    this.avatarUrl,
   });
 
   final String kind; // PERSON | INSTITUTION
-  final String? userId;
   final String? institutionId;
   final DateTime? leftAt;
+
+  /// Present only when this seat is held by a person.
+  final AuraPersonIdentity? person;
+
+  /// Institution identity — deliberately separate fields, so no code path can
+  /// read an institution's name through a person-shaped accessor.
+  final String? institutionName;
+  final String? institutionLogoUrl;
 
   /// Most recent entry. MUTABLE — rewritten on re-entry, so it must never
   /// be used as formation truth (F055 founder ruling).
@@ -40,26 +54,39 @@ class ConversationParty {
   /// through an invitation — how the conversation grew, not when a row
   /// happened to be written.
   final bool enteredByInvitation;
-  final String? displayName;
-
-  /// Real identity image (person avatar / institution logo) from the
-  /// canonical identity projection — never a synthesized placeholder.
-  final String? avatarUrl;
 
   bool get isActive => leftAt == null;
   bool get isPerson => kind == 'PERSON';
 
+  /// The seat holder's id when it is a person. Absent rather than empty, so
+  /// "is this me?" comparisons cannot succeed against a blank.
+  String? get userId {
+    final id = person?.userId ?? '';
+    return id.isEmpty ? null : id;
+  }
+
+  /// What this seat is called — the person's canonical name, or the
+  /// institution's own. One accessor, two identity domains, no shared parse.
+  String? get displayName =>
+      isPerson ? _emptyToNull(person?.displayName) : institutionName;
+
+  /// Real identity image (person avatar / institution logo) from the
+  /// canonical identity projection — never a synthesized placeholder.
+  String? get avatarUrl => isPerson ? person?.avatarUrl : institutionLogoUrl;
+
   factory ConversationParty.fromJson(Map<String, dynamic> json) {
+    final kind = (json['kind'] ?? 'PERSON').toString();
+    final isPerson = kind == 'PERSON';
     return ConversationParty(
-      kind: (json['kind'] ?? 'PERSON').toString(),
-      userId: _ns(json['userId']),
+      kind: kind,
+      person: isPerson ? AuraPersonIdentity.fromJson(json) : null,
       institutionId: _ns(json['institutionId']),
+      institutionName: isPerson ? null : _ns(json['displayName']),
+      institutionLogoUrl: isPerson ? null : _ns(json['avatarUrl']),
       leftAt: _date(json['leftAt']),
       joinedAt: _date(json['joinedAt']),
       firstJoinedAt: _date(json['firstJoinedAt']) ?? _date(json['joinedAt']),
       enteredByInvitation: json['enteredByInvitation'] == true,
-      displayName: _ns(json['displayName']),
-      avatarUrl: _ns(json['avatarUrl']),
     );
   }
 }
@@ -554,3 +581,8 @@ final conversationMessagesProvider = FutureProvider.autoDispose
     .family<List<ConversationMessage>, String>((ref, id) async {
   return ref.watch(conversationsRepositoryProvider).messages(id);
 });
+
+String? _emptyToNull(String? v) {
+  final t = (v ?? '').trim();
+  return t.isEmpty ? null : t;
+}

@@ -1,3 +1,5 @@
+import '../../core/identity/person_identity_model.dart';
+
 class SupportMessage {
   final String id;
   final String role; // 'user' | 'assistant' | 'admin'
@@ -110,7 +112,11 @@ class SupportCaseSummary {
       requesterEmail: j['requesterEmail'] as String?,
       requesterName: j['requesterName'] as String?,
       aiSummary: j['aiSummary'] as String?,
-      assignedAdminDisplayName: admin?['displayName'] as String?,
+      // The assigned admin is a person; only their NAME is carried on a case
+      // summary, and it is read the way every other person name is read.
+      assignedAdminDisplayName: admin == null
+          ? null
+          : _orNull(AuraPersonIdentity.fromJson(admin).displayName),
       createdAt: j['createdAt'] != null
           ? DateTime.tryParse(j['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),
@@ -143,4 +149,9 @@ class SupportAdminListResult {
       take: j['take'] as int? ?? 20,
     );
   }
+}
+
+String? _orNull(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

@@ -27,20 +27,22 @@
   ]
  },
  "totals": {
-  "rows": 139,
+  "rows": 101,
   "byVerdict": {
    "NON_CONFORMANT": 17,
-   "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 6,
+   "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 15,
    "AUTHORITY": 5,
-   "TYPED_DESERIALIZATION_BOUNDARY": 63,
    "CONFORMANT": 39,
-   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 9
+   "OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY": 3,
+   "CANONICAL_PERSON_DESERIALIZATION": 2,
+   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 2,
+   "NON_CANONICAL_PERSON_DESERIALIZATION": 18
   },
   "nonConformant": 17,
-  "adhocMapExtractionInSurface": 9,
-  "typedDeserializationBoundary": 63,
+  "adhocMapExtractionInSurface": 2,
+  "typedDeserializationBoundary": 0,
   "conformant": 39,
-  "frontend": 129,
+  "frontend": 91,
   "backend": 10
  },
  "sixPersonShapedExtractionSites": {
@@ -120,33 +122,6 @@
  "consumers": [
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/core/compliance/blocks_repository.dart",
-   "line": 73,
-   "evidence": "handle: (blocked['handle'] ?? '') as String,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/core/compliance/blocks_repository.dart",
-   "line": 74,
-   "evidence": "displayName: (blocked['displayName'] ?? '') as String,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/core/compliance/blocks_repository.dart",
-   "line": 75,
-   "evidence": "avatarUrl: blocked['avatarUrl'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/core/directory/member_picker_field.dart",
    "line": 266,
@@ -165,33 +140,6 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/core/interactions/follows_repository.dart",
-   "line": 265,
-   "evidence": "handle: (requester['handle'] ?? '').toString().trim(),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/core/interactions/follows_repository.dart",
-   "line": 266,
-   "evidence": "displayName: (requester['displayName'] ?? '').toString().trim(),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/core/interactions/follows_repository.dart",
-   "line": 267,
-   "evidence": "avatarUrl: (requester['avatarUrl'] ?? '').toString().trim(),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/core/tagging/governed_tag_field.dart",
    "line": 359,
@@ -205,8 +153,9 @@
    "path": "lib/core/tagging/mention_scope_providers.dart",
    "line": 187,
    "evidence": "final name = (inst?['name'] ?? inst?['displayName'] ?? '').toString().trim();",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'displayName' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
@@ -237,87 +186,6 @@
   },
   {
    "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 36,
-   "evidence": "displayName: _str(data['displayName'] ?? data['name']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 185,
-   "evidence": "handle: _str(json['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 187,
-   "evidence": "displayName: _str(json['displayName'] ?? json['name']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 595,
-   "evidence": "requesterHandle: req != null ? _str(req['handle']).let((s) => s.isEmpty ? null : s) : null,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 716,
-   "evidence": "displayName: orNull(json['displayName']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 717,
-   "evidence": "handle: orNull(json['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 718,
-   "evidence": "avatarUrl: orNull(json['avatarUrl']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 764,
-   "evidence": "final name = (map['displayName'] ?? '').toString().trim();",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 765,
-   "evidence": "final handle = (map['handle'] ?? '').toString().trim();",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/admin/presentation/admin_institution_members_screen.dart",
    "line": 529,
@@ -331,8 +199,9 @@
    "path": "lib/features/announcements/presentation/announcement_editor_screen.dart",
    "line": 782,
    "evidence": "data['displayName']?.toString(),",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+   "identityDomain": "EXTERNAL_PLATFORM",
+   "verdict": "OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY",
+   "why": "Reads 'displayName' from an EXTERNAL PLATFORM ACCOUNT (a connected third-party account label). Not an Aura person."
   },
   {
    "repo": "aura_final",
@@ -340,8 +209,9 @@
    "path": "lib/features/announcements/presentation/announcement_editor_screen.dart",
    "line": 821,
    "evidence": "data['displayName']?.toString(),",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+   "identityDomain": "EXTERNAL_PLATFORM",
+   "verdict": "OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY",
+   "why": "Reads 'displayName' from an EXTERNAL PLATFORM ACCOUNT (a connected third-party account label). Not an Aura person."
   },
   {
    "repo": "aura_final",
@@ -349,32 +219,15 @@
    "path": "lib/features/announcements/presentation/announcement_editor_screen.dart",
    "line": 887,
    "evidence": "copy['displayName']?.toString(),",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/articles/data/articles_repository.dart",
-   "line": 21,
-   "evidence": "handle: _ns(json['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/articles/data/articles_repository.dart",
-   "line": 22,
-   "evidence": "displayName: _s(json['displayName']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "EXTERNAL_PLATFORM",
+   "verdict": "OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY",
+   "why": "Reads 'displayName' from an EXTERNAL PLATFORM ACCOUNT (a connected third-party account label). Not an Aura person."
   },
   {
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/articles/presentation/article_screen.dart",
-   "line": 53,
+   "line": 54,
    "evidence": "AuraAvatar(",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
@@ -383,19 +236,21 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/conversation/data/conversations_repository.dart",
-   "line": 61,
-   "evidence": "displayName: _ns(json['displayName']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "line": 84,
+   "evidence": "institutionName: isPerson ? null : _ns(json['displayName']),",
+   "identityDomain": "PERSON",
+   "verdict": "CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/conversation/data/conversations_repository.dart",
-   "line": 62,
-   "evidence": "avatarUrl: _ns(json['avatarUrl']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "line": 85,
+   "evidence": "institutionLogoUrl: isPerson ? null : _ns(json['avatarUrl']),",
+   "identityDomain": "PERSON",
+   "verdict": "CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary whose person portion is delegated to AuraPersonIdentity. The model keeps its own domain state; it does not own person semantics."
   },
   {
    "repo": "aura_final",
@@ -511,8 +366,9 @@
    "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
    "line": 524,
    "evidence": "final name = (inst?['name'] ?? inst?['displayName'] ?? '')",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'displayName' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
@@ -520,6 +376,7 @@
    "path": "lib/features/direct_threads/presentation/direct_thread_screen.dart",
    "line": 640,
    "evidence": "? ((actorMap?['name'] ?? actorMap?['displayName'] ?? '')",
+   "identityDomain": "PERSON",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
@@ -536,142 +393,27 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 374,
-   "evidence": "displayName: s(['displayName']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 375,
+   "line": 771,
    "evidence": "handle: opt(['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 376,
-   "evidence": "avatarUrl: opt(['avatarUrl']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 712,
-   "evidence": "displayName: s(['displayName']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 713,
-   "evidence": "handle: opt(['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 714,
-   "evidence": "avatarUrl: opt(['avatarUrl']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 775,
-   "evidence": "handle: opt(['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/feed_item.dart",
-   "line": 1266,
+   "line": 1262,
    "evidence": "handle: s(['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/post.dart",
-   "line": 17,
-   "evidence": "final rawAvatar = _readString(j['avatarUrl']);",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/post.dart",
-   "line": 21,
-   "evidence": "handle: _readString(j['handle']) ?? '',",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/domain/post.dart",
-   "line": 23,
-   "evidence": "_readString(j['displayName']) ?? _readString(j['name']) ?? '',",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/post_model.dart",
-   "line": 35,
-   "evidence": "m['handle'] ?? m['username'] ?? m['authorHandle'],",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/post_model.dart",
-   "line": 39,
-   "evidence": "m['displayName'] ?? m['name'] ?? handle,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/post_model.dart",
-   "line": 47,
-   "evidence": "m['avatarUrl'] ?? m['avatar'] ?? m['imageUrl'],",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/feed/post_model.dart",
-   "line": 281,
-   "evidence": "_asString(authorMap?['handle']) ??",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/feed/presentation/quoted_post_preview.dart",
-   "line": 49,
+   "line": 47,
    "evidence": "AuraAvatar(name: name, imageUrl: author?.avatarUrl, size: 22),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
@@ -684,15 +426,6 @@
    "evidence": "AuraAvatar(name: actorName.isNotEmpty ? actorName : event.kind, size: 32),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/institutions/domain/explore_feed_item.dart",
-   "line": 93,
-   "evidence": "authorHandle: opt(authorMap, ['handle']) ?? '',",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
   },
   {
    "repo": "aura_final",
@@ -727,8 +460,9 @@
    "path": "lib/features/institutions/profile/institution_edit_profile_screen.dart",
    "line": 229,
    "evidence": ": (inst['avatarUrl']?.toString().trim().isNotEmpty == true",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'avatarUrl' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
@@ -736,8 +470,9 @@
    "path": "lib/features/institutions/profile/institution_edit_profile_screen.dart",
    "line": 230,
    "evidence": "? inst['avatarUrl'].toString().trim()",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'avatarUrl' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'avatarUrl' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
@@ -745,6 +480,7 @@
    "path": "lib/features/institutions/wizard/institution_onboarding_wizard.dart",
    "line": 1252,
    "evidence": "final slug = (data['slug'] ?? data['handle'] ?? '').toString().trim();",
+   "identityDomain": "PERSON",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'handle' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
   },
@@ -790,8 +526,9 @@
    "path": "lib/features/meetings/domain/availability_profile.dart",
    "line": 72,
    "evidence": "displayName: j['displayName'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -799,8 +536,9 @@
    "path": "lib/features/meetings/domain/availability_profile.dart",
    "line": 73,
    "evidence": "handle: j['handle'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -808,8 +546,9 @@
    "path": "lib/features/meetings/domain/availability_profile.dart",
    "line": 74,
    "evidence": "avatarUrl: j['avatarUrl'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -817,8 +556,9 @@
    "path": "lib/features/meetings/domain/meeting_entry_resolution.dart",
    "line": 108,
    "evidence": "displayName: j['displayName'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -826,8 +566,9 @@
    "path": "lib/features/meetings/domain/meeting_entry_resolution.dart",
    "line": 109,
    "evidence": "avatarUrl: j['avatarUrl'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -835,8 +576,9 @@
    "path": "lib/features/meetings/domain/meeting_entry_resolution.dart",
    "line": 244,
    "evidence": "identityName: identity['displayName'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -844,8 +586,9 @@
    "path": "lib/features/meetings/domain/meeting_identity.dart",
    "line": 31,
    "evidence": "displayName: _requiredString(j['displayName'], fallback: 'Guest'),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -853,8 +596,9 @@
    "path": "lib/features/meetings/domain/meeting_identity.dart",
    "line": 33,
    "evidence": "avatarUrl: _optionalString(j['avatarUrl']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -862,8 +606,9 @@
    "path": "lib/features/meetings/domain/meeting_identity.dart",
    "line": 35,
    "evidence": "handle: _optionalString(j['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -871,8 +616,9 @@
    "path": "lib/features/meetings/domain/meeting_identity.dart",
    "line": 45,
    "evidence": "displayName: _requiredString(j['displayName'], fallback: 'Guest'),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -880,8 +626,9 @@
    "path": "lib/features/meetings/domain/meeting_identity.dart",
    "line": 47,
    "evidence": "avatarUrl: _optionalString(j['avatarUrl']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -889,8 +636,9 @@
    "path": "lib/features/meetings/domain/meeting_identity.dart",
    "line": 49,
    "evidence": "handle: _optionalString(j['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -898,8 +646,9 @@
    "path": "lib/features/meetings/domain/meeting.dart",
    "line": 22,
    "evidence": "displayName: j['displayName'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -907,8 +656,9 @@
    "path": "lib/features/meetings/domain/meeting.dart",
    "line": 23,
    "evidence": "handle: j['handle'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'handle' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -916,8 +666,9 @@
    "path": "lib/features/meetings/domain/meeting.dart",
    "line": 24,
    "evidence": "avatarUrl: j['avatarUrl'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'avatarUrl' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -925,8 +676,9 @@
    "path": "lib/features/meetings/domain/meeting.dart",
    "line": 541,
    "evidence": "ownerName: ownerMap?['displayName'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "PERSON",
+   "verdict": "NON_CANONICAL_PERSON_DESERIALIZATION",
+   "why": "Typed boundary that independently interprets the person field 'displayName' — its own alias order, envelope unwrap or fallback. The TYPE may stay; the private PERSON interpretation may not."
   },
   {
    "repo": "aura_final",
@@ -1111,65 +863,32 @@
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
-   "path": "lib/features/realtime/data/realtime_repository.dart",
-   "line": 300,
-   "evidence": "final name = (broadcaster['displayName'] ?? '').toString().trim();",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
    "path": "lib/features/realtime/domain/realtime_models.dart",
-   "line": 462,
-   "evidence": "final displayName = _readString(normalized['displayName']) ?? _readString(user['displayName']);",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/realtime/domain/realtime_models.dart",
-   "line": 463,
-   "evidence": "final handle = _readString(normalized['handle']) ?? _readString(user['handle']);",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/realtime/domain/realtime_models.dart",
-   "line": 464,
-   "evidence": "final avatarUrl = _readString(normalized['avatarUrl']) ?? _readString(user['avatarUrl']);",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/realtime/domain/realtime_models.dart",
-   "line": 471,
+   "line": 481,
    "evidence": "_readString(institutionAdmin['handle']) ??",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'handle' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/realtime/domain/realtime_models.dart",
-   "line": 473,
+   "line": 483,
    "evidence": "_readString(topLevelInstitutionAdmin['handle']) ??",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'handle' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/realtime/domain/realtime_models.dart",
-   "line": 475,
+   "line": 485,
    "evidence": "_readString(_asMap(firstMembership['institution'])['handle']);",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'handle' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
@@ -1219,47 +938,22 @@
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
-   "path": "lib/features/support/support_models.dart",
-   "line": 113,
-   "evidence": "assignedAdminDisplayName: admin?['displayName'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
    "path": "lib/features/updates/updates_repository.dart",
-   "line": 185,
+   "line": 200,
    "evidence": "['displayName'],",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'displayName' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/updates/updates_repository.dart",
-   "line": 187,
-   "evidence": "['fullName'],",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'fullName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/updates/updates_repository.dart",
-   "line": 189,
+   "line": 206,
    "evidence": "['handle'],",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/updates/updates_repository.dart",
-   "line": 193,
-   "evidence": "['handle'],",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
+   "identityDomain": "INSTITUTION",
+   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
+   "why": "Reads 'handle' from an INSTITUTION, which has its own canonical authority (institution-identity.ts). Person identity and institution identity are deliberately separate; counting this as person debt measured the wrong thing."
   },
   {
    "repo": "aura_final",

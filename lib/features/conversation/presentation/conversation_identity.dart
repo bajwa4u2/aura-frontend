@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../data/conversations_repository.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// Presentation identity helpers for the Conversation module.
 /// Naming is DERIVED until customized (canon: no forced naming, ever).
@@ -74,9 +75,13 @@ String conversationDisplayName(Conversation c, String myUserId) {
 }
 
 String _partyName(ConversationParty p) {
+  // F053 — a person is named by the canonical order (their name, then their
+  // handle, then one neutral word). "Aura member" is a MEMBERSHIP STATUS, not
+  // a name, and naming an unresolved person by it is the invented-label
+  // defect. An institution keeps its own domain's fallback.
+  if (p.isPerson) return (p.person ?? AuraPersonIdentity.unknown).proseName;
   final n = (p.displayName ?? '').trim();
-  if (n.isNotEmpty) return n;
-  return p.isPerson ? 'Aura member' : 'Institution';
+  return n.isEmpty ? 'Institution' : n;
 }
 
 /// Canonical avatar for a 1:1 conversation — the counterpart's real image.

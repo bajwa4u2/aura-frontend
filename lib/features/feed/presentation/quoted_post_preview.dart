@@ -19,11 +19,9 @@ class QuotedPostPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final author = original.author;
-    final name = (author?.displayName.trim().isNotEmpty ?? false)
-        ? author!.displayName.trim()
-        : ((author?.handle.trim().isNotEmpty ?? false)
-              ? '@${author!.handle.trim()}'
-              : 'Someone');
+    // F053 — this surface used to re-decide the name/handle/neutral-word
+    // order for itself. It now asks the identity for its own label.
+    final name = author?.label ?? 'Someone';
     final handle = (author?.handle.trim().isNotEmpty ?? false)
         ? '@${author!.handle.trim()}'
         : null;

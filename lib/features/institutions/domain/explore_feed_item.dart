@@ -1,4 +1,5 @@
 import 'institution_post.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 /// Unified feed entry for the institution Explore Public surface.
 ///
@@ -33,16 +34,19 @@ class ExploreUserPost extends ExploreFeedItem {
     required super.id,
     required super.publishedAt,
     required this.text,
-    required this.authorDisplayName,
-    required this.authorHandle,
-    this.authorAvatarUrl,
+    required this.author,
     this.media = const <ExploreMediaPreview>[],
   });
 
   final String text;
-  final String authorDisplayName;
-  final String authorHandle;
-  final String? authorAvatarUrl;
+
+  /// The person who published it. Explore shows institution-authored posts
+  /// through a different type, so this one is always a person.
+  final AuraPersonIdentity author;
+
+  String get authorDisplayName => author.displayName;
+  String get authorHandle => author.handle;
+  String? get authorAvatarUrl => author.avatarUrl;
   final List<ExploreMediaPreview> media;
 
   factory ExploreUserPost.fromJson(Map<String, dynamic> json) {
@@ -52,15 +56,6 @@ class ExploreUserPost extends ExploreFeedItem {
         if (v.isNotEmpty) return v;
       }
       return '';
-    }
-
-    String? opt(Map<String, dynamic>? m, List<String> keys) {
-      if (m == null) return null;
-      for (final k in keys) {
-        final v = m[k]?.toString().trim() ?? '';
-        if (v.isNotEmpty) return v;
-      }
-      return null;
     }
 
     DateTime? readDate(dynamic raw) {
@@ -88,10 +83,7 @@ class ExploreUserPost extends ExploreFeedItem {
       id: s(['id']),
       publishedAt: readDate(json['publishedAt'] ?? json['createdAt']),
       text: s(['text', 'body']),
-      authorDisplayName:
-          opt(authorMap, ['displayName', 'name']) ?? '',
-      authorHandle: opt(authorMap, ['handle']) ?? '',
-      authorAvatarUrl: opt(authorMap, ['avatarUrl', 'photoUrl']),
+      author: AuraPersonIdentity.fromJson(authorMap),
       media: media,
     );
   }

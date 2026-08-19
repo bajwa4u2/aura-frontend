@@ -17,14 +17,11 @@
   "ADHOC_MAP_EXTRACTION_IN_SURFACE"
  ],
  "totals": {
-  "files": 14,
-  "sites": 26
+  "files": 11,
+  "sites": 19
  },
  "perFile": {
-  "aura_final:lib/core/tagging/mention_scope_providers.dart": 1,
-  "aura_final:lib/features/announcements/presentation/announcement_editor_screen.dart": 3,
-  "aura_final:lib/features/direct_threads/presentation/direct_thread_screen.dart": 2,
-  "aura_final:lib/features/institutions/profile/institution_edit_profile_screen.dart": 2,
+  "aura_final:lib/features/direct_threads/presentation/direct_thread_screen.dart": 1,
   "aura_final:lib/features/institutions/wizard/institution_onboarding_wizard.dart": 1,
   "aura_final:lib/features/invitations/presentation/invite_create_screen.dart": 1,
   "aura_final:lib/features/me/presentation/edit_profile_screen.dart": 2,
@@ -35,5 +32,19 @@
   "aura_final:lib/features/meetings/presentation/widgets/meeting_device_check.dart": 1,
   "aura_final:lib/features/meetings/presentation/widgets/meeting_preparation_panel.dart": 2,
   "aura-backend:src/auth/auth.service.ts": 2
+ },
+ "typedPersonDebtVerdicts": [
+  "NON_CANONICAL_PERSON_DESERIALIZATION"
+ ],
+ "typedPersonTotals": {
+  "files": 5,
+  "sites": 18
+ },
+ "typedPersonPerFile": {
+  "aura_final:lib/features/feed/domain/feed_item.dart": 2,
+  "aura_final:lib/features/meetings/domain/availability_profile.dart": 3,
+  "aura_final:lib/features/meetings/domain/meeting_entry_resolution.dart": 3,
+  "aura_final:lib/features/meetings/domain/meeting_identity.dart": 6,
+  "aura_final:lib/features/meetings/domain/meeting.dart": 4
  }
 }
