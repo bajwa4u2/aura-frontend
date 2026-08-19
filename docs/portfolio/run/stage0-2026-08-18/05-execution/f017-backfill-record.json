@@ -1,0 +1,73 @@
+{
+ "type": "EXECUTION_RECORD",
+ "unit": "F017 - Internal Aura-link hydration (historical backfill)",
+ "chapter": "CH-13",
+ "date": "2026-08-19",
+ "priorState": "PARTIALLY_VALIDATED - the older /p/ link still renders bare; pre-existing messages need a backfill or skip-guard.",
+ "newState": "IMPLEMENTED_AWAITING_PRODUCTION_BACKFILL",
+ "stateNote": "The register vocabulary has no state for implementation-complete-but-production-mutation-owed. Recorded in the EXECUTION LAYER only; Stage-0 untouched. Closest existing honest state is IMPLEMENTED_AWAITING_CERTIFICATION. No canonical state was invented.",
+ "architecturalDiscovery": {
+  "assumedModel": "F017 wording implies hydration is frozen at send, leaving historical messages stale.",
+  "actualModel": "NOTHING IS FROZEN AT SEND. conversations.service resolves internal references at READ time, per viewer, from the body - its own comment: a reference is a carrier, not an authority; the owning authority re-decides visibility on every read; nothing is frozen at send. Correspondence hydrates via DisplayLinkPreview, which live-revalidates against the same canonical endpoint.",
+  "consequence": "No stale hydration exists to repair and no authorization decision needs un-freezing. Adding /p/, /p/i/ and /p/a/ to the canonical parser already fixed Conversation for historical messages, because read-time resolution re-runs the CURRENT parser on every fetch.",
+  "theRealGap": "The stored item is the TRIGGER. Message.linkSourceUrl is written only when the composer sent it, and is projected as linkUrl. The Correspondence tile renders its preview ONLY when linkUrl is non-empty. A historical message whose body contains a canonical Aura URL but whose linkSourceUrl is NULL renders bare permanently, while an identical new message hydrates.",
+  "effectOnTheDecision": "The authorized backfill is real and necessary, but its target is the trigger, not hydration state - far safer than the decision assumed: one nullable derived field, never the body, never a resolved reference, never an authorization outcome."
+ },
+ "whatIsWritten": {
+  "table": "Message",
+  "column": "linkSourceUrl",
+  "value": "The canonical URL ALREADY PRESENT IN THE BODY, normalised by the canonical parseLinkUrl.",
+  "condition": "Only where linkSourceUrl IS NULL.",
+  "bodyUntouched": true,
+  "nothingElse": "No resolution performed, cached or stored. No reference frozen. No authorization outcome persisted."
+ },
+ "canonicalAuthorityReused": [
+  "parseLinkUrl",
+  "isInternalAuraUrl (host-based)",
+  "parseInternalReference (path-based)"
+ ],
+ "noSecondGrammar": "Eligibility ASKS the parser rather than restating it, so a change to the supported route set changes eligibility with it. The single regex is the URL-token extractor, kept byte-identical to the read path so both agree which URL is the URL.",
+ "eligibility": {
+  "ELIGIBLE": "linkSourceUrl NULL and the body first URL is a canonical Aura host AND a parser-supported route.",
+  "ALREADY_HYDRATED": "linkSourceUrl present - never overwritten, even when it differs from the body first URL, because the author own client chose it.",
+  "NO_URL": "no URL-shaped token in the body.",
+  "MALFORMED_URL": "the canonical normaliser refuses it.",
+  "EXTERNAL_URL": "real URL, non-Aura host. Out of scope.",
+  "UNSUPPORTED_AURA_ROUTE": "Aura host but a route the canonical parser does not resolve - /spaces/:slug and /articles/write are deliberately excluded upstream. Backfilling these would restore a trigger for a preview that could never render.",
+  "DELETED_MESSAGE": "never touched - adjudication data is evidence."
+ },
+ "multipleAndMixed": {
+  "rule": "FIRST URL wins, matching the read path exactly.",
+  "why": "The runtime hydrates one reference per message from the first URL. Backfilling a different one would make the stored trigger disagree with what a reader resolves.",
+  "externalFirst": "A message whose first URL is external stays EXTERNAL even when an Aura link follows, because the reader would not hydrate it either. Recorded honestly rather than scanning for the first INTERNAL url, which would invent a contract the runtime lacks.",
+  "multiplicityReported": "hasMultipleUrls is carried into the impact report rather than collapsed."
+ },
+ "idempotenceAndDeterminism": {
+  "property": "Backfill(Backfill(x)) == Backfill(x), mechanised.",
+  "mechanism": "Eligibility requires linkSourceUrl NULL so a completed row self-excludes on later passes, and the UPDATE carries the same NULL guard so a concurrent writer cannot be clobbered.",
+  "determinism": "classifyMessage is pure - no clock, no randomness, no I/O. Verified stable across 20 repeated evaluations.",
+  "restartability": "Keyset pagination on the primary key, no in-memory progress. Interruption leaves a consistent database and re-running completes the job."
+ },
+ "impactCounts": {
+  "status": "OWED - NOT INVENTED",
+  "why": "Real counts require querying production, which was not done, in keeping with the standing no-production-polling rule.",
+  "howToObtain": "npm run f017:dry-run - writes nothing and prints examined, eligible, already hydrated, no-url, malformed, external, unsupported route, deleted, eligible-with-multiple-urls, and eligible by reference kind.",
+  "coversEveryRequestedField": true
+ },
+ "recovery": {
+  "reversible": true,
+  "whatWouldBeCleared": "UPDATE Message SET linkSourceUrl = NULL for rows the backfill wrote.",
+  "identifyingIncorrectRows": "An incorrectly enriched row is one whose linkSourceUrl does not appear in its own body - checkable without any record of what the backfill did, because the written value is always drawn from the authored text.",
+  "irreversibleState": "NONE. No body modified, no row deleted, no reference frozen, no LinkPreview created or altered.",
+  "residualRisk": "A blanket clear would also remove values written legitimately at send time, so recovery should target only rows whose linkSourceUrl matches the body-derived canonical URL and which the run log records as written."
+ },
+ "verification": {
+  "newTests": 22,
+  "backendSuite": "201 suites / 2526 tests",
+  "protectedSurfaces": "meeting/conversation/message suites 179 passed",
+  "frontend": "652 passed",
+  "typecheck": "clean"
+ },
+ "productionCommand": "npm run f017:apply (aura-backend). Dry-run is the DEFAULT; --apply is required to write and cannot be triggered by omission.",
+ "notRun": "THE PRODUCTION BACKFILL WAS NOT EXECUTED."
+}
