@@ -1,0 +1,124 @@
+{
+ "type": "FRONTIER_BY_BLOCKER",
+ "date": "2026-08-18",
+ "principle": "A blocked IMPLEMENTATION unit is not automatically a blocked INVESTIGATION or PREPARATION unit.",
+ "classes": {
+  "EXECUTION_BLOCKED": [
+   {
+    "unit": "CH-12 examination mechanism",
+    "blocker": [
+     "G1 leg 5(B) live refusal",
+     "CH-15 D1/D3/D4"
+    ],
+    "note": "Two independent blockers; neither alone would release it."
+   },
+   {
+    "unit": "CH-05 attention authorities + DR1 retirement",
+    "blocker": [
+     "G1 leg 3 (F045 call lifecycle)",
+     "founder checkpoint 7"
+    ],
+    "note": "Not blocked by anything in the content chain."
+   },
+   {
+    "unit": "CH-04 PHASE 1",
+    "blocker": [
+     "AD-CON-5",
+     "SU-5",
+     "VS-02 three-call condition",
+     "real devices"
+    ],
+    "note": "Previously refused; unchanged."
+   },
+   {
+    "unit": "F123 / F122 composer half",
+    "blocker": [
+     "RC-C5 frozen gate — founder declaration of C4 live closure"
+    ],
+    "note": "F122 additionally a PRESERVED CONFLICT, never adjudicated."
+   }
+  ],
+  "FOUNDER_INPUT_REQUIRED": [
+   {
+    "unit": "CH-15 policy freeze",
+    "decisions": [
+     "D1 prohibited taxonomy",
+     "D2 consequence ladder",
+     "D3 appeal/false-positive route",
+     "D4 F137 scope and timing"
+    ],
+    "pack": "docs/portfolio/CH15_FOUNDER_POLICY_DECISION_PACK_2026-08-18.md"
+   },
+   {
+    "unit": "F095 in-Live ownership",
+    "decision": "D5",
+    "blocking": "NOTHING today — F095 held under 'LIVE — HOLD IMPLEMENTATION FOR NOW'"
+   }
+  ],
+  "CERTIFICATION_PREPARABLE": [
+   {
+    "unit": "G1 leg 5(B)",
+    "status": "PROCEDURE PREDECLARED — READY",
+    "artifact": "docs/governance/G1_LEG5B_LIVE_CERTIFICATION_PROCEDURE.md",
+    "blockedOn": "attributable deployed artifact; F129/D7 doors not pushed"
+   },
+   {
+    "unit": "CH-14 slice 1 live exercise",
+    "status": "PREPARABLE — procedure not yet written",
+    "note": "Its deliverable is LIVE exercise of each Create path plus People-surface residue removal."
+   },
+   {
+    "unit": "backend build attribution",
+    "status": "GAP IDENTIFIED, NOT BUILT",
+    "note": "GET /v1/health returns no version or commit, so no backend live certification can bind to an artifact. Recommended, not implemented — unrequested work."
+   }
+  ],
+  "ANALYSIS_AVAILABLE": [
+   {
+    "unit": "CH-15 decision extraction",
+    "status": "DONE"
+   },
+   {
+    "unit": "CH-15 dependency verification against canonical anchors",
+    "status": "DONE",
+    "result": "dependsOn CH-11 binds CH-15 CONSTRUCTION, not the policy freeze. Stage 5: the policy work has no engineering prerequisite whatever."
+   },
+   {
+    "unit": "backend deployment-state establishment",
+    "status": "DONE",
+    "result": "aura-backend local is 6 commits ahead of origin/main 2c6ad69. verifyClientSuppliedObject count on origin/main = 0, so F129 and D7 are not deployable. content-truth.ts IS on origin/main."
+   }
+  ]
+ },
+ "unblockMap": {
+  "afterCH15Rulings": {
+   "D1": "CH-15 report-vocabulary construction; CH-12 gains verdict vocabulary",
+   "D2": "CH-15 consequence construction and one-authority certification prep",
+   "D3": "CH-12 examination-mechanism construction — highest-leverage single unblock",
+   "D4": "CH-12 per-kind scanner scope and the backfill obligation",
+   "D1+D3+D4": "CH-12 fully specifiable"
+  },
+  "afterG1Leg5BPasses": {
+   "leg5": "DISCHARGED (5A already complete)",
+   "CH-12": "loses its leg-5 blocker; still requires CH-15 D1/D3/D4",
+   "note": "Leg 5(B) alone does NOT release CH-12. Both blockers must clear."
+  }
+ },
+ "notRoutedAround": [
+  "CH-12 not executed before leg 5(B)",
+  "CH-05 not executed before leg 3",
+  "CH-04 refusals preserved",
+  "no live exercise treated as local proof",
+  "F123 untouched",
+  "F122 unadjudicated",
+  "no protected boundary crossed",
+  "no production mutation",
+  "no certification gate weakened"
+ ],
+ "standingAccounting": {
+  "findings": 143,
+  "obligations": 308,
+  "units": 451,
+  "chapters": 17
+ }
+}
