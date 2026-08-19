@@ -1,0 +1,91 @@
+{
+ "type": "CH15_FOUNDER_POLICY_APPLIED",
+ "date": "2026-08-18",
+ "authority": "FOUNDER RULING 2026-08-18 — D1 through D5. Encoded as founder-authored policy; no Claude recommendation was converted into founder authorship.",
+ "policyArtifact": "docs/governance/CH15_MODERATION_POLICY_FOUNDER_AUTHORED.md (both repositories)",
+ "canonicalUnitsCreated": 0,
+ "stage0Rewritten": false,
+ "rulings": {
+  "D1": {
+   "status": "RESOLVED + IMPLEMENTED",
+   "categories": 6,
+   "derivedOnlyFromEvidence": true,
+   "evidenceSource": "aura_final/lib/core/compliance/report_repository.dart:47-75 — the shipped ReportReason enum and its stable wire tokens",
+   "nothingInvented": "All six already shipped. No category was added from moderation theory.",
+   "gapsReported": "None omitted for lack of evidence — every shipped category had evidence.",
+   "enforcement": "Write boundary (CreateReportDto), NOT a database enum. Converting the existing String column would require rewriting historical rows: production-data mutation, unauthorized, and adjudication data is evidence that must not be patched.",
+   "productionSafety": "Verified the shipped client sends reason.wire (report_repository.dart:114), so the governed set matches live traffic exactly and no reporting path breaks.",
+   "recordedNotResolved": "AIReportCategory is a separate DB-enforced 7-member enum for AI-response reports whose vocabulary overlaps without matching. NOT merged — that would author policy by inference. Founder disposition owed; blocks nothing."
+  },
+  "D2": {
+   "status": "RESOLVED",
+   "action": "Existing 14-action ladder ratified as canonical policy.",
+   "stateChange": "IMPLEMENTED -> FOUNDER_RATIFIED_AS_POLICY",
+   "codeChange": "NONE",
+   "why": "Every destructive action already has a restore path, which is what the destructive boundary requires. What it lacked was authorship, not correctness."
+  },
+  "D3": {
+   "status": "RESOLVED",
+   "chain": "AUTOMATED EXAMINATION -> QUARANTINE -> NOTICE -> HUMAN APPEAL/REVIEW -> FINAL GOVERNED DISPOSITION",
+   "rejected": [
+    "ADVISORY_ONLY — a scanner whose verdict cannot stop delivery is not an examination system",
+    "SILENT_AUTO_FINAL — irreversible product harm from a false verdict"
+   ],
+   "appealStanding": "Content authority under Aura's existing model. NEVER created by possession of an id, URL or reference — the same principle D7 froze.",
+   "timing": "No invented SLA. Prioritized queue, visible status, explicit quarantine, and neither silent permanent removal nor silent timer auto-release.",
+   "implementable": false,
+   "blockedBy": "CH-12 examination mechanism, itself gated by G1 leg 5(B)"
+  },
+  "D4": {
+   "status": "RESOLVED",
+   "endState": "All uploaded media classes within governed scope",
+   "phase1": "Image examination",
+   "phase2": "Remaining governed classes — a NAMED CH-12 CLOSURE REQUIREMENT, not an optional enhancement",
+   "invariant": "ALL APPLICABLE F137 MEDIA CLASSES MUST BE COVERED BEFORE CH-12 CLOSURE",
+   "noArbitraryDate": true,
+   "frozenAdequacyPreserved": [
+    "backfill over the existing population",
+    "explicit product-visible interim state",
+    "quarantine as reversible retention, never deletion",
+    "per-kind examination"
+   ]
+  },
+  "D5": {
+   "status": "RESOLVED",
+   "result": "CH-15 nonGoal STANDS; the conflicting founderActions wording is SUPERSEDED by ruling. F095 stays with the Live/surface owner under HOLD, and must consume CH-15's contract rather than reimplement policy.",
+   "blocksConstruction": false
+  }
+ },
+ "buildAttribution": {
+  "authorized": "FOUNDER RULING 2026-08-18 — bounded artifact-identity mechanism sufficient for live certification",
+  "implemented": "src/health/build-identity.ts; GET /health gains an additive `build` object",
+  "exposes": [
+   "version",
+   "build",
+   "commit",
+   "attributable"
+  ],
+  "deliberatelyNotExposed": [
+   "branch",
+   "repository",
+   "environment names",
+   "dependency inventory",
+   "configuration",
+   "paths",
+   "secrets"
+  ],
+  "honesty": "`attributable:false` is returned when neither a build id nor a commit is present — the explicit signal that a certification attempt must record NOT_ESTABLISHED rather than PASS.",
+  "compatibility": "Purely additive; every existing field keeps its name, type and meaning, so Railway probes and existing consumers are unaffected.",
+  "tests": "11 assertions including secret/branch/env leak checks and value bounding",
+  "notLiveYet": "Requires deployment before it can attribute anything."
+ },
+ "derivedObligations": {
+  "total": 12,
+  "done": 3,
+  "blocked": 8,
+  "founderInput": 1
+ },
+ "regression": {
+  "backend": "199 suites / 2493 tests PASS"
+ }
+}
