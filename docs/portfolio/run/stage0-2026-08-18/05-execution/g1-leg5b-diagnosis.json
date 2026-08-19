@@ -1,0 +1,101 @@
+{
+ "type": "G1_LEG5B_TECHNICAL_DIAGNOSIS",
+ "round": 2,
+ "date": "2026-08-18",
+ "artifact": "36036643a4d30b5376632271e34e110481020ae1",
+ "codeChanged": false,
+ "withdrawn": "My round-1 inference that the 'Attachment' rendering evidenced backend correction is WITHDRAWN. The founder is right: backend classification must never be read off frontend presentation, and the attachment surface is generic across types, so it can evidence nothing about type resolution.",
+
+ "A_actualIngestionPath": {
+  "path": "Messages composer -> uploadAuraMedia() -> POST /media/presign -> PUT to R2 (presigned) -> POST /media/:id/confirm -> PATCH /media/:id -> message sent carrying storageKey",
+  "evidence": [
+   "lib/core/attachments/aura_media_upload.dart:38 POST /media/presign",
+   "lib/core/attachments/aura_media_upload.dart:101 await dio.post('/media/$mediaId/confirm') — NOT wrapped in try/catch, so a 4xx propagates",
+   "lib/features/conversation/presentation/conversation_screen.dart:264 and :372 call uploadAuraMedia",
+   "lib/features/correspondence/presentation/thread/thread_composer.dart:453 calls uploadAuraMedia"
+  ],
+  "verdict": "NO BYPASS. Every Messages attachment surface uploads through presign+confirm. The D3 storageKey door is used for the SEND, after confirm has already run over the bytes.",
+  "clientErrorHandling": "conversation_screen wraps the upload in try/catch, marks the attachment failed and shows 'Attachment failed — remove it and try again.' A server refusal would therefore be visible, though generically worded."
+ },
+
+ "B_didTheBytesCrossContentTruth": {
+  "answer": "YES.",
+  "why": "confirmUpload performs a ranged read (CONTENT_TRUTH_HEAD_BYTES) and, when the head looks like a ZIP, a tail read for container inspection, then calls resolveContentTruth. media.service.ts:560-579.",
+  "notASilentPath": "On inspection failure it holds the row at UPLOADED and throws MEDIA_VERIFICATION_FAILED rather than passing the object."
+ },
+
+ "C_serverDisposition": {
+  "detectedType": "application/zip",
+  "layer4": "classifyZipContainer found no word/, ppt/ or xl/ member paths, so the generic ZIP was NOT refined into an OOXML type and stayed application/zip.",
+  "verdict": "CORRECTED — reason DECLARED_TYPE_CORRECTED_BY_SIGNATURE.",
+  "persistedState": "status READY, resolved mimeType application/zip, type derived from the resolved mime. The declared image/png was overridden by the bytes.",
+  "THE_ROOT_CAUSE": "application/zip IS A PERMITTED ATTACHMENT TYPE. kCanonicalAttachmentMimeMatrix carries an ARCHIVE class ['application/zip','application/x-zip-compressed'], and kDefaultPresignAllowedMimes is derived by FLATTENING EVERY CLASS. So isAllowed('application/zip') is true, and content-truth's contract is explicit: when the declared type is wrong but the actual type is permitted, CORRECT it rather than reject a legitimate upload.",
+  "therefore": "The door behaved exactly as its frozen contract specifies. Accepting the renamed ZIP is CORRECT BEHAVIOUR, not a bypass and not a defect."
+ },
+
+ "D_didTheClientSuppressARefusal": {
+  "answer": "NO — there was no refusal to suppress.",
+  "why": "The server returned success because the disposition was CORRECTED, not REJECTED. Nothing was hidden, mishandled or swallowed.",
+  "enforcementVerified": "media.service.ts:595 — on REJECTED it calls failUpload(id, reason) and throws BadRequestException CONTENT_REJECTED with declared/detected details. Enforcement exists and is not advisory."
+ },
+
+ "3_legVerdict": {
+  "verdict": "NOT_ESTABLISHED",
+  "notFAIL": "This contradicts both my round-1 recommendation and the founder's stated FAIL, and the reason is evidential rather than interpretive: the predeclared criterion tests what happens to a VIOLATING file. A ZIP is a PERMITTED file. The observation is accurate — the file was accepted and no refusal appeared — but it does not exercise the criterion, so it can establish neither PASS nor FAIL.",
+  "notAReinterpretation": "Visible acceptance is NOT being reinterpreted as refusal. The claim is narrower: acceptance was CORRECT because the file was permitted, so the leg remains untested.",
+  "recordingAFalseFailIsAlsoHarmful": "Recording FAIL against a door that behaved to specification would create a phantom defect and send repair effort at working code — the mirror of a false PASS, and equally damaging to the register.",
+  "legStatus": "G1 LEG 5(B) REMAINS OPEN AND UNTESTED. G1 is not weakened."
+ },
+
+ "myRepeatedError": {
+  "statement": "I have now twice recommended a test file that the canonical MIME policy permits — first a PDF (DOCUMENT class), then a ZIP (ARCHIVE class). Both were answered with CORRECTED, exactly as designed.",
+  "cause": "I recommended from intuition about what looks like a 'violating file' instead of reading the allow-list first. The allow-list is the only thing that decides.",
+  "correctedMethod": "The third case below was verified against the code BEFORE being proposed, by reading the detector's signature table and the branch that handles a missing signature."
+ },
+
+ "verifiedNextCase": {
+  "primary": {
+   "file": "A plain TEXT file (any .txt with ordinary content) renamed by extension only to photo.png",
+   "verifiedMechanism": "The detector finds no magic-byte signature (content-truth.ts LAYER 3). The declared type image/png is NOT in UNVERIFIABLE_MIMES, which contains only text/plain and text/csv and is checked against the DECLARED type. Control therefore reaches the final branch: REJECTED, reason SIGNATURE_ABSENT_FOR_DECLARED_TYPE — 'a binary format that SHOULD have had a recognisable signature did not'.",
+   "expected": "Visible, truthful, recoverable refusal. The server returns 400 CONTENT_REJECTED with message 'The uploaded file could not be verified as the declared type.'"
+  },
+  "alternative": {
+   "file": "An SVG whose first four bytes are literally <svg, renamed to photo.png",
+   "verifiedMechanism": "content-truth.ts:165 detects the <svg prefix and returns image/svg+xml, which is in kBlockedMimes and never permitted regardless of env config -> REJECTED, ACTUAL_CONTENT_NOT_PERMITTED.",
+   "caveat": "It must start LITERALLY with <svg. An SVG beginning with <?xml or a BOM is not matched by the prefix rule — though such a file would still be rejected via the missing-signature branch above, for a different reason."
+  },
+  "whyNotAnExecutable": "Not proposed: no PE/ELF signature appears in the detector's table, so an executable would reject via the missing-signature branch rather than by being identified. The text case exercises the same branch and is trivially producible."
+ },
+
+ "4_5_attachmentUXGap": {
+  "newFindingCreated": false,
+  "reason": "The 451-unit baseline already contains this product gap, in TWO findings that split along the same boundary the architecture uses.",
+  "primaryOwner": {
+   "finding": "F011 — Attachments",
+   "chapter": "CH-13 Composition, Intake & Rich Presentation",
+   "state": "PARTIALLY_VALIDATED",
+   "canonicalText": "'Attachments in Conversation. Attachment pills render live in thread, but the send/open/download journey per attachment type ...'",
+   "matchesObservation": "Exactly. Pills render; the per-type open/download journey does not. This is the founder's 'can be seen but cannot be opened', the generic Attachment item, and the absence of type-appropriate actions."
+  },
+  "secondaryOwner": {
+   "finding": "F016 — Honest document/media formats",
+   "chapter": "CH-11 Content Truth & Ingestion Governance",
+   "state": "OPEN",
+   "canonicalText": "'Founder observed PDFs rendered as bare attachments and docx/pptx unsupported; the whole media-kind honesty model is missing.'",
+   "matchesObservation": "The media-kind honesty half — the product not expressing WHAT a file is."
+  },
+  "theSplit": "F016's ingestion half (resolving what a file actually is) is CH-11's and is working. Presenting the resolved kind with its respective actions is explicitly a CH-11 NON-GOAL owned by CH-13, and that is F011. The founder's 'legacy product gap' is F011 plus F016's presentation half.",
+  "sharedCausationWithContentTruth": "NONE ESTABLISHED. Content-truth enforcement and attachment presentation are kept as separate defects, per the founder's instruction. The only relationship is that a generic presentation surface makes backend behaviour unobservable from the UI — which is a reason not to adjudicate from screenshots, not evidence of a shared cause.",
+  "notRedesigned": "No redesign attempted. Ownership and existing evidence are now established; that was the instruction."
+ },
+
+ "6_founderDecisionRequired": {
+  "genuinelyRequired": "NONE to proceed.",
+  "surfacedForAwareness": {
+   "question": "Should the ARCHIVE class (application/zip, application/x-zip-compressed) remain a permitted attachment type?",
+   "why": "Archives are accepted today with ZERO examination — F137 records that no uploaded media of any kind is scanned. An archive is the classic carrier for content the door cannot see.",
+   "notANewFinding": "This sits inside F137's existing zero-coverage scope and inside D4's phase plan. It is not a new canonical unit.",
+   "blocking": "NOTHING. Raised because the ZIP test made it concrete, not because it gates work."
+  }
+ }
+}
