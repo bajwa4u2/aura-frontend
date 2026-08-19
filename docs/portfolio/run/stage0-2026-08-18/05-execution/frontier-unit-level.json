@@ -1,0 +1,88 @@
+{
+ "type": "UNIT_LEVEL_FRONTIER_BY_EVIDENCE_DIMENSION",
+ "date": "2026-08-18",
+ "method": "Every open chapter re-evaluated from its ACTUAL bounded dependencies. Chapter-level and wave-level membership were NOT used as a substitute for unit-level analysis. A blocked closure does not block construction; a blocked construction does not block analysis; a blocked live certification does not block local preparation.",
+ "guardAgainstManufacturedWork": "A real dependency was not decomposed to create the appearance of available work. Where nothing is executable in a dimension, that is stated rather than filled.",
+
+ "A_PRODUCT_MUTATION_EXECUTABLE_NOW": [
+  { "unit": "CH-15 O1/O2 — governed report category at the write boundary", "status": "EXECUTED this pass", "evidence": "moderation-categories.ts, CreateReportDto, 22 assertions" },
+  { "unit": "Build attribution mechanism", "status": "EXECUTED this pass", "evidence": "build-identity.ts, additive /health field, 11 assertions" },
+  { "unit": "CH-15 taxonomy relationship encoding", "status": "EXECUTED this pass", "evidence": "taxonomy-relationship.ts, 11 assertions" },
+  { "remaining": "NONE. Every other product mutation in the open set crosses a real dependency — leg 5(B), leg 3, a named founder decision, or a frozen protected boundary." }
+ ],
+
+ "B_ANALYSIS_EXECUTABLE_NOW": [
+  { "unit": "Cross-taxonomy semantic map", "status": "EXECUTED", "finding": "Apart from the residual OTHER, NO pair across the two vocabularies is semantically equivalent. VIOLENCE_OR_THREAT and VIOLENCE_OR_SELF_HARM share a word and are close to disjoint — harm directed outward versus harm directed inward." },
+  { "unit": "Coverage asymmetry analysis", "status": "EXECUTED", "finding": "SELF-HARM is reportable about AI output but NOT about user content; a person encountering self-harm material posted by another person has only OTHER. Also asymmetric: FALSE_OR_MISLEADING, THREAT, SCAM, OFFENSIVE. Recorded for founder disposition, NOT fixed — expanding a taxonomy by inference is what D1 forbids." },
+  { "unit": "CH-02 S4 blocker re-evaluation", "status": "EXECUTED", "finding": "Two of three blockers cleared by this pass: the CH-03 conformance gate is now published, and PD-2 is resolved. One remains — the group identity doctrine, which is founder-authored and absent." }
+ ],
+
+ "C_ARCHITECTURE_SPECIFICATION_EXECUTABLE_NOW": [
+  {
+   "unit": "CH-12 examination preparation package",
+   "status": "EXECUTED",
+   "artifact": "docs/governance/CH12_EXAMINATION_PREPARATION_PACKAGE.md",
+   "covers": ["obligation decomposition E1-E8", "Phase 1 image architecture", "Phase 2 all-classes closure architecture", "quarantine/appeal state model with five invariants", "authority boundaries", "persistence requirements", "migration requirements", "API and UI contract requirements", "failure semantics", "test matrix and fixtures", "deterministic closure criteria"],
+   "boundary": "Specification only. No code, no schema, no migration, no provider selected. G1 leg 5(B) untouched and unweakened."
+  },
+  { "unit": "CH-15 O5/O6/O7 — notice, appeal standing, review queue", "status": "SPECIFIED within the CH-12 package and the policy artifact", "implementable": false, "why": "There are no automated verdicts to notify about or appeal until the examination mechanism exists." }
+ ],
+
+ "D_TEST_CERTIFICATION_PREPARATION_EXECUTABLE_NOW": [
+  { "unit": "G1 leg 5(B) live procedure", "status": "PREDECLARED", "artifact": "docs/governance/G1_LEG5B_LIVE_CERTIFICATION_PROCEDURE.md" },
+  { "unit": "CH-12 fixture matrix", "status": "SPECIFIED, not written", "why": "Fixtures for a mechanism that does not exist would be written against an imagined interface." },
+  { "unit": "CH-14 slice 1 live procedure", "status": "NOT WRITTEN", "why": "Genuinely available preparation. Not done this pass — recorded honestly rather than claimed." }
+ ],
+
+ "E_GOVERNANCE_DOCUMENTATION_EXECUTABLE_NOW": [
+  { "unit": "CH-15 founder policy artifact", "status": "EXECUTED", "bothRepositories": true },
+  { "unit": "AIReportCategory ruling encoded", "status": "EXECUTED" },
+  { "unit": "Reconstruction Register regenerated", "status": "EXECUTED" },
+  { "unit": "Certified push boundary established and pushed", "status": "EXECUTED", "range": "2c6ad69..6631910" }
+ ],
+
+ "F_LIVE_EVIDENCE_BLOCKED": [
+  { "unit": "G1 leg 5(B)", "state": "WAITING_FOR_EXTERNAL_LIVE_EVIDENCE", "note": "NOT the same as PROGRAMME_HAS_NO_WORK. The certified code is now pushed and available to the normal pipeline." },
+  { "unit": "CH-12 E1-E8 product mutation", "blockedBy": "G1 leg 5(B)", "respected": true },
+  { "unit": "CH-14 slice 1", "blockedBy": "its deliverable is LIVE exercise of each Create path" },
+  { "unit": "CH-16 native/device proofs", "blockedBy": "real-device access, a LANE-W0 long lead" }
+ ],
+
+ "G_FOUNDER_DECISION_BLOCKED": [
+  { "unit": "CH-02 S4 draft identity/ownership contract", "decision": "Group identity doctrine (F055 ordering, F056 group avatar treatment)", "nowSoleBlocker": true, "note": "Carried, not new — but this pass cleared its other two blockers, so it is now on the critical path." },
+  { "unit": "CH-03 acting on the consumer audit", "decision": "The same group identity doctrine" },
+  { "unit": "CH-04 entry", "decision": "AD-CON-5, plus SU-5" },
+  { "unit": "CH-05 DR1 retirement", "decision": "Founder checkpoint 7" },
+  { "unit": "Coverage asymmetries (self-harm, misinformation)", "decision": "Whether to expand the content taxonomy through governed policy change", "blocking": "NOTHING today" }
+ ],
+
+ "H_PROTECTED_SHARED_BOUNDARY_BLOCKED": [
+  { "unit": "F123 composer paste provenance", "boundary": "RC-C5 frozen gate — founder declaration of C4 live closure" },
+  { "unit": "F122 composer half", "boundary": "RC-C5 gate, and separately a PRESERVED CONFLICT never adjudicated" },
+  { "unit": "CH-01 Meetings foundation debt", "boundary": "CO-RC-C0-008 prohibits modifying certified Meetings for debt reduction" },
+  { "unit": "CH-04 realtime work", "boundary": "PB-02 plus owed PBCR conditions; previously refused and unchanged" }
+ ],
+
+ "chapterSweep": {
+  "CH-01": "Ratchets green and proven enforcing. Its remaining debt is measurement; the SITES are owned by other chapters per the remainder register. No independently executable product mutation.",
+  "CH-02": "S1-S3 executed and live-certified. S4 now blocked on ONE founder decision instead of three.",
+  "CH-03": "Audit executed; conformance gate published and proven enforcing. Acting on the audit needs group identity doctrine; the visual half is CORS-external.",
+  "CH-04": "Refusals preserved — AD-CON-5, SU-5, VS-02, real devices, DEFECT-1. No work performed.",
+  "CH-05": "Blocked by leg 3 and checkpoint 7. Not blocked by anything in the content chain.",
+  "CH-06": "Canonical Conversation is W3; its RC-C5-adjacent territory is gated. No bounded unit independently executable.",
+  "CH-07": "Downstream of CH-06. Nothing independently executable.",
+  "CH-08": "Institution Room, W4. Its foundation-debt sites are owned but sit behind its own chapter entry.",
+  "CH-09": "Live held under 'LIVE - HOLD IMPLEMENTATION FOR NOW'.",
+  "CH-10": "Public funnel, W5. PD-2 resolved, but its own chapter entry is not authorized.",
+  "CH-11": "Ungated portion complete. Leg 5(A) complete on both halves. 5(B) awaits live evidence.",
+  "CH-12": "Preparation package executed. Product mutation correctly blocked by leg 5(B).",
+  "CH-13": "Composition and rich presentation - RC-C5 territory. Gated.",
+  "CH-14": "Slice 1 needs live exercise; slice 2 is W5.",
+  "CH-15": "Policy authored and encoded. O1-O3 executed. O4-O7 need the examination mechanism.",
+  "CH-16": "Needs real devices.",
+  "CH-17": "Mechanism half executed and running in LANE-CONT. Terminal half needs every other chapter."
+ },
+
+ "proofThatTheFrontierIsThin": "After this pass, the only product mutations available without crossing a real dependency were the three executed. Every remaining open unit was tested against its own bounded dependency and found to cross one of: G1 leg 5(B), G1 leg 3, a named founder decision, or a frozen protected boundary. That is a unit-level result, not a chapter-level or wave-level assertion.",
+ "standingAccounting": { "findings": 143, "obligations": 308, "units": 451, "chapters": 17 }
+}
