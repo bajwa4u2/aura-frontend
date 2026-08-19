@@ -1,0 +1,140 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "CH-03 F053 / F116 - private typed-boundary convergence, authorized backend Meetings pass, institutions classification",
+  "chapter": "CH-03 (Identity Consumption & Presentation Truth)",
+  "date": "2026-08-19",
+  "measurementFactDiscovered": {
+    "fact": "TYPED_DESERIALIZATION_BOUNDARY is ENUMERATED but is NOT gate debt. The ratchet counts only NON_CONFORMANT + ADHOC_MAP_EXTRACTION_IN_SURFACE.",
+    "consequence": "Converging a private type can lower the enumerated typed-boundary total without moving the gate number at all. Type-level convergence is therefore reported as its own count, never folded into the debt figure - otherwise the two would silently disagree.",
+    "typedBoundaries": "75 -> 63"
+  },
+  "privateTypedBoundaryClassification": {
+    "case1_renamedSubset_retired": [
+      {
+        "type": "ModerationActorSummary (lib/features/admin/data/admin_models.dart)",
+        "was": "id + handle + displayName + avatarUrl, with its OWN private fallback `displayName ?? handle`",
+        "action": "DELETED. Moderation actors are AuraPersonIdentity like everyone else. Its two consumers (moderator, reporter) now hold the canonical type; one call site read `.id` and now reads `.userId`."
+      },
+      {
+        "type": "ProfileListItem (lib/features/profile/domain/profile.dart)",
+        "was": "id + handle + displayName + avatarUrl with a private `avatarUrl ?? avatar` fallback",
+        "action": "The NAME survives because callers use it; the INTERPRETATION does not. It composes AuraPersonIdentity and forwards, with the legacy `avatar` alias adapted at that boundary rather than widening the canonical reader."
+      },
+      {
+        "type": "AuthorBrief (lib/models/author_brief.dart)",
+        "action": "DELETED in the previous batch - dead, zero consumers."
+      }
+    ],
+    "case2_identityPlusDestinationState_composed": [
+      {
+        "type": "AdminInstitutionMember",
+        "destinationState": "role, title, joinedAt, canSpeakOfficially",
+        "action": "Composes `AuraPersonIdentity person`; forwarding getters keep every consumer working. Membership state stayed put - none of it moved into person identity."
+      },
+      {
+        "type": "Profile",
+        "destinationState": "bio, title, coverUrl, location, follower/following counts, isFollowing, verification, followState, accountStatus",
+        "action": "The person half reads canonically; profile CONTENT stays this model's own."
+      }
+    ],
+    "case3_differentDomainConcept_retained": [
+      {
+        "type": "FeedAuthor (feed_item.dart)",
+        "why": "POLYMORPHIC by design - a feed actor is a person OR an institution (`FeedAuthorType`, `handleOrSlug`, `avatarOrLogoUrl`). Composing person identity would either force person semantics onto institutions or invent a union type. Person and institution identity must not merge."
+      },
+      {
+        "type": "MeetingIdentityRef (meeting_identity.dart)",
+        "why": "Spans an Aura user, an institution member, AND an external contact (`auraUserId` / `memberId` / `contactId`, `email`, `verifiedEmail`, `identityType`). AuraPersonIdentity deliberately does not model non-Aura contacts."
+      },
+      {
+        "type": "Feed/realtime/meeting/updates/follows/blocks domain models (feed_item, post, post_model, realtime_models, meeting, availability_profile, meeting_entry_resolution, updates_repository, follows_repository, blocks_repository, conversations_repository, articles_repository, explore_feed_item, support_models)",
+        "why": "These are content, relationship, session, availability and support domain objects that happen to deserialise a person field. Their identity parsing converges as their surfaces migrate; the TYPES themselves are not person models and are not being unified for tidiness."
+      }
+    ],
+    "case4_dead_removed": ["AuthorBrief (previous batch)"],
+    "case5_specializedGovernedException": [
+      {
+        "site": "src/institutions/institutions.service.ts - claimInstitutionRequest",
+        "why": "Reads the CLAIMANT's own account (id + email + displayName) to match a verification request by email. It embeds no person in a response and renders nothing; composing the full reference would attach an avatar to a claim check for no consumer. Rationale recorded in the code."
+      },
+      {
+        "site": "src/auth/auth.service.ts - 2 sites",
+        "why": "Credential/account-state reads, as accepted in the previous checkpoint."
+      }
+    ],
+    "case6_falsePositive_instrumentIssue": {
+      "thisBatch": "NONE. Every count change is real migration or real type retirement.",
+      "previousBatch": "The router pathParameters['handle'] correction, already reported separately."
+    }
+  },
+  "institutionsServiceThreeSites": {
+    "resolved": true,
+    "usedBy_createdBy": "CONVERGED - embedded addressable person references on invite records.",
+    "claimInstitutionRequest": "RETAINED as a governed exception with its rationale written at the site."
+  },
+  "backendMeetingsAuthorizedPass": {
+    "authorization": "FOUNDER RULING 2026-08-19 - booking.service, meeting.service, meeting-reminder.service, for person projection convergence ONLY.",
+    "booking.service.ts": { "before": 10, "after": 0, "selector": "PERSON_REFERENCE_SELECT (+ email where the contract already carried it)" },
+    "meeting.service.ts": { "before": 10, "after": 0, "selector": "PERSON_REFERENCE_SELECT; the host include also keeps `title`, which is an institutional role line and destination state" },
+    "meeting-reminder.service.ts": { "before": 4, "after": 0, "selector": "PERSON_REFERENCE_SELECT (+ email, which reminders genuinely need to send)" },
+    "contractCare": "No response payload was expanded beyond what PERSON_REFERENCE_SELECT carries. No booking, scheduling, availability, lifecycle, participant-role, host, admission, invitation, waiting-room, realtime, reminder-semantics or reminder-timing change.",
+    "regressionResult": "MEETINGS BEHAVIOR PRESERVED - backend meeting/availability/booking 12 suites / 125 tests PASS; frontend meetings 31 PASS."
+  },
+  "backendLongTailSwept": [
+    "src/common/institutions/institution-ownership.ts",
+    "src/common/tags/tag-references.ts",
+    "src/invitations/invitations.service.ts",
+    "src/notifications/actor-notifications.service.ts",
+    "src/realtime/realtime.gateway.ts",
+    "src/meetings/participation/meeting-participation-resolver.service.ts"
+  ],
+  "identityDebt": {
+    "batchStart": "43 files / 86 sites",
+    "batchEnd": "35 files / 57 sites",
+    "breakdown": {
+      "realMigration": "29 sites",
+      "deadTypeRemoval": "0 this batch (AuthorBrief was the previous batch)",
+      "governedExceptionClassification": "3 sites classified and retained (auth 2, institutions 1) - counted as debt, NOT as cleared",
+      "instrumentCorrection": "0"
+    },
+    "cumulativeFromFindingStart": "66 files / 202 sites -> 35 / 57",
+    "ratchet": "FAILED until re-frozen; re-frozen at 35 / 57."
+  },
+  "remainder": {
+    "backendNonConformant": "5 sites - all classified governed exceptions or single stragglers",
+    "clientAdhocSurface": "26 sites",
+    "clientCircleAvatar": "15 sites - NOT yet classified; see below",
+    "typedBoundaries": "63 enumerated, of which the person-model cases are now dispositioned"
+  },
+  "circleAvatarDisposition": {
+    "status": "CLASSIFIED AS A GROUP, NOT MIGRATED THIS BATCH",
+    "why": "The founder's own rule: not every CircleAvatar is wrong. Deciding each of the 15 requires reading what it renders - a person, a non-person object, or a deliberately specialised treatment - and that judgment is the work, not the edit. Doing it half-attentively to move a number is exactly what the instruction warns against.",
+    "nextPass": "Classify A (person identity bypassing Aura presentation - converge), B (non-person visual - leave), C (specialised treatment where identity semantics should still come from AuraPersonIdentity while presentation stays local)."
+  },
+  "f116ClosureAssessment": {
+    "criterion1_backendProducersConverge": "SUBSTANTIALLY MET - 99 -> 31 non-conformant, with the residue classified.",
+    "criterion2_clientDeserializationConverges": "PARTIAL - the canonical reader exists and the major surfaces use it; 26 ad-hoc sites remain.",
+    "criterion3_duplicateFallbackSemanticsEliminated": "SUBSTANTIALLY MET on migrated surfaces - 'Member', 'Author', 'User', 'Unknown' and the private displayName??handle chains are gone from every surface touched.",
+    "criterion4_privateDuplicateModelsRetiredOrComposed": "MET for every PERSON model found: 3 retired, 2 composed, the rest classified as different domain concepts with reasons.",
+    "criterion5_destinationModelsRetainOnlyNonIdentityState": "MET on the composed models - no role, membership, follow, availability, moderation or notification state entered AuraPersonIdentity.",
+    "criterion6_remainingSitesClassified": "PARTIAL - the 15 CircleAvatar sites are not yet individually classified.",
+    "verdict": "F116 REMAINS PARTIALLY_VALIDATED. Criteria 2 and 6 are not met, and the closure test is explicitly not claimed on a low count."
+  },
+  "findingStates": {
+    "F053": "PARTIALLY_VALIDATED - unchanged.",
+    "F116": "PARTIALLY_VALIDATED - unchanged, per the closure assessment above.",
+    "F052": "Unchanged in state. Structural convergence advanced: realtime.gateway and the realtime overlay now use canonical person projections.",
+    "F054/F055/F056/F057": "Unchanged. No new structural debt exposed.",
+    "F051": "UNTOUCHED - preserved conflict. No type design in this batch touches the avatar-in-chat question."
+  },
+  "verification": {
+    "backendSuite": "205 suites / 2577 tests PASS",
+    "meetingsBackend": "12 suites / 125 tests PASS",
+    "frontendSuite": "787 PASS",
+    "meetingsFrontend": "31 PASS",
+    "identityConformanceGate": "PASS at the new baseline 35 files / 57 sites",
+    "portfolioValidator": "PASS - 451 units / 17 chapters",
+    "typecheckAndAnalyze": "clean"
+  },
+  "founderDecisionsRequired": ["NONE"]
+}

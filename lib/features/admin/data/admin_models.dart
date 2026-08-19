@@ -1,3 +1,5 @@
+import '../../../core/identity/person_identity_model.dart';
+
 // Domain models for the backend Admin Hub.
 // All fromJson factories are defensive — missing / null fields fall back to safe defaults.
 
@@ -610,16 +612,20 @@ class AdminVerificationRequest {
 // INSTITUTION MEMBERS
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// F116 case 2 — PERSON IDENTITY + LEGITIMATE DESTINATION STATE.
+///
+/// The membership half (`role`, `title`, `joinedAt`, `canSpeakOfficially`) is
+/// this model's own; the person half is COMPOSED rather than re-parsed. The
+/// forwarding getters keep every existing consumer working while there is
+/// exactly one place that decides what a person's name is.
 class AdminInstitutionMember {
   const AdminInstitutionMember({
     required this.id,
     required this.userId,
     required this.role,
     required this.joinedAt,
-    this.displayName,
-    this.handle,
+    this.person = AuraPersonIdentity.unknown,
     this.title,
-    this.avatarUrl,
     this.canSpeakOfficially = false,
   });
 
@@ -627,14 +633,17 @@ class AdminInstitutionMember {
   final String userId;
   final String role;
   final DateTime joinedAt;
-  final String? displayName;
-  final String? handle;
+  final AuraPersonIdentity person;
   final String? title;
+  final bool canSpeakOfficially;
+
+  String? get displayName =>
+      person.displayName.isEmpty ? null : person.displayName;
+  String? get handle => person.handle.isEmpty ? null : person.handle;
 
   /// AXR-1 identity precedence — verified profile photo when present,
   /// so member rows never fall back to initials unnecessarily.
-  final String? avatarUrl;
-  final bool canSpeakOfficially;
+  String? get avatarUrl => person.avatarUrl;
 
   static String _str(dynamic v) => (v ?? '').toString().trim();
 
@@ -647,9 +656,7 @@ class AdminInstitutionMember {
       userId: _str(json['userId']),
       role: _str(json['role'] ?? 'MEMBER'),
       joinedAt: _parseDate(json['joinedAt']) ?? DateTime.now(),
-      displayName: user != null ? _str(user['displayName']).let((s) => s.isEmpty ? null : s) : null,
-      handle: user != null ? _str(user['handle']).let((s) => s.isEmpty ? null : s) : null,
-      avatarUrl: user != null ? _str(user['avatarUrl']).let((s) => s.isEmpty ? null : s) : null,
+      person: AuraPersonIdentity.fromJson(user),
       title: _str(json['title']).let((s) => s.isEmpty ? null : s),
       canSpeakOfficially: json['canSpeakOfficially'] == true,
     );
@@ -1136,30 +1143,12 @@ class FeaturePolicy {
 // MODERATION
 // ─────────────────────────────────────────────────────────────────────────────
 
-class ModerationActorSummary {
-  const ModerationActorSummary({
-    required this.id,
-    required this.handle,
-    required this.displayName,
-    this.avatarUrl,
-  });
-
-  final String id;
-  final String handle;
-  final String displayName;
-  final String? avatarUrl;
-
-  static String _str(dynamic v) => (v ?? '').toString().trim();
-
-  factory ModerationActorSummary.fromJson(Map<String, dynamic> json) {
-    return ModerationActorSummary(
-      id: _str(json['id']),
-      handle: _str(json['handle']),
-      displayName: _str(json['displayName'] ?? json['handle']),
-      avatarUrl: json['avatarUrl'] as String?,
-    );
-  }
-}
+// F116 case 1 — RENAMED PERSON REFERENCE SUBSET, RETIRED.
+//
+// `ModerationActorSummary` was id + handle + displayName + avatarUrl with its
+// own private fallback (`displayName ?? handle`) — the canonical person
+// reference under a different name, with a competing fallback rule. It is
+// gone; moderation actors are `AuraPersonIdentity` like everyone else.
 
 class ModerationReportAction {
   const ModerationReportAction({
@@ -1176,7 +1165,7 @@ class ModerationReportAction {
   final String actionType;
   final String targetType;
   final String targetId;
-  final ModerationActorSummary moderator;
+  final AuraPersonIdentity moderator;
   final DateTime createdAt;
   final String? note;
 
@@ -1188,7 +1177,7 @@ class ModerationReportAction {
       actionType: _str(json['actionType']),
       targetType: _str(json['targetType']),
       targetId: _str(json['targetId']),
-      moderator: ModerationActorSummary.fromJson(
+      moderator: AuraPersonIdentity.fromJson(
         json['moderator'] is Map
             ? Map<String, dynamic>.from(json['moderator'] as Map)
             : const {},
@@ -1218,7 +1207,7 @@ class ModerationReport {
   final String id;
   final String targetType;
   final String targetId;
-  final ModerationActorSummary reporter;
+  final AuraPersonIdentity reporter;
   final String reason;
   final String status;
   final DateTime createdAt;
@@ -1236,7 +1225,7 @@ class ModerationReport {
       id: _str(json['id']),
       targetType: _str(json['targetType']),
       targetId: _str(json['targetId']),
-      reporter: ModerationActorSummary.fromJson(
+      reporter: AuraPersonIdentity.fromJson(
         json['reporter'] is Map
             ? Map<String, dynamic>.from(json['reporter'] as Map)
             : const {},

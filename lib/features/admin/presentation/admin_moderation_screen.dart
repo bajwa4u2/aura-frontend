@@ -244,7 +244,7 @@ class _ReportCard extends StatelessWidget {
                   Text(
                     report.reporter.handle.isNotEmpty
                         ? '@${report.reporter.handle}'
-                        : report.reporter.id,
+                        : report.reporter.userId,
                     style: AuraText.small.copyWith(color: AuraSurface.faint),
                   ),
                   const Spacer(),
@@ -628,7 +628,7 @@ class _PanelHeader extends StatelessWidget {
         ],
         const SizedBox(height: AuraSpace.s8),
         Text(
-          'Reporter: @${report.reporter.handle.isNotEmpty ? report.reporter.handle : report.reporter.id}  •  Target ID: ${report.targetId}',
+          'Reporter: @${report.reporter.handle.isNotEmpty ? report.reporter.handle : report.reporter.userId}  •  Target ID: ${report.targetId}',
           style: AuraText.small.copyWith(color: AuraSurface.faint),
         ),
       ],

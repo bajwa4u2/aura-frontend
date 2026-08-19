@@ -17,8 +17,8 @@
   "ADHOC_MAP_EXTRACTION_IN_SURFACE"
  ],
  "totals": {
-  "files": 43,
-  "sites": 86
+  "files": 35,
+  "sites": 57
  },
  "perFile": {
   "aura_final:lib/core/tagging/mention_scope_providers.dart": 1,
@@ -47,20 +47,12 @@
   "aura-backend:src/auth/auth.controller.ts": 1,
   "aura-backend:src/auth/auth.service.ts": 2,
   "aura-backend:src/availability/services/availability-profile.service.ts": 2,
-  "aura-backend:src/availability/services/booking.service.ts": 8,
-  "aura-backend:src/availability/services/meeting-reminder.service.ts": 4,
-  "aura-backend:src/common/institutions/institution-ownership.ts": 1,
-  "aura-backend:src/common/tags/tag-references.ts": 2,
   "aura-backend:src/communications/communications.service.ts": 2,
   "aura-backend:src/communications/notification-delivery/notification-delivery-authority.service.ts": 2,
   "aura-backend:src/conversations/conversation-invitation.adapter.ts": 1,
   "aura-backend:src/discovery/people-discovery.service.ts": 1,
-  "aura-backend:src/institutions/institutions.service.ts": 2,
-  "aura-backend:src/invitations/invitations.service.ts": 2,
-  "aura-backend:src/meetings/participation/meeting-participation-resolver.service.ts": 2,
-  "aura-backend:src/meetings/services/meeting.service.ts": 8,
-  "aura-backend:src/notifications/actor-notifications.service.ts": 1,
-  "aura-backend:src/realtime/realtime.gateway.ts": 1,
+  "aura-backend:src/invitations/invitations.service.ts": 1,
+  "aura-backend:src/meetings/participation/meeting-participation-resolver.service.ts": 1,
   "aura-backend:src/search/search.service.ts": 1,
   "aura-backend:src/uploads/uploads.controller.ts": 1,
   "aura-backend:src/users/users.service.ts": 1

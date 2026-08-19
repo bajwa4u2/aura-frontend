@@ -27,21 +27,21 @@
   ]
  },
  "totals": {
-  "rows": 216,
+  "rows": 171,
   "byVerdict": {
-   "NON_CONFORMANT": 60,
-   "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 9,
+   "NON_CONFORMANT": 31,
+   "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 6,
    "AUTHORITY": 5,
-   "CONFORMANT": 41,
-   "TYPED_DESERIALIZATION_BOUNDARY": 75,
+   "CONFORMANT": 40,
+   "TYPED_DESERIALIZATION_BOUNDARY": 63,
    "ADHOC_MAP_EXTRACTION_IN_SURFACE": 26
   },
-  "nonConformant": 60,
+  "nonConformant": 31,
   "adhocMapExtractionInSurface": 26,
-  "typedDeserializationBoundary": 75,
-  "conformant": 41,
-  "frontend": 158,
-  "backend": 58
+  "typedDeserializationBoundary": 63,
+  "conformant": 40,
+  "frontend": 146,
+  "backend": 25
  },
  "sixPersonShapedExtractionSites": {
   "obligation": "CO-RC-C2-010",
@@ -239,7 +239,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 34,
+   "line": 36,
    "evidence": "displayName: _str(data['displayName'] ?? data['name']),",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
@@ -248,7 +248,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 183,
+   "line": 185,
    "evidence": "handle: _str(json['handle']),",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
@@ -257,7 +257,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 185,
+   "line": 187,
    "evidence": "displayName: _str(json['displayName'] ?? json['name']),",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
@@ -266,7 +266,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 593,
+   "line": 595,
    "evidence": "requesterHandle: req != null ? _str(req['handle']).let((s) => s.isEmpty ? null : s) : null,",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
@@ -275,34 +275,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 650,
-   "evidence": "displayName: user != null ? _str(user['displayName']).let((s) => s.isEmpty ? null : s) : null,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 651,
-   "evidence": "handle: user != null ? _str(user['handle']).let((s) => s.isEmpty ? null : s) : null,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 652,
-   "evidence": "avatarUrl: user != null ? _str(user['avatarUrl']).let((s) => s.isEmpty ? null : s) : null,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 709,
+   "line": 716,
    "evidence": "displayName: orNull(json['displayName']),",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
@@ -311,7 +284,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 710,
+   "line": 717,
    "evidence": "handle: orNull(json['handle']),",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
@@ -320,7 +293,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 711,
+   "line": 718,
    "evidence": "avatarUrl: orNull(json['avatarUrl']),",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
@@ -329,7 +302,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 757,
+   "line": 764,
    "evidence": "final name = (map['displayName'] ?? '').toString().trim();",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
@@ -338,37 +311,10 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/admin/data/admin_models.dart",
-   "line": 758,
+   "line": 765,
    "evidence": "final handle = (map['handle'] ?? '').toString().trim();",
    "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
    "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 1157,
-   "evidence": "handle: _str(json['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 1158,
-   "evidence": "displayName: _str(json['displayName'] ?? json['handle']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/admin/data/admin_models.dart",
-   "line": 1159,
-   "evidence": "avatarUrl: json['avatarUrl'] as String?,",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
   },
   {
    "repo": "aura_final",
@@ -1201,60 +1147,6 @@
   {
    "repo": "aura_final",
    "surface": "USER_SHAPE",
-   "path": "lib/features/profile/domain/profile.dart",
-   "line": 68,
-   "evidence": "handle: (j['handle'] ?? '').toString().trim(),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/profile/domain/profile.dart",
-   "line": 69,
-   "evidence": "displayName: (j['displayName'] ?? '').toString().trim(),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/profile/domain/profile.dart",
-   "line": 72,
-   "evidence": "avatarUrl: asNullableString(j['avatarUrl'] ?? j['avatar']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/profile/domain/profile.dart",
-   "line": 106,
-   "evidence": "handle: (j['handle'] ?? '').toString().trim(),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'handle' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/profile/domain/profile.dart",
-   "line": 107,
-   "evidence": "displayName: (j['displayName'] ?? '').toString().trim(),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'displayName' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/features/profile/domain/profile.dart",
-   "line": 108,
-   "evidence": "avatarUrl: asNullableString(j['avatarUrl'] ?? j['avatar']),",
-   "verdict": "TYPED_DESERIALIZATION_BOUNDARY",
-   "why": "Deserialises the person field 'avatarUrl' inside a model/repository. Legitimate as a boundary — but it is a PRIVATE person shape, so it is enumerated: the client has no single canonical identity model the way the backend now has PERSON_IDENTITY_SELECT."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
    "path": "lib/features/profile/presentation/author_profile_screen.dart",
    "line": 471,
    "evidence": "viewerHandle = user['handle']?.toString();",
@@ -1588,96 +1480,6 @@
   {
    "repo": "aura-backend",
    "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 68,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 94,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 118,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 164,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 212,
-   "evidence": "displayName: true,",
-   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
-   "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 396,
-   "evidence": "owner: { select: { displayName: true, handle: true, email: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 533,
-   "evidence": "owner: { select: { id: true, displayName: true, handle: true, email: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 664,
-   "evidence": "select: { meetingTitle: true, owner: { select: { displayName: true, handle: true, email: true } } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 763,
-   "evidence": "displayName: true,",
-   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
-   "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/booking.service.ts",
-   "line": 773,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
    "path": "src/availability/services/institution-availability.service.ts",
    "line": 100,
    "evidence": "displayName: true,",
@@ -1701,69 +1503,6 @@
    "evidence": "displayName: true,",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
    "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/meeting-reminder.service.ts",
-   "line": 77,
-   "evidence": "host: { select: { email: true, displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/meeting-reminder.service.ts",
-   "line": 80,
-   "evidence": "user: { select: { email: true, displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/meeting-reminder.service.ts",
-   "line": 174,
-   "evidence": "owner: { select: { displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/availability/services/meeting-reminder.service.ts",
-   "line": 242,
-   "evidence": "owner: { select: { displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/common/institutions/institution-ownership.ts",
-   "line": 154,
-   "evidence": "user: { select: { displayName: true, handle: true, avatarUrl: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/common/tags/tag-references.ts",
-   "line": 164,
-   "evidence": "select: { id: true, handle: true, displayName: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/common/tags/tag-references.ts",
-   "line": 236,
-   "evidence": "select: { id: true, handle: true, displayName: true, avatarUrl: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
   },
   {
    "repo": "aura-backend",
@@ -1850,7 +1589,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/institutions/institutions.service.ts",
-   "line": 1270,
+   "line": 1274,
    "evidence": "select: { id: true, email: true, displayName: true },",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
    "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
@@ -1858,35 +1597,8 @@
   {
    "repo": "aura-backend",
    "surface": "PROJECTION",
-   "path": "src/institutions/institutions.service.ts",
-   "line": 1548,
-   "evidence": "usedBy: { select: { id: true, displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/institutions/institutions.service.ts",
-   "line": 1549,
-   "evidence": "createdBy: { select: { id: true, displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
    "path": "src/invitations/invitations.service.ts",
-   "line": 220,
-   "evidence": "select: { displayName: true, handle: true } as Prisma.UserSelect,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/invitations/invitations.service.ts",
-   "line": 435,
+   "line": 436,
    "evidence": "select: { displayName: true } as Prisma.UserSelect,",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
@@ -1895,125 +1607,8 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/meetings/participation/meeting-participation-resolver.service.ts",
-   "line": 233,
+   "line": 234,
    "evidence": "select: { id: true, displayName: true, email: true, emailVerifiedAt: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/participation/meeting-participation-resolver.service.ts",
-   "line": 294,
-   "evidence": "select: { id: true, displayName: true, avatarUrl: true, title: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 559,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 568,
-   "evidence": "displayName: true,",
-   "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
-   "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 591,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 1039,
-   "evidence": "user: { select: { email: true, displayName: true, handle: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 1119,
-   "evidence": "host: { select: { displayName: true, handle: true, email: true } },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 1713,
-   "evidence": "select: { displayName: true, handle: true, email: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 1724,
-   "evidence": "displayName: true,",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 2001,
-   "evidence": "select: { displayName: true, handle: true, email: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 2419,
-   "evidence": "select: { displayName: true, handle: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/meetings/services/meeting.service.ts",
-   "line": 2625,
-   "evidence": "displayName: true,",
-   "verdict": "CONFORMANT",
-   "why": "Composes the canonical person select rather than reconstructing one."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/notifications/actor-notifications.service.ts",
-   "line": 262,
-   "evidence": "select: { handle: true, displayName: true, avatarUrl: true },",
-   "verdict": "NON_CONFORMANT",
-   "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
-  },
-  {
-   "repo": "aura-backend",
-   "surface": "PROJECTION",
-   "path": "src/realtime/realtime.gateway.ts",
-   "line": 1120,
-   "evidence": "select: { displayName: true, handle: true },",
    "verdict": "NON_CONFORMANT",
    "why": "Hand-picks person identity fields in a select without composing PERSON_IDENTITY_SELECT / PERSON_REFERENCE_SELECT."
   },

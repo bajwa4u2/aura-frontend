@@ -1,4 +1,5 @@
 import '../../../core/trust/verification.dart';
+import '../../../core/identity/person_identity_model.dart';
 
 class Profile {
   Profile({
@@ -63,13 +64,17 @@ class Profile {
     final state = (j['followState'] ?? j['state'] ?? '').toString().trim();
     final following = j['isFollowing'] == true || state == 'following';
 
+    // F116 case 2 — the person half is read canonically; everything below is
+    // profile CONTENT and stays this model's own.
+    final person = AuraPersonIdentity.fromJson(j);
+
     return Profile(
-      id: (j['id'] ?? '').toString().trim(),
-      handle: (j['handle'] ?? '').toString().trim(),
-      displayName: (j['displayName'] ?? '').toString().trim(),
+      id: person.userId,
+      handle: person.handle,
+      displayName: person.displayName,
       bio: asNullableString(j['bio']),
       title: asNullableString(j['title'] ?? j['headline']),
-      avatarUrl: asNullableString(j['avatarUrl'] ?? j['avatar']),
+      avatarUrl: person.avatarUrl ?? asNullableString(j['avatar']),
       coverUrl: asNullableString(j['coverUrl'] ?? j['bannerUrl']),
       location: asNullableString(j['location']),
       followersCount: asInt(j['followersCount']),
@@ -82,30 +87,28 @@ class Profile {
   }
 }
 
+/// F116 case 1 — a RENAMED PERSON REFERENCE SUBSET. The type survives as a
+/// name its callers already use, but it no longer interprets identity: it
+/// composes the canonical person and forwards. `avatar` is a legacy alias
+/// this endpoint alone still sends, adapted here at the boundary rather than
+/// widening the canonical reader.
 class ProfileListItem {
-  ProfileListItem({
-    required this.id,
-    required this.handle,
-    required this.displayName,
-    required this.avatarUrl,
-  });
+  ProfileListItem({required this.person, String? legacyAvatarUrl})
+      : _legacyAvatarUrl = legacyAvatarUrl;
 
-  final String id;
-  final String handle;
-  final String displayName;
-  final String? avatarUrl;
+  final AuraPersonIdentity person;
+  final String? _legacyAvatarUrl;
+
+  String get id => person.userId;
+  String get handle => person.handle;
+  String get displayName => person.displayName;
+  String? get avatarUrl => person.avatarUrl ?? _legacyAvatarUrl;
 
   factory ProfileListItem.fromJson(Map<String, dynamic> j) {
-    String? asNullableString(dynamic v) {
-      final text = (v ?? '').toString().trim();
-      return text.isEmpty ? null : text;
-    }
-
+    final legacy = (j['avatar'] ?? '').toString().trim();
     return ProfileListItem(
-      id: (j['id'] ?? '').toString().trim(),
-      handle: (j['handle'] ?? '').toString().trim(),
-      displayName: (j['displayName'] ?? '').toString().trim(),
-      avatarUrl: asNullableString(j['avatarUrl'] ?? j['avatar']),
+      person: AuraPersonIdentity.fromJson(j),
+      legacyAvatarUrl: legacy.isEmpty ? null : legacy,
     );
   }
 }
