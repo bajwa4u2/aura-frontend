@@ -1,0 +1,111 @@
+{
+  "type": "RE_ADJUDICATION_AND_EXECUTION_RECORD",
+  "unit": "F135 — link-preview images are hotlinked third-party URLs, leaking viewer IPs",
+  "chapter": "CH-13 (Composition, Intake & Rich Presentation)",
+  "date": "2026-08-19",
+  "priorAdjudication": {
+    "claim": "CONSTRUCTION_BLOCKED — every remedy requires mirroring/proxying preview images, which enters CH-12 preview-image custody behind G1 leg 5(B).",
+    "verdict": "WRONG, AND WRONG IN A WAY THE DOCTRINE ALREADY FORBIDS.",
+    "twoErrors": [
+      "It used LIVE-CERTIFICATION DEBT as a CONSTRUCTION BLOCKER. G1 leg 5(B) is 'live violating-file refusal not yet observed'. The frozen rule is that certification debt must not hold otherwise-authorized construction hostage.",
+      "It treated 'mirror' and 'proxy' as the same act. They are not: one takes third-party bytes into Aura-owned storage and raises storage, retention and copyright questions; the other never stores anything and raises none of them."
+    ]
+  },
+  "adjudication": "A — EXECUTABLE NOW. Implemented this pass.",
+  "whyG1Leg5BDidNotMatter": "Leg 5(B) certifies that the UPLOAD path visibly refuses a violating file — an ingestion/content-truth observation. The F135 remedy touches no ingestion path at all: no upload, no Media row, no object in storage, no derivative, no content-truth classification, no ingestion door. Even setting the doctrine aside, leg 5(B) governs a different subsystem. Setting the subsystem aside, the doctrine forbids the inference anyway.",
+  "architectureDiscovered": {
+    "metadataFetch": "aura-backend/src/link-intelligence/link-intelligence.service.ts resolves Open Graph metadata through SafeUrlFetcherService — an SSRF-defended fetcher that re-resolves DNS on every hop, validates each address before a socket opens, checks literal IPs up front, bounds redirects, caps the body and enforces a content-type allowlist.",
+    "imageUrlOrigin": "LinkPreview.imageUrl / .faviconUrl are lifted verbatim from the linked page's own OG tags — third-party URLs on third-party hosts.",
+    "persisted": "YES. Both are columns on the LinkPreview row, deduplicated by canonicalUrl and re-fetched only when stale (7 days).",
+    "clientFetchedDirectly": "YES — this is the defect. conversation_screen.dart rendered Image.network(preview.imageUrl); link_preview_card.dart and internal_reference_card.dart rendered AuraAttachmentImage(url: imageUrl). Each viewer's own client opened a connection to the external host, disclosing IP, user agent and read timing.",
+    "surfacesAffected": [
+      "Conversation (raw preview object)",
+      "Correspondence / messages",
+      "Direct threads (list + send response)",
+      "Posts",
+      "Institution posts",
+      "Announcements",
+      "Compose-time resolve response"
+    ],
+    "emissionPointsFound": 8,
+    "notAffected": "Share/crawler OG pages source their images from Aura's OWN Media (mediaUrl / mediaLinks), never from LinkPreview — checked, not assumed. Internal-reference cards carry Aura-owned media URLs and were already safe.",
+    "custodyAsymmetryFound": "Preview METADATA is Aura-custodied (persisted, deduplicated, staleness-managed). Preview IMAGE BYTES had NO custody model at all — the row stored a pointer and the viewer did the fetching. That asymmetry IS the finding."
+  },
+  "ch12AuthorityDetermination": {
+    "category": "3 — REQUIRED INFRASTRUCTURE DID NOT EXIST FOR THIS PATH, BUT POLICY IS ALREADY SETTLED. Implementation work, not a founder blocker.",
+    "reasoning": [
+      "Aura fetching a third-party URL on a member's behalf is ALREADY established and defended: SafeUrlFetcherService exists, is governed, and is the single place that does it. Fetching the image referenced by the very page it already fetched is the same class of act, not a new one.",
+      "The remedy adds NO CH-12 custody: no Media row, no R2 object, no derivative, no ingestion door (the ingestion-doors closure test still enumerates exactly the registered doors and passes).",
+      "The genuinely unsettled question recorded in the Rich Content contract is OG image MIRRORING — 'privacy gain vs storage/copyright'. Proxying without persistence does not reach it: nothing is stored, so there is no retention policy to write and no copyright position to take.",
+      "The remedy therefore changes no frozen CH-12 policy (category 4 does not apply), and needs no policy that does not exist (category 2 does not apply)."
+    ]
+  },
+  "solutionChosen": {
+    "mechanism": "BACKEND-MEDIATED DELIVERY, NO PERSISTENCE.",
+    "shape": "Projections hand the client an Aura URL — GET /v1/link-previews/:id/:kind. The endpoint reads the URL the row already holds, fetches it through the existing SSRF-validated fetcher with an image content-type allowlist and a 5MB ceiling, and streams the bytes back with a 24h Cache-Control so the viewer's browser does the caching. Nothing is written anywhere.",
+    "whyNotMirroring": "Mirroring answers the same privacy question but drags in storage, retention and copyright — an explicitly unresolved founder decision. Proxying removes the leak without touching any of it. Smallest mechanism that actually satisfies the finding.",
+    "whyNotAnOpenProxy": "The endpoint accepts NO url. It accepts a LinkPreview id and serves only that row's stored URL — a URL Aura's own resolver chose from a page a member linked to. There is no input by which the fetcher can be aimed, so no SSRF surface is added beyond the one that already exists and is already defended.",
+    "evaluatedAgainst": {
+      "viewerPrivacy": "The viewer's client now contacts only Aura. The third-party host sees one server-side request, not one per viewer.",
+      "ssrf": "Reuses SafeUrlFetcherService — per-hop DNS validation, literal-IP check, redirect bound, timeouts. Non-http(s) schemes are refused before the fetcher is reached.",
+      "contentType": "The RESPONSE's own content type decides, never the URL extension. SVG deliberately excluded: a script-bearing document, not a picture.",
+      "payloadLimit": "5MB ceiling — generous for an OG card, small enough that a hostile host cannot use Aura as an amplifier.",
+      "redirects": "Bounded at 3 by the shared fetcher, each hop re-validated.",
+      "timeouts": "Inherited: 5s connect, 8s overall deadline.",
+      "storageAndRetention": "NONE. No new retention doctrine is created because nothing is retained.",
+      "freshness": "Follows the existing preview staleness model; no second cache to go stale on its own.",
+      "failureState": "Honest 404, no body. The client's existing error path renders nothing. It NEVER falls back to the third-party URL.",
+      "provenance": "The row keeps the true source URL unchanged; only what LEAVES the service differs. Site name and canonical URL attribution are untouched.",
+      "abuseAmplification": "Bounded by existing LinkPreview rows plus browser caching; no crawling, no URL input.",
+      "duplicatedAuthority": "None. One delivery authority, one fetcher, one preview table."
+    },
+    "failClosed": "If neither AURA_API_PUBLIC_URL nor RAILWAY_PUBLIC_DOMAIN is configured, the delivery URL is null and preview images simply do not render. The tempting fallback — emit the original URL — would silently reinstate the exact leak, so it is not done."
+  },
+  "authenticationDecision": {
+    "route": "GET /v1/link-previews/:id/:kind is @Public('PUBLIC_PRODUCT_SURFACE'); POST /resolve, which DOES take a URL, stays JwtAuthGuard-protected on the same controller.",
+    "why": "Public posts and announcements render previews to signed-out readers, and a plain network image sends no Authorization header. Requiring a token would blind anonymous readers while leaving them the only viewers still leaking their IP.",
+    "governance": "Declared through the canonical @Public opt-out and added to the reviewed inventory in public-routes.spec.ts, which fails until the inventory is updated deliberately. The fail-closed authentication authority was used, not bypassed."
+  },
+  "privacyBeforeAfter": {
+    "before": "Every viewer of every surface carrying a link preview made a direct request to the third-party image host, disclosing IP address, user agent and the timing of their read, once per render.",
+    "after": "The viewer's client requests only Aura. The third-party host is contacted server-side, sees Aura's IP and Aura's user agent, and learns nothing about any viewer."
+  },
+  "filesChanged": [
+    "aura-backend/src/link-intelligence/preview-image-delivery.ts (new — the single delivery authority)",
+    "aura-backend/src/link-intelligence/preview-image-delivery.spec.ts (new — 15 assertions incl. the ratchet + its seeded-failure proof)",
+    "aura-backend/src/link-intelligence/preview-image-serving.spec.ts (new — 12 assertions on the fetch/serve boundary)",
+    "aura-backend/src/link-intelligence/safe-url-fetcher.service.ts (generalised to bytes; fetchHtml behaviour unchanged)",
+    "aura-backend/src/link-intelligence/link-intelligence.service.ts (readPreviewImage + delivery-url projection)",
+    "aura-backend/src/link-intelligence/link-intelligence.controller.ts (the delivery endpoint)",
+    "aura-backend/src/{announcements,direct-threads,messages,posts,conversations}/... + institutions/posts (8 emission points routed through the authority)",
+    "aura-backend/src/common/auth/public-routes.spec.ts (reviewed public-route inventory)",
+    "aura-backend/src/{announcements,posts,messages,institutions/posts}/*.link-preview.spec.ts (four specs that had encoded the defect)",
+    "aura-backend/.env.example"
+  ],
+  "ratchet": {
+    "what": "A source scan asserting no file outside the delivery authority reads .imageUrl/.faviconUrl off a linkPreview into a client payload.",
+    "why": "Six services project link previews today; a seventh added tomorrow would reintroduce the leak silently, because nothing about writing linkPreview.imageUrl LOOKS dangerous.",
+    "fd13": "PROVEN ENFORCING — the spec seeds the exact line every projection used to contain and asserts the scanner flags it, then asserts it does not fire on the corrected form."
+  },
+  "clientChanges": "NONE REQUIRED. The response fields keep their shape and only their value changes, so every surface was fixed at the source rather than six times over.",
+  "verification": {
+    "backendSuite": "203 suites / 2553 tests PASS (was 201 / 2526 — +2 suites, +27 assertions)",
+    "meetings": "8 suites / 90 tests PASS — untouched",
+    "mediaAndIngestionDoors": "22 suites / 275 tests PASS — no new door, closure test still exact",
+    "publicRouteAuthority": "PASS with the inventory updated deliberately",
+    "typecheck": "tsc --noEmit clean",
+    "frontendSuite": "675 PASS — unchanged, no client change was needed"
+  },
+  "stateTransition": {
+    "F135": "OPEN → IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "terminal": false,
+    "stage0Preserved": "Stage-0 currentState OPEN retained verbatim; this is an execution-layer record."
+  },
+  "certificationDebt": "Live certification is OWED and NOT claimed: observing on the live system that a preview image renders through the Aura delivery URL and that no request reaches the third-party host. Recorded as debt, which by frozen doctrine does not block construction — the mistake this re-adjudication corrects.",
+  "deploymentNote": {
+    "required": "Set AURA_API_PUBLIC_URL on the deployed API (e.g. https://api.auraplatform.org).",
+    "ifOmitted": "RAILWAY_PUBLIC_DOMAIN is used automatically; if neither exists, preview images render as absent rather than leaking. Fails closed either way.",
+    "notPerformed": "No production environment was modified by this pass."
+  },
+  "founderDecisionsRequired": ["NONE — existing doctrine settled every choice this remedy required."]
+}
