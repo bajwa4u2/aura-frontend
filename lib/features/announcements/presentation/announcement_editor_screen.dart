@@ -18,6 +18,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/publication/aura_publication_title.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../composition/data/composition_repository.dart';
 import '../../composition/domain/composition_models.dart';
@@ -1157,6 +1158,14 @@ class _AnnouncementEditorScreenState
                             controller: _titleController,
                             textDirection: _announcementEditorDirectionFor(text),
                             textAlign: _announcementEditorAlignFor(text),
+                            // F026 convergence — a title is one line of text
+                            // on every publication surface, so the pasted
+                            // newlines an article title now rejects are
+                            // rejected here too. Shape only: no word is
+                            // removed and nothing is truncated.
+                            inputFormatters: const [
+                              PublicationTitleInputFormatter()
+                            ],
                             decoration: const InputDecoration(
                               labelText: 'Title',
                               hintText: 'What needs to be said clearly?',

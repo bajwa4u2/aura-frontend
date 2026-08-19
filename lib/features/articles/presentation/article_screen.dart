@@ -11,6 +11,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/publication/aura_publication_markdown.dart';
+import '../../../core/ui/publication/aura_publication_title.dart';
 import '../../conversation/presentation/conversation_identity.dart';
 import '../data/articles_repository.dart';
 import '../../../core/navigation/navigation_authority.dart';
@@ -42,7 +43,10 @@ class ArticleScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(AuraSpace.s20),
               children: [
-                Text(article.title, style: AuraText.display),
+                // F026 — one title authority. A long headline steps down to
+                // fit its column instead of running past it, and it is the
+                // same size here as it was in the editor's preview.
+                AuraPublicationTitle(article.title),
                 const SizedBox(height: AuraSpace.s12),
                 Row(
                   children: [

@@ -1,0 +1,56 @@
+{
+  "type": "EXECUTION_RECORD",
+  "unit": "F025 + F026 — the article authoring surface",
+  "chapter": "CH-13 (Composition, Intake & Rich Presentation)",
+  "date": "2026-08-19",
+  "batchRationale": "Both are founder-screenshot defects on ONE surface, both OPEN, both tracked as #170, neither gated by a dependency, a founder decision or a protected boundary. Fixing one without the other would have left the same screen half-corrected.",
+  "priorStates": { "F025": "OPEN", "F026": "OPEN" },
+  "newStates": {
+    "F025": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "F026": "IMPLEMENTED_NOT_LIVE_CERTIFIED"
+  },
+  "stateNote": "NOT terminal. Both carry a register 'Cert req'd: Y' column, so live certification remains owed and is NOT claimed here. Recorded in the execution layer; Stage-0 currentState OPEN is preserved verbatim for both.",
+  "F025": {
+    "finding": "Article image insertion shows raw markdown to the author instead of a rendered image.",
+    "defectAsFound": "_insertImage wrote `![image](<delivery url>)` into a plain TextField. The only rendered view was behind a Write/Preview MODE TOGGLE, so an author who inserted an image saw a line of raw markdown and had to leave writing to find out whether the right image had landed.",
+    "fix": "The rendered view became a PANE rather than a MODE. On a viewport with room for it (>= 1000px) the editor is source on the left and a live render on the right, so an inserted image appears the instant it is added and the render tracks every keystroke. Below that width the toggle remains — two cramped columns would be worse than one — and a successful insert raises 'Image added' with a one-tap Preview action, so the author is never left staring at markdown with no way to check it.",
+    "deliberatelyNotDone": "The written markdown was NOT changed. The durability and correctness of the written URL is F121's subject; rewriting the URL form here would have silently taken a position on another finding.",
+    "notInvented": "No second renderer. The pane draws the body through AuraPublicationMarkdown and the title through AuraPublicationTitle — the same two primitives that publish the article — so what the author sees while writing IS what publishes."
+  },
+  "F026": {
+    "finding": "Pasting a title into the article editor oversizes it.",
+    "defectAsFound": "Two causes at once. SHAPE: a title pasted from a document brought its newlines with it, and each newline consumed a whole line of a two-line box. SIZE: the field and the published article both rendered at a fixed AuraText.display 40px, so a long headline clipped inside the field while writing and ran past its column once published.",
+    "fix": "One authority — lib/core/ui/publication/aura_publication_title.dart. normalizePublicationTitle collapses shape whitespace; PublicationTitleInputFormatter applies it to typing AND paste; publicationTitleFontSize steps the size down with LENGTH as well as viewport, monotonically, to a floor that still reads as a title. The editor field, the editor's preview and the published article all draw from it, so a title cannot be one size while written and another once published.",
+    "authorsWordsAreTheirs": "Shape only. No word is removed, nothing is truncated, and a trailing single space is preserved so typing a space between words still works — the formatter runs on every keystroke.",
+    "convergenceBeyondTheFinding": "The announcement editor's title field now uses the same formatter. A title is one line of text on every publication surface; leaving the sibling editor accepting pasted newlines would have re-created the defect one screen over. Deliberate and recorded — F026 names the article editor."
+  },
+  "filesChanged": [
+    "aura_final/lib/core/ui/publication/aura_publication_title.dart (new — the shared authority)",
+    "aura_final/lib/features/articles/presentation/article_editor_screen.dart",
+    "aura_final/lib/features/articles/presentation/article_screen.dart",
+    "aura_final/lib/features/announcements/presentation/announcement_editor_screen.dart",
+    "aura_final/test/article_authoring_test.dart (new)",
+    "aura_final/test/article_editor_screen_test.dart (new)"
+  ],
+  "verification": {
+    "newAssertions": 23,
+    "harnessDiscipline": "The 7 screen assertions drive the REAL ArticleEditorScreen through the REAL ArticlesRepository — only the transport is canned. A test that reimplements the surface it certifies proves nothing about the surface.",
+    "frontendSuite": "675 PASS (was 652)",
+    "backendSuite": "201 suites / 2526 tests PASS (untouched by this batch)",
+    "identityConformanceGate": "PASS — 66 files / 202 sites, exactly at baseline",
+    "c0AntiDriftAndAuthorityGates": "PASS",
+    "portfolioValidator": "PASS — 143 + 308 = 451 units / 17 chapters",
+    "flutterAnalyze": "clean on every touched directory"
+  },
+  "protectedBoundaries": {
+    "meetings": "UNTOUCHED",
+    "ch12MediaCustody": "NOT CROSSED — no derivative, no mirroring, no storage change",
+    "f121": "NOT DECIDED — the written URL form is untouched",
+    "rc-c5": "NOT APPROACHED — this is the Article authoring surface, not the shared composer"
+  },
+  "canonicalRemainder": {
+    "F025": "Live certification: insert an image in the article editor and observe it render without leaving writing mode.",
+    "F026": "Live certification: paste a long multi-line title and observe it arrive as one line, sized to fit.",
+    "chapterRemainderAfterThisBatch": "CH-13's executable frontier is now F135 only, and F135 is NOT executable: its remedy is mirroring link-preview images into governed storage, which is CH-12 preview-image custody — blocked behind G1 leg 5(B). Everything else outstanding in CH-13 is live-certification debt, not construction."
+  }
+}

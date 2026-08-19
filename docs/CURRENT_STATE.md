@@ -1,6 +1,6 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-18**
+**Last updated: 2026-08-19**
 
 ---
 
@@ -20,6 +20,7 @@
 | **PD-1 Platform Administration** | ✅ **RESOLVED** (founder ruling 2026-08-18) — `OUT_OF_CURRENT_RECONSTRUCTION_SCOPE`. NOT deprecated, demolished or removed; 11 files / 52 debt sites `FROZEN_BY_RULE`. `/admin` route classification still applies — scope exclusion is not a security bypass. |
 | **PD-2 Authentication & Account Entry** | ✅ **RESOLVED** (founder ruling 2026-08-18) — split ratified: **CH-02 owns STRUCTURE, CH-10 owns ACCOUNT-ENTRY EXPERIENCE**. Seam enumerated in `docs/governance/CH02_DESTINATION_RECONSTRUCTION_CONTRACT.md`. |
 | **Portfolio reconstruction — Wave 1** | 🟡 **PART 1 + PART 2 EXECUTED** (2026-08-18) — W1-000/A/B/F and W1-C/D/E done. **No chapter closed.** F065 live refresh proof OWED (PB-11 founder observation). See `docs/portfolio/PART2_EXECUTION_RECORD_2026-08-18.md`. |
+| **Portfolio reconstruction — execution-first (CH-13)** | 🟡 **IN PROGRESS** (2026-08-19) — F011/F125/F014/F025/F026 implemented, live certification OWED for all five. **F017 `FOUNDER_CLOSED`** by ruling on production evidence (zero eligible rows; no mutation performed). CH-13 construction frontier now exhausted except **F135**, blocked behind CH-12 preview-image custody / G1 leg 5(B). |
 | **Item 17 — Release Gate** | ⛔ **OPEN, NOT STARTED** |
 
 ## What is frozen

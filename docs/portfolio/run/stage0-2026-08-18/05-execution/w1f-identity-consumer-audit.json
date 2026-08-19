@@ -563,7 +563,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/announcements/presentation/announcement_editor_screen.dart",
-   "line": 781,
+   "line": 782,
    "evidence": "data['displayName']?.toString(),",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -572,7 +572,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/announcements/presentation/announcement_editor_screen.dart",
-   "line": 820,
+   "line": 821,
    "evidence": "data['displayName']?.toString(),",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -581,7 +581,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/features/announcements/presentation/announcement_editor_screen.dart",
-   "line": 886,
+   "line": 887,
    "evidence": "copy['displayName']?.toString(),",
    "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
    "why": "A presentation surface reads the person field 'displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
@@ -608,7 +608,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/articles/presentation/article_screen.dart",
-   "line": 49,
+   "line": 53,
    "evidence": "AuraAvatar(",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."

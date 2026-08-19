@@ -16,6 +16,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/publication/aura_publication_markdown.dart';
+import '../../../core/ui/publication/aura_publication_title.dart';
 import '../data/articles_repository.dart';
 import '../../../core/navigation/navigation_authority.dart';
 
@@ -147,7 +148,24 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
           : urlRes.data as Map? ?? {};
       final url = (data['url'] ?? data['deliveryUrl'] ?? '').toString();
       if (url.isEmpty) throw Exception('no url');
+      // The markdown that is written is NOT changed here — the durability and
+      // correctness of the written URL is F121's subject, not F025's.
       _wrapSelection('\n![', ']($url)\n', 'image');
+      // F025 — on a wide viewport the image has already appeared in the
+      // preview pane. On a narrow one it has not, so the author is told the
+      // image exists and given one tap to see it rendered, instead of being
+      // left looking at a line of raw markdown.
+      if (mounted && MediaQuery.of(context).size.width < 1000 && !_preview) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Image added'),
+          action: SnackBarAction(
+            label: 'Preview',
+            onPressed: () {
+              if (mounted) setState(() => _preview = true);
+            },
+          ),
+        ));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -189,12 +207,126 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     }
   }
 
+
+  /// The rendered half. `live` is the always-on pane beside the source on a
+  /// wide viewport; without it this is the Preview the toggle switches to.
+  ///
+  /// Both draw the title through [AuraPublicationTitle] and the body through
+  /// the shared publication renderer, so what the author sees while writing
+  /// is what the published article will be — the same two primitives, not a
+  /// second approximation of them.
+  Widget _previewPane({required bool live}) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: ListView(
+          padding: const EdgeInsets.all(AuraSpace.s20),
+          children: [
+            if (live) ...[
+              Text('PREVIEW',
+                  style: AuraText.micro.copyWith(
+                      color: AuraSurface.faint, letterSpacing: 1.2)),
+              const SizedBox(height: AuraSpace.s10),
+            ],
+            AuraPublicationTitle(_title.text, placeholder: 'Untitled'),
+            const SizedBox(height: AuraSpace.s16),
+            AuraPublicationMarkdown(data: _body.text),
+            const SizedBox(height: AuraSpace.s32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The source half: title, formatting actions, markdown body.
+  Widget _writePane() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s20, AuraSpace.s16, AuraSpace.s20, 0),
+          child: TextField(
+            controller: _title,
+            // F026 — the field itself sizes to the title. A pasted headline
+            // steps down to fit instead of clipping inside a fixed 40px box,
+            // and the formatter strips the newlines a paste brings with it
+            // without removing a single word.
+            style: publicationTitleStyle(
+              title: _title.text,
+              viewportWidth: MediaQuery.of(context).size.width,
+            ),
+            inputFormatters: const [PublicationTitleInputFormatter()],
+            maxLines: 3,
+            minLines: 1,
+            decoration: const InputDecoration(
+              hintText: 'Title',
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s16),
+          child: Row(
+            children: [
+              IconButton(
+                  tooltip: 'Heading',
+                  icon: const Icon(Icons.title_rounded, size: 20),
+                  onPressed: () => _wrapSelection('\n## ', '\n', 'Heading')),
+              IconButton(
+                  tooltip: 'Bold',
+                  icon: const Icon(Icons.format_bold_rounded, size: 20),
+                  onPressed: () => _wrapSelection('**', '**', 'bold')),
+              IconButton(
+                  tooltip: 'Italic',
+                  icon: const Icon(Icons.format_italic_rounded, size: 20),
+                  onPressed: () => _wrapSelection('_', '_', 'italic')),
+              IconButton(
+                  tooltip: 'Link',
+                  icon: const Icon(Icons.link_rounded, size: 20),
+                  onPressed: () =>
+                      _wrapSelection('[', '](https://)', 'link text')),
+              IconButton(
+                  tooltip: 'Image',
+                  icon: const Icon(Icons.image_outlined, size: 20),
+                  onPressed: _insertImage),
+              const Spacer(),
+              Text(_saveState,
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint)),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(AuraSpace.s20),
+            child: TextField(
+              controller: _body,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              style: AuraText.body.copyWith(height: 1.7),
+              decoration: const InputDecoration(
+                hintText: 'Write your article — substantial authored '
+                    'thought, in your own words.',
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return AuraScaffold(
           body: const AuraProductState(state: ProductState.loading));
     }
+    // F025 — the split writing view needs real width; below it the author
+    // keeps the Write/Preview toggle rather than two cramped columns.
+    final wide = MediaQuery.of(context).size.width >= 1000;
+
     return AuraScaffold(
       showHeader: false,
       body: Column(
@@ -226,11 +358,13 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
                     style:
                         AuraText.micro.copyWith(color: AuraSurface.faint)),
                 const SizedBox(width: AuraSpace.s10),
-                TextButton(
-                  onPressed: () => setState(() => _preview = !_preview),
-                  child: Text(_preview ? 'Write' : 'Preview'),
-                ),
-                const SizedBox(width: AuraSpace.s6),
+                if (!wide) ...[
+                  TextButton(
+                    onPressed: () => setState(() => _preview = !_preview),
+                    child: Text(_preview ? 'Write' : 'Preview'),
+                  ),
+                  const SizedBox(width: AuraSpace.s6),
+                ],
                 AuraPrimaryButton(
                   label: _publishing
                       ? 'Publishing…'
@@ -241,98 +375,27 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
               ],
             ),
           ),
-          Expanded(child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: _preview
-              ? ListView(
-                  padding: const EdgeInsets.all(AuraSpace.s20),
-                  children: [
-                    Text(_title.text.trim().isEmpty
-                        ? 'Untitled'
-                        : _title.text.trim(),
-                        style: AuraText.display),
-                    const SizedBox(height: AuraSpace.s16),
-                    AuraPublicationMarkdown(data: _body.text),
-                  ],
-                )
-              : Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(AuraSpace.s20,
-                          AuraSpace.s16, AuraSpace.s20, 0),
-                      child: TextField(
-                        controller: _title,
-                        style: AuraText.display,
-                        maxLines: 2,
-                        minLines: 1,
-                        decoration: const InputDecoration(
-                          hintText: 'Title',
-                          border: InputBorder.none,
-                        ),
-                      ),
+          Expanded(
+            child: wide
+                // F025 — on a viewport with room for it, the author writes
+                // and SEES at the same time. An inserted image renders in
+                // the pane beside the source the instant it is added, which
+                // is the whole of what F025 reported missing.
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: _writePane()),
+                      const VerticalDivider(width: 1),
+                      Expanded(child: _previewPane(live: true)),
+                    ],
+                  )
+                : Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 760),
+                      child:
+                          _preview ? _previewPane(live: false) : _writePane(),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AuraSpace.s16),
-                      child: Row(
-                        children: [
-                          IconButton(
-                              tooltip: 'Heading',
-                              icon: const Icon(Icons.title_rounded, size: 20),
-                              onPressed: () =>
-                                  _wrapSelection('\n## ', '\n', 'Heading')),
-                          IconButton(
-                              tooltip: 'Bold',
-                              icon: const Icon(Icons.format_bold_rounded,
-                                  size: 20),
-                              onPressed: () =>
-                                  _wrapSelection('**', '**', 'bold')),
-                          IconButton(
-                              tooltip: 'Italic',
-                              icon: const Icon(Icons.format_italic_rounded,
-                                  size: 20),
-                              onPressed: () =>
-                                  _wrapSelection('_', '_', 'italic')),
-                          IconButton(
-                              tooltip: 'Link',
-                              icon: const Icon(Icons.link_rounded, size: 20),
-                              onPressed: () => _wrapSelection(
-                                  '[', '](https://)', 'link text')),
-                          IconButton(
-                              tooltip: 'Image',
-                              icon: const Icon(Icons.image_outlined, size: 20),
-                              onPressed: _insertImage),
-                          const Spacer(),
-                          Text(_saveState,
-                              style: AuraText.micro
-                                  .copyWith(color: AuraSurface.faint)),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AuraSpace.s20),
-                        child: TextField(
-                          controller: _body,
-                          maxLines: null,
-                          expands: true,
-                          textAlignVertical: TextAlignVertical.top,
-                          style: AuraText.body.copyWith(height: 1.7),
-                          decoration: const InputDecoration(
-                            hintText:
-                                'Write your article — substantial authored '
-                                'thought, in your own words.',
-                            border: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
+                  ),
           ),
         ],
       ),
