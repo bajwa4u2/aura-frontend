@@ -2,7 +2,6 @@
  "type": "G1_DECOMPOSITION_AND_RECALCULATED_FRONTIER",
  "date": "2026-08-18",
  "ruling": "FOUNDER RULING 2026-08-18 — G1's AGGREGATE SEQUENCING INTERPRETATION IS SUPERSEDED. Individual proof obligations are not.",
-
  "historicalG1": {
   "status": "PRESERVED UNCHANGED AS STAGE-5 ARCHITECTURE",
   "source": "05-execution/s5-execution-architecture.json — waves[W1].evidenceRequiredBeforeTheNextWave",
@@ -10,39 +9,124 @@
   "whyItsAggregateReadingBecameImpossible": "G1 was written to terminate Stage-5's W1, which contained CH-04 PHASE 1 and the CH-11 chapter head. The first executable wave was later RE-DERIVED from canonical evidence and CH-04 PHASE 1 was REFUSED (AD-CON-5 outstanding, SU-5 unsettled, VS-02 environmental, real devices unavailable), while CH-11 was admitted only conditionally and then bounded to its ungated portion. The executed wave is therefore NARROWER than the gate that terminates it. Read as an aggregate, G1 could never open — not because any proof failed, but because it retained prerequisites belonging to branches the evidence correctly excluded.",
   "whatIsNotSuperseded": "No individual G1 proof obligation is deleted, weakened, waived or discharged. Nothing is marked PASS that was not proven."
  },
-
  "forwardRule": {
   "statement": "PROOF GATES FOLLOW DEPENDENCIES; THEY DO NOT GLOBALLY FREEZE UNRELATED WORK MERELY BECAUSE THEY ONCE SHARED A WAVE.",
   "corollary": "A wave is an execution-planning construct. It cannot manufacture a technical dependency, and historical wave membership is not itself a prerequisite.",
   "failClosedPreserved": "Every genuinely unproven dependency remains fail-closed and attaches to the specific capability it actually proves."
  },
-
  "legs": [
-  { "leg": 1, "name": "F065 live refresh proof", "state": "PASS", "certifiedAgainst": "deployed artifact v1.3.0+24 / code cdbae96", "attachedTo": "CH-02 continuity keystone; ordering constraint over F059/F061/F062/F063/F064/F103/F104 preserved" },
-  { "leg": 2, "name": "Signed-out probe + route gates + Meetings regression", "state": "PASS", "certifiedAgainst": "same artifact", "attachedTo": "CH-02 route classification and destination reconstruction" },
-  { "leg": 3, "name": "F045 — three sequential calls in one page lifetime", "state": "OPEN / NOT_ATTEMPTED", "owner": "CH-04", "dependencyClass": "CERTIFICATION", "attachedTo": "Any unit whose correctness depends on the realtime call-lifecycle property. It may not be relied upon as certified until proven.", "blockers": ["AD-CON-5", "SU-5", "VS-02 environmental condition", "real-device access"] },
-  { "leg": 4, "name": "F006/F007/F008/F010 re-proven live on the Conversation surface", "state": "OPEN / NOT_ATTEMPTED", "owner": "CH-04 with CH-06", "dependencyClass": "CERTIFICATION", "attachedTo": "The CH-04/CH-06 boundary. No dependent capability may claim this realtime/Conversation behaviour certified until proved.", "note": "Under founder Ruling 3 the capabilities hold CERTIFICATION and LIVE_PRODUCTION PROVEN for the scope observed, while CANONICAL_INTEGRATION remains NOT_PROVEN. This leg is the canonical-integration proof, and the canonical Conversation surface does not yet exist (CH-06 is W3)." },
-  { "leg": 5, "name": "Violating file refused live + every ingestion door enumerated", "state": "PARTIALLY DISCHARGED — 5(A) ESTABLISHED, 5(B) OPEN", "owner": "CH-11", "dependencyClass": "CONSTRUCTION + CERTIFICATION", "attachedTo": "CH-11 and every downstream unit relying on governed ingestion completeness — CH-12 first." },
-  { "leg": 6, "name": "PBCR conditions 7 and 8 discharged retrospectively", "state": "PASS", "attachedTo": "The historical PB-02/RC-C6 crossing; recorded at PORTFOLIO_GOVERNANCE_DOCTRINE.md §7.1 and labelled as historical." }
+  {
+   "leg": 1,
+   "name": "F065 live refresh proof",
+   "state": "PASS",
+   "certifiedAgainst": "deployed artifact v1.3.0+24 / code cdbae96",
+   "attachedTo": "CH-02 continuity keystone; ordering constraint over F059/F061/F062/F063/F064/F103/F104 preserved"
+  },
+  {
+   "leg": 2,
+   "name": "Signed-out probe + route gates + Meetings regression",
+   "state": "PASS",
+   "certifiedAgainst": "same artifact",
+   "attachedTo": "CH-02 route classification and destination reconstruction"
+  },
+  {
+   "leg": 3,
+   "name": "F045 — three sequential calls in one page lifetime",
+   "state": "OPEN / NOT_ATTEMPTED",
+   "owner": "CH-04",
+   "dependencyClass": "CERTIFICATION",
+   "attachedTo": "Any unit whose correctness depends on the realtime call-lifecycle property. It may not be relied upon as certified until proven.",
+   "blockers": [
+    "AD-CON-5",
+    "SU-5",
+    "VS-02 environmental condition",
+    "real-device access"
+   ]
+  },
+  {
+   "leg": 4,
+   "name": "F006/F007/F008/F010 re-proven live on the Conversation surface",
+   "state": "OPEN / NOT_ATTEMPTED",
+   "owner": "CH-04 with CH-06",
+   "dependencyClass": "CERTIFICATION",
+   "attachedTo": "The CH-04/CH-06 boundary. No dependent capability may claim this realtime/Conversation behaviour certified until proved.",
+   "note": "Under founder Ruling 3 the capabilities hold CERTIFICATION and LIVE_PRODUCTION PROVEN for the scope observed, while CANONICAL_INTEGRATION remains NOT_PROVEN. This leg is the canonical-integration proof, and the canonical Conversation surface does not yet exist (CH-06 is W3)."
+  },
+  {
+   "leg": 5,
+   "name": "Violating file refused live + every ingestion door enumerated",
+   "state": "OPEN — 5(A) enumeration complete, 5(A) common-validation incomplete, 5(B) not attempted",
+   "owner": "CH-11",
+   "dependencyClass": "CONSTRUCTION + CERTIFICATION",
+   "attachedTo": "CH-11 and every downstream unit relying on governed ingestion completeness — CH-12 first."
+  },
+  {
+   "leg": 6,
+   "name": "PBCR conditions 7 and 8 discharged retrospectively",
+   "state": "PASS",
+   "attachedTo": "The historical PB-02/RC-C6 crossing; recorded at PORTFOLIO_GOVERNANCE_DOCTRINE.md §7.1 and labelled as historical."
+  }
  ],
-
  "leg5Split": {
   "5A_enumeration": {
    "question": "Can 'every ingestion door ENUMERATED' be established deterministically from repository/runtime architecture without production mutation?",
-   "answer": "YES — ESTABLISHED",
+   "answer": "ENUMERATION ESTABLISHED; COMMON VALIDATION NOT ESTABLISHED",
    "artifact": "aura-backend/src/media/ingestion-doors.spec.ts (7 assertions)",
    "definition": "An ingestion door is any code path by which caller-supplied bytes, or a caller-supplied reference to stored bytes, becomes a persisted Media row or a stored object. Reading, projecting and deleting are not ingestion.",
    "doors": [
-    { "id": "D1-PRESIGN", "surface": "POST /media/presign", "validated": true, "by": ["PRESIGN_POLICY"] },
-    { "id": "D2-CONFIRM", "surface": "POST /media/:id/confirm", "validated": true, "by": ["CONTENT_TRUTH", "PRESIGN_POLICY"] },
-    { "id": "D3-CORRESPONDENCE-ATTACHMENT", "surface": "sendMessage attachments", "validated": true, "by": ["CLIENT_KEY_DOOR (F129, closed this programme)"] },
-    { "id": "D4-MULTIPART-AVATAR", "surface": "POST /uploads/avatar", "validated": true, "by": ["MULTIPART_POLICY"] },
-    { "id": "D5-MULTIPART-MEDIA", "surface": "POST /uploads/media", "validated": true, "by": ["MULTIPART_POLICY"] },
-    { "id": "D7-INSTITUTION-POST-MEDIA", "surface": "institution post media attachment", "validated": false, "by": [], "finding": "institution-posts.service.ts:728 creates Media at status=READY from a caller-supplied URL, mimeType left null, type defaulted to IMAGE. No ownership proof, no headObject, no MIME or size check — structurally the shape F129 had before it was closed." }
+    {
+     "id": "D1-PRESIGN",
+     "surface": "POST /media/presign",
+     "validated": true,
+     "by": [
+      "PRESIGN_POLICY"
+     ]
+    },
+    {
+     "id": "D2-CONFIRM",
+     "surface": "POST /media/:id/confirm",
+     "validated": true,
+     "by": [
+      "CONTENT_TRUTH",
+      "PRESIGN_POLICY"
+     ]
+    },
+    {
+     "id": "D3-CORRESPONDENCE-ATTACHMENT",
+     "surface": "sendMessage attachments",
+     "validated": true,
+     "by": [
+      "CLIENT_KEY_DOOR (F129, closed this programme)"
+     ]
+    },
+    {
+     "id": "D4-MULTIPART-AVATAR",
+     "surface": "POST /uploads/avatar",
+     "validated": true,
+     "by": [
+      "MULTIPART_POLICY"
+     ]
+    },
+    {
+     "id": "D5-MULTIPART-MEDIA",
+     "surface": "POST /uploads/media",
+     "validated": true,
+     "by": [
+      "MULTIPART_POLICY"
+     ]
+    },
+    {
+     "id": "D7-INSTITUTION-POST-MEDIA",
+     "surface": "institution post media attachment",
+     "validated": false,
+     "by": [],
+     "finding": "institution-posts.service.ts:728 creates Media at status=READY from a caller-supplied URL, mimeType left null, type defaulted to IMAGE. No ownership proof, no headObject, no MIME or size check — structurally the shape F129 had before it was closed."
+    }
    ],
    "result": "ENUMERATION COMPLETE (6 doors). COVERAGE INCOMPLETE — 5 of 6 validated; D7 is not.",
    "closureIsBidirectional": "The suite re-derives the door set from source and fails if a media.create appears off-register, AND fails if a registered door does not actually ingest. The second check exists because an earlier draft listed a seventh door, 'D6-POST-MEDIA', on the strength of a grep that matched `media.createdAt`. posts.service.ts ATTACHES existing media by id and creates nothing; it is now recorded as an explained NON-door. The register is trustworthy only because it is re-derived rather than trusted.",
-   "notClaimed": "5(A) does not discharge leg 5. Enumeration proved coverage is incomplete; it did not create coverage."
+   "notClaimed": "5(A) does not discharge leg 5. Enumeration proved coverage is incomplete; it did not create coverage.",
+   "correction": "An earlier line in this artifact recorded 5(A) as simply ESTABLISHED. That overstated it. G1 leg 5 requires doors 'ENUMERATED and proven to pass through the same validation'. Enumeration is complete at 6 doors; common validation is not, because D7 bypasses it. See d7-discovered-defect-candidate.json."
   },
   "5B_liveRefusal": {
    "state": "OPEN",
@@ -51,14 +135,15 @@
    "additionalBlocker": "The F129 door is not deployed — it is in the 8 unpushed local commits. A live refusal cannot be observed against an artifact that does not contain the door."
   }
  },
-
  "frontier": {
   "method": "Recomputed from canonical chapters, Stage-5 dependency edges, founder rulings, actual certified evidence, individual unresolved legs and protected-boundary constraints. Historical wave membership was NOT used as a dependency.",
   "units": [
    {
     "unit": "CH-03 IDENTITY CONFORMANCE GATE",
     "canonicalOwner": "CH-03",
-    "prerequisites": ["The enumerated consumer list (W1-F, delivered)"],
+    "prerequisites": [
+     "The enumerated consumer list (W1-F, delivered)"
+    ],
     "outstandingG1LegsDependedUpon": [],
     "dependencyClass": "CONSTRUCTION",
     "classification": "EXECUTABLE_NOW",
@@ -103,7 +188,11 @@
     "classification": "BLOCKED_BY_G1_LEG_5",
     "dependencyClass": "CONSTRUCTION",
     "why": "CH-11 blocks CH-12 canonically: 'custody and scanning cannot reason about an object whose identity was asserted by its uploader'. Leg 5(A) has now made that concrete rather than theoretical — D7 admits exactly such objects today.",
-    "additionalGates": ["CH-15 moderation policy (founder-authored, absent)", "the three committed-but-unapplied migrations, which deploy only under PB-11 founder observation", "CORS for delivery legs"]
+    "additionalGates": [
+     "CH-15 moderation policy (founder-authored, absent)",
+     "the three committed-but-unapplied migrations, which deploy only under PB-11 founder observation",
+     "CORS for delivery legs"
+    ]
    },
    {
     "unit": "CH-15 — policy freeze",
@@ -116,7 +205,10 @@
     "unit": "CH-05 — attention authorities and DR1 retirement",
     "canonicalOwner": "CH-05",
     "classification": "BLOCKED_BY_G1_LEG_3",
-    "alsoBlockedBy": ["BLOCKED_BY_G1_LEG_4", "BLOCKED_BY_OTHER_EXISTING_GATE"],
+    "alsoBlockedBy": [
+     "BLOCKED_BY_G1_LEG_4",
+     "BLOCKED_BY_OTHER_EXISTING_GATE"
+    ],
     "dependencyClass": "CONSTRUCTION + CERTIFICATION",
     "why": "CH-05 dependsOn CH-04 for 'domain event truth for call-derived attention'. Call-derived attention cannot be correct if the call lifecycle property (leg 3) is unproven. Additionally founder checkpoint 7 is required before any DR1 surface is retired, and CH-05's protectedBoundaryReadiness is BLOCKED_CONDITIONS.",
     "notBlockedBy": "CH-05 is NOT blocked by leg 5 or by anything in the content chain. Those are unrelated branches."
@@ -132,27 +224,37 @@
    "note": "No unit was reclassified as executable to make the frontier look open. CH-14's slice is dependency-free yet still classified blocked, because its deliverable is live exercise."
   }
  },
-
  "executedThisPass": {
   "CH-03 IDENTITY CONFORMANCE GATE": {
    "artifact": "tool/identity_conformance_gate.mjs + tool/identity-conformance-baseline.json",
    "enforces": "No new file may introduce a non-conformant identity consumer; no existing count may rise; if a count FALLS the gate fails until the baseline is re-frozen, so the register can never overstate identity debt.",
-   "baseline": { "files": 66, "sites": 202, "verdictsCounted": ["NON_CONFORMANT", "ADHOC_MAP_EXTRACTION_IN_SURFACE"] },
+   "baseline": {
+    "files": 66,
+    "sites": 202,
+    "verdictsCounted": [
+     "NON_CONFORMANT",
+     "ADHOC_MAP_EXTRACTION_IN_SURFACE"
+    ]
+   },
    "fd13SeededFailureProof": "DEMONSTRATED — a probe rendering CircleAvatar(NetworkImage(user['avatarUrl'])) with user['displayName'] caused the gate to FAIL (exit 1) naming the exact file; removing it returned PASS (exit 0).",
    "deliberatelyNotZero": "The gate does not demand zero debt today. Demanding it would either block every unrelated change or invite quiet baseline regeneration, which is how a gate becomes decoration.",
    "doesNotClose": "F116 and F053 remain PARTIALLY_VALIDATED. PB-05 forbids closing F116 by fixing one consumer, and a gate is not a fix."
   }
  },
-
  "standingState": {
   "canonicalUnits": "451/451",
   "chapters": "17/17",
   "chaptersClosed": 0,
   "stage0Rewritten": false,
   "F065": "LIVE_CERTIFIED (execution layer)",
-  "F103": "OPEN", "F104": "OPEN", "F116": "PARTIALLY_VALIDATED", "F053": "PARTIALLY_VALIDATED",
-  "F123": "RC-C5 GATED", "F122": "GATED + PRESERVED CONFLICT",
+  "F103": "OPEN",
+  "F104": "OPEN",
+  "F116": "PARTIALLY_VALIDATED",
+  "F053": "PARTIALLY_VALIDATED",
+  "F123": "RC-C5 GATED",
+  "F122": "GATED + PRESERVED CONFLICT",
   "CH-04": "AD-CON-5, SU-5, VS-02, real devices, DEFECT-1 all preserved; no CH-04 work authorized or performed",
-  "W1-X2": "REFUSED", "W1-X3": "REFUSED"
+  "W1-X2": "REFUSED",
+  "W1-X3": "REFUSED"
  }
 }

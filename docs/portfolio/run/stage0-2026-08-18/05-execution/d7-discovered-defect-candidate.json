@@ -1,0 +1,53 @@
+{
+ "type": "DISCOVERED_DEFECT_CANDIDATE",
+ "id": "D7-DEFECT",
+ "date": "2026-08-18",
+ "discoveredBy": "G1 leg 5(A) — the ingestion-door enumeration. This is what the enumeration was for.",
+ "canonicalStatus": {
+  "isCanonicalFinding": false,
+  "whyNotNumbered": "Admitting a new canonical finding changes the founder-ratified 143/451 accounting. The register may never shrink, and adding to it is a governance act, not an engineering one. No F144 has been invented. Recorded in the execution layer for founder disposition.",
+  "accountingUnchanged": "143 findings + 308 obligations = 451 units"
+ },
+
+ "location": "aura-backend/src/institutions/posts/institution-posts.service.ts — linkLegacyMediaUrl(), called from line 810 and line 1121",
+ "callerSupplied": "YES — line 1119 reads dto.mediaUrl?.trim(), so the URL originates with the caller.",
+
+ "twoDistinctDefects": [
+  {
+   "branch": "CREATE (no existing Media row matches the URL)",
+   "statement": "Creates a Media row at status=READY from an arbitrary caller-supplied URL string. mimeType is left null and type is defaulted to IMAGE. There is no ownership proof, no headObject, no MIME check and no size check.",
+   "shape": "Structurally the same shape F129 had before it was closed, with a URL in place of a storage key.",
+   "severityNote": "The row is owned by authorUserId, so this is primarily an unvalidated-content problem rather than a cross-tenant one."
+  },
+  {
+   "branch": "EXISTING (a Media row already matches the URL)",
+   "statement": "The lookup matches ANY Media row whose url / originalUrl / displayUrl / playbackUrl equals the supplied string, WITHOUT filtering by owner. The matched row is then re-tagged: attachedToType, attachedToId and visibility are all overwritten.",
+   "consequence": "A caller who supplies a URL belonging to another user's Media row can re-anchor that row to their own institution post and CHANGE ITS VISIBILITY. The code comment records the intent — 'Owner is left alone — the original uploader keeps ownership' — but ownership is not what governs delivery here; attachedToType/attachedToId and visibility are.",
+   "severityNote": "This is the more serious of the two. It is a cross-tenant re-anchoring and visibility-change primitive, not merely unvalidated ingestion.",
+   "relatedCanonicalContext": "F143 already records that Media identity is not 1:1 with storage objects and that 10 production aliasing pairs exist. URL-equality matching is exactly the aliasing surface F143 describes, and DB-7 states that URL equality is permitted for migration/evidence DISCOVERY ONLY and may never be treated as the constitutional identity relationship."
+  }
+ ],
+
+ "whatIsNotClaimed": [
+  "No exploitation is asserted. Whether any production row has been re-anchored this way was NOT investigated — that would require querying production data, which is not authorized.",
+  "No severity rating is assigned. Severity is a product judgement.",
+  "The legitimate purpose of the path is real: the comment records that the normal case is reusing a row the frontend already uploaded via /media/presign, and that the create branch covers legacy URLs from before the canonical pipeline existed. This is not dead or careless code; it is a reconciliation path whose authorization assumptions were never stated."
+ ],
+
+ "notFixed": {
+  "reason": "Closing it is CH-11 construction against a defect that is not a canonical unit. Fixing it silently would put unrecorded security work into the tree and would pre-empt the founder's decision about whether it enters the register at all.",
+  "alsoRelevant": "The EXISTING branch's correct behaviour is a product question, not only a technical one: whether an institution post may reuse a Media row uploaded by a different person, and if so under whose visibility, is a governance decision about content ownership."
+ },
+
+ "consequenceForG1Leg5": {
+  "enumeration": "COMPLETE — 6 doors.",
+  "commonValidation": "NOT ESTABLISHED — 5 of 6 doors validated. G1 leg 5 requires doors 'ENUMERATED and proven to pass through the same validation', so leg 5(A) is COMPLETE ON ENUMERATION and INCOMPLETE ON COVERAGE.",
+  "correctionToEarlierRecord": "An earlier artifact in this pass recorded 5(A) as 'ESTABLISHED'. That overstated it. Enumeration is established; common validation is not, and D7 is the reason."
+ },
+
+ "founderDecisionRequired": {
+  "decision": "Admit D7-DEFECT into the canonical register as a new finding (and authorize its closure), or dispose of it otherwise.",
+  "whyItIsFounderAuthority": "The canonical accounting is founder-ratified at 451 units, and the non-shrinking register rule makes admission a governance act.",
+  "blocking": "G1 leg 5 cannot be fully discharged while a known ingestion door bypasses the common validation. CH-12 remains BLOCKED_BY_G1_LEG_5 as a consequence."
+ }
+}
