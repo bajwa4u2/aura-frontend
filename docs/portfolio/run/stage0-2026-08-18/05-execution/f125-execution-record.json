@@ -1,0 +1,19 @@
+{
+ "type": "EXECUTION_RECORD",
+ "unit": "F125 — Conversation images have no viewer and no save",
+ "chapter": "CH-13",
+ "date": "2026-08-18",
+ "priorState": "OPEN",
+ "newState": "IMPLEMENTED_AWAITING_CERTIFICATION (execution layer; Stage-0 not promoted)",
+ "canonicalText": "'Conversation images have no viewer and no save: not tappable, no fullscreen, no save affordance - while every other surface routes through AuraMediaViewer/MediaSaveService.'",
+ "theDefectRestated": "Conversation was the ONE surface that opted out of the canonical viewer. All three missing affordances - tappable, fullscreen, save - are properties the canonical viewer already provides to every other surface.",
+ "theFix": "Route Conversation into the SAME canonical viewer rather than building one for it. Images are now tappable and open showAuraMediaViewer with the canonical mediaId, which brings fullscreen and MediaSaveService save with it.",
+ "whyMediaIdMatters": "The viewer resolves a fresh signed URL from the mediaId for gated media. Passing only a URL would make save fail on exactly the files that most need it.",
+ "implementedBySameChangeAs": "F011 — one change to the conversation attachment renderer satisfies both, because both were caused by the same surface presenting media without consuming the canonical media family.",
+ "gate": "test/media/conversation_attachment_wiring_test.dart — 9 assertions, including the negative one that Conversation must NOT build a second viewer locally. A local fullscreen route would pass a behavioural test and recreate the exact defect F125 names.",
+ "notClaimed": [
+  "F125 is NOT closed - the save/open journey is live evidence.",
+  "Stage-0 state not promoted.",
+  "No live certification claimed."
+ ]
+}
