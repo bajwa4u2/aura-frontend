@@ -863,5 +863,96 @@
       "note": "Several of these tables are still SERVED by endpoints the surviving direct-thread product uses, so this is not merely 'data left behind' — part of the persistence is still live. Destructive cleanup requires both a separate authorisation and the backend consumer migration above."
     },
     "rollbackPosture": "Code-only and reversible. A revert restores the deleted screens, routes and resolvers, and every legacy row is exactly where it was, so restored code finds its data intact. No migration ran. The exposure remains address loss, not data loss."
+  },
+  "f053f116Promotion": {
+    "authorised": "Founder, 2026-08-20.",
+    "F053": "PARTIALLY_VALIDATED -> IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "F116": "PARTIALLY_VALIDATED -> IMPLEMENTED_NOT_LIVE_CERTIFIED",
+    "implementationOnly": "Neither is LIVE_CERTIFIED. Live evidence is a separate gate and was not claimed.",
+    "basisAtPromotion": [
+      "all six recorded closure criteria met",
+      "retirement-owned identity debt physically 15 -> 0, caused by deletions rather than by editing a baseline",
+      "typed-person debt 7 -> 0",
+      "invitation positional person reads canonicalised, plus four more found by sweeping invite_accept_screen",
+      "no surviving competing person-identity interpretation under the recorded criteria",
+      "detector and baselines were never weakened to manufacture closure"
+    ],
+    "historicalEvidencePreserved": "The PARTIALLY_VALIDATED record and the earlier withdrawn promotion stand as written. This is recorded forward.",
+    "ratchetHealthAfterThisTask": "Identity gate PASS at 11 files / 19 sites surface and 0 / 0 typed-person. Domain proof 23/23. Meetings ratchet PASS both directions. A residue sweep for nested positional person reads returns ZERO. No migration in this task reintroduced a private parser, a competing fallback order, an invented label, a raw surface extraction or a duplicate person DTO."
+  },
+  "backendConsumerMigration": {
+    "authorised": "Founder, 2026-08-20 — authority/concept migration, not endpoint renaming.",
+    "inventoryCorrection": "The inventory recorded at the end of the previous task OVERSTATED the surviving consumers, because it was built from filename substring matches. Three of them were false positives and it matters that they were caught before anything was migrated or deleted: `public_spaces_repository` is the PublicSpace product and has nothing to do with correspondence Spaces; `direct_threads_repository` is the direct-thread product's own repository and merely contains the substring 'threads_repository'; and `direct_thread_screen`/`inbox_screen` never imported the correspondence layer at all. A fourth, `thread_composer`, was retained last task on the strength of five references that turn out to be comments and docstrings, not imports.",
+    "actualSurvivingConsumers": [
+      {
+        "consumer": "activity_screen",
+        "used": "threadsRepository.getThread()",
+        "classification": "E — activity/notification projection",
+        "resolution": "REMOVED. It fetched a Thread to resolve a spaceId in order to build a correspondence address. Phase 5 retired that address, so both branches pushed the same destination — the round trip chose between two identical answers. Activity now navigates directly and has no legacy dependency."
+      },
+      {
+        "consumer": "mention_scope_providers.threadMentionScopeProvider",
+        "used": "threadsRepository.getThread(), spacesRepository.getSpace()",
+        "classification": "G — genuinely legacy and removable",
+        "resolution": "REMOVED with its subject. Its only consumer was thread_composer, which is itself orphaned. `directThreadMentionScope` — a pure function over a thread object the caller already holds, with no legacy dependency — survives untouched and keeps its coverage."
+      },
+      {
+        "consumer": "thread_composer.dart",
+        "used": "messages_repository, threadMentionScopeProvider",
+        "classification": "G — orphaned by the frontend retirement",
+        "resolution": "REMOVED. Nothing constructs `ThreadComposer` any more; the five 'references' that kept it alive last task were comments."
+      },
+      {
+        "consumer": "correspondence_live_service.dart",
+        "used": "live calling infrastructure",
+        "classification": "A/L — canonical Conversation realtime, misnamed",
+        "resolution": "RETAINED. Seven real consumers: aura_app, auth_controller, invitations_screen, caller_ringback_provider, thread_call_lifecycle_controller, realtime_reconciliation_controller, incoming_call_bridge. This is live-calling infrastructure that happens to live under a correspondence path. Renaming or relocating it is a move for its own slice, not something to fold into a retirement."
+      }
+    ],
+    "familiesThatWereNeverConsumers": {
+      "publicSpaces": "D — a legitimate public/community Space concept with its own repository and registry. It never touched the correspondence family, so there was nothing to migrate and nothing to demolish. No product decision was required and none is returned.",
+      "directThreads": "The surviving direct-thread product uses its own `core/interactions/direct_threads_repository`. It was never a consumer of the legacy correspondence repositories.",
+      "interactions": "Uses `directThreadsRepositoryProvider`. Not a legacy consumer.",
+      "institutionSpaces": "Uses `/institutions/:id/spaces/...` governance endpoints, which survive. Untouched."
+    },
+    "frontendResult": {
+      "legacyHttpCallsRemaining": 0,
+      "evidence": "No `_dio` call anywhere in lib/ now targets `/spaces`, `/threads` or `/messages` legacy endpoints. The only remaining `/spaces` calls are `/institutions/:id/spaces/...`, which belong to the LIVE_CERTIFIED Institution Spaces product.",
+      "removedThisTask": [
+        "correspondence/presentation/thread/thread_composer.dart",
+        "correspondence/presentation/thread/thread_utils.dart",
+        "correspondence/data/threads_repository.dart",
+        "correspondence/data/spaces_repository.dart",
+        "correspondence/data/messages_repository.dart",
+        "threadMentionScopeProvider and its institution-suggestion helper",
+        "activity's Thread fetch"
+      ],
+      "whatIsLeftOfTheFamily": "lib/features/correspondence/ now contains exactly one file: correspondence_live_service.dart."
+    },
+    "backendRetirementStatus": {
+      "firstPartyConsumers": "ZERO. The Aura client no longer calls a single legacy correspondence endpoint.",
+      "butNotRetiredYet": "Two blockers stand between zero first-party consumers and safely deleting backend runtime, and neither is discretionary.",
+      "blocker1_sharedInfrastructureInsideTheLegacyModule": "`ConversationsModule` imports `CorrespondenceModule`, and `conversation-live.controller` depends on `CorrespondenceOrchestratorService`. The canonical Conversation live/calling path runs through a service that lives under the correspondence name — the same shape as the frontend's correspondence_live_service. Deleting CorrespondenceModule today would break canonical Conversation calling, which is the opposite of what this retirement is for. That service must be relocated to a canonical realtime home first. Classified MIGRATE FIRST.",
+      "blocker2_releasedClients": "F071 records that released native binaries exist and lag the shared code. Removing `/threads`, `/messages` and the legacy `/spaces` messaging endpoints would break any released client still calling them. Whether older binaries may be broken is a product decision about installed users, not an engineering one, and it is returned rather than assumed.",
+      "whatIsSafeToRetireNow": "Nothing was retired backend-side in this task, deliberately. The correct next step is the orchestrator relocation, after which the legacy endpoints can be removed subject to the released-client ruling.",
+      "backendUntouched": "No backend file was modified. 207 suites / 2594 tests, tsc clean, route-path startup guard green."
+    },
+    "protectedBoundaries": {
+      "institutionSpaces": "LIVE_CERTIFIED and untouched. Space governs membership/access, Conversation governs communication, the lazy Space.conversationId association and the party projection authority are all unchanged. No Thread, Message, Space-local communication, Space-local realtime or Space-local attachment stack was restored.",
+      "canonicalConversationAndRichContent": "Untouched and unforked.",
+      "meetings": "Untouched. Meetings ratchet proof PASS both directions.",
+      "f044": "Untouched by this migration. Its policy authority and tests still pass; it remains implementation-certified with founder live observation OWED. Not promoted."
+    },
+    "legacyDataStatus": {
+      "migrateConversations": "HELD and never run.",
+      "productionRows": "Untouched — no read, write, migration or deletion occurred in this task.",
+      "destructivePersistenceCleanup": "UNAUTHORISED and not performed."
+    },
+    "phase5Accounting": {
+      "1_frontendRuntimeRetirement": "COMPLETE (previous task, extended here — the family is now one file).",
+      "2_backendConsumerMigration": "COMPLETE — zero first-party consumers of legacy endpoints.",
+      "3_backendRuntimeRetirement": "NOT EXECUTED — blocked on the orchestrator relocation and a released-client ruling.",
+      "4_persistenceRetirement": "NOT AUTHORISED. Remaining physical tables are not a failure to complete runtime retirement."
+    }
   }
 }

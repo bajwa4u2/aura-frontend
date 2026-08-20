@@ -18,7 +18,6 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../updates/providers.dart';
-import '../../correspondence/data/threads_repository.dart';
 import '../../../core/identity/person_identity_model.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
@@ -389,31 +388,19 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       return;
     }
 
-    try {
-      final thread = await ref
-          .read(threadsRepositoryProvider)
-          .getThread(cleanThreadId);
-      if (!mounted) return;
-
-      final resolvedSpaceId = _firstNonEmpty([
-        _stringOf(thread['spaceId']),
-        _stringOf(thread['space_id']),
-      ]);
-
-      if (resolvedSpaceId.isNotEmpty) {
-        context.push(
-          _withLiveQuery(
-            NavigationAuthority.messagesRoute,
-            sessionId: cleanSessionId,
-            shouldJoin: shouldJoin,
-          ),
-        );
-        return;
-      }
-    } catch (_) {}
-
+    // This used to fetch the legacy Thread to resolve its spaceId and build a
+    // correspondence address. Phase 5 retired that address, so both branches
+    // now push the same destination and the fetch decides nothing — it was
+    // a round trip to choose between two identical answers. Removing it is
+    // what frees Activity from the legacy Thread runtime.
     if (!mounted) return;
-    context.push(NavigationAuthority.messagesRoute);
+    context.push(
+      _withLiveQuery(
+        NavigationAuthority.messagesRoute,
+        sessionId: cleanSessionId,
+        shouldJoin: shouldJoin,
+      ),
+    );
   }
 
   String _withLiveQuery(

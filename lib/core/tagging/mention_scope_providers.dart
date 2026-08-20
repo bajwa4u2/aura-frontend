@@ -17,13 +17,9 @@
 ///  * DM institution-eligibility = a participant that IS that institution.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../interactions/actor_context.dart';
 import '../interactions/direct_threads_repository.dart';
-import '../../features/correspondence/data/spaces_repository.dart';
-import '../../features/correspondence/data/threads_repository.dart';
-import '../../features/institutions/data/institutions_repository.dart';
 import 'mention_scope.dart';
 import 'tag_entities.dart';
 import '../identity/person_identity_model.dart';
@@ -75,90 +71,6 @@ List<TagSuggestion> _suggestionsFromMemberRows(dynamic rows) {
   }
   return out;
 }
-
-TagSuggestion? _institutionSuggestionFromMap(dynamic institution) {
-  if (institution is! Map) return null;
-  final map = Map<String, dynamic>.from(institution);
-  final id = _pick(map, const ['id']);
-  if (id.isEmpty) return null;
-  final name = _pick(map, const [
-    'name',
-    'displayName',
-  ]);
-  final slug = _pick(map, const ['slug']);
-  final display = name.isNotEmpty ? name : slug;
-  if (display.isEmpty) return null;
-  final logo = _pick(map, const [
-    'logoUrl',
-    'logo',
-  ]);
-  return TagSuggestion(
-    kind: TagKind.institution,
-    canonicalId: id,
-    display: display,
-    insertText: '@$display',
-    subtitle: slug.isNotEmpty ? '@$slug · Institution' : 'Institution',
-    imageUrl: logo.isEmpty ? null : logo,
-  );
-}
-
-/// Thread/Space mention scope. `threadId` is enough — the Thread's own
-/// `spaceId` and the parent Space's `institutionId` come from the Thread
-/// payload itself, so callers never need to thread Space/institution
-/// context through the composer widgets by hand.
-final threadMentionScopeProvider = FutureProvider.family<MentionScope, String>(
-  (ref, threadId) async {
-    final thread = await ref.watch(threadsRepositoryProvider).getThread(threadId);
-
-    final isPrivate = thread['isPrivate'] == true;
-    final spaceId = _pick(thread, const [
-      'spaceId',
-      'space_id',
-    ]);
-    final threadSpace = thread['space'];
-    final ownerInstitutionId = threadSpace is Map
-        ? _pick(
-            Map<String, dynamic>.from(threadSpace),
-            const ['institutionId'],
-          )
-        : '';
-
-    List<TagSuggestion> personCandidates;
-    TagSuggestion? institutionCandidate;
-
-    if (spaceId.isEmpty) {
-      // Defensive: no parent Space resolvable at all — fall back to the
-      // Thread's own membership, its only available authority.
-      personCandidates = _suggestionsFromMemberRows(thread['members']);
-    } else if (ownerInstitutionId.isNotEmpty) {
-      final spaceDetail = await ref
-          .watch(institutionsRepositoryProvider)
-          .getInstitutionSpace(ownerInstitutionId, spaceId);
-      institutionCandidate = _institutionSuggestionFromMap(
-        spaceDetail['institution'],
-      );
-      // A private Thread's own membership stays authoritative even inside
-      // an Institution Space — mirrors messages.service.ts exactly.
-      personCandidates = isPrivate
-          ? _suggestionsFromMemberRows(thread['members'])
-          : _suggestionsFromMemberRows(spaceDetail['members']);
-    } else if (isPrivate) {
-      // Private Thread in a Personal Space: its own ThreadMember list is
-      // already complete and authoritative — no extra fetch needed.
-      personCandidates = _suggestionsFromMemberRows(thread['members']);
-    } else {
-      final spaceDetail = await ref
-          .watch(spacesRepositoryProvider)
-          .getSpace(spaceId);
-      personCandidates = _suggestionsFromMemberRows(spaceDetail['members']);
-    }
-
-    return MentionScope.bounded([
-      ...personCandidates,
-      if (institutionCandidate != null) institutionCandidate,
-    ]);
-  },
-);
 
 /// DM mention scope — pure, synchronous: `DirectThreadInfo` is already
 /// fully loaded by the screen for its own header/identity rendering, so

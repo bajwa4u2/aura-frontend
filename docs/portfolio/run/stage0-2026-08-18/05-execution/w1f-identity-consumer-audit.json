@@ -27,21 +27,21 @@
   ]
  },
  "totals": {
-  "rows": 90,
+  "rows": 89,
   "byVerdict": {
    "NON_CONFORMANT": 17,
    "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 20,
    "AUTHORITY": 5,
    "CONFORMANT": 34,
-   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 3,
    "OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY": 3,
-   "CANONICAL_PERSON_DESERIALIZATION": 8
+   "CANONICAL_PERSON_DESERIALIZATION": 8,
+   "ADHOC_MAP_EXTRACTION_IN_SURFACE": 2
   },
   "nonConformant": 17,
-  "adhocMapExtractionInSurface": 3,
+  "adhocMapExtractionInSurface": 2,
   "typedDeserializationBoundary": 0,
   "conformant": 34,
-  "frontend": 80,
+  "frontend": 79,
   "backend": 10
  },
  "sixPersonShapedExtractionSites": {
@@ -156,17 +156,7 @@
    "repo": "aura_final",
    "surface": "USER_SHAPE",
    "path": "lib/core/tagging/mention_scope_providers.dart",
-   "line": 84,
-   "evidence": "final name = _pick(map, const [",
-   "identityDomain": "PERSON",
-   "verdict": "ADHOC_MAP_EXTRACTION_IN_SURFACE",
-   "why": "A presentation surface reads the person field 'name/displayName' straight off an untyped map. This is the F057 class of defect and the direct subject of F053."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "USER_SHAPE",
-   "path": "lib/core/tagging/mention_scope_providers.dart",
-   "line": 189,
+   "line": 101,
    "evidence": "final name = (inst?['name'] ?? inst?['displayName'] ?? '').toString().trim();",
    "identityDomain": "INSTITUTION",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",

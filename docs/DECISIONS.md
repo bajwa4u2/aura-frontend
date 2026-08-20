@@ -729,3 +729,28 @@ opened without a real capability or maintenance reason.
 `invite_presentation.dart` are surviving debt the current detector cannot see, because they are nested
 path pairs rather than flat alias lists. They do not block this deployment, they remain an executable
 cleanup item, and they are not to be marked canonical or quietly dropped from the accounting.
+
+## FOUNDER RULINGS - F053/F116 PROMOTION AND BACKEND CONSUMER MIGRATION (2026-08-20)
+
+**F053 and F116 promoted to IMPLEMENTED_NOT_LIVE_CERTIFIED.** All six recorded closure criteria are met,
+retirement-owned identity debt moved 15 to 0 because files were deleted rather than because a baseline was
+edited, typed-person debt moved 7 to 0, and the invitation positional reads were canonicalised along with
+four more found by sweeping. Implementation only: neither is LIVE_CERTIFIED and live evidence was not
+claimed. Historical evidence, including the promotion withdrawn earlier, stands unchanged.
+
+**Backend consumer migration authorised and complete.** Zero first-party calls to the legacy endpoints
+remain. Worth recording that the inventory carried into this task was overstated - it came from filename
+substring matches, so three entries were different products entirely and a fourth was retained on comments
+mistaken for imports. Checking imports rather than strings was the difference between migrating four
+consumers and breaking three unrelated products.
+
+**Backend runtime was NOT retired, and that is the honest outcome rather than an omission.** Two blockers
+stand. ConversationsModule depends on CorrespondenceOrchestratorService, so canonical Conversation calling
+runs through the module the retirement wants to delete. And released native binaries may still call these
+endpoints, which is a decision about installed users rather than about code.
+
+**Public Spaces required no ruling.** It was never a consumer of the correspondence family, so nothing was
+demolished and nothing was preserved by inertia.
+
+**Still unauthorised and untouched:** destructive persistence cleanup, migrate-conversations.js, and any
+production data operation.

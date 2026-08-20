@@ -728,3 +728,63 @@ when the viewer has not asked to join"* covers both, needs no new ID, keeps the 
 register to 144/452 — a founder decision about a ratified baseline, which is why I assigned nothing.
 
 **Decision owed:** widen F044, or issue a new ID.
+
+## 2026-08-20 — F053/F116 PROMOTED; backend consumer migration complete
+
+**F053 → IMPLEMENTED_NOT_LIVE_CERTIFIED. F116 → IMPLEMENTED_NOT_LIVE_CERTIFIED.** Founder-authorised.
+Implementation only — neither is LIVE_CERTIFIED, and live evidence was not claimed. Historical
+PARTIALLY_VALIDATED evidence, including the earlier withdrawn promotion, stands as written.
+
+### The inventory I handed over last task was overstated
+
+It was built from filename substring matches, and three entries were false positives —
+`public_spaces_repository` is the PublicSpace product, `direct_threads_repository` is direct threads' own,
+and `direct_thread_screen`/`inbox_screen` never imported the correspondence layer at all. A fourth,
+`thread_composer`, was *retained* last task on five "references" that turn out to be comments and
+docstrings rather than imports. All caught before anything was migrated or deleted.
+
+### The four real consumers
+
+| Consumer | Class | Result |
+|---|---|---|
+| `activity_screen` | E — activity projection | **Removed.** It fetched a Thread to resolve a spaceId for a correspondence address; Phase 5 retired that address, so both branches pushed the same destination. The round trip chose between two identical answers. |
+| `threadMentionScopeProvider` | G — legacy | **Removed with its subject.** Its only consumer was the orphaned composer. `directThreadMentionScope` survives untouched — a pure function, no legacy dependency. |
+| `thread_composer` | G — orphaned | **Removed.** Nothing constructs it. |
+| `correspondence_live_service` | A/L — canonical realtime, misnamed | **RETAINED.** 7 real consumers. Live-calling infrastructure that happens to sit under a correspondence path; relocating it is its own slice. |
+
+**Zero frontend HTTP calls to legacy `/spaces`, `/threads`, `/messages` remain.** The correspondence
+family is down to **one file**.
+
+### Backend retired: nothing — deliberately
+
+First-party consumers are now zero, but two non-discretionary blockers stand in the way:
+
+1. **`ConversationsModule` depends on `CorrespondenceOrchestratorService`.** Canonical Conversation
+   live/calling runs through the legacy module. Deleting it today would break the very thing this
+   retirement exists to protect. **MIGRATE FIRST** — relocate the orchestrator to a canonical realtime home.
+2. **Released native binaries (F071).** They may still call these endpoints. Breaking installed users is a
+   product decision about people, not an engineering one, so it is returned rather than assumed.
+
+**Public Spaces needed no decision** — it was never a consumer, so nothing was demolished and nothing was
+preserved by inertia.
+
+### Protected and unchanged
+
+Institution Spaces **LIVE_CERTIFIED**, untouched. Meetings untouched (ratchet PASS both directions).
+**F044 untouched and NOT promoted** — founder live observation still owed.
+
+### Identity ratchet health after migration
+
+Surface **19 sites / 11 files**, typed-person **0/0**, domain proof 23/23, and a residue sweep for nested
+positional person reads returns **zero**. Nothing reintroduced a private parser, a competing fallback
+order, an invented label, a raw surface extraction, or a duplicate person DTO.
+
+**Phase 5 accounting:** frontend runtime retirement COMPLETE · backend consumer migration COMPLETE ·
+backend runtime retirement NOT EXECUTED (blocked above) · persistence retirement NOT AUTHORISED.
+`migrate-conversations.js` HELD, production rows untouched.
+
+Frontend **833 pass**, analyze clean. Backend **207 suites / 2594**, tsc clean, startup guard green,
+untouched. 451/451, 17/17, Stage-0 ratified.
+
+**Next:** relocate `CorrespondenceOrchestratorService` to a canonical realtime home, then rule on released
+clients, then retire the backend endpoints.

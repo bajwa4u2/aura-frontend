@@ -17,11 +17,10 @@
   "ADHOC_MAP_EXTRACTION_IN_SURFACE"
  ],
  "totals": {
-  "files": 12,
-  "sites": 20
+  "files": 11,
+  "sites": 19
  },
  "perFile": {
-  "aura_final:lib/core/tagging/mention_scope_providers.dart": 1,
   "aura_final:lib/features/direct_threads/presentation/direct_thread_screen.dart": 1,
   "aura_final:lib/features/institutions/profile/institution_profile_screen.dart": 1,
   "aura_final:lib/features/invitations/presentation/invite_create_screen.dart": 1,
