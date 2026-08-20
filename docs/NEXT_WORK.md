@@ -25,37 +25,30 @@ renamed to `photo.png`. All four predeclared properties PASS. **Leg 5(B) LIVE_CE
 COMPLETE.** F127 is live-certified on the D2 confirm path. Every record that waited on the
 attributable deployment or this observation is reconciled.
 
-## ACTIVE — CH-12 · F137 examination live, enforcement ENFORCED
+## ACTIVE — CH-12 · F137: clean path PROVEN, malicious path owed
 
-Migration applied, backend deployed, and **clamd provisioned** as Railway service `clamav` —
-private-network only, `clamav.railway.internal:3310`, ClamAV 1.5.4.
+**Clean-path production evidence verified from records.** PDF reached **`READY`** in ~1.9 s and
+became a real attachment (`attachedToType = CONVERSATION`), with three durable verdicts —
+`MALWARE_SCAN` **PASSED** by `clamav@clamd@clamav.railway.internal:3310` (294 ms),
+`DOCUMENT_INSPECTION` and `STRUCTURAL_VALIDATION` **PASSED** by the native examiners, `attempts=1`
+each. Archive and decode correctly `NOT_APPLICABLE`. Nothing silently omitted.
 
-**Measured, not estimated:** memory current **1.07 GiB**, **peak 1.64 GiB**, startup **~10 s**,
-~3.64 M signatures. The earlier "~1 GB" would have been **OOM-killed** — recorded so the estimate
-is not repeated. freshclam updated on first boot (daily 28087 → 28098).
+**EICAR: engine proven, product path owed.** clamd returns `Eicar-Test-Signature FOUND` over
+INSTREAM (artifact deleted, never in Aura storage). That proves the *engine*; it does not prove the
+*pipeline refuses*. **Next step: upload an EICAR file through Messages**, as the PDF was done.
 
-**Enforcement observed as `ENFORCED`** against the real production environment — examiner
-REGISTERED, capabilities `MALWARE_SCAN` only, version `clamd@clamav.railway.internal:3310`. Derived,
-not hand-flipped.
+**Legacy formats kept and now examined.** Per founder ruling the accept-list did not shrink.
+`.doc/.xls/.ppt` are OLE compound files — the same "open the container" capability ZIP already
+answers — so a second container reader was added beside the ZIP one, not a per-extension patch.
+RTF is examined as markup. No dependency added; nothing executed or decoded.
 
-### The one thing to do next, and why it is urgent
+**New gate:** no accepted format may carry a REQUIRED capability no examiner can answer — the exact
+property the PDF failure violated, now enforced across the whole accept-list.
 
-**Upload an attachment.** Enforcement is now ON: if anything on the examiner path fails, a required
-`MALWARE_SCAN` has no pass and uploads **hold at `PROCESSING`** — correct behaviour, and also a
-user-visible attachment outage. Reachability is control-tested and clamd answers cleanly, but **no
-upload has actually traversed the path**, and `MediaExamination` holds **0 rows**.
+**Remaining gaps, all OPTIONAL** (they neither block nor falsely pass): WebP has no dimension
+reader; audio/video have no container-sanity validator.
 
-Rollback if it misbehaves — one command, restores `NOT_ENFORCEABLE`:
-```
-railway variables --service aura-backend --unset CLAMAV_HOST
-railway redeploy --service aura-backend --yes
-```
-
-Then the remaining F137 closure evidence: clean file → `READY` with durable verdicts · EICAR →
-`MALWARE_SCAN` FAILED → never `READY` · unavailable examiner → retryable hold · idempotency ·
-provenance.
-
-**F137 stays OPEN.** clamd running is not the invariant.
+**F137 stays OPEN.**
 
 ## OWED — founder live observation
 
