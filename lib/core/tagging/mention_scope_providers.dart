@@ -21,7 +21,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../interactions/actor_context.dart';
 import '../interactions/direct_threads_repository.dart';
-import '../../features/correspondence/data/correspondence_identity.dart';
 import '../../features/correspondence/data/spaces_repository.dart';
 import '../../features/correspondence/data/threads_repository.dart';
 import '../../features/institutions/data/institutions_repository.dart';
@@ -54,7 +53,7 @@ List<TagSuggestion> _suggestionsFromMemberRows(dynamic rows) {
     final person = AuraPersonIdentity.fromJson(row);
     final userId = person.userId.isNotEmpty
         ? person.userId
-        : CorrespondenceIdentity.pickString(row, const ['userId']);
+        : _pick(row, const ['userId']);
     if (userId.isEmpty) continue;
     final handle = person.handle;
     // A mention must be insertable, so a person with no resolvable name is
@@ -80,16 +79,16 @@ List<TagSuggestion> _suggestionsFromMemberRows(dynamic rows) {
 TagSuggestion? _institutionSuggestionFromMap(dynamic institution) {
   if (institution is! Map) return null;
   final map = Map<String, dynamic>.from(institution);
-  final id = CorrespondenceIdentity.pickString(map, const ['id']);
+  final id = _pick(map, const ['id']);
   if (id.isEmpty) return null;
-  final name = CorrespondenceIdentity.pickString(map, const [
+  final name = _pick(map, const [
     'name',
     'displayName',
   ]);
-  final slug = CorrespondenceIdentity.pickString(map, const ['slug']);
+  final slug = _pick(map, const ['slug']);
   final display = name.isNotEmpty ? name : slug;
   if (display.isEmpty) return null;
-  final logo = CorrespondenceIdentity.pickString(map, const [
+  final logo = _pick(map, const [
     'logoUrl',
     'logo',
   ]);
@@ -112,13 +111,13 @@ final threadMentionScopeProvider = FutureProvider.family<MentionScope, String>(
     final thread = await ref.watch(threadsRepositoryProvider).getThread(threadId);
 
     final isPrivate = thread['isPrivate'] == true;
-    final spaceId = CorrespondenceIdentity.pickString(thread, const [
+    final spaceId = _pick(thread, const [
       'spaceId',
       'space_id',
     ]);
     final threadSpace = thread['space'];
     final ownerInstitutionId = threadSpace is Map
-        ? CorrespondenceIdentity.pickString(
+        ? _pick(
             Map<String, dynamic>.from(threadSpace),
             const ['institutionId'],
           )
@@ -226,4 +225,23 @@ MentionScope directThreadMentionScope(
     }
   }
   return const MentionScope.bounded([]);
+}
+
+/// Generic first-non-empty key read.
+///
+/// This file used `CorrespondenceIdentity.pickString` for it. The helper is not
+/// identity — the PERSON read above delegates to `AuraPersonIdentity`, and what
+/// remains here reads institution ids, slugs, logos and space ids. Keeping the
+/// import would have tied `lib/core/tagging`, which serves the LIVE
+/// DirectThreadScreen at `/direct/:threadId`, to a class the C7 retirement
+/// deletes. Depending on retiring code is not the same as being retired by it,
+/// so the four-line utility is local now and the coupling is gone.
+String _pick(Map<String, dynamic> map, List<String> keys) {
+  for (final key in keys) {
+    final value = map[key];
+    if (value == null) continue;
+    final text = value.toString().trim();
+    if (text.isNotEmpty) return text;
+  }
+  return '';
 }

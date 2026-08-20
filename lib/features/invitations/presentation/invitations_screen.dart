@@ -13,7 +13,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
-import '../../correspondence/data/correspondence_identity.dart';
+import '../data/invite_presentation.dart';
 import '../../correspondence/data/correspondence_live_service.dart';
 
 final _inviteInboxProvider = FutureProvider<List<Map<String, dynamic>>>((
@@ -601,19 +601,19 @@ class _IdentityAvatar extends StatelessWidget {
 }
 
 String _inviteTitle(Map<String, dynamic> invite) {
-  return CorrespondenceIdentity.inviteTitle(invite);
+  return InvitePresentation.title(invite);
 }
 
 String _inviteSubtitle(Map<String, dynamic> invite) {
-  return CorrespondenceIdentity.inviteSubtitle(invite);
+  return InvitePresentation.subtitle(invite);
 }
 
 String _inviteStateLabel(Map<String, dynamic> invite) {
-  return CorrespondenceIdentity.inviteStateLabel(invite);
+  return InvitePresentation.stateLabel(invite);
 }
 
 bool _inviteIsActive(Map<String, dynamic> invite) {
-  return CorrespondenceIdentity.inviteIsActive(invite);
+  return InvitePresentation.isActive(invite);
 }
 
 _StatusTone _inviteTone(Map<String, dynamic> invite) {
@@ -633,15 +633,15 @@ _StatusTone _inviteTone(Map<String, dynamic> invite) {
 }
 
 String _humanizeLabel(String value) {
-  return CorrespondenceIdentity.humanize(value);
+  return InvitePresentation.humanize(value);
 }
 
 String _inviteAvatarUrl(Map<String, dynamic> invite) {
-  return CorrespondenceIdentity.inviteAvatarUrl(invite);
+  return InvitePresentation.avatarUrl(invite);
 }
 
 String _destinationRoute(Map<String, dynamic> invite) {
-  return CorrespondenceIdentity.inviteDestinationRoute(invite);
+  return InvitePresentation.destinationRoute(invite);
 }
 
 String _pickString(Map<String, dynamic> map, List<String> keys) {
