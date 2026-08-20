@@ -25,41 +25,37 @@ renamed to `photo.png`. All four predeclared properties PASS. **Leg 5(B) LIVE_CE
 COMPLETE.** F127 is live-certified on the D2 confirm path. Every record that waited on the
 attributable deployment or this observation is reconciled.
 
-## ACTIVE — CH-12 · F137 examination DEPLOYED; clamd not provisioned
+## ACTIVE — CH-12 · F137 examination live, enforcement ENFORCED
 
-Migration `20260906000000_media_examination` **applied to production** (additive: one empty table,
-4 indexes, 1 CASCADE FK; **0 rows created, 0 Media rows touched**, 156 distinct `updatedAt` values
-across 156 rows). Backend **`644f3ee` live and attributable**. Frontend: both commits were
-documentation-only, so there is **no client-code change to deploy** — the served bundle is
-byte-identical at 7,195,270 bytes.
+Migration applied, backend deployed, and **clamd provisioned** as Railway service `clamav` —
+private-network only, `clamav.railway.internal:3310`, ClamAV 1.5.4.
 
-**Four capabilities operate in production**: archive, document, structural, decode.
+**Measured, not estimated:** memory current **1.07 GiB**, **peak 1.64 GiB**, startup **~10 s**,
+~3.64 M signatures. The earlier "~1 GB" would have been **OOM-killed** — recorded so the estimate
+is not repeated. freshclam updated on first boot (daily 28087 → 28098).
 
-### Blocked — clamd provisioning needs Railway credentials
+**Enforcement observed as `ENFORCED`** against the real production environment — examiner
+REGISTERED, capabilities `MALWARE_SCAN` only, version `clamd@clamav.railway.internal:3310`. Derived,
+not hand-flipped.
 
-`infra/clamav/` holds a ready-to-deploy Dockerfile and guide. The CLI is installed but
-`railway whoami` returns **`Unauthorized`** and `railway login` is interactive. **Access, not
-feasibility** — and no third-party scanner was substituted.
+### The one thing to do next, and why it is urgent
 
-**Measured:** image 156 MB compressed / 393 MB on disk · **amd64 only** · ports 3310 + 7357 ·
-entrypoint `/init` supervising clamd *and* freshclam · healthcheck `clamdcheck.sh`.
-**Not measured:** runtime RSS and startup time — the image has no arm64 manifest and this host has
-no amd64 emulation (`exec /init: exec format error`). **The earlier "~1 GB" is withdrawn**: plan
-~2 GB and verify from Railway's own metrics on first deploy.
+**Upload an attachment.** Enforcement is now ON: if anything on the examiner path fails, a required
+`MALWARE_SCAN` has no pass and uploads **hold at `PROCESSING`** — correct behaviour, and also a
+user-visible attachment outage. Reachability is control-tested and clamd answers cleanly, but **no
+upload has actually traversed the path**, and `MediaExamination` holds **0 rows**.
 
-The prepared Dockerfile raises clamd's scan limits above Aura's 25 MB ceiling — at defaults a large
-legitimate attachment returns an *error*, and an error is not a pass, so uploads would hold at
-`PROCESSING`.
+Rollback if it misbehaves — one command, restores `NOT_ENFORCEABLE`:
+```
+railway variables --service aura-backend --unset CLAMAV_HOST
+railway redeploy --service aura-backend --yes
+```
 
-### Owed
+Then the remaining F137 closure evidence: clean file → `READY` with durable verdicts · EICAR →
+`MALWARE_SCAN` FAILED → never `READY` · unavailable examiner → retryable hold · idempotency ·
+provenance.
 
-1. **Provision clamd** (one founder action; steps in `infra/clamav/README.md`), then set
-   `CLAMAV_HOST`/`CLAMAV_PORT` on the API. Enforcement flips to `ENFORCED` **by itself**.
-2. **Founder upload of a benign file**, so the clean-file production proof exists. `MediaExamination`
-   currently holds **0 rows** — nothing has passed the confirm door since deploy.
-
-**F137 stays OPEN.** Deployed code, an applied migration and a prepared image are not evidence that
-the promise holds.
+**F137 stays OPEN.** clamd running is not the invariant.
 
 ## OWED — founder live observation
 
