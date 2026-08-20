@@ -750,6 +750,49 @@ class InstitutionsRepository {
     throw Exception('Unexpected response adding member.');
   }
 
+  /// REMOVE MEMBER — the mirror of Add Member.
+  ///
+  /// Space membership only. The frozen Institution Space Membership Doctrine's
+  /// boundary holds in this direction too: removing someone from a Space never
+  /// touches their INSTITUTION membership.
+  Future<Map<String, dynamic>> removeInstitutionSpaceMember(
+    String institutionId,
+    String spaceId,
+    String userId,
+  ) async {
+    final res = await _dio.delete(
+      '/institutions/$institutionId/spaces/$spaceId/members/$userId',
+    );
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final space = root['space'];
+      if (space is Map) return Map<String, dynamic>.from(space);
+    }
+    throw Exception('Unexpected response removing member.');
+  }
+
+  /// The Space's canonical Conversation id.
+  ///
+  /// RC-C7 reconstruction: a Space owns governance, a Conversation owns
+  /// communication. The surface asks for this once and then speaks to the
+  /// canonical Conversation API for everything else — timeline, composer,
+  /// rich content, read state. There is no Space messaging endpoint, and
+  /// there must never be one.
+  Future<String?> institutionSpaceConversationId(
+    String institutionId,
+    String spaceId,
+  ) async {
+    final res = await _dio.get(
+      '/institutions/$institutionId/spaces/$spaceId/conversation',
+    );
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final id = root['conversationId'];
+      if (id is String && id.trim().isNotEmpty) return id.trim();
+    }
+    return null;
+  }
+
   Future<Map<String, dynamic>> createInstitutionSpace(
     String institutionId, {
     required String title,

@@ -86,6 +86,7 @@ import 'features/institutions/verification/institution_request_verification_scre
 import 'features/institutions/announcements/institution_announcements_screen.dart';
 import 'features/institutions/announcements/institution_announcement_composer.dart';
 import 'features/institutions/presentation/institution_spaces_screen.dart';
+import 'features/institutions/spaces/institution_space_screen.dart';
 import 'features/institutions/live_rooms/institution_live_rooms_screen.dart';
 import 'features/institutions/explore/institution_explore_screen.dart';
 import 'features/institutions/posts/institution_post_composer_screen.dart';
@@ -1842,11 +1843,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
           ),
+          // RC-C7 RECONSTRUCTION (2026-08-20). This route used to build the
+          // legacy `SpaceScreen` — the same widget as
+          // `/me/correspondence/:spaceId`, on the Thread/Message runtime. It
+          // now builds the reconstructed surface: Space governs identity,
+          // purpose and membership; the canonical Conversation owns the
+          // communication. The legacy route remains for personal
+          // correspondence until that family is retired.
           GoRoute(
             path: '/institution/:institutionId/spaces/:spaceId',
-            builder: (context, state) => SpaceScreen(
+            builder: (context, state) => InstitutionSpaceScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
               spaceId: state.pathParameters['spaceId'] ?? '',
-              institutionId: state.pathParameters['institutionId'],
             ),
           ),
           GoRoute(

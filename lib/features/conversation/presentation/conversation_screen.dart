@@ -29,6 +29,7 @@ import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
+import '../../institutions/spaces/institution_space_context.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -64,8 +65,19 @@ final conversationActiveLiveProvider = FutureProvider.autoDispose
 /// Nothing forks into a sibling product and no session/thread vocabulary
 /// reaches the person.
 class ConversationScreen extends ConsumerStatefulWidget {
-  const ConversationScreen({super.key, required this.conversationId});
+  const ConversationScreen({
+    super.key,
+    required this.conversationId,
+    this.spaceContext,
+  });
   final String conversationId;
+
+  /// Present when this conversation IS an Institution Space's communication
+  /// runtime (RC-C7 reconstruction, ruling D1). It changes what the header
+  /// says and where Back goes — nothing else. There is exactly ONE
+  /// conversation implementation in the product, and a Space consuming it is
+  /// the point of the reconstruction, not an exception to it.
+  final InstitutionSpaceContext? spaceContext;
 
   @override
   ConsumerState<ConversationScreen> createState() => _ConversationScreenState();
@@ -671,9 +683,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   IconButton(
                     tooltip: 'Back',
                     icon: const Icon(Icons.arrow_back_rounded),
-                    onPressed: () => context.canPop()
-                        ? context.pop()
-                        : context.go(NavigationAuthority.messagesRoute),
+                    onPressed: () {
+                      final back = widget.spaceContext?.onBack;
+                      if (back != null) {
+                        back();
+                        return;
+                      }
+                      context.canPop()
+                          ? context.pop()
+                          : context.go(NavigationAuthority.messagesRoute);
+                    },
                   ),
                   // F056: counterpart avatar for 1:1, bounded composite of
                   // canonical participant identities for a group.
@@ -681,15 +700,27 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       conversation: c, myUserId: myUserId, size: 34),
                   const SizedBox(width: AuraSpace.s10),
                   Expanded(
-                    child: Text(
-                      conversationDisplayName(c, myUserId),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AuraText.body.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AuraSurface.ink),
-                    ),
+                    // In a Space, the SPACE names the surface. The
+                    // conversation's own name is a mirror of the Space title,
+                    // and reading it here instead would let a rename drift
+                    // into two answers for one question.
+                    child: widget.spaceContext != null
+                        ? _SpaceHeading(context: widget.spaceContext!)
+                        : Text(
+                            conversationDisplayName(c, myUserId),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.body.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AuraSurface.ink),
+                          ),
                   ),
+                  if (widget.spaceContext?.onOpenMembers != null)
+                    IconButton(
+                      tooltip: 'Members',
+                      icon: const Icon(Icons.group_outlined),
+                      onPressed: widget.spaceContext!.onOpenMembers,
+                    ),
                   IconButton(
                     tooltip: 'Call',
                     icon: const Icon(Icons.call_rounded),
@@ -1836,6 +1867,40 @@ class _InternalRefCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Space identity in the conversation header: the Space's name, and its
+/// purpose when it has one. Two lines at most — the header is a place to know
+/// where you are, not a place to read the charter.
+class _SpaceHeading extends StatelessWidget {
+  const _SpaceHeading({required this.context});
+  final InstitutionSpaceContext context;
+
+  @override
+  Widget build(BuildContext ctx) {
+    final purpose = (context.purpose ?? '').trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          context.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AuraText.body
+              .copyWith(fontWeight: FontWeight.w800, color: AuraSurface.ink),
+        ),
+        if (purpose.isNotEmpty)
+          Text(
+            purpose,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AuraText.micro.copyWith(color: AuraSurface.muted),
+          ),
+      ],
     );
   }
 }
