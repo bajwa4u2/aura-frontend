@@ -65,22 +65,20 @@ class CommunicationResolver {
 
   String resolveRoute(CommunicationTarget target) {
     switch (target.owner) {
+      // CO-RC-C7-005 Phase 5: correspondence thread and space routes are
+      // retired, so resolving to them would send live traffic — an Activity
+      // tap, an incoming-call overlay — into a runtime that no longer exists.
+      // What still matters about these targets is the SESSION, and the
+      // canonical realtime address serves it. Where there is no session there
+      // is nothing left to open, so the honest destination is Activity rather
+      // than a dead correspondence address.
       case CommunicationOwner.thread:
-        if ((target.deeplink ?? '').trim().isNotEmpty) return target.deeplink!.trim();
-        if ((target.spaceId ?? '').isNotEmpty && (target.threadId ?? '').isNotEmpty) {
-          return (target.sessionId ?? '').isNotEmpty
-              ? '/me/correspondence/${target.spaceId!}/thread/${target.threadId!}/live/${target.sessionId!}'
-              : '/me/correspondence/${target.spaceId!}/thread/${target.threadId!}/live';
-        }
-        return '/me/correspondence';
       case CommunicationOwner.space:
         if ((target.deeplink ?? '').trim().isNotEmpty) return target.deeplink!.trim();
-        if ((target.spaceId ?? '').isNotEmpty) {
-          return (target.sessionId ?? '').isNotEmpty
-              ? '/me/correspondence/${target.spaceId!}/live/${target.sessionId!}'
-              : '/me/correspondence/${target.spaceId!}/live';
+        if ((target.sessionId ?? '').isNotEmpty) {
+          return '/realtime/${target.sessionId!}?action=join';
         }
-        return '/me/correspondence';
+        return '/activity';
       case CommunicationOwner.standaloneRealtime:
         if ((target.deeplink ?? '').trim().isNotEmpty) return target.deeplink!.trim();
         if ((target.sessionId ?? '').isNotEmpty) {

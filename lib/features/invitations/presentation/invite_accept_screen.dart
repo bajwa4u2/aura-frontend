@@ -1,3 +1,4 @@
+import '../../../core/identity/person_identity_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -264,12 +265,16 @@ class _InvitePreviewCardState extends ConsumerState<_InvitePreviewCard> {
       );
     }
 
-    final inviterName = _nested(invite, const [
-      ['inviter', 'displayName'],
-      ['invitedBy', 'displayName'],
-      ['inviter', 'handle'],
-      ['invitedBy', 'handle'],
-    ]);
+    // F053/F116 — the invitation domain says WHERE the inviter sits in its
+    // payload; the person authority says HOW to read them. The nested
+    // positional pairs this replaced were a private alias order over a
+    // canonical person projection (invitations.service selects inviters with
+    // PERSON_REFERENCE_SELECT), which is the defect F053 names. Prose naming,
+    // because this composes a sentence: "X invited you", never "@x invited
+    // you". Empty when nobody resolved, so the clause is omitted rather than
+    // naming a stranger.
+    final inviter = _inviterPerson(invite);
+    final inviterName = inviter.isEmpty ? '' : inviter.proseName;
     final targetName = _resolveTargetName(invite);
     final role = _s(invite, const ['roleToGrant', 'role']);
     final message = _s(invite, const ['message']);
@@ -398,6 +403,18 @@ class _InvitePreviewCardState extends ConsumerState<_InvitePreviewCard> {
       ),
     );
   }
+}
+
+/// The inviter as a canonical person. The envelope names are invitation
+/// knowledge; everything about reading the person inside them is not.
+AuraPersonIdentity _inviterPerson(Map<String, dynamic> invite) {
+  for (final key in const ['inviter', 'invitedBy', 'createdBy']) {
+    final raw = invite[key];
+    if (raw is! Map) continue;
+    final person = AuraPersonIdentity.fromJson(Map<String, dynamic>.from(raw));
+    if (person.isNotEmpty) return person;
+  }
+  return AuraPersonIdentity.unknown;
 }
 
 String _resolveTargetName(Map<String, dynamic> invite) {

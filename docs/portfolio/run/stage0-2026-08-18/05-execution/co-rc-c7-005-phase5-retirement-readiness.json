@@ -740,5 +740,128 @@
     "f053AfterRetirement": "The structural test would pass — no surviving code could give one Aura person a different name, handle, avatar or fallback.",
     "noPrePromotion": "F053 and F116 remain PARTIALLY_VALIDATED. Neither advances until the code actually changes and the audit is rerun against a tree where those files no longer exist."
   },
-  "currentReadinessVerdict": "RUNTIME/CODE RETIREMENT IS READY, pending one founder deep-link confirmation and an FD-12 disposition for conversations_screen. DESTRUCTIVE DATABASE CLEANUP IS NOT PART OF IT and is not authorised. PHASE 5 REMAINS UNAUTHORISED pending explicit founder authorisation after reading this reassessment."
+  "currentReadinessVerdict": "RUNTIME/CODE RETIREMENT IS READY, pending one founder deep-link confirmation and an FD-12 disposition for conversations_screen. DESTRUCTIVE DATABASE CLEANUP IS NOT PART OF IT and is not authorised. PHASE 5 REMAINS UNAUTHORISED pending explicit founder authorisation after reading this reassessment.",
+  "phase5RuntimeRetirementExecuted": {
+    "authorisation": "Founder authorised CO-RC-C7-005 Phase 5 RUNTIME/CODE RETIREMENT ONLY, 2026-08-20. Destructive persistence retirement explicitly NOT authorised and NOT performed.",
+    "noF144": "No new finding was created. The post-accept behaviour is a second manifestation of F044, which is clarified rather than duplicated. Accounting stays at 143 findings + 308 obligations = 451 units across 17 chapters.",
+    "f044": {
+      "clarifiedScope": "Ready-to-join presentation appears outside a valid pre-join state.",
+      "manifestationA_postEnd": "The affordance persisted or reappeared after a call ended, when the lifecycle no longer permitted joining.",
+      "manifestationB_postAccept": "After accept, a transient 'Ready to join / Tap Join call to enter' surface appeared while joining continued automatically. Not a dead end and not a second manual press — the founder's correction, and it was right.",
+      "rootCause": "`Ready to join` was the presentation for `joinState == idle`, reached as the default branch of the join-state switch. Idle was being read as 'this person has not asked to join', when it also covers 'has asked, and it is in flight' and 'it already finished'. The room issues its join from a POST-FRAME callback, so the first frame paints while the state is still idle — which is why accepting produced a flash of an instruction to accept.",
+      "repair": "lib/features/realtime/domain/ready_to_join_policy.dart — one pure predicate, `readyToJoinIsTruthful`, consulted by the room's stage computation. The instruction renders only when the viewer is idle, no join intent is in flight, the session is known-active, and nothing is busy. The screen records join intent SYNCHRONOUSLY in initState (the action is known there; the join is not issued until a frame later), so the first frame already knows the person has asked.",
+      "notATimingHack": "Hiding the widget for N milliseconds would have masked the flash and left the rule wrong, resurfacing anywhere else idle is rendered. The predicate is the authority.",
+      "lifecyclePreserved": "RINGING -> ACCEPTED -> JOINING -> CONNECTED are untouched. No state was removed, merged or short-circuited; only the sentence chosen for a state changed. A test asserts the enum still carries all its values so a future 'simplification' cannot collapse them quietly.",
+      "postAcceptAfterRepair": "The accepted call shows 'Connecting… / Setting up your session' until it connects. No instruction to join, no flash.",
+      "postEndAfterRepair": "An ended or not-yet-known session never renders an actionable join. `sessionIsActive != true` refuses it, which covers the null (unknown) case that let the post-end symptom back in while canonical state caught up.",
+      "certification": "8 tests, both directions, plus a SEEDED PROOF: removing the intent rule fails the suite. Local certification only — live observation of the corrected behaviour is owed."
+    },
+    "callingFindingsReassessedIndependently": {
+      "F044": "Repaired and locally certified. NOT promoted to LIVE_CERTIFIED — its closure test is live observation, and this is code.",
+      "F045": "UNCHANGED (IMPLEMENTED_NOT_LIVE_CERTIFIED). Its defect is Accept freezing/spinning via an overlay that never unmounts. The F044 repair touched the same screen but not that mechanism, and no freeze was observed. Not promoted merely because a shared repair passed nearby.",
+      "F047": "UNCHANGED (IMPLEMENTED_NOT_LIVE_CERTIFIED). The ring-card presentation was not touched by this repair. Founder attests the overlay is unchanged live, so its proof remains failed rather than outstanding.",
+      "F035": "UNCHANGED (C4_OWNED_OPEN). Roster-vs-connected truth is C4's, and nothing here addressed media-connected truth.",
+      "F036": "NOT IMPLICATED, deliberately. 'Ready to join' is a pre-join affordance, not 'Connecting'. Reopening a LIVE_CERTIFIED finding on a resemblance would have been wrong."
+    },
+    "mobileReceptionClassification": {
+      "verdict": "B — a responsive aggravation of the same F044 sequencing defect, not separate behaviour.",
+      "basis": "The surface, the trigger and the mechanism are identical on both form factors; the founder's report is that it is more disruptive on a small screen, which is a severity observation about the same interstitial. No distinct evidence of separate behaviour was found, and C (genuinely separate) was not proven, so no new finding was created.",
+      "consequence": "Removing the interstitial removes it on mobile too. If something specifically mobile survives the repair, that is new evidence and gets assessed then."
+    },
+    "runtimeRetirementExecuted": {
+      "frontendRemoved": [
+        "correspondence/presentation/correspondence_hub_screen.dart",
+        "correspondence/presentation/space_screen.dart",
+        "correspondence/presentation/thread_screen.dart",
+        "correspondence/presentation/thread_state_wrapper.dart",
+        "correspondence/presentation/archived_spaces_screen.dart",
+        "correspondence/presentation/archived_threads_screen.dart",
+        "correspondence/presentation/invite_member_screen.dart",
+        "correspondence/presentation/thread/thread_message_tile.dart",
+        "correspondence/data/correspondence_identity.dart",
+        "correspondence/data/communication_state.dart",
+        "messages/presentation/messages_hub_screen.dart",
+        "conversations/presentation/conversations_screen.dart",
+        "ROUTES: /me/correspondence and all sub-routes (space, thread, live, invite, archived, create redirects), /messages/legacy-hub, and the two orphaned institution thread/archived-thread routes"
+      ],
+      "frontendRetainedWithReason": [
+        "correspondence/data/correspondence_live_service.dart — 7 surviving consumers in realtime and updates. Retiring it would have broken live calling.",
+        "correspondence/data/threads_repository.dart — direct threads, activity, interactions, mention scope.",
+        "correspondence/data/spaces_repository.dart — public home, public space detail, mention scope.",
+        "correspondence/data/messages_repository.dart — required by the retained thread composer.",
+        "correspondence/presentation/thread/thread_composer.dart and thread_utils.dart — used by DirectThreadScreen and core/media.",
+        "DirectThreadScreen and /direct/:threadId — live, never part of this retirement."
+      ],
+      "aMistakeWorthRecording": "The first attempt deleted lib/features/correspondence wholesale and produced 27 errors across aura_app, activity, auth, invitations, realtime and core tagging. The directory was never cleanly 'legacy': its DATA layer is shared infrastructure that survives, while only its PRESENTATION layer is the legacy product. Everything was restored and retirement redone per file against proven consumers, which is exactly what the instruction to avoid deleting by filename resemblance was protecting against.",
+      "backendRemoved": "NOTHING — and this is a finding, not an omission. The retained repositories still call /spaces, /spaces/:id/threads, /threads/:id, /threads/:id/messages and /messages/:id, and their consumers are surviving product: DirectThreadScreen, InboxScreen, activity, interactions, mention scope, public spaces. Removing the Thread/Message/Space-messaging endpoints today would break direct threads. Classified MIGRATE CONSUMER FIRST, not REMOVE.",
+      "resolversRetargeted": [
+        "communication_resolver — thread/space targets resolved to /me/correspondence/... and were consumed by Activity and the incoming-live overlay. They now resolve to the canonical realtime session when there is one, and to Activity when there is not.",
+        "route_normalizer — '/correspondence' normalised into a retired address; now goes to /messages.",
+        "route_targets — '/spaces/:id' mapped into correspondence; now /messages.",
+        "activity_screen — 11 correspondence literals reduced to 1 (a persisted-deeplink guard that opens the live session if there is one, and otherwise leaves the row non-actionable).",
+        "new_conversation_screen, institution_correspondence_screen, invitations_screen — navigation retargeted to the Navigation Authority's messages route.",
+        "invite_presentation.destinationRoute — stopped emitting retired correspondence addresses."
+      ],
+      "noCompatibilitySubsystem": "Nothing replaced the removed routing. Persisted correspondence addresses expire, per the founder's ruling; only live realtime sessions still resolve."
+    },
+    "gatesThatFiredAndWhatTheyProved": "Five of this repository's own gates failed on the retirement and every one was right: the C0 baseline-honesty check found 11 baselined files that no longer existed, the C3 route-integrity gate found six surviving surfaces navigating to retired addresses, the C3 literal ratchet demanded the burn-down be recorded rather than silently improved, and the attachment single-authority test found a destination that had been deleted. Each was resolved by correcting the baseline or the code, never by weakening the gate.",
+    "fifteenSiteDischarge": {
+      "before": {
+        "correspondence_identity": 7,
+        "messages_hub_screen": 3,
+        "correspondence_hub_screen": 2,
+        "conversations_screen": 2,
+        "space_screen": 1,
+        "total": 15
+      },
+      "after": 0,
+      "causedByTheCodeChange": "The gate reported each file falling to zero as its file was deleted — conversations_screen 2->0, correspondence_hub_screen 2->0, space_screen 1->0, messages_hub_screen 3->0, correspondence_identity 7->0. The baseline was re-frozen AFTER the measurement moved, never edited to produce it.",
+      "measurements": {
+        "surfaceBefore": "16 files / 28 sites",
+        "surfaceAfter": "12 files / 20 sites",
+        "typedPersonBefore": "1 file / 7 sites",
+        "typedPersonAfter": "0 files / 0 sites",
+        "typedBoundaryInventory": "15 -> 8"
+      }
+    },
+    "invitePresentationResidue": {
+      "status": "RESOLVED, and it turned out to be larger than recorded.",
+      "whatWasFixed": "The five nested positional reads in invite_presentation.dart now delegate to AuraPersonIdentity. The invitation domain keeps the envelope names — invitedBy, inviter, recipient, recipientUser, invitedUser, recipientProfile, directRecipient — because knowing where a person sits in an invite is invitation knowledge; how to read the person is not.",
+      "producerProof": "invitations.service.ts selects these people with PERSON_REFERENCE_SELECT. They are canonical person payloads, so reading them with a private alias order was genuinely the F053 defect and not incidental strings.",
+      "moreFoundBySweeping": "A sweep for the same nested-positional shape found FOUR more pairs in invite_accept_screen.dart that had never been recorded. They are fixed the same way. This is why the sweep was run before considering any promotion: the detector cannot see this shape, so its absence from the metric proves nothing.",
+      "instrumentation": "The detector was NOT widened for this. The class is real but the honest fix was the code; adding a rule to chase nested pairs would have been instrument work in service of a promotion rather than of truth. Recorded so the limitation stays known.",
+      "sweepResult": "Zero remaining nested-positional person reads in lib/."
+    },
+    "f053f116Reassessment": {
+      "measuredState": "Client person-debt sites: 3, all previously classified NON-PERSON — mention_scope_providers:84 (institution suggestion), direct_thread_screen:640 (institution branch of a ternary), institution_profile_screen:151 (institution name). Typed-person: 0. The 17 NON_CONFORMANT are 15 AVATAR-class presentation sites and 2 governed backend credential selects.",
+      "criteria": {
+        "1": "MET — backend producers canonical, unchanged.",
+        "2": "MET — client person deserialization is canonical; typed-person debt is 0 and correspondence_identity is deleted.",
+        "3": "MET — no typed boundary owns private person fallback/alias/envelope semantics.",
+        "4": "MET — the duplicate person model is physically gone, not merely unused.",
+        "5": "MET — domain models keep their own state beside the person.",
+        "6": "MET — every remaining measured hit is classified and non-competing."
+      },
+      "recommendation": "Both findings now satisfy their implementation tests. I am NOT promoting them in this record: the founder held exactly this promotion once before, and the reason it was withdrawn — a detector that understated — is a reason to let the founder confirm rather than for me to decide twice. The evidence for promotion to IMPLEMENTED_NOT_LIVE_CERTIFIED is presented; the ruling is the founder's.",
+      "state": "F053 PARTIALLY_VALIDATED, F116 PARTIALLY_VALIDATED — unchanged in this record."
+    },
+    "persistenceInventoryUnretired": {
+      "status": "PRESENT, UNTOUCHED, UNAUTHORISED to remove — and NOT incomplete Phase 5 work.",
+      "tables": [
+        "DirectThread",
+        "DirectMessage",
+        "Thread",
+        "ThreadMember",
+        "ThreadReadState",
+        "Message",
+        "MessageAttachment",
+        "MessageMedia",
+        "Space.type",
+        "Space.visibility"
+      ],
+      "productionRows": "Unchanged: 5 DirectThreads, 9 DirectMessages, 69 Messages, 13 Spaces. Nothing was migrated, deleted or rewritten.",
+      "note": "Several of these tables are still SERVED by endpoints the surviving direct-thread product uses, so this is not merely 'data left behind' — part of the persistence is still live. Destructive cleanup requires both a separate authorisation and the backend consumer migration above."
+    },
+    "rollbackPosture": "Code-only and reversible. A revert restores the deleted screens, routes and resolvers, and every legacy row is exactly where it was, so restored code finds its data intact. No migration ran. The exposure remains address loss, not data loss."
+  }
 }

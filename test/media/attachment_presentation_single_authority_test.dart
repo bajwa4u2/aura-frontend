@@ -32,9 +32,14 @@ import 'package:aura/core/media/aura_attachment_card.dart';
 const String kResolver = 'lib/core/media/aura_attachment_card.dart';
 
 /// Destinations that present attachments.
+///
+/// The correspondence thread tile was removed from this list when CO-RC-C7-005
+/// Phase 5 retired that runtime (2026-08-20). One destination remains, and that
+/// is the point of the retirement rather than a weakening of this gate: there
+/// is now one attachment presentation surface in the product, so the rule this
+/// file enforces has one place left to be broken.
 const List<String> kDestinations = [
   'lib/features/conversation/presentation/conversation_screen.dart',
-  'lib/features/correspondence/presentation/thread/thread_message_tile.dart',
 ];
 
 /// Substring-matching on a MIME to decide PRESENTATION. This is the shape a

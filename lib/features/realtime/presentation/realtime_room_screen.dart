@@ -22,13 +22,13 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../correspondence/presentation/thread_screen.dart';
 import '../../institutions/live_rooms/institution_session_meta.dart';
 import '../../search/search_repository.dart';
 import '../application/caller_ringback_provider.dart';
 import '../application/realtime_controller.dart';
 import '../application/realtime_providers.dart';
 import '../domain/realtime_enums.dart';
+import '../domain/ready_to_join_policy.dart';
 import '../domain/realtime_models.dart';
 import '../domain/realtime_state.dart';
 import 'widgets/realtime_consent_sheet.dart';
@@ -147,6 +147,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   String? _lastKnownSurfaceId;
   String? _lastKnownInstitutionId;
   Timer? _durationTimer;
+
+  /// F044 — set the moment an explicit join/resume intent exists, cleared once
+  /// the lifecycle has moved somewhere with its own truthful presentation.
+  /// This is presentation state about the VIEWER's intent; it is not a
+  /// lifecycle state and it never substitutes for one.
+  bool _joinIntentInFlight = false;
   Timer? _preJoinTruthTimer;
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
@@ -188,6 +194,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // (fresh start from live rooms list); cache covers browser refresh
     // and second-device joins.
     _resolveInsSessionMeta();
+
+    // F044 — the intent is known SYNCHRONOUSLY, so it must be recorded
+    // synchronously. The join below is issued from a post-frame callback, so
+    // the first frame paints before it runs; without this the idle
+    // presentation ("tap Join call to enter") is shown to someone who has
+    // already accepted, for exactly one frame. That flash is the defect.
+    final initialAction = (widget.action ?? '').trim().toLowerCase();
+    _joinIntentInFlight = initialAction == 'join' || initialAction == 'resume';
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -461,17 +475,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   void _navigateAfterCall(RealtimeSession? session) {
-    // Invalidate cached thread data so the stale liveSessionId ribbon is gone
-    // when the thread screen remounts after the call ends.
-    final surfaceType = session?.surfaceType ?? _lastKnownSurfaceType;
-    final surfaceId = (session?.surfaceId ?? _lastKnownSurfaceId ?? '').trim();
-    if (surfaceId.isNotEmpty &&
-        (surfaceType == RealtimeSurfaceType.space ||
-            surfaceType == RealtimeSurfaceType.thread ||
-            surfaceType == RealtimeSurfaceType.dm)) {
-      ref.invalidate(threadDetailProvider(surfaceId));
-      ref.invalidate(messagesProvider(surfaceId));
-    }
+    // CO-RC-C7-005 Phase 5: this used to invalidate `threadDetailProvider`
+    // and `messagesProvider` so a stale live-session ribbon would clear when
+    // the correspondence thread screen remounted after a call. Both providers
+    // were defined in that screen and it is retired, so there is nothing left
+    // to invalidate. Direct threads are unaffected — they never consumed
+    // these providers, which means the `dm` branch had been inert already.
 
     final target = _safeReturnRoute(session);
     debugPrint(
@@ -1289,6 +1298,35 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required bool roomIsClosed,
   }) {
     final isMeeting = state.session?.surfaceType == RealtimeSurfaceType.meeting;
+
+    // F044 — once the lifecycle has left idle it owns the presentation, and
+    // the intent flag has done its job. Clearing here rather than in a
+    // listener keeps the rule in one place.
+    if (state.joinState != RealtimeJoinState.idle && _joinIntentInFlight) {
+      _joinIntentInFlight = false;
+    }
+
+    // F044 — an explicit join intent in flight reads as work under way, never
+    // as an instruction to act. Same sentence the joining state shows, because
+    // it is the same situation from the person's point of view.
+    if (_joinIntentInFlight &&
+        !readyToJoinIsTruthful(
+          joinState: state.joinState,
+          joinIntentInFlight: _joinIntentInFlight,
+          sessionIsActive: state.session?.isActive,
+          isBusy: state.isBusy,
+        )) {
+      return (
+        isMeeting ? Icons.event_note_rounded : Icons.call_rounded,
+        isMeeting ? 'Opening meeting room…' : 'Connecting…',
+        isMeeting
+            ? 'Waiting for guest to join.'
+            : 'Setting up your session. This only takes a moment.',
+        false,
+        false,
+      );
+    }
+
     if (state.isBusy || state.joinState == RealtimeJoinState.joining) {
       return (
         isMeeting ? Icons.event_note_rounded : Icons.call_rounded,
@@ -1406,6 +1444,25 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             'This room is closed to new entries.',
             false,
             true,
+          );
+        }
+        // F044 — the instruction is only truthful when the viewer genuinely
+        // still has a Join to perform. Idle alone never established that: it
+        // also covers "already asked, in flight" and "already over".
+        if (!readyToJoinIsTruthful(
+          joinState: state.joinState,
+          joinIntentInFlight: _joinIntentInFlight,
+          sessionIsActive: state.session?.isActive,
+          isBusy: state.isBusy,
+        )) {
+          return (
+            isMeeting ? Icons.event_note_rounded : Icons.call_rounded,
+            isMeeting ? 'Opening meeting room…' : 'Connecting…',
+            isMeeting
+                ? 'Waiting for guest to join.'
+                : 'Setting up your session. This only takes a moment.',
+            false,
+            false,
           );
         }
         return (

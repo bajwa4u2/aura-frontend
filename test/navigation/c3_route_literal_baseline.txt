@@ -13,7 +13,7 @@
 1 lib/core/translation/communication_translate_action.dart
 1 lib/core/ui/aura_identity_surface.dart
 1 lib/features/accountability/widgets/open_commitments_board.dart
-10 lib/features/activity/presentation/activity_screen.dart
+5 lib/features/activity/presentation/activity_screen.dart
 9 lib/features/admin/presentation/admin_institutions_screen.dart
 3 lib/features/announcements/presentation/announcement_editor_screen.dart
 7 lib/features/announcements/presentation/announcements_screen.dart
@@ -24,12 +24,6 @@
 3 lib/features/auth/presentation/verify_email_screen.dart
 2 lib/features/auth/presentation/verify_pending_screen.dart
 1 lib/features/communications/presentation/widgets/communication_role_hero.dart
-5 lib/features/conversations/presentation/conversations_screen.dart
-8 lib/features/correspondence/presentation/correspondence_hub_screen.dart
-4 lib/features/correspondence/presentation/space_screen.dart
-1 lib/features/correspondence/presentation/thread/thread_message_tile.dart
-4 lib/features/correspondence/presentation/thread_screen.dart
-3 lib/features/create/presentation/new_conversation_screen.dart
 1 lib/features/direct_threads/presentation/direct_intent_screen.dart
 2 lib/features/discourse_intelligence/widgets/continuity_cards.dart
 1 lib/features/discourse_intelligence/widgets/institutional_response_history_strip.dart
@@ -41,7 +35,6 @@
 9 lib/features/home/presentation/public_home_screen.dart
 1 lib/features/institution_ontology/widgets/sector_grid.dart
 2 lib/features/institutions/announcements/institution_announcements_screen.dart
-1 lib/features/institutions/correspondence/institution_correspondence_screen.dart
 1 lib/features/institutions/engagement/engagement_detail_screen.dart
 2 lib/features/institutions/engagement/engagement_list_screen.dart
 2 lib/features/institutions/explore/institution_explore_screen.dart
@@ -60,7 +53,7 @@
 # "Existing institution admin -> /institution/sign-in" retired — one
 # authenticated Person identity; no second authentication universe).
 6 lib/features/institutions/wizard/institution_onboarding_wizard.dart
-3 lib/features/invitations/presentation/invitations_screen.dart
+2 lib/features/invitations/presentation/invitations_screen.dart
 3 lib/features/invitations/presentation/invite_accept_screen.dart
 2 lib/features/invitations/presentation/invite_hub_screen.dart
 16 lib/features/me/presentation/me_screen.dart
@@ -80,7 +73,6 @@
 # 2026-08-16 founder-observed navigation correction: 7 -> 6 (empty-state
 # start-conversation entry now routes via NavigationAuthority.newConversationRoute
 # — the one canonical conversation-creation lifecycle).
-6 lib/features/messages/presentation/messages_hub_screen.dart
 3 lib/features/posts/presentation/compose_screen.dart
 5 lib/features/posts/presentation/post_detail_screen.dart
 3 lib/features/posts/presentation/widgets/post_card.dart

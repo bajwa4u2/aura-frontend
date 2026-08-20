@@ -1,3 +1,4 @@
+import '../../../core/navigation/navigation_authority.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/product/temporal.dart';
@@ -211,21 +212,24 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       }
       if (spaceId.isNotEmpty) {
         final route = _withLiveQuery(
-          '/me/correspondence/$spaceId',
+          NavigationAuthority.messagesRoute,
           sessionId: realtimeSessionId,
           shouldJoin: true,
         );
         context.push(route);
         return;
       }
+      // Phase 5: a persisted activity row may still carry a correspondence
+      // deeplink. That address has no surface now, and the founder ruled these
+      // links may expire rather than earn a translator. What survives is the
+      // SESSION, so a live one still opens; otherwise this row is simply no
+      // longer actionable, which is the honest outcome.
       if (deeplink.startsWith('/me/correspondence/')) {
-        context.push(
-          _withLiveQuery(
-            deeplink,
-            sessionId: realtimeSessionId,
-            shouldJoin: true,
-          ),
-        );
+        if (realtimeSessionId.trim().isNotEmpty) {
+          context.push(
+            NavigationAuthority.realtimeSessionJoinRoute(realtimeSessionId.trim()),
+          );
+        }
       }
       return;
     }
@@ -260,7 +264,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           // the navigator preserves the workspace.
           _safePush(
             _withLiveQuery(
-              '/me/correspondence/$idFromLink',
+              NavigationAuthority.messagesRoute,
               sessionId: realtimeSessionId,
               shouldJoin: isRealtimeActivity,
             ),
@@ -319,7 +323,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       case 'INVITE_ACCEPTED':
       case 'INVITE_DECLINED':
       case 'INVITE_REVOKED':
-        if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
+        if (spaceId.isNotEmpty) context.push(NavigationAuthority.messagesRoute);
         return;
       case 'THREAD_INVITE':
       case 'MESSAGE_RECEIVED':
@@ -333,7 +337,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           return;
         }
         if (spaceId.isNotEmpty) {
-          context.push('/me/correspondence/$spaceId');
+          context.push(NavigationAuthority.messagesRoute);
         }
         return;
       default:
@@ -348,14 +352,14 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         if (spaceId.isNotEmpty && threadId.isNotEmpty) {
           context.push(
             _withLiveQuery(
-              '/me/correspondence/$spaceId/thread/$threadId',
+              NavigationAuthority.messagesRoute,
               sessionId: realtimeSessionId,
               shouldJoin: isRealtimeActivity,
             ),
           );
           return;
         }
-        if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
+        if (spaceId.isNotEmpty) context.push(NavigationAuthority.messagesRoute);
     }
   }
 
@@ -370,14 +374,14 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final cleanSessionId = (sessionIdHint ?? '').trim();
 
     if (cleanThreadId.isEmpty) {
-      context.push('/me/correspondence');
+      context.push(NavigationAuthority.messagesRoute);
       return;
     }
 
     if (cleanSpaceId.isNotEmpty) {
       context.push(
         _withLiveQuery(
-          '/me/correspondence/$cleanSpaceId/thread/$cleanThreadId',
+          NavigationAuthority.messagesRoute,
           sessionId: cleanSessionId,
           shouldJoin: shouldJoin,
         ),
@@ -399,7 +403,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       if (resolvedSpaceId.isNotEmpty) {
         context.push(
           _withLiveQuery(
-            '/me/correspondence/$resolvedSpaceId/thread/$cleanThreadId',
+            NavigationAuthority.messagesRoute,
             sessionId: cleanSessionId,
             shouldJoin: shouldJoin,
           ),
@@ -409,7 +413,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     } catch (_) {}
 
     if (!mounted) return;
-    context.push('/me/correspondence');
+    context.push(NavigationAuthority.messagesRoute);
   }
 
   String _withLiveQuery(

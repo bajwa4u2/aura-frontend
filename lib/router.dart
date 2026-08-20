@@ -99,7 +99,6 @@ import 'features/direct_threads/presentation/direct_thread_screen.dart';
 import 'features/direct_threads/presentation/inbox_screen.dart';
 import 'core/navigation/navigation_authority.dart';
 import 'features/discover/presentation/discover_screen.dart';
-import 'features/messages/presentation/messages_hub_screen.dart';
 import 'features/conversation/presentation/messages_screen.dart';
 import 'features/conversation/presentation/conversation_screen.dart';
 import 'features/conversation/presentation/new_conversation_picker.dart';
@@ -112,12 +111,6 @@ import 'features/notifications/presentation/notifications_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
 import 'features/monetization/presentation/institution_billing_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
-import 'features/correspondence/presentation/correspondence_hub_screen.dart';
-import 'features/correspondence/presentation/archived_spaces_screen.dart';
-import 'features/correspondence/presentation/archived_threads_screen.dart';
-import 'features/correspondence/presentation/space_screen.dart';
-import 'features/correspondence/presentation/thread_state_wrapper.dart';
-import 'features/correspondence/presentation/invite_member_screen.dart';
 import 'features/create/presentation/create_hub_screen.dart';
 import 'features/invitations/presentation/invite_hub_screen.dart';
 import 'features/invitations/presentation/invitations_screen.dart';
@@ -179,6 +172,10 @@ const String kMeCommunicationsRoute = '/me/settings/communications';
 const String kRouterBootRoute = '/_boot';
 
 const String kMessagesRoute = '/messages';
+// CO-RC-C7-005 Phase 5: `/me/correspondence` is retired. The constant is
+// kept ONLY because route classification and the navigation authority still
+// name it while they finish shedding their references to a family that no
+// longer has routes; nothing builds a screen from it any more.
 const String kCorrespondenceHubRoute = '/me/correspondence';
 const String kCreateConversationRoute =
     '/me/correspondence/create/conversation';
@@ -1380,10 +1377,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               token: state.pathParameters['token'] ?? '',
             ),
           ),
-          GoRoute(
-            path: '/messages/legacy-hub',
-            builder: (_, __) => const MessagesHubScreen(),
-          ),
+          // /messages/legacy-hub RETIRED with the correspondence family.
+          // Canonical /messages has served this purpose since the additive
+          // deploy; the parked predecessor is removed, not the product.
           GoRoute(
             path: '$kMessagesRoute/direct',
             builder: (_, __) => const InboxScreen(),
@@ -1530,67 +1526,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const AdminSupportConsoleScreen(),
           ),
 
-          // Correspondence routes flattened for stable direct navigation
-          GoRoute(
-            path: kCorrespondenceHubRoute,
-            builder: (_, __) => const CorrespondenceHubScreen(),
-          ),
-          GoRoute(
-            path: '$kCorrespondenceHubRoute/archived',
-            builder: (_, __) => const ArchivedSpacesScreen(),
-          ),
-          GoRoute(
-            path: kCreateConversationRoute,
-            redirect: (context, state) {
-              final query = <String, String>{...state.uri.queryParameters};
-              query['start'] = 'private';
-              return Uri(
-                path: kCorrespondenceHubRoute,
-                queryParameters: query,
-              ).toString();
-            },
-          ),
-          GoRoute(
-            path: kCreateSpaceRoute,
-            redirect: (context, state) {
-              final query = <String, String>{...state.uri.queryParameters};
-              query['start'] = 'space';
-              return Uri(
-                path: kCorrespondenceHubRoute,
-                queryParameters: query,
-              ).toString();
-            },
-          ),
-          GoRoute(
-            path: '/me/correspondence/:spaceId',
-            builder: (context, state) =>
-                SpaceScreen(spaceId: state.pathParameters['spaceId'] ?? ''),
-          ),
-          GoRoute(
-            path: '/me/correspondence/:spaceId/archived-threads',
-            builder: (context, state) => ArchivedThreadsScreen(
-              spaceId: state.pathParameters['spaceId'] ?? '',
-            ),
-          ),
-          GoRoute(
-            path: '/me/correspondence/:spaceId/invite',
-            builder: (context, state) => InviteMemberScreen(
-              spaceId: state.pathParameters['spaceId'] ?? '',
-            ),
-          ),
-          GoRoute(
-            path: '/me/correspondence/:spaceId/thread/:threadId',
-            builder: (context, state) => ThreadStateWrapper(
-              threadId: state.pathParameters['threadId'] ?? '',
-            ),
-          ),
-          GoRoute(
-            path:
-                '/me/correspondence/:spaceId/thread/:threadId/live/:sessionId',
-            builder: (context, state) => ThreadStateWrapper(
-              threadId: state.pathParameters['threadId'] ?? '',
-            ),
-          ),
+          // CO-RC-C7-005 PHASE 5 (2026-08-20): the personal correspondence
+          // route family is RETIRED. `/me/correspondence` and its space,
+          // thread, invite, archived and live sub-routes are gone, and with
+          // them every path by which product traffic could enter the legacy
+          // Thread/Message runtime.
+          //
+          // Founder ruling: addresses whose only destination was abandoned
+          // legacy history may expire. No translator replaces them — a
+          // compatibility subsystem to preserve content the founder has
+          // ruled worthless would be the same fossil with a redirect in
+          // front of it.
+          //
+          // Canonical messaging is unaffected and lives at /messages.
 
           GoRoute(
             path: '/compose',
@@ -1857,19 +1805,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               spaceId: state.pathParameters['spaceId'] ?? '',
             ),
           ),
-          GoRoute(
-            path: '/institution/:institutionId/spaces/:spaceId/archived-threads',
-            builder: (context, state) => ArchivedThreadsScreen(
-              spaceId: state.pathParameters['spaceId'] ?? '',
-            ),
-          ),
-          GoRoute(
-            path:
-                '/institution/:institutionId/spaces/:spaceId/thread/:threadId',
-            builder: (context, state) => ThreadStateWrapper(
-              threadId: state.pathParameters['threadId'] ?? '',
-            ),
-          ),
+          // The institution thread/archived-thread routes are RETIRED with
+          // the Thread runtime. They were already orphaned by the Institution
+          // Spaces reconstruction: the reconstructed surface produces neither,
+          // and the only code that ever did was space_screen itself.
           GoRoute(
             path: '/institution/:institutionId/members',
             builder: (context, state) => InstitutionMembersScreen(

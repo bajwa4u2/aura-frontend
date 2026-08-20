@@ -1,3 +1,4 @@
+import '../../../core/navigation/navigation_authority.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -347,7 +348,11 @@ class _ChannelCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: id.isNotEmpty ? () => context.push('/me/correspondence/$id') : null,
+        // Phase 5: the correspondence space route is retired; canonical
+        // messaging is the destination now.
+        onTap: id.isNotEmpty
+            ? () => context.push(NavigationAuthority.messagesRoute)
+            : null,
         borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Ink(
           decoration: BoxDecoration(

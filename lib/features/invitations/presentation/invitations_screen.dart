@@ -1,3 +1,4 @@
+import '../../../core/navigation/navigation_authority.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -113,7 +114,8 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
                       ),
                       AuraSecondaryButton(
                         label: 'Open messages',
-                        onPressed: () => context.push('/me/correspondence'),
+                        onPressed: () =>
+                            context.push(NavigationAuthority.messagesRoute),
                       ),
                     ],
                   ),

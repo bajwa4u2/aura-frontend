@@ -39,10 +39,7 @@ G3 1 lib/features/admin/presentation/admin_moderation_screen.dart
 G3 1 lib/features/admin/presentation/admin_review_queue_screen.dart
 G3 1 lib/features/announcements/presentation/announcement_detail_screen.dart
 G3 1 lib/features/announcements/presentation/announcements_screen.dart
-G3 1 lib/features/conversations/presentation/conversations_screen.dart
-G3 1 lib/features/correspondence/data/correspondence_identity.dart
 G3 1 lib/features/correspondence/presentation/thread/thread_utils.dart
-G3 3 lib/features/correspondence/presentation/thread_screen.dart
 G3 1 lib/features/devices/presentation/devices_screen.dart
 G3 2 lib/features/home/presentation/member_home_screen.dart
 G3 2 lib/features/institutions/activity/institution_activity_screen.dart
@@ -65,7 +62,6 @@ G3 1 lib/features/meetings/presentation/meeting_lifecycle_presenter.dart
 G3 3 lib/features/meetings/presentation/meetings_home_screen.dart
 G3 1 lib/features/meetings/presentation/slot_picker_screen.dart
 G3 1 lib/features/meetings/presentation/widgets/meeting_preparation_panel.dart
-G3 1 lib/features/messages/presentation/messages_hub_screen.dart
 G3 1 lib/features/posts/presentation/compose_screen.dart
 G3 1 lib/features/realtime/domain/realtime_models.dart
 
@@ -133,12 +129,6 @@ G5 1 lib/features/communications/presentation/widgets/admin_ai_draft_panel.dart
 G5 1 lib/features/communications/presentation/widgets/admin_campaign_workflow.dart
 G5 1 lib/features/communications/presentation/widgets/admin_newsletter_lab.dart
 G5 2 lib/features/communications/presentation/widgets/digest_preferences_panel.dart
-G5 2 lib/features/conversations/presentation/conversations_screen.dart
-G5 3 lib/features/correspondence/presentation/archived_spaces_screen.dart
-G5 3 lib/features/correspondence/presentation/archived_threads_screen.dart
-G5 4 lib/features/correspondence/presentation/correspondence_hub_screen.dart
-G5 1 lib/features/correspondence/presentation/space_screen.dart
-G5 1 lib/features/correspondence/presentation/thread_screen.dart
 G5 3 lib/features/direct_threads/presentation/direct_intent_screen.dart
 G5 4 lib/features/direct_threads/presentation/direct_thread_screen.dart
 G5 4 lib/features/direct_threads/presentation/inbox_screen.dart
@@ -167,7 +157,6 @@ G5 2 lib/features/institutions/presentation/institution_spaces_screen.dart
 G5 4 lib/features/institutions/profile/institution_profile_screen.dart
 G5 1 lib/features/institutions/units/institution_units_screen.dart
 G5 2 lib/features/me/presentation/me_screen.dart
-G5 5 lib/features/messages/presentation/messages_hub_screen.dart
 G5 3 lib/features/notifications/presentation/notifications_screen.dart
 G5 2 lib/features/profile/presentation/author_profile_screen.dart
 G5 3 lib/features/public/presentation/institution_sector_screen.dart

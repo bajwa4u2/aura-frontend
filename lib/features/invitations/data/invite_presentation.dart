@@ -9,24 +9,46 @@
 /// a LIVE, routed surface that survives the C7 retirement; while it imported
 /// `CorrespondenceIdentity`, deleting that class would have broken it, and the
 /// seven person-identity sites inside it could never be discharged by the
-/// retirement that owns them. Nothing here was canonicalised or improved —
-/// preserving behaviour exactly is the point, because this is a relocation, not
-/// a rewrite.
+/// retirement that owns them. The move was a pure relocation; the identity work
+/// below came after, deliberately and separately.
 ///
-/// PERSON IDENTITY IS DELIBERATELY NOT READ HERE. These helpers read invitation
-/// STATE — destination type, access policy, status — and the names they surface
-/// are read positionally out of the invite payload's own envelopes. When this
-/// screen is reconstructed, the person-shaped reads below (`invitedBy`,
-/// `inviter`, `recipient`, …) are the ones that should move to
-/// `AuraPersonIdentity`; they are left as-is now so this change stays a pure
-/// relocation and the identity work is done deliberately rather than smuggled
-/// in alongside it.
+/// PERSON IDENTITY IS CANONICAL HERE (F053/F116, 2026-08-20).
 ///
-/// KNOWN LEGACY COUPLING, recorded not fixed: [inviteDestinationRoute] still
-/// emits `/me/correspondence/...` addresses. That is the same legacy deep-link
-/// production the CO-RC-C7-005 readiness audit found in eleven backend files,
-/// and it is dispositioned there, not here.
+/// When these helpers were relocated out of the retiring correspondence family
+/// they carried five person-shaped POSITIONAL reads — `['invitedBy',
+/// 'displayName']`, `['inviter', 'handle']`, `['recipient', 'avatarUrl']` and
+/// so on. That was recorded at the time as debt moved into surviving code, and
+/// deliberately left visible rather than quietly fixed inside a relocation.
+///
+/// It is fixed now, and the split is the point:
+///
+///   THE INVITATION DOMAIN knows WHERE a person sits in its own payload — an
+///   invite calls them `invitedBy` or `inviter`, `recipient` or `invitedUser`.
+///   That is invitation knowledge and stays here.
+///
+///   THE PERSON AUTHORITY knows HOW to read one — which aliases count, which
+///   envelope to unwrap, and what to do when a name is missing. That is
+///   `AuraPersonIdentity` and it is not re-decided here.
+///
+/// The producer confirms this is genuine person identity rather than incidental
+/// strings: `invitations.service.ts` selects these people with
+/// `PERSON_REFERENCE_SELECT`, the canonical person projection. Reading a
+/// canonical person payload with a private alias order is exactly the F053
+/// defect, so the aliases are gone.
+///
+/// The detector could not see these reads — it recognises flat alias lists, not
+/// nested positional path pairs. They were fixed because they were real, not
+/// because a metric found them.
+///
+/// LEGACY DESTINATIONS ARE NO LONGER EMITTED. [destinationRoute] used to return
+/// `/me/correspondence/...` addresses. Phase 5 retired those routes, so sending
+/// anyone there would be routing live product traffic into a runtime that no
+/// longer exists. An invite whose destination was a retired correspondence
+/// space now resolves to the invitations hub, which is honest about what can
+/// still be opened. No translator was built to resurrect the old address.
 library;
+
+import '../../../core/identity/person_identity_model.dart';
 
 class InvitePresentation {
   const InvitePresentation._();
@@ -53,12 +75,7 @@ class InvitePresentation {
             ['space', 'name'],
           ])
         : _pick(invite, const ['spaceTitle', 'spaceName', 'space_title']);
-    final inviterName = _pickNested(invite, const [
-      ['invitedBy', 'displayName'],
-      ['inviter', 'displayName'],
-      ['invitedBy', 'handle'],
-      ['inviter', 'handle'],
-    ]);
+    final inviterName = _nameOf(_inviter(invite));
 
     switch (destinationType) {
       case 'JOIN_SPACE':
@@ -88,20 +105,14 @@ class InvitePresentation {
 
     final policy =
         _pick(invite, const ['accessPolicy', 'access_policy']).replaceAll('_', ' ');
-    final recipientName = _pickNested(invite, const [
-      ['recipient', 'displayName'],
-      ['recipientUser', 'displayName'],
-      ['invitedUser', 'displayName'],
-      ['recipientProfile', 'displayName'],
-      ['directRecipient', 'displayName'],
-    ]);
-    final recipientHandle =
-        _pick(invite, const ['recipientHandle', 'recipient_handle']);
-    final inviterName = _pickNested(invite, const [
-      ['invitedBy', 'displayName'],
-      ['inviter', 'displayName'],
-      ['createdBy', 'displayName'],
-    ]);
+    final recipient = _recipient(invite);
+    final recipientName = _nameOf(recipient);
+    // The invite may carry a bare handle string of its own when no recipient
+    // person is embedded — invitation state, not a second person reader.
+    final recipientHandle = recipient.handle.trim().isNotEmpty
+        ? recipient.handle.trim()
+        : _pick(invite, const ['recipientHandle', 'recipient_handle']);
+    final inviterName = _nameOf(_inviter(invite));
     final parts = <String>[
       if (policy.isNotEmpty) 'Access: $policy',
       if (recipientName.isNotEmpty) 'For: $recipientName',
@@ -126,15 +137,13 @@ class InvitePresentation {
         status == 'OPENED';
   }
 
+  /// The face to show on the invite — the recipient's, or the inviter's when
+  /// the invite names no recipient person.
   static String avatarUrl(Map<String, dynamic> invite) {
-    return _pickNested(invite, const [
-      ['recipient', 'avatarUrl'],
-      ['recipientUser', 'avatarUrl'],
-      ['invitedUser', 'avatarUrl'],
-      ['recipientProfile', 'avatarUrl'],
-      ['directRecipient', 'avatarUrl'],
-      ['inviter', 'avatarUrl'],
-    ]);
+    final recipient = _recipient(invite);
+    final fromRecipient = (recipient.avatarUrl ?? '').trim();
+    if (fromRecipient.isNotEmpty) return fromRecipient;
+    return (_inviter(invite).avatarUrl ?? '').trim();
   }
 
   static String destinationRoute(Map<String, dynamic> invite) {
@@ -144,13 +153,11 @@ class InvitePresentation {
         _pick(invite, const ['destinationType', 'destination_type'])
             .toUpperCase();
 
-    if (threadId.isNotEmpty && spaceId.isNotEmpty) {
-      return '/me/correspondence/$spaceId/thread/$threadId';
-    }
-    if (spaceId.isNotEmpty) {
-      return '/me/correspondence/$spaceId';
-    }
+    // Phase 5: correspondence spaces and threads have no routes. Rather than
+    // hand back a dead address, an invite that pointed at one resolves to the
+    // hub where its own state is visible.
     if (destinationType == 'JOIN_AURA') return '/home';
+    if (threadId.isNotEmpty || spaceId.isNotEmpty) return '/me/invitations';
     return '/me/invitations';
   }
 
@@ -167,9 +174,48 @@ class InvitePresentation {
         .join(' ');
   }
 
-  /// Generic first-non-empty key read. Not identity: these keys name
-  /// invitation state, and where a person appears the envelope is read
-  /// positionally by the callers above.
+  /// WHO invited — the invitation domain naming its own envelopes, then
+  /// handing the payload to the person authority to actually read.
+  static AuraPersonIdentity _inviter(Map<String, dynamic> invite) =>
+      _personIn(invite, const ['invitedBy', 'inviter', 'createdBy']);
+
+  /// WHO was invited.
+  static AuraPersonIdentity _recipient(Map<String, dynamic> invite) => _personIn(
+        invite,
+        const [
+          'recipient',
+          'recipientUser',
+          'invitedUser',
+          'recipientProfile',
+          'directRecipient',
+        ],
+      );
+
+  /// First envelope that actually holds a person, read canonically.
+  static AuraPersonIdentity _personIn(
+    Map<String, dynamic> invite,
+    List<String> envelopes,
+  ) {
+    for (final key in envelopes) {
+      final raw = invite[key];
+      if (raw is! Map) continue;
+      final person = AuraPersonIdentity.fromJson(
+        Map<String, dynamic>.from(raw),
+      );
+      if (person.isNotEmpty) return person;
+    }
+    return AuraPersonIdentity.unknown;
+  }
+
+  /// A person's name for PROSE — "Ayesha invited you", never "@ayesha invited
+  /// you". Empty when nobody resolved, because these strings are composed into
+  /// sentences that must omit the clause rather than name a stranger.
+  static String _nameOf(AuraPersonIdentity person) =>
+      person.isEmpty ? '' : person.proseName;
+
+  /// Generic first-non-empty key read for invitation STATE — destination type,
+  /// access policy, status, ids. Never a person: people go through
+  /// [_personIn].
   static String _pick(Map<String, dynamic> map, List<String> keys) {
     for (final key in keys) {
       final value = map[key];

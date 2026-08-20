@@ -33,7 +33,10 @@ String normalizeMemberFacingRoute(
   } else if (normalizedPath == '/conversations') {
     normalizedPath = '/messages';
   } else if (normalizedPath.startsWith('/spaces/')) {
-    normalizedPath = '/me/correspondence/${normalizedPath.substring('/spaces/'.length)}';
+    // Phase 5: '/me/correspondence/:spaceId' is retired. A bare '/spaces/:id'
+    // address named a personal correspondence space, which no longer has a
+    // surface; messaging is where that traffic belongs now.
+    normalizedPath = '/messages';
   } else if (normalizedPath.startsWith('/threads/')) {
     final threadId = normalizedPath.substring('/threads/'.length).trim();
     if (threadId.isNotEmpty) {

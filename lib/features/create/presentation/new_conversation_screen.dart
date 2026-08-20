@@ -1,3 +1,4 @@
+import '../../../core/navigation/navigation_authority.dart';
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -446,12 +447,15 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
       if (_isSharedSpaceMode) {
         if (!mounted) return;
-        context.go('/me/correspondence/$spaceId');
+        context.go(NavigationAuthority.messagesRoute);
         return;
       }
 
+      // The direct thread is still ensured server-side — creation semantics are
+      // unchanged — but its id no longer selects a destination, because the
+      // correspondence thread route it used to open is retired.
       final member = _selectedEntries.first;
-      final threadId = await _ensureDirectThreadId(
+      await _ensureDirectThreadId(
         dio,
         createdResponse: created,
         spaceId: spaceId,
@@ -459,7 +463,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       );
 
       if (!mounted) return;
-      context.go('/me/correspondence/$spaceId/thread/$threadId');
+      context.go(NavigationAuthority.messagesRoute);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -653,7 +657,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                             if (context.canPop()) {
                               context.pop();
                             } else {
-                              context.go('/me/correspondence');
+                              context.go(NavigationAuthority.messagesRoute);
                             }
                           },
                     icon: Icons.close_rounded,

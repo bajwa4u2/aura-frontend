@@ -18,8 +18,12 @@ String normalizeAppLocation(
   // Keep this intentionally narrow.
   // Only normalize member-facing legacy paths that are already known to be stale.
   switch (path) {
+    // '/correspondence' normalised into '/me/correspondence', which Phase 5
+    // retired. Normalising a stale address into a dead one is worse than
+    // leaving it alone, so it now goes where personal messaging actually is.
     case '/correspondence':
-      path = '/me/correspondence';
+    case '/me/correspondence':
+      path = '/messages';
       break;
     case '/notification':
     case '/notifications':
