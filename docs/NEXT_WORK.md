@@ -522,3 +522,57 @@ this a rewrite and hidden identity work inside a retirement chore.
 end-to-end without further decisions.
 
 Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/institution-spaces-reconstruction-record.json`.
+
+## 2026-08-20 — Institution Spaces reconstructed (D1–D4 applied, locally certified)
+
+**D1 Option A applied.** Space governs membership and access; Conversation serves communication among the
+admitted. Parties are a **projection** of Space membership, implemented as **one synchronisation boundary**
+(`institution-space-conversation.authority.ts`) rather than scattered `SpaceMember → ConversationParty`
+writes. `syncParties` **reconciles the whole set rather than applying deltas** — a delta is correct only if
+every mutation path remembers to call it, and a reconciliation is correct even after one forgot. A test
+applies three membership changes with zero notifications and still converges.
+
+**The Conversation canon is untouched.** No role vocabulary reached a conversation, no creator-admin
+semantics, no removal governance. Setting `leftAt` when a Space removes someone is the projection reporting
+that they no longer belong to the Space; an ordinary conversation has no Space to project from.
+
+**D2 applied.** `Space.conversationId` (nullable, unique, FK), created **lazily** so Spaces predating this
+architecture work without a production backfill. `createInstitutionSpace` **no longer creates a Thread** —
+the block is deleted, not renamed.
+
+**D3 applied as written**: realtime deferred, architecture not. No Space-local realtime stack exists; the
+surface reuses `ConversationScreen`, so group realtime later arrives through
+`RealtimeSessionSurfaceType.CONVERSATION` with nothing to undo. **Meetings untouched and not reused.**
+
+**D4 applied.** SpaceType and DISCOVERABLE are not read, rendered or offered anywhere in the reconstructed
+surface, and no renamed equivalent was introduced. The columns remain only because dropping them is a
+destructive schema action and is not authorised. No product requirement for public Space discovery surfaced.
+
+**New capability the legacy product never had: Remove Member** — the mirror of the frozen Add Member
+doctrine, Space membership only (never institution membership), refusing to remove a sole owner.
+
+**The frontend is a governance shell, not a second messenger.** `ConversationScreen` gained ONE optional
+parameter that changes the header and Back destination. Timeline, composer, rich content, attachments,
+media, read state and identity are the canonical implementation, unmodified — no `SpaceMessage`,
+`SpaceAttachment`, `SpaceMedia`, `SpaceReadState`, `SpaceCall` or `SpaceNotification` was created.
+
+**Three of our own ratchets fired on the new file and all three were right** — C1 caught role-as-permission
+(`role == 'OWNER' || 'ADMIN'`, now a capability question the server answers), C3 caught two route literals,
+C0 caught "Try again". Gates that only fire on other people's code are decoration.
+
+**Legacy dependency severed.** Institution Spaces no longer depend on Thread, Message, `SpaceScreen`,
+`ThreadStateWrapper` or `correspondence_identity`. That removes the institution-side obstacle to Phase 5;
+the legacy runtime stays present and retirement stays unauthorised.
+
+**ONE ADDITIVE PRODUCTION MIGRATION REQUIRED, NOT EXECUTED:**
+`20260905000000_institution_space_conversation` — one nullable column, one unique index, one guarded FK.
+No row written, no legacy table altered, nothing dropped. It applies on the next authorised deploy.
+
+Backend **207 suites / 2594 tests** (+12 anti-drift), tsc clean, route guard green. Frontend **829 pass**,
+analyze clean. Identity gate unchanged. Meetings 52 pass. 451/451, 17/17, Stage-0 ratified.
+**F116/F053 unchanged** (active 0, retirement-owned 15 — no site artificially cleared).
+
+**Next:** apply the migration on the next authorised deploy, then founder live observation of the
+reconstructed Space journeys.
+
+Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/institution-spaces-reconstruction-record.json`.

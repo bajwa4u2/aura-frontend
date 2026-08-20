@@ -668,3 +668,33 @@ to be reused.
 **D4 VISIBILITY AND TAXONOMY.** DISCOVERABLE visibility has no canonical analogue and touches the
 live/broadcast direction. SpaceType (PRIVATE/CIRCLE/STUDIO/WORKROOM/SALON) is older-product vocabulary the
 reconstructed product may not need.
+
+## FOUNDER RULINGS D1-D4 - RESOLVED AND APPLIED (2026-08-20)
+
+**D1 GOVERNANCE - Option A.** Space governs membership and access. Conversation provides the communication
+runtime for the population the Space admits. Conversation parties on a space-backed conversation are
+DERIVED from Space membership and are never an independent competing membership authority.
+SPACE GOVERNANCE != CONVERSATION GOVERNANCE. Implemented as ONE synchronisation boundary, and the
+Conversation canon is untouched: no role vocabulary on conversations, no creator-admin semantics, no
+removal governance. An ordinary conversation still has no participant removal, because it has no Space to
+project from.
+
+**D2 CARDINALITY - one Space, one Conversation.** No channels. Thread is not preserved as a disguised
+channel abstraction; the creation path that made one is deleted rather than renamed. If multi-channel
+institutional collaboration becomes a real requirement it gets its own product decision.
+
+**D3 REALTIME - implementation deferred, architecture not.** No Space-local realtime stack was created.
+Spaces reuse the canonical conversation surface, so group realtime arrives later through
+RealtimeSessionSurfaceType.CONVERSATION. Meetings remains a separate protected product and was neither
+reused nor touched.
+
+**D4 SPACE TYPE / DISCOVERABILITY - retired.** SpaceType has no surviving product meaning and was not
+replaced with a renamed equivalent. DISCOVERABLE is not carried forward as a legacy visibility mode;
+public participation, broadcasting, institution discovery and live visibility belong to their own
+architecture. The columns remain only because dropping them is destructive and unauthorised. The
+reconstruction exposed no concrete requirement for public Space discovery.
+
+**Recorded with them:** legacy message history remains explicitly non-blocking and the held migration was
+not run; the C7 retirement boundary is corrected forward so that retiring the legacy COMMUNICATION
+implementation no longer endangers the surviving Institution Space PRODUCT; and one additive production
+migration is required and was deliberately not executed.

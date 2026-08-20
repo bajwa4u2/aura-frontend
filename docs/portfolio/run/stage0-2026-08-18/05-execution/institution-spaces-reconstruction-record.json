@@ -2,16 +2,14 @@
   "type": "RECONSTRUCTION_RECORD",
   "unit": "RC-C7 — Institution Spaces",
   "date": "2026-08-20",
-  "status": "AUDIT COMPLETE · UNBLOCKED MIGRATE-FIRST WORK EXECUTED · IMPLEMENTATION HELD ON FOUR FOUNDER DECISIONS",
+  "status": "FOUNDER RULINGS D1-D4 APPLIED · ADDITIVE RECONSTRUCTION IMPLEMENTED AND LOCALLY CERTIFIED · LEGACY RUNTIME STILL PRESENT, RETIREMENT NOT AUTHORISED",
   "headline": "The audit found one fact that reframes both this reconstruction and the retirement that preceded it: Institution Spaces and the 'legacy correspondence family' ARE THE SAME CODE. `/institution/:institutionId/spaces/:spaceId` and `/me/correspondence/:spaceId` both build `SpaceScreen`, distinguished only by whether an institutionId is passed. Retiring the correspondence family as previously scoped would have deleted the Institution Spaces product outright.",
-
   "founderRulingRecorded": {
     "ruling": "Legacy personal correspondence history and legacy Institution Space message history have no strategic value sufficient to block reconstruction or retirement. They must not block reconstruction, force compatibility architecture, force history-copy migrations, force dual-runtime support, consume substantial implementation time, or dictate the new product model.",
     "supersedes": "The migration-first assumption in the CO-RC-C7-005 readiness audit. That record is preserved as written; this is the superseding interpretation forward.",
     "effect": "`node scripts/migrate-conversations.js` is HELD and was NOT run. The 78 legacy message rows (9 direct + 67 personal-space + 2 institution-space) do not justify architecture.",
     "unchanged": "No production data was deleted, and none is authorized. Legacy rows may remain inert and become unreachable."
   },
-
   "decisiveFinding": {
     "statement": "Institution Spaces run on the legacy correspondence runtime. They are not a separate system.",
     "evidence": [
@@ -24,7 +22,6 @@
     "consequenceForRetirement": "The prior readiness audit classified `space_screen.dart` (1 identity site) and the correspondence thread surfaces as retirement-owned under CO-RC-C7-005. That classification was correct about the FILE and wrong about the CONSEQUENCE: those files also constitute the live Institution Spaces product. They are RECONSTRUCTION-OWNED, not merely retirement-owned. Phase 5 cannot delete them until Institution Spaces has a replacement surface.",
     "reclassification": "space_screen.dart moves from RETIREMENT-OWNED to RECONSTRUCTION-OWNED. The 15-site count is unchanged — the site still exists and is still discharged by eventual deletion — but what discharges it is now this reconstruction, not the correspondence retirement."
   },
-
   "legacyInventory": {
     "backendModels": {
       "Space": "id, type(SpaceType), title?, description?, imageUrl?, visibility(SpaceVisibility), memberLimit?, createdById, createdAt, updatedAt, archivedAt?, institutionId? → members, threads, invitations",
@@ -40,10 +37,24 @@
       "institution": "GET /institutions/:id/spaces · GET :spaceId · POST · PATCH :spaceId · DELETE :spaceId · POST :spaceId/restore · POST :spaceId/members · POST :spaceId/join",
       "personal": "POST /spaces · GET /spaces · GET :spaceId · PATCH :spaceId · POST :spaceId/archive · POST :spaceId/invites"
     },
-    "frontendSurfaces": ["institution_spaces_screen.dart (institution space list)", "space_screen.dart (SHARED — space detail, personal AND institution)", "thread_screen.dart + ThreadStateWrapper (SHARED thread/message surface)", "archived_threads_screen.dart", "archived_spaces_screen.dart", "correspondence_hub_screen.dart (personal only)", "spaces_repository.dart", "institution_correspondence_screen.dart", "institution_messaging_screen.dart"],
-    "governingDocs": ["capability/INSTITUTION_SPACE_MEMBERSHIP_DOCTRINE.md — FOUNDER-APPROVED, FROZEN 2026-08-13", "docs/2026-08-16-aura-conversation-system-canon.md — the Conversation canon, frozen", "CO-RC-C7-005 (Phase 5 retirement gate)", "CO-RC-C2-010 (per-file owners)"]
+    "frontendSurfaces": [
+      "institution_spaces_screen.dart (institution space list)",
+      "space_screen.dart (SHARED — space detail, personal AND institution)",
+      "thread_screen.dart + ThreadStateWrapper (SHARED thread/message surface)",
+      "archived_threads_screen.dart",
+      "archived_spaces_screen.dart",
+      "correspondence_hub_screen.dart (personal only)",
+      "spaces_repository.dart",
+      "institution_correspondence_screen.dart",
+      "institution_messaging_screen.dart"
+    ],
+    "governingDocs": [
+      "capability/INSTITUTION_SPACE_MEMBERSHIP_DOCTRINE.md — FOUNDER-APPROVED, FROZEN 2026-08-13",
+      "docs/2026-08-16-aura-conversation-system-canon.md — the Conversation canon, frozen",
+      "CO-RC-C7-005 (Phase 5 retirement gate)",
+      "CO-RC-C2-010 (per-file owners)"
+    ]
   },
-
   "frozenDoctrineThatConstrainsThis": {
     "institutionSpaceMembership": {
       "source": "capability/INSTITUTION_SPACE_MEMBERSHIP_DOCTRINE.md — FOUNDER-APPROVED, FROZEN 2026-08-13",
@@ -61,84 +72,131 @@
     },
     "THE_TENSION": "An Institution Space is a GOVERNED GROUP: admin-added members, six roles, visibility settings, institutional ownership. The Conversation canon deliberately REFUSES role vocabulary, creator-admin semantics and participant removal on conversations. These two frozen doctrines cannot both describe the same object. This is the central architectural decision of the reconstruction, and it is a founder decision, not an engineering one."
   },
-
   "responsibilityClassification": [
-    { "capability": "Space identity (title, description, image, purpose)", "class": "1 — SPACE-OWNED AND STILL LEGITIMATE" },
-    { "capability": "Institution ownership (institutionId)", "class": "1 — SPACE-OWNED" },
-    { "capability": "Membership + roles (SpaceMember, SpaceMemberRole)", "class": "1 — SPACE-OWNED, and FROZEN by the membership doctrine" },
-    { "capability": "Visibility (PRIVATE / INVITE_ONLY / DISCOVERABLE)", "class": "1 — SPACE-OWNED, but see decision D4: DISCOVERABLE has no canonical analogue" },
-    { "capability": "Archive / close", "class": "1 — SPACE-OWNED (Space-level), distinct from per-person archive which is ConversationHumanState" },
-    { "capability": "Message timeline, replies, durable history", "class": "2 — SHOULD CONSUME CANONICAL CONVERSATION" },
-    { "capability": "Read/unread cursors (SpaceMember.lastReadAt, ThreadReadState)", "class": "2 — ConversationHumanState already models exactly this per (conversation,user)" },
-    { "capability": "Mute (SpaceMember.isMuted)", "class": "2 — ConversationHumanState.mutedAt" },
-    { "capability": "Per-person archive (SpaceMember.isArchived)", "class": "2 — ConversationHumanState.archivedAt" },
-    { "capability": "Attachments (MessageAttachment, MessageMedia)", "class": "3 — SHOULD CONSUME RICH CONTENT via ConversationMessageMedia → canonical Media authority" },
-    { "capability": "Link previews (linkPreviewId, linkSourceUrl)", "class": "3 — ConversationMessage.linkPreviewId already exists" },
-    { "capability": "Audio/video calling in a space", "class": "4 — SHOULD CONSUME REALTIME via RealtimeSessionSurfaceType.CONVERSATION. Must NOT reuse Meetings." },
-    { "capability": "Notifications / unread projection", "class": "5 — C4 consumes conversation events and owns zero conversation state; Space must not keep its own ledger" },
-    { "capability": "Person and institution identity", "class": "6 — SHOULD CONSUME AuraPersonIdentity / institution authority" },
-    { "capability": "Acting context (speak personally vs institutionally)", "class": "6 — ConversationMessage.speakingForInstitutionId + dual attribution" },
-    { "capability": "Moderation / discourse integrity", "class": "7 — canonical moderation with CONVERSATION_MESSAGE target" },
-    { "capability": "Thread / ThreadMember / ThreadReadState", "class": "8 — LEGACY DUPLICATE, DELETE. Production has exactly one thread per space in every case; the table expresses a channel concept the product never used." },
-    { "capability": "Message / MessageAttachment / MessageMedia", "class": "8 — LEGACY DUPLICATE, DELETE (data left inert)" },
-    { "capability": "SpaceType (PRIVATE/CIRCLE/STUDIO/WORKROOM/SALON)", "class": "10 — OBSOLETE for institution spaces; a taxonomy the reconstructed product does not need. See D4." },
-    { "capability": "Space-level invitations (Invitation relation on Space/Thread)", "class": "6 — consume the canonical Invitation System, which Conversation already consumes for entry initiation" },
-    { "capability": "Group realtime with more than 2 parties", "class": "9 — CAPABILITY STILL NEEDED, canonical support must be confirmed before Space realtime is promised" }
-  ],
-
-  "spaceOwnedVsConsumed": {
-    "spaceOwns": ["space identity and purpose", "institution ownership", "membership roster and roles", "capabilities/permissions", "visibility and discoverability", "space-level archive/closure", "reference(s) to its Conversation(s)"],
-    "spaceMustNotOwn": ["messages", "attachments", "media presentation", "person identity", "institution identity", "audio/video signaling", "notification ledgers", "link hydration", "rich-content handling", "duplicate conversation state", "per-person read/mute/archive state"]
-  },
-
-  "founderDecisionsRequired": [
     {
-      "id": "D1",
-      "question": "GOVERNANCE — how does an admin-governed Space reconcile with a Conversation canon that freezes ORIGIN ≠ GOVERNANCE and deliberately omits participant removal?",
-      "whyItCannotBeDecidedInImplementation": "Both doctrines are frozen and founder-approved. Choosing silently would violate one of them.",
-      "options": [
-        { "option": "A — Space governs access; Conversation parties are DERIVED", "how": "SpaceMember stays the governance record. Conversation party set is projected from active Space membership; leaving the Space removes access. The Conversation itself never gains roles or removal.", "consequence": "Conversation canon untouched and intact. Cost: two membership representations to keep coherent, and 'party' stops being the access authority for space conversations.", "assessment": "Least doctrinal damage; most consistent with 'C7 institutional conversation ON this system'." },
-        { "option": "B — Extend the canon with the TRANSFERABLE STEWARDSHIP primitive the canon itself anticipates", "how": "Introduce stewardship on institution-owned conversations only, as the canon's own recorded evolution point, and let Space membership BE Conversation party membership.", "consequence": "One membership model, no sync. Cost: opens the governance primitive the canon deferred, and it must not leak role vocabulary onto ordinary conversations.", "assessment": "Cleanest data model; requires a deliberate canon amendment." },
-        { "option": "C — Institution Space conversations are a distinct party-governed kind", "how": "A third thing that is neither an ordinary conversation nor a Space.", "consequence": "Rejected on its face — this is how a new legacy gets built (§M).", "assessment": "NOT RECOMMENDED." }
-      ],
-      "recommendation": "A or B. I will not choose between them: A preserves a frozen canon, B amends it deliberately, and which is right depends on whether the founder wants institution group governance to become a first-class Conversation concept."
+      "capability": "Space identity (title, description, image, purpose)",
+      "class": "1 — SPACE-OWNED AND STILL LEGITIMATE"
     },
     {
-      "id": "D2",
-      "question": "CARDINALITY — one Conversation per Space, or multiple (channels/topics)?",
-      "evidence": "The legacy Thread table permits many per Space. Production has exactly ONE thread in EVERY space — 12 personal, 1 institution, 13 threads for 13 spaces. The multi-thread capability has never been used. The Conversation canon has no channel concept.",
-      "options": [
-        { "option": "A — ONE Conversation per Space", "consequence": "Simplest. Space becomes governance + identity around a single durable timeline. Matches every observed production use. Navigation is trivial. Notification/unread is one number.", "assessment": "RECOMMENDED on the evidence — nothing in production has ever needed more, and the Thread table is answering by inertia rather than by need." },
-        { "option": "B — Multiple Conversations per Space (channels)", "consequence": "More capable and more product to design: per-channel permissions, per-channel unread, navigation, discovery, realtime per channel. None of it is currently demanded.", "assessment": "Only if the founder intends Spaces to become a multi-channel institutional workspace." }
-      ],
-      "recommendation": "A, unless the founder's product intent for Institution Spaces is explicitly multi-channel. This decision determines the entire navigation and notification model, which is why it is not being buried."
+      "capability": "Institution ownership (institutionId)",
+      "class": "1 — SPACE-OWNED"
     },
     {
-      "id": "D3",
-      "question": "REALTIME — does this reconstruction slice include group audio/video in a Space?",
-      "evidence": "Conversation already has a realtime adapter (`RealtimeSessionSurfaceType.CONVERSATION`). Meetings is protected and must not be reused. Whether canonical realtime currently supports N-party group sessions on a conversation surface has NOT been confirmed in this audit.",
-      "consequence": "If in scope, canonical group-realtime capability must be verified first; if it does not exist, that is a capability gap (class 9), not a Space feature.",
-      "recommendation": "Defer realtime to a later slice unless the founder wants it now. Reconstructing the timeline, membership and rich content is a coherent, shippable slice on its own."
+      "capability": "Membership + roles (SpaceMember, SpaceMemberRole)",
+      "class": "1 — SPACE-OWNED, and FROZEN by the membership doctrine"
     },
     {
-      "id": "D4",
-      "question": "VISIBILITY AND TAXONOMY — does the reconstructed Institution Space keep DISCOVERABLE visibility and the five-value SpaceType?",
-      "evidence": "SpaceVisibility DISCOVERABLE implies a publicly observable institutional space; Conversation has no public-observation concept, and the canon's institution constraints are about consented relationships. SpaceType (PRIVATE/CIRCLE/STUDIO/WORKROOM/SALON) is a taxonomy from the older product; the two named production spaces are a CIRCLE and a WORKROOM, used as ordinary group chats.",
-      "consequence": "DISCOVERABLE is a genuine product capability (a space the institution's audience can find/observe) and would need canonical support that does not exist today. Keeping SpaceType without a purpose reproduces old vocabulary in new code.",
-      "recommendation": "Retire SpaceType for institution spaces unless the founder attaches meaning to it. Rule on DISCOVERABLE explicitly — it is the one visibility value with no canonical home, and it touches the live/broadcast direction."
+      "capability": "Visibility (PRIVATE / INVITE_ONLY / DISCOVERABLE)",
+      "class": "1 — SPACE-OWNED, but see decision D4: DISCOVERABLE has no canonical analogue"
+    },
+    {
+      "capability": "Archive / close",
+      "class": "1 — SPACE-OWNED (Space-level), distinct from per-person archive which is ConversationHumanState"
+    },
+    {
+      "capability": "Message timeline, replies, durable history",
+      "class": "2 — SHOULD CONSUME CANONICAL CONVERSATION"
+    },
+    {
+      "capability": "Read/unread cursors (SpaceMember.lastReadAt, ThreadReadState)",
+      "class": "2 — ConversationHumanState already models exactly this per (conversation,user)"
+    },
+    {
+      "capability": "Mute (SpaceMember.isMuted)",
+      "class": "2 — ConversationHumanState.mutedAt"
+    },
+    {
+      "capability": "Per-person archive (SpaceMember.isArchived)",
+      "class": "2 — ConversationHumanState.archivedAt"
+    },
+    {
+      "capability": "Attachments (MessageAttachment, MessageMedia)",
+      "class": "3 — SHOULD CONSUME RICH CONTENT via ConversationMessageMedia → canonical Media authority"
+    },
+    {
+      "capability": "Link previews (linkPreviewId, linkSourceUrl)",
+      "class": "3 — ConversationMessage.linkPreviewId already exists"
+    },
+    {
+      "capability": "Audio/video calling in a space",
+      "class": "4 — SHOULD CONSUME REALTIME via RealtimeSessionSurfaceType.CONVERSATION. Must NOT reuse Meetings."
+    },
+    {
+      "capability": "Notifications / unread projection",
+      "class": "5 — C4 consumes conversation events and owns zero conversation state; Space must not keep its own ledger"
+    },
+    {
+      "capability": "Person and institution identity",
+      "class": "6 — SHOULD CONSUME AuraPersonIdentity / institution authority"
+    },
+    {
+      "capability": "Acting context (speak personally vs institutionally)",
+      "class": "6 — ConversationMessage.speakingForInstitutionId + dual attribution"
+    },
+    {
+      "capability": "Moderation / discourse integrity",
+      "class": "7 — canonical moderation with CONVERSATION_MESSAGE target"
+    },
+    {
+      "capability": "Thread / ThreadMember / ThreadReadState",
+      "class": "8 — LEGACY DUPLICATE, DELETE. Production has exactly one thread per space in every case; the table expresses a channel concept the product never used."
+    },
+    {
+      "capability": "Message / MessageAttachment / MessageMedia",
+      "class": "8 — LEGACY DUPLICATE, DELETE (data left inert)"
+    },
+    {
+      "capability": "SpaceType (PRIVATE/CIRCLE/STUDIO/WORKROOM/SALON)",
+      "class": "10 — OBSOLETE for institution spaces; a taxonomy the reconstructed product does not need. See D4."
+    },
+    {
+      "capability": "Space-level invitations (Invitation relation on Space/Thread)",
+      "class": "6 — consume the canonical Invitation System, which Conversation already consumes for entry initiation"
+    },
+    {
+      "capability": "Group realtime with more than 2 parties",
+      "class": "9 — CAPABILITY STILL NEEDED, canonical support must be confirmed before Space realtime is promised"
     }
   ],
-
+  "spaceOwnedVsConsumed": {
+    "spaceOwns": [
+      "space identity and purpose",
+      "institution ownership",
+      "membership roster and roles",
+      "capabilities/permissions",
+      "visibility and discoverability",
+      "space-level archive/closure",
+      "reference(s) to its Conversation(s)"
+    ],
+    "spaceMustNotOwn": [
+      "messages",
+      "attachments",
+      "media presentation",
+      "person identity",
+      "institution identity",
+      "audio/video signaling",
+      "notification ledgers",
+      "link hydration",
+      "rich-content handling",
+      "duplicate conversation state",
+      "per-person read/mute/archive state"
+    ]
+  },
+  "founderDecisionsRequired": "NONE. D1-D4 are ruled and applied, and the reconstruction exposed no new product decision.",
   "liveBroadcastCompatibility": "The recommended shape does not obstruct the conversation → realtime → live/broadcast progression: Space consumes canonical realtime rather than owning a Space-specific call stack, so whatever live capability the platform gains, Spaces inherit. The one thing that WOULD obstruct it is answering D4's DISCOVERABLE question by inventing a Space-local public-observation mechanism.",
-
   "legacyDataDisposition": {
     "personalHistory": "NOT PRESERVED. Migration held; 5 DirectThreads / 9 messages and 12 personal spaces / 67 messages remain inert in legacy tables.",
     "institutionSpaceMessageHistory": "NOT PRESERVED. 1 space / 1 thread / 2 messages. Does not dictate architecture.",
     "worthCarryingForward": "Institution ownership, space title, description and MEMBERSHIP (1 institution space, and its roster) — only because recreating a governed roster by hand is worse than carrying it, and it is non-message state that remains meaningful. Even this is optional at this volume.",
-    "notCarried": ["legacy thread ids", "message ids", "attachment assumptions", "legacy route identity", "SpaceType taxonomy pending D4"],
+    "notCarried": [
+      "legacy thread ids",
+      "message ids",
+      "attachment assumptions",
+      "legacy route identity",
+      "SpaceType taxonomy pending D4"
+    ],
     "deletion": "NOT AUTHORIZED and NOT PERFORMED. No production row was deleted or modified."
   },
-
   "deepLinkPolicyCorrected": {
     "supersedes": "The earlier ruling that all persisted /me/correspondence links must be preserved, which assumed legacy message continuity mattered.",
     "class1_survivingObject": "`/institution/:institutionId/spaces/:spaceId` names a SURVIVING product object with a canonical successor. Worth a cheap redirect.",
@@ -146,7 +204,6 @@
     "class3_staleNotificationRows": "Persisted notification/activity rows targeting dead legacy history may become non-actionable rather than justifying a permanent compatibility layer.",
     "netEffect": "The bounded translator the previous record scoped is now mostly UNNECESSARY. Only Space addresses need continuity, and only because Spaces survive."
   },
-
   "workExecutedThisTask": {
     "migrateFirst_correspondenceIdentity": {
       "done": "YES — both surviving consumers moved off `CorrespondenceIdentity`; it is now RETIREMENT-LOCAL. Every remaining reference outside the retiring family is a comment.",
@@ -156,9 +213,7 @@
     },
     "notDone": "No Space reconstruction implementation. Held on D1–D4, which materially determine the domain model, the navigation model and the notification model. §V forbids deciding these independently, and §G requires presenting cardinality rather than burying it."
   },
-
   "certificationStrategy": "Built around the NEW product, not old chronology. Old message history is explicitly NOT a success criterion. Journeys to certify once implemented: create/open an institution Space · membership add (doctrine A) vs invite (doctrine B) · roles and permissions · speak personally vs institutionally with dual attribution visible · send/reply · rich attachments open and save · reload and deep-link continuity · notifications and unread · institution workspace navigation reaches it · archive/close · and a negative journey: no dependency remains on the legacy correspondence/Space communication runtime.",
-
   "sharedAuthorityHealth": {
     "conversation": "Untouched this task. Canon read, not modified.",
     "richContent": "Untouched.",
@@ -168,24 +223,123 @@
     "institutionAuthority": "Untouched.",
     "meetings": "PROTECTED AND UNTOUCHED — not refactored, not reused for Space realtime, booking/admission/waiting-room lifecycle unaltered."
   },
-
   "findingStates": {
     "F116": "PARTIALLY_VALIDATED — unchanged",
     "F053": "PARTIALLY_VALIDATED — unchanged",
     "activeExecutableSurvivingProductIdentityDebt": 0,
     "retirementOwnedStructuralIdentityDebt": 15,
-    "note": "Count unchanged, but ONE reclassification: `space_screen.dart`'s site is discharged by this RECONSTRUCTION, not by the correspondence retirement, because that file is the live Institution Spaces surface. No pre-promotion; after physical retirement, rerun the audits and reassess."
+    "countUnchangedDeliberately": "No site was artificially cleared. space_screen.dart's site still exists because the file still exists and still serves personal correspondence. What changed is that Institution Spaces no longer route through it, so the site is discharged by the correspondence retirement after all — the reconstruction removed the obstacle rather than the site.",
+    "invitationsNestedReadDebt": "The five person-shaped positional reads relocated into invite_presentation.dart are UNCHANGED and still unmeasured. They were not touched in this batch because invitations reconstruction was not in it. Recorded in the file itself and carried forward as named debt."
   },
-
   "verification": {
-    "frontendTests": "829 pass / 1 skipped",
-    "flutterAnalyze": "clean",
-    "identityGate": "PASS",
+    "backend": "207 suites / 2594 tests pass (was 206/2582; +12 anti-drift tests). tsc --noEmit clean. Route-path compilation guard green — the new DELETE and GET routes compile.",
+    "frontend": "829 pass / 1 skipped. flutter analyze clean.",
+    "identityGate": "PASS — 16 files / 28 sites surface, 1 file / 7 sites typed-person, unchanged",
+    "domainProof": "23/23 PASS",
+    "meetingsBoundary": "52 Meetings tests pass; Meetings untouched and not reused",
+    "meetingsRatchetProof": "PASS both directions",
     "portfolioValidator": "PASS — 143 findings + 308 obligations = 451 units across 17 chapters",
     "stage0": "FOUNDER_RATIFIED",
     "accounting": "451/451 · 17/17",
-    "production": "NOT polled, NOT mutated. Migration NOT run."
+    "production": "NOT polled, NOT mutated. Migration written locally and NOT applied to production."
   },
-
-  "nextExecutableFrontier": "D1 and D2 are the gate. With D1 (governance) and D2 (cardinality) ruled, the reconstruction is implementable end-to-end without further decisions: Space domain (identity, institution ownership, membership, roles, visibility) + Conversation reference, canonical rich content, canonical identity, canonical notification, institution workspace navigation pointed at the new surface, legacy Space communication runtime left in place until retirement is separately authorized."
+  "nextExecutableFrontier": "Deploy-time application of the additive migration, then founder live observation of the reconstructed Space journeys. After that, Phase 5 legacy retirement can proceed on its own remaining prerequisites — with the institution-side obstacle now removed.",
+  "founderRulingsApplied": {
+    "D1_governance": {
+      "ruling": "OPTION A. Space governs membership and access; Conversation provides the communication runtime for the admitted population. Conversation parties on a space-backed conversation are derived from Space membership and are never an independent competing membership authority.",
+      "implemented": "src/spaces/institution-space-conversation.authority.ts — ONE synchronisation boundary, as the ruling required, rather than SpaceMember->ConversationParty writes scattered through handlers.",
+      "canonUntouched": "No role vocabulary was added to conversations, no creator-admin semantics, and no removal governance entered the Conversation domain. Setting leftAt when a Space removes a member is the projection reporting that the person no longer belongs to the Space; an ordinary conversation has no Space to project from, so the canon's 'removal is intentionally ABSENT in v1' still holds exactly as written.",
+      "reconciliationNotDelta": "syncParties reconciles the WHOLE party set against current membership. A delta is correct only if every mutation path remembers to call it; a reconciliation is correct even after one forgot. Pinned by a test that applies three membership changes with zero notifications and still converges."
+    },
+    "D2_cardinality": {
+      "ruling": "ONE Institution Space -> ONE canonical Conversation. No channels. Thread is not preserved as a disguised channel abstraction.",
+      "implemented": "Space.conversationId (nullable, unique, FK) + migration 20260905000000_institution_space_conversation. createInstitutionSpace no longer creates a Thread — the `threads: { create: ... }` block is deleted, not renamed.",
+      "lazyCreation": "The conversation is created on first need rather than eagerly, so Spaces that predate this architecture work without a production backfill, which is not authorised."
+    },
+    "D3_realtime": {
+      "ruling": "Realtime implementation deferred; realtime ARCHITECTURE not deferred.",
+      "status": "No realtime was implemented and no Space-local realtime stack exists. The reconstructed surface reuses ConversationScreen, which already carries the canonical realtime entry points, so when group realtime is activated it arrives through RealtimeSessionSurfaceType.CONVERSATION for Spaces exactly as for any other conversation. Nothing in this slice would have to be undone.",
+      "meetings": "NOT reused, NOT refactored, NOT touched. 52 Meetings tests pass."
+    },
+    "D4_typeAndDiscoverability": {
+      "ruling": "SpaceType RETIRED. DISCOVERABLE not carried forward as a legacy visibility mode.",
+      "status": "The reconstructed surface exposes neither. SpaceType is not read, not rendered and not offered anywhere in the new Space experience, and no differently named equivalent was introduced. No public-discovery affordance was created.",
+      "columnsRemain": "The Space.type and visibility COLUMNS still exist in the schema because dropping them is a destructive schema action against production data and is not authorised. They are inert with respect to the reconstructed product. Physical removal belongs to the destructive retirement step.",
+      "noProductRequirementFound": "The reconstruction exposed no concrete current requirement for public Space discovery, so nothing was returned for a ruling on that point."
+    }
+  },
+  "implementation": {
+    "backend": {
+      "newAuthority": "src/spaces/institution-space-conversation.authority.ts — ensureConversation / syncParties / onMemberAdded / onMemberRemoved / onSpaceLifecycleChanged. Every operation idempotent. Race on conversation creation resolved by a conditional updateMany claim; the loser adopts the winner's conversation and deletes its own rather than orphaning one.",
+      "schema": "Space.conversationId String? @unique with FK to Conversation (onDelete: SetNull), plus the reciprocal relation on Conversation. Migration is purely additive: one nullable column, one unique index, one guarded FK. No row is written, no legacy table altered, no message migrated.",
+      "wiring": "createInstitutionSpace creates the conversation and no Thread; addInstitutionSpaceMember and the new removeInstitutionSpaceMember project through the boundary.",
+      "newCapability": "removeInstitutionSpaceMember — the mirror of the frozen Add Member doctrine, which the legacy product never had. Space membership only; the frozen boundary holds in this direction too. Refuses to remove a sole OWNER, because a Space nobody can govern is worse than a declined request.",
+      "newEndpoints": [
+        "DELETE /institutions/:institutionId/spaces/:spaceId/members/:userId",
+        "GET /institutions/:institutionId/spaces/:spaceId/conversation — resolves the Space's conversation AFTER checking Space access, so the id is never a way around Space governance"
+      ],
+      "tests": "12 anti-drift tests asserting the PROJECTION PROPERTY directly (active parties == active members) rather than asserting that a method was called — including reconciliation-after-missed-notification, re-admission without duplicate rows, a stray party being withdrawn, and the creation race."
+    },
+    "frontend": {
+      "newSurface": "lib/features/institutions/spaces/institution_space_screen.dart — the reconstructed Space: identity, purpose, membership governance, and the canonical conversation.",
+      "reuseNotRebuild": "ConversationScreen gained ONE optional parameter (InstitutionSpaceContext) that changes the header and the Back destination. Timeline, composer, rich content, attachments, media, read state and identity are the canonical implementation, unmodified. There is still exactly one conversation runtime in the product — no SpaceMessage, SpaceAttachment, SpaceMedia, SpaceReadState, SpaceCall, SpaceNotification or SpacePersonIdentity was created.",
+      "membership": "A members sheet performing the frozen ADD MEMBER / INVITE PERSON distinction honestly, with remove. The roster reads people through AuraPersonIdentity — a space roster does not get its own name order.",
+      "routing": "/institution/:institutionId/spaces/:spaceId now builds InstitutionSpaceScreen. /me/correspondence/:spaceId still builds the legacy SpaceScreen for personal correspondence until that family retires.",
+      "navigationAuthority": "institutionSpacesRoute / institutionSpaceRoute added, so the new surface composes no route literals."
+    },
+    "ratchetsThatFiredOnThisWork": {
+      "why_recorded": "Three of the repository's own gates caught the new file, and all three were right. A gate that only ever fires on other people's code is decoration.",
+      "C1_roleAsPermission": "The first draft read `role == 'OWNER' || role == 'ADMIN'` to decide whether to offer member management. That is the exact defect RC-C1 exists to prevent. Replaced with a capability question the server answers.",
+      "C3_routeLiterals": "Two composed '/institution/.../spaces' literals. Replaced with Navigation Authority addresses.",
+      "C0_productLanguage": "'Try again' where the canonical retry label already exists. Replaced with ProductLabels.of(ProductAction.retry)."
+    }
+  },
+  "legacyDependencyStatus": {
+    "institutionSpacesNowDependOn": [
+      "Space (governance/identity/membership)",
+      "Conversation + ConversationParty + ConversationMessage + ConversationHumanState + ConversationMessageMedia",
+      "canonical identity, rich content, notification and realtime boundaries"
+    ],
+    "institutionSpacesNoLongerDependOn": [
+      "Thread",
+      "ThreadMember",
+      "ThreadReadState",
+      "Message",
+      "MessageAttachment",
+      "MessageMedia",
+      "SpaceScreen / ThreadStateWrapper",
+      "correspondence_identity",
+      "SpaceType"
+    ],
+    "stillPresentAndStillServingPersonalCorrespondence": "SpaceScreen, ThreadStateWrapper, thread_screen, correspondence_hub_screen, messages_hub_screen and the Thread/Message backend. These retire with the correspondence family under CO-RC-C7-005; they are no longer load-bearing for Institution Spaces.",
+    "newlyEligibleForRetirement": "The institution branch of SpaceScreen — the `institutionId` parameter and every code path it selects — is now dead for the institution route. It is NOT deleted here: the same widget still serves personal correspondence, and physical removal belongs to the authorised retirement step."
+  },
+  "correctedRetirementBoundary": {
+    "before": "CO-RC-C7-005 assumed retiring the correspondence family removes SpaceScreen and discharges its identity site.",
+    "after": "Two separable things: (A) the RETIRING legacy communication architecture — Thread/Message/correspondence surfaces/correspondence_identity; and (B) the SURVIVING, now reconstructed Institution Space product. Retirement of A no longer endangers B, because B stopped depending on it in this batch. Historical records are unchanged; this is recorded forward.",
+    "unblocked": "This reconstruction REMOVES the reason Phase 5 could not proceed on the institution side. The remaining Phase 5 prerequisites are unchanged and still owed."
+  },
+  "productionMigrationRequired": {
+    "required": "YES — one purely additive migration, before the reconstructed institution Space route works against production.",
+    "migration": "prisma/migrations/20260905000000_institution_space_conversation — adds Space.conversationId (nullable), its unique index and a guarded FK.",
+    "risk": "Additive only. No row written, no legacy table altered, no data migrated, nothing dropped. Existing Spaces simply have no conversation until one is created lazily on first open.",
+    "notExecuted": "Deliberately. Deploy runs `prisma migrate deploy`, so this applies on the next authorised deploy — reported here rather than executed, as required."
+  },
+  "certificationJourneys": [
+    "Open an institution Space from the institution workspace — reconstructed surface, not the legacy screen",
+    "Space identity and purpose shown in the header",
+    "Canonical timeline loads; messages send and appear",
+    "Reply in the Space",
+    "Rich attachments: image, document, media open and save",
+    "Speak personally vs speak for the institution (dual attribution visible)",
+    "Mentions/tagging",
+    "Unread/attention behaviour",
+    "Reload and cold deep-link to /institution/:id/spaces/:spaceId",
+    "Open Members; add an eligible institution member (immediate membership)",
+    "Remove a member; confirm they lose access and the conversation no longer lists them",
+    "Sole-owner removal refused",
+    "Removing from a Space does NOT change institution membership",
+    "A non-member is refused the Space and never obtains its conversation id",
+    "No legacy Thread/Message runtime involved at any point"
+  ]
 }
