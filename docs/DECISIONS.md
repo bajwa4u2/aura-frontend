@@ -610,3 +610,61 @@ new rows; the frontend translator owns old addresses. Those are different proble
 consistent with the C7 Institutional Conversation & Desk amendment being frozen as a separate concern, but
 CO-RC-C7-005 does not name it, and retiring the family would strand that history. A founder decision is
 owed on whether it retires with the family, migrates first, or stays.
+
+---
+
+## FOUNDER RULING - LEGACY MESSAGE HISTORY HAS NO BLOCKING VALUE (2026-08-20)
+
+**Superseding ruling, recorded forward.** Legacy personal correspondence history and legacy Institution
+Space message history have no strategic value sufficient to block reconstruction or retirement. They must
+not block Institution Spaces reconstruction, force compatibility architecture, force history-copy
+migrations, force dual-runtime support, consume substantial implementation time, or dictate the new
+product model. They may remain inert, become unreachable, or be archived or deleted later under an
+explicitly authorized destructive step.
+
+This supersedes the migration-first assumption in the CO-RC-C7-005 readiness audit. That record stands as
+written; this is the interpretation going forward. The previously authorized apply of
+`scripts/migrate-conversations.js` is HELD and was not run. Seventy-eight legacy message rows do not
+justify architecture. No production data was deleted, and none is authorized.
+
+**"Migration" is reinterpreted for CO-RC-C7-005.** The five-step retirement sequence remains a good
+controlled pattern, but "migration" no longer means every legacy message is copied forward. It means
+whatever product state is actually worth carrying into the surviving product. Legacy communication history
+may be intentionally abandoned.
+
+**Deep-link policy narrowed accordingly.** The earlier ruling that all persisted `/me/correspondence`
+addresses must survive assumed legacy message continuity mattered. Links whose only value is reaching
+abandoned history may retire with the legacy product; stale notification rows may become non-actionable.
+Only addresses naming a SURVIVING object - Institution Spaces - deserve continuity. The bounded translator
+scoped in the readiness record is now mostly unnecessary.
+
+## THE FINDING THAT REFRAMES THE RETIREMENT (2026-08-20)
+
+Institution Spaces and the legacy correspondence family are the same code. `/institution/:id/spaces/:spaceId`
+and `/me/correspondence/:spaceId` both build `SpaceScreen`, separated only by whether an institutionId is
+passed; the institution thread route builds the same `ThreadStateWrapper`. Retiring the correspondence
+family as previously scoped would have deleted the Institution Spaces product. `space_screen.dart` is
+reconstruction-owned, not retirement-owned - the site count is unchanged, but what discharges it is this
+reconstruction rather than CO-RC-C7-005.
+
+## OPEN - FOUR DECISIONS BEFORE IMPLEMENTATION
+
+**D1 GOVERNANCE.** The Institution Space Membership Doctrine (FROZEN 2026-08-13) requires admin-governed
+roles and direct Add Member. The Conversation canon freezes ORIGIN != GOVERNANCE, omits participant
+removal in v1, and forbids role vocabulary on ordinary conversations. Both are frozen and founder-approved;
+they cannot both describe one object. Options recorded: (A) Space governs access and Conversation parties
+are derived - canon untouched; (B) adopt the TRANSFERABLE STEWARDSHIP primitive the canon itself
+anticipates, for institution-owned conversations only - one membership model, deliberate canon amendment;
+(C) a third party-governed kind - rejected, that is how a new legacy gets built.
+
+**D2 CARDINALITY.** One Conversation per Space, or several. The legacy Thread table permits many, but all
+thirteen production spaces have exactly one thread - the capability has never been used. Recommended: one,
+unless the product intent is explicitly multi-channel. This decides navigation and notification shape.
+
+**D3 REALTIME.** Whether group audio/video is in this slice. Conversation has a realtime adapter; whether
+canonical N-party group realtime exists on that surface is unverified. Meetings stays protected and is not
+to be reused.
+
+**D4 VISIBILITY AND TAXONOMY.** DISCOVERABLE visibility has no canonical analogue and touches the
+live/broadcast direction. SpaceType (PRIVATE/CIRCLE/STUDIO/WORKROOM/SALON) is older-product vocabulary the
+reconstructed product may not need.

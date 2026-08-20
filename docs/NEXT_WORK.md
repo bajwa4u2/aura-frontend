@@ -473,3 +473,52 @@ certify an empty list as correct. **NOT READY for retirement authorization.**
 451/451, 17/17, Stage-0 ratified. Retirement remains unauthorized and unattempted.
 
 Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/co-rc-c7-005-phase5-retirement-readiness.json`.
+
+## 2026-08-20 — Institution Spaces reconstruction: audit complete, held on four decisions
+
+**Founder ruling recorded:** legacy message history has no strategic value and must not block
+reconstruction. The migration is **HELD, not run**. No production data deleted.
+
+**The finding that reframes everything.** Institution Spaces and the "legacy correspondence family" are
+**the same code**. `/institution/:id/spaces/:spaceId` and `/me/correspondence/:spaceId` both build
+`SpaceScreen`, separated only by whether an institutionId is passed; the institution thread route builds
+the same `ThreadStateWrapper`. **Retiring the correspondence family as previously scoped would have
+deleted the Institution Spaces product.** `space_screen.dart` is reconstruction-owned, not
+retirement-owned — the 15-site count is unchanged, but what discharges it is this reconstruction.
+
+**Two frozen doctrines collide.** The Institution Space Membership Doctrine (FROZEN 2026-08-13) requires
+admin-governed roles and direct Add Member, with a frozen boundary that Space membership never becomes a
+backdoor to Institution membership. The Conversation canon freezes **ORIGIN ≠ GOVERNANCE**, omits
+participant removal in v1, and forbids **role vocabulary on ordinary conversations**. Both are
+founder-approved. They cannot both describe one object.
+
+**Cardinality has an evidence answer, not just an opinion.** The Thread table permits many threads per
+Space; **all 13 production spaces have exactly one**. The multi-thread capability has never been used, and
+the Conversation canon has no channel concept.
+
+**Executed and unblocked — `CorrespondenceIdentity` is now retirement-local.** Both surviving consumers
+moved off it: the invite helpers relocated to `features/invitations/data/invite_presentation.dart`
+(relocation, not rewrite), and `core/tagging` got a local 4-line generic picker. Every remaining reference
+outside the retiring family is a comment. **Honest consequence:** those invite helpers read people
+*positionally* out of payload envelopes, so the move carried **five person-shaped reads into surviving
+code**, where the detector cannot see them (nested path pairs, not flat alias lists). Recorded in the new
+file as the reads to canonicalise when invitations is reconstructed — converging them now would have made
+this a rewrite and hidden identity work inside a retirement chore.
+
+**Four decisions owed before implementation** (§V forbids deciding these independently):
+
+1. **D1 — Governance.** (A) Space governs access, Conversation parties derived — canon untouched;
+   (B) adopt the TRANSFERABLE STEWARDSHIP primitive the canon itself anticipates, institution-owned
+   conversations only — one membership model, deliberate amendment; (C) a third party-governed kind —
+   rejected, that is how a new legacy gets built.
+2. **D2 — Cardinality.** One Conversation per Space (recommended on the production evidence) or several.
+   Decides navigation and notification shape.
+3. **D3 — Realtime in this slice?** Conversation has a realtime adapter; canonical N-party group realtime
+   is unverified. Meetings stays protected and is not to be reused.
+4. **D4 — Visibility/taxonomy.** DISCOVERABLE has no canonical analogue and touches live/broadcast;
+   SpaceType may be vocabulary the new product does not need.
+
+**Next frontier:** D1 and D2 are the gate. With those ruled, the reconstruction is implementable
+end-to-end without further decisions.
+
+Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/institution-spaces-reconstruction-record.json`.
