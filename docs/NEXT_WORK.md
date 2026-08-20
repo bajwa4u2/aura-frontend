@@ -25,38 +25,46 @@ renamed to `photo.png`. All four predeclared properties PASS. **Leg 5(B) LIVE_CE
 COMPLETE.** F127 is live-certified on the D2 confirm path. Every record that waited on the
 attributable deployment or this observation is reconciled.
 
-## ACTIVE — CH-12 Media Custody, Delivery & Processing
+## ACTIVE — CH-12 · F137 examination architecture
 
-Entered. Forensic assessment done before any implementation:
-`aura-backend/docs/2026-08-20-ch12-f137-forensic-assessment.md`.
+`008d9d9` deployed and attributable (`/health` → `commit 008d9d9`); frontend `b665015` pushed.
 
-**Done this pass — F127's residue.** The institution-post door (`verifyClientSuppliedObject`)
-trusted the storage transport `Content-Type`, which the client sets on its own presigned `PUT`, and
-never read a byte. The file the founder just watched Aura refuse could enter there and be created
-`READY`. Both doors now share one `inspectStoredContent` helper over the same pure authority: the
-door rejects unverifiable bytes with the same code and message the messages door uses, corrects a
-mislabelled-but-permitted file to what it actually is, and refuses the attach if inspection itself
-fails. Seeded proof: bypassing the rejection fails the suite.
+**F127 stays `IMPLEMENTED_NOT_LIVE_CERTIFIED` — deliberately not promoted.** D2 confirm is
+live-certified; the D7 door is implemented and deployed but has no founder observation; the worker
+path and Meetings custody remain uncovered. Promoting on one door's certification is the error that
+let the residue survive the first time. Meetings evidence is recorded **under F127**, which already
+owns it — no new finding.
 
-**F137 stays OPEN.** Nothing in this pass performs examination, and nothing claims to.
+**Architecture done, engine-neutral.** `examination.types.ts` + `examination-policy.ts`, both pure:
+capability contract (`MALWARE_SCAN` · `STRUCTURAL_VALIDATION` · `ARCHIVE_INSPECTION` ·
+`DOCUMENT_INSPECTION` · `MEDIA_DECODE_VALIDATION`), the content-family requirement matrix, and the
+READY invariant. Record:
+`aura-backend/docs/2026-08-20-f137-examination-architecture.md`.
 
-### Owed before F137 can be built
+**The honest posture.** Requirements are true today and Aura has **no examiner for any of them**.
+Enforcement is therefore an explicit second axis: `NOT_ENFORCEABLE` admits the object but returns
+`unexamined: [...]` as a value the caller must handle — never a silence. `FAILED` is terminal under
+both postures. Seeded proof: emptying that list fails the suite.
 
-**One founder decision — the examination engine.** Self-hosted ClamAV (infra and memory, no
-per-scan fee, auditable) · managed scanning API (per-scan cost, and **content leaves Aura's
-custody** — a privacy question, not just billing) · neither, accepting the exposure for now.
-R2 offers nothing native. The async-worker shape around it needs **no new states** — `UPLOADED →
-PROCESSING → READY/FAILED` already exists and is wired — so the decision really is only the engine.
+**Not wired into the lifecycle, deliberately.** Running it at confirm today would either refuse
+every upload or admit everything while recording nothing.
 
-### CH-12's remaining surface, recorded not changed
+### Owed before F137 can be implemented — two things, both founder-facing
 
-- **Worker `markReady`** promotes to `READY` with no inspection, gated by a worker token. **No
-  worker exists in this repo** — an external contract whose other side is not visible, so it was
-  left alone rather than altered blind.
-- **Meetings asset custody** writes `READY` without byte verification. **Protected** — observed
-  only.
-- **Archives** are the sharpest exposure: accepted, identified, never opened. Inside F137's
-  existing zero-coverage scope, not a new unit.
+1. **An engine decision.** ClamAV covers `MALWARE_SCAN` and `ARCHIVE_INSPECTION` (it scans inside
+   ZIPs) with content never leaving custody and no per-scan fee — but it does **not** decode media,
+   does **not** structurally validate, and answers "known-bad macro", not "has macros".
+   **ClamAV ≠ F137**; it is one examiner for one capability family.
+2. **An additive migration** to persist verdicts durably (`MediaExamination`: capability, outcome,
+   examiner id + version, timing, retryability). Nothing durable can be recorded without it.
+
+### Archives — the sharpest exposure, now traced
+
+ZIP only. OOXML is distinguished by an **ASCII substring search over the last 64 KB**, not a
+central-directory parse — so a plain ZIP holding a member named `xl/…` reads as `.xlsx`, and a
+legitimate OOXML with its directory outside that window stays `application/zip`. Nested archives,
+expansion ratio, encryption, malformed directories and member contents are **never examined**: with
+a 512-byte head and 64 KB tail, the middle of every archive Aura accepts has never been read.
 
 ## OWED — founder live observation
 
