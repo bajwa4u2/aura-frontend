@@ -243,7 +243,7 @@
     "accounting": "451/451 · 17/17",
     "production": "NOT polled, NOT mutated. Migration written locally and NOT applied to production."
   },
-  "nextExecutableFrontier": "Deploy-time application of the additive migration, then founder live observation of the reconstructed Space journeys. After that, Phase 5 legacy retirement can proceed on its own remaining prerequisites — with the institution-side obstacle now removed.",
+  "nextExecutableFrontier": "Founder live observation of the 18 recorded journeys. Then journey certification, then retirement-readiness reassessment. Phase 5 remains unauthorised; nothing crosses into destructive retirement without its own authorisation.",
   "founderRulingsApplied": {
     "D1_governance": {
       "ruling": "OPTION A. Space governs membership and access; Conversation provides the communication runtime for the admitted population. Conversation parties on a space-backed conversation are derived from Space membership and are never an independent competing membership authority.",
@@ -524,5 +524,23 @@
       "realtime audio/video (D3 deferred)",
       "archive/closure beyond what is currently implemented"
     ]
+  },
+  "deploymentResult": {
+    "pushed": {
+      "aura-backend": "879b205..8182bc6",
+      "aura-frontend": "7eab7b7..a7396d8",
+      "order": "backend first, so the migration and API landed before the client that calls them",
+      "bothSynced": "YES"
+    },
+    "migrationApplied": "YES — confirmed once, read-only. `_prisma_migrations` row for 20260905000000_institution_space_conversation: finished=true, rolled_back_at=null, and it is the latest applied migration.",
+    "schemaConfirmed": {
+      "column": "Space.conversationId present, is_nullable = YES",
+      "index": "Space_conversationId_key present",
+      "foreignKey": "Space_conversationId_fkey present"
+    },
+    "legacyDataUntouched": "CONFIRMED by the same read-only check: DirectThread 5, DirectMessage 9, Message 69, Space 13 — identical to the pre-deploy counts. Nothing was migrated, deleted or rewritten.",
+    "spacesWithConversation": "0 at deploy time, by design. Association is LAZY — the first use of a Space creates and attaches its conversation, which is why no backfill was needed or run.",
+    "startupHealth": "The backend booted and served the migration step; the route-path compilation guard that was added after the 2026-08-20 crash loop passed pre-deploy and no new route syntax was introduced by this batch.",
+    "probeDiscipline": "One read-only confirmation, session and per-probe transactions read-only, rolled back. No exploratory production testing was performed on the founder's behalf, and the temporary probe script was removed rather than committed."
   }
 }

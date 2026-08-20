@@ -576,3 +576,62 @@ analyze clean. Identity gate unchanged. Meetings 52 pass. 451/451, 17/17, Stage-
 reconstructed Space journeys.
 
 Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/institution-spaces-reconstruction-record.json`.
+
+## 2026-08-20 — Reconstructed Institution Spaces DEPLOYED; founder live observation OWED
+
+**Founder authorised the additive migration.** `20260905000000_institution_space_conversation` was
+re-verified before pushing rather than trusted from the commit that wrote it: three statements, all
+additive and guarded — nullable `Space.conversationId`, `CREATE UNIQUE INDEX IF NOT EXISTS`, and an
+existence-guarded FK. No `DROP`/`TRUNCATE`/`DELETE`/`INSERT`/`UPDATE`/`ALTER COLUMN`/`NOT NULL`; the only
+DELETE/UPDATE text in the file is the FK's referential-action clause. **No backfill** — existing Spaces
+carry NULL until first use, and Postgres permits many NULLs under a unique index.
+
+**Pushed backend-first**, so the migration and API land before the client that calls them:
+`aura-backend 879b205..8182bc6`, `aura-frontend 7eab7b7..a7396d8`. Both synced with origin/main.
+
+**The startup guard was part of pre-deploy health deliberately.** Tests + tsc + migration safety are not
+startup evidence — the 2026-08-20 crash loop passed all three and still refused to boot. Route-path
+compilation spec PASS.
+
+**HELD and unchanged:** the legacy history migration (`migrate-conversations.js` **not run**), legacy
+message/Space deletion, table drops, destructive cleanup, arbitrary backfills. **Phase 5 remains
+UNAUTHORISED.**
+
+**Stage discipline:** deployment makes the reconstructed product **observable** and certifies nothing.
+Observation is not retirement.
+
+### FOUNDER LIVE OBSERVATION — 18 journeys, ordered as the product is used
+
+Workspace → Space → membership/governance → conversation → rich content → continuity.
+
+1. Institution workspace → Spaces list opens
+2. Open a Space → **reconstructed** surface, title + purpose (not the old correspondence screen)
+3. Create a Space → opens with an honest empty timeline
+4. Open Members → roster with names/avatars, and the institution-membership disclaimer
+5. **Add Member** → immediate membership for an eligible institution member, **no invitation step**
+6. The added member can open the Space and read the timeline
+7. **Remove Member** → loses access; conversation stops counting them
+8. Sole-owner removal is **refused** with a reason
+9. Removed person is **still an institution member** (frozen boundary)
+10. Non-member is refused the Space and never obtains its conversation
+11. Send a message → appears and persists
+12. Reply, and a second member replies → one continuous thread
+13. **Acting context** → personal vs institution voice, human actor still attributable
+14. **Rich content** → image/document/media attach, render, open, save
+15. Mentions resolve to the right person
+16. Unread appears and clears
+17. Hard-refresh / cold deep-link to `/institution/:id/spaces/:spaceId` reconstructs
+18. **No legacy runtime** appears anywhere in the experience
+
+**Not required:** old message chronology, legacy history visibility, realtime audio/video (D3 deferred),
+archive/closure beyond what is currently implemented.
+
+**Still visible, still owed:** the five nested positional person reads in `invite_presentation.dart` —
+surviving identity debt the current detector cannot see. Not blocking; not canonical; an executable
+cleanup item after observation.
+
+**F116/F053 unchanged PARTIALLY_VALIDATED** (active 0, retirement-owned 15). 451/451, 17/17, Stage-0
+ratified.
+
+**Next:** founder performs the observation above; then journey certification, then retirement-readiness
+reassessment. Nothing crosses into destructive retirement without its own authorisation.
