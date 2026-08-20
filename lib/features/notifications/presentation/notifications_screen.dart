@@ -17,6 +17,7 @@ import '../../feed/domain/feed_item.dart';
 import '../../updates/app_notification.dart';
 import '../../updates/providers.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../core/navigation/canonical_destinations.dart';
 
 /// Phase-3 actor-aware notifications list. Each row carries enough data to
 /// route on tap (post detail, institution-post detail, direct thread,
@@ -91,6 +92,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       return '/messages/c/$conversationId';
     }
     if (n.type == 'INVITATION') return '/messages';
+
+    // CH-12 E6 — media restriction notices resolve through the CANONICAL
+    // destination authority, before the stored-deeplink shortcut.
+    //
+    // Resolving from the notice's own media id rather than from a stored
+    // deeplink is the whole point: the notices written before that field
+    // existed carry none, and depending on it left a real member tapping a
+    // real quarantine notice and getting nothing. Both notice shapes are
+    // handled by one reader, so the paired lifecycle notifications cannot
+    // drift apart.
+    final restrictionType = n.type.toUpperCase();
+    if (restrictionType == 'MEDIA_QUARANTINED' ||
+        restrictionType == 'MEDIA_QUARANTINE_LIFTED') {
+      final destination =
+          restrictedMediaDestination(mediaIdFromRestrictionNotice(n.payload));
+      if (destination != null) return destination;
+    }
 
     // Phase 3 — backend stores a canonical deeplink in payload.deeplink
     // for every notification kind that has a target. Honor it first; the

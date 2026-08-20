@@ -41,6 +41,36 @@ String? institutionSpaceDestination(String? institutionId, String? spaceId) {
   return '/institution/$institution/spaces/$space';
 }
 
+/// `/media/:mediaId/restricted` — the member's surface for an attachment whose
+/// delivery has been stopped, and the route back through the appeal.
+///
+/// Minted from the media id alone, because that is the only identifier a
+/// restriction notice is guaranteed to carry. Deliberately NOT read out of a
+/// stored `deeplink`: the notices written before that field existed have none,
+/// and a destination authority that only works for rows created after it
+/// shipped is not an authority — it is a migration waiting to be noticed by a
+/// member whose tap does nothing.
+String? restrictedMediaDestination(String? mediaId) {
+  final id = _clean(mediaId);
+  return id == null ? null : '/media/$id/restricted';
+}
+
+/// The media id carried by a quarantine or quarantine-lifted notice.
+///
+/// Tolerates BOTH governed shapes on purpose: the quarantine notice nests it
+/// under `subject` (the D3 notice contract), while the lifted notice carries it
+/// flat. One reader for both means the paired lifecycle notifications cannot
+/// drift apart — the failure that left QUARANTINED navigable and LIFTED not.
+String? mediaIdFromRestrictionNotice(Map<String, dynamic>? payload) {
+  if (payload == null) return null;
+  final subject = payload['subject'];
+  if (subject is Map) {
+    final nested = _clean(subject['mediaId']?.toString());
+    if (nested != null) return nested;
+  }
+  return _clean(payload['mediaId']?.toString());
+}
+
 /// `/realtime/:sessionId` — where a live session is actually experienced.
 String? realtimeSessionDestination(String? sessionId, {bool join = false}) {
   final id = _clean(sessionId);
