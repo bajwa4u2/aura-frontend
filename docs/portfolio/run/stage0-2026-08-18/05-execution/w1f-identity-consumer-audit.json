@@ -496,7 +496,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/invitations/presentation/invite_create_screen.dart",
-   "line": 751,
+   "line": 748,
    "evidence": "CircleAvatar(",
    "verdict": "NON_CONFORMANT",
    "why": "Renders a person image/initial through CircleAvatar instead of the canonical AuraAvatar."
@@ -783,7 +783,7 @@
    "repo": "aura_final",
    "surface": "AVATAR",
    "path": "lib/features/realtime/presentation/realtime_room_screen.dart",
-   "line": 2576,
+   "line": 2580,
    "evidence": "child: AuraAvatar(name: name, imageUrl: avatarUrl, size: size),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
@@ -929,7 +929,7 @@
    "repo": "aura-backend",
    "surface": "PROJECTION",
    "path": "src/realtime/services/realtime-session.service.ts",
-   "line": 141,
+   "line": 142,
    "evidence": "displayName: true,",
    "verdict": "OUT_OF_SCOPE_INSTITUTION_IDENTITY",
    "why": "Institution identity has its own canonical authority (institution-identity.ts); it is not a person consumer."

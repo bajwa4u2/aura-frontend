@@ -4,14 +4,40 @@
 
 ---
 
-## OPEN — deeplink family retired here is still minted by the backend (2026-08-20)
+## RESOLVED — the stranded deeplink family (2026-08-20)
 
-Nine backend services still emit `/me/correspondence/:spaceId/thread/:threadId`. Phase 5
-retired that route family in this client, and there is no `errorBuilder` on the router, so
-those notification/activity/attention deeplinks land on GoRouter's default not-found page.
-Retargeting them is a behavioural slice with its own tests on the backend side; the client
-side of the decision is whether `route_normalizer.dart` should also absorb the deep form.
-**Not started. Reported, not fixed.**
+Fixed, and wider than the 2026-08-19 note said: eleven backend producers and ten client
+sites, not nine backend services. One rule now owns the answer on each side
+(`canonical_destinations.dart` / `canonical-destinations.ts`) and two ratchets hold it.
+The retired prefix is no longer classified as a live member surface.
+
+## OPEN — founder step before anything can be pushed
+
+The outgoing native build **1.3.0+24** must be placed in maintenance through
+`POST /v1/admin/client-policies` (distributions `android-direct` and `unknown`, channel
+`production`) **before** the backend deploy removes the legacy endpoints. Applying it after
+the deploy leaves a window where the old client meets missing runtime as random failure.
+This session does not hold `SETTINGS_WRITE` credentials, so it is returned rather than
+worked around.
+
+**On release day**, after the new build ships: switch both rows to `maintenanceMode: false`
+with `minSupportedVersion` set to the new version. Leaving maintenance on while setting a
+minimum locks out the upgrade itself, because maintenance short-circuits before any version
+comparison.
+
+## OPEN — orphaned screen calling retired endpoints
+
+`lib/features/create/presentation/new_conversation_screen.dart` calls `POST /spaces` and
+`GET /spaces/:spaceId/threads`, both retired. Nothing constructs or routes it — it is
+referenced in comments only — so it is not a supported-product consumer and the endpoints
+stay retired. Deleting it is retirement work that was not authorised here. **Reported, not
+removed.**
+
+## OPEN — `/messages/new` prefill
+
+`author_profile_screen` now opens `/messages/new` with `userId`/`handle`/`name` query
+parameters, but the route builds `const NewConversationPicker()`, which takes none. The
+navigation works; the prefill does not. **Small, named, not started.**
 
 ---
 

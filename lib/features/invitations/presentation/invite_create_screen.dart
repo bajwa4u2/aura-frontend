@@ -13,6 +13,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../core/navigation/canonical_destinations.dart';
 
 class InviteCreateScreen extends ConsumerStatefulWidget {
   const InviteCreateScreen({
@@ -102,13 +103,9 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
   String get _returnRoute {
     final explicit = (widget.returnTo ?? '').trim();
     if (explicit.isNotEmpty) return explicit;
-    final spaceId = (widget.spaceId ?? '').trim();
-    final threadId = (widget.threadId ?? '').trim();
-    if (spaceId.isNotEmpty && threadId.isNotEmpty) {
-      return '/me/correspondence/$spaceId/thread/$threadId';
-    }
-    if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    return '/me/invitations';
+    // Phase 5: only a canonical surface is a valid place to return to.
+    return canonicalContextDestination(spaceId: widget.spaceId) ??
+        '/me/invitations';
   }
 
   void _leaveInviteFlow() {

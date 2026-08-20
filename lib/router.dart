@@ -172,14 +172,10 @@ const String kMeCommunicationsRoute = '/me/settings/communications';
 const String kRouterBootRoute = '/_boot';
 
 const String kMessagesRoute = '/messages';
-// CO-RC-C7-005 Phase 5: `/me/correspondence` is retired. The constant is
-// kept ONLY because route classification and the navigation authority still
-// name it while they finish shedding their references to a family that no
-// longer has routes; nothing builds a screen from it any more.
-const String kCorrespondenceHubRoute = '/me/correspondence';
-const String kCreateConversationRoute =
-    '/me/correspondence/create/conversation';
-const String kCreateSpaceRoute = '/me/correspondence/create/space';
+// CO-RC-C7-005 Phase 5: the `/me/correspondence` constants are gone. Route
+// classification and the navigation authority no longer name the family, and
+// nothing builds a screen from it, so keeping the names alive would only make
+// a retired address look reachable.
 
 String _normalizeRedirectDest(String? dest, {String fallback = '/home'}) {
   final trimmed = (dest ?? '').trim();

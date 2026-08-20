@@ -2513,7 +2513,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         router.pop(true);
       } else {
         if (_isReply) {
-          router.go('/me/correspondence');
+          router.go('/messages');
         } else if ((publishedPostId ?? '').trim().isNotEmpty) {
           router.go('/posts/${publishedPostId!.trim()}');
         } else {

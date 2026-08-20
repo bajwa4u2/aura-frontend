@@ -100,9 +100,7 @@ class NavigationAuthority {
     }
     if (p == '/messages' ||
         p.startsWith('/messages/') ||
-        p == '/conversations' ||
-        p == '/me/correspondence' ||
-        p.startsWith('/me/correspondence/')) {
+        p == '/conversations') {
       return PrimaryDestination.messages;
     }
     if (p == '/discover' ||

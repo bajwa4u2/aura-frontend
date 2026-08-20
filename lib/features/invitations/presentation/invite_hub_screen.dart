@@ -8,6 +8,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import '../../../core/navigation/canonical_destinations.dart';
 
 class InviteHubScreen extends StatelessWidget {
   const InviteHubScreen({
@@ -26,11 +27,8 @@ class InviteHubScreen extends StatelessWidget {
   String get _returnTo {
     final explicit = (returnTo ?? '').trim();
     if (explicit.isNotEmpty) return explicit;
-    if (_hasThreadContext && _hasSpaceContext) {
-      return '/me/correspondence/${spaceId!.trim()}/thread/${threadId!.trim()}';
-    }
-    if (_hasSpaceContext) return '/me/correspondence/${spaceId!.trim()}';
-    return '/me/invitations';
+    // Phase 5: only a canonical surface is a valid place to return to.
+    return canonicalContextDestination(spaceId: spaceId) ?? '/me/invitations';
   }
 
   String _withReturnTo(String path) {

@@ -2,6 +2,7 @@ import '../../app/route_targets.dart';
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import '../../core/navigation/canonical_destinations.dart';
 
 class NotificationsRepository {
   NotificationsRepository(this._dio);
@@ -428,11 +429,14 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
       _stringOf(payload['deeplink']),
       _stringOf(data['link']),
       _stringOf(data['url']),
-      threadId.isNotEmpty && spaceId.isNotEmpty
-          ? '/me/correspondence/$spaceId/thread/$threadId'
-          : '',
-      threadId.isNotEmpty ? '/threads/$threadId' : '',
-      spaceId.isNotEmpty ? '/spaces/$spaceId' : '',
+      // Phase 5: a legacy threadId/spaceId names no surviving surface, so a
+      // destination is synthesised only from canonical identifiers.
+      canonicalContextDestination(
+            conversationId: _stringOf(data['conversationId']),
+            institutionId: _stringOf(data['institutionId']),
+            spaceId: spaceId,
+          ) ??
+          '',
       announcementSlug.isNotEmpty ? '/announcements/$announcementSlug' : '',
       announcementId.isNotEmpty ? '/announcements/$announcementId' : '',
     ]),

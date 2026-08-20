@@ -36,6 +36,7 @@ import 'widgets/realtime_host_controls.dart';
 import 'widgets/realtime_join_requests_panel.dart';
 import 'widgets/realtime_participant_list.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../core/navigation/canonical_destinations.dart';
 
 class _CallRouteRedirectingFallback extends StatelessWidget {
   const _CallRouteRedirectingFallback();
@@ -429,7 +430,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           if (surfaceId.isNotEmpty) return '/meetings/$surfaceId';
           return '/meetings';
         case RealtimeSurfaceType.space:
-          if (surfaceId.isNotEmpty) return '/me/correspondence/$surfaceId';
+          // Phase 5 retired the correspondence family. A legacy space call has
+          // no surface to return to, so it falls through to the default rather
+          // than landing on an address that resolves to nothing.
+          break;
         case RealtimeSurfaceType.conversation:
           // Conversation calls return to their conversation — the durable
           // parent surface (canon: capabilities attach, they do not fork).
@@ -466,10 +470,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   bool _isUsableReturnRoute(String route) {
     if (!route.startsWith('/') || route.startsWith('/realtime')) return false;
 
-    // The generic correspondence hub/shell is not a safe post-call landing
-    // route. It has produced the blank grey state in live testing. Exact space
-    // and thread routes remain valid.
-    if (route == '/me/correspondence') return false;
+    // Phase 5 retired the whole correspondence family, not just its hub. A
+    // persisted return route from before the cutover may still name it, and
+    // none of those addresses resolve any more — so the entire prefix is
+    // rejected rather than only the bare hub, which used to land on a blank
+    // grey state in live testing.
+    if (route.startsWith(kRetiredCorrespondenceRoutePrefix)) return false;
 
     return true;
   }
@@ -1817,11 +1823,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   String? _spaceRoute(RealtimeSession? session) {
+    // A legacy space names no surviving surface after Phase 5, and there is no
+    // mapping from one to a canonical destination.
     if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final id = (session.surfaceId ?? '').trim();
-      if (id.isNotEmpty) return '/me/correspondence/$id';
-    }
     return null;
   }
 

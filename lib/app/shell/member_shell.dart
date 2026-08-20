@@ -233,10 +233,6 @@ int _memberBadgeFor(_NavItem item, ModuleAttention attention) {
 /// full-screen routes where navigation chrome should get out of the way.
 bool _showMemberMobileBar(String path) {
   if (path.startsWith('/realtime')) return false;
-  if (path.startsWith('/me/correspondence/') &&
-      (path.contains('/thread/') || path.contains('/live/'))) {
-    return false;
-  }
   return true;
 }
 

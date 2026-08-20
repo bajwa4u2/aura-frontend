@@ -50,9 +50,22 @@ void main() {
     });
 
     test('messages aliases resolve to Messages', () {
-      for (final p in ['/messages', '/conversations', '/me/correspondence']) {
+      for (final p in ['/messages', '/conversations']) {
         expect(NavigationAuthority.primaryOf(p), PrimaryDestination.messages,
             reason: p);
+      }
+    });
+
+    test('the retired correspondence family is no longer a destination', () {
+      // CO-RC-C7-005 Phase 5: these addresses have no routes. Classifying them
+      // as Messages made the shell light a tab for a page that resolves to
+      // nothing, which reads as handled when it is not.
+      for (final p in [
+        '/me/correspondence',
+        '/me/correspondence/t1',
+        '/me/correspondence/s1/thread/t1',
+      ]) {
+        expect(NavigationAuthority.primaryOf(p), isNull, reason: p);
       }
     });
 
@@ -65,7 +78,7 @@ void main() {
 
     test(
         'me and meetings are DEPTH, not primaries (founder-observed '
-        'correction) — but me correspondence stays Messages', () {
+        'correction)', () {
       // Me: personal depth behind the identity/avatar chrome.
       expect(NavigationAuthority.primaryOf('/me'), isNull);
       expect(NavigationAuthority.primaryOf('/me/edit'), isNull);
@@ -73,9 +86,6 @@ void main() {
       // meeting are contextual (booking, attention, participations).
       expect(NavigationAuthority.primaryOf('/meetings/m1'), isNull);
       expect(NavigationAuthority.primaryOf('/meetings/m1/room'), isNull);
-      // Correspondence remains the Messages intention.
-      expect(NavigationAuthority.primaryOf('/me/correspondence/t1'),
-          PrimaryDestination.messages);
     });
 
     test('detail routes select nothing (truthful no-selection)', () {

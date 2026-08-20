@@ -241,10 +241,6 @@ bool isMemberShellPath(String path) {
       path == '/me/invitations' ||
       path == '/invite' ||
       path == '/invite/create' ||
-      path == '/me/correspondence' ||
-      path == '/me/correspondence/create/conversation' ||
-      path == '/me/correspondence/create/space' ||
-      path.startsWith('/me/correspondence/') ||
       // Article AUTHORING (F069 evidence): reading an article is public,
       // but composing/editing one is a member act. This was excluded from
       // the public list yet never added here, leaving it unclassified and

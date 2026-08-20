@@ -6,21 +6,37 @@
 
 ## Status
 
-> **2026-08-20 — backend release cutover (aura-backend, local only, NOT pushed).**
-> The legacy Correspondence module was dissolved: its four services moved into
-> `src/realtime/orchestration/` and `RealtimeModule` now owns orchestration outright.
-> **15 legacy HTTP endpoints were deleted** (`threads`, `messages`, legacy `/spaces`
-> controllers). No service was removed — each has a living canonical consumer. This client
-> calls none of the deleted endpoints; `/threads/:threadId/invites` (`invitations_client.dart:98`)
-> is a *surviving* Invites surface and was deliberately retained.
+> **2026-08-20 — cutover finalized, still NOT pushed (aura-backend + this repo, local only).**
+> The legacy Correspondence module was dissolved into `src/realtime/orchestration/`, and
+> **14 legacy HTTP endpoints are retired, 1 restored**: re-running the dependency proof
+> against executable client calls found `POST /spaces/:spaceId/invites` is still used by
+> `invitations_client.dart:88` via the routed `/invite/create`, so it survives as
+> `space-invites.controller.ts`. No service was removed — each has a living canonical
+> consumer.
 >
-> **Open defect this exposes, owned by this repo:** the backend still mints
-> `/me/correspondence/:spaceId/thread/:threadId` deeplinks from nine services, and Phase 5
-> retired that route family here. `route_normalizer.dart` rewrites only the *bare*
-> `/me/correspondence`, and `lib/router.dart` declares no `errorBuilder`, so the deep form
-> lands on GoRouter's default not-found page. `route_classification.dart:244-247` and
-> `member_shell.dart:236` still classify the dead prefix, which is why it reads as handled.
-> Full record: `aura-backend/docs/2026-08-20-release-cutover-realtime-rehome-legacy-retirement.md`.
+> **The stranded-deeplink defect recorded on 2026-08-19 is fixed, and it was bigger than
+> reported.** Eleven backend producers (not nine) and **ten client sites** were minting
+> `/me/correspondence/...`, so the app was navigating *itself* onto a not-found page. All
+> are retargeted through one rule, mirrored on both sides:
+> `lib/core/navigation/canonical_destinations.dart` and
+> `src/common/routes/canonical-destinations.ts` — Conversation → `/messages/c/:id`,
+> Institution Space → `/institution/:institutionId/spaces/:spaceId`, live session →
+> `/realtime/:sessionId`, otherwise **no destination**. A legacy `threadId` is not an
+> accepted input: there is no Thread → Conversation mapping, so it cannot be honestly
+> converted, and nothing guesses.
+>
+> The retired prefix is no longer classified as live in `route_classification.dart`,
+> `navigation_authority.dart` or `member_shell.dart` — the shell had been lighting a
+> Messages tab for a page that resolves to nothing. Two ratchets now hold the line
+> (`test/navigation/retired_route_production_test.dart` and the backend twin), scanning
+> executable source only and separating *producing* an address from *recognising* one.
+>
+> **Blocked on one founder step before push:** the outgoing native build (1.3.0+24, on
+> `android-direct` and — because `ClientDistribution` has no iOS member — `unknown`) must be
+> placed in `maintenanceMode` through `POST /v1/admin/client-policies` *before* the code
+> deploys, or it meets the removed endpoints as random failure. Web (`web-prod`) is
+> deliberately ungated and stays compatible. Full record:
+> `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md`.
 
 
 | Track | State |

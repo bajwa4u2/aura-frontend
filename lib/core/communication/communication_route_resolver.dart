@@ -9,18 +9,16 @@ class CommunicationRouteResolver {
     }
 
     switch (contract.ownerType) {
+      // Phase 5 retired the `/me/correspondence` family. A legacy thread or
+      // space owner names no surviving surface and there is no mapping to a
+      // canonical one, so a live contract for either is addressed by the
+      // session it is actually happening in — the same answer `room` already
+      // gave. When there is no session there is nothing honest to point at,
+      // and the fallback below applies.
       case CommunicationOwnerType.thread:
-        if ((contract.spaceId ?? '').isNotEmpty && (contract.threadId ?? '').isNotEmpty) {
-          return contract.sessionId == null || contract.sessionId!.isEmpty
-              ? '/me/correspondence/${contract.spaceId}/thread/${contract.threadId}/live'
-              : '/me/correspondence/${contract.spaceId}/thread/${contract.threadId}/live/${contract.sessionId}';
-        }
-        break;
       case CommunicationOwnerType.space:
-        if ((contract.spaceId ?? '').isNotEmpty) {
-          return contract.sessionId == null || contract.sessionId!.isEmpty
-              ? '/me/correspondence/${contract.spaceId}/live'
-              : '/me/correspondence/${contract.spaceId}/live/${contract.sessionId}';
+        if ((contract.sessionId ?? '').isNotEmpty) {
+          return '/realtime/${contract.sessionId}?action=join';
         }
         break;
       case CommunicationOwnerType.room:

@@ -126,7 +126,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     final handle = _cleanValue(widget.handle);
 
     final uri = Uri(
-      path: '/me/correspondence/create/space',
+      path: '/messages/new',
       queryParameters: {
         if (userId.isNotEmpty) 'userId': userId,
         if (handle.isNotEmpty) 'handle': handle,

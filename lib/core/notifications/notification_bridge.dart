@@ -17,6 +17,7 @@ import 'native_call_notification_channel.dart';
 import 'notification_open_reconcile.dart';
 import 'notification_presentation.dart';
 import 'sw_message_bridge.dart';
+import '../navigation/canonical_destinations.dart';
 
 final auraScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -259,7 +260,6 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
       }
     }
 
-    final threadId = _stringOf(payload['threadId']);
     final spaceId = _stringOf(payload['spaceId']);
 
     // 2026-08-14 repair — a call notification tap never auto-joins. A
@@ -268,25 +268,22 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     // context with the Accept/Decline overlay on top — the same choice a
     // foreground call already gives them. The accept/decline path is now
     // the sole way into /realtime from a notification.
+    // Phase 5 retired the correspondence family, so the context this lands on
+    // is whatever canonical surface the payload actually names. A legacy
+    // threadId names none, and is no longer used to build a destination.
+    final conversationId = _stringOf(payload['conversationId']);
+    final institutionId = _stringOf(payload['institutionId']);
+    final canonical = canonicalContextDestination(
+      conversationId: conversationId,
+      institutionId: institutionId,
+      spaceId: spaceId,
+    );
+
     if (isCall) {
-      if (threadId.isNotEmpty && spaceId.isNotEmpty) {
-        return '/me/correspondence/$spaceId/thread/$threadId';
-      }
-      if (spaceId.isNotEmpty) {
-        return '/me/correspondence/$spaceId';
-      }
-      return '/home';
+      return canonical ?? '/home';
     }
 
-    // Thread message tap.
-    if (threadId.isNotEmpty && spaceId.isNotEmpty) {
-      return '/me/correspondence/$spaceId/thread/$threadId';
-    }
-    if (spaceId.isNotEmpty) {
-      return '/me/correspondence/$spaceId';
-    }
-
-    return '';
+    return canonical ?? '';
   }
 
   // ── Snackbar ──────────────────────────────────────────────────────────────

@@ -16,6 +16,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
+import '../../../core/navigation/canonical_destinations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROVIDER
@@ -561,39 +562,35 @@ String _destinationRoute(Map<String, dynamic> invite) {
         ])
       : _s(invite, const ['spaceId', 'space_id']);
 
-  final threadId =
-      _nested(invite, const [
-        ['thread', 'id'],
-        ['destination', 'threadId'],
-      ]).isNotEmpty
+
+  // Phase 5 retired the correspondence family. An accepted invitation lands on
+  // the canonical surface the envelope actually names; a legacy thread/space
+  // destination names none, and the member goes back to their invitations
+  // rather than to an address that resolves to nothing.
+  final conversationId = _nested(invite, const [
+    ['conversation', 'id'],
+    ['destination', 'conversationId'],
+  ]).isNotEmpty
       ? _nested(invite, const [
-          ['thread', 'id'],
-          ['destination', 'threadId'],
+          ['conversation', 'id'],
+          ['destination', 'conversationId'],
         ])
-      : _s(invite, const [
-          'threadId',
-          'thread_id',
-          'destinationId',
-          'destination_id',
-        ]);
+      : _s(invite, const ['conversationId', 'conversation_id']);
+  final institutionId = _s(invite, const ['institutionId', 'institution_id']);
+  final canonical = canonicalContextDestination(
+    conversationId: conversationId,
+    institutionId: institutionId,
+    spaceId: spaceId,
+  );
 
   switch (destinationType) {
-    case 'JOIN_THREAD':
-    case 'START_1_TO_1':
-      if (spaceId.isNotEmpty && threadId.isNotEmpty) {
-        return '/me/correspondence/$spaceId/thread/$threadId';
-      }
-      return '/me/invitations';
-    case 'JOIN_SPACE':
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-      return '/me/correspondence';
     case 'JOIN_AURA':
       return '/home';
+    case 'JOIN_THREAD':
+    case 'START_1_TO_1':
+    case 'JOIN_SPACE':
+      return canonical ?? '/me/invitations';
     default:
-      if (spaceId.isNotEmpty && threadId.isNotEmpty) {
-        return '/me/correspondence/$spaceId/thread/$threadId';
-      }
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-      return '/home';
+      return canonical ?? '/home';
   }
 }
