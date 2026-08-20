@@ -186,6 +186,26 @@ final adminPoliciesProvider = FutureProvider<AdminPolicy>((ref) async {
 
 // ── /v1/moderation/queue ─────────────────────────────────────────────────
 
+/// CH-12 E6 — the governed media-appeal queue.
+///
+/// Mirrors the moderation-queue provider exactly, including returning empty on
+/// 401/403 rather than throwing: a reviewer without MODERATION_READ should see
+/// an empty surface, not a crash, and the SERVER is what decided they may not
+/// see it. The client never checks the permission itself.
+final adminMediaAppealsProvider =
+    FutureProvider.autoDispose<List<MediaAppealSummary>>((ref) async {
+  final me = await ref.watch(adminMeProvider.future);
+  if (me == null) return const [];
+
+  try {
+    return await ref.watch(adminRepositoryProvider).fetchMediaAppeals();
+  } on DioException catch (e) {
+    final code = e.response?.statusCode;
+    if (code == 401 || code == 403) return const [];
+    rethrow;
+  }
+});
+
 final adminModerationQueueProvider =
     FutureProvider.family<List<ModerationReport>, String?>((ref, status) async {
   final me = await ref.watch(adminMeProvider.future);

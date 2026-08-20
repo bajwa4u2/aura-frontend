@@ -219,6 +219,12 @@ bool isInstitutionShellPath(String path) {
 
 bool isMemberShellPath(String path) {
   return path == '/home' ||
+      // CH-12 E6 — the restricted-attachment surface. MEMBER, not public: it
+      // is reached from a quarantine notice addressed to one person, and the
+      // server shows nothing at all to a caller without standing. Classifying
+      // it public would put a governed restriction behind a URL anyone could
+      // try, even though the answer would be empty.
+      RegExp(r'^/media/[^/]+/restricted$').hasMatch(path) ||
       path == '/messages' ||
       path.startsWith('/messages/') ||
       path.startsWith('/direct/') ||

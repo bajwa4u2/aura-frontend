@@ -100,6 +100,12 @@ class _AdminShellLayout extends StatelessWidget {
       path: '/admin/review-queue',
     ),
     _NavItem(
+      label: 'Appeals',
+      icon: Icons.gavel_outlined,
+      selectedIcon: Icons.gavel_rounded,
+      path: '/admin/media-appeals',
+    ),
+    _NavItem(
       label: 'Users',
       icon: Icons.group_outlined,
       selectedIcon: Icons.group_rounded,

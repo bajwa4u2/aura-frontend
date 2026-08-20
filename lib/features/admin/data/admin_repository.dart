@@ -394,6 +394,101 @@ class AdminRepository {
       },
     );
   }
+
+  // ── CH-12 E6 — media quarantine appeals ──────────────────────────────────
+  //
+  // Deliberately part of the EXISTING admin repository rather than a new
+  // media-admin client. The authority is the same MODERATION_READ /
+  // MODERATION_WRITE the moderation queue already uses; a separate client
+  // would imply a separate authority and eventually acquire one.
+
+  Future<List<MediaAppealSummary>> fetchMediaAppeals({int limit = 50}) async {
+    final res = await _dio.get(
+      '/v1/admin/media/appeals',
+      queryParameters: {'limit': limit},
+    );
+    final body = _asMap(res.data);
+    return _parseList(body['items'] ?? res.data, MediaAppealSummary.fromJson);
+  }
+
+  /// Decide an appeal. REVERSED releases the object through the canonical
+  /// lifecycle; UPHELD leaves it quarantined and RETAINED — upholding is never
+  /// deletion, and there is no client call that could make it one.
+  Future<void> decideMediaAppeal(
+    String appealId, {
+    required String outcome,
+    required String decisionSummary,
+    String? privateNote,
+  }) async {
+    await _dio.post(
+      '/v1/admin/media/appeals/$appealId/decide',
+      data: {
+        'outcome': outcome,
+        'decisionSummary': decisionSummary,
+        if (privateNote != null) 'privateNote': privateNote,
+      },
+    );
+  }
+}
+
+/// One row of the governed appeal queue, as the reviewer sees it.
+///
+/// Carries the appellant's own statement and the governed restriction context.
+/// It does NOT carry detector internals: the server's select decides that, and
+/// this model has no field for a signature so a widening cannot leak through
+/// the reviewer UI either.
+class MediaAppealSummary {
+  const MediaAppealSummary({
+    required this.id,
+    required this.mediaId,
+    required this.status,
+    required this.standingBasis,
+    this.appellantUserId,
+    this.statement,
+    this.submittedAt,
+    this.fileName,
+    this.mimeType,
+    this.quarantineReason,
+    this.quarantineSource,
+  });
+
+  final String id;
+  final String mediaId;
+  final String status;
+  final String standingBasis;
+  final String? appellantUserId;
+  final String? statement;
+  final DateTime? submittedAt;
+
+  final String? fileName;
+  final String? mimeType;
+
+  /// Reviewer-facing context. A reviewer, unlike a member, needs to know what
+  /// the examiner actually said in order to decide.
+  final String? quarantineReason;
+  final String? quarantineSource;
+
+  static MediaAppealSummary fromJson(Map<String, dynamic> json) {
+    final media = json['media'] is Map
+        ? Map<String, dynamic>.from(json['media'] as Map)
+        : const <String, dynamic>{};
+    return MediaAppealSummary(
+      id: json['id']?.toString() ?? '',
+      mediaId: json['mediaId']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'SUBMITTED',
+      standingBasis: json['standingBasis']?.toString() ?? '',
+      appellantUserId: json['appellantUserId']?.toString(),
+      statement: json['statement']?.toString(),
+      // Parsed, not localised — ProductTime owns presentation timezone.
+      submittedAt: json['submittedAt'] == null
+          ? null
+          : DateTime.tryParse(json['submittedAt'].toString()),
+      fileName: media['fileName']?.toString(),
+      mimeType: media['mimeType']?.toString(),
+      quarantineReason: media['quarantineReason']?.toString(),
+      quarantineSource: media['quarantineSource']?.toString(),
+    );
+  }
 }
 
 // Standalone provider helper — used by admin_providers.dart.

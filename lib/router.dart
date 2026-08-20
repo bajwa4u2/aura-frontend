@@ -151,6 +151,8 @@ import 'screens/child_safety_screen.dart';
 import 'screens/terms_screen.dart';
 import 'features/support/presentation/support_agent_screen.dart';
 import 'features/support/presentation/admin_support_console_screen.dart';
+import 'features/media_governance/presentation/restricted_media_screen.dart';
+import 'features/admin/presentation/admin_media_appeals_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -940,6 +942,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) =>
                 PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
           ),
+          // CH-12 E6 — the member's route back from a restricted attachment.
+          // D3's chain ends in an APPEAL a person can actually reach, and this
+          // is where a quarantine notice lands. The screen shows nothing at all
+          // to a caller without standing, so the path is safe to hold a raw
+          // media id.
+          GoRoute(
+            path: '/media/:id/restricted',
+            builder: (context, state) => RestrictedMediaScreen(
+              mediaId: state.pathParameters['id'] ?? '',
+            ),
+          ),
           // Public-UX generalized thread surface — works for both user
           // posts and institution posts via the existing
           // `feedItemDetailProvider` / `feedItemRepliesProvider`. The
@@ -1516,6 +1529,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/moderation',
             builder: (_, __) => const AdminModerationScreen(),
+          ),
+          // CH-12 E6 — the reviewer's side of the governed route back. Sits in
+          // the existing admin shell under the same MODERATION_READ /
+          // MODERATION_WRITE authority the moderation queue already uses.
+          GoRoute(
+            path: '/admin/media-appeals',
+            builder: (_, __) => const AdminMediaAppealsScreen(),
           ),
           GoRoute(
             path: '/admin/support',

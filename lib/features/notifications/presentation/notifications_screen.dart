@@ -363,9 +363,45 @@ class _Tile extends StatelessWidget {
           default:
             return '$actorName updated the status of your issue';
         }
+      // CH-12 E5/E6 — governed media restriction notices.
+      //
+      // Deliberately NOT actor-voiced. Every other row here reads "$actorName
+      // did something", but no person acted on these: an examiner produced a
+      // verdict. Rendering them in an actor's voice would tell the member a
+      // human reviewed their file when nobody has, which is the same
+      // misstatement that keeping MODERATION_ACTION_TAKEN separate avoids.
+      case 'MEDIA_QUARANTINED':
+        return 'An attachment of yours is under review';
+      case 'MEDIA_QUARANTINE_LIFTED':
+        return 'An attachment of yours is available again';
       default:
         return '$actorName interacted with your content';
     }
+  }
+
+  /// Supporting line for a media-restriction notice: the file's name.
+  ///
+  /// Only the name. The category and the explanation belong on the restricted
+  /// -media screen where there is room to say them properly, and a notification
+  /// list is the wrong place to tell somebody their file may contain malware.
+  static String _mediaGovernanceSnippet(AppNotification n) {
+    final t = n.type.toUpperCase();
+    if (t != 'MEDIA_QUARANTINED' && t != 'MEDIA_QUARANTINE_LIFTED') return '';
+    final subject = n.payload['subject'];
+    final name = subject is Map
+        ? (subject['fileName']?.toString() ?? '')
+        : (n.payload['fileName']?.toString() ?? '');
+    return name.trim();
+  }
+
+  /// Is this a system notice with no acting person?
+  ///
+  /// Used to suppress the actor avatar and the actor-derived initial, which
+  /// would otherwise render whatever fallback letter the empty actor produces
+  /// and imply somebody was behind it.
+  static bool isSystemVoice(String type) {
+    final t = type.toUpperCase();
+    return t == 'MEDIA_QUARANTINED' || t == 'MEDIA_QUARANTINE_LIFTED';
   }
 
   @override
@@ -373,19 +409,27 @@ class _Tile extends StatelessWidget {
     // F053/F116 — the person half resolves once; the institution half keeps
     // its own authority.
     final person = AuraPersonIdentity.fromJson(notification.actor);
-    final imageUrl = notification.isInstitutionVoice
-        ? (notification.actorInstitution?['logoUrl']?.toString() ?? '')
-        : (person.avatarUrl ?? '');
-    final fallback = notification.isInstitutionVoice
-        ? ((notification.actorInstitution?['name']?.toString() ?? 'I')
-            .substring(0, 1)
-            .toUpperCase())
-        : person.label.substring(0, 1).toUpperCase();
+    // CH-12 — a system notice has no acting person. Falling through to the
+    // person branch would render whatever initial the empty actor produces and
+    // put a face on a decision no human made.
+    final systemVoice = isSystemVoice(notification.type);
+    final imageUrl = systemVoice
+        ? ''
+        : notification.isInstitutionVoice
+            ? (notification.actorInstitution?['logoUrl']?.toString() ?? '')
+            : (person.avatarUrl ?? '');
+    final fallback = systemVoice
+        ? 'A'
+        : notification.isInstitutionVoice
+            ? ((notification.actorInstitution?['name']?.toString() ?? 'I')
+                .substring(0, 1)
+                .toUpperCase())
+            : person.label.substring(0, 1).toUpperCase();
     final snippet = notification.payload['snippet']?.toString() ??
         // Meeting rows carry the meeting title as their supporting line.
         (notification.type.toUpperCase().startsWith('MEETING_')
             ? (notification.payload['meetingTitle']?.toString() ?? '')
-            : '');
+            : _mediaGovernanceSnippet(notification));
 
     // For grouped tiles, the row is "unread" when any underlying entry
     // is unread — so the wash persists until the user opens the post.
