@@ -543,5 +543,202 @@
     "rollback": "The migration writes only additive canonical rows with deterministic ids. If it needed undoing, the affected rows are exactly those whose id matches the migrated prefixes - but deleting them is itself a production mutation and would need its own authorization. Legacy data is never touched, so the legacy surfaces keep working throughout, before and after.",
     "environmentLimitation": "The run uses the same public-proxy DATABASE_URL used for this read-only evidence. Nothing about the command is agent-specific; the founder can run it directly."
   },
-  "status_2026_08_20_update": "Migration status resolved from UNKNOWN to NOT_APPLIED by authorized read-only evidence. Everything else in this record stands as written."
+  "status_2026_08_20_update": "Migration status resolved from UNKNOWN to NOT_APPLIED by authorized read-only evidence. Everything else in this record stands as written.",
+  "reassessment_2026_08_20": {
+    "trigger": "Two gates crossed since the original audit: the additive deploy/migration is COMPLETE and founder live observation of the reconstructed Institution Spaces is PASS.",
+    "supersededPrerequisite": {
+      "removed": "history/data migration",
+      "why": "Founder ruling: legacy personal and institution message history is not worth preserving merely to enable retirement. The question is no longer 'has old history been migrated?' but 'can the legacy runtime be removed without harming the surviving product?'",
+      "status": "NO LONGER REQUIRED. The stale prerequisite is retired from the readiness model rather than left to block. migrate-conversations.js remains HELD and unrun, and must not be revived as a blocker.",
+      "historicalRecordsUnchanged": "The original readiness record is preserved as written; this reassessment is recorded forward."
+    },
+    "matrix": {
+      "A_additiveDeployment": {
+        "status": "COMPLETE",
+        "evidence": "20260905000000_institution_space_conversation applied to production; migration row finished, not rolled back, latest applied. Column, unique index and FK confirmed present read-only."
+      },
+      "B_institutionSpacesReconstruction": {
+        "status": "COMPLETE",
+        "evidence": "Space governs identity/purpose/membership; canonical Conversation owns communication; one Space = one Conversation; no Thread created; no Space-local communication stack."
+      },
+      "C_founderLiveObservation": {
+        "status": "COMPLETE — PASS",
+        "evidence": "Founder observation 2026-08-20, 'institution spaces done beautifully'. Inherited shared-Conversation calling defects attributed to their existing owners."
+      },
+      "D_journeyCertification": {
+        "status": "COMPLETE FOR THE INSTITUTION SIDE; NOT REQUIRED FOR THE PERSONAL SIDE",
+        "evidence": "The institution Space journeys were observed and accepted. The personal correspondence family needs no reconstruction certification because personal messaging already moved to the canonical /messages surface in an earlier additive deploy — there is no personal product being reconstructed here, only surfaces being removed."
+      },
+      "E_survivingConsumersOfRetiringCode": {
+        "status": "COMPLETE",
+        "evidence": "correspondence_identity is retirement-local: invite helpers relocated to features/invitations/data/invite_presentation.dart, and lib/core/tagging/mention_scope_providers given a local generic picker. Every remaining reference outside the retiring family is a comment."
+      },
+      "F_legacyDeepLinkHandling": {
+        "status": "READY — recommendation below, one founder decision",
+        "evidence": "See legacyDeepLinkReassessment."
+      },
+      "G_retirementManifest": {
+        "status": "READY",
+        "evidence": "Rebuilt against the current architecture below."
+      },
+      "H_legacyPersonalCorrespondenceRuntime": {
+        "status": "OWED — still live and still serving",
+        "evidence": "/me/correspondence and its sub-routes still build SpaceScreen/ThreadStateWrapper; /messages/legacy-hub still builds MessagesHubScreen. These are the runtime Phase 5 removes."
+      },
+      "I_institutionLegacyRuntime": {
+        "status": "READY — now orphaned",
+        "evidence": "/institution/:id/spaces/:spaceId builds the reconstructed surface. Two institution routes remain mounted on the legacy surface — .../spaces/:spaceId/thread/:threadId (ThreadStateWrapper) and .../spaces/:spaceId/archived-threads — and the ONLY code that produces those addresses is space_screen.dart itself, which institution Spaces no longer route to. They are reachable by persisted address only."
+      },
+      "J_correspondenceIdentityConsumers": {
+        "status": "COMPLETE",
+        "evidence": "Retirement-local. Dies with the family."
+      },
+      "K_f053f116RetirementOwnedSites": {
+        "status": "READY — full mapping below, all 15 discharged by deletion",
+        "evidence": "See fifteenSiteDischargeMapping."
+      },
+      "L_rollbackRecovery": {
+        "status": "READY",
+        "evidence": "Retirement is code-only and deletes no data. A revert restores the routes and the legacy rows are untouched, so restored code finds them where it left them. Exposure is address loss, not data loss."
+      },
+      "M_destructiveDataOrSchemaWork": {
+        "status": "NOT REQUIRED FOR RUNTIME RETIREMENT — reported separately",
+        "evidence": "Runtime/code retirement and destructive schema/data cleanup are separable and need not ship together. Nothing in Phase 5 as scoped requires dropping a table or deleting a row."
+      },
+      "N_explicitFounderRetirementAuthorization": {
+        "status": "NOT GRANTED",
+        "evidence": "By doctrine, last. This reassessment exists to be seen before it is given."
+      }
+    },
+    "remainingBlockers": [
+      "N — explicit founder authorisation for physical retirement. That is the ONLY hard blocker left.",
+      "F — one product decision on legacy deep links (recommendation given; low cost either way).",
+      "conversations_screen still needs an FD-12 proven-dead disposition rather than a zero-reference grep, though it is unreferenced by route, library and test."
+    ],
+    "notBlockers": [
+      "Legacy message history — superseded by founder ruling.",
+      "The shared Conversation calling defects — they belong to F044/F035/F045 and to the canonical calling authority, not to the correspondence family being retired. Retiring legacy surfaces neither causes nor cures them."
+    ]
+  },
+  "legacyDeepLinkReassessment": {
+    "changeFromOriginalAudit": "The original record required preserving persisted /me/correspondence addresses, on the assumption that legacy message continuity mattered. The founder has since ruled that it does not. The bounded translator scoped there is now mostly unnecessary.",
+    "classification": [
+      {
+        "address": "/institution/:institutionId/spaces/:spaceId",
+        "class": "A — surviving object with a canonical successor",
+        "disposition": "ALREADY RESOLVED. The address is unchanged and now serves the reconstructed surface. No translation needed; the link that used to reach the legacy screen reaches the new one."
+      },
+      {
+        "address": "/institution/:id/spaces/:spaceId/thread/:threadId and /archived-threads",
+        "class": "B — obsolete, reachable only by persisted address",
+        "disposition": "MAY EXPIRE with retirement. Nothing produces them any more."
+      },
+      {
+        "address": "/me/correspondence/... (hub, space, thread, live)",
+        "class": "B — value is reaching abandoned personal message history",
+        "disposition": "MAY EXPIRE. The founder has ruled that content not worth preserving, and an address whose only destination is that content is not worth a compatibility subsystem."
+      },
+      {
+        "address": "/conversations?threadId=<id>",
+        "class": "C — another canonical path already makes translation unnecessary",
+        "disposition": "DirectThread surfaces (/direct/:threadId, /messages/direct) are NOT part of the C7 correspondence retirement and remain live. This address is not orphaned by Phase 5."
+      },
+      {
+        "address": "/messages/legacy-hub",
+        "class": "B",
+        "disposition": "MAY EXPIRE. The canonical /messages has served the same purpose since the additive deploy."
+      }
+    ],
+    "recommendation": "NO translator. Build no compatibility subsystem for addresses whose only value is abandoned history. The one address class that genuinely survives — institution Spaces — already resolves correctly without any translation, which is the cheapest possible outcome and was achieved by keeping the route stable through the reconstruction.",
+    "founderDecision": "Confirm that persisted /me/correspondence notification and activity links may become non-actionable when the family retires. This reverses the earlier 'must not break' ruling, which was made under the superseded premise, so it needs saying explicitly rather than being inferred from the history ruling."
+  },
+  "retirementManifestRebuilt": {
+    "note": "Rebuilt against the architecture as it stands after the reconstruction. Runtime/code retirement is separable from destructive schema/data cleanup and is ready first.",
+    "frontend_REMOVE": [
+      "MessagesHubScreen + /messages/legacy-hub route — discharges 3 identity sites",
+      "correspondence_hub_screen + /me/correspondence routes — discharges 2",
+      "space_screen.dart (personal path; its institutionId branch is already dead) — discharges 1",
+      "thread_screen / ThreadStateWrapper + correspondence thread routes",
+      "archived_threads_screen, archived_spaces_screen",
+      "conversations_screen — discharges 2, after an FD-12 proven-dead disposition",
+      "correspondence_identity.dart — discharges 7; retirement-local, no surviving consumer",
+      "spaces_repository.dart (legacy thread/message paths)",
+      "the two orphaned institution routes: .../spaces/:spaceId/thread/:threadId and .../archived-threads",
+      "communication_resolver.dart's /me/correspondence targets and route_normalizer's /correspondence normalisation — these MUST move or be removed with the routes, since they are live code pointing at addresses that would no longer exist"
+    ],
+    "frontend_RETAIN": [
+      "InstitutionSpaceScreen and the reconstructed Space surfaces",
+      "ConversationScreen and the whole canonical conversation module",
+      "DirectThreadScreen and /direct/:threadId — live, not part of this retirement",
+      "invite_presentation.dart — relocated deliberately so invitations survives the family",
+      "lib/core/tagging/mention_scope_providers — core, serves the live DirectThreadScreen"
+    ],
+    "backend_REMOVE": [
+      "CorrespondenceModule, SpacesModule legacy messaging endpoints, MessagesModule",
+      "obsolete Space messaging endpoints (/spaces/:id/threads and the thread/message paths)",
+      "the 11 files producing /me/correspondence deep links must stop producing them"
+    ],
+    "backend_RETAIN": [
+      "SpacesService and the institution Space governance endpoints — the Space is the surviving product",
+      "InstitutionSpaceConversationAuthority",
+      "DirectThreadsModule, PublicSpacesModule",
+      "ConversationsModule and every canonical authority"
+    ],
+    "database_SEPARATE_AND_NOT_YET": {
+      "tables": [
+        "DirectThread",
+        "DirectMessage",
+        "Thread",
+        "ThreadMember",
+        "ThreadReadState",
+        "Message",
+        "MessageAttachment",
+        "MessageMedia",
+        "Space.type",
+        "Space.visibility"
+      ],
+      "disposition": "NOT part of runtime retirement and NOT authorised. Rows may remain inert indefinitely; code can stop reading them long before anything is dropped. Reported separately exactly as instructed, because coupling the two would turn a reversible code change into an irreversible data one."
+    }
+  },
+  "fifteenSiteDischargeMapping": {
+    "total": 15,
+    "sites": [
+      {
+        "file": "correspondence_identity.dart",
+        "count": 7,
+        "disposition": "DELETED WITH RETIRED RUNTIME",
+        "precondition": "None remaining — both surviving consumers were migrated off it, so the file is retirement-local."
+      },
+      {
+        "file": "messages_hub_screen.dart",
+        "count": 3,
+        "disposition": "DELETED WITH RETIRED RUNTIME"
+      },
+      {
+        "file": "correspondence_hub_screen.dart",
+        "count": 2,
+        "disposition": "DELETED WITH RETIRED RUNTIME"
+      },
+      {
+        "file": "conversations_screen.dart",
+        "count": 2,
+        "disposition": "DELETED WITH RETIRED RUNTIME",
+        "precondition": "FD-12 proven-dead disposition, not a zero-reference grep."
+      },
+      {
+        "file": "space_screen.dart",
+        "count": 1,
+        "disposition": "DELETED WITH RETIRED RUNTIME",
+        "note": "Its institution branch is already dead; the personal path is what remains."
+      }
+    ],
+    "migratedBecauseConsumerSurvives": "NONE remaining. That work was done in advance: the invite helpers and the core tagging picker.",
+    "retainedForGovernedReason": "NONE.",
+    "afterRetirement": "15 -> 0. Typed-person debt 7 -> 0, because correspondence_identity is the last typed boundary owning private person semantics.",
+    "whatSurvivesAndIsNotPersonDebt": "3 non-person sites remain measured and are unaffected: mention_scope_providers (institution suggestion), direct_thread_screen (institution branch of a ternary), institution_profile_screen (institution name). Plus the 15 AVATAR-class presentation sites and 2 governed backend credential selects.",
+    "f116AfterRetirement": "All six criteria would be met: client deserialization canonical (2), no typed boundary owning private person semantics (3), duplicate person model deleted (4), remaining hits classified and non-competing (6), with 1 and 5 already met.",
+    "f053AfterRetirement": "The structural test would pass — no surviving code could give one Aura person a different name, handle, avatar or fallback.",
+    "noPrePromotion": "F053 and F116 remain PARTIALLY_VALIDATED. Neither advances until the code actually changes and the audit is rerun against a tree where those files no longer exist."
+  },
+  "currentReadinessVerdict": "RUNTIME/CODE RETIREMENT IS READY, pending one founder deep-link confirmation and an FD-12 disposition for conversations_screen. DESTRUCTIVE DATABASE CLEANUP IS NOT PART OF IT and is not authorised. PHASE 5 REMAINS UNAUTHORISED pending explicit founder authorisation after reading this reassessment."
 }

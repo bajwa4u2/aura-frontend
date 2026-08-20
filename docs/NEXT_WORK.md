@@ -635,3 +635,60 @@ ratified.
 
 **Next:** founder performs the observation above; then journey certification, then retirement-readiness
 reassessment. Nothing crosses into destructive retirement without its own authorisation.
+
+## 2026-08-20 — Institution Spaces LIVE_CERTIFIED; CO-RC-C7-005 reassessed; runtime retirement READY
+
+**Founder live observation PASS** — *"institution spaces done beautifully"*. State moves to `LIVE_CERTIFIED`
+using the register's existing certification vocabulary. Legacy history was neither preserved nor validated,
+and its absence is not a defect.
+
+### Calling defects: inherited, no new finding
+
+Proven from the register and from **route**, not assumption. Two of the three captures are on the personal
+`/messages` surface, which the reconstruction never touched; the third shows the identical state via a Space.
+
+| Finding | State | What the evidence adds |
+|---|---|---|
+| **F044** Ready-to-join persists | IMPLEMENTED_NOT_LIVE_CERTIFIED | Its *outstanding proof* arrives **negative** — persists on both surfaces |
+| **F035** Roster vs actually-connected | C4_OWNED_OPEN | Badge reads 2 while unjoined — exactly the divergence recorded |
+| **F047** Ring-card underline | IMPLEMENTED_NOT_LIVE_CERTIFIED | Founder attests the **redbox pill (overlay)** is unchanged live → proof **FAILED** |
+| **F045** Accept freezes (RC-B) | IMPLEMENTED_NOT_LIVE_CERTIFIED | *"overlay mounted above the router never unmounts"* — flagged as a plausible **single shared mechanism** behind F044+F047 |
+
+**I withdrew an earlier caveat.** I first recorded F047 as ambiguous because the fix commit `dfc9027` shares
+the screenshot's date. The founder confirmed the overlay is unchanged live, so that reading was wrong and the
+caveat is gone.
+
+**F036 deliberately not implicated** — "Ready to join" is a pre-join affordance, not "Connecting"; conflating
+them would have wrongly reopened a LIVE_CERTIFIED finding.
+
+**Repair boundary:** the canonical Conversation calling authority. One repair fixes personal, public and Space
+together. No `SpaceCall`, no Space-local realtime. **Meetings untouched and not implicated.**
+
+### CO-RC-C7-005 readiness
+
+**history/data migration — NO LONGER REQUIRED.** Superseded by founder ruling; `migrate-conversations.js`
+stays HELD and unrun. The question is now *"can the legacy runtime be removed without harming the surviving
+product?"*
+
+A COMPLETE · B COMPLETE · C PASS · D complete (institution side) / not required (personal side) ·
+E COMPLETE · F ready · G ready · **H OWED** (personal correspondence runtime still live) · I ready
+(institution legacy routes **orphaned**) · J COMPLETE · K ready (**15 → 0**) · L ready · M separable ·
+**N NOT GRANTED**.
+
+**Deep links — no translator recommended.** The only surviving address class, institution Spaces, already
+resolves unchanged; keeping the route stable through the reconstruction bought that for free. Everything else
+reaches abandoned history and may expire.
+
+**All 15 identity sites map to deletion:** correspondence_identity 7, messages_hub 3, correspondence_hub 2,
+conversations_screen 2, space_screen 1 → **0**. Typed-person 7 → 0. **No pre-promotion** — F053/F116 advance
+only after the code changes and the audit is rerun.
+
+### Blockers
+1. **Explicit founder authorisation** for physical retirement — the only hard blocker.
+2. One deep-link confirmation (recommendation above).
+3. FD-12 proven-dead disposition for `conversations_screen`.
+
+**Destructive database cleanup is separate and unauthorised.** Runtime/code retirement is ready first; coupling
+them would turn a reversible code change into an irreversible data one.
+
+Records: `.../institution-spaces-reconstruction-record.json`, `.../co-rc-c7-005-phase5-retirement-readiness.json`.

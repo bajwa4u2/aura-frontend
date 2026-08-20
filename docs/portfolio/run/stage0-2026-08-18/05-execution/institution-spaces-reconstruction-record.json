@@ -2,7 +2,7 @@
   "type": "RECONSTRUCTION_RECORD",
   "unit": "RC-C7 — Institution Spaces",
   "date": "2026-08-20",
-  "status": "FOUNDER RULINGS D1-D4 APPLIED · ADDITIVE RECONSTRUCTION IMPLEMENTED AND LOCALLY CERTIFIED · LEGACY RUNTIME STILL PRESENT, RETIREMENT NOT AUTHORISED",
+  "status": "LIVE_CERTIFIED — founder live observation PASS 2026-08-20. Inherited shared-Conversation calling defects observed through the Space, attributed to their existing owners, not to this reconstruction.",
   "headline": "The audit found one fact that reframes both this reconstruction and the retirement that preceded it: Institution Spaces and the 'legacy correspondence family' ARE THE SAME CODE. `/institution/:institutionId/spaces/:spaceId` and `/me/correspondence/:spaceId` both build `SpaceScreen`, distinguished only by whether an institutionId is passed. Retiring the correspondence family as previously scoped would have deleted the Institution Spaces product outright.",
   "founderRulingRecorded": {
     "ruling": "Legacy personal correspondence history and legacy Institution Space message history have no strategic value sufficient to block reconstruction or retirement. They must not block reconstruction, force compatibility architecture, force history-copy migrations, force dual-runtime support, consume substantial implementation time, or dictate the new product model.",
@@ -542,5 +542,59 @@
     "spacesWithConversation": "0 at deploy time, by design. Association is LAZY — the first use of a Space creates and attaches its conversation, which is why no backfill was needed or run.",
     "startupHealth": "The backend booted and served the migration step; the route-path compilation guard that was added after the 2026-08-20 crash loop passed pre-deploy and no new route syntax was introduced by this batch.",
     "probeDiscipline": "One read-only confirmation, session and per-probe transactions read-only, rolled back. No exploratory production testing was performed on the founder's behalf, and the temporary probe script was removed rather than committed."
+  },
+  "founderLiveObservation": {
+    "verdict": "PASS",
+    "date": "2026-08-20",
+    "founderWords": "\"institution spaces done beautifully\"",
+    "acceptedScope": "The reconstructed Institution Space product within the authorised reconstruction scope: Space identity and context, membership and governance, Space access reaching the canonical Conversation, canonical communication CONSUMED rather than duplicated, person/institution acting context preserved, and the legacy Space messaging runtime no longer powering the institution surface.",
+    "legacyHistoryNotRequired": "Old message history was neither preserved nor validated, and its absence is not a defect. The reconstruction is not reopened for it.",
+    "stateTransition": "deployed / founder observation owed -> LIVE_CERTIFIED. This uses the register's established certification vocabulary (the same LIVE_CERTIFIED state carried by F006/F007/F008/F036/F038); no new state was invented.",
+    "qualification": "Certification covers the RECONSTRUCTION. It does not certify the shared Conversation calling authority, whose defects were visible through the new surface and remain owned by their existing findings."
+  },
+  "inheritedCallingDefects": {
+    "rule": "A defect inside an already-canonical shared authority does not fail the reconstruction merely because the reconstructed Space now consumes that authority. Recorded against the actual owner.",
+    "newFindingRequired": "NO. Every observed behaviour maps to an existing finding. No duplicate ID was invented.",
+    "evidenceDatesAreTheProof": "The INHERITANCE argument rests on ROUTE, not on date, and is unaffected by the currency clarification: two of the three captures are on the personal /messages surface, which the Institution Spaces reconstruction never touched, and the third shows the identical state reached through a Space. Same defect, two consumers, one owner.",
+    "mapping": [
+      {
+        "finding": "F044 — Ready-to-join persists after end",
+        "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+        "registerText": "The 'Ready to join' affordance persisted after the call had ended. A 12s re-hydrate plus a controller terminal-clear were deployed; proof is outstanding.",
+        "whatTheScreenshotsAdd": "The outstanding live proof — and it is NEGATIVE. Screenshot 1 (2026-08-17, /messages, 'Video call') and screenshot 3 (2026-08-20, /institution/:id/spaces, 'Audio call') both sit at 'Ready to join / Tap Join call to enter' with Join call and Leave offered. The deployed remedy has not resolved it on either surface.",
+        "institutionSpacesChangesScope": "NO. It adds a second consumer through which the same defect is observable.",
+        "recommendation": "F044 stays IMPLEMENTED_NOT_LIVE_CERTIFIED and should NOT advance; this is live evidence AGAINST the deployed fix, so its proof obligation is now failed rather than merely outstanding."
+      },
+      {
+        "finding": "F035 — Roster vs actually-connected count",
+        "currentState": "C4_OWNED_OPEN",
+        "registerText": "Roster count versus actually-connected count. The presentation half shipped but media-connected domain truth is untouched. Section K verdict: 'Not harmless for call truth.'",
+        "whatTheScreenshotsAdd": "Direct visual confirmation on both surfaces: the header badge reads 2 participants while the viewer has not joined and no media is connected. Exactly the roster-vs-connected divergence the finding describes.",
+        "institutionSpacesChangesScope": "NO. Owner remains C4.",
+        "recommendation": "Attach as evidence. State unchanged."
+      },
+      {
+        "finding": "F047 — Ugly yellow-underline ring card",
+        "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+        "registerText": "The incoming-ring card rendered with an ugly yellow underline. Root cause: a missing Material ancestor in the root overlay (dfc9027).",
+        "whatTheScreenshotsAdd": "Screenshot 2 (/messages/c/:id) shows the incoming-call overlay — the founder's 'redbox pill' — with the yellow underline on all three lines ('Incoming video call', the caller name, 'started a video call'), alongside the red decline and accept controls. Founder attests this overlay is UNCHANGED in the live product, so it is current evidence.",
+        "institutionSpacesChangesScope": "NO — the ring card is the personal conversation surface. Ownership unchanged.",
+        "recommendation": "F047 stays IMPLEMENTED_NOT_LIVE_CERTIFIED and must NOT advance. Its outstanding proof is now FAILED rather than merely outstanding: the deployed Material-ancestor fix has not resolved the presentation. Same disposition as F044 — deployed remedy, negative live evidence.",
+        "correctionOfMyEarlierReading": "I first recorded this as ambiguous because the fix commit dfc9027 shares the screenshot's date, and I reasoned the capture might predate deployment. The founder has since confirmed the behaviour is unchanged live. The caveat is withdrawn: this is not an undated artefact, it is the current state."
+      },
+      {
+        "finding": "F045 — Accept freezes/spins on later calls",
+        "currentState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+        "registerText": "Root cause RC-B: the overlay mounted above the router never unmounts, so `_joining` stays latched true after navigation.",
+        "whyMentioned": "The founder's term for the incoming-call card is the 'redbox pill (overlay)', and F045's recorded root cause RC-B is precisely that overlay: 'the overlay mounted above the router never unmounts'. Both persisted call surfaces also appear over LIST routes (/messages and /institution/:id/spaces), which is the same mechanism. Offered as a plausible shared mechanism with F044 and F047 — NOT a confirmed reproduction, since the founder reported no accept freeze and I have no evidence of one.",
+        "recommendation": "No state change. Flagged prominently for whoever repairs F044/F047: one overlay that never unmounts may explain the persisted ready-to-join surface, the unchanged ring presentation and RC-B together. Worth testing as one mechanism before treating them as three repairs."
+      }
+    ],
+    "genuinelyAbsentFromRegister": "NONE identified. Every observed behaviour has an existing owner.",
+    "notF036": "F036 (Stuck in 'Connecting' forever, LIVE_CERTIFIED) is a DIFFERENT state and was not observed. 'Ready to join' is a pre-join affordance, not a connecting state, and conflating them would have wrongly reopened a certified finding.",
+    "repairBoundary": "Any eventual repair belongs to the canonical Conversation/Thread calling authority, so ONE repair corrects personal, public and Institution Space behaviour together. No SpaceCall, Space-specific call lifecycle, Space-specific controls, duplicate realtime state or Space-local participant/session semantics is to be created.",
+    "meetingsBoundary": "UNTOUCHED and not implicated. None of these findings concerns Meetings, and Conversation and Meetings realtime semantics are not to be merged because they present similar concepts. 52 Meetings tests pass.",
+    "evidenceCurrency": "FOUNDER CLARIFICATION 2026-08-20: all three screenshots are CURRENT. The founder did not re-capture the incoming-call overlay — the 'REDBOX PILL (OVERLAY)' in their words — because it is unchanged in the live product: 'redbox pill (overlay) in old screenshot is same in new... the experience is still same'. The 2026-08-17 timestamps record when the images were taken, not the age of the behaviour they show. Founder first-hand attestation from the person running the product is the same class of evidence live certification already relies on.",
+    "summaryAfterClarification": "Three existing findings now carry NEGATIVE live evidence against deployed remedies — F044 (ready-to-join persists), F047 (ring-card presentation), and F035 (roster vs connected count, which never claimed a fix). None is an Institution Spaces defect, none is new, and no duplicate ID was created. What changed with the founder's clarification is the strength of the evidence, not its ownership."
   }
 }
