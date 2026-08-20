@@ -17,6 +17,17 @@ Policy applied, both repos deployed, all verdicts verified from production. 14 e
 404; the two retained invite endpoints are 401. Android, released iOS and upgraded iOS all read
 `maintenance` / `show_maintenance`; web, macOS and Linux read `compatible`.
 
+## OWED — the maintenance copy cannot reach released native users
+
+`UpdateGate` crashed the maintenance screen into a `GoError` because it read the route with
+`GoRouterState.of(context)` while mounted above the route tree. Fixed in `5a180b6` and
+deployed, so **web and every future build** render the message correctly.
+
+Released iOS and Android binaries have frozen code: they are correctly blocked, but show
+"This section ran into a problem" instead of "Aura is being upgraded… August 22". Nothing
+server-side can change what a shipped binary renders. If those users need the explanation
+before they update, it has to come from a store-listing note or an out-of-band message.
+
 ## OPEN — the August 22 release transition
 
 Nothing is preconfigured and no upgraded version was invented — the repo is still `1.3.0+24`.

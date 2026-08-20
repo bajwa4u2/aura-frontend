@@ -17,6 +17,17 @@
 > `maintenance` / `show_maintenance` with `policyMatched: true`; web, macOS and Linux all
 > return `compatible` with no policy matched. A gated client gets 503 on product routes.
 >
+> Two defects surfaced and both are fixed. The middleware was gating
+> `/v1/client/compatibility` itself — the endpoint an app calls to *learn* it is in
+> maintenance — and `compatibility_provider.dart` swallows a failed fetch, so a gated client
+> would have shown a broken app rather than the maintenance screen; it is now exempt. And
+> `UpdateGate` read the route with `GoRouterState.of(context)` while mounted **above** the route
+> tree, so the maintenance screen crashed into `GoError` instead of rendering (`5a180b6`). That
+> read sat on the maintenance branch alone, so it stayed invisible until the first time
+> maintenance was ever switched on. **Released native binaries keep the broken screen until
+> users update** — their code is frozen; web is unaffected.
+>
+> Superseded line follows:
 > Applying the policy exposed one real defect and it is fixed: the middleware was gating
 > `/v1/client/compatibility` itself — the endpoint an app calls to *learn* it is in
 > maintenance — and `compatibility_provider.dart` swallows a failed fetch, so a gated client
