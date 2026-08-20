@@ -6,38 +6,25 @@
 
 ## Status
 
-> **2026-08-20 — CO-RC-C7-005 Phase 5 cutover EXECUTED and DEPLOYED.**
-> Maintenance policy applied through the governed admin authority for `android-direct` and
-> `ios`; **14 legacy endpoints are 404 in production**, and `POST /spaces/:id/invites` plus
-> `GET/POST /threads/:id/invites` remain 401 as the two retained exceptions. Backend
-> `8182bc6..7a48ff3` and frontend `b2a3855..53c65b3` are live.
+> **2026-08-20 — native release-cutover workstream CLOSED (founder ruling).**
+> Maintenance policy live on `android-direct` and `ios`; **14 legacy endpoints 404 in production**;
+> `POST /spaces/:id/invites` and `GET/POST /threads/:id/invites` retained on live consumers;
+> canonical realtime rehome healthy with `CorrespondenceModule` absent; active
+> `/me/correspondence` production **zero** in both repos. Live: backend `9b51bc7`,
+> frontend `4284763`.
 >
-> Verified from production: Android, the **released** iOS binary (`platform: ios` +
-> `distribution: unknown`) and the upgraded iOS contract all return
-> `maintenance` / `show_maintenance` with `policyMatched: true`; web, macOS and Linux all
-> return `compatible` with no policy matched. A gated client gets 503 on product routes.
+> **Accepted limitation:** already-installed Android/iOS binaries carry frozen client code and may
+> show "This section ran into a problem" instead of the August 22 explanation. The server returns
+> `maintenance / show_maintenance` correctly. Not a blocker, and not a reason to reopen anything;
+> any pre-upgrade messaging belongs to a store-listing or release-note path.
 >
-> Two defects surfaced and both are fixed. The middleware was gating
-> `/v1/client/compatibility` itself — the endpoint an app calls to *learn* it is in
-> maintenance — and `compatibility_provider.dart` swallows a failed fetch, so a gated client
-> would have shown a broken app rather than the maintenance screen; it is now exempt. And
-> `UpdateGate` read the route with `GoRouterState.of(context)` while mounted **above** the route
-> tree, so the maintenance screen crashed into `GoError` instead of rendering (`5a180b6`). That
-> read sat on the maintenance branch alone, so it stayed invisible until the first time
-> maintenance was ever switched on. **Released native binaries keep the broken screen until
-> users update** — their code is frozen; web is unaffected.
+> **Carried forward, not complete:** F044 live observation · F053/F116 live certification · the
+> upgraded native release and its ClientPolicy transition (August 22, no automatic authority) ·
+> destructive persistence cleanup only if ever separately authorised.
 >
-> Superseded line follows:
-> Applying the policy exposed one real defect and it is fixed: the middleware was gating
-> `/v1/client/compatibility` itself — the endpoint an app calls to *learn* it is in
-> maintenance — and `compatibility_provider.dart` swallows a failed fetch, so a gated client
-> would have shown a broken app rather than the maintenance screen. It is now exempt.
->
-> **August 22 has no execution authority.** Maintenance lifts only by an explicit policy write.
-> Release day: establish the real upgraded version/build, verify store availability, certify,
-> then `PATCH` each row to `maintenanceMode: false` with `minSupportedVersion` — each platform
-> independently. Full record:
-> `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md`.
+> **Lesson kept, no new machinery:** server-side correctness is not evidence of user-visible
+> correctness — this chapter produced three versions of it. And HTTP 200 proves availability, not
+> that the intended release is live; certify with a build/content marker instead.
 
 
 | Track | State |

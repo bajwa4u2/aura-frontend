@@ -1179,5 +1179,52 @@
     "releasedBinaries": "iOS and Android builds already installed have frozen code. They are correctly blocked but will show the error screen rather than the explanation until users update. Nothing server-side can change what a shipped binary renders. Web is unaffected - compatible and never gated.",
     "finalCertification": "android-direct, ios+unknown (released binary) and ios+ios all maintenance / show_maintenance with policyMatched true. web-prod and macos+unknown compatible, unmatched. /v1/spaces, /v1/threads/:id, /v1/messages/:id -> 404. POST /v1/spaces/:id/invites and GET /v1/threads/:id/invites -> 401. /v1/health -> 200. Deployed backend 0ef0f9d, frontend 5a180b6. Backend 213 suites / 2641 tests, frontend 843 pass, analyzers clean, identity gate PASS 11 files / 19 sites and 0/0 with baselines unchanged, Meetings ratchet PASS with 0 modified files.",
     "phaseStatus": "CO-RC-C7-005 Phase 5 COMPLETE. migrate-conversations.js HELD, legacy persistence untouched, destructive cleanup UNAUTHORIZED, no schema change or migration in any deploy."
+  },
+  "workstreamClosure_2026_08_20": {
+    "ruling": "Founder: the native release-cutover workstream is sufficiently complete and must not stay open because already-installed binaries carry the old maintenance-screen presentation.",
+    "status": "CLOSED",
+    "closedNow": [
+      "maintenance gate implementation",
+      "released-iOS compatibility bridge",
+      "compatibility endpoint exemption from its own gate",
+      "runtime endpoint retirement (14 endpoints, 404 verified in production)",
+      "canonical realtime rehome (CorrespondenceModule absent)",
+      "production cutover (policy applied through the governed admin authority)",
+      "production verification (all required verdicts read back)"
+    ],
+    "carriedForward": [
+      "F044 live observation - IMPLEMENTED_NOT_LIVE_CERTIFIED, founder observation owed",
+      "F053 live certification - IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "F116 live certification - IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "Upgraded native release and the ClientPolicy transition (August 22 gate)",
+      "Destructive persistence cleanup - only if ever separately authorized and worthwhile"
+    ],
+    "acceptedLimitation": "Already-installed Android/iOS binaries contain frozen client code and may render 'This section ran into a problem' instead of the August 22 maintenance explanation. The server correctly returns maintenance/show_maintenance. Founder ACCEPTS this until users install the upgraded binary. It is not a blocker, not a reason to restore endpoints, alter the bridge, redesign release governance, or reopen the cutover. Any pre-upgrade user communication belongs to a store-listing or release-note path, not reconstruction.",
+    "augustGate": "August 22 has NO automatic execution authority and is NOT configured now. When upgraded binaries exist: establish real Android/iOS version and build, verify store availability, certify the clients, establish which platform is genuinely ready, present the exact transition, obtain explicit authorization, then PATCH each platform independently (android-direct cmt14c3sb00myn30cjac096q9, ios cmt14c43500n2n30cbalri41m) to maintenanceMode false with an appropriate minSupportedVersion. Android and iOS need not transition simultaneously. Carried as release continuity, not an active blocker.",
+    "notAbsorbed": "F044/F053/F116, migrate-conversations.js (HELD), legacy persistence (untouched) and destructive cleanup (UNAUTHORIZED) are NOT folded into this closure. Runtime retirement was not turned into a database-cleanup project and no legacy-history preservation work was performed.",
+    "verificationLesson": {
+      "principle": "Server-side correctness is not sufficient evidence of user-visible correctness.",
+      "threeInstancesThisChapter": [
+        "an iOS policy row that initially governed no released iOS binary - the contract was right for builds that did not exist yet",
+        "maintenance middleware that initially blocked its own compatibility/verdict channel - the gate suppressed the signal it existed to deliver",
+        "a correct production maintenance verdict whose resulting UI was wrong in the frozen installed client - the verdict was right and the screen still failed"
+      ],
+      "deploymentProofLesson": "HTTP 200 proves availability. It does NOT prove the intended release is live. Release certification must use a release-specific content/build marker or equivalent - a bundle string, /health build.commit - rather than a status code. Both were used here: the web bundle marker went 2 -> 0, and /health reports commit 9b51bc7 with attributable true.",
+      "propagatedInto": "The existing release/verification discipline: G1_LEG5B_LIVE_CERTIFICATION_PROCEDURE.md (artifact attribution now closed and recorded), and the release-cutover record. No new governance machinery was created to hold the lesson."
+    }
+  },
+  "nextFrontier_2026_08_20": {
+    "frontier": "G1 leg 5(B) - live violating-file refusal at the D2 confirm door.",
+    "howItWasFound": "Traced from the recorded frontier, not invented. frontier-by-blocker.json names ONE choke point: 'deploying the backend so G1 leg 5(B) can be observed against an attributable artifact'. frontier-unit-level.json records that every other product mutation crosses a real dependency.",
+    "whyItIsNowTheCorrectNext": "Both conditions that blocked it were closed by today's cutover deploy, incidentally rather than by design. verifyClientSuppliedObject (the F129/D7 doors) is now on origin/main and live, and the build-identity mechanism the procedure recommended is deployed - GET /v1/health returns build.commit 9b51bc7 with attributable true. The procedure's own NOT_ESTABLISHED fallback, which applied whenever attribution was impossible, no longer applies.",
+    "whatItReleases": "unblockMap: after leg 5(B) passes, leg 5 is DISCHARGED (5A already complete) and CH-12 Media Custody, Delivery & Processing loses its leg-5 blocker. Its other blocker, CH-15 D1/D3/D4, was already cleared by the CH-15 rulings, and D3 is recorded as the highest-leverage single unblock in the programme.",
+    "workPerformedThisPass": {
+      "1_confirmDoorProof": "The pure resolver already covered a signature-less binary declaration. The CONFIRM door - the endpoint the client actually calls - did not. Added 'REFUSES a plain-text file renamed to photo.png - the leg 5(B) case' asserting the three properties the leg's criteria demand: visible (400 the client surfaces), truthful (message names what was wrong, details carry declared/detected), recoverable (row FAILED, not destroyed, never READY).",
+      "2_mistakeCannotRecur": "Added 'does NOT refuse the two cases earlier attempts mistook for violations' pinning that a PDF and a ZIP resolve to READY by CORRECTION. Two earlier observations were recorded as FAIL against working code because both files are PERMITTED types; this makes a fourth repetition fail the suite instead of a founder's afternoon.",
+      "3_procedureCorrected": "G1_LEG5B_LIVE_CERTIFICATION_PROCEDURE.md still instructed 'take any PDF or plain-text file'. The PDF half is proven wrong. CASE A now pins plain text, explains why PDF and ZIP are correct-not-refuse, and records that the artifact-attribution gap it described is closed."
+    },
+    "whatRemainsFounderOwned": "The live observation itself. Leg 5(B) requires a person to attach the file on the live site and report what they see; predeclared criteria may not be adjusted after observation. The door is now locally proven, so a live FAIL would be a genuine runtime defect rather than another badly chosen test file.",
+    "meetingsImpact": "NONE. No Meetings file touched; ratchet PASS both directions with 0 modified files.",
+    "sharedSystemImpact": "Test-only in the backend plus one governance document. No production code changed in this pass."
   }
 }

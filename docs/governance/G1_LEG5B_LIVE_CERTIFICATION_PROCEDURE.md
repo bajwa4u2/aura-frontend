@@ -1,8 +1,22 @@
 # G1 LEG 5(B) — LIVE VIOLATING-FILE REFUSAL · PREDECLARED PROCEDURE
 
-**Status: READY — but BLOCKED on an attributable deployed artifact.** Predeclared before observation so
-the criteria cannot be adjusted afterwards.
-**Date:** 2026-08-18
+**Status: READY — UNBLOCKED 2026-08-20.** Predeclared before observation so the criteria cannot be
+adjusted afterwards. The original criteria below are unchanged; only the artifact gap and the test-file
+selection are corrected, both from evidence recorded after this was written.
+**Date:** 2026-08-18 · **Corrected:** 2026-08-20
+
+> ### 2026-08-20 — the two conditions that blocked this are now closed
+>
+> **Artifact attribution: CLOSED.** The recommendation below — add a build identifier to `/health` — was
+> implemented and is deployed. `GET /v1/health` now returns
+> `build: { version, build, commit, attributable: true }`, currently `commit: 9b51bc7`. Backend live
+> certification can now bind to exactly one artifact, so the `NOT_ESTABLISHED` fallback no longer applies.
+>
+> **The F129/D7 doors are deployed.** `verifyClientSuppliedObject` is on `origin/main` and live; the
+> backend is no longer ahead of its deployed branch.
+>
+> **The test file in §CASE A is corrected — read it before observing.** "any PDF" is **wrong** and must
+> not be used.
 
 ---
 
@@ -54,8 +68,21 @@ separately because they prove a different property and need a crafted request.
 
 ## CASE A — THE VIOLATING FILE *(primary; D2)*
 
-**Preparation (you can do this in seconds):** take any PDF or plain-text file and **rename it to
-`photo.png`**. Do not convert it — the point is that the extension and declared type lie about the bytes.
+**Preparation (you can do this in seconds):** take a **plain-text file** — any `.txt` with ordinary
+content — and **rename it to `photo.png`**. Do not convert it; the point is that the extension and
+declared type lie about the bytes.
+
+> **Do NOT use a PDF, and do not use a ZIP.** Both were tried and both are **permitted attachment types**,
+> so the frozen Content Truth contract answers them with `CORRECTED` — the file is accepted with its real
+> type — which is *correct behaviour*, not a refusal. Recording that as a failure produced a phantom
+> defect twice. A violating file, in this contract's vocabulary, is one whose **actual** type is not
+> permitted, or one with **no signature at all** declared as a binary type.
+>
+> Plain text declared as `image/png` is the verified case: `image/png` is not in `UNVERIFIABLE_MIMES`, so
+> the missing-signature branch is reached and the door must refuse. This is now proven locally at the
+> confirm door — see `media-confirm-content-truth.spec.ts`, "REFUSES a plain-text file renamed to
+> photo.png — the leg 5(B) case", which also pins that PDF and ZIP are *corrected* rather than refused so
+> the mistake cannot recur.
 
 1. Sign in on the live site.
 2. Open any surface that attaches a file to a message.

@@ -1,6 +1,6 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-15.** Roadmap frozen. **C0 implemented and fully adjudicated — awaiting final closeout review.**
+**As of 2026-08-20.** Roadmap frozen. C0–C3 executed. The native release-cutover workstream is **CLOSED**; the active frontier is **G1 leg 5(B)**, below.
 
 ---
 
@@ -11,40 +11,41 @@ sites, not nine backend services. One rule now owns the answer on each side
 (`canonical_destinations.dart` / `canonical-destinations.ts`) and two ratchets hold it.
 The retired prefix is no longer classified as a live member surface.
 
-## DONE — the cutover shipped (2026-08-20)
+## CLOSED — the native release-cutover workstream (2026-08-20)
 
-Policy applied, both repos deployed, all verdicts verified from production. 14 endpoints are
-404; the two retained invite endpoints are 401. Android, released iOS and upgraded iOS all read
-`maintenance` / `show_maintenance`; web, macOS and Linux read `compatible`.
+Founder-ruled closed. Maintenance gate, released-iOS bridge, compatibility-endpoint exemption,
+14-endpoint runtime retirement, canonical realtime rehome, production cutover and production
+verification are all done. The outgoing binaries' maintenance-screen presentation is an accepted
+limitation, not an open item.
 
-## OWED — the maintenance copy cannot reach released native users
+## NEXT FRONTIER — G1 leg 5(B), now unblocked
 
-`UpdateGate` crashed the maintenance screen into a `GoError` because it read the route with
-`GoRouterState.of(context)` while mounted above the route tree. Fixed in `5a180b6` and
-deployed, so **web and every future build** render the message correctly.
+`frontier-by-blocker.json` named one choke point for the whole programme: *"deploying the backend
+so G1 leg 5(B) can be observed against an attributable artifact."* Today's cutover deploy closed
+both halves of it, incidentally: the F129/D7 doors are on `origin/main` and live, and
+`GET /v1/health` now returns `build.commit` `9b51bc7` with `attributable: true` — the exact
+mechanism the procedure asked for and could not have.
 
-Released iOS and Android binaries have frozen code: they are correctly blocked, but show
-"This section ran into a problem" instead of "Aura is being upgraded… August 22". Nothing
-server-side can change what a shipped binary renders. If those users need the explanation
-before they update, it has to come from a store-listing note or an out-of-band message.
+**Done this pass (local, no product code):**
 
-## OPEN — the August 22 release transition
+- the **confirm door** — the endpoint the client actually calls — is now proven to refuse the exact
+  file the procedure uses: plain text renamed to `photo.png` → `400 CONTENT_REJECTED`, truthful
+  message, row `FAILED` not `READY`, never promoted;
+- a companion test pins that a **PDF and a ZIP are corrected, not refused**, because both are
+  permitted types. Two earlier observations were recorded as FAIL against working code for exactly
+  this reason; a fourth attempt now fails the suite instead of a founder's afternoon;
+- `G1_LEG5B_LIVE_CERTIFICATION_PROCEDURE.md` corrected — it still said "take any PDF or plain-text
+  file", and the PDF half is proven wrong.
 
-Nothing is preconfigured and no upgraded version was invented — the repo is still `1.3.0+24`.
-When the upgraded binary actually exists:
+**Founder-owned remainder:** the observation itself. Attach a plain-text file renamed to
+`photo.png` on the live site and report what happens. Criteria are predeclared and may not be
+adjusted afterwards. Because the door is now locally proven, a live FAIL would be a genuine runtime
+defect rather than another badly chosen test file.
 
-1. establish its real version and build;
-2. verify store availability;
-3. certify the upgraded client;
-4. present the exact policy transition;
-5. **founder authorizes**;
-6. `PATCH /v1/admin/client-policies/{id}` per row — `android-direct` `cmt14c3sb00myn30cjac096q9`,
-   `ios` `cmt14c43500n2n30cbalri41m` — to `maintenanceMode: false` with `minSupportedVersion`
-   set, `forceUpdate: true`, `storeUrl`, `message: null`.
-
-Each platform can go independently. **Do not set a minimum while maintenance is still on** —
-maintenance short-circuits before any version comparison, so it would lock out the upgrade
-itself.
+**What it releases:** leg 5 DISCHARGED (5A already complete), and **CH-12 Media Custody, Delivery &
+Processing** loses its leg-5 blocker. Its other blocker (CH-15 D1/D3/D4) is already cleared, and D3
+— the examination mechanism — is recorded as the highest-leverage single unblock in the programme.
+F137 records that **no uploaded media of any kind is scanned today**.
 
 ## OWED — founder live observation
 
