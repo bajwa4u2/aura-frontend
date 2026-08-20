@@ -407,3 +407,69 @@ PARTIALLY_VALIDATED** (active executable identity debt 0, retirement-owned 15). 
 unauthorized and unattempted.
 
 Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/co-rc-c7-005-phase5-retirement-readiness.json`.
+
+## 2026-08-20 — Migration status: NOT_APPLIED (confirmed, read-only). Mutation authorization owed.
+
+Founder authorized read-only production evidence. **Write protection was enforced by Postgres, not by
+intent** — `SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY`, every probe inside
+`BEGIN TRANSACTION READ ONLY … ROLLBACK`, with `SHOW transaction_read_only = on` captured as proof.
+Method committed at `aura-backend/scripts/c7-migration-status-readonly.js`.
+
+**Status: `NOT_APPLIED`. Zero migrated rows of any kind.**
+
+| population | legacy | migrated |
+|---|---|---|
+| DirectThread | 5 | **0** |
+| DirectMessage | 9 | **0** |
+| eligible personal Spaces | 12 | **0** |
+| eligible Space messages | 67 | **0** |
+
+The 4 conversations / 20 messages already in canonical storage are **new-system rows** created since the
+additive deploy — none carries a migrated id prefix. `ConversationHumanState` is **empty**: no read state
+exists canonically at all. The corpus has **not drifted** since the 2026-08-16 design measurement, and the
+two named spaces are still 'Aura Internal' (WORKROOM, 3 members, 1 msg) and 'family' (CIRCLE, 2 members,
+3 msgs).
+
+**Migration script safety audit: SAFE TO APPLY. No defect found; the script was not changed.** Every
+INSERT target matches the live schema, all three `ON CONFLICT` targets exist, and every apply-blocking
+data risk probed clean — NULL `body` 0, duplicate `(messageId,position)` 0 (that one matters: it is a
+unique index that is *not* the conflict target, so a duplicate would have errored rather than skipped),
+NULL `SpaceMember.userId` 0, the `'system'` fallback unreachable, and **directKey collisions 0**, so all 5
+DirectThreads migrate with pair identity intact. The script has no wrapping transaction — safe **only**
+because it is idempotent and restart-safe, which is stated plainly rather than left to look like a defect.
+
+One thing that briefly looked like a defect and was not: a probe errored with `column "archivedAt" does not
+exist` on `Conversation`. That was my query being wrong. Archive is per-person state on
+`ConversationHumanState`, which is exactly where the script writes it.
+
+**NEW SCOPE GAP — institution spaces are not migrated at all.** The eligibility filter is
+`institutionId IS NULL`. Production holds 1 institution space / 1 thread / **2 messages**, which are
+precisely the 2 of 69 Space messages outside the eligible set. Probably deliberate — the C7 Institutional
+Conversation & Desk amendment is frozen separately — but **CO-RC-C7-005 does not name it**, and retiring
+the family would strand that history.
+
+**Deep-link mapping authority established (ruling: persisted links must not break).** The mapping is
+**deterministic from the migration's own key scheme** — `sp:<spaceId>`, `dt:<threadId>`. No lookup table,
+no heuristic, no participant guessing, no most-recent-thread inference. Backend owns new rows; a bounded
+frontend translator owns old addresses; **no data mutation needed** — persisted rows keep their stored
+address and resolve at navigation time. Unmappable cases named: multi-thread personal spaces (0 today),
+institution spaces (1), and anything deleted before migration. **Not implemented** — gated behind status.
+
+**Additive deploy, dimensionally:** HTTP health COMPLETE · canonical runtime COMPLETE · history canonical
+**NOT COMPLETE** · old addresses reach canonical **NOT COMPLETE** · surviving consumers off retiring
+identity **NOT COMPLETE**.
+
+**NOT READY for founder live observation** — J1–J10 unchanged and still owed; running them now would
+certify an empty list as correct. **NOT READY for retirement authorization.**
+
+**Founder decisions owed — two:**
+1. **Authorize the production migration apply.** `cd aura-backend && node -r dotenv/config
+   scripts/migrate-conversations.js`. INSERTs only, into the five canonical tables; nothing written to any
+   legacy table. Expect 17 conversations, 76 messages, up to 25 media joins. Verify with the read-only
+   collector afterwards.
+2. **Institution spaces** — retire with the family, migrate first under the frozen C7 amendment, or stay?
+
+**F116/F053 unchanged at PARTIALLY_VALIDATED** (active executable identity debt 0, retirement-owned 15).
+451/451, 17/17, Stage-0 ratified. Retirement remains unauthorized and unattempted.
+
+Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/co-rc-c7-005-phase5-retirement-readiness.json`.

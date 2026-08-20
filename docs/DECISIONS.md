@@ -578,3 +578,35 @@ model a union on seeing a union-shaped field name is exactly what created the de
 **Result.** Active executable person debt 2 -> 0: every person-identity site in the SURVIVING product now
 resolves through one canonical reader. **F116 and F053 remain PARTIALLY_VALIDATED** while 15 retirement-
 owned parsers remain physically executable. F051 preserved and untouched.
+
+---
+
+## FOUNDER RULINGS - CO-RC-C7-005 PHASE 5 PREREQUISITES (2026-08-20)
+
+**Ruling 1 - read-only production evidence AUTHORIZED.** Determining whether the history migration had ever
+run was not answerable from the repository, and `--dry-run` cannot answer it either: that flag returns
+before the verification block and inventories the legacy corpus only. Read-only production access was
+granted for exactly this question. Write protection was enforced by Postgres rather than by intent, and
+the method is committed at `aura-backend/scripts/c7-migration-status-readonly.js` so the same question can
+be re-asked at any time without re-deriving it.
+
+**Result: NOT_APPLIED.** Zero migrated rows of any kind. The four conversations already in canonical
+storage are new-system rows created since the additive deploy. Production mutation now requires its own
+explicit authorization, which is why this returned rather than proceeding.
+
+**Ruling 2 - persisted deep links MUST NOT break.** Broken historical notification and activity links are
+not an acceptable retirement outcome. A bounded translation layer is required, and it preserves ADDRESS
+CONTINUITY ONLY: the legacy screen, runtime, duplicate person identity and architecture may still retire.
+
+The mapping authority this needs already exists and did not have to be invented. The migration derives
+canonical ids deterministically from legacy ids - a Space becomes `sp:<spaceId>`, a DirectThread becomes
+`dt:<threadId>` - so a translator constructs the canonical id and verifies the conversation exists before
+redirecting. No lookup table, no participant guessing, no most-recent-thread inference, and no mutation of
+persisted rows: they keep their stored address and are resolved at navigation time. Backend producers own
+new rows; the frontend translator owns old addresses. Those are different problems and both need doing.
+
+**Recorded, not ruled: institution spaces are outside the migration entirely.** The eligibility filter is
+`institutionId IS NULL`, so one institution space and its two messages are never migrated. That is
+consistent with the C7 Institutional Conversation & Desk amendment being frozen as a separate concern, but
+CO-RC-C7-005 does not name it, and retiring the family would strand that history. A founder decision is
+owed on whether it retires with the family, migrates first, or stays.
