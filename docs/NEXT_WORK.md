@@ -25,30 +25,28 @@ renamed to `photo.png`. All four predeclared properties PASS. **Leg 5(B) LIVE_CE
 COMPLETE.** F127 is live-certified on the D2 confirm path. Every record that waited on the
 attributable deployment or this observation is reconciled.
 
-## ACTIVE — CH-12 · F137: clean path PROVEN, malicious path owed
+## ACTIVE — CH-12 · F137: scanning half DISCHARGED, moderation half open
 
-**Clean-path production evidence verified from records.** PDF reached **`READY`** in ~1.9 s and
-became a real attachment (`attachedToType = CONVERSATION`), with three durable verdicts —
-`MALWARE_SCAN` **PASSED** by `clamav@clamd@clamav.railway.internal:3310` (294 ms),
-`DOCUMENT_INSPECTION` and `STRUCTURAL_VALIDATION` **PASSED** by the native examiners, `attempts=1`
-each. Archive and decode correctly `NOT_APPLICABLE`. Nothing silently omitted.
+**Malicious path proven in production.** `eicar.txt` → Media `FAILED`, `readyAt` **never**,
+**never attached**, `MALWARE_SCAN=FAILED` by `clamav@clamd@clamav.railway.internal:3310` with
+`findings {"signature":"Eicar-Test-Signature"}`, `attempts=1`. Two attempts, two independent
+objects, one verdict each — idempotency behaving as designed.
 
-**EICAR: engine proven, product path owed.** clamd returns `Eicar-Test-Signature FOUND` over
-INSTREAM (artifact deleted, never in Aura storage). That proves the *engine*; it does not prove the
-*pipeline refuses*. **Next step: upload an EICAR file through Messages**, as the PDF was done.
+**Clean path proven across the whole capability set.** DOCX → `READY`, genuinely attached to a
+conversation, with **four distinct examiners** producing four verdicts; the archive examiner opened
+the OOXML container and measured a real 32.16× expansion ratio against the 200× limit. `d5259cc`
+restored the document path rather than changing its failure mode.
 
-**Legacy formats kept and now examined.** Per founder ruling the accept-list did not shrink.
-`.doc/.xls/.ppt` are OLE compound files — the same "open the container" capability ZIP already
-answers — so a second container reader was added beside the ZIP one, not a per-extension patch.
-RTF is examined as markup. No dependency added; nothing executed or decoded.
+**F137 stays OPEN**, and the reason is its own text: *"No **moderation** or **scanning** of
+uploaded media of any kind."* Scanning is now discharged. **Moderation is untouched** — nothing
+classifies image or video content against a safety policy, and a file can be malware-clean and
+structurally valid while still being content Aura should not carry. CH-12 owns that mechanism;
+CH-15 owns the policy.
 
-**New gate:** no accepted format may carry a REQUIRED capability no examiner can answer — the exact
-property the PDF failure violated, now enforced across the whole accept-list.
+### One criterion not observed in production, deliberately
 
-**Remaining gaps, all OPTIONAL** (they neither block nor falsely pass): WebP has no dimension
-reader; audio/video have no container-sanity validator.
-
-**F137 stays OPEN.**
+*"Unavailable examiner cannot silently pass"* is implementation-proven only. Staging it would mean
+taking clamd down and breaking attachments for real people.
 
 ## OWED — founder live observation
 
