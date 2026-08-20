@@ -692,3 +692,29 @@ only after the code changes and the audit is rerun.
 them would turn a reversible code change into an irreversible data one.
 
 Records: `.../institution-spaces-reconstruction-record.json`, `.../co-rc-c7-005-phase5-retirement-readiness.json`.
+
+### Addendum — one calling behaviour is NOT in the register
+
+Founder, on the reception side: *"after accept it should move to call not this mediator"*, and the overlay is
+*"more ugly in mobile experience, its reception side, after accept"*.
+
+**Accepting an incoming call does not put the callee in the call.** It delivers them to the pre-join surface —
+"Ready to join / Tap Join call to enter" — where they must press Join a second time. Accept and Join are two
+acts when accepting *is* the intent to join.
+
+**Confirmed structurally, not inferred:** there is no auto-join path anywhere in `lib/features/realtime`.
+`Ready to join` (`realtime_room_screen.dart:1413`) is a terminal pre-join stage whose only exit is a manual
+tap; `autoJoin`/`shouldAutoJoin` return nothing. The callee lands on the mediator **by construction**.
+
+**Not an existing finding** — checked each candidate rather than assuming: F044 is ready-to-join persisting
+*after a call ended*; F045 is Accept *freezing*; F071 is *native binaries*; F041 is a false "Connection lost".
+Here Accept works and delivers the user to the wrong place.
+
+**The frozen doctrine does not forbid the fix.** ACCEPT/DECLINE truth-propagation requires
+RINGING → ACCEPTED → JOINING → CONNECTED never be *collapsed as model states*. It does not require two button
+presses. Carrying the callee automatically from ACCEPTED to CONNECTED keeps every state distinct.
+
+**No ID was invented.** Issuing one moves the register from 143/451 to 144/452 — a founder decision about a
+FOUNDER_RATIFIED baseline. Totals unchanged and still validating at 143 + 308 = 451 / 17 chapters.
+
+**Decision owed:** issue an ID for this, or direct that an existing finding's scope be widened to cover it.

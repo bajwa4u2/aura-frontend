@@ -590,7 +590,23 @@
         "recommendation": "No state change. Flagged prominently for whoever repairs F044/F047: one overlay that never unmounts may explain the persisted ready-to-join surface, the unchanged ring presentation and RC-B together. Worth testing as one mechanism before treating them as three repairs."
       }
     ],
-    "genuinelyAbsentFromRegister": "NONE identified. Every observed behaviour has an existing owner.",
+    "genuinelyAbsentFromRegister": {
+      "status": "ONE BEHAVIOUR IS GENUINELY ABSENT. Reported rather than forced into an approximate finding, and NO id was invented.",
+      "founderReport": "\"after accept it should move to call not this mediator\" — and \"this overlay becomes more ugly in the mobile experience, its reception side, after accept\".",
+      "defect": "On the RECEPTION side, accepting an incoming call does not put the callee into the call. It delivers them to the pre-join surface — 'Ready to join / Tap Join call to enter' — where they must press Join a second time. Accept and Join are presented as two separate acts when accepting IS the intent to join.",
+      "structuralConfirmation": "There is NO auto-join path anywhere in lib/features/realtime. 'Ready to join' at realtime_room_screen.dart:1413 is a terminal pre-join stage whose only exit is a manual tap, and a grep for autoJoin/shouldAutoJoin returns nothing. So this is not an intermittent failure — the callee lands on the mediator by construction, every time.",
+      "whyThisIsNotAnExistingFinding": {
+        "notF044": "F044 is 'Ready-to-join persists AFTER THE CALL HAD ENDED' — a lingering affordance with a different trigger. This is the surface appearing after ACCEPT, when a call is starting.",
+        "notF045": "F045 is Accept FREEZING or SPINNING — a dead button. Here Accept works; it simply delivers the user to the wrong place.",
+        "notF071": "F071 is accept/reject defective on RELEASED NATIVE BINARIES, BLOCKED pending a store release. This is present in the web client.",
+        "notF041": "F041 is a false 'Connection lost' pre-join state, LIVE_CERTIFIED. Different state, different message."
+      },
+      "doctrineCheck": "The frozen ACCEPT/DECLINE truth-propagation doctrine requires that RINGING -> ACCEPTED -> JOINING -> CONNECTED are never COLLAPSED as model states. It does NOT require the human to press two buttons. A repair that carries the callee automatically from ACCEPTED through JOINING to CONNECTED keeps every state distinct and violates nothing. Recorded so a future repair is not talked out of it by a doctrine that does not actually forbid it.",
+      "mobileAggravation": "The founder reports the overlay is materially worse on mobile on the reception side after accept. Whether that is a distinct responsive defect or the same mediator rendered badly at narrow width is not established, and is not asserted here.",
+      "minorObservationNotInflated": "The pre-join surface uses Icons.call_rounded regardless of kind, which is why a 'Video call' header appears beside a phone icon. Noted; too small to be its own finding.",
+      "accountingImplication": "Issuing this as a new finding would move the register from 143 findings / 451 units to 144 / 452. That is a founder decision about a FOUNDER_RATIFIED baseline, not an engineering one, so no id was assigned and no total was changed. The register still validates at 143 + 308 = 451 across 17 chapters.",
+      "requestedDecision": "Issue an id for this defect (or direct that it be absorbed into an existing finding whose scope you intend to widen)."
+    },
     "notF036": "F036 (Stuck in 'Connecting' forever, LIVE_CERTIFIED) is a DIFFERENT state and was not observed. 'Ready to join' is a pre-join affordance, not a connecting state, and conflating them would have wrongly reopened a certified finding.",
     "repairBoundary": "Any eventual repair belongs to the canonical Conversation/Thread calling authority, so ONE repair corrects personal, public and Institution Space behaviour together. No SpaceCall, Space-specific call lifecycle, Space-specific controls, duplicate realtime state or Space-local participant/session semantics is to be created.",
     "meetingsBoundary": "UNTOUCHED and not implicated. None of these findings concerns Meetings, and Conversation and Meetings realtime semantics are not to be merged because they present similar concepts. 52 Meetings tests pass.",
