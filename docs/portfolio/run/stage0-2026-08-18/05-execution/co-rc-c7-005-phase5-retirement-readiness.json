@@ -1,0 +1,204 @@
+{
+  "type": "RETIREMENT_READINESS_RECORD",
+  "unit": "CO-RC-C7-005 — RC-C7 Phase 5 legacy retirement",
+  "date": "2026-08-20",
+  "scope": "READINESS AUDIT ONLY. Nothing was retired, no production was polled or mutated, no migration script was run, no legacy code was removed, no finding state was changed.",
+  "headline": "NOT READY — and the blocker is larger than the frontend. The canonical conversation read path shares NO storage with the legacy stacks and there is NO compatibility layer, so legacy history is reachable only through legacy surfaces until a manual, deploy-independent migration is run. Separately, eleven backend files still produce `/me/correspondence/...` deep links, which are already persisted in production notification and activity rows.",
+
+  "governingAuthority": {
+    "primary": "CO-RC-C7-005 (RC-C7 THREADS, SPACES & CORRESPONDENCE): 'Phase 5 legacy retirement NOT AUTHORIZED — gate: additive deploy -> migration -> founder live observation -> journey certification -> explicit authorization. Legacy conversation surfaces NOT yet retired; legacy hub parked at /messages/legacy-hub.' Obligation state remains NOT_RECORDED_AT_OBLIGATION_LEVEL with the standing warning that chapter status must not be read as the obligation being satisfied.",
+    "perFileOwners": "CO-RC-C2-010: 'conversations_screen C4-retired; correspondence_hub/space/invite_member C7; member_home C3; admin_institution_members PD-1'.",
+    "founderResolution": "docs/CURRENT_STATE.md §62 FOUNDER RESOLUTION (2026-08-16), which is the record that FROZE the five-step gate and also authorized the release: 'commit + push both repos; founder observes deployment; migration + PublicSpace seed run through the authorized deployment path.'",
+    "supporting": ["scripts/migrate-conversations.js header (Phase 4 history migration, canon-referenced)", "docs/2026-08-16-aura-conversation-system-canon.md", "lib/router.dart:1322-1330 route comment", "FD-12 proven-dead retirement doctrine"],
+    "staleDecisionCheck": "No contradiction found between records. The §62 resolution, CO-RC-C7-005 and the router comment agree. One TIMING fact must be read carefully and is easy to misread: the release §62 authorized on 2026-08-16 was only PUSHED on 2026-08-19/20. Everything downstream of 'additive deploy' therefore begins now, not in August.",
+    "newDoctrineCreated": "NONE. The existing sequence is sufficient and was applied as written."
+  },
+
+  "prerequisite1_additiveDeploy": {
+    "status": "PARTIAL",
+    "definition": "The canonical Conversation system exists and serves alongside the legacy stacks, with both simultaneously routable.",
+    "frontend": {
+      "status": "COMPLETE (structurally)",
+      "replacementSurfaces": ["/messages -> MessagesScreen (canonical conversation list)", "/messages/new -> NewConversationPicker", "/messages/c/:conversationId -> ConversationScreen"],
+      "navigationAuthority": "navigation_authority.dart declares messages('Messages', '/messages') — the canonical destination is what the shell points at.",
+      "legacyRetainedAlongside": ["/messages/legacy-hub -> MessagesHubScreen", "/me/correspondence + 6 sub-routes (hub, archived, :spaceId, archived-threads, invite, thread/:threadId, thread live)", "/messages/direct and /direct/:threadId -> InboxScreen / DirectThreadScreen"],
+      "simultaneousSupport": "YES — all of the above are declared in one router and reachable today."
+    },
+    "backend": {
+      "status": "PARTIAL — this is a finding, not a formality",
+      "canonicalPathExists": "YES. ConversationsService reads only conversation, conversationParty, conversationMessage, conversationHumanState (+ user/institution/media/linkPreview/notification). It never touches DirectThread, Space, Thread or Message.",
+      "legacyStillMounted": "CorrespondenceModule, DirectThreadsModule, SpacesModule, PublicSpacesModule and MessagesModule are all still registered in app.module.ts and still serving.",
+      "deepLinkProduction": "ELEVEN backend files still PRODUCE '/me/correspondence/...' deep links: activity-record.service, attention-mapper.service, attention-policy.service, canonical-call-notification, communications.service, correspondence-orchestrator.service, canonical-event.service, internal-reference.service, actor-notifications.service, notifications.service, communication-live.controller. Exactly ONE file emits the canonical '/messages/c/:id' — conversation-live.controller.ts:249.",
+      "why_this_matters": "Those deep links are not transient. They are written into notification, activity and attention rows that already exist in production. Retiring the correspondence routes without addressing this breaks every historical notification's destination AND every new one, because the producers still point at the legacy address."
+    },
+    "environmentStepStillRequired": "YES — see prerequisite 2. Neither the history migration nor the PublicSpace seed runs as part of deploy.",
+    "blocker": "Backend deep-link production has not moved to the canonical conversation route."
+  },
+
+  "prerequisite2_historyMigration": {
+    "status": "NOT COMPLETE (as far as structure can prove) — UNKNOWN against production, and the evidence needed is exact",
+    "exactMeaning": "A DATA migration, not a schema migration. scripts/migrate-conversations.js copies two legacy stacks into the canonical tables: (1) DirectThread + DirectMessage -> Conversation + ConversationMessage, with dual attribution mapped 1:1 (actorType/actorInstitutionId -> speakingForInstitutionId), read cursors -> ConversationHumanState, archive flags -> archivedAt; (2) personal Spaces (PRIVATE 1:1s and the two named personal spaces) holding EXACTLY ONE thread -> one Conversation each, the human-chosen title becoming the Conversation name as presentation only, members -> plain parties (roles do not survive), per-member state -> ConversationHumanState.",
+    "properties": {
+      "idempotent": "YES, by construction — deterministic primary keys derived from legacy ids ('dt:<threadId>', 'sp:<spaceId>', 'dm:<msgId>', 'm:<msgId>') with ON CONFLICT DO NOTHING throughout. Re-running inserts zero rows.",
+      "nonDestructive": "YES — reads legacy tables, writes ONLY the new tables. The script's own header states legacy deletion is a separately authorized later phase.",
+      "directKeyPolicy": "A migrated pair claims the canonical directKey only if the canonical system has not already created one for that pair; new-system rows win and the migrated row then carries history without pair identity, reported for review. PRIVATE spaces with more than 2 ACTIVE members migrate WITHOUT directKey.",
+      "skipRule": "A personal space with zero or more than one thread is SKIPPED and REPORTED. At §62 measurement time none existed."
+    },
+    "isItRunByDeploy": {
+      "answer": "NO — and this is the decisive structural fact.",
+      "evidence": "scripts/railway-start.sh runs exactly two stages: `npx prisma migrate deploy` then `node dist/src/main.js`. It never invokes migrate-conversations.js or seed-public-spaces.js, and nothing else in the repo references either script. The 2026-08-20 production logs corroborate it: 'No pending migrations to apply' — the Prisma stage, not the history migration.",
+      "consequence": "Pushing and deploying — which happened on 2026-08-19/20 — does NOT advance this prerequisite. The §62 phrase 'run through the authorized deployment path' must mean a founder-run step, because the deployment path as coded does not contain it."
+    },
+    "compatibilityLayer": {
+      "exists": "NO.",
+      "evidence": "ConversationsService touches no legacy table. There is no adapter that reads DirectThread/Space and presents it as a Conversation. Legacy and canonical are separate storage.",
+      "consequence": "History is NOT visible through the canonical surface until the rows are physically copied. Until then, every legacy conversation is reachable ONLY through legacy code."
+    },
+    "dimensionalStatus": {
+      "dataTransformation": "NOT COMPLETE (unproven against production; the script exists and is verified in dry-run only)",
+      "storageConvergence": "NOT COMPLETE — legacy rows remain in DirectThread/DirectMessage/Space/Thread/Message; canonical rows live in Conversation*",
+      "routeMigration": "PARTIAL — canonical routes exist, legacy routes still declared and still produced by the backend",
+      "identityPathMigration": "PARTIAL — conversation ids change form ('dt:<id>', 'sp:<id>'); old deep links do not resolve to new ids without a redirect that does not yet exist",
+      "uiMigration": "COMPLETE on the canonical side; legacy surfaces retained deliberately",
+      "compatibilityRetirement": "NOT STARTED"
+    },
+    "wouldDeletionLoseHistory": "YES, today. If the legacy family were removed before the migration runs and is verified, every DirectThread and personal-space conversation in production becomes unreachable — the data would still be in the database, with no code able to read it.",
+    "readOnlyEvidenceOwed": {
+      "why": "Whether the migration has already been run manually cannot be determined from the repository. It can only be read from production, and this audit does not poll production.",
+      "note": "`node scripts/migrate-conversations.js --dry-run` is NOT sufficient on its own: the dry-run branch returns before the VERIFICATION block, so it reports the legacy corpus only and never compares it to what has been migrated. Recorded because reaching for --dry-run is the obvious move and it would answer the wrong question.",
+      "exactReadOnlyQuery": "SELECT (SELECT COUNT(*) FROM \"DirectThread\") AS legacy_dt, (SELECT COUNT(*) FROM \"Conversation\" WHERE id LIKE 'dt:%') AS migrated_dt, (SELECT COUNT(*) FROM \"DirectMessage\") AS legacy_dm, (SELECT COUNT(*) FROM \"ConversationMessage\" WHERE id LIKE 'dm:%') AS migrated_dm, (SELECT COUNT(*) FROM \"Space\" s WHERE s.\"institutionId\" IS NULL AND (SELECT COUNT(*) FROM \"Thread\" t2 WHERE t2.\"spaceId\"=s.id) = 1) AS legacy_sp, (SELECT COUNT(*) FROM \"Conversation\" WHERE id LIKE 'sp:%') AS migrated_sp;",
+      "interpretation": "All migrated_* zero => migration never run. migrated_* equal to legacy_* => complete. Anything between => partial, and the skipped-space report matters.",
+      "baselineToCompareAgainst": "§62 read-only measurement (2026-08-16): 5 DirectThreads / 9 messages; 10 PRIVATE personal spaces / 67 messages; 0 grown-past-pair; 2 named personal spaces ('family' CIRCLE 2 members/3 msgs, 'Aura Internal' WORKROOM 3 members/1 msg). Production has moved since; treat as a floor, not a target."
+    }
+  },
+
+  "legacyReachability": {
+    "MessagesHubScreen": { "route": "/messages/legacy-hub", "reachableFromNavigation": "NO — no push/go anywhere in lib/ outside the router", "deepLinkPossible": "YES — the address is declared and resolves", "verdict": "PARKED BUT LIVE" },
+    "correspondenceHubScreen": { "route": "/me/correspondence", "reachableFromNavigation": "YES — indirectly and actively", "how": "communication_resolver.dart returns /me/correspondence[...] for thread and space communication targets, and it is consumed by activity_screen.dart and incoming_live_overlay.dart. route_normalizer.dart normalizes /correspondence -> /me/correspondence. route_classification.dart and navigation_authority.dart both still declare the path.", "verdict": "LIVE AND ROUTED INTO BY CURRENT CODE" },
+    "spaceScreen": { "route": "/me/correspondence/:spaceId (+ /archived-threads, /invite, /live)", "reachableFromNavigation": "YES via the hub and via resolved communication targets", "verdict": "LIVE" },
+    "correspondenceThreadScreen": { "route": "/me/correspondence/:spaceId/thread/:threadId (+ /live/:sessionId)", "servedBy": "ThreadStateWrapper (NOT the feed's ThreadScreen at /thread/:id, which is a different surface and must not be confused with it)", "verdict": "LIVE" },
+    "conversationsScreen": { "route": "NONE", "reachableFromNavigation": "NO", "importsOrConsumers": "NONE — lib/features/conversations/ contains this one file and nothing references it, including tests", "verdict": "UNREACHABLE BUT NOT PROVEN DEAD — FD-12 forbids the naive zero-reference gate that would justify deletion on this evidence alone" },
+    "directThreadScreen": { "route": "/direct/:threadId and /institution/:institutionId/direct/:threadId", "verdict": "LIVE — and NOT part of the C7 correspondence retirement; it is the direct-thread stack that the migration reads FROM" }
+  },
+
+  "fifteenRetirementOwnedSites": {
+    "confirmedCount": 15,
+    "measurementNow": "surface 16 files / 28 sites; typed-person 1 file / 7 sites (identity gate PASS at frozen baseline)",
+    "sites": [
+      { "file": "lib/features/correspondence/data/correspondence_identity.dart", "count": 7, "surface": "data layer beneath the C7 surfaces", "owner": "CO-RC-C7-005", "dischargedByDeletingOwningSurfaces": "NO — SEE BELOW", "reason": "Two LIVE, non-retiring surfaces still import it: lib/core/tagging/mention_scope_providers.dart (8 remaining pickString calls for id/slug/logo/spaceId — the person read was converged, the utility use was not) and lib/features/invitations/presentation/invitations_screen.dart, routed at router.dart:1437, which uses inviteTitle, inviteSubtitle, inviteStateLabel, inviteIsActive, humanize, inviteAvatarUrl and inviteDestinationRoute. Deleting the correspondence hub and space screens does NOT remove this file." },
+      { "file": "lib/features/messages/presentation/messages_hub_screen.dart", "count": 3, "surface": "legacy messages hub at /messages/legacy-hub", "owner": "CO-RC-C7-005 names this surface and route explicitly", "dischargedByDeletingOwningSurfaces": "YES" },
+      { "file": "lib/features/correspondence/presentation/correspondence_hub_screen.dart", "count": 2, "surface": "correspondence hub", "owner": "CO-RC-C2-010 declares C7", "dischargedByDeletingOwningSurfaces": "YES" },
+      { "file": "lib/features/conversations/presentation/conversations_screen.dart", "count": 2, "surface": "unreachable legacy conversations list", "owner": "CO-RC-C2-010 declares C4-retired", "dischargedByDeletingOwningSurfaces": "YES, once FD-12 proven-dead is satisfied" },
+      { "file": "lib/features/correspondence/presentation/space_screen.dart", "count": 1, "surface": "correspondence space", "owner": "CO-RC-C2-010 declares C7", "dischargedByDeletingOwningSurfaces": "YES" }
+    ],
+    "reclassification": {
+      "changed": "NO site leaves the retirement-owned bucket, and the count stays 15.",
+      "butRecorded": "The 7 sites in correspondence_identity.dart carry a PRECONDITION that the other 8 do not: the file cannot be deleted until mention_scope_providers and invitations_screen are moved off it. They remain retirement-owned because the file is inside the retiring family and retirement is what removes it — but retirement of the SURFACES alone will not discharge them. Recorded rather than quietly reclassified, because 'the deletion will handle it' is exactly the assumption that would leave 7 sites standing after Phase 5 and make the accounting wrong."
+    }
+  },
+
+  "founderLiveObservation": {
+    "readiness": "NOT READY TO BEGIN — observation is meaningless until the history migration has run, because the canonical surface cannot show history it does not yet hold. Running the observation now would certify an empty list as correct.",
+    "mustObserve": [
+      { "id": "J1", "journey": "Open Messages from the primary navigation", "expected": "/messages renders MessagesScreen — the canonical list, not the legacy hub", "pass": "The canonical list loads", "fail": "Lands on legacy hub, or the destination errors" },
+      { "id": "J2", "journey": "The migrated conversation list is COMPLETE", "expected": "Every historical direct thread and personal-space conversation the founder remembers appears in /messages", "pass": "Count and identity match the pre-migration corpus", "fail": "Any known conversation missing — this is the single most important observation in the set" },
+      { "id": "J3", "journey": "Open one migrated conversation and read its full history", "expected": "Complete message chronology, oldest to newest, no gaps", "pass": "Message count and order match what the legacy surface shows for the same conversation", "fail": "Truncated, reordered, or missing messages" },
+      { "id": "J4", "journey": "Participant identity inside a migrated conversation", "expected": "Correct name, handle and avatar for both parties, including institution-voiced messages where dual attribution applied", "pass": "Identity matches the legacy rendering", "fail": "Wrong person, missing name, or an institution message attributed to a person or vice versa" },
+      { "id": "J5", "journey": "Named personal spaces survived as names", "expected": "'family' and 'Aura Internal' appear as Conversation names — presentation only", "pass": "Both present and correctly named", "fail": "Either missing, renamed, or split" },
+      { "id": "J6", "journey": "Send a new message in a MIGRATED conversation", "expected": "Sends, appears in order, persists across reload", "pass": "New message lands and survives refresh", "fail": "Send fails, or lands in a different conversation" },
+      { "id": "J7", "journey": "Reply/receive in the same migrated conversation from the other party", "expected": "Two-way exchange in one thread", "pass": "Both sides see one continuous thread", "fail": "Duplicate conversations appear for the same pair — this is the directKey collision case the script reports" },
+      { "id": "J8", "journey": "Deep-link directly to /messages/c/:conversationId and hard-refresh it", "expected": "Reconstructs from a cold load", "pass": "Same conversation, same history", "fail": "Blank, error, or redirect to a list" },
+      { "id": "J9", "journey": "Attachments and media inside migrated history", "expected": "Existing attachments open and save", "pass": "Media renders and opens", "fail": "Broken or missing media on historical messages" },
+      { "id": "J10", "journey": "Unread/read continuity", "expected": "Read cursors carried over — a conversation read before migration is not unread after it", "pass": "Read state is plausible and stable", "fail": "Everything unread, or unread counts inflated" },
+      { "id": "J11", "journey": "An EXISTING notification or activity row that points at /me/correspondence/...", "expected": "Opening it still reaches the conversation", "pass": "Reaches a usable destination", "fail": "Dead end — this is the deep-link blocker, and it is expected to FAIL today", "note": "This journey exists to CONFIRM the blocker, not to pass. It is what proves the backend deep-link producers must move first." }
+    ],
+    "niceToObserve": [
+      { "id": "N1", "journey": "Legacy hub at /messages/legacy-hub still opens", "why": "Confirms the fallback exists while retirement is pending" },
+      { "id": "N2", "journey": "Institution-voiced conversation variant", "why": "Only if the founder has one in production; dual attribution is the riskiest mapping" },
+      { "id": "N3", "journey": "Archived conversation visibility", "why": "archivedAt mapping" },
+      { "id": "N4", "journey": "PublicSpace seed surfaces", "why": "Separate from history migration; seed has also not been run by deploy" }
+    ],
+    "deliberatelyExcluded": "No 'send a test message and see if it works' item. Every journey above names a destination, a historical expectation and a distinguishable failure."
+  },
+
+  "journeyCertification": {
+    "criteria": "A journey is CERTIFIED when the founder reports the observed result and it matches the expected result stated above. Certification is founder-reported; this agent does not certify live behavior.",
+    "evidenceToReport": "For J2 and J3, counts (conversations visible / messages in one conversation) compared against the same conversation on the legacy surface. For the rest, a plain pass/fail with what was seen.",
+    "localAutomatedCoverageAlreadyExisting": "Frontend 829 tests and backend 206 suites / 2582 tests pass, and the conversation system carries its own tests — but NONE of them observe migrated production data. Local tests can prove the code paths; they cannot prove that a specific production conversation survived. Stated explicitly because 'tests pass' has twice now been mistaken for evidence about production in this program.",
+    "mustEstablishRetirementWillNotCause": ["history loss (J2, J3)", "identity drift (J4, J5)", "duplicate conversation identity (J7)", "broken send/reply (J6, J7)", "route loss on cold load (J8)", "attachment loss (J9)", "unread discontinuity (J10)", "inaccessible old threads via existing links (J11)", "silent fallback to the legacy surface (J1)"]
+  },
+
+  "retirementManifest": {
+    "MIGRATE_FIRST": [
+      { "item": "Backend deep-link production — 11 files emitting /me/correspondence/...", "owner": "RC-C7 / CO-RC-C7-005", "reason": "Producers must emit the canonical conversation route before its legacy target can be deleted, and already-persisted rows need a redirect or resolver." },
+      { "item": "communication_resolver.dart + its two consumers (activity_screen, incoming_live_overlay)", "owner": "frontend C7", "reason": "Live code that routes into correspondence today." },
+      { "item": "route_normalizer.dart /correspondence normalization", "owner": "frontend C7", "reason": "Normalizes into a route that would no longer exist." },
+      { "item": "correspondence_identity.dart consumers — mention_scope_providers (8 utility calls) and invitations_screen (7 invite helpers)", "owner": "frontend C7 + CH-03", "reason": "Both are live and non-retiring; without this the file cannot be deleted and 7 identity sites survive Phase 5." },
+      { "item": "History migration execution + verification", "owner": "founder", "reason": "Prerequisite 2." }
+    ],
+    "REMOVE": [
+      { "item": "MessagesHubScreen + /messages/legacy-hub route", "owner": "CO-RC-C7-005", "discharges": "3 identity sites" },
+      { "item": "correspondence_hub_screen + space_screen + correspondence thread surfaces and their routes", "owner": "CO-RC-C2-010 -> C7", "discharges": "3 identity sites" },
+      { "item": "correspondence_identity.dart", "owner": "C7", "discharges": "7 identity sites", "precondition": "after MIGRATE_FIRST consumers move off it" },
+      { "item": "Backend CorrespondenceModule / SpacesModule / MessagesModule and their read paths", "owner": "RC-C7", "precondition": "after migration verified and deep links moved" },
+      { "item": "Dead tests referencing removed surfaces", "owner": "C7" }
+    ],
+    "RETAIN": [
+      { "item": "DirectThreadsModule and DirectThreadScreen (/direct/:threadId)", "reason": "Live, and the source the migration reads FROM. Not part of the C7 correspondence retirement." },
+      { "item": "PublicSpacesModule", "reason": "Distinct product surface, not legacy correspondence." },
+      { "item": "All legacy DATABASE rows", "reason": "Retirement is code-only. Deleting legacy data is a separate authorization and is not proposed here." },
+      { "item": "lib/core/tagging/mention_scope_providers.dart", "reason": "Core, live, serves DirectThreadScreen — already established as not retirement-owned." }
+    ],
+    "UNKNOWN": [
+      { "item": "conversations_screen.dart", "reason": "Unreachable by every static measure, but FD-12 requires proven-dead rather than zero-reference. Needs the FD-12 procedure, not a grep." },
+      { "item": "Whether any production notification/activity row's deep link is the ONLY path to a given conversation", "reason": "Requires production read; cannot be answered structurally." }
+    ]
+  },
+
+  "rollbackRecovery": {
+    "isRetirementCodeOnly": "YES as scoped — Phase 5 removes screens, routes, modules and adapters. It deletes no data. The migration itself is additive and non-destructive.",
+    "isRevertSufficient": "YES for the code deletion: a git revert restores the legacy surfaces and routes, and the legacy DATA is untouched and still present, so restored code finds its rows exactly where it left them.",
+    "irreversibleSteps": "NONE identified. The migration is idempotent and additive; re-running it inserts zero rows. Nothing in Phase 5 as scoped destroys anything.",
+    "theRealRisk": "Not data loss but ADDRESS loss — persisted deep links pointing at deleted routes. A revert restores those routes, so it is recoverable, but it is the failure most likely to be noticed by users first.",
+    "compatibilityPathForOneRelease": "NOT designed and NOT recommended by default. If the founder wants persisted deep links to keep working after retirement, the cheap option is a redirect from /me/correspondence/... to the canonical conversation rather than retaining the legacy runtime. Flagged as a decision, not built."
+  },
+
+  "readinessMatrix": {
+    "additiveDeploy": { "status": "PARTIAL", "blocker": "Backend still produces legacy deep links from 11 files; only conversation-live.controller emits the canonical route." },
+    "historyDataMigration": { "status": "NOT COMPLETE / UNKNOWN AGAINST PRODUCTION", "blocker": "migrate-conversations.js is not run by the deploy path and its execution against production is unproven. Read-only verification query specified." },
+    "routeDeepLinkMigration": { "status": "NOT COMPLETE", "blocker": "No redirect or resolver exists for persisted /me/correspondence links; frontend resolver and normalizer still target them." },
+    "founderLiveObservation": { "status": "OWED — and NOT YET MEANINGFUL", "blocker": "Cannot start before migration; the canonical surface cannot show history it does not hold." },
+    "journeyCertification": { "status": "OWED", "blocker": "Depends on observation." },
+    "retirementManifest": { "status": "READY", "blocker": "None — manifest complete with 5 MIGRATE_FIRST, 5 REMOVE, 4 RETAIN, 2 UNKNOWN, each with an owner and reason." },
+    "explicitFounderApproval": { "status": "NOT YET GRANTED", "blocker": "By doctrine, last." }
+  },
+
+  "authorizationThreshold": "READY FOR FOUNDER RETIREMENT AUTHORIZATION requires ALL of: (1) the history migration has been run against production and verified by the migrated-vs-legacy counts, with the skipped-space report empty or explicitly dispositioned; (2) no conversation, message, participant, attachment or read cursor exists only in legacy storage; (3) backend deep-link production emits the canonical conversation route, and persisted legacy deep links either resolve or are deliberately accepted as broken by founder ruling; (4) the frontend communication resolver and route normalizer target canonical routes; (5) correspondence_identity.dart's two live consumers have been moved off it, so deletion discharges all 7 of its identity sites; (6) journeys J1-J10 observed and certified, with J11 either passing or explicitly waived; (7) conversations_screen has an FD-12 proven-dead disposition; (8) the retirement manifest is executed as REMOVE-only with no data deletion; (9) rollback is a plain git revert with legacy data intact. None of these may be assumed from clean local code.",
+
+  "findingStates": {
+    "F116": "PARTIALLY_VALIDATED — UNCHANGED by this audit",
+    "F053": "PARTIALLY_VALIDATED — UNCHANGED by this audit",
+    "activeExecutableSurvivingProductIdentityDebt": 0,
+    "retirementOwnedStructuralIdentityDebt": 15,
+    "noPrePromotion": "Confirmed. After actual Phase 5 retirement: remove legacy code -> rerun the identity audit and ratchets -> verify the 15 sites disappear by deletion -> reassess F053/F116.",
+    "preserved": "F051 conflict, F052, F054-F057, CH-13, RC-C5 founder gate and the protected Meetings boundary were not touched or reopened."
+  },
+
+  "verification": {
+    "identityGate": "PASS — surface 16 files / 28 sites, typed-person 1 file / 7 sites (frozen baseline)",
+    "domainProof": "23/23 PASS both directions",
+    "meetingsRatchetProof": "PASS both directions",
+    "stage0Validator": "PASS — FOUNDER_RATIFIED_CANONICAL_BASELINE",
+    "portfolioValidator": "PASS — 143 findings + 308 obligations = 451 units across 17 chapters",
+    "accounting": { "findings": 143, "obligations": 308, "totalUnits": 451, "chapters": 17, "unitCheck": "451/451", "chapterCheck": "17/17" },
+    "workingTrees": "Both repos clean and synced with origin/main at audit start; no source file was modified by this audit.",
+    "production": "NOT polled, NOT mutated. No migration script run."
+  },
+
+  "founderDecisionsRequired": [
+    "Run the read-only migration-status query (or authorize it) so 'has the history migration executed?' stops being unknown. Nothing downstream can be sequenced without it.",
+    "Persisted /me/correspondence deep links after retirement: add a redirect to the canonical conversation, or accept them as broken. This decides whether Phase 5 needs a compatibility route."
+  ],
+
+  "nextStep": "Determine migration status from production, read-only. If not run: run the migration through a founder-controlled path, verify with the migrated-vs-legacy counts, THEN begin the J1-J10 observation. Retirement remains unauthorized and unattempted."
+}

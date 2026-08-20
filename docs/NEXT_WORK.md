@@ -349,3 +349,61 @@ Frontend **829 pass**, analyze clean, backend **205 suites / 2579**, tsc clean, 
 identity gate unchanged, 451/451, 17/17. **No finding effects** — this was never an identity defect.
 
 Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/engagement-content-contract-repair.json`.
+
+## 2026-08-20 — CO-RC-C7-005 Phase 5 readiness audit: NOT READY
+
+Read-only audit. Nothing retired, no production polled or mutated, no migration run.
+
+**The retirement is further away than the register implied, for five concrete reasons.**
+
+**1. The history migration is a DATA migration, and the deploy path does not run it.**
+`scripts/railway-start.sh` runs exactly `prisma migrate deploy` then Nest. Nothing anywhere invokes
+`scripts/migrate-conversations.js` or `seed-public-spaces.js`. The 2026-08-20 deploy logs corroborate it
+(`No pending migrations to apply` is the Prisma stage). **Pushing and deploying did not advance this
+prerequisite** — §62's "run through the authorized deployment path" has to mean a founder-run step,
+because the deployment path as coded does not contain one.
+
+**2. There is no compatibility layer.** `ConversationsService` reads only `Conversation`,
+`ConversationParty`, `ConversationMessage` and `ConversationHumanState`. It never touches `DirectThread`,
+`Space`, `Thread` or `Message`. History is not adapted — it must be physically copied. **Until the
+migration runs, every legacy conversation is reachable only through legacy code, and deleting the family
+would make all of it unreachable** (the rows would remain; nothing could read them).
+
+**3. Eleven backend files still produce `/me/correspondence/...` deep links** — activity-record,
+attention-mapper, attention-policy, canonical-call-notification, communications, correspondence-orchestrator,
+canonical-event, internal-reference, actor-notifications, notifications, communication-live. Exactly one
+file emits the canonical `/messages/c/:id`. Those links are **already persisted** in production
+notification and activity rows, so retirement breaks both history and new production.
+
+**4. Correspondence is not merely parked.** `communication_resolver.dart` returns `/me/correspondence/...`
+for thread and space targets and is consumed by `activity_screen` and `incoming_live_overlay`;
+`route_normalizer.dart` normalizes `/correspondence` into it. Live code routes there today.
+
+**5. `correspondence_identity.dart` is not discharged by retiring the surfaces.** Two live, non-retiring
+consumers still import it: `mention_scope_providers` (8 remaining utility calls — the person read was
+converged, the id/slug/logo/spaceId use was not) and the routed `invitations_screen` (7 invite helpers).
+So **7 of the 15 identity sites carry a MIGRATE-FIRST precondition**. The count stays 15 and nothing was
+reclassified — recorded rather than assumed away, because "the deletion will handle it" is exactly what
+would leave 7 sites standing after Phase 5.
+
+**Readiness:** additive deploy PARTIAL · history migration NOT COMPLETE/UNKNOWN · route+deep-link
+migration NOT COMPLETE · founder observation OWED **and not yet meaningful** (observing before migration
+would certify an empty list as correct) · certification OWED · manifest READY · approval NOT GRANTED.
+
+**Rollback is understood and cheap:** retirement is code-only and deletes no data; the migration is
+idempotent and additive; a revert restores the routes and the legacy rows are untouched. The real risk is
+**address loss, not data loss**.
+
+**Founder decisions owed — two:**
+1. Authorize the read-only migration-status query (specified exactly in the record). Nothing downstream
+   can be sequenced while "has the migration run?" is unknown. Note `--dry-run` alone will not answer it:
+   it returns before the verification block and reports the legacy corpus only.
+2. Persisted `/me/correspondence` deep links after retirement — add a redirect to the canonical
+   conversation, or accept them as broken.
+
+**Next step:** determine migration status read-only; if not run, run it through a founder-controlled path
+and verify with the migrated-vs-legacy counts; only then begin the J1–J10 observation. **F116/F053 remain
+PARTIALLY_VALIDATED** (active executable identity debt 0, retirement-owned 15). Retirement remains
+unauthorized and unattempted.
+
+Record: `docs/portfolio/run/stage0-2026-08-18/05-execution/co-rc-c7-005-phase5-retirement-readiness.json`.
