@@ -38,6 +38,8 @@ import 'add_people_sheet.dart';
 import 'conversation_avatar.dart';
 import 'conversation_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
+import '../../../core/media/attachment.dart';
+import '../../../core/media/media_mime.dart';
 
 /// Durable ringing/active-call truth for a conversation (founder charter
 /// 2026-08-17). A call must never be reachable ONLY through an ephemeral
@@ -429,32 +431,28 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   /// Media/MIME authority accepts or refuses truthfully.
   Future<void> _ingestBytes(
       Uint8List bytes, String fileName, String? mimeType) async {
-    final lower = fileName.toLowerCase();
+    // Use the canonical MIME authority rather than an inline ladder.
+    //
+    // This method used to carry its own extension switch covering png, jpg,
+    // gif, webp, mp4, webm, mp3 and pdf, with everything else falling through
+    // to application/octet-stream — which the server's allow-list refuses
+    // before it creates a Media row. That is why a PDF attached fine and a
+    // DOCX did not: .docx was never named, so it arrived as octet-stream and
+    // was rejected at presign, with nothing to see in the database afterwards.
+    //
+    // `inferMimeFromFileName` already knows doc, docx, xls, xlsx, ppt, pptx,
+    // rtf, txt, csv and zip — its own docstring records that it was extracted
+    // to replace exactly these duplicate implementations. This call site had
+    // never been migrated.
     final mime = mimeType ??
-        (lower.endsWith('.png')
-            ? 'image/png'
-            : lower.endsWith('.jpg') || lower.endsWith('.jpeg')
-                ? 'image/jpeg'
-                : lower.endsWith('.gif')
-                    ? 'image/gif'
-                    : lower.endsWith('.webp')
-                        ? 'image/webp'
-                        : lower.endsWith('.mp4')
-                            ? 'video/mp4'
-                            : lower.endsWith('.webm')
-                                ? 'video/webm'
-                                : lower.endsWith('.mp3')
-                                    ? 'audio/mpeg'
-                                    : lower.endsWith('.pdf')
-                                        ? 'application/pdf'
-                                        : 'application/octet-stream');
-    final kind = mime.startsWith('image/')
-        ? 'IMAGE'
-        : mime.startsWith('video/')
-            ? 'VIDEO'
-            : mime.startsWith('audio/')
-                ? 'AUDIO'
-                : 'DOCUMENT';
+        inferMimeFromFileName(fileName) ??
+        'application/octet-stream';
+    final kind = switch (kindFromMime(mime)) {
+      AttachmentKind.image => 'IMAGE',
+      AttachmentKind.video => 'VIDEO',
+      AttachmentKind.audio => 'AUDIO',
+      AttachmentKind.document => 'DOCUMENT',
+    };
     final pending = _PendingAttachment(
       name: fileName,
       kind: kind,
