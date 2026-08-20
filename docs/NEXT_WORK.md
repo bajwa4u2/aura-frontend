@@ -25,28 +25,34 @@ renamed to `photo.png`. All four predeclared properties PASS. **Leg 5(B) LIVE_CE
 COMPLETE.** F127 is live-certified on the D2 confirm path. Every record that waited on the
 attributable deployment or this observation is reconciled.
 
-## ACTIVE — CH-12 · F137: scanning half DISCHARGED, moderation half open
+## ACTIVE — CH-12 · F137 remainder is BACKFILL, not a classifier
 
-**Malicious path proven in production.** `eicar.txt` → Media `FAILED`, `readyAt` **never**,
-**never attached**, `MALWARE_SCAN=FAILED` by `clamav@clamd@clamav.railway.internal:3310` with
-`findings {"signature":"Eicar-Test-Signature"}`, `attempts=1`. Two attempts, two independent
-objects, one verdict each — idempotency behaving as designed.
+**Scanning half: IMPLEMENTED + PRODUCTION-PROVEN.** Clean PDF and DOCX reached `READY` and were
+attached; EICAR was detected as `Eicar-Test-Signature`, ended `FAILED`, never ready, never attached.
 
-**Clean path proven across the whole capability set.** DOCX → `READY`, genuinely attached to a
-conversation, with **four distinct examiners** producing four verdicts; the archive examiner opened
-the OOXML container and measured a real 32.16× expansion ratio against the 200× limit. `d5259cc`
-restored the document path rather than changing its failure mode.
+**The moderation half is not a classifier.** Tracing CH-15 first: both its vocabularies
+(`ReportReason`, `AIReportCategory`) are about what a **person reports**, and `moderation.service`
+adjudicates reports and classifies nothing. Meanwhile **CH-12's own obligation family** already
+defines the mechanism — *"media safety examination … with a verdict that gates delivery and
+retention … and **backfill over objects already in the bucket**"* — certified by proving *"the
+verdict applies to objects uploaded **before the scanner existed**"*.
 
-**F137 stays OPEN**, and the reason is its own text: *"No **moderation** or **scanning** of
-uploaded media of any kind."* Scanning is now discharged. **Moderation is untouched** — nothing
-classifies image or video content against a safety policy, and a file can be malware-clean and
-structurally valid while still being content Aura should not carry. CH-12 owns that mechanism;
-CH-15 owns the policy.
+### What actually remains, in order
 
-### One criterion not observed in production, deliberately
+1. **Backfill** — objects uploaded before the scanner have never been examined. Explicit CH-12
+   certification requirement, needs **no policy**, and is the largest genuine gap.
+2. **Gate delivery and retention**, not only `READY` — today a verdict arriving later has nothing
+   to revoke.
+3. **Asynchronous** examination — today it runs inside confirm.
+4. **CH-15 media verdict policy** — a *named founder action*, not CH-12's to invent.
 
-*"Unavailable examiner cannot silently pass"* is implementation-proven only. Staging it would mean
-taking clamd down and breaking attachments for real people.
+**No classifier was built.** The policy it would enforce does not exist, and choosing categories
+from a model vendor's taxonomy is what the ruling forbids.
+
+### Optional gaps: CLOSED
+
+WebP dimensions (it had no reader, so the decode-bomb check never applied to it) and audio/video
+container sanity. Both OPTIONAL, neither gates readiness. `c3ac97f`.
 
 ## OWED — founder live observation
 
