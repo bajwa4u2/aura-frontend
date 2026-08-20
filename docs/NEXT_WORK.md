@@ -25,46 +25,36 @@ renamed to `photo.png`. All four predeclared properties PASS. **Leg 5(B) LIVE_CE
 COMPLETE.** F127 is live-certified on the D2 confirm path. Every record that waited on the
 attributable deployment or this observation is reconciled.
 
-## ACTIVE — CH-12 · F137 examination architecture
+## ACTIVE — CH-12 · F137 content examination IMPLEMENTED (not deployed)
 
-`008d9d9` deployed and attributable (`/health` → `commit 008d9d9`); frontend `b665015` pushed.
+Record: `aura-backend/docs/2026-08-20-f137-examination-implementation.md`.
+**Committed, not pushed. Migration not applied. No production mutation.**
 
-**F127 stays `IMPLEMENTED_NOT_LIVE_CERTIFIED` — deliberately not promoted.** D2 confirm is
-live-certified; the D7 door is implemented and deployed but has no founder observation; the worker
-path and Meetings custody remain uncovered. Promoting on one door's certification is the error that
-let the residue survive the first time. Meetings evidence is recorded **under F127**, which already
-owns it — no new finding.
+Four capabilities now **operate**: archive inspection (opens the container — members, encryption,
+expansion ratio, malformed structure), document inspection (OOXML macros/embedded objects, PDF
+active content), structural validation (ZIP, PDF) and decode validation (image dimensions from
+headers, never a pixel). **No dependency was added** — adding an npm parser to implement a security
+control would widen the supply chain of the thing meant to narrow risk.
 
-**Architecture done, engine-neutral.** `examination.types.ts` + `examination-policy.ts`, both pure:
-capability contract (`MALWARE_SCAN` · `STRUCTURAL_VALIDATION` · `ARCHIVE_INSPECTION` ·
-`DOCUMENT_INSPECTION` · `MEDIA_DECODE_VALIDATION`), the content-family requirement matrix, and the
-READY invariant. Record:
-`aura-backend/docs/2026-08-20-f137-examination-architecture.md`.
+`MALWARE_SCAN` is implemented as a **clamd INSTREAM client** and **not registered**, because no
+`CLAMAV_HOST` exists. Its absence surfaces as an unexamined capability — never as a pass.
 
-**The honest posture.** Requirements are true today and Aura has **no examiner for any of them**.
-Enforcement is therefore an explicit second axis: `NOT_ENFORCEABLE` admits the object but returns
-`unexamined: [...]` as a value the caller must handle — never a silence. `FAILED` is terminal under
-both postures. Seeded proof: emptying that list fails the suite.
+**Enforcement is derived, not set:** `ENFORCED` only when an examiner exists for every capability
+the accepted classes can require. It is `NOT_ENFORCEABLE` today as a computed fact, and standing up
+clamd flips it with no code change.
 
-**Not wired into the lifecycle, deliberately.** Running it at confirm today would either refuse
-every upload or admit everything while recording nothing.
+### Owed — two deployment acts, both returned
 
-### Owed before F137 can be implemented — two things, both founder-facing
+1. **Apply the migration** (`npm run db:deploy:prod`) **before pushing code.** `start:prod` runs no
+   `migrate deploy`, so a push alone would deploy code without the table; persistence failures are
+   caught and logged, so the app would serve while recording nothing — a degraded state not worth
+   shipping. Migration is additive and guarded: one `CREATE TABLE IF NOT EXISTS`, three indexes, one
+   FK, no-op on re-run.
+2. **Provision clamd** — a service at `CLAMAV_HOST`/`CLAMAV_PORT`, roughly 1 GB RAM for the
+   signature database plus `freshclam`. Railway topology, memory and recurring cost. Not performed.
 
-1. **An engine decision.** ClamAV covers `MALWARE_SCAN` and `ARCHIVE_INSPECTION` (it scans inside
-   ZIPs) with content never leaving custody and no per-scan fee — but it does **not** decode media,
-   does **not** structurally validate, and answers "known-bad macro", not "has macros".
-   **ClamAV ≠ F137**; it is one examiner for one capability family.
-2. **An additive migration** to persist verdicts durably (`MediaExamination`: capability, outcome,
-   examiner id + version, timing, retryability). Nothing durable can be recorded without it.
-
-### Archives — the sharpest exposure, now traced
-
-ZIP only. OOXML is distinguished by an **ASCII substring search over the last 64 KB**, not a
-central-directory parse — so a plain ZIP holding a member named `xl/…` reads as `.xlsx`, and a
-legitimate OOXML with its directory outside that window stays `application/zip`. Nested archives,
-expansion ratio, encryption, malformed directories and member contents are **never examined**: with
-a 512-byte head and 64 KB tail, the middle of every archive Aura accepts has never been read.
+**F137 stays OPEN.** Four capabilities operating is not the invariant; `MALWARE_SCAN` is required by
+every class and has no examiner, and nothing is deployed.
 
 ## OWED — founder live observation
 
