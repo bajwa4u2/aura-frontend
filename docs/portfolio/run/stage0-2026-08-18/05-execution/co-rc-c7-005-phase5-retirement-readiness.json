@@ -1051,5 +1051,62 @@
     },
     "rollbackBoundary": "The maintenance gate is database state, independent of deployed code, so it stays active across any code rollback. Reverting the two backend commits restores every removed route - the controllers were deleted, not rewritten, so the revert is clean. The realtime rehome is code-only. NO schema change and NO migration exists in this work (git status prisma/ is empty), so legacy persistence is intact and no backfill is required to restore the old runtime.",
     "pushStatus": "NOT PUSHED. Precondition 1 complete and proved. Precondition 2 needs the ClientPolicy rows ACTIVE IN PRODUCTION BEFORE the code deploy - MaintenanceMiddleware is already live there, so the policy can be applied now against the current backend ahead of the push, but writing it requires admin credentials with SETTINGS_WRITE that this session does not hold. Founder-owned and returned rather than worked around. Safe order: apply policy -> verify verdict -> push both repos -> deploy."
+  },
+  "founderRulings_2026_08_20_prePushCheckpoint": {
+    "date": "2026-08-20",
+    "record": "aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md",
+    "ruling1_clientPolicyMutation": "AUTHORIZED, and NOT EXECUTED IN THIS SESSION. The outbound call to https://api.auraplatform.org/v1 was denied by the sandbox permission classifier, so no production request was made and no SQL path was used. scripts/apply-cutover-client-policies.sh performs exactly the authorised operation - two POST /v1/admin/client-policies creates, a read-back of every row, and the effective GET /v1/client/compatibility verdict for android, ios, web and unknown. Needs AURA_ADMIN_TOKEN with SETTINGS_WRITE.",
+    "ruling1_buildNumberDiscipline": "Build 24 is recorded as IDENTIFYING METADATA ONLY. The evaluator compares semantic version and never reads buildNumber, so no build-level enforcement is claimed anywhere in the record, the script or the policy notes. Evaluator semantics were NOT broadened to build number - no requirement for it emerged.",
+    "ruling2_iosFirstClass": {
+      "result": "IMPLEMENTED. ClientDistribution gained an `ios` member on both sides of the wire.",
+      "backend": "src/platform/client-identity/client-identity.types.ts - added to the union and to the DISTRIBUTIONS list. The parser needed no change because it validates against that list. auth.service.ts already mapped a literal `ios` distribution to 'Aura iPhone', so device naming was correct in advance and was left alone.",
+      "client": "lib/core/client_identity/client_identity.dart enum, and _defaultDistribution now maps ClientPlatform.ios -> ClientDistribution.ios.",
+      "unknownPreserved": "`unknown` keeps its real job - genuinely unresolved identity. macOS, Linux and unparseable values still resolve to it, and it is deliberately NOT rowed in the cutover policy. Asserted in both new specs.",
+      "scopeDiscipline": "Smallest bounded correction. No platform taxonomy redesign; no other distribution changed.",
+      "independentReleaseProof": "cutover-policy.spec.ts proves either native platform can leave maintenance while the other stays gated, in both directions - which is what matters if one store approves first.",
+      "tests": "src/platform/client-identity/ios-distribution.spec.ts (4) and test/client_identity/ios_distribution_test.dart (4), plus the independence group in cutover-policy.spec.ts."
+    },
+    "ruling3_newConversationScreenDeleted": {
+      "result": "DELETED on executable proof, not string matching. FD-12 proven-dead disposition.",
+      "publicSurface": "The file declared exactly ONE public symbol, NewConversationScreen; its other seven classes are underscore-prefixed and unreachable outside it.",
+      "proof": {
+        "importedAnywhereInLib": "NO - the only matches are three prose comments recording where directory_entry.dart was extracted from",
+        "symbolConstructedAnywhere": "NO - the sole construction was in its own test",
+        "routerRegistration": "NO - /messages/new builds NewConversationPicker, a different widget",
+        "generatedRouting": "NONE EXISTS in the repo",
+        "dynamicStringReference": "NO - no 'NewConversationScreen' literal anywhere"
+      },
+      "deadByConsequence": "test/new_conversation_screen_test.dart deleted with it. All four of its assertions exercised the screen's own payloads to POST /spaces, a retired endpoint. The logic extracted out of the screen keeps independent coverage in test/directory_entry_test.dart, which does not import it.",
+      "nothingElseDied": "Every file the screen imported - composition_assist, composition_models, directory_entry and the core/ui set - has other live importers, checked individually rather than assumed."
+    },
+    "ruling4_routeRetargetingAccepted": "Accepted as recorded. Executable production of /me/correspondence is ZERO in both repos; the only remaining references are the two allowlisted RECOGNITION sites (route_normalizer rewriting the bare stale hub, activity_screen opening the live session behind an expired row). The producing-vs-recognising ratchets are kept in both repos.",
+    "ruling5_endpointCount": "14 proven-obsolete HTTP endpoints retired. POST /spaces/:spaceId/invites retained as src/spaces/space-invites.controller.ts because invitations_client.dart:88 consumes it from the routed /invite/create. Living services whose implementation is still consumed canonically remain preserved - no service was removed.",
+    "ruling6_augustSemantics": "August 22, 2026 has NO EXECUTION AUTHORITY. Re-proved after all policy work: the only clock usage in release-governance production code is a 5s verdict cache TTL and a 503 response timestamp, and no 2026-08-22 literal exists anywhere in executable source. A fake-timer test evaluates the same policy at 2027-01-01 and still returns maintenance. No future minSupportedVersion is preconfigured and no upgraded version was invented - pubspec is still 1.3.0+24.",
+    "executionOrderStatus": {
+      "A_iosDistribution": "DONE",
+      "B_identityContract": "DONE (both sides)",
+      "C_releaseGovernanceCertified": "DONE - 24 release-governance tests including independent Android/iOS release",
+      "D_deadnessReconfirmed": "DONE - five-part executable proof",
+      "E_deleted": "DONE - screen + its test",
+      "F_dependencyProofRerun": "DONE - zero client HTTP consumers of the 14 retired endpoints; the surviving /spaces strings are Public Spaces navigation, and /spaces/:id/invites plus /threads/:id/invites are the retained endpoints",
+      "G_applyPolicy": "BLOCKED IN SESSION - outbound production call denied by the sandbox permission classifier. Not worked around. Script prepared.",
+      "H_readBackVerdict": "PENDING on G",
+      "I_webCompatible": "PROVED LOCALLY against the real evaluator; production read-back pending on G",
+      "J_unknownNotIos": "PROVED - unknown is not rowed, and macOS/Linux/unresolved still resolve to it",
+      "K_fullLocalCertification": "DONE",
+      "L_push": "HELD - must not precede G",
+      "M_deployVerification": "PENDING on L",
+      "N_stop": "STOPPED HERE"
+    },
+    "verification": {
+      "backend": "211 suites / 2627 tests pass, tsc clean, route-path guard green, full AppModule graph resolves under the real injector (then the known win32-arm64 Prisma engine gap, identical to baseline).",
+      "frontend": "841 pass, flutter analyze clean. 843 before this step: +4 iOS identity tests, -6 from the deleted dead screen's test.",
+      "identity": "Gate PASS at 11 files / 19 sites surface and 0/0 typed-person, baselines unchanged. Domain proof PASS both directions.",
+      "meetings": "Ratchet PASS both directions, 0 modified files in the Meetings tree.",
+      "institutionSpaces": "LIVE_CERTIFIED, untouched.",
+      "f044": "IMPLEMENTED_NOT_LIVE_CERTIFIED, untouched, NOT promoted; founder live observation still owed.",
+      "f053_f116": "IMPLEMENTED_NOT_LIVE_CERTIFIED, preserved."
+    },
+    "legacyDataStatus": "migrate-conversations.js HELD and never run. No legacy persistence deleted. No destructive schema cleanup. No schema change or migration exists in this work, so rollback needs no backfill."
   }
 }

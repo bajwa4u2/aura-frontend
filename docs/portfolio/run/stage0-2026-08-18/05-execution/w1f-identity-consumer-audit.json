@@ -27,12 +27,12 @@
   ]
  },
  "totals": {
-  "rows": 89,
+  "rows": 87,
   "byVerdict": {
    "NON_CONFORMANT": 17,
    "OUT_OF_SCOPE_INSTITUTION_IDENTITY": 20,
    "AUTHORITY": 5,
-   "CONFORMANT": 34,
+   "CONFORMANT": 32,
    "OUT_OF_SCOPE_EXTERNAL_PLATFORM_IDENTITY": 3,
    "CANONICAL_PERSON_DESERIALIZATION": 8,
    "ADHOC_MAP_EXTRACTION_IN_SURFACE": 2
@@ -40,8 +40,8 @@
   "nonConformant": 17,
   "adhocMapExtractionInSurface": 2,
   "typedDeserializationBoundary": 0,
-  "conformant": 34,
-  "frontend": 79,
+  "conformant": 32,
+  "frontend": 77,
   "backend": 10
  },
  "sixPersonShapedExtractionSites": {
@@ -299,24 +299,6 @@
    "path": "lib/features/conversation/presentation/new_conversation_picker.dart",
    "line": 103,
    "evidence": "leading: AuraAvatar(",
-   "verdict": "CONFORMANT",
-   "why": "Renders the canonical AuraAvatar."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "AVATAR",
-   "path": "lib/features/create/presentation/new_conversation_screen.dart",
-   "line": 1052,
-   "evidence": "AuraAvatar(",
-   "verdict": "CONFORMANT",
-   "why": "Renders the canonical AuraAvatar."
-  },
-  {
-   "repo": "aura_final",
-   "surface": "AVATAR",
-   "path": "lib/features/create/presentation/new_conversation_screen.dart",
-   "line": 1118,
-   "evidence": "AuraAvatar(name: label, imageUrl: avatarUrl, size: 20),",
    "verdict": "CONFORMANT",
    "why": "Renders the canonical AuraAvatar."
   },

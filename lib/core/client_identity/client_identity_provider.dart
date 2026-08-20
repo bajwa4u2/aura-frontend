@@ -63,6 +63,7 @@ ClientDistribution _defaultDistribution(ClientPlatform platform) {
     case ClientPlatform.windows:
       return ClientDistribution.windowsStore;
     case ClientPlatform.ios:
+      return ClientDistribution.ios;
     case ClientPlatform.macos:
     case ClientPlatform.linux:
     case ClientPlatform.unknown:

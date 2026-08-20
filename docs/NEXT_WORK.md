@@ -11,27 +11,31 @@ sites, not nine backend services. One rule now owns the answer on each side
 (`canonical_destinations.dart` / `canonical-destinations.ts`) and two ratchets hold it.
 The retired prefix is no longer classified as a live member surface.
 
-## OPEN — founder step before anything can be pushed
+## OPEN — the one production step the push waits on
 
-The outgoing native build **1.3.0+24** must be placed in maintenance through
-`POST /v1/admin/client-policies` (distributions `android-direct` and `unknown`, channel
-`production`) **before** the backend deploy removes the legacy endpoints. Applying it after
-the deploy leaves a window where the old client meets missing runtime as random failure.
-This session does not hold `SETTINGS_WRITE` credentials, so it is returned rather than
-worked around.
+The outgoing native release **1.3.0** must be placed in maintenance on the `android-direct`
+and `ios` rows through `POST /v1/admin/client-policies` **before** the backend deploy removes
+the legacy endpoints. Applying it afterwards leaves a window where the old client meets
+missing runtime as random failure.
 
-**On release day**, after the new build ships: switch both rows to `maintenanceMode: false`
-with `minSupportedVersion` set to the new version. Leaving maintenance on while setting a
-minimum locks out the upgrade itself, because maintenance short-circuits before any version
-comparison.
+Run `aura-backend/scripts/apply-cutover-client-policies.sh` with `AURA_ADMIN_TOKEN` set to an
+admin JWT carrying `SETTINGS_WRITE`. It creates both rows, reads every row back, and prints
+the effective `GET /v1/client/compatibility` verdict for android, ios, web and unknown.
+Proceed to the push only when android and ios both report `maintenance` / `show_maintenance`
+and web reports `compatible`. This session could not make the call itself — the outbound
+request was denied by the sandbox permission classifier.
 
-## OPEN — orphaned screen calling retired endpoints
+**On release day** the sequence is founder-driven and nothing is preconfigured: establish the
+actual upgraded version and build, verify store availability, certify the upgraded client,
+present the exact policy transition, receive authorization, then `PATCH` each row to
+`maintenanceMode: false` with `minSupportedVersion` set. Each platform can go independently.
+Leaving maintenance on while setting a minimum locks out the upgrade itself, because
+maintenance short-circuits before any version comparison.
 
-`lib/features/create/presentation/new_conversation_screen.dart` calls `POST /spaces` and
-`GET /spaces/:spaceId/threads`, both retired. Nothing constructs or routes it — it is
-referenced in comments only — so it is not a supported-product consumer and the endpoints
-stay retired. Deleting it is retirement work that was not authorised here. **Reported, not
-removed.**
+## RESOLVED — orphaned screen calling retired endpoints (2026-08-20)
+
+`new_conversation_screen.dart` and its test are deleted on executable proof. Nothing else
+died with it — every file it imported has other live importers, checked individually.
 
 ## OPEN — `/messages/new` prefill
 

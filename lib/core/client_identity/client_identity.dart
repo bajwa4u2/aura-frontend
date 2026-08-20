@@ -36,6 +36,11 @@ enum ClientDistribution {
   webProd('web-prod'),
   androidPlay('android-play'),
   androidDirect('android-direct'),
+  // iOS ships through a single store channel, so unlike Android it needs no
+  // play/direct split. It is named rather than left to resolve as `unknown`,
+  // which also covers macOS, Linux and genuinely unresolved clients and is
+  // therefore not a release authority for anything.
+  ios('ios'),
   windowsStore('windows-store'),
   unknown('unknown');
 

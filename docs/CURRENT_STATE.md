@@ -6,36 +6,30 @@
 
 ## Status
 
-> **2026-08-20 — cutover finalized, still NOT pushed (aura-backend + this repo, local only).**
-> The legacy Correspondence module was dissolved into `src/realtime/orchestration/`, and
-> **14 legacy HTTP endpoints are retired, 1 restored**: re-running the dependency proof
-> against executable client calls found `POST /spaces/:spaceId/invites` is still used by
-> `invitations_client.dart:88` via the routed `/invite/create`, so it survives as
-> `space-invites.controller.ts`. No service was removed — each has a living canonical
-> consumer.
+> **2026-08-20 — cutover complete except its one production step; still NOT pushed.**
+> Founder rulings resolved every open decision. **iOS is now a first-class distribution**
+> (`ClientDistribution.ios` on both sides of the wire) rather than being gated through
+> `unknown`, which also covers macOS, Linux and unresolved clients — Android and iOS can now
+> be released independently, proved in both directions. **14 legacy HTTP endpoints are
+> retired**; `POST /spaces/:spaceId/invites` is retained because `invitations_client.dart:88`
+> consumes it from the routed `/invite/create`.
 >
-> **The stranded-deeplink defect recorded on 2026-08-19 is fixed, and it was bigger than
-> reported.** Eleven backend producers (not nine) and **ten client sites** were minting
-> `/me/correspondence/...`, so the app was navigating *itself* onto a not-found page. All
-> are retargeted through one rule, mirrored on both sides:
-> `lib/core/navigation/canonical_destinations.dart` and
-> `src/common/routes/canonical-destinations.ts` — Conversation → `/messages/c/:id`,
-> Institution Space → `/institution/:institutionId/spaces/:spaceId`, live session →
-> `/realtime/:sessionId`, otherwise **no destination**. A legacy `threadId` is not an
-> accepted input: there is no Thread → Conversation mapping, so it cannot be honestly
-> converted, and nothing guesses.
+> **`new_conversation_screen.dart` is deleted** on a five-part executable proof — unimported,
+> never constructed outside its own test, unrouted, no generated routing, no dynamic string
+> reference. Its test went with it (all four assertions posted to a retired endpoint); the
+> logic extracted out of it keeps independent coverage in `directory_entry_test.dart`.
 >
-> The retired prefix is no longer classified as live in `route_classification.dart`,
-> `navigation_authority.dart` or `member_shell.dart` — the shell had been lighting a
-> Messages tab for a page that resolves to nothing. Two ratchets now hold the line
-> (`test/navigation/retired_route_production_test.dart` and the backend twin), scanning
-> executable source only and separating *producing* an address from *recognising* one.
+> Executable production of `/me/correspondence` is **zero in both repos**; the two remaining
+> references are allowlisted *recognition* sites, and ratchets in both repos hold the line.
 >
-> **Blocked on one founder step before push:** the outgoing native build (1.3.0+24, on
-> `android-direct` and — because `ClientDistribution` has no iOS member — `unknown`) must be
-> placed in `maintenanceMode` through `POST /v1/admin/client-policies` *before* the code
-> deploys, or it meets the removed endpoints as random failure. Web (`web-prod`) is
-> deliberately ungated and stays compatible. Full record:
+> **The push is held behind one production step.** The outgoing native release **1.3.0** must
+> be put in maintenance on the `android-direct` and `ios` rows via
+> `POST /v1/admin/client-policies` *before* the retirement deploys. This session's outbound
+> call to production was denied by the sandbox permission classifier, so
+> `aura-backend/scripts/apply-cutover-client-policies.sh` is prepared instead — it creates
+> both rows, reads them back, and prints the effective verdict for android, ios, web and
+> unknown. **Build 24 is identifying metadata only**: the evaluator compares semantic version
+> and never reads `buildNumber`. Full record:
 > `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md`.
 
 
