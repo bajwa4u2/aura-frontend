@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../auth/admin_access_provider.dart';
 import '../ui/aura_radius.dart';
@@ -10,6 +9,7 @@ import '../ui/aura_text.dart';
 import 'compatibility_models.dart';
 import 'compatibility_provider.dart';
 import 'update_actions.dart';
+import '../../router.dart';
 
 /// Wraps the routed widget tree with release-governance UX. Renders one of
 /// four modes based on the latest CompatibilityVerdict:
@@ -74,7 +74,22 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
     // /admin to operate).
     if (verdict.status == CompatibilityStatus.maintenance) {
       final isAdmin = ref.watch(appAdminCachedDisplayProvider);
-      final path = GoRouterState.of(context).uri.path;
+      // NOT `GoRouterState.of(context)`. This widget is mounted in
+      // `MaterialApp.router`'s builder — deliberately, so the blocking screens
+      // get Material and MediaQuery ancestors — which puts it ABOVE the route
+      // tree. `GoRouterState.of` only resolves under a `RouteBase.builder`, so
+      // it threw `GoError: There is no GoRouterState above the current
+      // context` and replaced the maintenance screen with an error screen.
+      //
+      // The bug was invisible until maintenance was switched on for the first
+      // time, because this is the only branch that reads the route. The router
+      // itself is reachable from anywhere, so ask it directly.
+      final path = ref
+              .read(routerProvider)
+              .routerDelegate
+              .currentConfiguration
+              .uri
+              .path;
       if (isAdmin && path.startsWith('/admin')) {
         return widget.child;
       }
