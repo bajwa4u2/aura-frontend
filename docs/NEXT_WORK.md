@@ -25,36 +25,41 @@ renamed to `photo.png`. All four predeclared properties PASS. **Leg 5(B) LIVE_CE
 COMPLETE.** F127 is live-certified on the D2 confirm path. Every record that waited on the
 attributable deployment or this observation is reconciled.
 
-## ACTIVE — CH-12 · F137 content examination IMPLEMENTED (not deployed)
+## ACTIVE — CH-12 · F137 examination DEPLOYED; clamd not provisioned
 
-Record: `aura-backend/docs/2026-08-20-f137-examination-implementation.md`.
-**Committed, not pushed. Migration not applied. No production mutation.**
+Migration `20260906000000_media_examination` **applied to production** (additive: one empty table,
+4 indexes, 1 CASCADE FK; **0 rows created, 0 Media rows touched**, 156 distinct `updatedAt` values
+across 156 rows). Backend **`644f3ee` live and attributable**. Frontend: both commits were
+documentation-only, so there is **no client-code change to deploy** — the served bundle is
+byte-identical at 7,195,270 bytes.
 
-Four capabilities now **operate**: archive inspection (opens the container — members, encryption,
-expansion ratio, malformed structure), document inspection (OOXML macros/embedded objects, PDF
-active content), structural validation (ZIP, PDF) and decode validation (image dimensions from
-headers, never a pixel). **No dependency was added** — adding an npm parser to implement a security
-control would widen the supply chain of the thing meant to narrow risk.
+**Four capabilities operate in production**: archive, document, structural, decode.
 
-`MALWARE_SCAN` is implemented as a **clamd INSTREAM client** and **not registered**, because no
-`CLAMAV_HOST` exists. Its absence surfaces as an unexamined capability — never as a pass.
+### Blocked — clamd provisioning needs Railway credentials
 
-**Enforcement is derived, not set:** `ENFORCED` only when an examiner exists for every capability
-the accepted classes can require. It is `NOT_ENFORCEABLE` today as a computed fact, and standing up
-clamd flips it with no code change.
+`infra/clamav/` holds a ready-to-deploy Dockerfile and guide. The CLI is installed but
+`railway whoami` returns **`Unauthorized`** and `railway login` is interactive. **Access, not
+feasibility** — and no third-party scanner was substituted.
 
-### Owed — two deployment acts, both returned
+**Measured:** image 156 MB compressed / 393 MB on disk · **amd64 only** · ports 3310 + 7357 ·
+entrypoint `/init` supervising clamd *and* freshclam · healthcheck `clamdcheck.sh`.
+**Not measured:** runtime RSS and startup time — the image has no arm64 manifest and this host has
+no amd64 emulation (`exec /init: exec format error`). **The earlier "~1 GB" is withdrawn**: plan
+~2 GB and verify from Railway's own metrics on first deploy.
 
-1. **Apply the migration** (`npm run db:deploy:prod`) **before pushing code.** `start:prod` runs no
-   `migrate deploy`, so a push alone would deploy code without the table; persistence failures are
-   caught and logged, so the app would serve while recording nothing — a degraded state not worth
-   shipping. Migration is additive and guarded: one `CREATE TABLE IF NOT EXISTS`, three indexes, one
-   FK, no-op on re-run.
-2. **Provision clamd** — a service at `CLAMAV_HOST`/`CLAMAV_PORT`, roughly 1 GB RAM for the
-   signature database plus `freshclam`. Railway topology, memory and recurring cost. Not performed.
+The prepared Dockerfile raises clamd's scan limits above Aura's 25 MB ceiling — at defaults a large
+legitimate attachment returns an *error*, and an error is not a pass, so uploads would hold at
+`PROCESSING`.
 
-**F137 stays OPEN.** Four capabilities operating is not the invariant; `MALWARE_SCAN` is required by
-every class and has no examiner, and nothing is deployed.
+### Owed
+
+1. **Provision clamd** (one founder action; steps in `infra/clamav/README.md`), then set
+   `CLAMAV_HOST`/`CLAMAV_PORT` on the API. Enforcement flips to `ENFORCED` **by itself**.
+2. **Founder upload of a benign file**, so the clean-file production proof exists. `MediaExamination`
+   currently holds **0 rows** — nothing has passed the confirm door since deploy.
+
+**F137 stays OPEN.** Deployed code, an applied migration and a prepared image are not evidence that
+the promise holds.
 
 ## OWED — founder live observation
 
