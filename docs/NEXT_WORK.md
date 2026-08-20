@@ -18,34 +18,45 @@ Founder-ruled closed. Maintenance gate, released-iOS bridge, compatibility-endpo
 verification are all done. The outgoing binaries' maintenance-screen presentation is an accepted
 limitation, not an open item.
 
-## NEXT FRONTIER — G1 leg 5(B), now unblocked
+## CLOSED — G1 leg 5 (2026-08-20)
 
-`frontier-by-blocker.json` named one choke point for the whole programme: *"deploying the backend
-so G1 leg 5(B) can be observed against an attributable artifact."* Today's cutover deploy closed
-both halves of it, incidentally: the F129/D7 doors are on `origin/main` and live, and
-`GET /v1/health` now returns `build.commit` `9b51bc7` with `attributable: true` — the exact
-mechanism the procedure asked for and could not have.
+Founder observed the predeclared leg 5(B) test live and Aura **rejected** the plain-text file
+renamed to `photo.png`. All four predeclared properties PASS. **Leg 5(B) LIVE_CERTIFIED; leg 5
+COMPLETE.** F127 is live-certified on the D2 confirm path. Every record that waited on the
+attributable deployment or this observation is reconciled.
 
-**Done this pass (local, no product code):**
+## ACTIVE — CH-12 Media Custody, Delivery & Processing
 
-- the **confirm door** — the endpoint the client actually calls — is now proven to refuse the exact
-  file the procedure uses: plain text renamed to `photo.png` → `400 CONTENT_REJECTED`, truthful
-  message, row `FAILED` not `READY`, never promoted;
-- a companion test pins that a **PDF and a ZIP are corrected, not refused**, because both are
-  permitted types. Two earlier observations were recorded as FAIL against working code for exactly
-  this reason; a fourth attempt now fails the suite instead of a founder's afternoon;
-- `G1_LEG5B_LIVE_CERTIFICATION_PROCEDURE.md` corrected — it still said "take any PDF or plain-text
-  file", and the PDF half is proven wrong.
+Entered. Forensic assessment done before any implementation:
+`aura-backend/docs/2026-08-20-ch12-f137-forensic-assessment.md`.
 
-**Founder-owned remainder:** the observation itself. Attach a plain-text file renamed to
-`photo.png` on the live site and report what happens. Criteria are predeclared and may not be
-adjusted afterwards. Because the door is now locally proven, a live FAIL would be a genuine runtime
-defect rather than another badly chosen test file.
+**Done this pass — F127's residue.** The institution-post door (`verifyClientSuppliedObject`)
+trusted the storage transport `Content-Type`, which the client sets on its own presigned `PUT`, and
+never read a byte. The file the founder just watched Aura refuse could enter there and be created
+`READY`. Both doors now share one `inspectStoredContent` helper over the same pure authority: the
+door rejects unverifiable bytes with the same code and message the messages door uses, corrects a
+mislabelled-but-permitted file to what it actually is, and refuses the attach if inspection itself
+fails. Seeded proof: bypassing the rejection fails the suite.
 
-**What it releases:** leg 5 DISCHARGED (5A already complete), and **CH-12 Media Custody, Delivery &
-Processing** loses its leg-5 blocker. Its other blocker (CH-15 D1/D3/D4) is already cleared, and D3
-— the examination mechanism — is recorded as the highest-leverage single unblock in the programme.
-F137 records that **no uploaded media of any kind is scanned today**.
+**F137 stays OPEN.** Nothing in this pass performs examination, and nothing claims to.
+
+### Owed before F137 can be built
+
+**One founder decision — the examination engine.** Self-hosted ClamAV (infra and memory, no
+per-scan fee, auditable) · managed scanning API (per-scan cost, and **content leaves Aura's
+custody** — a privacy question, not just billing) · neither, accepting the exposure for now.
+R2 offers nothing native. The async-worker shape around it needs **no new states** — `UPLOADED →
+PROCESSING → READY/FAILED` already exists and is wired — so the decision really is only the engine.
+
+### CH-12's remaining surface, recorded not changed
+
+- **Worker `markReady`** promotes to `READY` with no inspection, gated by a worker token. **No
+  worker exists in this repo** — an external contract whose other side is not visible, so it was
+  left alone rather than altered blind.
+- **Meetings asset custody** writes `READY` without byte verification. **Protected** — observed
+  only.
+- **Archives** are the sharpest exposure: accepted, identified, never opened. Inside F137's
+  existing zero-coverage scope, not a new unit.
 
 ## OWED — founder live observation
 

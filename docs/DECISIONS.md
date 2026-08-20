@@ -782,3 +782,17 @@ identity changes, the new behaviour is not proof of protection for already-relea
 Cutover validation has to use the wire identity actually emitted by the current minimum
 supported released build. What the repository declares describes the *next* build.
 
+## 2026-08-20 — READY is a type verdict, not a safety verdict
+
+G1 leg 5(B) passed live: Aura refuses a plain-text file presented as a PNG. That certifies content
+*truth*, and it is worth writing down precisely what it does not certify.
+
+`READY` means "stored, and the bytes match a permitted type". It does not mean examined. A genuine
+PNG carrying a malicious payload passes every layer Aura has, correctly, because every layer asks
+*what is this file* and none asks *is it harmful*. Consumers — announcements, Rich Content,
+previews, delivery — read `READY` as consumable, so the gap between those two readings is the whole
+of F137.
+
+Recorded because the temptation after a passing security test is to treat the door as solved. The
+door is solved for the question it was built to answer.
+

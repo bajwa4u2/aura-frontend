@@ -1,5 +1,27 @@
 # G1 LEG 5(B) — LIVE VIOLATING-FILE REFUSAL · PREDECLARED PROCEDURE
 
+**Status: OBSERVED — PASS. G1 leg 5(B) is LIVE_CERTIFIED (2026-08-20).**
+
+> ### RESULT — founder live observation, 2026-08-20
+>
+> A plain-text file renamed to `photo.png` was uploaded through the live Aura web attachment flow.
+> **Aura rejected it.** Founder: *"TEST PASS — Aura rejected it."*
+>
+> Reconciled against the predeclared properties, without reinterpretation:
+>
+> | Predeclared property | Result |
+> |---|---|
+> | Visible rejection | **PASS** — refused, not silently accepted |
+> | Truthful content/type rejection | **PASS** — the content-truth verdict, not a generic error |
+> | Invalid upload does not become READY | **PASS** — `failUpload` writes `FAILED`; `READY` never written |
+> | Recoverable failure | **PASS** — failed, not destroyed; re-attach works |
+>
+> **G1 leg 5(B) = LIVE_CERTIFIED. 5(A) was already complete, so G1 leg 5 = COMPLETE.**
+> No criterion was adjusted after observation and no substitute test was requested.
+>
+> Artifact: backend `commit 9b51bc7`, `attributable: true` via `GET /v1/health`.
+
+**Superseded status line follows.**
 **Status: READY — UNBLOCKED 2026-08-20.** Predeclared before observation so the criteria cannot be
 adjusted afterwards. The original criteria below are unchanged; only the artifact gap and the test-file
 selection are corrected, both from evidence recorded after this was written.

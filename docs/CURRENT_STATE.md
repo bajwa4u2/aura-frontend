@@ -6,6 +6,30 @@
 
 ## Status
 
+> **2026-08-20 — G1 leg 5 COMPLETE; CH-12 entered.**
+> Founder observed the predeclared leg 5(B) test live: a plain-text file renamed to `photo.png`
+> was **rejected** by the live attachment flow. All four predeclared properties reconcile PASS, so
+> **leg 5(B) is LIVE_CERTIFIED** and, with 5(A) already complete, **G1 leg 5 is COMPLETE**. That
+> was the programme's single recorded choke point; **CH-12 Media Custody, Delivery & Processing is
+> now executable and has been entered.**
+>
+> **F137 confirmed OPEN by forensic assessment, not by its sentence.** No malware scanning,
+> malicious-document or archive-content examination, media decoding, metadata extraction,
+> provider-side examination, async post-upload examination or quarantine exists anywhere.
+> Signature detection is **not** scanning: content truth answers *what is this file*, never *is it
+> harmful*. **`READY` does not mean examined.**
+>
+> **Closed this pass — F127's residue, not F137.** The institution-post door resolved type from the
+> storage transport header, which the client sets on its own presigned PUT, and never read a byte —
+> so the exact file the founder watched Aura refuse could enter there and be created `READY`. Both
+> doors now share one inspection helper and one authority. No new finding: this is inside F127's
+> recorded "anywhere" scope.
+>
+> **Founder decision owed** before genuine examination can be built: the engine choice (self-hosted
+> ClamAV vs managed API vs neither). No provider integrated, no credential added, no cost incurred.
+> Record: `aura-backend/docs/2026-08-20-ch12-f137-forensic-assessment.md`.
+
+
 > **2026-08-20 — native release-cutover workstream CLOSED (founder ruling).**
 > Maintenance policy live on `android-direct` and `ios`; **14 legacy endpoints 404 in production**;
 > `POST /spaces/:id/invites` and `GET/POST /threads/:id/invites` retained on live consumers;
