@@ -341,5 +341,188 @@
     "Removing from a Space does NOT change institution membership",
     "A non-member is refused the Space and never obtains its conversation id",
     "No legacy Thread/Message runtime involved at any point"
-  ]
+  ],
+  "founderMigrationAuthorization": {
+    "granted": "2026-08-20 — the additive production migration 20260905000000_institution_space_conversation is AUTHORISED, and the reconstructed Institution Spaces implementation may be deployed.",
+    "authorisedScope": [
+      "deploy the already-implemented reconstruction",
+      "apply 20260905000000_institution_space_conversation",
+      "add nullable Space.conversationId",
+      "add its unique index",
+      "add the guarded foreign key",
+      "allow the runtime to lazily create and associate the canonical Conversation when a Space is used"
+    ],
+    "explicitlyNotAuthorised": [
+      "migrating DirectThread/DirectMessage history",
+      "running migrate-conversations.js for history preservation",
+      "migrating old Space messages",
+      "deleting legacy messages",
+      "deleting legacy Spaces",
+      "dropping Thread/Message or any other table",
+      "destructive schema cleanup",
+      "Phase 5 physical legacy retirement",
+      "arbitrary production backfills"
+    ],
+    "reverifiedContents": {
+      "statementsInFile": 3,
+      "1": "ALTER TABLE \"Space\" ADD COLUMN IF NOT EXISTS \"conversationId\" TEXT — nullable, no NOT NULL, no default",
+      "2": "CREATE UNIQUE INDEX IF NOT EXISTS \"Space_conversationId_key\" — Postgres permits multiple NULLs, so every existing Space coexists under it untouched",
+      "3": "guarded ADD CONSTRAINT ... FOREIGN KEY ... ON DELETE SET NULL — added only if absent",
+      "destructiveScan": "No DROP, TRUNCATE, DELETE, INSERT, UPDATE, ALTER COLUMN or NOT NULL anywhere. The only DELETE/UPDATE text in the file is the FK's referential-action clause, which is a constraint definition and not a data statement.",
+      "backfill": "NONE required. Existing Spaces simply carry NULL until the runtime lazily creates a conversation on first use.",
+      "idempotent": "Every statement is IF NOT EXISTS or existence-guarded, so a replay is a no-op."
+    },
+    "legacyHistoryStatus": "HELD. migrate-conversations.js was not run and is not part of this deployment. The founder ruling that legacy message history has no blocking value stands, and it is not reintroduced into the critical path."
+  },
+  "preDeployHealth": {
+    "backend": {
+      "tests": "207 suites / 2594 tests PASS",
+      "tsc": "clean",
+      "prismaValidate": "schema valid",
+      "startupGuard": "route-path compilation spec PASS (3/3) — included deliberately, because tests + tsc + migration safety are NOT startup evidence. The 2026-08-20 crash loop passed all three and still refused to boot.",
+      "spaceAndConversationAuthorities": "8 suites / 66 tests PASS"
+    },
+    "frontend": {
+      "tests": "829 pass / 1 skipped",
+      "analyze": "clean",
+      "identityGate": "PASS — 16 files / 28 sites surface, 1 file / 7 sites typed-person",
+      "domainProof": "23/23 PASS",
+      "meetingsRatchetProof": "PASS both directions",
+      "meetingsBoundary": "52 Meetings tests PASS — untouched, not reused"
+    },
+    "portfolio": "validate-portfolio-v2 PASS (451 units / 17 chapters); validate-stage0 PASS (FOUNDER_RATIFIED)"
+  },
+  "conversationScreenJudgment": "ACCEPTED BY FOUNDER and CLOSED for this batch. The bounded Space context parameter stays in ConversationScreen. No shared timeline widget is to be extracted for architectural neatness, and no surgery on the 1,841-line canonical surface without a genuine future capability or maintenance reason.",
+  "invitationIdentityResidue": {
+    "status": "VISIBLE AND UNRESOLVED — deliberately kept in the accounting.",
+    "what": "Five person-shaped positional reads in lib/features/invitations/data/invite_presentation.dart (invitedBy, inviter, recipient and related envelopes), relocated out of the retiring correspondence family and into surviving code.",
+    "whyInvisibleToTheDetector": "They are nested positional path pairs rather than flat alias lists, and the current instrument recognises the latter. That is an instrument limitation, not an absence of debt.",
+    "blocksDeployment": "NO.",
+    "disposition": "Remains an executable cleanup item after live Space observation, unless another authorised batch resolves it first. NOT to be silently marked canonical, and NOT to disappear from continuity because a metric cannot see it."
+  },
+  "stageDiscipline": {
+    "deploymentIsNotLiveCertification": "Applying the migration and shipping the runtime makes the reconstructed product OBSERVABLE. It certifies nothing.",
+    "liveObservationIsNotRetirement": "Founder observation and journey certification come first; retirement-readiness is then reassessed and requires its own explicit authorisation.",
+    "phase5": "REMAINS UNAUTHORISED. Nothing in this deployment begins physical legacy retirement.",
+    "sequence": "additive deploy/migration -> founder live observation -> journey certification -> retirement-readiness reassessment -> explicit founder authorisation -> physical legacy retirement"
+  },
+  "founderLiveObservationPackage": {
+    "note": "Ordered as the product is actually used, not as the code is organised. Realtime/audio/video is deliberately absent — D3 deferred its implementation, so it is not a certification criterion. No journey requires legacy history or old message chronology.",
+    "sequence": [
+      {
+        "n": 1,
+        "journey": "Institution workspace -> Spaces",
+        "expect": "The institution's Spaces list opens from the workspace.",
+        "fail": "Cannot reach it, or it errors."
+      },
+      {
+        "n": 2,
+        "journey": "Open a Space",
+        "expect": "The RECONSTRUCTED surface — Space title in the header, purpose beneath it when set. Not the old correspondence screen.",
+        "fail": "The legacy space/thread surface appears."
+      },
+      {
+        "n": 3,
+        "journey": "Create a Space",
+        "expect": "Title and description are accepted; the new Space opens on the reconstructed surface with an empty, honest timeline.",
+        "fail": "Creation fails, or the Space opens with no conversation."
+      },
+      {
+        "n": 4,
+        "journey": "Open Members",
+        "expect": "The roster lists members with names and avatars, and states that removing someone here never changes their institution membership.",
+        "fail": "Roster empty or misnamed while members exist."
+      },
+      {
+        "n": 5,
+        "journey": "Add Member",
+        "expect": "An eligible existing institution member becomes a Space member IMMEDIATELY — no invitation step. The frozen doctrine's Add Member, not Invite Person.",
+        "fail": "It silently runs an invitation lifecycle instead."
+      },
+      {
+        "n": 6,
+        "journey": "The added member sees the Space",
+        "expect": "They can open it and read the timeline.",
+        "fail": "Member of the Space but cannot see or open its conversation — the projection has drifted."
+      },
+      {
+        "n": 7,
+        "journey": "Remove Member",
+        "expect": "They are removed and lose access; the conversation no longer counts them.",
+        "fail": "They retain access, or the roster and conversation disagree."
+      },
+      {
+        "n": 8,
+        "journey": "Sole-owner removal is refused",
+        "expect": "Removing the only owner is declined with a reason.",
+        "fail": "It succeeds, leaving a Space nobody can govern."
+      },
+      {
+        "n": 9,
+        "journey": "Institution membership is untouched by Space removal",
+        "expect": "The removed person is still an institution member.",
+        "fail": "Space removal changed institution standing — a frozen-boundary violation."
+      },
+      {
+        "n": 10,
+        "journey": "Non-member refusal",
+        "expect": "Someone outside the Space cannot open it.",
+        "fail": "They reach it, or obtain its conversation."
+      },
+      {
+        "n": 11,
+        "journey": "Send a message",
+        "expect": "It appears in the canonical timeline and persists.",
+        "fail": "Send fails or the message vanishes."
+      },
+      {
+        "n": 12,
+        "journey": "Reply, and a second member replies",
+        "expect": "One continuous thread both people see.",
+        "fail": "Split or duplicated conversations."
+      },
+      {
+        "n": 13,
+        "journey": "Acting context",
+        "expect": "A person speaking personally is attributed to them; an authorised person speaking for the institution shows the institution voice WITH the human actor still attributable.",
+        "fail": "Person and institution identity collapse into one."
+      },
+      {
+        "n": 14,
+        "journey": "Rich content",
+        "expect": "Image, document and media attach, render, open and save through the canonical implementation.",
+        "fail": "Attachment path is missing or broken in a Space."
+      },
+      {
+        "n": 15,
+        "journey": "Mentions",
+        "expect": "Mentioning a member works and resolves to the right person.",
+        "fail": "Mention scope is empty or resolves wrongly."
+      },
+      {
+        "n": 16,
+        "journey": "Unread / attention",
+        "expect": "A new message produces unread; opening clears it.",
+        "fail": "Unread never appears or never clears."
+      },
+      {
+        "n": 17,
+        "journey": "Reload and cold deep-link",
+        "expect": "Hard-refresh on /institution/:id/spaces/:spaceId reconstructs the same Space and timeline.",
+        "fail": "Blank, error, or redirect away."
+      },
+      {
+        "n": 18,
+        "journey": "No legacy runtime",
+        "expect": "Nothing in the Space experience routes through the old thread/message surfaces.",
+        "fail": "A legacy screen appears at any point."
+      }
+    ],
+    "notRequired": [
+      "old message chronology",
+      "legacy history visibility",
+      "realtime audio/video (D3 deferred)",
+      "archive/closure beyond what is currently implemented"
+    ]
+  }
 }

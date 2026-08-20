@@ -698,3 +698,34 @@ reconstruction exposed no concrete requirement for public Space discovery.
 not run; the C7 retirement boundary is corrected forward so that retiring the legacy COMMUNICATION
 implementation no longer endangers the surviving Institution Space PRODUCT; and one additive production
 migration is required and was deliberately not executed.
+
+## FOUNDER AUTHORISATION - ADDITIVE INSTITUTION SPACE MIGRATION (2026-08-20)
+
+**AUTHORISED:** apply `20260905000000_institution_space_conversation` to production and deploy the
+reconstructed Institution Spaces implementation. Scope: nullable `Space.conversationId`, its unique index,
+the guarded foreign key, and letting the runtime lazily create and associate the canonical Conversation
+when a Space is used.
+
+Re-verified before pushing: three statements, all additive and all guarded. No DROP, TRUNCATE, DELETE,
+INSERT, UPDATE, ALTER COLUMN or NOT NULL. The only DELETE/UPDATE text in the file is the foreign key's
+referential-action clause, which defines a constraint rather than touching a row. No backfill is required:
+existing Spaces carry NULL until first use, and Postgres permits many NULLs under a unique index.
+
+**NOT AUTHORISED and not performed:** migrating DirectThread/DirectMessage or Space message history,
+running migrate-conversations.js, deleting legacy messages or Spaces, dropping any table, destructive
+schema cleanup, Phase 5 physical retirement, or arbitrary backfills. Legacy history remains HELD and is
+not in the critical path.
+
+**Stage discipline, restated because these are easy to slide together.** Deployment makes the
+reconstructed product OBSERVABLE and certifies nothing. Live observation is not retirement. Phase 5
+remains unauthorised, and the sequence is unchanged: additive deploy/migration, founder live observation,
+journey certification, retirement-readiness reassessment, explicit authorisation, physical retirement.
+
+**ConversationScreen judgment ACCEPTED and CLOSED for this batch.** The bounded Space context parameter
+stays. No shared timeline widget is extracted for neatness, and the 1,841-line canonical surface is not
+opened without a real capability or maintenance reason.
+
+**Invitation identity residue stays visible.** The five positional person reads in
+`invite_presentation.dart` are surviving debt the current detector cannot see, because they are nested
+path pairs rather than flat alias lists. They do not block this deployment, they remain an executable
+cleanup item, and they are not to be marked canonical or quietly dropped from the accounting.
