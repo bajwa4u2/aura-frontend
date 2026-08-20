@@ -698,13 +698,20 @@ Records: `.../institution-spaces-reconstruction-record.json`, `.../co-rc-c7-005-
 Founder, on the reception side: *"after accept it should move to call not this mediator"*, and the overlay is
 *"more ugly in mobile experience, its reception side, after accept"*.
 
-**Accepting an incoming call does not put the callee in the call.** It delivers them to the pre-join surface —
-"Ready to join / Tap Join call to enter" — where they must press Join a second time. Accept and Join are two
-acts when accepting *is* the intent to join.
+**Accepting an incoming call does not take the callee straight into the call.** A pre-join interstitial —
+"Ready to join / Tap Join call to enter" — appears in between. It **mediates**: it shows after accept and then
+goes away once the conversation starts. The callee is asked to do the thing they just did, for as long as the
+join takes. Worse on mobile.
 
-**Confirmed structurally, not inferred:** there is no auto-join path anywhere in `lib/features/realtime`.
-`Ready to join` (`realtime_room_screen.dart:1413`) is a terminal pre-join stage whose only exit is a manual
-tap; `autoJoin`/`shouldAutoJoin` return nothing. The callee lands on the mediator **by construction**.
+**Correction — my first reading was wrong.** I recorded this as a *terminal* gate whose "only exit is a manual
+tap", on the strength of a grep finding no `autoJoin` symbol. Founder: *"its behavior is mediator because after
+accept its come and go after conversation start."* The stage is **state-driven** — "Ready to join" is the
+default fall-through of the join-state switch (`realtime_room_screen.dart` ~1379) and clears itself when the
+join advances. The absence of a function *named* autoJoin was not the absence of automatic advancement.
+
+**Revised characterisation:** a sequencing/presentation defect, not a dead end. Nobody is stranded. What is
+wrong is showing a surface whose whole message is "tap Join to enter" to someone who has already accepted —
+an interstitial that contradicts the action that produced it. It makes accept feel like it did not work.
 
 **Not an existing finding** — checked each candidate rather than assuming: F044 is ready-to-join persisting
 *after a call ended*; F045 is Accept *freezing*; F071 is *native binaries*; F041 is a false "Connection lost".
@@ -714,7 +721,10 @@ Here Accept works and delivers the user to the wrong place.
 RINGING → ACCEPTED → JOINING → CONNECTED never be *collapsed as model states*. It does not require two button
 presses. Carrying the callee automatically from ACCEPTED to CONNECTED keeps every state distinct.
 
-**No ID was invented.** Issuing one moves the register from 143/451 to 144/452 — a founder decision about a
-FOUNDER_RATIFIED baseline. Totals unchanged and still validating at 143 + 308 = 451 / 17 chapters.
+**Recommended disposition — I lean to widening, not a new ID.** F044 is the *same surface* with a different
+trigger ("persists after end" vs "shown after accept"). Widening F044 to *"the ready-to-join surface is shown
+when the viewer has not asked to join"* covers both, needs no new ID, keeps the FOUNDER_RATIFIED baseline at
+143/451, and lands in the code where F044's remedy work already lives. Issuing a new ID instead would move the
+register to 144/452 — a founder decision about a ratified baseline, which is why I assigned nothing.
 
-**Decision owed:** issue an ID for this, or direct that an existing finding's scope be widened to cover it.
+**Decision owed:** widen F044, or issue a new ID.
