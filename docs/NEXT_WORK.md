@@ -11,29 +11,31 @@ sites, not nine backend services. One rule now owns the answer on each side
 (`canonical_destinations.dart` / `canonical-destinations.ts`) and two ratchets hold it.
 The retired prefix is no longer classified as a live member surface.
 
-## BLOCKED — the cutover push, on an iOS gating gap
+## BLOCKED — the cutover push, on one credential
 
-Two things stand between the certified local state and the deploy.
+The iOS gating gap is **closed**: a narrow bridge maps `distribution: unknown` + `platform: ios`
+onto the `ios` policy row, in row selection only. The released binary is now governable.
 
-**The admin token.** `scripts/apply-cutover-client-policies.sh` needs `AURA_ADMIN_TOKEN` with
-`SETTINGS_WRITE`; none is available to the agent session, and it refuses before opening a
-connection. Outbound access itself works — the production read-back below was taken live.
+What remains is operational, not technical: **`AURA_ADMIN_TOKEN` carrying `SETTINGS_WRITE`.**
+Without it `scripts/apply-cutover-client-policies.sh` refuses before opening a connection. The
+only secret in `.env` is a local `JWT_SECRET`, deliberately not used to mint a token — forging
+a credential to satisfy a governance check is bypassing the governance, not passing it.
 
-**The real one: the `ios` row is inert for every installed iOS client.** The released binary
-1.3.0+24 sends `distribution: unknown`, because first-class `ios` is in unpushed commits and
-released binaries cannot be changed. Production normalizes an `ios` header to `unknown` today
-for the same reason. Rows are chosen by `(distribution, channel)` alone — platform is not part
-of selection — so the `ios` row protects nobody, and pushing behind it would send iOS users
-straight into the retired endpoints.
+**Sequence once the token exists:**
 
-Production read-back, `GET /v1/client/compatibility`, all with `policyMatched: false`:
-`android-direct` → `android-direct`; `ios` → **`unknown`**; `web-prod` → `web-prod`;
-`unknown` → `unknown`. No policy row exists in production.
+1. run the script — creates the `android-direct` and `ios` maintenance rows;
+2. confirm the three read-backs provable now: `android-direct` → maintenance, `web-prod` →
+   compatible, `unknown` + non-iOS → compatible/unmatched;
+3. push backend, verify startup health;
+4. re-run the script (the creates report a harmless conflict) and confirm the two read-backs
+   that only become provable after the deploy: `ios` platform with `unknown` distribution →
+   maintenance, and with `ios` distribution → maintenance;
+5. push frontend, verify deployment health;
+6. stop.
 
-**Founder decision required.** Three options are laid out in the cutover record §13:
-temporarily row `unknown` as well; extend the evaluator to select by platform as well as
-distribution; or deploy for Android and Web only and hold iOS. Android gates correctly under
-any of them.
+Step 4 is after the deploy by necessity — the bridge ships in it. This is safe because the row
+is created in step 1, so the gate is already in place the moment the bridge and the endpoint
+retirement land together.
 
 ## RESOLVED — orphaned screen calling retired endpoints (2026-08-20)
 

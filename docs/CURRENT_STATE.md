@@ -6,29 +6,30 @@
 
 ## Status
 
-> **2026-08-20 — cutover STOPPED before push. Nothing deployed, nothing mutated.**
-> Local implementation is complete and certified: first-class iOS distribution, 14 legacy
-> endpoints retired (`POST /spaces/:spaceId/invites` retained — `invitations_client.dart:88`
-> consumes it), `new_conversation_screen.dart` deleted on executable proof, active
-> `/me/correspondence` production **zero** in both repos.
+> **2026-08-20 — cutover locally complete, held on one credential. Nothing deployed.**
+> The iOS gating gap is closed. A narrow released-iOS bridge maps *policy row selection only*
+> — `distribution: unknown` **+** `platform: ios` → the `ios` row — so the binary people
+> actually have installed (1.3.0+24, which predates first-class `ios`) is governed by its own
+> row. macOS and Linux still resolve to `unknown` and are never even queried; `ClientPolicy`
+> keeps its `(distribution, channel)` key; and the raw distribution stays `unknown` in
+> `evaluatedIdentity`, auth and analytics, so operators can still tell which binary they are
+> looking at. 11 regression tests run against the identity the installed binary really emits.
 >
-> The push is held on a **structural** blocker, not just the missing admin token. **An `ios`
-> policy row cannot gate a single installed iOS user.** The released binary 1.3.0+24 resolves
-> `ClientPlatform.ios` to `ClientDistribution.unknown` — first-class `ios` is in today's
-> unpushed commits and released binaries cannot be changed — and production independently
-> normalizes an `ios` header to `unknown` for the same reason. Policy rows are selected by
-> `(distribution, channel)` only; platform plays no part. Deploying on the strength of that row
-> would send every iOS user through the retirement ungated, behind a shield that looks present
-> in the policy table while protecting nobody.
+> Everything else stands certified: 14 legacy endpoints retired
+> (`POST /spaces/:spaceId/invites` retained — `invitations_client.dart:88` consumes it),
+> `new_conversation_screen.dart` deleted on executable proof, active `/me/correspondence`
+> production **zero** in both repos, realtime orchestration healthy with `CorrespondenceModule`
+> absent.
 >
-> Read back from production (`GET /v1/client/compatibility`, read-only): every distribution
-> reports `policyMatched: false` — **no ClientPolicy row exists**, the table is untouched.
-> Android is unaffected and would gate correctly the moment its row exists.
+> **Blocked on `AURA_ADMIN_TOKEN` with `SETTINGS_WRITE`** — absent from the environment and
+> from `.env`, which holds only a local `JWT_SECRET` that was deliberately not used to mint
+> one. Production is untouched; every distribution still reads back `policyMatched: false`.
 >
-> **Founder choice returned** (three options, in
-> `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md` §13):
-> temporarily row `unknown` too; or let the evaluator select by platform as well as
-> distribution; or ship the retirement for Android and Web only and hold iOS.
+> One ordering fact worth knowing before the deploy: the two iOS read-backs can only be proven
+> *after* the backend ships, because the bridge is in the deploy. That is safe — the `ios` row
+> is created first, so the gate is already in place the instant the bridge and the retirement
+> land together. Full record:
+> `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md` §14.
 
 
 | Track | State |

@@ -771,3 +771,14 @@ table but protects no one. Three options were returned to the founder: temporari
 and hold iOS. Recorded because the general shape recurs — a wire-contract correction only
 governs clients built after it ships.
 
+## 2026-08-20 — released-client evidence beats repository declarations
+
+Follow-on to the entry above. The gap was closed with a bridge that maps
+`distribution: unknown` + `platform: ios` onto the `ios` policy row, in row selection only —
+raw identity untouched, `ClientPolicy` key unchanged, macOS/Linux uncoupled.
+
+The rule this leaves behind matters more than the fix: **when a wire contract or compatibility
+identity changes, the new behaviour is not proof of protection for already-released binaries.**
+Cutover validation has to use the wire identity actually emitted by the current minimum
+supported released build. What the repository declares describes the *next* build.
+
