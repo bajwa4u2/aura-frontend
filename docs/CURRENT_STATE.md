@@ -6,31 +6,29 @@
 
 ## Status
 
-> **2026-08-20 — cutover complete except its one production step; still NOT pushed.**
-> Founder rulings resolved every open decision. **iOS is now a first-class distribution**
-> (`ClientDistribution.ios` on both sides of the wire) rather than being gated through
-> `unknown`, which also covers macOS, Linux and unresolved clients — Android and iOS can now
-> be released independently, proved in both directions. **14 legacy HTTP endpoints are
-> retired**; `POST /spaces/:spaceId/invites` is retained because `invitations_client.dart:88`
-> consumes it from the routed `/invite/create`.
+> **2026-08-20 — cutover STOPPED before push. Nothing deployed, nothing mutated.**
+> Local implementation is complete and certified: first-class iOS distribution, 14 legacy
+> endpoints retired (`POST /spaces/:spaceId/invites` retained — `invitations_client.dart:88`
+> consumes it), `new_conversation_screen.dart` deleted on executable proof, active
+> `/me/correspondence` production **zero** in both repos.
 >
-> **`new_conversation_screen.dart` is deleted** on a five-part executable proof — unimported,
-> never constructed outside its own test, unrouted, no generated routing, no dynamic string
-> reference. Its test went with it (all four assertions posted to a retired endpoint); the
-> logic extracted out of it keeps independent coverage in `directory_entry_test.dart`.
+> The push is held on a **structural** blocker, not just the missing admin token. **An `ios`
+> policy row cannot gate a single installed iOS user.** The released binary 1.3.0+24 resolves
+> `ClientPlatform.ios` to `ClientDistribution.unknown` — first-class `ios` is in today's
+> unpushed commits and released binaries cannot be changed — and production independently
+> normalizes an `ios` header to `unknown` for the same reason. Policy rows are selected by
+> `(distribution, channel)` only; platform plays no part. Deploying on the strength of that row
+> would send every iOS user through the retirement ungated, behind a shield that looks present
+> in the policy table while protecting nobody.
 >
-> Executable production of `/me/correspondence` is **zero in both repos**; the two remaining
-> references are allowlisted *recognition* sites, and ratchets in both repos hold the line.
+> Read back from production (`GET /v1/client/compatibility`, read-only): every distribution
+> reports `policyMatched: false` — **no ClientPolicy row exists**, the table is untouched.
+> Android is unaffected and would gate correctly the moment its row exists.
 >
-> **The push is held behind one production step.** The outgoing native release **1.3.0** must
-> be put in maintenance on the `android-direct` and `ios` rows via
-> `POST /v1/admin/client-policies` *before* the retirement deploys. This session's outbound
-> call to production was denied by the sandbox permission classifier, so
-> `aura-backend/scripts/apply-cutover-client-policies.sh` is prepared instead — it creates
-> both rows, reads them back, and prints the effective verdict for android, ios, web and
-> unknown. **Build 24 is identifying metadata only**: the evaluator compares semantic version
-> and never reads `buildNumber`. Full record:
-> `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md`.
+> **Founder choice returned** (three options, in
+> `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md` §13):
+> temporarily row `unknown` too; or let the evaluator select by platform as well as
+> distribution; or ship the retirement for Android and Web only and hold iOS.
 
 
 | Track | State |

@@ -11,26 +11,29 @@ sites, not nine backend services. One rule now owns the answer on each side
 (`canonical_destinations.dart` / `canonical-destinations.ts`) and two ratchets hold it.
 The retired prefix is no longer classified as a live member surface.
 
-## OPEN — the one production step the push waits on
+## BLOCKED — the cutover push, on an iOS gating gap
 
-The outgoing native release **1.3.0** must be placed in maintenance on the `android-direct`
-and `ios` rows through `POST /v1/admin/client-policies` **before** the backend deploy removes
-the legacy endpoints. Applying it afterwards leaves a window where the old client meets
-missing runtime as random failure.
+Two things stand between the certified local state and the deploy.
 
-Run `aura-backend/scripts/apply-cutover-client-policies.sh` with `AURA_ADMIN_TOKEN` set to an
-admin JWT carrying `SETTINGS_WRITE`. It creates both rows, reads every row back, and prints
-the effective `GET /v1/client/compatibility` verdict for android, ios, web and unknown.
-Proceed to the push only when android and ios both report `maintenance` / `show_maintenance`
-and web reports `compatible`. This session could not make the call itself — the outbound
-request was denied by the sandbox permission classifier.
+**The admin token.** `scripts/apply-cutover-client-policies.sh` needs `AURA_ADMIN_TOKEN` with
+`SETTINGS_WRITE`; none is available to the agent session, and it refuses before opening a
+connection. Outbound access itself works — the production read-back below was taken live.
 
-**On release day** the sequence is founder-driven and nothing is preconfigured: establish the
-actual upgraded version and build, verify store availability, certify the upgraded client,
-present the exact policy transition, receive authorization, then `PATCH` each row to
-`maintenanceMode: false` with `minSupportedVersion` set. Each platform can go independently.
-Leaving maintenance on while setting a minimum locks out the upgrade itself, because
-maintenance short-circuits before any version comparison.
+**The real one: the `ios` row is inert for every installed iOS client.** The released binary
+1.3.0+24 sends `distribution: unknown`, because first-class `ios` is in unpushed commits and
+released binaries cannot be changed. Production normalizes an `ios` header to `unknown` today
+for the same reason. Rows are chosen by `(distribution, channel)` alone — platform is not part
+of selection — so the `ios` row protects nobody, and pushing behind it would send iOS users
+straight into the retired endpoints.
+
+Production read-back, `GET /v1/client/compatibility`, all with `policyMatched: false`:
+`android-direct` → `android-direct`; `ios` → **`unknown`**; `web-prod` → `web-prod`;
+`unknown` → `unknown`. No policy row exists in production.
+
+**Founder decision required.** Three options are laid out in the cutover record §13:
+temporarily row `unknown` as well; extend the evaluator to select by platform as well as
+distribution; or deploy for Android and Web only and hold iOS. Android gates correctly under
+any of them.
 
 ## RESOLVED — orphaned screen calling retired endpoints (2026-08-20)
 

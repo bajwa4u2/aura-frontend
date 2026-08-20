@@ -754,3 +754,20 @@ demolished and nothing was preserved by inertia.
 
 **Still unauthorised and untouched:** destructive persistence cleanup, migrate-conversations.js, and any
 production data operation.
+
+## 2026-08-20 — iOS cannot be gated by its own distribution in this cutover
+
+Ruling: `unknown` is not a legitimate iOS release authority, so iOS became a first-class
+`ClientDistribution.ios` on both sides of the wire.
+
+That is right as a permanent design, and it becomes true **one release after** it is written.
+The binary installed today (1.3.0+24) still reports `unknown`, and release policy selects a row
+by `(distribution, channel)` with no platform component — so the `ios` row matches nobody who
+currently has the app.
+
+The cutover push was **stopped** rather than deployed behind a shield that exists in the policy
+table but protects no one. Three options were returned to the founder: temporarily row
+`unknown`; extend row selection to include platform; or ship the retirement for Android and Web
+and hold iOS. Recorded because the general shape recurs — a wire-contract correction only
+governs clients built after it ships.
+

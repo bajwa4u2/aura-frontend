@@ -1108,5 +1108,28 @@
       "f053_f116": "IMPLEMENTED_NOT_LIVE_CERTIFIED, preserved."
     },
     "legacyDataStatus": "migrate-conversations.js HELD and never run. No legacy persistence deleted. No destructive schema cleanup. No schema change or migration exists in this work, so rollback needs no backfill."
+  },
+  "finalCutoverExecution_2026_08_20": {
+    "outcome": "STOPPED BEFORE PUSH. Policy not applied, nothing pushed, nothing deployed, no production mutation of any kind.",
+    "governedAuthorityUsed": "scripts/apply-cutover-client-policies.sh (POST /v1/admin/client-policies). No SQL, no ad hoc DB mutation, no ungoverned config path, no workaround attempted.",
+    "blocker1_noToken": "AURA_ADMIN_TOKEN is unset and .env carries no admin/token/settings key. The script refuses at line 24 before opening a connection (exit 1). An earlier attempt to obtain a token by authenticating against production was denied by the sandbox permission classifier. Outbound access is NOT the problem - unauthenticated read-only calls to the governed public endpoint succeed.",
+    "blocker2_iosRowIsInert": "STRUCTURAL, and would stop the push even with a valid token. The released iOS binary 1.3.0+24 (prepared at db3a088, 2026-08-05) resolves ClientPlatform.ios to ClientDistribution.unknown - first-class ios is in today's UNPUSHED commits and released binaries cannot be changed. Production independently confirms it: it normalizes an `ios` distribution header to `unknown`, because the union it validates against is also unpushed. Policy rows are selected by (distribution, channel) and by nothing else - platform plays no part. So an `ios` row matches ZERO installed iOS clients before or after the backend deploys, and pushing on the strength of it would send every iOS user through the retirement ungated, with a shield that looks present in the policy table while protecting nobody.",
+    "readBack": {
+      "endpoint": "GET /v1/client/compatibility (unauthenticated, read-only), X-Aura-App-Version 1.3.0, X-Aura-Build 24, channel production",
+      "android_androidDirect": "normalized android-direct, status compatible, action none, policyMatched FALSE",
+      "ios_ios": "normalized UNKNOWN, status compatible, action none, policyMatched FALSE",
+      "ios_unknown": "normalized unknown, status compatible, action none, policyMatched FALSE",
+      "web_webProd": "normalized web-prod, status compatible, action none, policyMatched FALSE",
+      "macos_unknown": "normalized unknown, status compatible, action none, policyMatched FALSE",
+      "conclusion": "policyMatched false everywhere confirms NO ClientPolicy row exists in production. The table is untouched - nothing created, patched or deleted."
+    },
+    "founderChoiceReturned": [
+      "1. Row `unknown` as well, temporarily, retiring that row once the upgraded iOS build ships. Gates installed iOS, which is the point; collateral is macOS/Linux/unparsed, and the 1.3.0 release shipped Android, iOS, Web and Windows with Windows on windows-store, so macOS/Linux are not released Aura platforms. Contradicts ruling 2 as written, which is why it is returned rather than done.",
+      "2. Let the evaluator select a row by platform as well as distribution. Clean fix, works for the installed build immediately because the released client does send X-Aura-Platform: ios. Broadens evaluator semantics, which ruling 6 asked not to do unless a genuine requirement emerges - this is arguably that requirement.",
+      "3. Deploy the retirement for Android and Web only, holding it for iOS until the upgraded iOS build ships. Costs a split deployment and keeps two runtimes alive longer."
+    ],
+    "androidUnaffected": "The released Android build sends android-direct, its row would match, and its verdict would flip to maintenance the moment the row exists.",
+    "august22": "Still NO execution authority. Re-confirmed at this step: only clock usage in release-governance production code is a 5s verdict cache TTL and a 503 response timestamp; no such date literal exists in executable source. Nothing lifts maintenance except an explicit policy write.",
+    "unchanged": "migrate-conversations.js HELD. No legacy row, table or column touched. Destructive persistence cleanup unauthorised. Backend 211 suites / 2627 tests, frontend 841 pass, analyzers clean, identity gate PASS 11 files / 19 sites and 0/0 with baselines unchanged, Meetings ratchet PASS with 0 modified files, Institution Spaces LIVE_CERTIFIED untouched, F044/F053/F116 unpromoted."
   }
 }
