@@ -21,6 +21,15 @@ Without it `scripts/apply-cutover-client-policies.sh` refuses before opening a c
 only secret in `.env` is a local `JWT_SECRET`, deliberately not used to mint a token — forging
 a credential to satisfy a governance check is bypassing the governance, not passing it.
 
+**Checked and ruled out (2026-08-20):** the credential at `~/.bajwa/write_auth_token` is a
+Bajwa Writes token — 40 bytes, opaque, `bw_` prefix. It is not an Aura admin JWT and cannot
+become one. `/v1/admin/client-policies` sits behind the canonical passport `JwtAuthGuard`,
+which accepts only a signed Aura JWT, and Aura's auth surface exposes no token-exchange,
+service-account or API-key path — only email/password login, OAuth and refresh. It was not
+sent anywhere: putting one product's credential into another product's request logs has no
+possible upside. What is needed is a JWT for an Aura account holding the `SETTINGS_WRITE`
+admin permission.
+
 **Sequence once the token exists:**
 
 1. run the script — creates the `android-direct` and `ios` maintenance rows;
