@@ -1,10 +1,27 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-19**
+**Last updated: 2026-08-20**
 
 ---
 
 ## Status
+
+> **2026-08-20 — backend release cutover (aura-backend, local only, NOT pushed).**
+> The legacy Correspondence module was dissolved: its four services moved into
+> `src/realtime/orchestration/` and `RealtimeModule` now owns orchestration outright.
+> **15 legacy HTTP endpoints were deleted** (`threads`, `messages`, legacy `/spaces`
+> controllers). No service was removed — each has a living canonical consumer. This client
+> calls none of the deleted endpoints; `/threads/:threadId/invites` (`invitations_client.dart:98`)
+> is a *surviving* Invites surface and was deliberately retained.
+>
+> **Open defect this exposes, owned by this repo:** the backend still mints
+> `/me/correspondence/:spaceId/thread/:threadId` deeplinks from nine services, and Phase 5
+> retired that route family here. `route_normalizer.dart` rewrites only the *bare*
+> `/me/correspondence`, and `lib/router.dart` declares no `errorBuilder`, so the deep form
+> lands on GoRouter's default not-found page. `route_classification.dart:244-247` and
+> `member_shell.dart:236` still classify the dead prefix, which is why it reads as handled.
+> Full record: `aura-backend/docs/2026-08-20-release-cutover-realtime-rehome-legacy-retirement.md`.
+
 
 | Track | State |
 |---|---|

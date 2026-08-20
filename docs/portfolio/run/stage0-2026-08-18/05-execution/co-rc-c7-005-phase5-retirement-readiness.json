@@ -954,5 +954,55 @@
       "3_backendRuntimeRetirement": "NOT EXECUTED — blocked on the orchestrator relocation and a released-client ruling.",
       "4_persistenceRetirement": "NOT AUTHORISED. Remaining physical tables are not a failure to complete runtime retirement."
     }
+  },
+  "releaseCutoverRehomeAndBackendRetirement": {
+    "date": "2026-08-20",
+    "authorised": "Founder — release-cutover maintenance gate + canonical realtime rehome + backend legacy runtime retirement.",
+    "record": "aura-backend/docs/2026-08-20-release-cutover-realtime-rehome-legacy-retirement.md",
+    "clientVersionAuthority": "ALREADY PRESENT AND WIRED — satisfied by reuse, nothing built. src/platform/client-identity/ + src/platform/release-governance/; MaintenanceMiddleware forRoutes('*'); GET /v1/client/compatibility; frontend UpdateGate at lib/app/aura_app.dart:337.",
+    "noAutomaticExpiry": "PROVED. compatibility.evaluator.ts contains no date comparison; the only date usage in release-governance is a 5s verdict cache TTL and a response timestamp. 2026-08-22 is presentation metadata and is read by nothing. Support state is policy-driven only, so the safety of the retirement DEPENDS ON the founder setting ClientPolicy.minSupportedVersion — retirement does not enforce itself.",
+    "rehome": {
+      "result": "src/correspondence/ no longer exists. All four services relocated to src/realtime/orchestration/. CorrespondenceModule DELETED; RealtimeModule now provides and exports orchestration directly and absorbed MessagesModule(forwardRef)/InstitutionActivityModule/ReachabilityModule. The RealtimeModule<->CorrespondenceModule forwardRef pair was removed, not relocated.",
+      "behaviourChange": "NONE. Class names, signatures and call sites unchanged — locations and module ownership only.",
+      "consumers": "ConversationsModule, InstitutionsModule, InvitesModule, MessagesModule now consume canonical RealtimeModule; three already imported it, so only MessagesModule gained an import.",
+      "proof": "The symbol CorrespondenceModule does not appear anywhere in src/.",
+      "defectFoundByTheMove": "Collapsing the modules exposed a file-level cycle realtime-policy -> realtime.gateway -> correspondence-orchestrator -> expression-orchestrator -> realtime-policy, previously masked by module load order. RealtimePolicyService was undefined at decoration time. Fixed with @Inject(forwardRef(...)) at the two injection sites. Caught by src/app-boot.spec.ts; every unit suite passed throughout."
+    },
+    "backendRuntimeRetirement": {
+      "endpointsRemoved": 15,
+      "deleted": [
+        "src/threads/threads.controller.ts (5)",
+        "src/messages/messages.controller.ts (5)",
+        "src/spaces/spaces.controller.ts (6)"
+      ],
+      "retainedWithReason": {
+        "ThreadsService/ThreadsModule": "internal-reference.service.ts injects it",
+        "MessagesService/MessagesGateway": "canonical orchestration injects both",
+        "SpacesService": "Institution Spaces + internal references",
+        "invites GET/POST /threads/:threadId/invites": "called by the canonical client at invitations_client.dart:98",
+        "direct-threads / public-spaces": "different products, untouched"
+      },
+      "noServiceRemoved": "Correct outcome, not an omission. The Thread/Message layer was legacy only at the HTTP edge; the services underneath are canonical Conversation infrastructure wearing an old name.",
+      "twoOverreachesCorrectedBeforeShipping": "ThreadsService looked dead because a grep|head truncated its only real consumer (caught by tsc). The /threads/:threadId/invites endpoints looked legacy by path and are in fact called by the canonical invitations client.",
+      "detectorIntegrity": "optional-auth-and-verified-email.spec.ts listed three now-deleted controllers in its guard-coverage inventory; those three entries were dropped BECAUSE THE FILES NO LONGER EXIST, recorded in a comment, with every surviving surface still asserted. No detector, gate or baseline was weakened."
+    },
+    "certification": {
+      "backend": "207 suites / 2594 tests pass, tsc clean, route-path compilation guard green.",
+      "realInjectorBoot": "Full AppModule dependency graph RESOLVES under NestFactory.create against a disposable Postgres, then fails identically to the pre-change baseline on the known win32-arm64 Prisma engine gap. Nest instantiates the whole graph before any onModuleInit, so reaching engine load is itself the graph proof — and a broken graph throws strictly earlier, which is how the cycle above was found.",
+      "frontend": "833 pass, flutter analyze clean. Frontend source untouched by this task.",
+      "identity": "Gate PASS at 11 files / 19 sites surface and 0/0 typed-person, baselines unchanged. Domain proof PASS both directions.",
+      "meetings": "Ratchet PASS both directions with 0 modified files in the Meetings tree.",
+      "institutionSpaces": "LIVE_CERTIFIED and untouched — controller and InstitutionSpaceConversationAuthority unchanged and still registered.",
+      "f044": "ready_to_join_policy.dart untouched; tests pass inside the 833. NOT promoted — founder live observation still owed."
+    },
+    "foundNotFixed": {
+      "backendMintsDeeplinksIntoARetiredRouteFamily": "The backend still generates /me/correspondence/:spaceId/thread/:threadId from nine services. The frontend retired that family in Phase 5; route_normalizer.dart rewrites only the BARE /me/correspondence, and lib/router.dart declares no errorBuilder, so the deep form lands on GoRouter's default not-found page. route_classification.dart:244-247 and member_shell.dart:236 still classify the dead prefix, which is why it reads as handled and is not. This is notification/deeplink routing behaviour across nine files with their own tests — a distinct behavioural slice, reported rather than folded into an HTTP-surface retirement."
+    },
+    "stillUnauthorisedAndUntouched": "migrate-conversations.js HELD and never run. No production data read, written, migrated or deleted. Destructive persistence cleanup remains unauthorised and not performed — the physical Thread/Message/Space tables still stand, which is correct rather than an incomplete retirement.",
+    "notPushed": "Both repos committed locally only. Pushing auto-deploys to Railway and this removes 15 live production endpoints — a founder-controlled release act."
+  },
+  "phase5Accounting": {
+    "3_backendRuntimeRetirement": "EXECUTED 2026-08-20 at the HTTP surface — 15 legacy endpoints removed across three controllers. Services retained because each has a living canonical consumer. Both prior blockers cleared: the orchestrator was rehomed, and the released-client risk is now carried by the policy-driven maintenance/update gate, which requires the founder to set minSupportedVersion.",
+    "4_persistenceRetirement": "STILL NOT AUTHORISED. Unchanged."
   }
 }

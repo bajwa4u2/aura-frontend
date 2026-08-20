@@ -4,6 +4,17 @@
 
 ---
 
+## OPEN — deeplink family retired here is still minted by the backend (2026-08-20)
+
+Nine backend services still emit `/me/correspondence/:spaceId/thread/:threadId`. Phase 5
+retired that route family in this client, and there is no `errorBuilder` on the router, so
+those notification/activity/attention deeplinks land on GoRouter's default not-found page.
+Retargeting them is a behavioural slice with its own tests on the backend side; the client
+side of the decision is whether `route_normalizer.dart` should also absorb the deep form.
+**Not started. Reported, not fixed.**
+
+---
+
 ## C0 — CROSS-CUTTING FOUNDATIONS ✅ IMPLEMENTED
 
 Three authorities built, consumers migrated, hard gate in place, regression green.
