@@ -1143,5 +1143,29 @@
     "certification": "Backend 212 suites / 2638 tests, tsc clean, route-path guard green, full AppModule graph resolves under the real injector. Frontend 841 pass, analyze clean (untouched this step). Identity gate PASS at 11 files / 19 sites and 0/0 typed-person, baselines unchanged. Meetings ratchet PASS both directions.",
     "blocked": "AURA_ADMIN_TOKEN with SETTINGS_WRITE is absent from the environment and from .env, which carries only a local JWT_SECRET - NOT used to mint a token, because forging credentials to satisfy a governance check is bypassing the governance rather than passing it. No SQL, no ad hoc mutation. Production untouched: every distribution still reads back policyMatched false.",
     "pushStatus": "NOT PUSHED. Nothing applied, nothing deployed."
+  },
+  "cutoverExecuted_2026_08_20": {
+    "outcome": "EXECUTED. Policy applied through the governed authority, both repos pushed and deployed, all required verdicts verified from production.",
+    "governedAuthority": "POST /v1/admin/client-policies with an Aura admin JWT carrying SETTINGS_WRITE. No SQL, no ad hoc mutation. The token was used for a single shell invocation and never written to disk, the repository, or any record.",
+    "rowsApplied": {
+      "android-direct": "id cmt14c3sb00myn30cjac096q9, channel production, enabled true, maintenanceMode TRUE, all version fields null, August 22 copy in message. HTTP 201.",
+      "ios": "id cmt14c43500n2n30cbalri41m, channel production, enabled true, maintenanceMode TRUE, all version fields null, August 22 copy in message. HTTP 201.",
+      "notCreated": "web-prod, unknown, windows-store, android-play - deliberately."
+    },
+    "defectFoundByTheApplication": "The first read-back returned 503 for GET /v1/client/compatibility. The middleware was gating the verdict endpoint - the one an app calls to LEARN it is in maintenance. compatibility_provider.dart swallows a failed fetch and keeps the compatible default, so a gated client would have kept believing it was compatible, rendered normal UI, and failed every other call with 503: a broken app instead of an explained one, behind a gate that looked correct in the policy table. The endpoint now joins the minimal exemption list. Its regression exercises the real middleware rather than re-listing the exempt prefixes - an earlier version re-implemented the list and passed itself by accident, the same class of mistake as the iOS row that governed nobody.",
+    "productionVerdicts": {
+      "android_androidDirect": "maintenance / show_maintenance, policyMatched TRUE",
+      "ios_unknown_theReleasedBinary": "maintenance / show_maintenance, policyMatched TRUE, raw distribution still reported as unknown - the bridge works and the diagnostic value survives",
+      "ios_ios_theUpgradedContract": "maintenance / show_maintenance, policyMatched TRUE, raw distribution ios",
+      "web_webProd": "compatible / none, policyMatched FALSE",
+      "macos_unknown": "compatible / none, policyMatched FALSE",
+      "linux_unknown": "compatible / none, policyMatched FALSE - unknown did not become an iOS proxy"
+    },
+    "runtimeVerification": "Gated client on /v1/conversations -> 503, the shield holding. /v1/spaces, /v1/threads/:id, /v1/threads/:id/messages, /v1/messages/:id -> 404, retired. POST /v1/spaces/:id/invites and GET /v1/threads/:id/invites -> 401, present and auth-gated, the two retained exceptions.",
+    "backendDeploy": "Pushed 8182bc6..7a48ff3 (6 commits) to bajwa4u2/aura-backend main; Railway auto-deployed. /v1/health 200 throughout, compatibility answering from the new build, no migration ran and none exists.",
+    "frontendDeploy": "Pushed b2a3855..53c65b3 (6 commits) to bajwa4u2/aura-frontend main; Railway auto-deployed. The first 200 would have been misleading because the site was already serving, so verification used a content marker instead: '/me/correspondence/create/space', a string only the old bundle contains, went 2 -> 2 -> 0. New bundle confirmed live at 7,195,237 bytes carrying the canonical /messages/c/ and Institution Space routes. Web remains compatible against the new backend.",
+    "rollbackPosture": "Maintenance rows are database state, independent of deployed code, so they stay active across any code rollback. Reverting the backend commits restores all 14 endpoints - the controllers were deleted, not rewritten. Reverting the frontend restores the prior bundle. No schema change and no migration exists in either deploy, so no backfill is required and no legacy data was destroyed. No dual runtime was constructed.",
+    "finalState": "14 endpoints retired (404 verified). Retained: POST /spaces/:id/invites and GET/POST /threads/:id/invites (401, consumed by invitations_client.dart). Active /me/correspondence production 0 in both repos. Realtime orchestration healthy, CorrespondenceModule absent. Institution Spaces LIVE_CERTIFIED untouched. F044/F053/F116 IMPLEMENTED_NOT_LIVE_CERTIFIED, unpromoted. Meetings protected, 0 modified files. migrate-conversations.js HELD. Legacy persistence untouched, destructive cleanup UNAUTHORIZED. Backend 213 suites / 2641 tests, frontend 841 pass, analyzers clean, identity gate PASS 11 files / 19 sites and 0/0 with baselines unchanged.",
+    "august22": "Presentation metadata with NO execution authority. Maintenance is live and lifts only by an explicit policy write. Release day: establish the actual upgraded version/build (nothing preconfigured - repo still 1.3.0+24), verify store availability, certify the client, present the transition, founder authorizes, then PATCH each row (android-direct cmt14c3sb00myn30cjac096q9, ios cmt14c43500n2n30cbalri41m) to maintenanceMode false with minSupportedVersion set. Each platform can go independently."
   }
 }

@@ -6,30 +6,27 @@
 
 ## Status
 
-> **2026-08-20 — cutover locally complete, held on one credential. Nothing deployed.**
-> The iOS gating gap is closed. A narrow released-iOS bridge maps *policy row selection only*
-> — `distribution: unknown` **+** `platform: ios` → the `ios` row — so the binary people
-> actually have installed (1.3.0+24, which predates first-class `ios`) is governed by its own
-> row. macOS and Linux still resolve to `unknown` and are never even queried; `ClientPolicy`
-> keeps its `(distribution, channel)` key; and the raw distribution stays `unknown` in
-> `evaluatedIdentity`, auth and analytics, so operators can still tell which binary they are
-> looking at. 11 regression tests run against the identity the installed binary really emits.
+> **2026-08-20 — CO-RC-C7-005 Phase 5 cutover EXECUTED and DEPLOYED.**
+> Maintenance policy applied through the governed admin authority for `android-direct` and
+> `ios`; **14 legacy endpoints are 404 in production**, and `POST /spaces/:id/invites` plus
+> `GET/POST /threads/:id/invites` remain 401 as the two retained exceptions. Backend
+> `8182bc6..7a48ff3` and frontend `b2a3855..53c65b3` are live.
 >
-> Everything else stands certified: 14 legacy endpoints retired
-> (`POST /spaces/:spaceId/invites` retained — `invitations_client.dart:88` consumes it),
-> `new_conversation_screen.dart` deleted on executable proof, active `/me/correspondence`
-> production **zero** in both repos, realtime orchestration healthy with `CorrespondenceModule`
-> absent.
+> Verified from production: Android, the **released** iOS binary (`platform: ios` +
+> `distribution: unknown`) and the upgraded iOS contract all return
+> `maintenance` / `show_maintenance` with `policyMatched: true`; web, macOS and Linux all
+> return `compatible` with no policy matched. A gated client gets 503 on product routes.
 >
-> **Blocked on `AURA_ADMIN_TOKEN` with `SETTINGS_WRITE`** — absent from the environment and
-> from `.env`, which holds only a local `JWT_SECRET` that was deliberately not used to mint
-> one. Production is untouched; every distribution still reads back `policyMatched: false`.
+> Applying the policy exposed one real defect and it is fixed: the middleware was gating
+> `/v1/client/compatibility` itself — the endpoint an app calls to *learn* it is in
+> maintenance — and `compatibility_provider.dart` swallows a failed fetch, so a gated client
+> would have shown a broken app rather than the maintenance screen. It is now exempt.
 >
-> One ordering fact worth knowing before the deploy: the two iOS read-backs can only be proven
-> *after* the backend ships, because the bridge is in the deploy. That is safe — the `ios` row
-> is created first, so the gate is already in place the instant the bridge and the retirement
-> land together. Full record:
-> `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md` §14.
+> **August 22 has no execution authority.** Maintenance lifts only by an explicit policy write.
+> Release day: establish the real upgraded version/build, verify store availability, certify,
+> then `PATCH` each row to `maintenanceMode: false` with `minSupportedVersion` — each platform
+> independently. Full record:
+> `aura-backend/docs/2026-08-20-cutover-finalization-route-retargeting-and-client-policy.md`.
 
 
 | Track | State |

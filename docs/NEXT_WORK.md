@@ -11,40 +11,34 @@ sites, not nine backend services. One rule now owns the answer on each side
 (`canonical_destinations.dart` / `canonical-destinations.ts`) and two ratchets hold it.
 The retired prefix is no longer classified as a live member surface.
 
-## BLOCKED — the cutover push, on one credential
+## DONE — the cutover shipped (2026-08-20)
 
-The iOS gating gap is **closed**: a narrow bridge maps `distribution: unknown` + `platform: ios`
-onto the `ios` policy row, in row selection only. The released binary is now governable.
+Policy applied, both repos deployed, all verdicts verified from production. 14 endpoints are
+404; the two retained invite endpoints are 401. Android, released iOS and upgraded iOS all read
+`maintenance` / `show_maintenance`; web, macOS and Linux read `compatible`.
 
-What remains is operational, not technical: **`AURA_ADMIN_TOKEN` carrying `SETTINGS_WRITE`.**
-Without it `scripts/apply-cutover-client-policies.sh` refuses before opening a connection. The
-only secret in `.env` is a local `JWT_SECRET`, deliberately not used to mint a token — forging
-a credential to satisfy a governance check is bypassing the governance, not passing it.
+## OPEN — the August 22 release transition
 
-**Checked and ruled out (2026-08-20):** the credential at `~/.bajwa/write_auth_token` is a
-Bajwa Writes token — 40 bytes, opaque, `bw_` prefix. It is not an Aura admin JWT and cannot
-become one. `/v1/admin/client-policies` sits behind the canonical passport `JwtAuthGuard`,
-which accepts only a signed Aura JWT, and Aura's auth surface exposes no token-exchange,
-service-account or API-key path — only email/password login, OAuth and refresh. It was not
-sent anywhere: putting one product's credential into another product's request logs has no
-possible upside. What is needed is a JWT for an Aura account holding the `SETTINGS_WRITE`
-admin permission.
+Nothing is preconfigured and no upgraded version was invented — the repo is still `1.3.0+24`.
+When the upgraded binary actually exists:
 
-**Sequence once the token exists:**
+1. establish its real version and build;
+2. verify store availability;
+3. certify the upgraded client;
+4. present the exact policy transition;
+5. **founder authorizes**;
+6. `PATCH /v1/admin/client-policies/{id}` per row — `android-direct` `cmt14c3sb00myn30cjac096q9`,
+   `ios` `cmt14c43500n2n30cbalri41m` — to `maintenanceMode: false` with `minSupportedVersion`
+   set, `forceUpdate: true`, `storeUrl`, `message: null`.
 
-1. run the script — creates the `android-direct` and `ios` maintenance rows;
-2. confirm the three read-backs provable now: `android-direct` → maintenance, `web-prod` →
-   compatible, `unknown` + non-iOS → compatible/unmatched;
-3. push backend, verify startup health;
-4. re-run the script (the creates report a harmless conflict) and confirm the two read-backs
-   that only become provable after the deploy: `ios` platform with `unknown` distribution →
-   maintenance, and with `ios` distribution → maintenance;
-5. push frontend, verify deployment health;
-6. stop.
+Each platform can go independently. **Do not set a minimum while maintenance is still on** —
+maintenance short-circuits before any version comparison, so it would lock out the upgrade
+itself.
 
-Step 4 is after the deploy by necessity — the bridge ships in it. This is safe because the row
-is created in step 1, so the gate is already in place the moment the bridge and the endpoint
-retirement land together.
+## OWED — founder live observation
+
+F044 remains `IMPLEMENTED_NOT_LIVE_CERTIFIED`; its live observation is still owed, and is now
+observable against a deployed build. F053 and F116 likewise remain implementation-certified.
 
 ## RESOLVED — orphaned screen calling retired endpoints (2026-08-20)
 
