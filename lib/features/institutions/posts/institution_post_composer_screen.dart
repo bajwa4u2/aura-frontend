@@ -809,6 +809,7 @@ class _InstitutionPostComposerScreenState
         bytes: prepared,
         fileName: uploadName,
         mimeType: mimeType,
+        originalMimeType: attachment.originalMimeType,
         kind: video ? 'VIDEO' : 'IMAGE',
         source: 'UPLOAD',
         width: size?['width'],

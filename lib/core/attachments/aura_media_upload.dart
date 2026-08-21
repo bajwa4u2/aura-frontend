@@ -29,6 +29,14 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
   required String mimeType,
   required String kind,
   required String source,
+  /// What the content was BEFORE Aura transcoded it, when it did.
+  ///
+  /// Sent only when it differs from [mimeType]. A HEIC photograph re-encoded
+  /// to JPEG so recipients can see it is still a HEIC photograph the person
+  /// took, and the stored row must not quietly claim they attached a JPEG.
+  /// The server drops it when it does not differ, so a persisted value always
+  /// means a real transformation.
+  String? originalMimeType,
   int? width,
   int? height,
   int? duration,
@@ -43,6 +51,10 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
       'bytes': bytes.length,
       'kind': kind,
       'source': source,
+      if (originalMimeType != null &&
+          originalMimeType.trim().isNotEmpty &&
+          originalMimeType.trim().toLowerCase() != mimeType.trim().toLowerCase())
+        'originalMimeType': originalMimeType.trim().toLowerCase(),
       if (width != null) 'width': width,
       if (height != null) 'height': height,
       if (duration != null) 'duration': duration,

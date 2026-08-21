@@ -276,6 +276,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
         bytes: cover.bytes!,
         fileName: cover.fileName ?? picked.name,
         mimeType: cover.mimeType!,
+        originalMimeType: cover.originalMimeType,
         kind: wireKind(cover.kind),
         source: wireSource(cover.source),
       );
@@ -346,6 +347,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
         bytes: inline.bytes!,
         fileName: inline.fileName ?? picked.name,
         mimeType: inline.mimeType!,
+        originalMimeType: inline.originalMimeType,
         kind: wireKind(inline.kind),
         source: wireSource(inline.source),
       );

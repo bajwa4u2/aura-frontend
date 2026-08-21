@@ -331,6 +331,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         bytes: attachment.bytes!,
         fileName: attachment.fileName ?? 'attachment',
         mimeType: attachment.mimeType!,
+        originalMimeType: attachment.originalMimeType,
         // This surface has always sent the semantic kind, and must keep
         // doing so: 'DOCUMENT' buys the 25 MiB document bucket, 'IMAGE'
         // would silently cut it to 10 MiB and start refusing PDFs that
@@ -466,6 +467,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         bytes: attachment.bytes!,
         fileName: attachment.fileName ?? 'attachment',
         mimeType: attachment.mimeType!,
+        originalMimeType: attachment.originalMimeType,
         // This surface has always sent the semantic kind, and must keep
         // doing so: 'DOCUMENT' buys the 25 MiB document bucket, 'IMAGE'
         // would silently cut it to 10 MiB and start refusing PDFs that
