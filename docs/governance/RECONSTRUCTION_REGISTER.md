@@ -203,6 +203,7 @@ why the certification dimension is printed separately on every row.
 | Item | Stage-0 state | Terminal state | Basis | Structural | Live certification |
 |---|---|---|---|---|---|
 | **F017** | `PARTIALLY_VALIDATED` | `FOUNDER_CLOSED` | FOUNDER RULING 2026-08-19 | CLOSED | NOT CERTIFIED |
+| **F137** | `OPEN` | `FOUNDER_CLOSED` | FOUNDER RULING 2026-08-21 | CLOSED - every governed media class present in production is covered at the current examiner identity, every deliverable object holds a malware pass, and the accepted envelope is examinable end to end with the deployment verified live against it. | NOT CERTIFIED as a chapter. E6 is live-certified in its own right; F137's closure is terminal by founder authority and must never be read as certifying CH-12. |
 
 ---
 
@@ -223,7 +224,6 @@ Without this section a reader sees a 2026-08-18 snapshot and no way to reconcile
 | **F063** | CH-02 | `OPEN` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-19 | RC7 repaired in both halves. |
 | **F053** | CH-03 | `PARTIALLY_VALIDATED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | Founder-authorised promotion. |
 | **F116** | CH-03 | `PARTIALLY_VALIDATED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | Founder-authorised promotion. |
-| **F137** | CH-12 | `OPEN` | `STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED` | 2026-08-21 | Adjudicated against the ORIGINAL frozen D4 criteria in aura-backend/docs/2026-08-21-ch12-e8-completion-and-f137-adjudication.md, which states 'F137 is CLOSED': every governed class present in production is covered at the current examiner identity, every deliverable object holds a malware pass, the accepted envelope is examinable end to end and verified live, and the one class the backfill structurally could not reach is now reachable. |
 | **F044** | CH-05 | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | UNCHANGED and explicitly NOT promoted across the Phase 5 work. |
 
 ---

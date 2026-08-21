@@ -191,6 +191,10 @@ owning chapter in the approved roadmap; both need a product decision.
 
 # C2 — IDENTITY, PRESENCE & PROFILE
 
+> **C2 IS FINAL CLOSED — FOUNDER RULING 2026-08-21.** The authorized C2 transitions were
+> executed, final retirement was executed (`d18b0bb`), and its own closeout established
+> readiness for founder closure. **This ruling does NOT reinterpret C3+ authorization.**
+>
 > **STALE SECTION — kept, not deleted (2026-08-21).** The text below says C2 is not started.
 > `docs/frontend-discovery/C2_FINAL_CLOSEOUT.md` (2026-08-16) contradicts it: the authorized
 > data transitions executed in order, final retirement was EXECUTED at `d18b0bb`, and it records

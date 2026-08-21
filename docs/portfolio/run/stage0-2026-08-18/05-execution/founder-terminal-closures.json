@@ -57,6 +57,36 @@
         "founderRuling": "NO F017 WORK IS REQUIRED TO SOLVE THIS. Production mutation is not needed, so no execution environment is to be created merely so a zero-row apply could run.",
         "consequenceIfEverNeeded": "Should the instrument ever be needed for imported/restored data, it must run in an environment with a compatible Prisma engine (the deployed Railway container or a linux runner)."
       }
+    },
+    "F137": {
+      "title": "Media safety examination",
+      "chapter": "CH-12",
+      "stage0State": "OPEN",
+      "terminalState": "FOUNDER_CLOSED",
+      "ruledBy": "FOUNDER RULING 2026-08-21",
+      "basis": "Translates the already-accepted E8/F137 closure into canonical register vocabulary. The engineering adjudication against the ORIGINAL frozen D4 criteria is recorded in aura-backend/docs/2026-08-21-ch12-e8-completion-and-f137-adjudication.md; the founder ruling supplies the terminal authority that adjudication could not.",
+      "supersedes": "The 2026-08-21 execution-layer entry that held F137 at STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED pending exactly this ruling. Preserved verbatim below.",
+      "priorNonTerminalRecord": {
+        "title": "Media safety examination",
+        "chapter": "CH-12",
+        "stage0State": "OPEN",
+        "executionLayerState": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+        "date": "2026-08-21",
+        "basis": "Adjudicated against the ORIGINAL frozen D4 criteria in aura-backend/docs/2026-08-21-ch12-e8-completion-and-f137-adjudication.md, which states 'F137 is CLOSED': every governed class present in production is covered at the current examiner identity, every deliverable object holds a malware pass, the accepted envelope is examinable end to end and verified live, and the one class the backfill structurally could not reach is now reachable. Two defects closed there were introduced during the chapter and found by checking evidence rather than the summary line: an empty-stream false clean, and an invalid depth probe.",
+        "terminalPromotionWithheld": "'CLOSED' is not a register terminal state. The terminal set is LIVE_CERTIFIED / RETIRED_BY_RULING / SUPERSEDED_BY_RULING / FOUNDER_CLOSED, and promotion into it is a governance act requiring a founder ruling. Recorded here at the highest NON-TERMINAL state the evidence supports. FOUNDER DECISION OWED: does the E8 adjudication constitute FOUNDER_CLOSED?"
+      },
+      "dimensionsReportedSeparately": {
+        "structural": "CLOSED - every governed media class present in production is covered at the current examiner identity, every deliverable object holds a malware pass, and the accepted envelope is examinable end to end with the deployment verified live against it.",
+        "liveCertification": "NOT CERTIFIED as a chapter. E6 is live-certified in its own right; F137's closure is terminal by founder authority and must never be read as certifying CH-12."
+      },
+      "evidencePreserved": [
+        "Governed READY classes are covered - the one class the backfill structurally could not reach is now reachable.",
+        "NO FALSE CLEAN FOR ABSENT BYTES. An empty stream had been recorded as a clean scan; that defect was introduced during this chapter and was found by reading the evidence rather than the summary line.",
+        "Genuinely unavailable ORPHANED bytes remain HONESTLY UNAVAILABLE - four objects retained per standing ruling, reported as UNAVAILABLE rather than clean.",
+        "Two correctly-refused EICAR member uploads retained, FAILED, never delivered, not authorised for disposal.",
+        "The invalid depth probe, also introduced during this chapter, was corrected; verdict rows now carry their own coverage so the next reader can check this without trusting the author."
+      ],
+      "closureIsNarrow": "THIS CLOSES F137 AND NOTHING ELSE. It does not close CH-12, and it settles none of the remaining CH-12 policy or product questions: the CH-15 media verdict policy, F127 D7, the firstKeyFromMedia() delivery blind spot, AI provenance/classification/disclosure, or Meetings visible-product verification. Do not broaden it."
     }
   },
   "observationsPreserved": {
@@ -127,15 +157,6 @@
       "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
       "date": "2026-08-20",
       "basis": "Founder-authorised promotion. Implementation only; live evidence was NOT claimed. Identity ratchet after migration: surface 19 sites / 11 files, typed-person 0/0, domain proof 23/23, residue sweep zero."
-    },
-    "F137": {
-      "title": "Media safety examination",
-      "chapter": "CH-12",
-      "stage0State": "OPEN",
-      "executionLayerState": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
-      "date": "2026-08-21",
-      "basis": "Adjudicated against the ORIGINAL frozen D4 criteria in aura-backend/docs/2026-08-21-ch12-e8-completion-and-f137-adjudication.md, which states 'F137 is CLOSED': every governed class present in production is covered at the current examiner identity, every deliverable object holds a malware pass, the accepted envelope is examinable end to end and verified live, and the one class the backfill structurally could not reach is now reachable. Two defects closed there were introduced during the chapter and found by checking evidence rather than the summary line: an empty-stream false clean, and an invalid depth probe.",
-      "terminalPromotionWithheld": "'CLOSED' is not a register terminal state. The terminal set is LIVE_CERTIFIED / RETIRED_BY_RULING / SUPERSEDED_BY_RULING / FOUNDER_CLOSED, and promotion into it is a governance act requiring a founder ruling. Recorded here at the highest NON-TERMINAL state the evidence supports. FOUNDER DECISION OWED: does the E8 adjudication constitute FOUNDER_CLOSED?"
     },
     "F044": {
       "title": "Awaiting founder live observation",
