@@ -1160,6 +1160,26 @@ class RealtimeController extends StateNotifier<RealtimeState>
     if (isFirst) {
       debugPrint('[join-seq] 6 first heartbeat sent sessionId=$sessionId');
     }
+
+    // ── SILENT-PEER REPAIR ───────────────────────────────────────────────────
+    //
+    // The heartbeat is the right home for this, and the join path is the wrong
+    // one. A peer that answered before its own getUserMedia resolved holds no
+    // senders and is permanently mute to the far side — connected, in the
+    // roster, and unrecoverable, because setCameraEnabled only flips `enabled`
+    // on tracks that already exist and replaceTrack needs a sender to replace.
+    //
+    // Repairing during join is what broke production before: at that moment a
+    // fresh answerer legitimately has zero senders too, and the two are
+    // indistinguishable by sender count alone. By heartbeat time negotiation has
+    // settled, so a peer that is STILL missing senders is genuinely stale rather
+    // than merely unfinished — and `repairSilentPeers()` re-checks eligibility
+    // against live WebRTC state per peer immediately before touching anything.
+    //
+    // Worst case is one beat of silence rather than a permanently dead call.
+    // Deliberately unawaited: a slow repair must never delay the beat itself,
+    // because presence is what the beat exists for.
+    unawaited(_repairSilentPeersIfAny());
     // emitAck is best-effort — a transient network blip drops the beat
     // but the next tick recovers. The server ignores heartbeats from
     // non-joined sockets, so the ticker is safe to keep running. The latest
@@ -1299,6 +1319,32 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
     if (needsRenegotiation) {
       await _renegotiateExistingPeers();
+    }
+  }
+
+  /// Repair peers that are genuinely stale, then re-offer to those peers only.
+  ///
+  /// Adding a track requires renegotiation, so the media layer reports what it
+  /// repaired and signalling stays here — the same division `startScreenShare()`
+  /// already uses. Nothing is re-offered when nothing was repaired, so a healthy
+  /// room produces no traffic from this at all.
+  Future<void> _repairSilentPeersIfAny() async {
+    if (!state.isJoined) return;
+    try {
+      final repaired = await _mediaService.repairSilentPeers();
+      if (repaired.isEmpty) return;
+      debugPrint('[rtc-repair] repaired ${repaired.length} peer(s); re-offering');
+      for (final peerKey in repaired) {
+        if (!_mediaService.hasPeer(peerKey)) continue;
+        try {
+          await _sendOfferToSocket(peerKey: peerKey, targetSocketId: peerKey);
+        } catch (error) {
+          debugPrint('[rtc-repair] re-offer failed peer=$peerKey err=$error');
+        }
+      }
+    } catch (error) {
+      // A repair that cannot run must never take the heartbeat down with it.
+      debugPrint('[rtc-repair] sweep failed err=$error');
     }
   }
 
