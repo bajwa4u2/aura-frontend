@@ -72,8 +72,8 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '}' \
 '' \
 'server {' \
-'  listen       ${PORT};' \
-'  listen  [::]:${PORT};' \
+'  listen       ${PORT} default_server;' \
+'  listen  [::]:${PORT} default_server;' \
 '  server_name  _;' \
 '  root   /usr/share/nginx/html;' \
 '  index  index.html;' \
