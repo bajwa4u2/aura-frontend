@@ -106,13 +106,24 @@ ${dispositions.map((d) => {
 // Stage-0 evidence (stage4-proof R7). The register surfaces them so a reader
 // sees proven state without the canonical evidence being rewritten.
 const BT = String.fromCharCode(96)
+// Read EVERY certification artifact, oldest first. A dated adjudication is a
+// record of what that adjudication found; later evidence gets its own artifact
+// rather than being appended into it.
+const CERT_ARTIFACTS = [
+  '05-execution/w1-live-certification-adjudication.json',
+  '05-execution/live-certifications-2026-08-21.json',
+]
 let liveCerts = []
-try {
-  const adj = rd('05-execution/w1-live-certification-adjudication.json')
-  liveCerts = Object.entries(adj.certifications || {})
-    .filter(([, v]) => v && typeof v === 'object' && v.verdict)
-    .map(([k, v]) => ({ id: k, verdict: v.verdict, against: v.against || '', limit: v.provenLimit || '' }))
-} catch { liveCerts = [] }
+for (const artifact of CERT_ARTIFACTS) {
+  try {
+    const adj = rd(artifact)
+    liveCerts = liveCerts.concat(
+      Object.entries(adj.certifications || {})
+        .filter(([, v]) => v && typeof v === 'object' && v.verdict)
+        .map(([k, v]) => ({ id: k, verdict: v.verdict, against: v.against || '', limit: v.provenLimit || '' })),
+    )
+  } catch { /* artifact absent - not an error, there may be only one */ }
+}
 
 const liveCertSection = liveCerts.length === 0 ? '' : [
   '',
@@ -142,6 +153,35 @@ try {
   terminalClosures = Object.entries(tc.closures || {}).map(([id, c]) => ({ id, ...c }))
 } catch { terminalClosures = [] }
 
+let nonTerminal = []
+try {
+  const tc = rd('05-execution/founder-terminal-closures.json')
+  nonTerminal = Object.entries((tc.nonTerminalTransitions || {}))
+    .filter(([k, v]) => k !== 'note' && v && typeof v === 'object' && v.executionLayerState)
+    .map(([id, v]) => ({ id, ...v }))
+} catch { nonTerminal = [] }
+
+const nonTerminalSection = nonTerminal.length === 0 ? '' : [
+  '',
+  '---',
+  '',
+  '## RECORDED NON-TERMINAL TRANSITIONS (execution layer)',
+  '',
+  'Movement since the ratified baseline that is **not** terminal. Stage-0 `currentState` is preserved',
+  'verbatim in the left column; the right column is the later evidenced state. **None of these is',
+  'terminal** — every one is still owed, however finished it looks (F120).',
+  '',
+  'They are printed because the distribution table above is the RATIFIED BASELINE, not a live count.',
+  'Without this section a reader sees a 2026-08-18 snapshot and no way to reconcile it.',
+  '',
+  '| Item | Chapter | Stage-0 state | Execution-layer state | Date | Basis |',
+  '|---|---|---|---|---|---|',
+  ...nonTerminal.map((t) => '| **' + t.id + '** | ' + (t.chapter || '-') + ' | ' + BT + t.stage0State + BT +
+    ' | ' + BT + t.executionLayerState + BT + ' | ' + (t.date || '-') + ' | ' +
+    String(t.basis || '-').split('. ')[0] + '. |'),
+  '',
+].join(NL)
+
 const terminalSection = terminalClosures.length === 0 ? '' : [
   '',
   '---',
@@ -161,6 +201,35 @@ const terminalSection = terminalClosures.length === 0 ? '' : [
     c.terminalState + BT + ' | ' + (c.ruledBy || '-') + ' | ' +
     ((c.dimensionsReportedSeparately || {}).structural || '-').split('—')[0].trim() + ' | ' +
     ((c.dimensionsReportedSeparately || {}).liveCertification || '-').split('—')[0].trim() + ' |'),
+  '',
+].join(NL)
+
+// Admitted execution defects are recorded against a chapter and are NOT
+// canonical units. They were invisible in the register until now, which is
+// precisely the F119 failure mode: recorded, then absent from reporting, then
+// re-encountered later as if new.
+const admittedDefects = []
+for (const ch of chapters) {
+  for (const d of (ch.assignedDefects || [])) {
+    admittedDefects.push({ chapter: ch.id, ...d })
+  }
+}
+
+const defectSection = admittedDefects.length === 0 ? '' : [
+  '',
+  '---',
+  '',
+  '## ADMITTED EXECUTION DEFECTS (not canonical units)',
+  '',
+  'Discovered while executing, governed for closure through execution provenance. Stage 0 did not',
+  'know them, so admitting one is **not** retroactively a finding: the accounting stays',
+  '**143 + 308 = 451**. They are printed here because a recorded item that disappears from',
+  'reporting comes back later looking like new work — the exact failure F119 names.',
+  '',
+  '| ID | Chapter | State | Statement | Closure requirement |',
+  '|---|---|---|---|---|',
+  ...admittedDefects.map((d) => '| **' + d.id + '** | ' + d.chapter + ' | ' + BT + (d.state || 'OPEN_ASSIGNED') + BT +
+    ' | ' + (d.statement || d.title || '-') + ' | ' + (d.closureRequirement || '-') + ' |'),
   '',
 ].join(NL)
 
@@ -200,7 +269,12 @@ ${NON_TERMINAL_LOOKALIKES.map((s) => `- \`${s}\``).join('\n')}
 
 ---
 
-## CURRENT STATE DISTRIBUTION (${totalF} findings)
+## STAGE-0 RATIFIED STATE DISTRIBUTION (${totalF} findings)
+
+> **This is the FOUNDER-RATIFIED BASELINE of 2026-08-18, not a live count.** Stage-0 evidence is
+> never rewritten, so this table does not move. Every later transition is recorded in the execution
+> layer and printed below under **LIVE CERTIFICATIONS**, **TERMINAL CLOSURES** and **RECORDED
+> NON-TERMINAL TRANSITIONS**. Reading this table alone will understate what has been done.
 
 | State | Count | Terminal? |
 |---|---:|---|
@@ -244,7 +318,7 @@ Reporting one dimension as "F139 status" is a governance violation.
 |---|---|---:|---:|
 ${chapters.map((c) => `| ${c.id} | ${c.name} | ${c.findings.count} | ${c.obligations.count} |`).join('\n')}
 
-${dispositionSection}${liveCertSection}${terminalSection}
+${defectSection}${dispositionSection}${liveCertSection}${terminalSection}${nonTerminalSection}
 ---
 
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER

@@ -1,0 +1,29 @@
+{
+ "type": "LIVE_CERTIFICATIONS_RECONCILIATION",
+ "layer": "EXECUTION",
+ "date": "2026-08-21",
+ "rule": "Founder-observed live evidence bound to a technically established deployed artifact. Recorded in the execution layer; Stage-0 evidence is not rewritten. A certification becomes a register state transition at chapter closure.",
+ "supersedesNothing": "The 2026-08-18 W1 adjudication stands unchanged. This artifact adds later facts beside it.",
+ "certifications": {
+  "G1_LEG_5B": {
+   "verdict": "LIVE_CERTIFIED",
+   "against": "founder-observed live test, 2026-08-20",
+   "provenLimit": "Founder observed the predeclared leg 5(B) test: a plain-text file renamed photo.png was REJECTED live. All four predeclared properties PASS. With 5(A) already complete, G1 leg 5 is COMPLETE and F127 is live-certified ON THE D2 CONFIRM PATH ONLY. F127 D7 remains outstanding and is not covered by this."
+  },
+  "INSTITUTION_SPACES": {
+   "verdict": "LIVE_CERTIFIED",
+   "against": "deployed reconstructed Institution Spaces, 2026-08-20",
+   "provenLimit": "Founder live observation PASS across the predeclared journeys. Legacy history was neither preserved nor validated, and its absence is not a defect. Calling defects observed during the walkthrough are INHERITED, route-proven, and created no new finding."
+  },
+  "CH12_E6": {
+   "verdict": "LIVE_CERTIFIED",
+   "against": "backend 3faa46d / frontend daeb8fa, 2026-08-21",
+   "provenLimit": "Founder-observed walkthrough PASSED; backend evidence corroborates without contradiction. Certifies E6 only. It does NOT certify the chapter, and does NOT carry the web-consumer delivery leg — see CH12_WEB_CONSUMER_LEG."
+  },
+  "CH12_WEB_CONSUMER_LEG": {
+   "verdict": "CERTIFICATION_CORRECTED",
+   "against": "backend fc2bd71 / frontend 3f24f94, 2026-08-21",
+   "provenLimit": "A CORRECTION, not a pass. The earlier private-origin custody and byte-authority results remain valid, but the WEB CONSUMER leg had been incompletely certified: it proved a signed URL returned correct bytes and never exercised the Flutter Web / CanvasKit CORS-read path, where a cross-origin redirect taints Origin to null at R2. The same-origin delivery incident that followed is CLOSED, founder-verified in the released product 2026-08-21."
+  }
+ }
+}

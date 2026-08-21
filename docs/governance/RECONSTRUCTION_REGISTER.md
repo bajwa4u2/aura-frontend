@@ -41,7 +41,12 @@ Three corollaries, each of which has already been violated once and is therefore
 
 ---
 
-## CURRENT STATE DISTRIBUTION (143 findings)
+## STAGE-0 RATIFIED STATE DISTRIBUTION (143 findings)
+
+> **This is the FOUNDER-RATIFIED BASELINE of 2026-08-18, not a live count.** Stage-0 evidence is
+> never rewritten, so this table does not move. Every later transition is recorded in the execution
+> layer and printed below under **LIVE CERTIFICATIONS**, **TERMINAL CLOSURES** and **RECORDED
+> NON-TERMINAL TRANSITIONS**. Reading this table alone will understate what has been done.
 
 | State | Count | Terminal? |
 |---|---:|---|
@@ -113,6 +118,21 @@ Reporting one dimension as "F139 status" is a governance violation.
 
 ---
 
+## ADMITTED EXECUTION DEFECTS (not canonical units)
+
+Discovered while executing, governed for closure through execution provenance. Stage 0 did not
+know them, so admitting one is **not** retroactively a finding: the accounting stays
+**143 + 308 = 451**. They are printed here because a recorded item that disappears from
+reporting comes back later looking like new work — the exact failure F119 names.
+
+| ID | Chapter | State | Statement | Closure requirement |
+|---|---|---|---|---|
+| **DEFECT-1** | CH-04 | `OPEN_ASSIGNED` | Realtime rendered presentation currently lacks automated visual proof despite the broader realtime suite being green. | Restoration or replacement of meaningful realtime-room presentation verification is a CH-04 certification/closure requirement. |
+| **D7-DEFECT** | CH-11 | `CLOSED_LOCALLY_NOT_LIVE_CERTIFIED` | Institution-post media authority — URL match treated as attachment and visibility authority | - |
+| **ARTICLES-FIRST-CLASS-DEFECT** | CH-14 | `OPEN_ASSIGNED` | Articles are not established as a first-class publication surface | Audit Articles against the canonical publication/interaction capability set - like/reaction, reply/discussion, share/reshare, translation - confirming each against the running product rather than assuming Posts are the template. |
+
+---
+
 ## PRODUCT DISPOSITION CHECKPOINTS
 
 Surfaces the approved roadmap never named an owner for. Each is resolved by founder ruling, and a
@@ -165,6 +185,10 @@ state transition at chapter closure. **No chapter has closed.**
 |---|---|---|---|
 | **F065** | `LIVE_CERTIFIED` | deployed artifact v1.3.0+24 / code cdbae96 | Certifies the deployed contract. The unpushed S1 refinement is behaviour-neutral on these paths and is not separately certified. |
 | **S2_S3_LIVE_PROBE** | `PASS 6/6` | deployed artifact v1.3.0+24 / code cdbae96 | - |
+| **G1_LEG_5B** | `LIVE_CERTIFIED` | founder-observed live test, 2026-08-20 | Founder observed the predeclared leg 5(B) test: a plain-text file renamed photo.png was REJECTED live. All four predeclared properties PASS. With 5(A) already complete, G1 leg 5 is COMPLETE and F127 is live-certified ON THE D2 CONFIRM PATH ONLY. F127 D7 remains outstanding and is not covered by this. |
+| **INSTITUTION_SPACES** | `LIVE_CERTIFIED` | deployed reconstructed Institution Spaces, 2026-08-20 | Founder live observation PASS across the predeclared journeys. Legacy history was neither preserved nor validated, and its absence is not a defect. Calling defects observed during the walkthrough are INHERITED, route-proven, and created no new finding. |
+| **CH12_E6** | `LIVE_CERTIFIED` | backend 3faa46d / frontend daeb8fa, 2026-08-21 | Founder-observed walkthrough PASSED; backend evidence corroborates without contradiction. Certifies E6 only. It does NOT certify the chapter, and does NOT carry the web-consumer delivery leg — see CH12_WEB_CONSUMER_LEG. |
+| **CH12_WEB_CONSUMER_LEG** | `CERTIFICATION_CORRECTED` | backend fc2bd71 / frontend 3f24f94, 2026-08-21 | A CORRECTION, not a pass. The earlier private-origin custody and byte-authority results remain valid, but the WEB CONSUMER leg had been incompletely certified: it proved a signed URL returned correct bytes and never exercised the Flutter Web / CanvasKit CORS-read path, where a cross-origin redirect taints Origin to null at R2. The same-origin delivery incident that followed is CLOSED, founder-verified in the released product 2026-08-21. |
 ---
 
 ## TERMINAL CLOSURES BY FOUNDER RULING (execution layer)
@@ -179,6 +203,28 @@ why the certification dimension is printed separately on every row.
 | Item | Stage-0 state | Terminal state | Basis | Structural | Live certification |
 |---|---|---|---|---|---|
 | **F017** | `PARTIALLY_VALIDATED` | `FOUNDER_CLOSED` | FOUNDER RULING 2026-08-19 | CLOSED | NOT CERTIFIED |
+
+---
+
+## RECORDED NON-TERMINAL TRANSITIONS (execution layer)
+
+Movement since the ratified baseline that is **not** terminal. Stage-0 `currentState` is preserved
+verbatim in the left column; the right column is the later evidenced state. **None of these is
+terminal** — every one is still owed, however finished it looks (F120).
+
+They are printed because the distribution table above is the RATIFIED BASELINE, not a live count.
+Without this section a reader sees a 2026-08-18 snapshot and no way to reconcile it.
+
+| Item | Chapter | Stage-0 state | Execution-layer state | Date | Basis |
+|---|---|---|---|---|---|
+| **F059** | CH-02 | `OPEN` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-19 | Named causes RC1, RC2 and RC3 all repaired. |
+| **F062** | CH-02 | `OPEN` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-19 | Named causes RC2 and RC4 repaired, plus the RC3 screen-binding half its destination depends on. |
+| **F061** | CH-02 | `OPEN` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-19 | RC4 repaired; RC8 proven inapplicable (its whole surface is booking/meeting entry). |
+| **F063** | CH-02 | `OPEN` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-19 | RC7 repaired in both halves. |
+| **F053** | CH-03 | `PARTIALLY_VALIDATED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | Founder-authorised promotion. |
+| **F116** | CH-03 | `PARTIALLY_VALIDATED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | Founder-authorised promotion. |
+| **F137** | CH-12 | `OPEN` | `STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED` | 2026-08-21 | Adjudicated against the ORIGINAL frozen D4 criteria in aura-backend/docs/2026-08-21-ch12-e8-completion-and-f137-adjudication.md, which states 'F137 is CLOSED': every governed class present in production is covered at the current examiner identity, every deliverable object holds a malware pass, the accepted envelope is examinable end to end and verified live, and the one class the backfill structurally could not reach is now reachable. |
+| **F044** | CH-05 | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | UNCHANGED and explicitly NOT promoted across the Phase 5 work. |
 
 ---
 
