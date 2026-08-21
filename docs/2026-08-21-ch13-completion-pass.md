@@ -133,11 +133,35 @@ schema-shaped question.
 
 ## 4. HEIC / HEIF — pursued, and the exact blocker
 
-**Where it can actually arrive.** `image_picker` is called with
-`imageQuality: 92` in the profile pipeline and the post composer, which forces a
-re-encode to JPEG on iOS — so the most common phone path does **not** deliver
-HEIC. Real exposure is web/desktop: `desktop_drop` drag-drop, and `file_picker`
-in the document and announcement doors.
+**Where it can actually arrive.** `image_picker` on iOS converts HEIC to JPEG
+unconditionally — its `convertImage:` default branch returns
+`UIImageJPEGRepresentation` and names the result `.jpg` — so the commonest phone
+path does not deliver HEIC at all. Android is different, and it produced a
+defect of its own (below). Real HEIC exposure is web/desktop: `desktop_drop`
+drag-drop and `file_picker`.
+
+### The Android defect this uncovered — fixed
+
+`image_picker` on **Android** does not convert a picked HEIC unless a size or
+quality constraint is set. When one IS set it re-encodes to JPEG **and keeps the
+original filename** — producing `photo.heic` containing perfectly good JPEG
+bytes. Two of Aura's own pickers set `imageQuality: 92`
+(`institution_post_composer_screen:755`, `profile_media_pipeline:90`).
+
+`ContentIntake._resolveMime` resolved from the declared type and then the
+filename, and never looked at the content — so Aura refused a JPEG it fully
+supports, for a reason the person could not possibly guess.
+
+**Content sniffing is now the first evidence.** `sniffMimeFromBytes` reads the
+signature, and the order is: **bytes → declared type → filename**. Bytes outrank
+a declaration because a declaration is possession rather than authority — the D7
+rule one layer up — and they outrank a filename because a filename is provably
+wrong in the field. The sniffer returns null for a zip container rather than
+guessing, because `PK..` cannot distinguish docx from xlsx and the filename is
+genuinely the better evidence for which zip it is.
+
+Detection is not permission: genuine HEIC bytes are still refused, but now for
+being HEIC rather than for what they were called.
 
 **Where it stops today.** `inferMimeFromFileName` already maps `.heic` →
 `image/heic` and `.heif` → `image/heif`. The type resolves **correctly** and is

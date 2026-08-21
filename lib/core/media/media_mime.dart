@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'attachment.dart';
 
 /// Canonical MIME utilities. Replaces the four duplicate `_inferMime`
@@ -60,6 +62,84 @@ const Set<String> kAllowedDocumentMimes = <String>{
   'application/zip',
   'application/x-zip-compressed',
 };
+
+/// Detect a MIME type from the CONTENT itself.
+///
+/// The strongest evidence there is. A filename is what something was CALLED
+/// and a declared mime is what a caller CLAIMED; the bytes are the thing.
+///
+/// This exists because both weaker sources are provably wrong in the field.
+/// `image_picker` on Android re-encodes a picked HEIC to JPEG when a quality
+/// or size constraint is set — and KEEPS THE ORIGINAL FILENAME. The result is
+/// `photo.heic` containing perfectly good JPEG bytes. Resolving that by
+/// extension refuses a file Aura fully supports, and does it for a reason the
+/// person cannot possibly guess.
+///
+/// Returns null when the signature is not one Aura recognises, so the caller
+/// can fall back to weaker evidence rather than treating "unknown" as "wrong".
+String? sniffMimeFromBytes(Uint8List? bytes) {
+  final b = bytes;
+  if (b == null || b.length < 12) return null;
+
+  bool at(int offset, List<int> sig) {
+    if (offset + sig.length > b.length) return false;
+    for (var i = 0; i < sig.length; i++) {
+      if (b[offset + i] != sig[i]) return false;
+    }
+    return true;
+  }
+
+  // ── images ──
+  if (at(0, [0xFF, 0xD8, 0xFF])) return 'image/jpeg';
+  if (at(0, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])) return 'image/png';
+  if (at(0, [0x47, 0x49, 0x46, 0x38])) return 'image/gif';
+  // RIFF....WEBP / WAVE share a container header, so the sub-type decides.
+  if (at(0, [0x52, 0x49, 0x46, 0x46])) {
+    if (at(8, [0x57, 0x45, 0x42, 0x50])) return 'image/webp';
+    if (at(8, [0x57, 0x41, 0x56, 0x45])) return 'audio/wav';
+    return null;
+  }
+
+  // ── ISO base media (ftyp at offset 4): heic/heif, mp4, m4a ──
+  if (at(4, [0x66, 0x74, 0x79, 0x70])) {
+    final brand = String.fromCharCodes(b.sublist(8, 12)).toLowerCase();
+    switch (brand) {
+      case 'heic':
+      case 'heix':
+      case 'heim':
+      case 'heis':
+        return 'image/heic';
+      case 'mif1':
+      case 'msf1':
+        return 'image/heif';
+      case 'qt  ':
+        return 'video/quicktime';
+      case 'm4a ':
+        return 'audio/mp4';
+      default:
+        // isom / mp42 / avc1 and friends are all MP4 video.
+        return 'video/mp4';
+    }
+  }
+
+  // ── audio ──
+  if (at(0, [0x49, 0x44, 0x33])) return 'audio/mpeg'; // ID3-tagged MP3
+  if (at(0, [0xFF, 0xFB]) || at(0, [0xFF, 0xF3]) || at(0, [0xFF, 0xF2])) {
+    return 'audio/mpeg';
+  }
+  if (at(0, [0x66, 0x4C, 0x61, 0x43])) return 'audio/flac';
+  if (at(0, [0x4F, 0x67, 0x67, 0x53])) return 'audio/ogg';
+
+  // ── documents / containers ──
+  if (at(0, [0x25, 0x50, 0x44, 0x46])) return 'application/pdf';
+  // PK.. is every OOXML document as well as a plain zip. The container alone
+  // cannot tell docx from xlsx from zip, so this deliberately does NOT answer
+  // — the filename is the better evidence for WHICH zip this is, and the
+  // caller falls through to it.
+  if (at(0, [0x50, 0x4B, 0x03, 0x04])) return null;
+
+  return null;
+}
 
 /// Infer a MIME type from a file name's extension. Returns `null` when
 /// the extension is unknown — callers that need a fallback should pick
