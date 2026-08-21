@@ -500,4 +500,72 @@ void main() {
       expect(r.attachment!.kind, AttachmentKind.document);
     });
   });
+
+  // ── CONTENT DETECTION — the bytes outrank the name ────────────────────────
+  //
+  // `image_picker` on Android re-encodes a picked HEIC to JPEG when a size or
+  // quality constraint is set, and KEEPS the original filename. The result is
+  // `photo.heic` holding perfectly good JPEG bytes. Resolving by extension
+  // refused a file Aura fully supports, for a reason the person could not
+  // possibly guess. Two of Aura's own pickers set `imageQuality: 92`.
+  group('CO-RC-C5-012 · type is detected, not assumed', () {
+    Uint8List withHeader(List<int> header) =>
+        Uint8List.fromList([...header, ...List<int>.filled(32, 0)]);
+
+    final jpeg = withHeader([0xFF, 0xD8, 0xFF, 0xE0]);
+    final png = withHeader([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+    final heic = withHeader(
+        [0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63]);
+
+    test('JPEG bytes named .heic are accepted as JPEG', () {
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: jpeg,
+        fileName: 'photo.heic',
+      );
+      expect(r.isAccepted, isTrue,
+          reason: 'the bytes are a JPEG Aura fully supports');
+      expect(r.attachment!.mimeType, 'image/jpeg');
+      expect(r.attachment!.kind, AttachmentKind.image);
+    });
+
+    test('a declared type does not override the content', () {
+      // A caller's claim is possession, not authority — the D7 rule one layer
+      // up. PNG bytes declared as JPEG resolve as PNG.
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: png,
+        fileName: 'whatever.jpg',
+        declaredMimeType: 'image/jpeg',
+      );
+      expect(r.attachment!.mimeType, 'image/png');
+    });
+
+    test('genuine HEIC bytes are still refused, and honestly', () {
+      // Detection is not permission. Aura cannot serve HEIC to ~85% of
+      // browsers, so it is refused — but for being HEIC, not for its name.
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: heic,
+        fileName: 'photo.jpg',
+      );
+      expect(r.isAccepted, isFalse);
+      expect(r.rejection, AttachmentRejection.unsupportedType);
+    });
+
+    test('an unrecognised signature falls through to weaker evidence', () {
+      // A zip container cannot tell docx from xlsx, so the filename is the
+      // better evidence for WHICH zip it is and the sniffer declines to answer.
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: withHeader([0x50, 0x4B, 0x03, 0x04]),
+        fileName: 'proposal.docx',
+      );
+      expect(r.isAccepted, isTrue);
+      expect(
+        r.attachment!.mimeType,
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
+    });
+  });
 }

@@ -111,7 +111,7 @@ class ContentIntake {
       );
     }
 
-    final mime = _resolveMime(declaredMimeType, fileName);
+    final mime = _resolveMime(declaredMimeType, fileName, bytes: bytes);
     if (mime == null || !isAnyMimeAllowed(mime)) {
       return IntakeResolution.rejected(
         path: path,
@@ -231,7 +231,29 @@ class ContentIntake {
 
   /// `octet-stream` means "the source did not know". Treating it as a real type
   /// is how an unknown file becomes an accepted one.
-  static String? _resolveMime(String? declared, String? fileName) {
+  /// THE EVIDENCE ORDER, strongest first.
+  ///
+  ///   1. THE BYTES. What the content actually is. Not a claim about it.
+  ///   2. THE DECLARED TYPE. What the platform or clipboard said.
+  ///   3. THE FILENAME. What the file was called.
+  ///
+  /// Bytes outrank a declaration because a declaration is possession, not
+  /// authority — the D7 rule, applied one layer up. And bytes outrank a
+  /// filename because a filename is provably wrong in the field:
+  /// `image_picker` on Android re-encodes a picked HEIC to JPEG when a size or
+  /// quality constraint is set and KEEPS the `.heic` name, so extension-only
+  /// resolution refuses perfectly good JPEG bytes.
+  ///
+  /// `octet-stream` is read as "the source did not know" at every level rather
+  /// than as a type, because accepting it would let unknown pass as fine.
+  static String? _resolveMime(
+    String? declared,
+    String? fileName, {
+    Uint8List? bytes,
+  }) {
+    final sniffed = sniffMimeFromBytes(bytes);
+    if (sniffed != null) return sniffed;
+
     final claimed = (declared ?? '').trim().toLowerCase();
     if (claimed.isNotEmpty &&
         claimed != 'application/octet-stream' &&
