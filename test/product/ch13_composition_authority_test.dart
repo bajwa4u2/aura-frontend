@@ -19,6 +19,8 @@ import 'package:aura/core/composition/composition_authority.dart';
 import 'package:aura/core/composition/content_intake.dart';
 import 'package:aura/core/content_policy/content_length_policy.dart';
 import 'package:aura/core/media/attachment.dart';
+import 'package:aura/core/media/media_capacity.dart';
+import 'package:aura/core/media/attachment.dart';
 import 'package:image_picker/image_picker.dart' show XFile;
 
 Attachment _att({
@@ -345,6 +347,109 @@ void main() {
       );
       expect(bad.attachment, isNull);
       expect(bad.rejection, isNotNull);
+    });
+  });
+
+  // ── CAPACITY — one answer, and it names itself ────────────────────────────
+  //
+  // Capacity used to be whatever private constant the receiving composer
+  // declared: 8 MiB image and 50 MiB video on the institution post composer,
+  // nothing at all on the conversation composer. The same file was accepted on
+  // one surface and refused on another, and neither number came from a measured
+  // constraint. It is judged once, at the door, against the canonical ceiling.
+  group('CO-RC-C5-022 · capacity is judged at the door', () {
+    Uint8List sized(int n) => Uint8List(n);
+
+    test('a file at the ceiling is accepted', () {
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: sized(MediaCapacity.image),
+        fileName: 'big.png',
+        declaredMimeType: 'image/png',
+      );
+      expect(r.isAccepted, isTrue);
+    });
+
+    test('one byte over is refused, before anything is uploaded', () {
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: sized(MediaCapacity.image + 1),
+        fileName: 'big.png',
+        declaredMimeType: 'image/png',
+      );
+      expect(r.isAccepted, isFalse);
+      expect(r.rejection, AttachmentRejection.tooLarge);
+    });
+
+    test('a capacity refusal names the limit it exceeded', () {
+      // "That file is too large" tells a person nothing they can act on.
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: sized(MediaCapacity.image + 1),
+        fileName: 'big.png',
+        declaredMimeType: 'image/png',
+      );
+      expect(r.kind, AttachmentKind.image);
+      expect(r.rejectionMessage, contains('32 MB'));
+    });
+
+    test('the ceiling differs by class, because the constraint does', () {
+      // Video is examined by streaming, so it is not bounded by the examiner's
+      // whole-file buffer the way image, audio and document are.
+      expect(MediaCapacity.video, greaterThan(MediaCapacity.image));
+      expect(MediaCapacity.image, MediaCapacity.document);
+      expect(MediaCapacity.audio, MediaCapacity.document);
+    });
+
+    test('the retired private ceilings are not the answer anywhere', () {
+      // 8 MiB and 50 MiB were the institution post composer's own constants.
+      const retired = <int>[8 * 1024 * 1024, 50 * 1024 * 1024];
+      for (final kind in AttachmentKind.values) {
+        expect(retired, isNot(contains(MediaCapacity.maxBytesFor(kind))));
+      }
+    });
+  });
+
+  // ── TYPE CAPABILITY — the mirror must not be narrower than the door ───────
+  group('CO-RC-C5-019 · supported content is not narrowed by the client', () {
+    test('the audio names a browser actually reports are accepted', () {
+      // audio/mp3, audio/m4a and audio/x-aac are in the backend's canonical
+      // matrix and were refused only by this mirror. A browser naming the same
+      // bytes differently was turned away at the client.
+      for (final mime in ['audio/mp3', 'audio/m4a', 'audio/x-aac']) {
+        final r = ContentIntake.resolveBytes(
+          path: IntakePath.picker,
+          bytes: Uint8List.fromList([1, 2, 3]),
+          fileName: 'voice.m4a',
+          declaredMimeType: mime,
+        );
+        expect(r.isAccepted, isTrue, reason: '$mime must be accepted');
+        expect(r.attachment!.kind, AttachmentKind.audio);
+      }
+    });
+
+    test('office documents resolve from the filename when the platform is silent',
+        () {
+      // The DOCX late-refusal defect: no declared mime, and the retired path
+      // fell to octet-stream, which the server refuses at presign.
+      const office = {
+        'proposal.docx':
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'deck.pptx':
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'sheet.xlsx':
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      };
+      office.forEach((name, mime) {
+        final r = ContentIntake.resolveBytes(
+          path: IntakePath.picker,
+          bytes: Uint8List.fromList([1, 2, 3]),
+          fileName: name,
+        );
+        expect(r.isAccepted, isTrue, reason: '$name must be accepted');
+        expect(r.attachment!.mimeType, mime);
+        expect(r.attachment!.kind, AttachmentKind.document);
+      });
     });
   });
 }

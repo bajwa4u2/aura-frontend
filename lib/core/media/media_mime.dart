@@ -37,6 +37,13 @@ const Set<String> kAllowedAudioMimes = <String>{
   'audio/wav',
   'audio/x-wav',
   'audio/flac',
+  // 2026-08-21 — the backend's canonical matrix has accepted these three all
+  // along; only this mirror refused them. A browser reporting `audio/mp3` for
+  // an MP3, or `audio/m4a` for an M4A, was turned away at the client for
+  // naming the same bytes differently.
+  'audio/mp3',
+  'audio/m4a',
+  'audio/x-aac',
 };
 
 const Set<String> kAllowedDocumentMimes = <String>{

@@ -23,8 +23,8 @@ import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
+import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
-import '../../../core/media/media_mime.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
@@ -1161,31 +1161,52 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
-    Uint8List? bytes;
-    int? width;
-    int? height;
-
-    if (type == AttachmentKind.image) {
-      bytes = await file.readAsBytes();
-      try {
-        final size = await _decodeImageSize(bytes);
-        width = size?['width'];
-        height = size?['height'];
-      } catch (_) {}
+    // ONE governed door. `kind` used to be whatever the CALLER declared, and
+    // the mime was not resolved here at all — `_uploadAttachment` inferred it
+    // later and fell back to `application/octet-stream`, which the server's
+    // allow-list refuses at presign. The attachment appeared in the composer,
+    // climbed, and failed late.
+    final resolution = ContentIntake.resolveFile(
+      path: IntakePath.picker,
+      file: file,
+      source: source,
+    );
+    final attachment = resolution.attachment;
+    if (attachment == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(resolution.rejectionMessage!)),
+      );
+      return;
+    }
+    // The picker promised a kind; the content decides whether it kept the
+    // promise. Uploading a document through the Video button is a refusal, not
+    // a reclassification.
+    if (attachment.kind != type) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            type == AttachmentKind.video
+                ? 'That is not a video file.'
+                : 'That is not an image file.',
+          ),
+        ),
+      );
+      return;
     }
 
-    final attachment = Attachment(
-      localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}',
-      kind: type,
-      source: source,
-      file: file,
-      bytes: bytes,
-      fileName: file.name,
-      width: width,
-      height: height,
-      uploading: true,
-      attachedToDraft: false,
-    );
+    if (type == AttachmentKind.image) {
+      final bytes = await file.readAsBytes();
+      attachment.bytes = bytes;
+      try {
+        final size = await _decodeImageSize(bytes);
+        attachment.width = size?['width'];
+        attachment.height = size?['height'];
+      } catch (_) {}
+    }
+    attachment.uploading = true;
+    attachment.attachedToDraft = false;
 
     _ensureCaptionController(attachment);
 
@@ -1224,7 +1245,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       throw Exception('Attachment file missing.');
     }
 
-    final mime = inferMimeFromFileName(file.name) ?? 'application/octet-stream';
+    // Resolved at intake. The `?? 'application/octet-stream'` that used to
+    // stand here turned a legitimate DOCX into a generic binary the server
+    // refuses, and did it AFTER the person had seen the file attached.
+    final mime = attachment.mimeType!;
     final captionText = _captionText(attachment);
     final result = await uploadAuraMedia(
       dio: ref.read(dioProvider),

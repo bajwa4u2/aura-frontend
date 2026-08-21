@@ -26,6 +26,7 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart' show XFile;
 
 import '../media/attachment.dart';
+import '../media/media_capacity.dart';
 import '../media/media_mime.dart';
 import 'attachment_lifecycle.dart';
 
@@ -43,6 +44,7 @@ class IntakeResolution {
     required this.path,
     this.attachment,
     this.rejection,
+    this.rejectedKind,
   });
 
   const IntakeResolution.accepted({
@@ -50,14 +52,29 @@ class IntakeResolution {
     required Attachment attachment,
   }) : this._(path: path, attachment: attachment);
 
+  /// [kind] is supplied when the content resolved far enough to have one —
+  /// a file refused for CAPACITY has a perfectly good class, and the message
+  /// needs it to name the ceiling. A file refused for type does not.
   const IntakeResolution.rejected({
     required IntakePath path,
     required AttachmentRejection rejection,
-  }) : this._(path: path, rejection: rejection);
+    AttachmentKind? kind,
+  }) : this._(path: path, rejection: rejection, rejectedKind: kind);
 
   final IntakePath path;
   final Attachment? attachment;
   final AttachmentRejection? rejection;
+
+  /// Set only on a refusal that got far enough to classify the content.
+  final AttachmentKind? rejectedKind;
+
+  /// The class the content resolved to, whether or not it was accepted.
+  AttachmentKind? get kind => attachment?.kind ?? rejectedKind;
+
+  /// The refusal, already worded, with the ceiling filled in where it applies.
+  String? get rejectionMessage => rejection == null
+      ? null
+      : AttachmentLifecycle.rejectionMessage(rejection!, kind: kind);
 
   bool get isAccepted => attachment != null;
 
@@ -112,6 +129,18 @@ class ContentIntake {
       );
     }
 
+    // Capacity is judged HERE, once, against the canonical per-class ceiling.
+    // It used to be judged by whichever private constant the receiving composer
+    // happened to declare, so the same file was accepted on one surface and
+    // refused on another.
+    if (bytes.length > MediaCapacity.maxBytesFor(kind)) {
+      return IntakeResolution.rejected(
+        path: path,
+        rejection: AttachmentRejection.tooLarge,
+        kind: kind,
+      );
+    }
+
     return IntakeResolution.accepted(
       path: path,
       attachment: Attachment(
@@ -157,6 +186,14 @@ class ContentIntake {
       return IntakeResolution.rejected(
         path: path,
         rejection: AttachmentRejection.empty,
+      );
+    }
+
+    if (sizeBytes != null && sizeBytes > MediaCapacity.maxBytesFor(kind)) {
+      return IntakeResolution.rejected(
+        path: path,
+        rejection: AttachmentRejection.tooLarge,
+        kind: kind,
       );
     }
 

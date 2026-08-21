@@ -17,8 +17,8 @@ import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
+import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
-import '../../../core/media/media_mime.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -263,24 +263,31 @@ class _InstitutionAnnouncementComposerState
 
     if (result == null || result.files.isEmpty) return;
 
+    // ONE governed door, and every refusal is SPOKEN. A file with missing
+    // bytes used to be `continue`d past in silence, and an unresolvable type
+    // fell to `application/octet-stream` — which the server refuses at presign,
+    // after the person had already seen the file attached.
     final picked = <Attachment>[];
+    final refusals = <String>[];
     for (final file in result.files) {
-      final bytes = file.bytes;
-      if (bytes == null || bytes.isEmpty) continue;
-      final mime =
-          inferMimeFromFileName(file.name) ?? 'application/octet-stream';
-      picked.add(
-        Attachment(
-          localId:
-              '${DateTime.now().microsecondsSinceEpoch}_${file.name}_${picked.length}',
-          kind: kindFromMime(mime),
-          source: AttachmentSource.gallery,
-          fileName: file.name,
-          bytes: bytes,
-          mimeType: mime,
-          sizeBytes: bytes.length,
-          uploading: true,
-        ),
+      final resolution = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: file.bytes ?? Uint8List(0),
+        fileName: file.name,
+        source: AttachmentSource.gallery,
+      );
+      final attachment = resolution.attachment;
+      if (attachment == null) {
+        refusals.add('${file.name}: ${resolution.rejectionMessage!}');
+        continue;
+      }
+      attachment.uploading = true;
+      picked.add(attachment);
+    }
+
+    if (refusals.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(refusals.join(String.fromCharCode(10)))),
       );
     }
 

@@ -1,6 +1,5 @@
 import '../../../core/ui/publication/aura_article_cover.dart';
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/composition/content_intake.dart';
+import '../../../core/media/attachment.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
@@ -209,24 +210,45 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     if (picked == null) return;
     setState(() => _coverBusy = true);
     try {
-      final bytes = await picked.readAsBytes();
+      // ONE governed door. `?? 'image/jpeg'` GUESSED, and guessed wrong for
+      // every png, webp and heic the platform declined to name.
+      final resolution = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: await picked.readAsBytes(),
+        fileName: picked.name,
+        declaredMimeType: picked.mimeType,
+        source: AttachmentSource.gallery,
+      );
+      final cover = resolution.attachment;
+      if (cover == null || cover.kind != AttachmentKind.image) {
+        throw _CoverRefused(
+          cover == null
+              ? resolution.rejectionMessage!
+              : 'A cover must be an image.',
+        );
+      }
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
-        bytes: bytes,
-        fileName: picked.name,
-        mimeType: picked.mimeType ?? 'image/jpeg',
-        kind: 'IMAGE',
-        source: 'GALLERY',
+        bytes: cover.bytes!,
+        fileName: cover.fileName ?? picked.name,
+        mimeType: cover.mimeType!,
+        kind: wireKind(cover.kind),
+        source: wireSource(cover.source),
       );
       // canonical Media identity, never a durable URL
       await ref.read(articlesRepositoryProvider).setCover(id, result.mediaId);
       if (!mounted) return;
       setState(() => _coverMediaId = result.mediaId);
       await _refreshCoverPreview();
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Cover upload failed — try again.')));
+        // A governed refusal says what is wrong and is not retryable. Showing
+        // "try again" for a file type Aura will never accept invites the person
+        // to repeat something that cannot succeed.
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e is _CoverRefused
+                ? e.message
+                : 'Cover upload failed — try again.')));
       }
     } finally {
       if (mounted) setState(() => _coverBusy = false);
@@ -260,14 +282,28 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
     try {
-      final Uint8List bytes = await picked.readAsBytes();
+      final resolution = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: await picked.readAsBytes(),
+        fileName: picked.name,
+        declaredMimeType: picked.mimeType,
+        source: AttachmentSource.gallery,
+      );
+      final inline = resolution.attachment;
+      if (inline == null || inline.kind != AttachmentKind.image) {
+        throw _CoverRefused(
+          inline == null
+              ? resolution.rejectionMessage!
+              : 'Only an image can be inserted here.',
+        );
+      }
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
-        bytes: bytes,
-        fileName: picked.name,
-        mimeType: picked.mimeType ?? 'image/jpeg',
-        kind: 'IMAGE',
-        source: 'GALLERY',
+        bytes: inline.bytes!,
+        fileName: inline.fileName ?? picked.name,
+        mimeType: inline.mimeType!,
+        kind: wireKind(inline.kind),
+        source: wireSource(inline.source),
       );
       final urlRes =
           await ref.read(dioProvider).get<dynamic>('/media/${result.mediaId}/url');
@@ -295,10 +331,12 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
           ),
         ));
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Image upload failed — try again.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e is _CoverRefused
+                ? e.message
+                : 'Image upload failed — try again.')));
       }
     }
   }
@@ -588,4 +626,13 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       ),
     );
   }
+}
+
+/// A refusal the editor can show verbatim, so a governed "that file type
+/// cannot be attached" is not flattened into "upload failed — try again".
+class _CoverRefused implements Exception {
+  const _CoverRefused(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }
