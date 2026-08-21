@@ -1726,6 +1726,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
         if (wantsVideo) {
           unawaited(_mediaService.setSpeakerphoneEnabled(true));
         }
+
+        // Media has just become available. Any peer that answered BEFORE this
+        // moment answered with no tracks and is currently sending nothing —
+        // connected, in the roster, and permanently silent to the far side.
+        // Hand those peers the tracks and re-offer.
+        //
+        // This is the recovery half of the answerer race; the media service
+        // also waits on an in-flight acquisition so the common case never gets
+        // here. Renegotiating is safe when nothing was added, but it is skipped
+        // anyway — a needless offer to every peer on every join is real
+        // signalling churn.
+        if (await _mediaService.publishLocalTracksToSilentPeers()) {
+          debugPrint('[rtc] local media arrived late — re-offering to peers');
+          await _renegotiateExistingPeers();
+        }
       }
 
       await _socketService.emitAck('session:audio.set', <String, dynamic>{
