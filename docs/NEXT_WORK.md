@@ -4,14 +4,28 @@
 
 ---
 
+## 2026-08-21 — TWO STALE GATES RELEASED BY FOUNDER RULING
+
+**RC-C5 does not transfer.** 33 obligations (CH-13 × 26, CH-14 × 5, CH-11 × 2) are released
+from a gate that governed a chapter transition, not their provenance. **CH-11 is no longer
+blocked by RC-C5.** Each obligation is still subject to its own chapter, dependencies, founder
+decisions, live-certification requirements and any explicitly preserved gate — release is not
+authorisation to execute all 33.
+
+**CH-15 is not a founder gate.** D1–D5 are resolved doctrine; its blockers were mechanism, and
+they have discharged.
+
 ## AWAITING FOUNDER SELECTION — the next reconstruction item (2026-08-21)
 
 Two candidates are recorded in this file and **neither may be started by inference**.
 
 1. **CH-12 remainder.** Backfill, delivery/retention gating and asynchronous examination were
-   discharged by the 2026-08-21 E8 work. What is left is **CH-15 media verdict policy — a
-   named founder action**, which CH-12 may not invent. So CH-12 has reached a **policy gate**,
-   not an engineering one.
+   discharged by the 2026-08-21 E8 work. ~~What is left is CH-15 media verdict policy — a named
+   founder action.~~ **CORRECTED 2026-08-21: that was a stale claim.** CH-15 D1–D5 are already
+   resolved founder doctrine and its O4–O10 were mechanism-blocked, never policy-blocked.
+   **CH-12 has NOT reached a policy gate.** What remains for it is F127 D7, the
+   `firstKeyFromMedia()` blind spot, AI provenance/disclosure and Meetings visible-product
+   verification — none of them policy.
 2. **Correspondence retirement continuation**, from the 2026-08-20 entry below: relocate
    `CorrespondenceOrchestratorService` to a canonical realtime home → rule on released
    clients (F071) → retire the backend endpoints. Step 1 is engineering-executable; step 2 is
@@ -97,7 +111,12 @@ verdict applies to objects uploaded **before the scanner existed**"*.
 2. **Gate delivery and retention**, not only `READY` — today a verdict arriving later has nothing
    to revoke.
 3. **Asynchronous** examination — today it runs inside confirm.
-4. **CH-15 media verdict policy** — a *named founder action*, not CH-12's to invent.
+4. ~~**CH-15 media verdict policy** — a *named founder action*, not CH-12's to invent.~~
+   **CORRECTED 2026-08-21 — STALE.** `CH15_MODERATION_POLICY_FOUNDER_AUTHORED.md` records
+   **D1–D5 all RESOLVED**, including D3 (automated verdict · quarantine · appeal) and D4
+   (F137 media examination scope). Its own obligation table shows O4–O10 blocked by *CH-12's
+   real dependency, not by policy* — and that dependency, G1 leg 5(B), is live-certified.
+   Only **O11** (held by F095/CH-09) and **O12** (AI-report taxonomy, *blocks nothing*) remain.
 
 **No classifier was built.** The policy it would enforce does not exist, and choosing categories
 from a model vendor's taxonomy is what the ruling forbids.

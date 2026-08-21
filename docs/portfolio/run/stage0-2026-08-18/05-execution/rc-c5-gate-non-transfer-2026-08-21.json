@@ -1,0 +1,35 @@
+{
+ "type": "FOUNDER_RULING",
+ "id": "RC-C5-GATE-NON-TRANSFER",
+ "date": "2026-08-21",
+ "layer": "EXECUTION",
+ "supersedes": "The operative belief that CH-11 and CH-13 were blocked by the RC-C5 hard gate. PORTFOLIO_GOVERNANCE_DOCTRINE §2 (NOT_RECORDED) and §6 (BIFURCATED) are historical evidence and are NOT rewritten; this ruling is recorded forward.",
+ "question": "Does the historical C4 -> RC-C5 authorization gate transfer to CH-11, CH-13 or CH-14, which inherited obligations chartered under RC-C5?",
+ "ruling": "IT DOES NOT TRANSFER.",
+ "canonicalInterpretation": [
+  "The gate governed the RC-C4 -> RC-C5 chapter/deployment transition.",
+  "Obligation provenance is NOT authorization inheritance.",
+  "The later BIFURCATED doctrine prevents retroactive extension.",
+  "Section 12 Rich Content remains governed by its own RIC staging.",
+  "RIC-C5 must never be conflated with RC-C5.",
+  "Successor chapters inherit the OBLIGATIONS, not an obsolete chapter transition gate, unless a gate was explicitly preserved."
+ ],
+ "evidenceRecovered": {
+  "frozenGateText": "C5 remains CLOSED until C4 is implemented, locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live defects resolved, and founder declares C4 certified/closed. C4 LOCAL CERTIFICATION != C5 AUTHORIZATION.",
+  "gateTextSource": "00-evidence/rc-map.json -> RC-C5.relationshipsAndDependencies.hardGateIssued",
+  "noFindingAssigned": "NOT_RECORDED_AS_RC-C5 - composition/intake/attachment findings F011-F019 and F121-F143 are staged under the Section 12 Rich Content contract's OWN stage table (RIC axis). No governed document assigns any F-id to RC-C5.",
+  "namespaceHazard": "The Section 12 contract's dependency graph line reads '... -> GOVERNED DELIVERY (C5) -> ...'. That C5 is RIC-C5, NOT RC-C5. Any later reader equating them would produce a confidently wrong mapping. The belief that CH-13's 26 obligations sat behind the RC-C5 hard gate was that mapping.",
+  "dates": "gate frozen 2026-08-16 - Section 12 frozen 2026-08-17 - BIFURCATED ruling 2026-08-18"
+ },
+ "released": {
+  "count": 33,
+  "byChapter": {
+   "CH-13": 26,
+   "CH-14": 5,
+   "CH-11": 2
+  },
+  "note": "Released from the RC-C5 gate ONLY."
+ },
+ "doesNotAuthorize": "This ruling does NOT authorize indiscriminate execution of the 33. Each obligation remains subject to its canonical chapter, its own dependencies, existing founder decisions, live-certification requirements, and any other explicitly recorded gate.",
+ "accountingUnchanged": "143 findings + 308 obligations = 451 units. No unit moved chapter."
+}
