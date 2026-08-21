@@ -1,3 +1,4 @@
+import '../../../core/ui/publication/aura_article_cover.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -40,6 +41,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
   final _body = TextEditingController();
   String? _articleId;
   String? _coverUrl;
+  String? _coverMediaId;
   bool _coverBusy = false;
   Timer? _autosave;
   bool _loading = true;
@@ -61,7 +63,9 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
           ? await repo.getOwn(widget.articleId!)
           : await repo.createDraft();
       _articleId = article.id;
-      _coverUrl = article.coverUrl;
+      _coverMediaId = article.coverMediaId;
+      // Reopening a draft must show its saved cover, not an empty slot.
+      unawaited(_refreshCoverPreview());
       _wasPublished = article.isPublished;
       _title.text = article.title;
       _body.text = article.bodyMarkdown;
@@ -154,6 +158,42 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     return (column - AuraSpace.s20 * 2).clamp(240.0, 900.0);
   }
 
+  /// Resolve a URL the COMPOSER can actually display.
+  ///
+  /// The reader renders the governed door, which anonymous visitors may use
+  /// because a PUBLISHED article authorises it. A DRAFT authorises nobody — so
+  /// `Image.network` on the door, which sends no credentials, is denied 403 for
+  /// exactly the article the author is still writing. The preview would have
+  /// failed precisely where it is needed.
+  ///
+  /// So the composer asks the AUTHENTICATED endpoint, which checks that this
+  /// caller owns the media and issues a short-lived signed URL. Authority is
+  /// unchanged — it is enforced at issuance rather than skipped — and the
+  /// PRESENTATION is still the shared AuraArticleCover, so what the author sees
+  /// is what readers will get.
+  Future<void> _refreshCoverPreview() async {
+    final mediaId = _coverMediaId;
+    if (mediaId == null || mediaId.isEmpty) {
+      if (mounted) setState(() => _coverUrl = null);
+      return;
+    }
+    try {
+      final res = await ref
+          .read(dioProvider)
+          .get<dynamic>('/media/$mediaId/url');
+      final raw = res.data;
+      final data = raw is Map && raw['data'] is Map
+          ? raw['data'] as Map
+          : (raw as Map? ?? const {});
+      final url = (data['url'] ?? '').toString();
+      if (mounted) setState(() => _coverUrl = url.isEmpty ? null : url);
+    } catch (_) {
+      // A signed URL also EXPIRES, so a failure here is often staleness rather
+      // than absence. Leaving the old value lets the cover keep rendering until
+      // a retry succeeds instead of blanking the author's work.
+    }
+  }
+
   /// Choose the article's cover.
   ///
   /// Deliberately SEPARATE from inserting an inline image. A cover is the
@@ -180,9 +220,9 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       );
       // canonical Media identity, never a durable URL
       await ref.read(articlesRepositoryProvider).setCover(id, result.mediaId);
-      final fresh = await ref.read(articlesRepositoryProvider).getOwn(id);
       if (!mounted) return;
-      setState(() => _coverUrl = fresh.coverUrl);
+      setState(() => _coverMediaId = result.mediaId);
+      await _refreshCoverPreview();
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -200,7 +240,12 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     setState(() => _coverBusy = true);
     try {
       await ref.read(articlesRepositoryProvider).setCover(id, null);
-      if (mounted) setState(() => _coverUrl = null);
+      if (mounted) {
+        setState(() {
+          _coverMediaId = null;
+          _coverUrl = null;
+        });
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -326,6 +371,45 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
   Widget _writePane() {
     return Column(
       children: [
+        // COVER PREVIEW — the author must see what they are about to publish.
+        // A filename or a success toast is not a cover-authoring experience:
+        // the first version gave no preview at all, so the framing was only
+        // discoverable AFTER publishing. This renders through the same
+        // AuraArticleCover the reader uses, so it predicts the real result
+        // rather than approximating it.
+        if ((_coverUrl ?? '').trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s20, AuraSpace.s16, AuraSpace.s20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AuraArticleCover(
+                  _coverUrl!,
+                  showFailure: true,
+                  onRetry: _coverBusy ? null : _refreshCoverPreview,
+                ),
+                const SizedBox(height: AuraSpace.s8),
+                Row(children: [
+                  Text('Cover',
+                      style: AuraText.micro.copyWith(color: AuraSurface.muted)),
+                  const Spacer(),
+                  TextButton(
+                      onPressed: _coverBusy ? null : _pickCover,
+                      child: const Text('Replace')),
+                  TextButton(
+                      onPressed: _coverBusy ? null : _removeCover,
+                      child: const Text('Remove')),
+                ]),
+              ],
+            ),
+          ),
+        if (_coverBusy)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(
+                AuraSpace.s20, AuraSpace.s16, AuraSpace.s20, 0),
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(
               AuraSpace.s20, AuraSpace.s16, AuraSpace.s20, 0),

@@ -1,4 +1,4 @@
-import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/publication/aura_article_cover.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -52,20 +52,11 @@ class ArticleScreen extends ConsumerWidget {
                 // design — most articles have none, and an empty frame would
                 // be worse than no frame. Rendered from the SERVER's governed
                 // URL; the client never composes a media address itself.
+                // Rendered through the SHARED cover contract, so the author's
+                // composer preview and this are the same widget and cannot
+                // disagree about framing.
                 if ((article.coverUrl ?? '').trim().isNotEmpty) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AuraRadius.md),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Image.network(
-                        article.coverUrl!,
-                        fit: BoxFit.cover,
-                        // A cover that fails to load must not leave a broken
-                        // frame sitting above the headline.
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                      ),
-                    ),
-                  ),
+                  AuraArticleCover(article.coverUrl!),
                   const SizedBox(height: AuraSpace.s16),
                 ],
                 AuraPublicationTitle(article.title),
