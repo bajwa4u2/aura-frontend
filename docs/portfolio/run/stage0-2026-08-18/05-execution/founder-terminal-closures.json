@@ -65,6 +65,17 @@
       "ownership": "NO CANONICAL FINDING GOVERNS INTERNAL MEETING-LINK HYDRATION OR PRESENTATION. The nearest Meetings findings — F064 and F113 (refresh continuity) and F114 (Meetings protected) — govern different subjects and do NOT own this.",
       "disposition": "PRESERVED AS AN OBSERVATION FOR RECONSTRUCTION ACCOUNTING / GOVERNANCE REVIEW ONLY. No finding was created, parseInternalReference was NOT extended, and Meetings was NOT touched. Meetings remains a protected surface.",
       "wouldRequire": "Explicit founder authorization, both to admit a finding and to cross the Meetings boundary."
+    },
+    "MEETINGS_REALTIME_CERTIFICATION_2026_08_21": {
+      "observation": "A controller-level rig running two real RealtimeControllers reproduced the original one-way media race, symmetric silence, symmetric repair, real glare and watchdog competition. The known-bad 9815742 design survived all of them. The repair DOES execute inside a rejoin and costs a real InvalidStateError that reaches state.errorMessage; the founder-observed bilateral fatal overlay is NOT locally reproduced.",
+      "ownership": "Meetings is a protected certified surface. No finding was created and no canonical unit was added. CH-04 owns realtime substrate; this is recorded as evidence, not as an admitted defect.",
+      "disposition": "INVESTIGATION CLOSED BY FOUNDER RULING 2026-08-21. Production remains reverted at 4420602. 9815742 FAILED founder production certification and is historical evidence, not an accepted repair. Full record: aura_final/docs/2026-08-21-meetings-realtime-certification-disposition.md",
+      "separateDefectRecorded": "Explicit web rollback is defective: handleRemoteOffer builds RTCSessionDescription(null, 'rollback') and dart_webrtc's web setLocalDescription dereferences description.sdp!, so the polite side's rollback always throws on Flutter Web. OPEN, separate, deliberately NOT fixed, and NOT used to explain the web incident."
+    },
+    "MEDIA_SAME_ORIGIN_DELIVERY_2026_08_21": {
+      "observation": "User avatars, user covers and institution identity imagery were missing from every profile in the web product. Bytes were intact throughout; the failure was the SHAPE of delivery - app origin -> api origin -> 302 -> r2 origin taints Origin to null at R2 on the CanvasKit CORS-read path.",
+      "ownership": "CH-12 delivery. Closed as an incident, and it corrected a CH-12 certification claim.",
+      "disposition": "CLOSED - founder-verified in the released product 2026-08-21. Backend fc2bd71 / frontend 3f24f94. Fixed with a same-origin nginx door, NOT a CORS change. Record: aura-backend/docs/2026-08-21-media-delivery-same-origin-incident.md"
     }
   },
   "nonTerminalTransitions": {
@@ -100,6 +111,39 @@
       "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
       "date": "2026-08-19",
       "basis": "RC7 repaired in both halves. RC8 attribution tested and REMOVED FORWARD - no compose surface carries a state.extra destination. Stage-0 attribution preserved verbatim, superseded only as to current causal status."
+    },
+    "F053": {
+      "title": "Person identity consumption",
+      "chapter": "CH-03",
+      "stage0State": "PARTIALLY_VALIDATED",
+      "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "date": "2026-08-20",
+      "basis": "Founder-authorised promotion. Implementation only; live evidence was NOT claimed. Backend consumer migration complete. The earlier WITHDRAWN promotion and the historical PARTIALLY_VALIDATED evidence stand as written."
+    },
+    "F116": {
+      "title": "Typed person convergence",
+      "chapter": "CH-03",
+      "stage0State": "PARTIALLY_VALIDATED",
+      "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "date": "2026-08-20",
+      "basis": "Founder-authorised promotion. Implementation only; live evidence was NOT claimed. Identity ratchet after migration: surface 19 sites / 11 files, typed-person 0/0, domain proof 23/23, residue sweep zero."
+    },
+    "F137": {
+      "title": "Media safety examination",
+      "chapter": "CH-12",
+      "stage0State": "OPEN",
+      "executionLayerState": "STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED",
+      "date": "2026-08-21",
+      "basis": "Adjudicated against the ORIGINAL frozen D4 criteria in aura-backend/docs/2026-08-21-ch12-e8-completion-and-f137-adjudication.md, which states 'F137 is CLOSED': every governed class present in production is covered at the current examiner identity, every deliverable object holds a malware pass, the accepted envelope is examinable end to end and verified live, and the one class the backfill structurally could not reach is now reachable. Two defects closed there were introduced during the chapter and found by checking evidence rather than the summary line: an empty-stream false clean, and an invalid depth probe.",
+      "terminalPromotionWithheld": "'CLOSED' is not a register terminal state. The terminal set is LIVE_CERTIFIED / RETIRED_BY_RULING / SUPERSEDED_BY_RULING / FOUNDER_CLOSED, and promotion into it is a governance act requiring a founder ruling. Recorded here at the highest NON-TERMINAL state the evidence supports. FOUNDER DECISION OWED: does the E8 adjudication constitute FOUNDER_CLOSED?"
+    },
+    "F044": {
+      "title": "Awaiting founder live observation",
+      "chapter": "CH-05",
+      "stage0State": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "executionLayerState": "IMPLEMENTED_NOT_LIVE_CERTIFIED",
+      "date": "2026-08-20",
+      "basis": "UNCHANGED and explicitly NOT promoted across the Phase 5 work. Recorded so its unchanged state is visible rather than inferred from silence. Live observation is owed and is now observable against a deployed build."
     }
   }
 }

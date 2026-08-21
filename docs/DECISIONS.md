@@ -796,3 +796,40 @@ of F137.
 Recorded because the temptation after a passing security test is to treat the door as solved. The
 door is solved for the question it was built to answer.
 
+---
+
+## 2026-08-21 — FOUNDER RULING: Meetings realtime investigation CLOSED
+
+**The two-party-web causal statement is formally REJECTED:** *symmetric repair → glare →
+fatal join failure*. Genuine symmetric glare and watchdog competition were reproduced under
+the known-bad `9815742` design and **the system survived them**. That explanation is not to
+be rescued.
+
+**`9815742` FAILED founder production certification.** It remains historical evidence, never
+an accepted repair. Production stays reverted at `4420602`.
+
+**Not to be pursued** without new founder authorisation: repeated rejoin-cycle
+experimentation · 3+ participant mesh · TURN/relay reproduction · further harness expansion ·
+native rollback investigation · another repair design · another production deployment.
+
+**Proportionality, frozen:** *an unresolved production edge case does not become a multi-day
+research programme.* Local proof is valuable when it materially reduces deployment risk and
+must stay proportionate to the workstream. Preserve hard unresolved items explicitly and
+continue reconstruction when investigation reaches diminishing returns.
+
+Future realtime fixes may be founder-validated directly on the live product when a bounded
+fix is ready. Record: `docs/2026-08-21-meetings-realtime-certification-disposition.md`.
+
+## 2026-08-21 — ADMISSION: Articles are not a first-class publication surface
+
+Admitted to **CH-14** as `ARTICLES-FIRST-CLASS-DEFECT` through the execution-defect
+mechanism (`PORTFOLIO_GOVERNANCE_DOCTRINE` §13). **Not** a Stage-0 finding, **not** F144;
+143 + 308 = 451 unchanged.
+
+**Audit before assuming.** Articles are to be audited against the canonical
+publication/interaction capability set — like/reaction, reply/discussion, share/reshare,
+translation — confirming each against the running product. **Posts are not automatically
+the template.** Nothing is authorised to be implemented.
+
+**The Article cover capability is SEPARATE** and must never be read as first-class
+publication completion.

@@ -1,8 +1,61 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-20.** Roadmap frozen. C0–C3 executed. The native release-cutover workstream is **CLOSED**; the active frontier is **G1 leg 5(B)**, below.
+**As of 2026-08-21.** Roadmap frozen. C0–C3 executed. The native release-cutover workstream is **CLOSED**. G1 leg 5 is **COMPLETE**. Canonical accounting reconciled 2026-08-21; the next item is **awaiting founder selection** — see the top entry.
 
 ---
+
+## AWAITING FOUNDER SELECTION — the next reconstruction item (2026-08-21)
+
+Two candidates are recorded in this file and **neither may be started by inference**.
+
+1. **CH-12 remainder.** Backfill, delivery/retention gating and asynchronous examination were
+   discharged by the 2026-08-21 E8 work. What is left is **CH-15 media verdict policy — a
+   named founder action**, which CH-12 may not invent. So CH-12 has reached a **policy gate**,
+   not an engineering one.
+2. **Correspondence retirement continuation**, from the 2026-08-20 entry below: relocate
+   `CorrespondenceOrchestratorService` to a canonical realtime home → rule on released
+   clients (F071) → retire the backend endpoints. Step 1 is engineering-executable; step 2 is
+   a founder decision about installed users.
+
+## OPEN — Articles are not a first-class publication surface (2026-08-21)
+
+`ARTICLES-FIRST-CLASS-DEFECT`, admitted to **CH-14** through the execution-defect mechanism
+(`PORTFOLIO_GOVERNANCE_DOCTRINE` §13). **Not** a Stage-0 finding, **not** numbered F144 —
+143 + 308 = 451 is unchanged.
+
+Observed or unverified as missing: **like/reaction · reply/discussion · share/reshare ·
+translation**. That list is what has been *observed*, not a completed audit — each must be
+confirmed against the running product before it is claimed absent.
+
+**Audit Articles against the canonical publication/interaction capability set. Do NOT assume
+Posts are the exact template.** Nothing is authorised to be built.
+
+**The Article cover capability (`831ca21`, `37b6d59`) is SEPARATE** and must never be read as
+first-class publication completion.
+
+## PARKED — Meetings realtime (founder ruling, 2026-08-21)
+
+Investigation closed. Production reverted at `4420602`; one-way media can still occur;
+**leave/rejoin remains the working workaround**. `9815742` FAILED founder production
+certification. Six Meetings items are classified individually and **none blocks unrelated
+reconstruction**: one-way media (OPEN / root-caused / repair not certified) · camera-off
+presentation (OPEN, separate) · refresh continuity (OPEN) · explicit web rollback defect
+(OPEN, separate realtime defect) · TURN/multi-peer/rejoin-stress (NOT CERTIFIED) ·
+Meetings visible-product certification (PARTIAL).
+
+Do not reopen. Record: `docs/2026-08-21-meetings-realtime-certification-disposition.md`.
+
+## REPORTED — a stray backend test that does not test anything (2026-08-21)
+
+`aura-backend/src/media/media-payload-urls.spec.ts` carries **24 uncommitted lines**. Its
+narrative is accurate — it documents the redirect loop where `/media/:id/raw` redirected to
+itself and production answered 429 after three hops, fixed and shipped in `a30c99e` by the
+`resolve: 'door' | 'storage'` split.
+
+**Its assertions are tautologies.** Both tests declare a local constant and assert on that
+constant; neither imports or invokes `MediaService.getDeliveryUrl` or the controller. Delete
+`resolve: 'storage'` from `media.controller.ts:194` and both still pass. **Not committed, not
+deleted.** A genuine regression test for that line is missing and remains owed.
 
 ## RESOLVED — the stranded deeplink family (2026-08-20)
 

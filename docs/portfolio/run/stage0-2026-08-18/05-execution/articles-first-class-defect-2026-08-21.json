@@ -1,0 +1,28 @@
+{
+ "type": "ADMITTED_EXECUTION_DEFECT",
+ "id": "ARTICLES-FIRST-CLASS-DEFECT",
+ "date": "2026-08-21",
+ "admittedBy": "FOUNDER INSTRUCTION 2026-08-21",
+ "discoveredBy": "Founder product observation while reviewing the Article surface",
+ "owningChapter": "CH-14",
+ "classification": "DISCOVERED_PRODUCT_CAPABILITY_DEFECT",
+ "isNewCanonicalUnit": false,
+ "accountingNote": "Admitted through the execution-defect mechanism (PORTFOLIO_GOVERNANCE_DOCTRINE §13). NOT a Stage-0 finding and NOT numbered F144. The ratified baseline of 143 findings + 308 obligations = 451 units is unchanged.",
+ "statement": "Articles are not yet established as a first-class Aura publication surface.",
+ "observedOrUnverifiedGaps": [
+  "like / reaction",
+  "reply / discussion",
+  "share / reshare",
+  "translation"
+ ],
+ "gapsAreNotYetAudited": "The list above is what has been OBSERVED OR IS UNVERIFIED, not a completed audit. Each item must be confirmed against the running product before it is claimed absent.",
+ "auditRule": "Audit Articles against the CANONICAL publication/interaction capability set. Do NOT assume Posts are the exact template - that assumption is what would turn a real product question into a copy exercise.",
+ "mustNotBeConfusedWith": {
+  "articleCover": "The recently implemented Article cover capability (831ca21, 37b6d59) is SEPARATE. It is a composition/presentation capability and must never be read as first-class publication completion."
+ },
+ "state": "OPEN_ASSIGNED",
+ "waived": false,
+ "acceptedAsPermanent": false,
+ "doesNotAuthorize": "This admission authorises NO implementation. Nothing is to be built until the audit is performed and its result is founder-reviewed. CH-14 remains un-entered.",
+ "closureRequirement": "An Articles capability audit against the canonical publication/interaction set, with each capability confirmed present or absent from the running product, is a CH-14 closure requirement."
+}

@@ -1,6 +1,9 @@
 # Aura Release Client — Handoff
 
-**2026-08-15.** For any agent or engineer picking this up.
+**2026-08-15, dated facts refreshed 2026-08-21.** For any agent or engineer picking this up.
+
+> **Read `CURRENT_STATE.md` first.** The doctrine in this file is still correct; the
+> repository picture below was written on 2026-08-15 and is refreshed at the bottom.
 
 ---
 
@@ -46,10 +49,10 @@
 
 ## Repositories
 
-| Repo | State |
+| Repo | State (2026-08-21) |
 |---|---|
-| `aura-backend` | construction baseline **FROZEN** at `2a92a0e`; Live additions are future work |
-| `aura_final` | discovery + roadmap + **C0 implemented and fully adjudicated**; nothing committed |
+| `aura-backend` | the `2a92a0e` construction baseline is **historical**. Much has shipped since: CH-12 examination, governed media delivery, the release cutover. One uncommitted file — see below |
+| `aura_final` | **committed and pushed.** `main` at `4420602`; certification branch `realtime-negotiation-certification` pushed. *"Nothing committed"* below was true on 2026-08-15 and is not true now |
 | Representation | **3 founder-authorised reconciliation edits** (2026-08-15): Discovery directive superseded · Person-vs-Member note · Correspondence umbrella note. No frozen status, type, features or framing directive altered; no historical text deleted. |
 
 ## Current git state
@@ -57,6 +60,34 @@
 `aura_final`: **C0 modified source.** New: `lib/core/product/` (4 files), `test/product/` (5 files incl. the frozen drift baseline). Modified: `lib/core/utils/relative_time.dart` (now a forwarding shim), 30 files whose `'Try again'` labels became `ProductAction.retry`, `lib/features/updates/presentation/updates_screen.dart`, `lib/features/communications/presentation/widgets/communication_empty_error_states.dart`, `lib/features/public/presentation/thread_screen.dart` (one `const` removed). **Nothing committed.**
 
 **Meetings, routes, layout and visual treatment were not touched.**
+
+---
+
+## 2026-08-21 — what a new reader most needs to know
+
+**Canonical accounting is current.** `RECONSTRUCTION_REGISTER.md` was regenerated through its
+own generator; nothing was lost and fifteen already-recorded items became visible. Accounting
+is unchanged at **143 findings + 308 obligations = 451 units across 17 chapters**.
+
+**Read the register's distribution table correctly.** It is the **STAGE-0 RATIFIED BASELINE**
+of 2026-08-18, not a live count — Stage-0 evidence is never rewritten. Later movement lives in
+**LIVE CERTIFICATIONS**, **TERMINAL CLOSURES** and **RECORDED NON-TERMINAL TRANSITIONS** further
+down the same file. Reading the table alone understates what has been done. `17/17` is chapter
+*accounting coverage*, never completion — **no chapter has closed**. `138` is a historical
+checkpoint and is not a live counter.
+
+**Meetings realtime is PARKED** by founder ruling. Production reverted at `4420602`; one-way
+media can still occur; **leave/rejoin remains the working workaround**. `9815742` FAILED
+founder production certification — historical evidence, never a repair to reapply. Do not
+reopen the investigation. See `docs/2026-08-21-meetings-realtime-certification-disposition.md`.
+
+**`lib/rtc_harness/` is not product.** A separate entrypoint, unreachable from `lib/main.dart`
+and `router.dart`, absent from every release bundle. It must stay outside the release surface.
+
+**One uncommitted backend file**, deliberately: `aura-backend/src/media/media-payload-urls.spec.ts`
+carries 24 lines whose narrative is right and whose assertions are tautologies — they assert on
+locally declared constants and would pass even if the production behaviour were deleted. Not
+committed, not deleted, reported in `NEXT_WORK.md`.
 
 ---
 

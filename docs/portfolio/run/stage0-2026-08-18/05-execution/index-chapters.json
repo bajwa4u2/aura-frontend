@@ -1726,7 +1726,24 @@
      "CO-RC-C5-032",
      "CO-RC-C5-033"
     ]
-   }
+   },
+   "assignedDefects": [
+    {
+     "id": "ARTICLES-FIRST-CLASS-DEFECT",
+     "title": "Articles are not established as a first-class publication surface",
+     "admittedBy": "FOUNDER INSTRUCTION 2026-08-21",
+     "discoveredBy": "Founder product observation",
+     "classification": "DISCOVERED_PRODUCT_CAPABILITY_DEFECT",
+     "state": "OPEN_ASSIGNED",
+     "waived": false,
+     "acceptedAsPermanent": false,
+     "isNewCanonicalUnit": false,
+     "accountingNote": "Recorded against an existing chapter. NOT a new finding and NOT a new chartered obligation; 143 + 308 = 451 is unchanged.",
+     "closureRequirement": "Audit Articles against the canonical publication/interaction capability set - like/reaction, reply/discussion, share/reshare, translation - confirming each against the running product rather than assuming Posts are the template.",
+     "doesNotAuthorize": "No implementation. The Article cover capability is separate and is not first-class publication completion.",
+     "record": "docs/portfolio/run/stage0-2026-08-18/05-execution/articles-first-class-defect-2026-08-21.json"
+    }
+   ]
   },
   {
    "id": "CH-15",

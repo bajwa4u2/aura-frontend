@@ -1,10 +1,50 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-20**
+**Last updated: 2026-08-21**
 
 ---
 
 ## Status
+
+> **2026-08-21 — canonical accounting reconciled; Meetings realtime parked.**
+> `RECONSTRUCTION_REGISTER.md` was regenerated through its own generator after four days of
+> execution-layer facts had accumulated without being printed. **Nothing was lost** — 192 → 238
+> lines, zero items dropped — and fifteen items became visible that were already recorded:
+> the F059/F061/F062/F063 transitions of 2026-08-19, F053/F116, F137, F044, the G1 leg 5(B),
+> Institution Spaces and CH-12 E6 live certifications, the CH-12 web-consumer certification
+> **correction**, and the three admitted execution defects.
+>
+> **The register's distribution table was mislabelled.** It reads from Stage-0 evidence, which
+> is never rewritten — correct and deliberate — but it was headed *CURRENT STATE DISTRIBUTION*,
+> so a 2026-08-18 baseline read as a live count and every later movement was invisible. It now
+> says **STAGE-0 RATIFIED STATE DISTRIBUTION** and points at the sections that carry the
+> movement. That single mislabel is what made the accounting look stale.
+>
+> **Accounting unchanged and independently re-proved: 143 findings + 308 obligations = 451
+> units across 17 chapters.** `17/17` means chapter *accounting coverage*, never completion —
+> **no chapter has closed.** `138` remains a historical checkpoint and must never be quoted as
+> a live counter.
+>
+> **Meetings realtime investigation CLOSED by founder ruling.** Production stays reverted at
+> `4420602`; `9815742` FAILED founder production certification and is historical evidence, not
+> an accepted repair. One-way media can still occur and **leave/rejoin remains the working
+> workaround**. Full disposition:
+> `docs/2026-08-21-meetings-realtime-certification-disposition.md`.
+>
+> **Articles are not established as a first-class publication surface** —
+> `ARTICLES-FIRST-CLASS-DEFECT`, admitted to CH-14 through the execution-defect mechanism,
+> accounting unchanged. The Article cover capability is separate and is **not** first-class
+> publication completion.
+>
+> **CH-12.** E6 live-certified against backend `3faa46d`; E8 complete; the F137 adjudication
+> against the original frozen D4 criteria records *"F137 is CLOSED"*. `CLOSED` is not a
+> register terminal state, so F137 sits at `STRUCTURALLY_CLOSED_NOT_LIVE_CERTIFIED` pending a
+> founder ruling on whether that adjudication constitutes `FOUNDER_CLOSED`.
+>
+> **Same-origin media delivery incident CLOSED**, founder-verified in the released product
+> (backend `fc2bd71` / frontend `3f24f94`). It also *corrected* a CH-12 claim: the web-consumer
+> leg had been certified on a signed URL that never exercised the Flutter Web / CanvasKit
+> CORS-read path.
 
 > **2026-08-20 — G1 leg 5 COMPLETE; CH-12 entered.**
 > Founder observed the predeclared leg 5(B) test live: a plain-text file renamed to `photo.png`
