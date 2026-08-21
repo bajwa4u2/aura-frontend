@@ -191,6 +191,13 @@ owning chapter in the approved roadmap; both need a product decision.
 
 # C2 — IDENTITY, PRESENCE & PROFILE
 
+> **STALE SECTION — kept, not deleted (2026-08-21).** The text below says C2 is not started.
+> `docs/frontend-discovery/C2_FINAL_CLOSEOUT.md` (2026-08-16) contradicts it: the authorized
+> data transitions executed in order, final retirement was EXECUTED at `d18b0bb`, and it records
+> *"C2 is ready for the founder's FINAL CLOSURE declaration."* This file's own header also says
+> C0–C3 executed. **The FINAL CLOSURE declaration is not recorded in this repository** — that is
+> the open question, not whether the work happened. Preserved verbatim rather than adjudicated.
+
 **⛔ NOT STARTED. Awaiting explicit founder authorisation.** Roadmap approval is
 **not** authorisation to start a chapter, and C1 closure is not authorisation for C2.
 
