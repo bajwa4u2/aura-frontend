@@ -798,6 +798,29 @@ door is solved for the question it was built to answer.
 
 ---
 
+## 2026-08-21 — FOUNDER RULING: C2 IS FINAL CLOSED
+
+**C2 — Identity, Presence & Profile is FINAL CLOSED.** The authorized C2 transitions were
+executed in order, final retirement was executed at `d18b0bb` (legacy `Follow`/`FollowRequest`
+dropped, the `AURA_FOLLOW_STORE` flag and every legacy branch deleted, authority single-store
+by construction), and `C2_FINAL_CLOSEOUT.md` established readiness for founder closure.
+
+> **This ruling does NOT reinterpret C3+ authorization.** C3's executed work and C4–C11's
+> unauthorised status are untouched. Roadmap approval remains not authorisation.
+
+## 2026-08-21 — FOUNDER RULING: F137 is FOUNDER_CLOSED
+
+The accepted E8/F137 closure is translated into canonical register vocabulary:
+**F137 = `FOUNDER_CLOSED`**, terminal by founder authority.
+
+Evidence preserved, and the distinction with it: governed `READY` classes are covered · there
+is **no false clean for absent bytes** · genuinely unavailable `ORPHANED` bytes remain
+**honestly unavailable**.
+
+> **THIS CLOSES F137, NOT CH-12.** It settles none of the remaining CH-12 policy or product
+> questions — CH-15 media verdict policy, F127 D7, the `firstKeyFromMedia()` blind spot, AI
+> provenance/disclosure, Meetings visible-product verification. **Do not broaden the closure.**
+
 ## 2026-08-21 — FOUNDER RULING: Meetings realtime investigation CLOSED
 
 **The two-party-web causal statement is formally REJECTED:** *symmetric repair → glare →
