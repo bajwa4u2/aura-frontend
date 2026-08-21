@@ -58,6 +58,19 @@ COPY --from=build /app/build/web /usr/share/nginx/html
 RUN rm -f /etc/nginx/conf.d/default.conf \
  && mkdir -p /etc/nginx/templates \
  && printf '%s\n' \
+'# Canonical application origin. auraplatform.org is the ONE canonical' \
+'# browser origin. app.auraplatform.org stays reachable as a legacy entry' \
+'# point but is not a second supported origin: two equal origins mean two' \
+'# different same-origin sets, and the governed media door can only be' \
+'# same-origin for one of them. Path and query are preserved so bookmarks' \
+'# and Stripe billing returns (/billing/success, /billing/cancel) survive.' \
+'server {' \
+'  listen       ${PORT};' \
+'  listen  [::]:${PORT};' \
+'  server_name  app.auraplatform.org;' \
+'  return 301 https://auraplatform.org$request_uri;' \
+'}' \
+'' \
 'server {' \
 '  listen       ${PORT};' \
 '  listen  [::]:${PORT};' \
@@ -115,6 +128,42 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
 '    proxy_set_header X-Real-IP $remote_addr;' \
 '    proxy_read_timeout 15s;' \
+'    proxy_connect_timeout 5s;' \
+'  }' \
+'' \
+'  # Governed media door (same-origin first hop). THIS BLOCK EXISTS FOR' \
+'  # ONE REASON: browser CORS. The API returns a 302 to a signed private' \
+'  # R2 URL. Reached CROSS-origin, the Fetch spec replaces the request' \
+'  # origin with an opaque one before following that redirect, so R2 sees' \
+'  # Origin: null, matches no rule in a correct policy, and the browser' \
+'  # discards a 200 it already holds. Every avatar, cover and institution' \
+'  # logo vanished that way, seen as statusCode 0 from image resource' \
+'  # service. Serving the SAME path on the app origin makes the first hop' \
+'  # same-origin, so the real Origin survives and the EXISTING R2 policy' \
+'  # matches. No bucket change, no Origin:null.' \
+'  #' \
+'  # nginx is TRANSPORT ONLY here. It decides nothing about visibility,' \
+'  # quarantine, readiness or parent access; it forwards to the canonical' \
+'  # API route, which stays the single Media authority. Authorization and' \
+'  # Cookie headers pass through unchanged, so an anonymous request stays' \
+'  # anonymous and a bearer request keeps its elevation.' \
+'  #' \
+'  # proxy_redirect off is load-bearing: the 302 must reach the BROWSER' \
+'  # untouched so the BROWSER follows it to R2. Following or rewriting it' \
+'  # here would put media bytes back on Railway.' \
+'  location ~ ^/media/[^/]+/raw$ {' \
+'    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;' \
+'    resolver_timeout 5s;' \
+'    proxy_pass ${AURA_BACKEND_API_ORIGIN}/v1$request_uri;' \
+'    proxy_http_version 1.1;' \
+'    proxy_ssl_server_name on;' \
+'    proxy_set_header Host api.auraplatform.org;' \
+'    proxy_set_header X-Forwarded-Host $host;' \
+'    proxy_set_header X-Forwarded-Proto $scheme;' \
+'    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'    proxy_set_header X-Real-IP $remote_addr;' \
+'    proxy_redirect off;' \
+'    proxy_read_timeout 30s;' \
 '    proxy_connect_timeout 5s;' \
 '  }' \
 '' \
