@@ -26,10 +26,17 @@ Two candidates are recorded in this file and **neither may be started by inferen
    **CH-12 has NOT reached a policy gate.** What remains for it is F127 D7, the
    `firstKeyFromMedia()` blind spot, AI provenance/disclosure and Meetings visible-product
    verification — none of them policy.
-2. **Correspondence retirement continuation**, from the 2026-08-20 entry below: relocate
-   `CorrespondenceOrchestratorService` to a canonical realtime home → rule on released
-   clients (F071) → retire the backend endpoints. Step 1 is engineering-executable; step 2 is
-   a founder decision about installed users.
+2. **Correspondence retirement continuation**, from the 2026-08-20 entry below: ~~relocate
+   `CorrespondenceOrchestratorService` to a canonical realtime home~~ → rule on released
+   clients (F071) → retire the backend endpoints.
+   **CORRECTED 2026-08-21: step 1 was already done and this entry was stale.** The service
+   lives at `src/realtime/orchestration/correspondence-orchestrator.service.ts`,
+   `RealtimeModule` provides and exports it, `ConversationsModule` reaches it by importing
+   `RealtimeModule`, and no correspondence module exists anywhere in `src/`. Commit `96fc92e`
+   ("Rehome realtime orchestration out of Correspondence") did the move and `55e6099`
+   retargeted the producers. `tsc` clean; 236 suites / 2997 tests pass.
+   **The remaining steps are the founder decision on installed users (F071) and the endpoint
+   retirement that depends on it. Neither is engineering-executable.**
 
 ## OPEN — Articles are not a first-class publication surface (2026-08-21)
 
@@ -910,9 +917,15 @@ family is down to **one file**.
 
 First-party consumers are now zero, but two non-discretionary blockers stand in the way:
 
-1. **`ConversationsModule` depends on `CorrespondenceOrchestratorService`.** Canonical Conversation
+1. ~~**`ConversationsModule` depends on `CorrespondenceOrchestratorService`.** Canonical Conversation
    live/calling runs through the legacy module. Deleting it today would break the very thing this
-   retirement exists to protect. **MIGRATE FIRST** — relocate the orchestrator to a canonical realtime home.
+   retirement exists to protect. **MIGRATE FIRST** — relocate the orchestrator to a canonical realtime home.~~
+   **DISCHARGED (verified 2026-08-21).** The orchestrator was rehomed by `96fc92e` and its producers
+   retargeted by `55e6099`. `RealtimeModule` provides and exports it; `ConversationsModule` imports
+   `RealtimeModule`; there is no correspondence module left in `src/`. This blocker no longer stands.
+   *Note: the boot smoke (`npm run test:app-smoke`) could not be run as confirmation on this machine —
+   the Prisma query engine binary is x64 and the host is Windows-on-ARM. The evidence above is static
+   plus `tsc --noEmit` clean.*
 2. **Released native binaries (F071).** They may still call these endpoints. Breaking installed users is a
    product decision about people, not an engineering one, so it is returned rather than assumed.
 
