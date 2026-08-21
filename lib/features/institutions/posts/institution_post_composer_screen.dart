@@ -792,14 +792,22 @@ class _InstitutionPostComposerScreenState
               : 'That is not an image file.',
         );
       }
+      // WHAT GETS UPLOADED IS WHAT INTAKE PRODUCED, not what was picked.
+      //
+      // These must travel together. Sending the ORIGINAL bytes with the
+      // resolved mime is exactly the mislabelling the whole intake design
+      // exists to prevent — and after normalization the two genuinely differ:
+      // a picked HEIC resolves to image/jpeg and carries re-encoded bytes.
+      final prepared = attachment.bytes!;
       final mimeType = attachment.mimeType!;
+      final uploadName = attachment.fileName ?? file.name;
 
-      final size = video ? null : await _decodeImageSize(bytes);
+      final size = video ? null : await _decodeImageSize(prepared);
 
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
-        bytes: bytes,
-        fileName: file.name,
+        bytes: prepared,
+        fileName: uploadName,
         mimeType: mimeType,
         kind: video ? 'VIDEO' : 'IMAGE',
         source: 'UPLOAD',

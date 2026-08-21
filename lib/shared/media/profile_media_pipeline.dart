@@ -150,9 +150,13 @@ class ProfileMediaPipeline {
       );
     }
 
+    // The editor gets what intake PRODUCED, not what was picked. For ordinary
+    // content they are the same object; for a normalized HEIC they are not,
+    // and handing the editor the original would decode it a second time on the
+    // only platforms that can.
     final cropped = await ProfileMediaEditor.open(
       context,
-      imageBytes: bytes,
+      imageBytes: picked.bytes ?? bytes,
       config: config,
     );
     if (cropped == null) {

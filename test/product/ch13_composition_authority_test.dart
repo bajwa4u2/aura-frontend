@@ -20,6 +20,7 @@ import 'package:aura/core/composition/content_intake.dart';
 import 'package:aura/core/content_policy/content_length_policy.dart';
 import 'package:aura/core/media/attachment.dart';
 import 'package:aura/core/media/content_normalizer.dart';
+import 'package:aura/core/media/media_mime.dart';
 import 'package:aura/core/media/media_capacity.dart';
 import 'package:aura/core/media/attachment.dart';
 import 'package:image_picker/image_picker.dart' show XFile;
@@ -642,6 +643,28 @@ void main() {
       expect(prepared.attachment!.mimeType, direct.attachment!.mimeType);
       expect(prepared.attachment!.kind, direct.attachment!.kind);
       expect(prepared.attachment!.originalMimeType, 'image/png');
+    });
+
+    test('the attachment carries the bytes its type describes', () async {
+      // THE MISLABELLING TRAP, pinned. An upload site that sends the bytes it
+      // PICKED alongside the mime intake RESOLVED will mislabel content the
+      // moment those two differ — which is exactly what normalization makes
+      // happen. The attachment is the single object carrying both, so a caller
+      // that uploads `attachment.bytes` with `attachment.mimeType` cannot
+      // desynchronise them.
+      final jpeg = withHeader([0xFF, 0xD8, 0xFF, 0xE0]);
+      final r = await ContentIntake.resolveAndPrepareBytes(
+        path: IntakePath.picker,
+        bytes: jpeg,
+        fileName: 'photo.jpg',
+      );
+      final a = r.attachment!;
+      expect(a.bytes, isNotNull);
+      expect(a.mimeType, isNotNull);
+      // The declared size must describe the bytes actually held, or the
+      // presign contract is measuring a different object than the one sent.
+      expect(a.sizeBytes, a.bytes!.length);
+      expect(sniffMimeFromBytes(a.bytes), a.mimeType);
     });
 
     test('a rename without a re-encode is exactly what this avoids', () {
