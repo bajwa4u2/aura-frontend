@@ -798,6 +798,47 @@ door is solved for the question it was built to answer.
 
 ---
 
+## 2026-08-21 — FOUNDER RULING: the RC-C5 gate DOES NOT TRANSFER
+
+**The historical C4 → RC-C5 authorization gate does NOT transfer to CH-11, CH-13 or CH-14**
+merely because those chapters inherited obligations chartered under RC-C5.
+
+- The gate governed the **RC-C4 → RC-C5 chapter/deployment transition**.
+- **Obligation provenance is not authorization inheritance.**
+- The later BIFURCATED doctrine prevents retroactive extension.
+- §12 Rich Content remains governed by its own **RIC staging**.
+- **RIC-C5 must never be conflated with RC-C5.**
+- Successor chapters inherit the obligations, **not an obsolete chapter transition gate**,
+  unless a gate was explicitly preserved.
+
+The frozen gate text, recovered as `PORTFOLIO_GOVERNANCE_DOCTRINE` §2 required before any
+ordering could depend on an interpretation: *"C5 remains CLOSED until C4 is implemented,
+locally certified, pushed as authorized, deployed, observed end-to-end on the LIVE site, live
+defects resolved, and founder declares C4 certified/closed."* Stage-0 also recorded that **no
+governed document assigns any F-id to RC-C5**, and flagged the RIC-C5/RC-C5 namespace hazard
+as one that *"would produce a confidently wrong mapping"* — which is what the belief that
+CH-13 was blocked had become.
+
+**33 obligations are released from this gate** (CH-13 × 26, CH-14 × 5, CH-11 × 2).
+
+> **This does NOT authorize indiscriminate execution of all 33.** Each remains subject to its
+> canonical chapter, its own dependencies, existing founder decisions, live-certification
+> requirements, and any other explicitly recorded gate.
+
+§2 and §6 are historical evidence and are **not rewritten**. Accounting unchanged.
+
+## 2026-08-21 — FOUNDER RULING: CH-15 is NOT an outstanding founder gate
+
+**D1–D5 are already resolved founder doctrine.** *"CH-15 media verdict policy"* must no longer
+be carried as an outstanding founder gate — carrying it was a stale-decision claim of exactly
+the kind §14 exists to catch.
+
+- **O4–O10 were mechanism/dependency blocked, never policy blocked**, and those dependencies
+  have now substantially discharged (E3/E5/E6 shipped, G1 leg 5(B) live-certified, backfill
+  run, all governed classes covered).
+- **O11** remains held by **F095 / CH-09**.
+- **O12** AI-report taxonomy divergence remains an explicit **non-blocking** founder item.
+
 ## 2026-08-21 — FOUNDER RULING: C2 IS FINAL CLOSED
 
 **C2 — Identity, Presence & Profile is FINAL CLOSED.** The authorized C2 transitions were
