@@ -38,8 +38,11 @@ import 'add_people_sheet.dart';
 import 'conversation_avatar.dart';
 import 'conversation_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
+import '../../../core/composition/attachment_lifecycle.dart';
+import '../../../core/composition/composition_authority.dart';
+import '../../../core/composition/content_intake.dart';
+import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/media/attachment.dart';
-import '../../../core/media/media_mime.dart';
 
 /// Durable ringing/active-call truth for a conversation (founder charter
 /// 2026-08-17). A call must never be reachable ONLY through an ephemeral
@@ -85,20 +88,32 @@ class ConversationScreen extends ConsumerStatefulWidget {
   ConsumerState<ConversationScreen> createState() => _ConversationScreenState();
 }
 
-class _PendingAttachment {
-  _PendingAttachment({required this.name, required this.kind, this.preview});
-  final String name;
-  final String kind; // IMAGE | VIDEO | AUDIO
-  final Uint8List? preview; // image bytes for the pre-send thumbnail
-  String? mediaId;
-  bool failed = false;
-}
+// `_PendingAttachment` used to live here: a FOURTH private attachment model,
+// with a stringly-typed kind and a `failed` boolean, that survived the
+// consolidation `Attachment` was written to finish. It is gone. This screen
+// composes the canonical `Attachment` and reads its phase from
+// `AttachmentLifecycle`, so it can no longer disagree with another composer
+// about what a half-uploaded file means.
 
 class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final _composer = TextEditingController();
-  final List<_PendingAttachment> _attachments = [];
+
+  /// CH-13 - the canonical composition.
+  ///
+  /// This screen used to keep a private attachment model, its own `_uploading`
+  /// derivation and its own `_sending` flag, then decide readiness from all
+  /// three at the send site. Phase and readiness are now DERIVED by
+  /// CompositionAuthority from the attachments themselves.
+  CompositionState _composition = const CompositionState(
+    maxLength: ContentLengthPolicy.message,
+    // A conversation message legitimately has no body: a photo, a voice note
+    // and a video message are each complete messages with nothing typed.
+    requiresBody: false,
+  );
+
+  List<Attachment> get _attachments => _composition.attachments;
+
   final _recorder = AudioRecorder();
-  bool _sending = false;
   bool _startingCall = false;
   bool _recording = false;
 
@@ -145,7 +160,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           .take(4)
           .toList();
     }
-    setState(() => _mentionMatches = matches);
+    setState(() {
+      // The authority measures the body; the controller only holds it.
+      _composition = _composition.copyWith(body: text);
+      _mentionMatches = matches;
+    });
 
     _linkDebounce?.cancel();
     _linkDebounce = Timer(
@@ -215,7 +234,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     try {
       final bytes = await Pasteboard.image;
       if (bytes != null && bytes.isNotEmpty) {
-        await _ingestBytes(bytes, 'pasted-image.png', 'image/png');
+        await _admit(ContentIntake.resolveBytes(
+          path: IntakePath.paste,
+          bytes: bytes,
+          fileName: 'pasted-image.png',
+          declaredMimeType: 'image/png',
+        ));
       }
     } catch (_) {
       // No image on the clipboard — the native text paste proceeds.
@@ -269,60 +293,100 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     return 'Someone';
   }
 
-  bool get _uploading =>
-      _attachments.any((a) => a.mediaId == null && !a.failed);
+  /// Take one resolved attachment into the composition, then upload it.
+  ///
+  /// A refusal is SHOWN and not added. An attachment the person can see is a
+  /// promise it will be sent, and intake has already decided whether that
+  /// promise can be kept.
+  Future<void> _admit(IntakeResolution resolution) async {
+    final attachment = resolution.attachment;
+    if (attachment == null) {
+      _refuse(resolution.rejection!);
+      return;
+    }
+    setState(() => _composition = _composition.copyWith(
+          attachments: [..._composition.attachments, attachment],
+        ));
+    await _upload(attachment);
+  }
 
-  Future<void> _upload(
-    _PendingAttachment pending,
-    Uint8List bytes,
-    String fileName,
-    String mimeType,
-  ) async {
+  void _refuse(AttachmentRejection rejection) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AttachmentLifecycle.rejectionMessage(rejection))),
+    );
+  }
+
+  /// `Attachment` is mutable by design and the lifecycle reads it live, so
+  /// setState is all that moves the phase - there is no stored phase that
+  /// could fall out of step with the data.
+  Future<void> _upload(Attachment attachment) async {
+    setState(() {
+      attachment.uploading = true;
+      attachment.error = null;
+    });
     try {
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
-        bytes: bytes,
-        fileName: fileName,
-        mimeType: mimeType,
-        kind: pending.kind,
-        source: pending.kind == 'AUDIO' ? 'RECORDING' : 'GALLERY',
+        bytes: attachment.bytes!,
+        fileName: attachment.fileName ?? 'attachment',
+        mimeType: attachment.mimeType!,
+        // This surface has always sent the semantic kind, and must keep
+        // doing so: 'DOCUMENT' buys the 25 MiB document bucket, 'IMAGE'
+        // would silently cut it to 10 MiB and start refusing PDFs that
+        // attach today.
+        kind: wireKind(attachment.kind, collapseDocumentToImage: false),
+        source: wireSource(attachment.source),
       );
-      if (mounted) setState(() => pending.mediaId = result.mediaId);
+      if (!mounted) return;
+      setState(() {
+        attachment.uploading = false;
+        attachment.mediaId = result.mediaId;
+        // Only an image needs its bytes kept, for the thumbnail. Holding a
+        // video's bytes for the life of the composer is what the retired
+        // model avoided by never storing them at all.
+        if (attachment.kind != AttachmentKind.image) attachment.bytes = null;
+      });
     } catch (_) {
-      if (mounted) {
-        setState(() => pending.failed = true);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Attachment failed — remove it and try again.')));
-      }
+      if (!mounted) return;
+      setState(() {
+        attachment.uploading = false;
+        // An error with no server identity is the RETRYABLE phase, and it
+        // keeps the attachment pending - which is what now stops the send
+        // that used to drop it silently.
+        attachment.error = 'upload-failed';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Attachment failed — remove it and try again.')));
     }
   }
 
   Future<void> _attachPhoto() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
-    final bytes = await picked.readAsBytes();
-    final pending = _PendingAttachment(
-        name: picked.name, kind: 'IMAGE', preview: bytes);
-    setState(() => _attachments.add(pending));
-    await _upload(
-      pending,
-      bytes,
-      picked.name,
-      picked.mimeType ??
-          (picked.name.toLowerCase().endsWith('.png')
-              ? 'image/png'
-              : 'image/jpeg'),
-    );
+    // The inline `.png ? image/png : image/jpeg` ladder that used to stand
+    // here GUESSED, and guessed wrong for heic and webp. Intake infers from
+    // the name when the platform declines to say, and refuses when neither
+    // source of evidence answers.
+    await _admit(ContentIntake.resolveBytes(
+      path: IntakePath.picker,
+      bytes: await picked.readAsBytes(),
+      fileName: picked.name,
+      declaredMimeType: picked.mimeType,
+      source: AttachmentSource.gallery,
+    ));
   }
 
   Future<void> _attachVideo() async {
     final picked = await ImagePicker().pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
-    final bytes = await picked.readAsBytes();
-    final pending = _PendingAttachment(name: picked.name, kind: 'VIDEO');
-    setState(() => _attachments.add(pending));
-    await _upload(
-        pending, bytes, picked.name, picked.mimeType ?? 'video/mp4');
+    await _admit(ContentIntake.resolveBytes(
+      path: IntakePath.picker,
+      bytes: await picked.readAsBytes(),
+      fileName: picked.name,
+      declaredMimeType: picked.mimeType,
+      source: AttachmentSource.gallery,
+    ));
   }
 
   void _showAttachMenu() {
@@ -377,23 +441,37 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final picked = await ImagePicker().pickVideo(source: ImageSource.camera);
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
-    // A video MESSAGE sends itself — capture IS the send.
-    await _uploadAndSendImmediately(
-        bytes, picked.name, picked.mimeType ?? 'video/webm', 'VIDEO');
+    // A video MESSAGE sends itself — capture IS the send. It goes through the
+    // same governed door as everything else; capture earns no exemption.
+    await _uploadAndSendImmediately(ContentIntake.resolveBytes(
+      path: IntakePath.picker,
+      bytes: bytes,
+      fileName: picked.name,
+      declaredMimeType: picked.mimeType ?? 'video/webm',
+      source: AttachmentSource.camera,
+    ));
   }
 
   /// Voice/video MESSAGES are sent the moment capture completes (WhatsApp
   /// ergonomics); picked/dropped files stay reviewable before send.
-  Future<void> _uploadAndSendImmediately(
-      Uint8List bytes, String fileName, String mimeType, String kind) async {
+  Future<void> _uploadAndSendImmediately(IntakeResolution resolution) async {
+    final attachment = resolution.attachment;
+    if (attachment == null) {
+      _refuse(resolution.rejection!);
+      return;
+    }
     try {
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
-        bytes: bytes,
-        fileName: fileName,
-        mimeType: mimeType,
-        kind: kind,
-        source: kind == 'AUDIO' ? 'RECORDING' : 'CAMERA',
+        bytes: attachment.bytes!,
+        fileName: attachment.fileName ?? 'attachment',
+        mimeType: attachment.mimeType!,
+        // This surface has always sent the semantic kind, and must keep
+        // doing so: 'DOCUMENT' buys the 25 MiB document bucket, 'IMAGE'
+        // would silently cut it to 10 MiB and start refusing PDFs that
+        // attach today.
+        kind: wireKind(attachment.kind, collapseDocumentToImage: false),
+        source: wireSource(attachment.source),
       );
       await ref.read(conversationsRepositoryProvider).send(
             widget.conversationId,
@@ -423,44 +501,21 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final file = result?.files.firstOrNull;
     final bytes = file?.bytes;
     if (file == null || bytes == null) return;
-    await _ingestBytes(bytes, file.name, null);
+    await _admit(ContentIntake.resolveBytes(
+      path: IntakePath.picker,
+      bytes: bytes,
+      fileName: file.name,
+      source: AttachmentSource.upload,
+    ));
   }
 
-  /// One coherent intake for every source — picker, camera, recording,
-  /// clipboard, drag/drop: kind derives from the content, the canonical
-  /// Media/MIME authority accepts or refuses truthfully.
-  Future<void> _ingestBytes(
-      Uint8List bytes, String fileName, String? mimeType) async {
-    // Use the canonical MIME authority rather than an inline ladder.
-    //
-    // This method used to carry its own extension switch covering png, jpg,
-    // gif, webp, mp4, webm, mp3 and pdf, with everything else falling through
-    // to application/octet-stream — which the server's allow-list refuses
-    // before it creates a Media row. That is why a PDF attached fine and a
-    // DOCX did not: .docx was never named, so it arrived as octet-stream and
-    // was rejected at presign, with nothing to see in the database afterwards.
-    //
-    // `inferMimeFromFileName` already knows doc, docx, xls, xlsx, ppt, pptx,
-    // rtf, txt, csv and zip — its own docstring records that it was extracted
-    // to replace exactly these duplicate implementations. This call site had
-    // never been migrated.
-    final mime = mimeType ??
-        inferMimeFromFileName(fileName) ??
-        'application/octet-stream';
-    final kind = switch (kindFromMime(mime)) {
-      AttachmentKind.image => 'IMAGE',
-      AttachmentKind.video => 'VIDEO',
-      AttachmentKind.audio => 'AUDIO',
-      AttachmentKind.document => 'DOCUMENT',
-    };
-    final pending = _PendingAttachment(
-      name: fileName,
-      kind: kind,
-      preview: kind == 'IMAGE' ? bytes : null,
-    );
-    setState(() => _attachments.add(pending));
-    await _upload(pending, bytes, fileName, mime);
-  }
+  // `_ingestBytes` used to live here. It resolved mime and kind itself and,
+  // when neither the caller nor the filename answered, fell back to
+  // `application/octet-stream` - a type the server's allow-list refuses at
+  // presign. The attachment appeared in the composer, climbed, and failed
+  // with a generic message, because the fallback moved the refusal later
+  // rather than removing it. ContentIntake refuses at the door, truthfully,
+  // and never manufactures a type it has no evidence for.
 
   /// Voice note: record → stop → the note joins the pending attachments.
   Future<void> _toggleVoiceNote() async {
@@ -477,8 +532,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         if (bytes.isEmpty) throw Exception('empty recording');
         // Messenger ergonomics (founder): a voice MESSAGE sends itself —
         // stop recording IS the send.
-        await _uploadAndSendImmediately(
-            bytes, 'voice-note.webm', 'audio/webm', 'AUDIO');
+        await _uploadAndSendImmediately(ContentIntake.resolveBytes(
+          path: IntakePath.picker,
+          bytes: bytes,
+          fileName: 'voice-note.webm',
+          declaredMimeType: 'audio/webm',
+          source: AttachmentSource.recording,
+        ));
       } catch (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -500,13 +560,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 
   Future<void> _send() async {
-    final text = _composer.text.trim();
-    final mediaIds = _attachments
-        .map((a) => a.mediaId)
-        .whereType<String>()
+    // Readiness is the authority's answer, not this screen's. The guard that
+    // stood here read `mediaId == null && !failed` as "still uploading", so a
+    // FAILED attachment counted as finished: the send proceeded and
+    // `whereType<String>()` quietly dropped it. The person watched a message
+    // leave without the file they had attached to it.
+    if (!_composition.canSubmit) return;
+    final text = _composition.trimmedBody;
+    final mediaIds = _composition.composableAttachments
+        .map((a) => a.mediaId!)
         .toList();
-    if ((text.isEmpty && mediaIds.isEmpty) || _sending || _uploading) return;
-    setState(() => _sending = true);
+    setState(() => _composition = _composition.copyWith(isSubmitting: true));
     try {
       final previewId = _previewDismissed
           ? null
@@ -520,7 +584,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           );
       _composer.clear();
       setState(() {
-        _attachments.clear();
+        _composition = const CompositionState(
+          maxLength: ContentLengthPolicy.message,
+          requiresBody: false,
+        );
         _replyTo = null;
         _pendingPreview = null;
         _pendingPreviewUrl = null;
@@ -536,7 +603,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _sending = false);
+      if (mounted) {
+        setState(() =>
+            _composition = _composition.copyWith(isSubmitting: false));
+      }
     }
   }
 
@@ -656,8 +726,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       data: (c) => _DropIntake(
         onFiles: (files) async {
           for (final f in files) {
-            final bytes = await f.readAsBytes();
-            await _ingestBytes(bytes, f.name, f.mimeType);
+            await _admit(ContentIntake.resolveBytes(
+              path: IntakePath.drop,
+              bytes: await f.readAsBytes(),
+              fileName: f.name,
+              declaredMimeType: f.mimeType,
+              source: AttachmentSource.upload,
+            ));
           }
         },
         child: AuraScaffold(
@@ -799,8 +874,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       for (final a in _attachments)
                         _PendingAttachmentTile(
                           attachment: a,
-                          onRemove: () =>
-                              setState(() => _attachments.remove(a)),
+                          phase: _composition.phaseOf(a),
+                          onRemove: () => setState(() =>
+                              _composition = _composition.copyWith(
+                                attachments: _composition.attachments
+                                    .where((x) => x.localId != a.localId)
+                                    .toList(growable: false),
+                              )),
                         ),
                     ],
                   ),
@@ -932,8 +1012,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                             onContentInserted: (content) async {
                               final data = content.data;
                               if (data != null && data.isNotEmpty) {
-                                await _ingestBytes(Uint8List.fromList(data),
-                                    'pasted-image.png', content.mimeType);
+                                await _admit(ContentIntake.resolveBytes(
+                                  path: IntakePath.paste,
+                                  bytes: Uint8List.fromList(data),
+                                  fileName: 'pasted-image.png',
+                                  declaredMimeType: content.mimeType,
+                                ));
                               }
                             },
                           ),
@@ -955,7 +1039,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     ),
                     const SizedBox(width: AuraSpace.s8),
                     IconButton.filled(
-                      onPressed: (_sending || _uploading) ? null : _send,
+                      // The control reflects readiness now, instead of
+                      // offering a send it would silently refuse.
+                      onPressed: _composition.canSubmit ? _send : null,
                       icon: const Icon(Icons.arrow_upward_rounded),
                     ),
                   ],
@@ -1030,13 +1116,19 @@ class _DropIntakeState extends State<_DropIntake> {
 /// chips for audio/video, upload progress and failure states.
 class _PendingAttachmentTile extends StatelessWidget {
   const _PendingAttachmentTile(
-      {required this.attachment, required this.onRemove});
-  final _PendingAttachment attachment;
+      {required this.attachment, required this.phase, required this.onRemove});
+  final Attachment attachment;
+  final AttachmentPhase phase;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
-    final uploading = attachment.mediaId == null && !attachment.failed;
+    final failed = phase == AttachmentPhase.failed;
+    // Everything short of server identity, refusal aside, still reads as busy
+    // - exactly what `mediaId == null && !failed` used to mean, now derived.
+    final busy = AttachmentLifecycle.isPending(phase) && !failed;
+    final preview =
+        attachment.kind == AttachmentKind.image ? attachment.bytes : null;
     return Stack(
       children: [
         Container(
@@ -1047,22 +1139,22 @@ class _PendingAttachmentTile extends StatelessWidget {
             color: AuraSurface.subtle,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: attachment.failed
-                    ? AuraSurface.dangerInk
-                    : AuraSurface.divider),
+                color: failed ? AuraSurface.dangerInk : AuraSurface.divider),
           ),
-          child: attachment.preview != null
-              ? Image.memory(attachment.preview!, fit: BoxFit.cover)
+          child: preview != null
+              ? Image.memory(preview, fit: BoxFit.cover)
               : Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        attachment.kind == 'AUDIO'
-                            ? Icons.mic_rounded
-                            : attachment.kind == 'VIDEO'
-                                ? Icons.videocam_rounded
-                                : Icons.insert_drive_file_outlined,
+                        switch (attachment.kind) {
+                          AttachmentKind.audio => Icons.mic_rounded,
+                          AttachmentKind.video => Icons.videocam_rounded,
+                          AttachmentKind.image => Icons.image_outlined,
+                          AttachmentKind.document =>
+                            Icons.insert_drive_file_outlined,
+                        },
                         size: 22,
                         color: AuraSurface.muted,
                       ),
@@ -1071,7 +1163,7 @@ class _PendingAttachmentTile extends StatelessWidget {
                         padding:
                             const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
-                          attachment.name,
+                          attachment.fileName ?? 'Attachment',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AuraText.micro
@@ -1082,7 +1174,7 @@ class _PendingAttachmentTile extends StatelessWidget {
                   ),
                 ),
         ),
-        if (uploading)
+        if (busy)
           const Positioned.fill(
             child: ColoredBox(
               color: Color(0x66000000),
