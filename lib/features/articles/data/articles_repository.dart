@@ -14,6 +14,7 @@ class Article {
     required this.title,
     required this.bodyMarkdown,
     required this.coverMediaId,
+    required this.coverUrl,
     required this.status,
     required this.publishedAt,
     this.author,
@@ -25,6 +26,11 @@ class Article {
   final String title;
   final String bodyMarkdown;
   final String? coverMediaId;
+
+  /// Governed delivery URL for the cover, minted by the server. The client
+  /// never builds a media address itself — that is how a durable raw storage
+  /// URL ended up inside published article bodies.
+  final String? coverUrl;
   final String status; // DRAFT | PUBLISHED
   final DateTime? publishedAt;
   /// The person who wrote it — the canonical identity, not an
@@ -43,6 +49,7 @@ class Article {
         title: _s(json['title']),
         bodyMarkdown: _s(json['bodyMarkdown']),
         coverMediaId: _ns(json['coverMediaId']),
+        coverUrl: _ns(json['coverUrl']),
         status: _ns(json['status']) ?? 'PUBLISHED',
         publishedAt: json['publishedAt'] == null
             ? null
@@ -102,6 +109,16 @@ class ArticlesRepository {
       if (bodyMarkdown != null) 'bodyMarkdown': bodyMarkdown,
       if (coverMediaId != null) 'coverMediaId': coverMediaId,
     });
+  }
+
+  /// Set or REMOVE the article cover.
+  ///
+  /// Separate from [saveDraft] because that method omits null keys, so it can
+  /// only ever ADD a cover — "leave this field alone" and "remove this cover"
+  /// are different intentions and a null cannot mean both. This always sends
+  /// the key, so null genuinely clears it.
+  Future<void> setCover(String id, String? mediaId) async {
+    await _dio.patch<dynamic>('/articles/$id', data: {'coverMediaId': mediaId});
   }
 
   Future<Article> publish(String id) async {

@@ -39,6 +39,8 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
   final _title = TextEditingController();
   final _body = TextEditingController();
   String? _articleId;
+  String? _coverUrl;
+  bool _coverBusy = false;
   Timer? _autosave;
   bool _loading = true;
   bool _publishing = false;
@@ -59,6 +61,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
           ? await repo.getOwn(widget.articleId!)
           : await repo.createDraft();
       _articleId = article.id;
+      _coverUrl = article.coverUrl;
       _wasPublished = article.isPublished;
       _title.text = article.title;
       _body.text = article.bodyMarkdown;
@@ -149,6 +152,63 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     final w = MediaQuery.of(context).size.width;
     final column = w > 1000 ? w / 2 : w; // split-pane preview above 1000
     return (column - AuraSpace.s20 * 2).clamp(240.0, 900.0);
+  }
+
+  /// Choose the article's cover.
+  ///
+  /// Deliberately SEPARATE from inserting an inline image. A cover is the
+  /// article's representative identity — it appears on the reader, and on the
+  /// surfaces that show an article without its body. Inline media is part of
+  /// the reading flow. Conflating them (for example by silently promoting the
+  /// first inline image) would take the choice away from the author, so the
+  /// cover is only ever what the author picked.
+  Future<void> _pickCover() async {
+    final id = _articleId;
+    if (id == null || _coverBusy) return;
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+    setState(() => _coverBusy = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final result = await uploadAuraMedia(
+        dio: ref.read(dioProvider),
+        bytes: bytes,
+        fileName: picked.name,
+        mimeType: picked.mimeType ?? 'image/jpeg',
+        kind: 'IMAGE',
+        source: 'GALLERY',
+      );
+      // canonical Media identity, never a durable URL
+      await ref.read(articlesRepositoryProvider).setCover(id, result.mediaId);
+      final fresh = await ref.read(articlesRepositoryProvider).getOwn(id);
+      if (!mounted) return;
+      setState(() => _coverUrl = fresh.coverUrl);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Cover upload failed — try again.')));
+      }
+    } finally {
+      if (mounted) setState(() => _coverBusy = false);
+    }
+  }
+
+  /// Remove the cover. Sends an explicit null, which `saveDraft` cannot express.
+  Future<void> _removeCover() async {
+    final id = _articleId;
+    if (id == null || _coverBusy) return;
+    setState(() => _coverBusy = true);
+    try {
+      await ref.read(articlesRepositoryProvider).setCover(id, null);
+      if (mounted) setState(() => _coverUrl = null);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Could not remove the cover — try again.')));
+      }
+    } finally {
+      if (mounted) setState(() => _coverBusy = false);
+    }
   }
 
   Future<void> _insertImage() async {
@@ -315,6 +375,23 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
                   tooltip: 'Image',
                   icon: const Icon(Icons.image_outlined, size: 20),
                   onPressed: _insertImage),
+              IconButton(
+                tooltip: (_coverUrl ?? '').isEmpty
+                    ? 'Set cover image'
+                    : 'Change cover image',
+                icon: Icon(
+                    (_coverUrl ?? '').isEmpty
+                        ? Icons.wallpaper_outlined
+                        : Icons.wallpaper_rounded,
+                    size: 20),
+                onPressed: _coverBusy ? null : _pickCover,
+              ),
+              if ((_coverUrl ?? '').isNotEmpty)
+                IconButton(
+                  tooltip: 'Remove cover image',
+                  icon: const Icon(Icons.hide_image_outlined, size: 20),
+                  onPressed: _coverBusy ? null : _removeCover,
+                ),
               const Spacer(),
               Text(_saveState,
                   style: AuraText.micro.copyWith(color: AuraSurface.faint)),

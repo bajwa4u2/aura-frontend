@@ -11,6 +11,7 @@
 // These tests hold the two properties that make the fixes honest: the author's
 // WORDS are never altered, and what the author sees while writing is produced
 // by the SAME primitives that publish it.
+import 'package:aura/features/articles/data/articles_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -217,6 +218,59 @@ void main() {
         publicationTitleFontSize(characters: 5000, availableWidth: 320),
         greaterThanOrEqualTo(20.0),
       );
+    });
+  });
+
+  _coverTests();
+}
+
+/// ARTICLE COVER — an optional, intentional, governed representative image.
+///
+/// Distinct from inline media by design. Inline images are part of the reading
+/// flow; the cover is the article's identity on surfaces that show an article
+/// without its body. The first inline image is deliberately NOT promoted to
+/// cover — that would take the choice away from the author.
+void _coverTests() {
+  group('article cover', () {
+    test('a cover is optional — most articles have none', () {
+      final a = Article.fromJson(const {
+        'id': 'a1',
+        'title': 'T',
+        'bodyMarkdown': 'b',
+        'status': 'PUBLISHED',
+      });
+      expect(a.coverMediaId, isNull);
+      expect(a.coverUrl, isNull);
+    });
+
+    test('the cover URL comes from the server, governed', () {
+      final a = Article.fromJson(const {
+        'id': 'a1',
+        'title': 'T',
+        'bodyMarkdown': 'b',
+        'status': 'PUBLISHED',
+        'coverMediaId': 'm1',
+        'coverUrl': 'https://auraplatform.org/media/m1/raw',
+      });
+      expect(a.coverMediaId, 'm1');
+      expect(a.coverUrl, 'https://auraplatform.org/media/m1/raw');
+      // The client must never hold a raw storage address.
+      expect(a.coverUrl, isNot(contains('uploads.auraplatform.org')));
+      expect(a.coverUrl, isNot(contains('r2.cloudflarestorage.com')));
+    });
+
+    test('canonical identity and address are separate fields', () {
+      // coverMediaId is what is PERSISTED; coverUrl is only how it is reached.
+      final a = Article.fromJson(const {
+        'id': 'a1',
+        'title': 'T',
+        'bodyMarkdown': 'b',
+        'status': 'DRAFT',
+        'coverMediaId': 'm1',
+        'coverUrl': null,
+      });
+      expect(a.coverMediaId, 'm1');
+      expect(a.coverUrl, isNull);
     });
   });
 }
