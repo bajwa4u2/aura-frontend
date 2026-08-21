@@ -1341,7 +1341,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/messages/new',
-            builder: (_, __) => const NewConversationPicker(),
+            builder: (_, state) {
+              // A profile's "Invite to space" arrives carrying handle/name/
+              // userId. These were dropped on the floor, so the picker opened
+              // empty and the person searched again for whoever they had just
+              // been reading about.
+              final q = state.uri.queryParameters;
+              final prefill = (q['handle'] ?? '').trim().isNotEmpty
+                  ? q['handle']!.trim()
+                  : (q['name'] ?? '').trim();
+              return NewConversationPicker(
+                initialQuery: prefill.isEmpty ? null : prefill,
+              );
+            },
           ),
           GoRoute(
             path: '/messages/c/:conversationId',
