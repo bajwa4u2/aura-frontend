@@ -88,8 +88,10 @@ Future<void> gradeRecovery(
   World world, {
   required int windowStartMs,
 }) async {
-  final firstOffers = world.hub.offersFrom(world.first.socketId, afterMs: windowStartMs);
-  final secondOffers = world.hub.offersFrom(world.second.socketId, afterMs: windowStartMs);
+  final firstOffers =
+      world.hub.offersFromAny(world.first.socketIds, afterMs: windowStartMs);
+  final secondOffers =
+      world.hub.offersFromAny(world.second.socketIds, afterMs: windowStartMs);
   final counts = trailCounts();
 
   result.checks.addAll(<String, dynamic>{
@@ -332,6 +334,36 @@ final List<HarnessCase> kCases = <HarnessCase>[
       world.hub.holdOffers = false;
       await world.teardown();
     }
+  }),
+
+  // -- JOIN-PATH CONCURRENCY -----------------------------------------------
+  //
+  // The only place a repair sweep can run INSIDE a join. _startHeartbeat()
+  // fires _sendHeartbeat(isFirst: true) synchronously, and under the known-bad
+  // design that beat carries the repair sweep. On a rejoin or resume the peer
+  // map and local stream are still populated - the signalling grace keeps the
+  // media plane alive across a socket drop on purpose - so the repair authority
+  // can operate while the join's own media/negotiation lifecycle is running.
+  //
+  // This is also the only region where RealtimeJoinState.failed is reachable at
+  // all: join(), resume() and _rejoinAfterReconnect() each have a catch that
+  // maps an error to a join state AND sets errorMessage, which is exactly the
+  // pair meeting_live_room_screen gates its fatal overlay on.
+
+  HarnessCase('L1', 'reconnect rejoin with a retained SILENT peer',
+      (result) async {
+    await _rejoinCase(result, caseId: 'L1', viaResume: false, bothSilent: false);
+  }),
+
+  HarnessCase('L2', 'resume() with a retained SILENT peer', (result) async {
+    await _rejoinCase(result, caseId: 'L2', viaResume: true, bothSilent: false);
+  }),
+
+  HarnessCase('L3', 'both sides silent, BOTH reconnect together', (result) async {
+    // The most loaded combination available: symmetric silence, both repair
+    // authorities eligible, both running inside a join. If a bilateral fatal
+    // overlay is reachable at all, it is reachable here.
+    await _rejoinCase(result, caseId: 'L3', viaResume: false, bothSilent: true);
   }),
 
   HarnessCase('F', 'simultaneous negotiation / glare', (result) async {
@@ -588,6 +620,146 @@ Future<void> _symmetricSilence(
     world.hub.holdOffers = false;
     await world.teardown();
   }
+}
+
+/// Drive a real rejoin/resume against retained peer and media state.
+///
+/// Nothing here calls repair, fabricates SDP, or forces a join failure. The
+/// harness drops a wire and brings it back; every decision after that -
+/// signalling grace, media retention, rejoin, heartbeat, repair eligibility,
+/// negotiation and the join outcome - belongs to the controller.
+Future<void> _rejoinCase(
+  CaseResult result, {
+  required String caseId,
+  required bool viaResume,
+  required bool bothSilent,
+}) async {
+  final world = await World.create(firstIsPolite: true, caseId: caseId);
+  try {
+    // The room screen is mounted in production, and the controller reads that
+    // through setCallRoomVisible. Without it the reconnect path takes the
+    // tear-everything-down branch and the retained state under test never
+    // exists - so this is fidelity, not convenience.
+    world.first.controller.setCallRoomVisible(true);
+    world.second.controller.setCallRoomVisible(true);
+
+    world.second.media
+      ..injury = MediaInjury.stallAcquisition
+      ..stall = const Duration(seconds: 7);
+    if (bothSilent) {
+      world.first.media.injury = MediaInjury.denyAcquisition;
+    }
+
+    await bringUp(world, gap: kStaggeredJoinGap);
+    await waitUntil(() async => world.second.controller.state.isMediaReady,
+        timeout: const Duration(seconds: 25));
+    if (bothSilent) {
+      await world.first.media.releaseDevice();
+    }
+    await result.checkpoint('silent-and-settled', world);
+
+    final silentProbe = await world.second.probe(world.first);
+    result.checks['retainedPeerIsSilent'] = silentProbe.hasPeer &&
+        silentProbe.mediaReady &&
+        silentProbe.senderKinds.isEmpty;
+    result.checks['bothSilent'] = bothSilent;
+
+    // -- the event under test ------------------------------------------------
+    final markMs = Trail.clock.elapsedMilliseconds;
+    result.checks['eventStartMs'] = markMs;
+
+    if (viaResume) {
+      result.note('resume() on the silent side, peers and media retained');
+      unawaited(world.second.controller.resume(world.sessionId));
+    } else {
+      result.note('socket drop on the silent side');
+      world.second.socket.simulateDrop();
+      if (bothSilent) {
+        result.note('socket drop on the other side too');
+        world.first.socket.simulateDrop();
+      }
+      await hold(const Duration(seconds: 2));
+      await result.checkpoint('dropped', world);
+      result.checks['peerRetainedAcrossDrop'] =
+          (await world.second.probe(world.first)).hasPeer;
+      result.checks['mediaRetainedAcrossDrop'] =
+          world.second.controller.state.isMediaReady;
+
+      result.note('sockets reconnect on NEW ids');
+      world.second.socket.simulateReconnect('${world.second.socketId}-rc');
+      if (bothSilent) {
+        world.first.socket.simulateReconnect('${world.first.socketId}-rc');
+      }
+    }
+
+    // Long enough for the rejoin, its retries, the watchdog and two beats.
+    await hold(kHeartbeat * 2 + kWatchdog + const Duration(seconds: 8));
+    await result.checkpoint('after-rejoin', world);
+
+    // -- the ordering evidence -----------------------------------------------
+    // Every join-stage marker and every repair line the product emitted after
+    // the drop, in order. Interleaving is the whole question: a repair line
+    // between `join-seq 5` and `join-seq 8` is the repair authority running
+    // inside the join's own media/negotiation lifecycle.
+    result.checks['orderingAfterEvent'] = Trail.lines
+        .where((l) {
+          final at = int.tryParse(l.split('|').first) ?? 0;
+          if (at < markMs) return false;
+          return l.contains('[join-seq]') ||
+              l.contains('[rtc-repair]') ||
+              l.contains('[rtc-recover]') ||
+              l.contains('glare') ||
+              l.contains('watchdog') ||
+              l.contains('[HX] socket');
+        })
+        .map((l) => l.length > 150 ? l.substring(0, 150) : l)
+        .toList();
+
+    result.checks['repairRanDuringJoin'] = _repairInsideJoinWindow(markMs);
+    result.checks['offersAfterEvent.FIRST'] =
+        world.hub.offersFromAny(world.first.socketIds, afterMs: markMs);
+    result.checks['offersAfterEvent.SECOND'] =
+        world.hub.offersFromAny(world.second.socketIds, afterMs: markMs);
+    result.checks['socketIds.FIRST'] = world.first.socketIds;
+    result.checks['socketIds.SECOND'] = world.second.socketIds;
+    await gradeRecovery(result, world, windowStartMs: markMs);
+    result.checks['fatalOverlay.FIRST'] = _fatalOverlay(world.first);
+    result.checks['fatalOverlay.SECOND'] = _fatalOverlay(world.second);
+    result.frames = world.hub.sdpFrames();
+  } finally {
+    await world.teardown();
+  }
+}
+
+/// Did a repair line land between the heartbeat starting and the join's
+/// media/negotiation finishing? That interval is `join-seq 5` .. `join-seq 8`,
+/// and a repair inside it is the concurrency this case exists to detect.
+bool _repairInsideJoinWindow(int afterMs) {
+  var open = false;
+  for (final line in Trail.lines) {
+    final at = int.tryParse(line.split('|').first) ?? 0;
+    if (at < afterMs) continue;
+    if (line.contains('[join-seq] 5 heartbeat started')) open = true;
+    if (line.contains('[join-seq] 8 media+negotiation complete')) open = false;
+    if (open &&
+        (line.contains('[rtc-repair] added') ||
+            line.contains('[rtc-repair] repaired'))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// The founder-observed symptom, read exactly as meeting_live_room_screen
+/// computes it: `joinState == failed && errorMessage != null`.
+Map<String, dynamic> _fatalOverlay(Party party) {
+  final state = party.controller.state;
+  return <String, dynamic>{
+    'joinState': state.joinState.name,
+    'errorMessage': state.errorMessage,
+    'meetingOverlayShown':
+        state.joinState.name == 'failed' && state.errorMessage != null,
+  };
 }
 
 /// Camera and microphone toggles share a shape: flip it off, hold across two

@@ -31,8 +31,10 @@ def write(path, text):
 
 
 def restore():
-    shutil.copy(os.path.join(PRISTINE, 'realtime_controller.dart'), CTRL)
-    shutil.copy(os.path.join(PRISTINE, 'realtime_media_service.dart'), MEDIA)
+    # Snapshots carry a .snapshot suffix so the analyzer never treats a second
+    # copy of the controller as live source in this package.
+    shutil.copy(os.path.join(PRISTINE, 'realtime_controller.dart.snapshot'), CTRL)
+    shutil.copy(os.path.join(PRISTINE, 'realtime_media_service.dart.snapshot'), MEDIA)
 
 
 def insert_before(text, anchor, block, label):

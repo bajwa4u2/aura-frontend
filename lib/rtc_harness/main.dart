@@ -193,7 +193,6 @@ class World {
     return Party(
       label: label,
       userId: userId,
-      socketId: socketId,
       controller: controller,
       media: media,
       socket: socket,

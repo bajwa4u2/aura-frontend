@@ -202,6 +202,15 @@ class SignalHub {
           (afterMs == null || (f['at'] as int) >= afterMs))
       .length;
 
+  /// Offers from any id a party has held. A reconnect changes the id, so
+  /// counting by a single id silently drops half a case's traffic.
+  int offersFromAny(Iterable<String> socketIds, {int? afterMs}) => frames
+      .where((f) =>
+          f['event'] == 'session:offer' &&
+          socketIds.contains(f['from']) &&
+          (afterMs == null || (f['at'] as int) >= afterMs))
+      .length;
+
   int answersFrom(String socketId, {int? afterMs}) => frames
       .where((f) =>
           f['event'] == 'session:answer' &&
@@ -256,6 +265,35 @@ class SignalHub {
       copy.remove('runtimeDeviceId');
       return copy;
     }).toList();
+  }
+
+  /// Tell the room a socket dropped. Reason `disconnect` is what the gateway
+  /// sends for an involuntary drop, and it is what makes the far side apply
+  /// reconnect grace — keeping the peer connection alive instead of emptying
+  /// the seat. Using any other reason would quietly delete the retained-peer
+  /// state this test exists to exercise.
+  void announceDrop(String socketId) {
+    _broadcastExcept(socketId, 'session:participant.left', <String, dynamic>{
+      'userId': _userBySocket[socketId] ?? '',
+      'socketId': socketId,
+      'reason': 'disconnect',
+    });
+  }
+
+  /// Move a party's registration to its new socket id, as a reconnect does.
+  void rekey(String oldSocketId, String newSocketId) {
+    final socket = _sockets.remove(oldSocketId);
+    final userId = _userBySocket.remove(oldSocketId);
+    final roster = _rosterBySocket.remove(oldSocketId) ??
+        _rosterTemplate[oldSocketId];
+    if (socket != null) _sockets[newSocketId] = socket;
+    if (userId != null) _userBySocket[newSocketId] = userId;
+    if (roster != null) {
+      final moved = Map<String, dynamic>.from(roster)
+        ..['socketId'] = newSocketId;
+      _rosterBySocket[newSocketId] = moved;
+      _rosterTemplate[newSocketId] = Map<String, dynamic>.from(moved);
+    }
   }
 
   Future<Map<String, dynamic>> emit(
@@ -384,8 +422,18 @@ class SignalHub {
 class HarnessSocketService extends RealtimeSocketService {
   HarnessSocketService(this.assignedId, this.hub);
 
-  final String assignedId;
+  /// Not final: a real socket that drops and reconnects comes back with a NEW
+  /// server-assigned id. That change is load-bearing — politeness is computed
+  /// from raw socket ids, and the peer map is keyed by them — so a rig that
+  /// recycled the id would be testing a reconnect production cannot perform.
+  String assignedId;
   final SignalHub hub;
+
+  /// Every id this socket has held, oldest first. A probe pinned to the
+  /// pre-reconnect id would report no peer connection for a peer that is
+  /// healthy under its new key — a harness artifact that reads exactly like a
+  /// product failure. Counting traffic across a reconnect needs the same list.
+  late final List<String> idHistory = <String>[assignedId];
 
   final StreamController<RealtimeParsedEvent> _events =
       StreamController<RealtimeParsedEvent>.broadcast();
@@ -430,6 +478,29 @@ class HarnessSocketService extends RealtimeSocketService {
   void inject(String event, Map<String, dynamic> payload) {
     if (_dead || _events.isClosed) return;
     _events.add(RealtimeParsedEvent(name: event, payload: payload));
+  }
+
+  /// An involuntary socket drop, delivered through the product's own
+  /// `socket:disconnected` event. The controller decides what happens next —
+  /// whether to arm the signalling grace, whether to keep the media plane, and
+  /// whether to re-arm for a rejoin. The harness only drops the wire.
+  void simulateDrop() {
+    Trail.say('socket: DROP $assignedId');
+    _connected = false;
+    hub.announceDrop(assignedId);
+    inject('socket:disconnected', <String, dynamic>{'reason': 'transport close'});
+  }
+
+  /// The socket comes back, on a new server-assigned id. `socket:connected` is
+  /// the product's own reconnect trigger; everything after it is the
+  /// controller's own rejoin sequence.
+  void simulateReconnect(String newSocketId) {
+    Trail.say('socket: RECONNECT $assignedId -> $newSocketId');
+    hub.rekey(assignedId, newSocketId);
+    assignedId = newSocketId;
+    idHistory.add(newSocketId);
+    _connected = true;
+    inject('socket:connected', <String, dynamic>{});
   }
 
   @override
@@ -684,7 +755,6 @@ class Party {
   Party({
     required this.label,
     required this.userId,
-    required this.socketId,
     required this.controller,
     required this.media,
     required this.socket,
@@ -692,10 +762,17 @@ class Party {
 
   final String label;
   final String userId;
-  final String socketId;
   final RealtimeController controller;
   final HarnessMediaService media;
   final HarnessSocketService socket;
+
+  /// The LIVE socket id, never a remembered one. A reconnect issues a new id
+  /// and the peer map is rekeyed with it, so a probe pinned to the old id would
+  /// find no peer connection and report a healthy call as broken.
+  String get socketId => socket.assignedId;
+
+  /// Every id this party has held, for counting traffic across a reconnect.
+  List<String> get socketIds => socket.idHistory;
 
   String peerKeyOf(Party other) => other.socketId;
 

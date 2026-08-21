@@ -1,0 +1,1206 @@
+{
+ "design": "baseline",
+ "cases": [
+  {
+   "id": "L1",
+   "title": "reconnect rejoin with a retained SILENT peer",
+   "checks": {
+    "retainedPeerIsSilent": true,
+    "bothSilent": false,
+    "eventStartMs": 10108,
+    "peerRetainedAcrossDrop": true,
+    "mediaRetainedAcrossDrop": true,
+    "orderingAfterEvent": [
+     "10108|[HX] socket: DROP zz-second",
+     "12116|[HX] socket: RECONNECT zz-second -> zz-second-rc",
+     "12126|[join-seq] 1 socket connected socketId=zz-second-rc sessionId=session-L1 isMeeting=true",
+     "12126|[join-seq] 2 session join emitted sessionId=session-L1",
+     "12126|[join-seq] 3 session join ack received sessionId=session-L1 ack={ok: true, sessionId: session-L1}",
+     "12126|[join-seq] 4 state.isJoined=true sessionId=session-L1",
+     "12126|[join-seq] 6 first heartbeat sent sessionId=session-L1",
+     "12126|[join-seq] 5 heartbeat started sessionId=session-L1",
+     "12126|[join-seq] 7 heartbeat ack received sessionId=session-L1 ack={ok: true}",
+     "12126|[join-seq] 8 media+negotiation complete sessionId=session-L1"
+    ],
+    "repairRanDuringJoin": false,
+    "offersAfterEvent.FIRST": 1,
+    "offersAfterEvent.SECOND": 0,
+    "socketIds.FIRST": [
+     "aa-first"
+    ],
+    "socketIds.SECOND": [
+     "zz-second-rc",
+     "zz-second-rc"
+    ],
+    "windowStartMs": 10108,
+    "recoveryOffers.FIRST": 1,
+    "recoveryOffers.SECOND": 0,
+    "recoveryOffers.total": 1,
+    "bothSidesOfferedInWindow": false,
+    "firstIsPolite": true,
+    "secondIsPolite": false,
+    "fullyDuplex": false,
+    "joinState.FIRST": "joined",
+    "joinState.SECOND": "joined",
+    "error.FIRST": null,
+    "error.SECOND": null,
+    "joinStateTimeline": [
+     {
+      "atMs": 1,
+      "side": "FIRST",
+      "socketId": "aa-first",
+      "joinState": "idle"
+     },
+     {
+      "atMs": 1,
+      "side": "SECOND",
+      "socketId": "zz-second",
+      "joinState": "idle"
+     },
+     {
+      "atMs": 1046,
+      "side": "FIRST",
+      "socketId": "aa-first",
+      "joinState": "joined"
+     },
+     {
+      "atMs": 3207,
+      "side": "SECOND",
+      "socketId": "zz-second",
+      "joinState": "joined"
+     },
+     {
+      "atMs": 12201,
+      "side": "SECOND",
+      "socketId": "zz-second-rc",
+      "joinState": "joined"
+     }
+    ],
+    "heldOffersStillParked": 0,
+    "heldAnswersStillParked": 0,
+    "glareImpoliteIgnores": 0,
+    "glarePoliteRollsBack": 0,
+    "rollbackFailed": 0,
+    "watchdogReoffer": 0,
+    "attachNoLocalStream": 1,
+    "staleAnswerIgnored": 0,
+    "repairSweep": 0,
+    "repairedPeers": 0,
+    "recoverLines": 0,
+    "addTrackFailed": 0,
+    "fatalOverlay.FIRST": {
+     "joinState": "joined",
+     "errorMessage": null,
+     "meetingOverlayShown": false
+    },
+    "fatalOverlay.SECOND": {
+     "joinState": "joined",
+     "errorMessage": null,
+     "meetingOverlayShown": false
+    }
+   },
+   "notes": [
+    "socket drop on the silent side",
+    "sockets reconnect on NEW ids"
+   ],
+   "checkpoints": [
+    {
+     "name": "silent-and-settled",
+     "atMs": 10108,
+     "first": {
+      "socketId": "aa-first",
+      "peerKey": "zz-second",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [
+       "audio",
+       "video"
+      ],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "SendOnly",
+       "video": "SendOnly"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": false,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     },
+     "second": {
+      "socketId": "zz-second",
+      "peerKey": "aa-first",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "RecvOnly",
+       "video": "RecvOnly"
+      },
+      "remoteVideoLive": true,
+      "remoteAudioLive": true,
+      "locallySilent": true,
+      "remoteSilent": false,
+      "errorMessage": null,
+      "participantCount": 2
+     }
+    },
+    {
+     "name": "dropped",
+     "atMs": 12116,
+     "first": {
+      "socketId": "aa-first",
+      "peerKey": "zz-second",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [
+       "audio",
+       "video"
+      ],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "SendOnly",
+       "video": "SendOnly"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": false,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     },
+     "second": {
+      "socketId": "zz-second",
+      "peerKey": "aa-first",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "RecvOnly",
+       "video": "RecvOnly"
+      },
+      "remoteVideoLive": true,
+      "remoteAudioLive": true,
+      "locallySilent": true,
+      "remoteSilent": false,
+      "errorMessage": null,
+      "participantCount": 2
+     }
+    },
+    {
+     "name": "after-rejoin",
+     "atMs": 48117,
+     "first": {
+      "socketId": "aa-first",
+      "peerKey": "zz-second-rc",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [
+       "audio",
+       "video"
+      ],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "SendOnly",
+       "video": "SendOnly"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": false,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     },
+     "second": {
+      "socketId": "zz-second-rc",
+      "peerKey": "aa-first",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "RecvOnly",
+       "video": "RecvOnly"
+      },
+      "remoteVideoLive": true,
+      "remoteAudioLive": true,
+      "locallySilent": true,
+      "remoteSilent": false,
+      "errorMessage": null,
+      "participantCount": 2
+     }
+    }
+   ],
+   "frames": [
+    {
+     "at": 3139,
+     "event": "session:offer",
+     "from": "aa-first",
+     "target": "zz-second"
+    },
+    {
+     "at": 3223,
+     "event": "session:answer",
+     "from": "zz-second",
+     "target": "aa-first"
+    },
+    {
+     "at": 12200,
+     "event": "session:offer",
+     "from": "aa-first",
+     "target": "zz-second-rc"
+    },
+    {
+     "at": 12268,
+     "event": "session:answer",
+     "from": "zz-second-rc",
+     "target": "aa-first"
+    }
+   ],
+   "trail": [
+    "0|[HX] === CASE L1 \u2014 reconnect rejoin with a retained SILENT peer (design=baseline)",
+    "1|[HX] joinState FIRST -> idle",
+    "1|[HX] joinState SECOND -> idle",
+    "1|[HX] join FIRST (aa-first)",
+    "1046|[HX] joinState FIRST -> joined",
+    "2044|[join-seq] 1 socket connected socketId=aa-first sessionId=session-L1 isMeeting=true",
+    "2044|[join-seq] 2 session join emitted sessionId=session-L1",
+    "2045|[HX] hub: aa-first joined",
+    "2045|[join-seq] 3 session join ack received sessionId=session-L1 ack={ok: true, sessionId: session-L1}",
+    "2045|[join-seq] 4 state.isJoined=true sessionId=session-L1",
+    "2045|[join-seq] 6 first heartbeat sent sessionId=session-L1",
+    "2045|[join-seq] 5 heartbeat started sessionId=session-L1",
+    "2046|[join-seq] 7 heartbeat ack received sessionId=session-L1 ack={ok: true}",
+    "2130|[join-seq] 8 media+negotiation complete sessionId=session-L1",
+    "3053|[HX] join SECOND (zz-second)",
+    "3067|[join-seq] 1 socket connected socketId=zz-second sessionId=session-L1 isMeeting=true",
+    "3067|[join-seq] 2 session join emitted sessionId=session-L1",
+    "3067|[HX] hub: zz-second joined",
+    "3067|[join-seq] 3 session join ack received sessionId=session-L1 ack={ok: true, sessionId: session-L1}",
+    "3067|[join-seq] 4 state.isJoined=true sessionId=session-L1",
+    "3067|[join-seq] 6 first heartbeat sent sessionId=session-L1",
+    "3067|[join-seq] 5 heartbeat started sessionId=session-L1",
+    "3067|[join-seq] 7 heartbeat ack received sessionId=session-L1 ack={ok: true}",
+    "3067|[HX] media: acquisition stalled 7000ms (injected)",
+    "3135|[rtc] peer created peerKey=zz-second iceServers=1 addLocalTracks=true",
+    "3141|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3142|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3142|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3144|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3144|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3144|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3145|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3145|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3145|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3145|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3199|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3206|[rtc] peer created peerKey=aa-first iceServers=1 addLocalTracks=false",
+    "3207|[HX] joinState SECOND -> joined",
+    "3207|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3220|[rtc] attach: NO local stream peerKey=aa-first",
+    "3224|[rtc] iceConnectionState peerKey=aa-first state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "3224|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "3224|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "3225|[rtc] connectionState peerKey=aa-first state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "3225|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "3225|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "3225|[rtc] iceConnectionState peerKey=zz-second state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "3225|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "3225|[rtc] iceConnectionState peerKey=aa-first state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "3226|[rtc] connectionState peerKey=zz-second state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "3263|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3263|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3263|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3264|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3264|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3264|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3264|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3264|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3264|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3264|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "3288|[rtc] iceConnectionState peerKey=zz-second state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "3289|[rtc] connectionState peerKey=aa-first state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "3290|[rtc] connectionState peerKey=zz-second state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "10072|[join-seq] 8 media+negotiation complete sessionId=session-L1",
+    "10108|[HX] checkpoint silent-and-settled  first[join=joined send=[audio, video] dir={audio: SendOnly, video: SendOnly}]  second[join=joined send=[] dir={audio: RecvOnly, video: RecvOnly}]",
+    "10108|[HX] note: socket drop on the silent side",
+    "10108|[HX] socket: DROP zz-second",
+    "12116|[HX] checkpoint dropped  first[join=joined send=[audio, video] dir={audio: SendOnly, video: SendOnly}]  second[join=joined send=[] dir={audio: RecvOnly, video: RecvOnly}]",
+    "12116|[HX] note: sockets reconnect on NEW ids",
+    "12116|[HX] socket: RECONNECT zz-second -> zz-second-rc",
+    "12126|[join-seq] 1 socket connected socketId=zz-second-rc sessionId=session-L1 isMeeting=true",
+    "12126|[join-seq] 2 session join emitted sessionId=session-L1",
+    "12126|[HX] hub: zz-second-rc joined",
+    "12126|[join-seq] 3 session join ack received sessionId=session-L1 ack={ok: true, sessionId: session-L1}",
+    "12126|[join-seq] 4 state.isJoined=true sessionId=session-L1",
+    "12126|[join-seq] 6 first heartbeat sent sessionId=session-L1",
+    "12126|[join-seq] 5 heartbeat started sessionId=session-L1",
+    "12126|[join-seq] 7 heartbeat ack received sessionId=session-L1 ack={ok: true}",
+    "12126|[join-seq] 8 media+negotiation complete sessionId=session-L1",
+    "12197|[rtc] peer created peerKey=zz-second-rc iceServers=1 addLocalTracks=true",
+    "12201|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12201|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12201|[HX] joinState SECOND -> joined",
+    "12201|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12202|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12202|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12202|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12202|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12202|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12203|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12203|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12246|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12246|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "12268|[rtc] connectionState peerKey=aa-first state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "12269|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "12269|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "12270|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "12270|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "12271|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "12294|[rtc] iceConnectionState peerKey=zz-second-rc state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "12294|[rtc] connectionState peerKey=zz-second-rc state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "12332|[rtc] iceConnectionState peerKey=zz-second-rc state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "18685|[rtc] connectionState peerKey=aa-first state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "18686|[rtc] connectionState peerKey=zz-second-rc state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "48118|[HX] checkpoint after-rejoin  first[join=joined send=[audio, video] dir={audio: SendOnly, video: SendOnly}]  second[join=joined send=[] dir={audio: RecvOnly, video: RecvOnly}]",
+    "48130|[rtc] attach: NO local stream peerKey=zz-second-rc",
+    "48130|[rtc] peer created peerKey=zz-second-rc iceServers=1 addLocalTracks=true",
+    "48138|[rtc] attach: NO local stream peerKey=aa-first",
+    "48138|[rtc] peer created peerKey=aa-first iceServers=1 addLocalTracks=true"
+   ],
+   "error": null
+  },
+  {
+   "id": "L2",
+   "title": "resume() with a retained SILENT peer",
+   "checks": {
+    "retainedPeerIsSilent": true,
+    "bothSilent": false,
+    "eventStartMs": 9323,
+    "orderingAfterEvent": [
+     "9328|[join-seq] 6 first heartbeat sent sessionId=session-L2",
+     "9328|[join-seq] 7 heartbeat ack received sessionId=session-L2 ack={ok: true}"
+    ],
+    "repairRanDuringJoin": false,
+    "offersAfterEvent.FIRST": 0,
+    "offersAfterEvent.SECOND": 0,
+    "socketIds.FIRST": [
+     "aa-first"
+    ],
+    "socketIds.SECOND": [
+     "zz-second"
+    ],
+    "windowStartMs": 9323,
+    "recoveryOffers.FIRST": 0,
+    "recoveryOffers.SECOND": 0,
+    "recoveryOffers.total": 0,
+    "bothSidesOfferedInWindow": false,
+    "firstIsPolite": true,
+    "secondIsPolite": false,
+    "fullyDuplex": false,
+    "joinState.FIRST": "joined",
+    "joinState.SECOND": "joined",
+    "error.FIRST": null,
+    "error.SECOND": null,
+    "joinStateTimeline": [
+     {
+      "atMs": 0,
+      "side": "FIRST",
+      "socketId": "aa-first",
+      "joinState": "idle"
+     },
+     {
+      "atMs": 0,
+      "side": "SECOND",
+      "socketId": "zz-second",
+      "joinState": "idle"
+     },
+     {
+      "atMs": 206,
+      "side": "FIRST",
+      "socketId": "aa-first",
+      "joinState": "joined"
+     },
+     {
+      "atMs": 2414,
+      "side": "SECOND",
+      "socketId": "zz-second",
+      "joinState": "joined"
+     }
+    ],
+    "heldOffersStillParked": 0,
+    "heldAnswersStillParked": 0,
+    "glareImpoliteIgnores": 0,
+    "glarePoliteRollsBack": 0,
+    "rollbackFailed": 0,
+    "watchdogReoffer": 0,
+    "attachNoLocalStream": 1,
+    "staleAnswerIgnored": 0,
+    "repairSweep": 0,
+    "repairedPeers": 0,
+    "recoverLines": 0,
+    "addTrackFailed": 0,
+    "fatalOverlay.FIRST": {
+     "joinState": "joined",
+     "errorMessage": null,
+     "meetingOverlayShown": false
+    },
+    "fatalOverlay.SECOND": {
+     "joinState": "joined",
+     "errorMessage": null,
+     "meetingOverlayShown": false
+    }
+   },
+   "notes": [
+    "resume() on the silent side, peers and media retained"
+   ],
+   "checkpoints": [
+    {
+     "name": "silent-and-settled",
+     "atMs": 9323,
+     "first": {
+      "socketId": "aa-first",
+      "peerKey": "zz-second",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [
+       "audio",
+       "video"
+      ],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "SendOnly",
+       "video": "SendOnly"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": false,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     },
+     "second": {
+      "socketId": "zz-second",
+      "peerKey": "aa-first",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "RecvOnly",
+       "video": "RecvOnly"
+      },
+      "remoteVideoLive": true,
+      "remoteAudioLive": true,
+      "locallySilent": true,
+      "remoteSilent": false,
+      "errorMessage": null,
+      "participantCount": 2
+     }
+    },
+    {
+     "name": "after-rejoin",
+     "atMs": 45325,
+     "first": {
+      "socketId": "aa-first",
+      "peerKey": "zz-second",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [
+       "audio",
+       "video"
+      ],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "SendOnly",
+       "video": "SendOnly"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": false,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     },
+     "second": {
+      "socketId": "zz-second",
+      "peerKey": "aa-first",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "RecvOnly",
+       "video": "RecvOnly"
+      },
+      "remoteVideoLive": true,
+      "remoteAudioLive": true,
+      "locallySilent": true,
+      "remoteSilent": false,
+      "errorMessage": null,
+      "participantCount": 2
+     }
+    }
+   ],
+   "frames": [
+    {
+     "at": 2343,
+     "event": "session:offer",
+     "from": "aa-first",
+     "target": "zz-second"
+    },
+    {
+     "at": 2434,
+     "event": "session:answer",
+     "from": "zz-second",
+     "target": "aa-first"
+    }
+   ],
+   "trail": [
+    "0|[HX] === CASE L2 \u2014 resume() with a retained SILENT peer (design=baseline)",
+    "0|[HX] joinState FIRST -> idle",
+    "0|[HX] joinState SECOND -> idle",
+    "0|[HX] join FIRST (aa-first)",
+    "13|[join-seq] 1 socket connected socketId=aa-first sessionId=session-L2 isMeeting=true",
+    "13|[join-seq] 2 session join emitted sessionId=session-L2",
+    "13|[HX] hub: aa-first joined",
+    "13|[join-seq] 3 session join ack received sessionId=session-L2 ack={ok: true, sessionId: session-L2}",
+    "13|[join-seq] 4 state.isJoined=true sessionId=session-L2",
+    "13|[join-seq] 6 first heartbeat sent sessionId=session-L2",
+    "14|[join-seq] 5 heartbeat started sessionId=session-L2",
+    "14|[join-seq] 7 heartbeat ack received sessionId=session-L2 ack={ok: true}",
+    "22|[join-seq] 8 media+negotiation complete sessionId=session-L2",
+    "206|[HX] joinState FIRST -> joined",
+    "2261|[HX] join SECOND (zz-second)",
+    "2276|[join-seq] 1 socket connected socketId=zz-second sessionId=session-L2 isMeeting=true",
+    "2276|[join-seq] 2 session join emitted sessionId=session-L2",
+    "2276|[HX] hub: zz-second joined",
+    "2276|[join-seq] 3 session join ack received sessionId=session-L2 ack={ok: true, sessionId: session-L2}",
+    "2276|[join-seq] 4 state.isJoined=true sessionId=session-L2",
+    "2276|[join-seq] 6 first heartbeat sent sessionId=session-L2",
+    "2277|[join-seq] 5 heartbeat started sessionId=session-L2",
+    "2277|[join-seq] 7 heartbeat ack received sessionId=session-L2 ack={ok: true}",
+    "2277|[HX] media: acquisition stalled 7000ms (injected)",
+    "2340|[rtc] peer created peerKey=zz-second iceServers=1 addLocalTracks=true",
+    "2344|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2344|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2344|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2345|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2346|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2346|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2346|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2346|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2346|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2346|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2393|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2393|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2415|[HX] joinState SECOND -> joined",
+    "2416|[rtc] peer created peerKey=aa-first iceServers=1 addLocalTracks=false",
+    "2429|[rtc] attach: NO local stream peerKey=aa-first",
+    "2435|[rtc] iceConnectionState peerKey=aa-first state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "2435|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2435|[rtc] connectionState peerKey=aa-first state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "2436|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2436|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2436|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2436|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2436|[rtc] iceConnectionState peerKey=zz-second state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "2437|[rtc] iceConnectionState peerKey=aa-first state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "2437|[rtc] connectionState peerKey=zz-second state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "2469|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2469|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2469|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2469|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2469|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2469|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2469|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2470|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2470|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2470|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2501|[rtc] iceConnectionState peerKey=zz-second state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "2501|[rtc] connectionState peerKey=zz-second state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "2501|[rtc] connectionState peerKey=aa-first state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "9281|[join-seq] 8 media+negotiation complete sessionId=session-L2",
+    "9323|[HX] checkpoint silent-and-settled  first[join=joined send=[audio, video] dir={audio: SendOnly, video: SendOnly}]  second[join=joined send=[] dir={audio: RecvOnly, video: RecvOnly}]",
+    "9323|[HX] note: resume() on the silent side, peers and media retained",
+    "9328|[join-seq] 6 first heartbeat sent sessionId=session-L2",
+    "9328|[join-seq] 7 heartbeat ack received sessionId=session-L2 ack={ok: true}",
+    "45325|[HX] checkpoint after-rejoin  first[join=joined send=[audio, video] dir={audio: SendOnly, video: SendOnly}]  second[join=joined send=[] dir={audio: RecvOnly, video: RecvOnly}]",
+    "45335|[rtc] attach: NO local stream peerKey=zz-second",
+    "45335|[rtc] peer created peerKey=zz-second iceServers=1 addLocalTracks=true"
+   ],
+   "error": null
+  },
+  {
+   "id": "L3",
+   "title": "both sides silent, BOTH reconnect together",
+   "checks": {
+    "retainedPeerIsSilent": true,
+    "bothSilent": true,
+    "eventStartMs": 9342,
+    "peerRetainedAcrossDrop": true,
+    "mediaRetainedAcrossDrop": true,
+    "orderingAfterEvent": [
+     "9343|[HX] socket: DROP zz-second",
+     "9343|[HX] socket: DROP aa-first",
+     "11358|[HX] socket: RECONNECT zz-second -> zz-second-rc",
+     "11358|[HX] socket: RECONNECT aa-first -> aa-first-rc",
+     "11368|[join-seq] 1 socket connected socketId=zz-second-rc sessionId=session-L3 isMeeting=true",
+     "11368|[join-seq] 2 session join emitted sessionId=session-L3",
+     "11368|[join-seq] 3 session join ack received sessionId=session-L3 ack={ok: true, sessionId: session-L3}",
+     "11368|[join-seq] 4 state.isJoined=true sessionId=session-L3",
+     "11368|[join-seq] 6 first heartbeat sent sessionId=session-L3",
+     "11368|[join-seq] 5 heartbeat started sessionId=session-L3",
+     "11368|[join-seq] 7 heartbeat ack received sessionId=session-L3 ack={ok: true}",
+     "11368|[join-seq] 8 media+negotiation complete sessionId=session-L3",
+     "11368|[join-seq] 1 socket connected socketId=aa-first-rc sessionId=session-L3 isMeeting=true",
+     "11368|[join-seq] 2 session join emitted sessionId=session-L3",
+     "11368|[join-seq] 3 session join ack received sessionId=session-L3 ack={ok: true, sessionId: session-L3}",
+     "11368|[join-seq] 4 state.isJoined=true sessionId=session-L3",
+     "11368|[join-seq] 6 first heartbeat sent sessionId=session-L3",
+     "11368|[join-seq] 5 heartbeat started sessionId=session-L3",
+     "11368|[join-seq] 7 heartbeat ack received sessionId=session-L3 ack={ok: true}",
+     "11368|[join-seq] 8 media+negotiation complete sessionId=session-L3",
+     "11514|[rtc] glare: impolite IGNORES offer peer=aa-first-rc",
+     "11514|[rtc] glare: polite ROLLS BACK then accepts peer=zz-second-rc"
+    ],
+    "repairRanDuringJoin": false,
+    "offersAfterEvent.FIRST": 1,
+    "offersAfterEvent.SECOND": 1,
+    "socketIds.FIRST": [
+     "aa-first-rc",
+     "aa-first-rc"
+    ],
+    "socketIds.SECOND": [
+     "zz-second-rc",
+     "zz-second-rc"
+    ],
+    "windowStartMs": 9342,
+    "recoveryOffers.FIRST": 1,
+    "recoveryOffers.SECOND": 1,
+    "recoveryOffers.total": 2,
+    "bothSidesOfferedInWindow": true,
+    "firstIsPolite": true,
+    "secondIsPolite": false,
+    "fullyDuplex": true,
+    "joinState.FIRST": "joined",
+    "joinState.SECOND": "joined",
+    "error.FIRST": null,
+    "error.SECOND": null,
+    "joinStateTimeline": [
+     {
+      "atMs": 0,
+      "side": "FIRST",
+      "socketId": "aa-first",
+      "joinState": "idle"
+     },
+     {
+      "atMs": 0,
+      "side": "SECOND",
+      "socketId": "zz-second",
+      "joinState": "idle"
+     },
+     {
+      "atMs": 212,
+      "side": "FIRST",
+      "socketId": "aa-first",
+      "joinState": "joined"
+     },
+     {
+      "atMs": 2408,
+      "side": "SECOND",
+      "socketId": "zz-second",
+      "joinState": "joined"
+     },
+     {
+      "atMs": 11405,
+      "side": "FIRST",
+      "socketId": "aa-first-rc",
+      "joinState": "joined"
+     },
+     {
+      "atMs": 11405,
+      "side": "SECOND",
+      "socketId": "zz-second-rc",
+      "joinState": "joined"
+     }
+    ],
+    "heldOffersStillParked": 0,
+    "heldAnswersStillParked": 0,
+    "glareImpoliteIgnores": 1,
+    "glarePoliteRollsBack": 1,
+    "rollbackFailed": 1,
+    "watchdogReoffer": 0,
+    "attachNoLocalStream": 2,
+    "staleAnswerIgnored": 0,
+    "repairSweep": 0,
+    "repairedPeers": 0,
+    "recoverLines": 0,
+    "addTrackFailed": 0,
+    "fatalOverlay.FIRST": {
+     "joinState": "joined",
+     "errorMessage": null,
+     "meetingOverlayShown": false
+    },
+    "fatalOverlay.SECOND": {
+     "joinState": "joined",
+     "errorMessage": null,
+     "meetingOverlayShown": false
+    }
+   },
+   "notes": [
+    "socket drop on the silent side",
+    "socket drop on the other side too",
+    "sockets reconnect on NEW ids"
+   ],
+   "checkpoints": [
+    {
+     "name": "silent-and-settled",
+     "atMs": 9342,
+     "first": {
+      "socketId": "aa-first",
+      "peerKey": "zz-second",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "Inactive",
+       "video": "Inactive"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": true,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     },
+     "second": {
+      "socketId": "zz-second",
+      "peerKey": "aa-first",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "Inactive",
+       "video": "Inactive"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": true,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     }
+    },
+    {
+     "name": "dropped",
+     "atMs": 11357,
+     "first": {
+      "socketId": "aa-first",
+      "peerKey": "zz-second",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "Inactive",
+       "video": "Inactive"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": true,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     },
+     "second": {
+      "socketId": "zz-second",
+      "peerKey": "aa-first",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "Inactive",
+       "video": "Inactive"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": false,
+      "locallySilent": true,
+      "remoteSilent": true,
+      "errorMessage": null,
+      "participantCount": 2
+     }
+    },
+    {
+     "name": "after-rejoin",
+     "atMs": 47358,
+     "first": {
+      "socketId": "aa-first-rc",
+      "peerKey": "zz-second-rc",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [
+       "audio",
+       "video"
+      ],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "SendRecv",
+       "video": "SendRecv"
+      },
+      "remoteVideoLive": false,
+      "remoteAudioLive": true,
+      "locallySilent": false,
+      "remoteSilent": false,
+      "errorMessage": null,
+      "participantCount": 2
+     },
+     "second": {
+      "socketId": "zz-second-rc",
+      "peerKey": "aa-first-rc",
+      "joinState": "joined",
+      "isJoined": true,
+      "mediaReady": true,
+      "cameraEnabled": true,
+      "micEnabled": true,
+      "hasPeer": true,
+      "signalling": "RTCSignalingStateStable",
+      "senderKinds": [
+       "audio",
+       "video"
+      ],
+      "receiverKinds": [
+       "audio",
+       "video"
+      ],
+      "transceiverDirections": {
+       "audio": "SendRecv",
+       "video": "SendRecv"
+      },
+      "remoteVideoLive": true,
+      "remoteAudioLive": true,
+      "locallySilent": false,
+      "remoteSilent": false,
+      "errorMessage": null,
+      "participantCount": 2
+     }
+    }
+   ],
+   "frames": [
+    {
+     "at": 2353,
+     "event": "session:offer",
+     "from": "aa-first",
+     "target": "zz-second"
+    },
+    {
+     "at": 2430,
+     "event": "session:answer",
+     "from": "zz-second",
+     "target": "aa-first"
+    },
+    {
+     "at": 11449,
+     "event": "session:offer",
+     "from": "aa-first-rc",
+     "target": "zz-second-rc"
+    },
+    {
+     "at": 11449,
+     "event": "session:offer",
+     "from": "zz-second-rc",
+     "target": "aa-first-rc"
+    },
+    {
+     "at": 11532,
+     "event": "session:answer",
+     "from": "aa-first-rc",
+     "target": "zz-second-rc"
+    }
+   ],
+   "trail": [
+    "0|[HX] === CASE L3 \u2014 both sides silent, BOTH reconnect together (design=baseline)",
+    "0|[HX] joinState FIRST -> idle",
+    "0|[HX] joinState SECOND -> idle",
+    "1|[HX] join FIRST (aa-first)",
+    "16|[join-seq] 1 socket connected socketId=aa-first sessionId=session-L3 isMeeting=true",
+    "16|[join-seq] 2 session join emitted sessionId=session-L3",
+    "16|[HX] hub: aa-first joined",
+    "16|[join-seq] 3 session join ack received sessionId=session-L3 ack={ok: true, sessionId: session-L3}",
+    "16|[join-seq] 4 state.isJoined=true sessionId=session-L3",
+    "16|[join-seq] 6 first heartbeat sent sessionId=session-L3",
+    "16|[join-seq] 5 heartbeat started sessionId=session-L3",
+    "16|[join-seq] 7 heartbeat ack received sessionId=session-L3 ack={ok: true}",
+    "16|[HX] media: acquisition denied, no stream (injected)",
+    "17|[join-seq] 8 media+negotiation complete sessionId=session-L3",
+    "213|[HX] joinState FIRST -> joined",
+    "2270|[HX] join SECOND (zz-second)",
+    "2284|[join-seq] 1 socket connected socketId=zz-second sessionId=session-L3 isMeeting=true",
+    "2284|[join-seq] 2 session join emitted sessionId=session-L3",
+    "2284|[HX] hub: zz-second joined",
+    "2284|[join-seq] 3 session join ack received sessionId=session-L3 ack={ok: true, sessionId: session-L3}",
+    "2284|[join-seq] 4 state.isJoined=true sessionId=session-L3",
+    "2284|[join-seq] 6 first heartbeat sent sessionId=session-L3",
+    "2284|[join-seq] 5 heartbeat started sessionId=session-L3",
+    "2284|[join-seq] 7 heartbeat ack received sessionId=session-L3 ack={ok: true}",
+    "2284|[HX] media: acquisition stalled 7000ms (injected)",
+    "2349|[rtc] attach: NO local stream peerKey=zz-second",
+    "2349|[rtc] peer created peerKey=zz-second iceServers=1 addLocalTracks=true",
+    "2353|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2353|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2354|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2354|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2355|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2355|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2355|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2355|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2355|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2355|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2397|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2398|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2408|[HX] joinState SECOND -> joined",
+    "2424|[rtc] peer created peerKey=aa-first iceServers=1 addLocalTracks=false",
+    "2428|[rtc] attach: NO local stream peerKey=aa-first",
+    "2430|[rtc] iceConnectionState peerKey=aa-first state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "2431|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2431|[rtc] connectionState peerKey=aa-first state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "2431|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2431|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2432|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2432|[rtc] iceConnectionState peerKey=zz-second state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "2433|[rtc] ice-candidate LOCAL peerKey=aa-first",
+    "2433|[rtc] connectionState peerKey=zz-second state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "2433|[rtc] iceConnectionState peerKey=aa-first state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "2477|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2477|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2477|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2477|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2477|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2478|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2478|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2478|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2478|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2478|[rtc] ice-candidate LOCAL peerKey=zz-second",
+    "2505|[rtc] iceConnectionState peerKey=zz-second state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "2506|[rtc] connectionState peerKey=aa-first state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "2507|[rtc] connectionState peerKey=zz-second state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "9298|[join-seq] 8 media+negotiation complete sessionId=session-L3",
+    "9340|[HX] media: device released, acquiring for real",
+    "9342|[HX] checkpoint silent-and-settled  first[join=joined send=[] dir={audio: Inactive, video: Inactive}]  second[join=joined send=[] dir={audio: Inactive, video: Inactive}]",
+    "9342|[HX] note: socket drop on the silent side",
+    "9343|[HX] socket: DROP zz-second",
+    "9343|[HX] note: socket drop on the other side too",
+    "9343|[HX] socket: DROP aa-first",
+    "11357|[HX] checkpoint dropped  first[join=joined send=[] dir={audio: Inactive, video: Inactive}]  second[join=joined send=[] dir={audio: Inactive, video: Inactive}]",
+    "11358|[HX] note: sockets reconnect on NEW ids",
+    "11358|[HX] socket: RECONNECT zz-second -> zz-second-rc",
+    "11358|[HX] socket: RECONNECT aa-first -> aa-first-rc",
+    "11368|[join-seq] 1 socket connected socketId=zz-second-rc sessionId=session-L3 isMeeting=true",
+    "11368|[join-seq] 2 session join emitted sessionId=session-L3",
+    "11368|[HX] hub: zz-second-rc joined",
+    "11368|[join-seq] 3 session join ack received sessionId=session-L3 ack={ok: true, sessionId: session-L3}",
+    "11368|[join-seq] 4 state.isJoined=true sessionId=session-L3",
+    "11368|[join-seq] 6 first heartbeat sent sessionId=session-L3",
+    "11368|[join-seq] 5 heartbeat started sessionId=session-L3",
+    "11368|[join-seq] 7 heartbeat ack received sessionId=session-L3 ack={ok: true}",
+    "11368|[join-seq] 8 media+negotiation complete sessionId=session-L3",
+    "11368|[join-seq] 1 socket connected socketId=aa-first-rc sessionId=session-L3 isMeeting=true",
+    "11368|[join-seq] 2 session join emitted sessionId=session-L3",
+    "11368|[HX] hub: aa-first-rc joined",
+    "11368|[join-seq] 3 session join ack received sessionId=session-L3 ack={ok: true, sessionId: session-L3}",
+    "11368|[join-seq] 4 state.isJoined=true sessionId=session-L3",
+    "11368|[join-seq] 6 first heartbeat sent sessionId=session-L3",
+    "11368|[join-seq] 5 heartbeat started sessionId=session-L3",
+    "11368|[join-seq] 7 heartbeat ack received sessionId=session-L3 ack={ok: true}",
+    "11368|[join-seq] 8 media+negotiation complete sessionId=session-L3",
+    "11405|[HX] joinState FIRST -> joined",
+    "11405|[HX] joinState SECOND -> joined",
+    "11441|[rtc] peer created peerKey=zz-second-rc iceServers=1 addLocalTracks=true",
+    "11445|[rtc] peer created peerKey=aa-first-rc iceServers=1 addLocalTracks=true",
+    "11450|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11450|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11450|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11451|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11451|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11451|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11452|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11452|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11452|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11452|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11452|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11453|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11453|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11453|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11453|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11453|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11454|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11454|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11454|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11454|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11492|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11499|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11500|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11500|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11514|[rtc] glare: impolite IGNORES offer peer=aa-first-rc",
+    "11514|[rtc] glare: polite ROLLS BACK then accepts peer=zz-second-rc",
+    "11515|[rtc] rollback failed peer=zz-second-rc err=Null check operator used on a null value",
+    "11533|[rtc] iceConnectionState peerKey=zz-second-rc state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "11533|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11534|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11534|[rtc] connectionState peerKey=zz-second-rc state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "11534|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11534|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11534|[rtc] ice-candidate LOCAL peerKey=zz-second-rc",
+    "11534|[rtc] iceConnectionState peerKey=aa-first-rc state=RTCIceConnectionState.RTCIceConnectionStateChecking",
+    "11534|[rtc] iceConnectionState peerKey=zz-second-rc state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "11534|[rtc] connectionState peerKey=aa-first-rc state=RTCPeerConnectionState.RTCPeerConnectionStateConnecting",
+    "11569|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11569|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11569|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11569|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11569|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11569|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11570|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11570|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11570|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11570|[rtc] ice-candidate LOCAL peerKey=aa-first-rc",
+    "11598|[rtc] iceConnectionState peerKey=aa-first-rc state=RTCIceConnectionState.RTCIceConnectionStateConnected",
+    "11599|[rtc] connectionState peerKey=aa-first-rc state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "11599|[rtc] connectionState peerKey=zz-second-rc state=RTCPeerConnectionState.RTCPeerConnectionStateConnected",
+    "47358|[HX] checkpoint after-rejoin  first[join=joined send=[audio, video] dir={audio: SendRecv, video: SendRecv}]  second[join=joined send=[audio, video] dir={audio: SendRecv, video: SendRecv}]",
+    "47369|[rtc] attach: NO local stream peerKey=zz-second-rc",
+    "47369|[rtc] peer created peerKey=zz-second-rc iceServers=1 addLocalTracks=true",
+    "47388|[rtc] attach: NO local stream peerKey=aa-first-rc",
+    "47388|[rtc] peer created peerKey=aa-first-rc iceServers=1 addLocalTracks=true"
+   ],
+   "error": null
+  }
+ ],
+ "complete": true
+}
