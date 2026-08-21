@@ -74,27 +74,6 @@ class RealtimeQualitySample {
       bitrateKbps != null;
 }
 
-/// Which track KINDS a peer is missing and must therefore be given.
-///
-/// Pulled out as a pure function so the selection rule is testable without a
-/// live RTCPeerConnection. The rule matters in both directions:
-///
-///   * miss a kind and the peer stays silent for it — the defect this repairs;
-///   * add a kind it already sends and you create a duplicate m-line, plus a
-///     pointless renegotiation on every single join.
-///
-/// Compared by KIND, never by track identity: a peer already sending video is
-/// satisfied even if it is a different track (a device switch, or a screen
-/// share standing in for the camera).
-Set<String> missingSenderKinds({
-  required Set<String> presentKinds,
-  required List<String> localKinds,
-}) {
-  return localKinds
-      .where((k) => k.isNotEmpty && !presentKinds.contains(k))
-      .toSet();
-}
-
 class RealtimeMediaService {
   RealtimeMediaService();
 
@@ -323,37 +302,8 @@ class RealtimeMediaService {
     RTCPeerConnection connection,
     String peerKey,
   ) async {
-    var local = _localStream;
-    // THE ANSWERER RACE. `handleRemoteOffer` attaches tracks after
-    // setRemoteDescription, and it does so exactly ONCE — guarded by
-    // `isNewPeer`. If the offer lands while getUserMedia is still in flight,
-    // `_localStream` is null, nothing is attached, and `createAnswer` produces
-    // recvonly m-lines. The connection then reaches Connected and stays
-    // PERMANENTLY silent: the offerer sees "Camera off" forever, toggling the
-    // camera cannot help (replaceTrack has no sender to replace), and the
-    // attach is never retried.
-    //
-    // Acquisition is already coalesced into a single future, so the fix is to
-    // wait for it rather than answer with nothing. This is the common case —
-    // join and session:offer arrive within milliseconds of each other.
+    final local = _localStream;
     if (local == null) {
-      final inflight = _mediaAcquisition;
-      if (inflight != null) {
-        debugPrint('[rtc] attach: acquisition in flight, waiting peerKey=$peerKey');
-        try {
-          await inflight;
-        } catch (_) {
-          // Acquisition failing is not this method's business to report; the
-          // null-stream branch below records the outcome either way.
-        }
-        local = _localStream;
-      }
-    }
-    if (local == null) {
-      // Still nothing — acquisition has not started, or it failed (camera busy
-      // in another app). NOT terminal: `publishLocalTracksToSilentPeers()`
-      // repairs this peer once media arrives, so the silence is recoverable
-      // rather than permanent.
       debugPrint('[rtc] attach: NO local stream peerKey=$peerKey');
       return;
     }
@@ -370,66 +320,6 @@ class RealtimeMediaService {
     }
     _lastSentTrackKinds = kinds;
     _publish();
-  }
-
-  /// Give local tracks to peers that are carrying NONE of that kind.
-  ///
-  /// The repair half of the answerer race above. A peer that answered before
-  /// media existed holds no sender, and nothing in the normal flow ever adds
-  /// one: `setCameraEnabled` only flips `track.enabled` on tracks that already
-  /// exist, and `replaceTrack` needs a sender to replace. Without this, "my
-  /// camera was still starting when the offer arrived" is a permanent,
-  /// unrecoverable mute that survives every toggle.
-  ///
-  /// Deliberately the same shape as `startScreenShare()`: add the missing
-  /// track, return true, and let the CONTROLLER re-offer. Adding a track needs
-  /// renegotiation, and signalling belongs to the controller, not here.
-  ///
-  /// Compares by KIND rather than by track identity — a peer that already has a
-  /// video sender is fine, even if it is a different track (a device switch, or
-  /// a screen share standing in for the camera). Re-adding would create a
-  /// duplicate m-line for no gain.
-  Future<bool> publishLocalTracksToSilentPeers() async {
-    final local = _localStream;
-    if (local == null || _disposed) return false;
-
-    var added = false;
-    for (final entry in _peers.entries) {
-      final peerKey = entry.key;
-      final connection = entry.value;
-      Set<String> presentKinds;
-      try {
-        final senders = await connection.getSenders();
-        presentKinds = senders
-            .map((s) => s.track?.kind)
-            .whereType<String>()
-            .where((k) => k.isNotEmpty)
-            .toSet();
-      } catch (error) {
-        debugPrint('[rtc] getSenders failed peerKey=$peerKey err=$error');
-        continue;
-      }
-
-      final wanted = missingSenderKinds(
-        presentKinds: presentKinds,
-        localKinds: local.getTracks().map((t) => t.kind ?? '').toList(),
-      );
-      for (final track in local.getTracks()) {
-        final kind = track.kind ?? '';
-        if (!wanted.contains(kind) || presentKinds.contains(kind)) continue;
-        try {
-          await connection.addTrack(track, local);
-          presentKinds.add(kind);
-          added = true;
-          debugPrint('[rtc] repaired silent peer: added $kind peerKey=$peerKey');
-        } catch (error) {
-          debugPrint(
-            '[rtc] repair addTrack FAILED kind=$kind peerKey=$peerKey err=$error',
-          );
-        }
-      }
-    }
-    return added;
   }
 
   Future<RTCPeerConnection> _ensurePeer({
