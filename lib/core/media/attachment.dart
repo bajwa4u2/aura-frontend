@@ -137,12 +137,27 @@ class Attachment {
   }
 }
 
-/// Wire string for [AttachmentKind] — backend `MediaType` enum is
-/// upper-case (IMAGE / VIDEO / AUDIO). Documents historically rode the
-/// IMAGE channel on the messages backend; the thread composer used to
-/// force `'IMAGE'` for documents — preserved here so behaviour is
-/// identical.
-String wireKind(AttachmentKind kind) {
+/// Wire string for [AttachmentKind] — the backend's presign `kind`.
+///
+/// AURA SENDS TWO DIFFERENT ANSWERS FOR A DOCUMENT TODAY, and both are live.
+///
+///   * The composers that call this helper send `'IMAGE'`. That is a legacy
+///     transport contract from the thread composer, and the backend preserves
+///     it deliberately — `mime-policy.ts` names this function and states the
+///     collapse is honoured exactly for the released client.
+///   * The conversation composer has always sent `'DOCUMENT'`. `PresignDto`
+///     validates it, and F130 recorded the IMAGE routing as the defect it
+///     fixed: `maxBytesFor('DOCUMENT')` is 25 MiB and is commented as the
+///     conversation/document bucket, where `'IMAGE'` is 10 MiB.
+///
+/// The collapse is therefore a PARAMETER rather than a hidden constant, so the
+/// divergence is visible at every call site instead of being decided here for
+/// callers that never agreed to it. The default preserves the released
+/// contract, so no existing caller changes behaviour.
+///
+/// Choosing ONE answer is a wire-contract change with an installed client in
+/// the field. It is recorded as a CH-13 finding, not settled here.
+String wireKind(AttachmentKind kind, {bool collapseDocumentToImage = true}) {
   switch (kind) {
     case AttachmentKind.image:
       return 'IMAGE';
@@ -151,7 +166,7 @@ String wireKind(AttachmentKind kind) {
     case AttachmentKind.audio:
       return 'AUDIO';
     case AttachmentKind.document:
-      return 'IMAGE';
+      return collapseDocumentToImage ? 'IMAGE' : 'DOCUMENT';
   }
 }
 
