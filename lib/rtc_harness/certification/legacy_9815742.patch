@@ -1,0 +1,340 @@
+commit 981574242ee4a01e7bed9c90aebc87a2b8a211bf
+Author: Muhammad Sakhawat <muhammadsakhawat@gmail.com>
+Date:   Fri Aug 21 02:02:17 2026 -0400
+
+    fix(realtime): repair peers left silent by the media-acquisition race
+    
+    A peer that answered before its own getUserMedia resolved holds no senders and is
+    permanently mute to the far side — connected, in the roster, and unrecoverable,
+    because setCameraEnabled only flips `enabled` on tracks that already exist and
+    replaceTrack needs a sender to replace. That is the one-way media defect: one
+    side sees the other perfectly, the other sees nothing, and toggling the camera
+    changes nothing.
+    
+    An earlier attempt at this shipped and broke both sides of live meetings, because
+    it used "peer has zero senders" as a proxy for "peer is stale". That predicate is
+    invalid: a fresh answerer legitimately has zero senders until handleRemoteOffer
+    attaches them, and mutating one mid-negotiation misaligns m-lines. This version
+    distinguishes the two from live WebRTC state — remote description applied,
+    signalling stable, no offer in flight, media acquisition settled, senders
+    genuinely missing — and re-checks eligibility per peer immediately before
+    touching anything.
+    
+    The trigger is the existing heartbeat, and the join path is deliberately NOT
+    used: at join the transitional and the broken peer are indistinguishable, which
+    is exactly what broke production. By heartbeat time negotiation has settled.
+    Worst case is one beat of silence rather than a permanently dead call. The sweep
+    is unawaited so presence never waits on repair, and signalling stays in the
+    controller — the media layer reports what it repaired, the same division
+    startScreenShare() already uses.
+    
+    Proven locally before shipping, in two real browser participants with real
+    getUserMedia and real negotiation. The race was reproduced (offer received with
+    localMedia=false, answer sent with zero tracks, far side receiving nothing), then
+    nothing was invoked by hand:
+    
+      beats=2  verdict=waitMedia  senders=0  autoRepairs=0   transitional, untouched
+      beats=3  verdict=repair     senders=0  autoRepairs=0   eligible, awaiting beat
+      beats=4  verdict=healthy    senders=2  autoRepairs=1   repaired automatically
+    
+    and the far side recovered video and audio with no user action. Twelve further
+    beats left autoRepairs at 1. Camera and mic held OFF across three beats never
+    read as missing senders — sender count stayed 2 and the verdict stayed healthy.
+    
+    The harness is a separate entrypoint, unreachable from lib/main.dart and
+    therefore absent from the release bundle. It is committed as evidence, not as
+    product.
+    
+    NOT included, and still open: camera-off/black-frame presentation, refresh
+    continuity, firstKeyFromMedia(), meeting-file behaviour. makingOffer remains
+    unit-proven and not live-captured; TURN/relay and production-scale multi-peer
+    were not certified by this proof.
+    
+    Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+diff --git a/lib/features/realtime/application/realtime_controller.dart b/lib/features/realtime/application/realtime_controller.dart
+index 49548a8..64922eb 100644
+--- a/lib/features/realtime/application/realtime_controller.dart
++++ b/lib/features/realtime/application/realtime_controller.dart
+@@ -1160,6 +1160,26 @@ class RealtimeController extends StateNotifier<RealtimeState>
+     if (isFirst) {
+       debugPrint('[join-seq] 6 first heartbeat sent sessionId=$sessionId');
+     }
++
++    // ── SILENT-PEER REPAIR ───────────────────────────────────────────────────
++    //
++    // The heartbeat is the right home for this, and the join path is the wrong
++    // one. A peer that answered before its own getUserMedia resolved holds no
++    // senders and is permanently mute to the far side — connected, in the
++    // roster, and unrecoverable, because setCameraEnabled only flips `enabled`
++    // on tracks that already exist and replaceTrack needs a sender to replace.
++    //
++    // Repairing during join is what broke production before: at that moment a
++    // fresh answerer legitimately has zero senders too, and the two are
++    // indistinguishable by sender count alone. By heartbeat time negotiation has
++    // settled, so a peer that is STILL missing senders is genuinely stale rather
++    // than merely unfinished — and `repairSilentPeers()` re-checks eligibility
++    // against live WebRTC state per peer immediately before touching anything.
++    //
++    // Worst case is one beat of silence rather than a permanently dead call.
++    // Deliberately unawaited: a slow repair must never delay the beat itself,
++    // because presence is what the beat exists for.
++    unawaited(_repairSilentPeersIfAny());
+     // emitAck is best-effort — a transient network blip drops the beat
+     // but the next tick recovers. The server ignores heartbeats from
+     // non-joined sockets, so the ticker is safe to keep running. The latest
+@@ -1302,6 +1322,32 @@ class RealtimeController extends StateNotifier<RealtimeState>
+     }
+   }
+ 
++  /// Repair peers that are genuinely stale, then re-offer to those peers only.
++  ///
++  /// Adding a track requires renegotiation, so the media layer reports what it
++  /// repaired and signalling stays here — the same division `startScreenShare()`
++  /// already uses. Nothing is re-offered when nothing was repaired, so a healthy
++  /// room produces no traffic from this at all.
++  Future<void> _repairSilentPeersIfAny() async {
++    if (!state.isJoined) return;
++    try {
++      final repaired = await _mediaService.repairSilentPeers();
++      if (repaired.isEmpty) return;
++      debugPrint('[rtc-repair] repaired ${repaired.length} peer(s); re-offering');
++      for (final peerKey in repaired) {
++        if (!_mediaService.hasPeer(peerKey)) continue;
++        try {
++          await _sendOfferToSocket(peerKey: peerKey, targetSocketId: peerKey);
++        } catch (error) {
++          debugPrint('[rtc-repair] re-offer failed peer=$peerKey err=$error');
++        }
++      }
++    } catch (error) {
++      // A repair that cannot run must never take the heartbeat down with it.
++      debugPrint('[rtc-repair] sweep failed err=$error');
++    }
++  }
++
+   /// Renegotiate with every peer we already hold a connection to (track
+   /// added/removed). Fresh offers on EXISTING connections — perfect
+   /// negotiation resolves any collision.
+diff --git a/lib/features/realtime/data/realtime_media_service.dart b/lib/features/realtime/data/realtime_media_service.dart
+index 4da93aa..80e31b5 100644
+--- a/lib/features/realtime/data/realtime_media_service.dart
++++ b/lib/features/realtime/data/realtime_media_service.dart
+@@ -74,6 +74,97 @@ class RealtimeQualitySample {
+       bitrateKbps != null;
+ }
+ 
++/// Which track KINDS a peer is missing and must therefore be given.
++///
++/// Compared by KIND, never by track identity: a peer already sending video is
++/// satisfied even if it is a different track (a switched device, or a screen
++/// share standing in for the camera). Re-adding would create a duplicate
++/// m-line and a pointless renegotiation on every ordinary join.
++Set<String> missingSenderKinds({
++  required Set<String> presentKinds,
++  required List<String> localKinds,
++}) {
++  return localKinds
++      .where((k) => k.isNotEmpty && !presentKinds.contains(k))
++      .toSet();
++}
++
++/// Why a peer may or may not be repaired. Named outcomes rather than a bool so
++/// the log says WHICH guard held, and so the tests pin each one separately.
++enum PeerRepairVerdict {
++  /// Genuinely stale: negotiation finished, media exists, senders are missing.
++  repair,
++
++  /// Nothing to publish yet — local acquisition has not completed.
++  waitMedia,
++
++  /// The answerer has not applied the remote offer yet. Its zero senders are
++  /// CORRECT for this instant; `handleRemoteOffer` attaches them next.
++  waitRemoteDescription,
++
++  /// An offer/answer exchange is mid-flight. Touching senders now is what
++  /// misaligns m-lines.
++  waitNegotiation,
++
++  /// Already publishing everything it should.
++  healthy,
++}
++
++/// Decide whether a peer's missing senders are a DEFECT or a normal transient.
++///
++/// ───────────────────────────────────────────────────────────────────────────
++/// This function exists because the previous repair (381c452, reverted) used
++///
++///     peer has zero senders  ⇒  peer is broken
++///
++/// which is false. It broke live meetings by adding tracks to answerers that
++/// were simply not finished yet. "Zero senders" is a state BOTH a broken peer
++/// and a healthy mid-negotiation peer pass through, and nothing downstream can
++/// recover from confusing them.
++///
++/// The guards below are derived from the two real lifecycles, not assumed:
++///
++/// ANSWERER (`handleRemoteOffer`)
++///   1. `_ensurePeer(addLocalTracks: false)` — zero senders, and CORRECT.
++///      `remoteDescriptionSet` is false here → `waitRemoteDescription`.
++///   2. `setRemoteDescription(offer)` → signalling `have-remote-offer`.
++///      `remoteDescriptionSet` is now true, so guard 1 has stopped helping —
++///      but the state is not stable → `waitNegotiation`.
++///   3. `_attachLocalTracks` — where the defect happens if media is late.
++///   4. `setLocalDescription(answer)` → stable. Missing senders here are REAL.
++///
++/// OFFERER (`createOfferFor`)
++///   1. `_ensurePeer(addLocalTracks: true)` — attaches immediately, or attaches
++///      nothing if media is late.
++///   2. `_makingOffer = true`, then `await createOffer()`. Signalling is STILL
++///      stable during this await, so `signallingStable` alone would wrongly
++///      admit it. This is precisely why `makingOffer` is a required guard and
++///      not redundant.
++///   3. `setLocalDescription(offer)` → `have-local-offer`, not stable.
++///   4. remote answer applied → stable. Missing senders here are REAL.
++///
++/// So the two windows in which zero senders are legitimate are covered by
++/// `remoteDescriptionSet`, `signallingStable` and `makingOffer` TOGETHER. Any
++/// one of them alone lets a healthy peer through.
++PeerRepairVerdict evaluatePeerRepair({
++  required bool localMediaReady,
++  required bool remoteDescriptionSet,
++  required bool signallingStable,
++  required bool makingOffer,
++  required Set<String> presentKinds,
++  required List<String> localKinds,
++}) {
++  // Order matters only for which reason is reported; the guards are ANDed.
++  if (!localMediaReady) return PeerRepairVerdict.waitMedia;
++  if (!remoteDescriptionSet) return PeerRepairVerdict.waitRemoteDescription;
++  if (makingOffer || !signallingStable) return PeerRepairVerdict.waitNegotiation;
++  if (missingSenderKinds(presentKinds: presentKinds, localKinds: localKinds)
++      .isEmpty) {
++    return PeerRepairVerdict.healthy;
++  }
++  return PeerRepairVerdict.repair;
++}
++
+ class RealtimeMediaService {
+   RealtimeMediaService();
+ 
+@@ -150,6 +241,11 @@ class RealtimeMediaService {
+   /// are initiated exclusively from the participant.joined path.
+   bool hasPeer(String peerKey) => _peers.containsKey(peerKey);
+ 
++  /// Read-only access to a peer connection, for local diagnostics and the
++  /// local WebRTC harness. Returns the live object rather than a copy so
++  /// signalling state and senders can be READ; nothing here mutates.
++  RTCPeerConnection? debugPeer(String peerKey) => _peers[peerKey];
++
+   /// True while our offer to [peerKey] is outstanding (no answer applied).
+   /// Drives the negotiation watchdog: a lost answer is re-offered instead of
+   /// waiting forever.
+@@ -322,6 +418,107 @@ class RealtimeMediaService {
+     _publish();
+   }
+ 
++  /// Why this peer is or is not repairable, read from LIVE WebRTC state.
++  ///
++  /// Exposed rather than private because the reverted repair (381c452) failed
++  /// precisely on this question and its unit tests could not see it: they
++  /// pinned the kind-selection arithmetic while the eligibility rule was wrong.
++  /// A verdict you can observe is a verdict you can prove.
++  Future<PeerRepairVerdict> peerRepairVerdict(String peerKey) async {
++    final connection = _peers[peerKey];
++    if (connection == null) return PeerRepairVerdict.waitNegotiation;
++
++    // Acquisition still in flight counts as NOT ready: repairing mid-acquire
++    // would attach whatever half-built stream exists at that instant.
++    final localReady = _localStream != null && _mediaAcquisition == null;
++
++    Set<String> presentKinds = <String>{};
++    try {
++      final senders = await connection.getSenders();
++      presentKinds = senders
++          .map((s) => s.track?.kind)
++          .whereType<String>()
++          .where((k) => k.isNotEmpty)
++          .toSet();
++    } catch (_) {
++      // Unable to read senders is unable to judge — never repair blind.
++      return PeerRepairVerdict.waitNegotiation;
++    }
++
++    return evaluatePeerRepair(
++      localMediaReady: localReady,
++      remoteDescriptionSet: _remoteDescriptionSet.contains(peerKey),
++      signallingStable: connection.signalingState ==
++          RTCSignalingState.RTCSignalingStateStable,
++      makingOffer: _makingOffer[peerKey] == true,
++      presentKinds: presentKinds,
++      localKinds:
++          (_localStream?.getTracks() ?? const <MediaStreamTrack>[])
++              .map((t) => t.kind ?? '')
++              .toList(),
++    );
++  }
++
++  /// Give local tracks to peers that are GENUINELY stale, and only those.
++  ///
++  /// Returns the peer keys that were repaired; a non-empty result means the
++  /// caller must re-offer, because adding a track requires renegotiation.
++  /// Signalling belongs to the controller, so it is reported, not performed —
++  /// the same division `startScreenShare()` already uses.
++  ///
++  /// The eligibility check is per-peer and runs against live state immediately
++  /// before touching anything. Iterating every peer and adding tracks wherever
++  /// senders were absent is exactly what took production down: a fresh answerer
++  /// legitimately has zero senders until `handleRemoteOffer` attaches them.
++  Future<List<String>> repairSilentPeers() async {
++    if (_disposed || _localStream == null) return const <String>[];
++    final local = _localStream!;
++    final repaired = <String>[];
++
++    for (final entry in _peers.entries) {
++      final peerKey = entry.key;
++      final verdict = await peerRepairVerdict(peerKey);
++      if (verdict != PeerRepairVerdict.repair) {
++        debugPrint('[rtc-repair] skip peer=$peerKey verdict=${verdict.name}');
++        continue;
++      }
++
++      final connection = entry.value;
++      Set<String> present;
++      try {
++        final senders = await connection.getSenders();
++        present = senders
++            .map((s) => s.track?.kind)
++            .whereType<String>()
++            .where((k) => k.isNotEmpty)
++            .toSet();
++      } catch (error) {
++        debugPrint('[rtc-repair] getSenders failed peer=$peerKey err=$error');
++        continue;
++      }
++
++      final wanted = missingSenderKinds(
++        presentKinds: present,
++        localKinds: local.getTracks().map((t) => t.kind ?? '').toList(),
++      );
++      var added = false;
++      for (final track in local.getTracks()) {
++        final kind = track.kind ?? '';
++        if (!wanted.contains(kind) || present.contains(kind)) continue;
++        try {
++          await connection.addTrack(track, local);
++          present.add(kind);
++          added = true;
++          debugPrint('[rtc-repair] added $kind peer=$peerKey');
++        } catch (error) {
++          debugPrint('[rtc-repair] addTrack FAILED $kind peer=$peerKey err=$error');
++        }
++      }
++      if (added) repaired.add(peerKey);
++    }
++    return repaired;
++  }
++
+   Future<RTCPeerConnection> _ensurePeer({
+     required String peerKey,
+     required Map<String, dynamic> configuration,
