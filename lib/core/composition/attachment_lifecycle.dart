@@ -23,6 +23,7 @@
 // rather than observed in a running composer.
 
 import '../media/attachment.dart';
+import '../media/media_capacity.dart';
 
 /// Where an attachment actually is in the frozen lifecycle.
 ///
@@ -69,6 +70,10 @@ enum AttachmentRejection {
 
   /// Nothing to attach: no file, no bytes.
   empty,
+
+  /// Larger than the canonical ceiling for its class. Refused at the door so a
+  /// person is told before a long upload is attempted and then rejected.
+  tooLarge,
 }
 
 /// The lifecycle authority.
@@ -142,7 +147,13 @@ class AttachmentLifecycle {
   ///
   /// Deliberately vague about WHY a type is unsupported: a precise refusal is
   /// an oracle, and D7 froze that a refusal must not become one.
-  static String rejectionMessage(AttachmentRejection rejection) {
+  /// [kind] is supplied where it is known, so a capacity refusal can name the
+  /// actual ceiling. "That file is too large" without a number tells a person
+  /// nothing they can act on.
+  static String rejectionMessage(
+    AttachmentRejection rejection, {
+    AttachmentKind? kind,
+  }) {
     switch (rejection) {
       case AttachmentRejection.unsupportedType:
         return 'That file type cannot be attached.';
@@ -150,6 +161,11 @@ class AttachmentLifecycle {
         return 'That file does not match the kind it claims to be.';
       case AttachmentRejection.empty:
         return 'That file is empty.';
+      case AttachmentRejection.tooLarge:
+        return kind == null
+            ? 'That file is too large.'
+            : 'That file is larger than the '
+                '${MediaCapacity.describeLimit(kind)} limit.';
     }
   }
 }

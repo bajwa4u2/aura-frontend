@@ -16,7 +16,6 @@ import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/media/attachment.dart';
-import '../../../core/media/media_mime.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
 import '../../../core/link_preview/internal_reference_card.dart';
@@ -40,6 +39,8 @@ import '../../topics/aura_topic_selector.dart';
 import '../../topics/topic.dart';
 import '../../topics/topic_repository.dart';
 import '../data/institution_draft_store.dart';
+import '../../../core/composition/composition_authority.dart';
+import '../../../core/composition/content_intake.dart';
 import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
 import '../domain/institution_post.dart';
@@ -107,6 +108,17 @@ class _InstitutionPostComposerScreenState
   // backend contract change (flagged below).
   final ImagePicker _picker = ImagePicker();
   String? _mediaUrl;
+
+  /// The server's identity for the uploaded media.
+  ///
+  /// This used to be DISCARDED — only `result.url` was kept — which is half of
+  /// why the draft could not hold a governed claim on its own cover.
+  String? _mediaId;
+
+  /// The server-side DRAFT post that holds this composition's media claim.
+  /// Null while the composition has nothing worth protecting, or while it
+  /// cannot yet be promoted (see [_ensureServerDraftClaim]).
+  String? _serverDraftPostId;
   String? _mediaThumbUrl;
   String? _mediaMimeType;
 
@@ -143,8 +155,10 @@ class _InstitutionPostComposerScreenState
       false; // true while we programmatically load a draft into the fields
   bool _draftCleared = false; // true after publish/discard so we don't resave
 
-  static const int _kImageMaxBytes = 8 * 1024 * 1024; // 8 MB
-  static const int _kVideoMaxBytes = 50 * 1024 * 1024; // 50 MB
+  // `_kImageMaxBytes = 8 MB` and `_kVideoMaxBytes = 50 MB` used to live here.
+  // Neither came from a measured constraint — they were round numbers, set
+  // once, and lower than both the backend's ceiling and every other composer's.
+  // Capacity is now MediaCapacity's single answer, judged inside ContentIntake.
   // MIME allow-lists moved to lib/core/media/media_mime.dart (canonical
   // mirror of backend `media.service.ts::allowedMime()`). Local copies
   // here used to drift; consolidated.
@@ -322,6 +336,7 @@ class _InstitutionPostComposerScreenState
     setState(() {
       _titleCtrl.text = draft.title;
       _bodyCtrl.text = draft.body;
+      _serverDraftPostId = draft.serverDraftPostId;
       _mediaUrl = draft.mediaUrl;
       _mediaThumbUrl = draft.mediaThumbUrl;
       _mediaMimeType = draft.mediaMimeType;
@@ -342,6 +357,87 @@ class _InstitutionPostComposerScreenState
       setState(() => _draftStatus = _DraftStatus.unsaved);
     }
     _draftDebounce = Timer(_kDraftDebounce, _persistDraftNow);
+  }
+
+  /// CO-RC-C5-007 — THE DRAFT CLAIM.
+  ///
+  /// Uploaded media starts life unreferenced: the backend stamps `orphanedAt`
+  /// at confirm for any object with no parent, and the reaper reclaims it once
+  /// the orphan window elapses. A draft that lives only in `localStorage` holds
+  /// no `ContentReference`, so correctly-implemented cleanup eventually takes
+  /// its cover and the person reopens a draft pointing at a dead URL. That was
+  /// this screen's class-D exposure, and it was not a fault in the reaper — it
+  /// was an unasserted claim.
+  ///
+  /// The answer is not a timer and not a longer retention window. It is to make
+  /// the draft REAL. A server-side DRAFT post carries an `InstitutionPostMedia`
+  /// link, which is one of the authoritative sources `ContentReference` derives
+  /// from, so the media is protected for exactly as long as the draft exists
+  /// and becomes reclaimable the moment it stops existing. Retention authority
+  /// keeps re-deriving; nothing here asks it to trust a counter.
+  ///
+  /// A DRAFT needs only a title and a body — the topic the publish gate insists
+  /// on is optional on the create — so promotion succeeds as soon as there is
+  /// anything worth recovering.
+  Future<void> _ensureServerDraftClaim() async {
+    if (widget.isEditing) return; // already a server row; already claimed
+    if (_serverDraftPostId != null) return;
+    if ((_mediaUrl ?? '').trim().isEmpty) return; // nothing to protect
+
+    final title = _encodedTitle().trim();
+    final body = _bodyCtrl.text.trim();
+    if (title.isEmpty || body.isEmpty) return; // not yet recoverable either
+
+    try {
+      final post = await ref
+          .read(institutionsRepositoryProvider)
+          .createInstitutionPost(
+            widget.institutionId,
+            _draftClaimPayload(),
+            status: 'DRAFT',
+          );
+      if (!mounted) return;
+      setState(() => _serverDraftPostId = post.id);
+    } catch (_) {
+      // Leave the claim unmade rather than pretend. `_draftClaim` stays
+      // clientOnly, and `_persistDraftNow` will not write a media reference
+      // the server cannot see.
+    }
+  }
+
+  /// The create payload for a claim.
+  ///
+  /// Deliberately NOT [_payload]: that one dereferences `_primaryTopic!` because
+  /// publishing requires a topic. A draft does not, and refusing to claim media
+  /// because a topic has not been chosen yet would leave the exposure open for
+  /// exactly the compositions most likely to be abandoned.
+  Map<String, dynamic> _draftClaimPayload() {
+    return <String, dynamic>{
+      'title': _encodedTitle(),
+      'body': _bodyCtrl.text.trim(),
+      if ((_mediaUrl ?? '').trim().isNotEmpty) 'mediaUrl': _mediaUrl,
+      'visibility': _visibility.wire,
+      'distribution': _distribution.wire,
+      if (_primaryTopic != null) 'primaryTopic': _primaryTopic!.wire,
+    };
+  }
+
+  /// Whether this composition's media is visible to retention authority.
+  ///
+  /// Two shapes count as holding media. A FRESH upload is identified by
+  /// `_mediaId` — server identity is the only proof an upload finished, and it
+  /// is the object the reaper can actually reclaim. A RESTORED draft has only
+  /// `_mediaUrl`, because the local store keeps the URL; it is nonetheless real
+  /// media, and by the invariant in [_persistDraftNow] it was only written down
+  /// because a claim already existed.
+  DraftClaim get _draftClaim {
+    final uploaded = (_mediaId ?? '').trim().isNotEmpty;
+    final restored = (_mediaUrl ?? '').trim().isNotEmpty;
+    if (!uploaded && !restored) return DraftClaim.nothingToProtect;
+    if (widget.isEditing || _serverDraftPostId != null) {
+      return DraftClaim.serverHeld;
+    }
+    return DraftClaim.clientOnly;
   }
 
   Future<void> _persistDraftNow() async {
@@ -367,10 +463,20 @@ class _InstitutionPostComposerScreenState
       return;
     }
 
+    // Now that there IS something recoverable, make sure its media is claimed
+    // before a reference to that media is written down anywhere.
+    await _ensureServerDraftClaim();
+    if (!mounted) return;
+
     if (mounted) {
       setState(() => _draftStatus = _DraftStatus.saving);
     }
     final now = DateTime.now();
+    // THE INVARIANT: a local draft never records media the server cannot see.
+    // Persisting the URL without a claim is what turned a cleanup the retention
+    // authority performed correctly into a cover that vanished from a draft the
+    // person could still open.
+    final claimed = _draftClaim == DraftClaim.serverHeld;
     try {
       await InstitutionDraftStore.save(
         institutionId: widget.institutionId,
@@ -378,9 +484,10 @@ class _InstitutionPostComposerScreenState
         draft: InstitutionDraft(
           title: title,
           body: body,
-          mediaUrl: _mediaUrl,
-          mediaThumbUrl: _mediaThumbUrl,
-          mediaMimeType: _mediaMimeType,
+          mediaUrl: claimed ? _mediaUrl : null,
+          mediaThumbUrl: claimed ? _mediaThumbUrl : null,
+          mediaMimeType: claimed ? _mediaMimeType : null,
+          serverDraftPostId: _serverDraftPostId,
           visibility: _visibility.wire,
           distribution: _distribution.wire,
           updatedAt: now,
@@ -515,6 +622,7 @@ class _InstitutionPostComposerScreenState
     setState(() {
       _titleCtrl.text = draft.title;
       _bodyCtrl.text = draft.body;
+      _serverDraftPostId = draft.serverDraftPostId;
       _mediaUrl = draft.mediaUrl;
       _mediaThumbUrl = draft.mediaThumbUrl;
       _mediaMimeType = draft.mediaMimeType;
@@ -656,38 +764,35 @@ class _InstitutionPostComposerScreenState
 
     try {
       final bytes = await file.readAsBytes();
-      final mimeType =
-          file.mimeType ??
-          inferMimeFromFileName(file.name) ??
-          (video ? 'video/mp4' : 'image/jpeg');
 
-      if (bytes.isEmpty) {
-        throw const _MediaValidationException('File is empty.');
+      // ONE governed door. This branch used to resolve the mime itself and
+      // fall back to `video/mp4` or `image/jpeg` when neither the platform nor
+      // the filename answered — a guess, and the same class of defect as the
+      // conversation composer's inline ladder. It then judged type and size
+      // against constants only this screen knew about.
+      final resolution = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: bytes,
+        fileName: file.name,
+        declaredMimeType: file.mimeType,
+        source: AttachmentSource.gallery,
+      );
+      final attachment = resolution.attachment;
+      if (attachment == null) {
+        throw _MediaValidationException(resolution.rejectionMessage!);
       }
-
-      if (video) {
-        if (!isMimeAllowedFor(AttachmentKind.video, mimeType)) {
-          throw const _MediaValidationException(
-            'Unsupported video format. Use MP4, MOV, or WebM.',
-          );
-        }
-        if (bytes.length > _kVideoMaxBytes) {
-          throw const _MediaValidationException(
-            'Video must be ${_kVideoMaxBytes ~/ (1024 * 1024)} MB or smaller.',
-          );
-        }
-      } else {
-        if (!isMimeAllowedFor(AttachmentKind.image, mimeType)) {
-          throw const _MediaValidationException(
-            'Unsupported image format. Use JPEG, PNG, WebP, or GIF.',
-          );
-        }
-        if (bytes.length > _kImageMaxBytes) {
-          throw const _MediaValidationException(
-            'Image must be ${_kImageMaxBytes ~/ (1024 * 1024)} MB or smaller.',
-          );
-        }
+      // The destination still decides what it can CARRY. A post has one media
+      // slot and renders an image or a video in it; that is a genuine
+      // destination constraint, not a duplicated type policy.
+      final wanted = video ? AttachmentKind.video : AttachmentKind.image;
+      if (attachment.kind != wanted) {
+        throw _MediaValidationException(
+          video
+              ? 'That is not a video file.'
+              : 'That is not an image file.',
+        );
       }
+      final mimeType = attachment.mimeType!;
 
       final size = video ? null : await _decodeImageSize(bytes);
 
@@ -714,12 +819,15 @@ class _InstitutionPostComposerScreenState
 
       if (!mounted) return;
       setState(() {
+        _mediaId = result.mediaId.trim().isEmpty ? null : result.mediaId.trim();
         _mediaUrl = url;
         _mediaThumbUrl = result.thumbUrl.trim().isNotEmpty
             ? result.thumbUrl.trim()
             : url;
         _mediaMimeType = mimeType;
       });
+      // Claim it before anything persists a reference to it.
+      await _ensureServerDraftClaim();
       _scheduleDraftSave();
     } on DioException catch (e) {
       if (!mounted) return;
@@ -739,10 +847,15 @@ class _InstitutionPostComposerScreenState
 
   void _removeMedia() {
     setState(() {
+      _mediaId = null;
       _mediaUrl = null;
       _mediaThumbUrl = null;
       _mediaMimeType = null;
     });
+    // The server-side draft, if one exists, is updated by the next autosave
+    // and drops its InstitutionPostMedia link there. Release stays SOFT: the
+    // media becomes reclaimable rather than deleted, which is the retention
+    // authority's decision to make and not this screen's.
     _scheduleDraftSave();
   }
 
@@ -813,6 +926,29 @@ class _InstitutionPostComposerScreenState
     }
   }
 
+  /// Write the composition to its server row.
+  ///
+  /// Reuses the DRAFT post that already holds this composition's media claim.
+  /// Without this, promoting a claimed draft would mint a SECOND post and
+  /// leave the first one behind still holding a reference to the media —
+  /// turning a fix for lost media into a source of orphaned drafts.
+  Future<InstitutionPost> _commitComposition() async {
+    final repo = ref.read(institutionsRepositoryProvider);
+    final existing = widget.isEditing ? widget.postId : _serverDraftPostId;
+    if (existing != null && existing.trim().isNotEmpty) {
+      return repo.updateInstitutionPost(
+        widget.institutionId,
+        existing.trim(),
+        _payload(),
+      );
+    }
+    return repo.createInstitutionPost(
+      widget.institutionId,
+      _payload(),
+      status: 'DRAFT',
+    );
+  }
+
   Future<void> _saveDraft() async {
     final err = _localValidationError;
     if (err != null) {
@@ -824,20 +960,7 @@ class _InstitutionPostComposerScreenState
       _error = null;
     });
     try {
-      final repo = ref.read(institutionsRepositoryProvider);
-      if (widget.isEditing) {
-        await repo.updateInstitutionPost(
-          widget.institutionId,
-          widget.postId!,
-          _payload(),
-        );
-      } else {
-        await repo.createInstitutionPost(
-          widget.institutionId,
-          _payload(),
-          status: 'DRAFT',
-        );
-      }
+      await _commitComposition();
       // The backend now owns this draft; clear the local fallback so a stale
       // copy can't resurrect after the server-side draft is moved/published.
       await _clearAllLocalDrafts();
@@ -870,23 +993,10 @@ class _InstitutionPostComposerScreenState
       _error = null;
     });
     try {
-      final repo = ref.read(institutionsRepositoryProvider);
-      InstitutionPost post;
-      if (widget.isEditing) {
-        post = await repo.updateInstitutionPost(
-          widget.institutionId,
-          widget.postId!,
-          _payload(),
-        );
-      } else {
-        // Create a real draft first so the integrity review has a durable
-        // post id to evaluate, acknowledge, and publish against.
-        post = await repo.createInstitutionPost(
-          widget.institutionId,
-          _payload(),
-          status: 'DRAFT',
-        );
-      }
+      // A real draft must exist so the integrity review has a durable post id
+      // to evaluate, acknowledge and publish against. When media was attached
+      // earlier, that row already exists and already holds the media claim.
+      final InstitutionPost post = await _commitComposition();
       if (!mounted) return;
       setState(() => _busy = false);
 

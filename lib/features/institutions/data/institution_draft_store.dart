@@ -22,6 +22,7 @@ class InstitutionDraft {
     this.mediaUrl,
     this.mediaThumbUrl,
     this.mediaMimeType,
+    this.serverDraftPostId,
     required this.visibility,
     required this.distribution,
     required this.updatedAt,
@@ -32,6 +33,13 @@ class InstitutionDraft {
   final String? mediaUrl;
   final String? mediaThumbUrl;
   final String? mediaMimeType;
+
+  /// The server-side DRAFT post holding this draft's media claim.
+  ///
+  /// Persisted so a reopened draft RESUMES its existing claim. Without it the
+  /// composer would mint a second DRAFT post on every reopen, and the first
+  /// one would linger holding a reference nobody could see or release.
+  final String? serverDraftPostId;
 
   /// Wire visibility, e.g. `PUBLIC`, `MEMBER_ONLY`, `INTERNAL`.
   final String visibility;
@@ -51,6 +59,8 @@ class InstitutionDraft {
           'mediaThumbUrl': mediaThumbUrl,
         if (mediaMimeType != null && mediaMimeType!.isNotEmpty)
           'mediaMimeType': mediaMimeType,
+        if (serverDraftPostId != null && serverDraftPostId!.isNotEmpty)
+          'serverDraftPostId': serverDraftPostId,
         'visibility': visibility,
         'distribution': distribution,
         'updatedAt': updatedAt.toUtc().toIso8601String(),
@@ -80,6 +90,9 @@ class InstitutionDraft {
       mediaMimeType: (m['mediaMimeType'] ?? '').toString().isEmpty
           ? null
           : m['mediaMimeType'].toString(),
+      serverDraftPostId: (m['serverDraftPostId'] ?? '').toString().isEmpty
+          ? null
+          : m['serverDraftPostId'].toString(),
       visibility: visibility,
       distribution: distribution,
       updatedAt: updatedAt,

@@ -9,8 +9,8 @@ import 'package:go_router/go_router.dart';
 import '../../../config.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
-import '../../../core/media/media_mime.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -203,22 +203,31 @@ class _AnnouncementEditorScreenState
 
     if (result == null || result.files.isEmpty) return;
 
+    // ONE governed door, and every refusal is SPOKEN. A file whose bytes were
+    // missing used to be `continue`d past in silence, and an unresolvable type
+    // fell to `application/octet-stream` and failed later at presign. Both left
+    // the person believing a file had attached when it had not.
     final picked = <Attachment>[];
+    final refusals = <String>[];
     for (final file in result.files) {
-      final bytes = file.bytes;
-      if (bytes == null || bytes.isEmpty) continue;
-      final mime = inferMimeFromFileName(file.name) ?? 'application/octet-stream';
-      picked.add(
-        Attachment(
-          localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}_${picked.length}',
-          kind: kindFromMime(mime),
-          source: AttachmentSource.gallery,
-          fileName: file.name,
-          bytes: bytes,
-          mimeType: mime,
-          sizeBytes: bytes.length,
-          uploading: true,
-        ),
+      final resolution = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: file.bytes ?? Uint8List(0),
+        fileName: file.name,
+        source: AttachmentSource.gallery,
+      );
+      final attachment = resolution.attachment;
+      if (attachment == null) {
+        refusals.add('${file.name}: ${resolution.rejectionMessage!}');
+        continue;
+      }
+      attachment.uploading = true;
+      picked.add(attachment);
+    }
+
+    if (refusals.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(refusals.join(String.fromCharCode(10)))),
       );
     }
 
