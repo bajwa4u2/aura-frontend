@@ -14,6 +14,7 @@ import '../../../core/ui/aura_text_block.dart';
 import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
 import '../../../shared/media/profile_media_editor.dart';
+import '../../../core/media/media_capacity.dart';
 import '../../../shared/media/profile_media_pipeline.dart';
 import 'edit_profile/edit_profile_widgets.dart';
 
@@ -291,8 +292,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   // Same caps as the parallel institution media kinds (logo 2 MB / cover
   // 4 MB) — the existing product rule applied to the person editor, which
   // previously uploaded unvalidated.
-  static const int _kAvatarMaxBytes = 2 * 1024 * 1024;
-  static const int _kCoverMaxBytes = 4 * 1024 * 1024;
+  // Was 2 MiB avatar / 4 MiB cover, applied to the file as PICKED. An
+  // ordinary phone photograph is 3-8 MB, so choosing one for an avatar was
+  // refused outright — for an image that ends up a few dozen kilobytes once
+  // cropped. Capacity here is about what the on-device editor can DECODE; the
+  // stored object is the cropped output at a fixed size.
+  static const int _kAvatarMaxBytes = MediaCapacity.profileSource;
+  static const int _kCoverMaxBytes = MediaCapacity.profileSource;
 
   Future<void> _pickAvatar() async {
     if (_busy) return;

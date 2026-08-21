@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import '../../../config.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/composition/composition_authority.dart';
+import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/institutions/institution_access_provider.dart';
@@ -140,13 +142,35 @@ class _AnnouncementEditorScreenState
 
   bool get _isPlatformMode => widget.scope == AnnouncementEditorScope.platform;
 
+  /// The canonical composition, for the parts CompositionAuthority owns.
+  CompositionState get _composition => CompositionState(
+        body: _bodyController.text,
+        attachments: _attachments,
+        maxLength: ContentLengthPolicy.announcementBody,
+        isSubmitting: _submitting,
+      );
+
   bool get _canSubmit {
-    if (_submitting) return false;
+    // This guard did not look at attachments AT ALL, so an announcement could
+    // be submitted while an image was still climbing — and the mediaId filter
+    // at submit would then drop it silently. The authority answers for
+    // readiness, attachment contribution and length.
+    if (!_composition.canSubmit) return false;
+    // Destination requirements this surface genuinely owns.
     if (_titleController.text.trim().isEmpty) return false;
     if (_summaryController.text.trim().isEmpty) return false;
-    if (_bodyController.text.trim().isEmpty) return false;
     if (!_isPlatformMode) return false;
     return true;
+  }
+
+  /// Why submission is blocked, in the authority's words where it owns the
+  /// answer and this surface's where it does not.
+  String? get _submitBlockedReason {
+    final reason = _composition.blockedReason;
+    if (reason != null) return reason;
+    if (_titleController.text.trim().isEmpty) return 'A title is required.';
+    if (_summaryController.text.trim().isEmpty) return 'A summary is required.';
+    return null;
   }
 
   String get _pageTitle => _isPlatformMode
@@ -1476,9 +1500,13 @@ class _AnnouncementEditorScreenState
                   label: 'Cancel',
                   onPressed: _submitting ? null : _cancelEditor,
                 ),
-                AuraPrimaryButton(
-                  label: _submitting ? 'Publishing' : 'Publish announcement',
-                  onPressed: _canSubmit ? _submitAnnouncement : null,
+                Tooltip(
+                  // A disabled control that will not say why is a dead end.
+                  message: _submitBlockedReason ?? '',
+                  child: AuraPrimaryButton(
+                    label: _submitting ? 'Publishing' : 'Publish announcement',
+                    onPressed: _canSubmit ? _submitAnnouncement : null,
+                  ),
                 ),
               ],
             ),

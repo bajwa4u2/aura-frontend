@@ -390,15 +390,20 @@ void main() {
         declaredMimeType: 'image/png',
       );
       expect(r.kind, AttachmentKind.image);
-      expect(r.rejectionMessage, contains('32 MB'));
+      expect(
+        r.rejectionMessage,
+        contains('${MediaCapacity.image ~/ (1024 * 1024)} MB'),
+      );
     });
 
     test('the ceiling differs by class, because the constraint does', () {
-      // Video is examined by streaming, so it is not bounded by the examiner's
-      // whole-file buffer the way image, audio and document are.
-      expect(MediaCapacity.video, greaterThan(MediaCapacity.image));
-      expect(MediaCapacity.image, MediaCapacity.document);
-      expect(MediaCapacity.audio, MediaCapacity.document);
+      // Image, video and audio require only MALWARE_SCAN, which streams, so
+      // they share the streamed envelope. DOCUMENT requires whole-object
+      // inspection — a PDF's objects are anywhere in the file — so it is
+      // genuinely bound by the examiner's buffer and stands lower.
+      expect(MediaCapacity.image, MediaCapacity.video);
+      expect(MediaCapacity.audio, MediaCapacity.video);
+      expect(MediaCapacity.document, lessThan(MediaCapacity.video));
     });
 
     test('the retired private ceilings are not the answer anywhere', () {
@@ -450,6 +455,49 @@ void main() {
         expect(r.attachment!.mimeType, mime);
         expect(r.attachment!.kind, AttachmentKind.document);
       });
+    });
+  });
+
+  // ── IDENTITY IMAGERY — a cap on the decode, not on the result ─────────────
+  group('CO-RC-C5-022 · profile imagery capacity', () {
+    test('an ordinary phone photograph can become an avatar', () {
+      // THE DEFECT. Avatar was capped at 2 MiB and cover at 4 MiB, applied to
+      // the file as PICKED. A modern phone photograph is 3-8 MB, so choosing
+      // one for an avatar was refused outright — for an image that ends up a
+      // few dozen kilobytes once cropped to a fixed size.
+      const typicalPhonePhoto = 6 * 1024 * 1024;
+      expect(typicalPhonePhoto, lessThan(MediaCapacity.profileSource));
+
+      const retiredAvatarCap = 2 * 1024 * 1024;
+      const retiredCoverCap = 4 * 1024 * 1024;
+      expect(typicalPhonePhoto, greaterThan(retiredAvatarCap));
+      expect(typicalPhonePhoto, greaterThan(retiredCoverCap));
+    });
+
+    test('identity imagery still resolves through the canonical door', () {
+      // The pipeline used to carry its own three-format whitelist and its own
+      // `_inferMime` that defaulted anything unrecognised to image/jpeg.
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: Uint8List.fromList(List<int>.filled(1024, 7)),
+        fileName: 'portrait.webp',
+        declaredMimeType: 'image/webp',
+      );
+      expect(r.isAccepted, isTrue);
+      expect(r.attachment!.kind, AttachmentKind.image);
+    });
+
+    test('a non-image picked for a profile is refused, not defaulted to jpeg',
+        () {
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: Uint8List.fromList(List<int>.filled(64, 7)),
+        fileName: 'notes.pdf',
+      );
+      expect(r.isAccepted, isTrue);
+      // It resolves honestly as a document; the pipeline refuses it for being
+      // the wrong KIND rather than relabelling it as an image.
+      expect(r.attachment!.kind, AttachmentKind.document);
     });
   });
 }

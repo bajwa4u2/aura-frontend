@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/net/dio_provider.dart';
@@ -51,6 +52,34 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
   bool _wasPublished = false;
   String _saveState = '';
 
+  /// The snapshot as last persisted. Null until the first save.
+  String? _savedSnapshot;
+
+  /// Title and body are ONE draft as far as recovery is concerned, so
+  /// dirtiness is measured over both.
+  ///
+  /// Length-prefixed rather than delimiter-joined: title "a" + body "bc" and
+  /// title "ab" + body "c" are different drafts, and any separator a person
+  /// could also type would collapse them into one snapshot and lose a save.
+  String get _snapshot =>
+      '${_title.text.length}:${_title.text}${_body.text}';
+
+  /// The canonical composition, for the part CompositionAuthority owns here:
+  /// dirtiness, and whether an autosave may run at all.
+  ///
+  /// Length is deliberately NOT policed — articles are long-form and the
+  /// backend applies no `@MaxLength` to an article body, so imposing a cap
+  /// here would invent a refusal the product does not have.
+  CompositionState get _composition => CompositionState(
+        body: _snapshot,
+        maxLength: 1 << 30,
+        requiresBody: false,
+        isSubmitting: _publishing,
+        savedBody: _savedSnapshot,
+      );
+
+  static const _autosavePolicy = AutosavePolicy();
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +99,9 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       _wasPublished = article.isPublished;
       _title.text = article.title;
       _body.text = article.bodyMarkdown;
+      // What was loaded IS what is saved. Without this baseline a freshly
+      // opened draft reads as dirty and autosaves an unchanged article.
+      _savedSnapshot = _snapshot;
 
       // RC7 / F063 — WRITE THE DRAFT'S IDENTITY INTO THE URL.
       //
@@ -108,20 +140,32 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
 
   void _scheduleSave() {
     _autosave?.cancel();
+    // The authority decides WHETHER to save; this surface only decides when.
+    // It used to schedule unconditionally, so it wrote an unchanged draft on
+    // every keystroke-batch and could write underneath a publish in flight.
+    if (!_autosavePolicy.shouldSave(_composition)) return;
     setState(() => _saveState = 'Saving…');
-    _autosave = Timer(const Duration(seconds: 2), _saveNow);
+    _autosave = Timer(_autosavePolicy.debounce, _saveNow);
   }
 
   Future<void> _saveNow() async {
     final id = _articleId;
     if (id == null) return;
+    // Captured BEFORE the await: anything typed while the request is in flight
+    // must still count as dirty afterwards, or the next edit would be dropped.
+    final inFlight = _snapshot;
     try {
       await ref.read(articlesRepositoryProvider).saveDraft(
             id,
             title: _title.text,
             bodyMarkdown: _body.text,
           );
-      if (mounted) setState(() => _saveState = 'Saved');
+      if (mounted) {
+        setState(() {
+          _savedSnapshot = inFlight;
+          _saveState = 'Saved';
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _saveState = 'Not saved — check connection');
     }
