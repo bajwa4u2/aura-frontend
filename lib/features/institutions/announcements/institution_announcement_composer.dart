@@ -17,6 +17,8 @@ import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
+import '../../../core/composition/attachment_lifecycle.dart';
+import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/net/dio_provider.dart';
@@ -78,6 +80,14 @@ class _InstitutionAnnouncementComposerState
   final List<Attachment> _attachments = <Attachment>[];
   final List<TagReference> _selectedTagReferences = <TagReference>[];
   bool _mediaUploading = false;
+
+  /// The canonical composition, for the parts CompositionAuthority owns.
+  CompositionState get _composition => CompositionState(
+        body: _bodyController.text,
+        attachments: _attachments,
+        maxLength: ContentLengthPolicy.announcementBody,
+        isSubmitting: _saving || _publishing,
+      );
 
   // Compose Link Intelligence / OG Preview -- Phase 1 (Announcement
   // extension). Same ComposeLinkDetector wired to _bodyController that
@@ -399,20 +409,22 @@ class _InstitutionAnnouncementComposerState
       return null;
     }
 
-    if (_mediaUploading || _attachments.any((a) => a.uploading)) {
+    // This surface already got attachment readiness RIGHT — it was the only
+    // one that checked failures as well as uploads. Converging it anyway is the
+    // point: a correct private answer is still a private answer, and the next
+    // edit to it would have no authority to agree with.
+    if (_composition.hasPendingAttachments) {
+      final failed = _attachments
+          .where(
+            (a) =>
+                _composition.phaseOf(a) == AttachmentPhase.failed,
+          )
+          .toList(growable: false);
       setState(
-        () => _error = 'Wait for media uploads to finish before saving.',
-      );
-      return null;
-    }
-    final failed = _attachments
-        .where(
-          (a) => (a.error ?? '').trim().isNotEmpty && (a.mediaId ?? '').isEmpty,
-        )
-        .toList(growable: false);
-    if (failed.isNotEmpty) {
-      setState(
-        () => _error = 'Remove or retry the failed media before saving.',
+        () => _error = failed.isEmpty
+            ? _composition.blockedReason ??
+                'Wait for media uploads to finish before saving.'
+            : 'Remove or retry the failed media before saving.',
       );
       return null;
     }

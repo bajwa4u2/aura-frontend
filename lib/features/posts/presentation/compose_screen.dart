@@ -23,6 +23,7 @@ import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
+import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/net/dio_provider.dart';
@@ -345,12 +346,37 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   bool get _hasTikTokVideo => _primaryTikTokVideoAttachment != null;
 
+  /// The canonical composition. Built from live fields rather than stored, so
+  /// it cannot drift from them.
+  CompositionState get _composition => CompositionState(
+        body: _textController.text,
+        attachments: _attachments,
+        maxLength: _limit,
+        // A photograph with no caption is a real post. Requiring text was a
+        // per-composer accident, not a rule — CompositionState still refuses a
+        // composition that carries nothing at all.
+        requiresBody: false,
+        isSubmitting: _posting || _saving,
+      );
+
   bool get _canPublish {
-    if (!_hasText) return false;
-    if (_textTooLong) return false;
-    if (_hasUploadingAttachments) return false;
+    // Readiness is the authority's answer. The guard that stood here asked
+    // `a.uploading`, so a FAILED attachment read as finished: publish
+    // proceeded and the mediaId filter below silently dropped it, and the post
+    // went out without the image the person had attached to it.
+    if (!_composition.canSubmit) return false;
+    // A DESTINATION requirement, not a composition one: a post must be filed
+    // under a topic. Replies inherit their parent's.
     if (!_isReply && _primaryTopic == null) return false;
     return true;
+  }
+
+  /// Why publishing is blocked, in the authority's words.
+  String? get _publishBlockedReason {
+    final reason = _composition.blockedReason;
+    if (reason != null) return reason;
+    if (!_isReply && _primaryTopic == null) return 'Choose a topic first.';
+    return null;
   }
 
   Map<String, dynamic> _asMap(dynamic v) {
@@ -3228,7 +3254,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             },
     );
 
-    final publishBtn = AuraPrimaryButton(
+    // A disabled control that will not say why is a dead end. The reason comes
+    // from the authority where it owns the answer, and from this surface where
+    // the requirement is the destination's.
+    final publishBtn = Tooltip(
+      message: _publishBlockedReason ?? '',
+      child: AuraPrimaryButton(
       label: _posting
           ? (_isReply
                 ? 'Publishing reply…'
@@ -3243,13 +3274,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       onPressed: (_posting || !_canPublish)
           ? null
           : () {
-              if (!_hasText) {
+              if (!_hasText && _composition.composableAttachments.isEmpty) {
                 setState(() => _showTextError = true);
                 return;
               }
               _publish();
             },
-    );
+    ));
 
     return Container(
       padding: EdgeInsets.fromLTRB(

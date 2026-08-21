@@ -27,6 +27,9 @@ import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/attachments/aura_media_upload.dart';
+import '../../core/composition/attachment_lifecycle.dart';
+import '../../core/composition/content_intake.dart';
+import '../../core/media/attachment.dart';
 import 'profile_media_editor.dart';
 
 /// Why a pipeline run produced no URL.
@@ -71,12 +74,6 @@ class ProfileMediaPipeline {
   final Dio dio;
   final ImagePicker _picker;
 
-  static const Set<String> _mimeWhitelist = {
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-  };
-
   /// Pick from the gallery, validate, crop with [config], upload.
   ///
   /// [maxBytes] is the caller's cap for this media kind (logo vs cover vs
@@ -100,21 +97,44 @@ class ProfileMediaPipeline {
     }
 
     final bytes = await file.readAsBytes();
-    if (bytes.isEmpty) {
-      return const ProfileMediaResult.failed(
-        ProfileMediaFailure.emptyFile,
-        'Image file is empty.',
+
+    // ONE governed door. This method used to carry its own MIME whitelist and
+    // its own `_inferMime`, which is the same private answer every composer
+    // had before CH-13 — and it refused a `.heic` or `.gif` with a message
+    // naming three formats rather than the canonical vocabulary.
+    final resolution = ContentIntake.resolveBytes(
+      path: IntakePath.picker,
+      bytes: bytes,
+      fileName: file.name,
+      declaredMimeType: file.mimeType,
+      source: AttachmentSource.gallery,
+    );
+    final picked = resolution.attachment;
+    if (picked == null) {
+      return ProfileMediaResult.failed(
+        resolution.rejection == AttachmentRejection.empty
+            ? ProfileMediaFailure.emptyFile
+            : resolution.rejection == AttachmentRejection.tooLarge
+                ? ProfileMediaFailure.tooLarge
+                : ProfileMediaFailure.unsupportedType,
+        resolution.rejectionMessage,
       );
     }
-
-    final mime = (file.mimeType ?? _inferMime(file.name)).toLowerCase();
-    if (!_mimeWhitelist.contains(mime)) {
+    if (picked.kind != AttachmentKind.image) {
       return const ProfileMediaResult.failed(
         ProfileMediaFailure.unsupportedType,
-        'Unsupported image type. Use JPEG, PNG, or WebP.',
+        'A profile image must be an image.',
       );
     }
 
+    // CAPACITY IS ABOUT THE DECODE, NOT THE RESULT.
+    //
+    // This cap used to be 2 MiB for an avatar and 4 MiB for a cover, applied
+    // to the file as PICKED. An ordinary phone photograph is 3–8 MB, so
+    // choosing one for an avatar was refused outright — for an image that
+    // would be a few dozen kilobytes once cropped. What is stored is the
+    // CROPPED output at [config]'s fixed size; the only real constraint is
+    // that the editor can decode the original on a phone.
     if (bytes.length > maxBytes) {
       final mb = (maxBytes / (1024 * 1024)).toStringAsFixed(0);
       return ProfileMediaResult.failed(
@@ -223,12 +243,9 @@ class ProfileMediaPipeline {
     return '$base-$tag.png';
   }
 
-  static String _inferMime(String name) {
-    final ext = name.split('.').last.toLowerCase();
-    if (ext == 'png') return 'image/png';
-    if (ext == 'webp') return 'image/webp';
-    return 'image/jpeg';
-  }
+  // `_inferMime` used to live here — a fourth private extension ladder that
+  // defaulted anything it did not recognise to `image/jpeg`. Intake resolves
+  // the type from the canonical authority and refuses rather than guessing.
 }
 
 /// The one http(s)-URL rule both editors need. It was implemented only on the

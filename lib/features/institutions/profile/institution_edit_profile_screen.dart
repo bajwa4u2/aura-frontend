@@ -17,6 +17,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../shared/media/profile_media_editor.dart';
+import '../../../core/media/media_capacity.dart';
 import '../../../shared/media/profile_media_pipeline.dart';
 import '../../institution_ontology/models.dart';
 import '../../institution_ontology/providers.dart';
@@ -151,8 +152,10 @@ class _InstitutionEditProfileScreenState
   static const int _kTaglineMax = 160;
   static const int _kDescMax = 2000;
 
-  static const int _kLogoMaxBytes = 2 * 1024 * 1024;
-  static const int _kCoverMaxBytes = 4 * 1024 * 1024;
+  // See the note in the member editor: this cap governs what the on-device
+  // crop editor can decode, not what is stored.
+  static const int _kLogoMaxBytes = MediaCapacity.profileSource;
+  static const int _kCoverMaxBytes = MediaCapacity.profileSource;
 
   @override
   void initState() {

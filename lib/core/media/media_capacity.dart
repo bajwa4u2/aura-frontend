@@ -43,23 +43,44 @@ import 'attachment.dart';
 class MediaCapacity {
   const MediaCapacity._();
 
-  /// Parsed whole during examination, so bounded by the examiner's buffer.
-  static const int image = 32 * 1024 * 1024;
+  /// The streamed-examination envelope: what the malware scanner vouches for.
+  ///
+  /// Image, video and audio all live here. Reading `examination-policy.ts`
+  /// rather than assuming: MALWARE_SCAN is the ONLY required capability for
+  /// these three classes, and it streams to clamd window by window.
+  /// STRUCTURAL_VALIDATION answers from a header window, and
+  /// MEDIA_DECODE_VALIDATION is optional — above the examiner's buffer it
+  /// reports UNAVAILABLE, an honest absence rather than a pass it did not earn.
+  /// The 32 MiB buffer therefore does not bind them.
+  static const int _streamedEnvelope = 150 * 1024 * 1024;
 
-  /// Examined by streaming (malware) and by header window (container sanity),
-  /// so it is not bounded by the examiner's buffer. This is the product's
-  /// accepted envelope and the number the malware-coherence invariant is
-  /// measured against.
-  static const int video = 150 * 1024 * 1024;
+  static const int image = _streamedEnvelope;
+  static const int video = _streamedEnvelope;
+  static const int audio = _streamedEnvelope;
 
-  /// Container sanity reads a header window, but audio still routes through
-  /// the whole-file examiners for structural checks, so it takes the buffer
-  /// bound rather than the streaming one.
-  static const int audio = 32 * 1024 * 1024;
-
-  /// Parsed whole during examination — a document examiner cannot answer from
-  /// a header window.
+  /// DOCUMENT is different in kind. `DOCUMENT_INSPECTION` and
+  /// `STRUCTURAL_VALIDATION` are both REQUIRED for it, and a PDF's objects are
+  /// anywhere in the file, so the examiner must hold the whole object. This
+  /// ceiling is architectural: raising it would accept documents Aura cannot
+  /// inspect. Archives are bounded the same way — their directory is at the
+  /// END — and the frontend models them as documents.
   static const int document = 32 * 1024 * 1024;
+
+  /// The largest image the ON-DEVICE crop editor will decode.
+  ///
+  /// Identity imagery is a different problem from an attachment. The picked
+  /// file is never what gets stored — it is decoded, cropped to a fixed output
+  /// size and re-encoded, so the stored object is small regardless of what was
+  /// picked. The only real constraint is that the editor must hold the decoded
+  /// original in memory on a phone.
+  ///
+  /// The caps this replaced were 2 MiB for an avatar and 4 MiB for a cover,
+  /// applied to the PRE-CROP file. An ordinary modern phone photograph is 3–8
+  /// MB, so picking one for an avatar was refused outright — for an image that
+  /// would have been a few dozen kilobytes once cropped. That is precisely a
+  /// ceiling impoverishing ordinary use, and it is why this is measured
+  /// against decode feasibility rather than against the stored result.
+  static const int profileSource = 32 * 1024 * 1024;
 
   static int maxBytesFor(AttachmentKind kind) {
     switch (kind) {
