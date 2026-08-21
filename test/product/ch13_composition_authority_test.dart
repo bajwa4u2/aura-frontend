@@ -19,6 +19,7 @@ import 'package:aura/core/composition/composition_authority.dart';
 import 'package:aura/core/composition/content_intake.dart';
 import 'package:aura/core/content_policy/content_length_policy.dart';
 import 'package:aura/core/media/attachment.dart';
+import 'package:aura/core/media/content_normalizer.dart';
 import 'package:aura/core/media/media_capacity.dart';
 import 'package:aura/core/media/attachment.dart';
 import 'package:image_picker/image_picker.dart' show XFile;
@@ -566,6 +567,93 @@ void main() {
         r.attachment!.mimeType,
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       );
+    });
+  });
+
+  // ── NORMALIZATION — accept the photograph, serve something renderable ─────
+  //
+  // HEIC is what an iPhone produces and ~85% of browsers cannot display it.
+  // Refusing it is wrong; storing it unchanged is wrong. Aura decodes through
+  // the PLATFORM codec and re-encodes, so the stored bytes really are a JPEG
+  // and the original type survives as provenance rather than being erased.
+  group('CO-RC-C5-012 · content is prepared, never relabelled', () {
+    Uint8List withHeader(List<int> header) =>
+        Uint8List.fromList([...header, ...List<int>.filled(64, 0)]);
+
+    final heic = withHeader(
+        [0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63]);
+
+    test('HEIC and HEIF are the formats that need preparing', () {
+      expect(ContentNormalizer.needsNormalization('image/heic'), isTrue);
+      expect(ContentNormalizer.needsNormalization('image/heif'), isTrue);
+      expect(ContentNormalizer.needsNormalization('IMAGE/HEIC'), isTrue);
+      for (final ok in ['image/jpeg', 'image/png', 'image/webp', 'image/gif']) {
+        expect(ContentNormalizer.needsNormalization(ok), isFalse);
+      }
+      expect(ContentNormalizer.needsNormalization(null), isFalse);
+    });
+
+    test('content that needs nothing passes through with its origin recorded',
+        () async {
+      final jpeg = withHeader([0xFF, 0xD8, 0xFF, 0xE0]);
+      final out = await ContentNormalizer.normalize(
+        bytes: jpeg,
+        mimeType: 'image/jpeg',
+        fileName: 'photo.jpg',
+      );
+      expect(out, isNotNull);
+      expect(out!.wasNormalized, isFalse);
+      expect(out.mimeType, 'image/jpeg');
+      // Equal, never null — a caller must not have to ask whether it means
+      // anything.
+      expect(out.originalMimeType, 'image/jpeg');
+      expect(identical(out.bytes, jpeg), isTrue);
+    });
+
+    test('a device that cannot decode it refuses, and says something useful',
+        () async {
+      // The Dart test VM has no platform HEIC codec, which is exactly the
+      // situation on web and on Android below 28. The honest outcome is a
+      // refusal — NOT a stored file no recipient could open.
+      final r = await ContentIntake.resolveAndPrepareBytes(
+        path: IntakePath.picker,
+        bytes: heic,
+        fileName: 'IMG_0001.heic',
+      );
+      expect(r.isAccepted, isFalse);
+      expect(r.rejection, AttachmentRejection.cannotBeMadePresentable);
+      expect(r.rejectionMessage, contains('phone'));
+    });
+
+    test('the preparing door is transparent for ordinary content', () async {
+      final png = withHeader(
+          [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+      final prepared = await ContentIntake.resolveAndPrepareBytes(
+        path: IntakePath.drop,
+        bytes: png,
+        fileName: 'diagram.png',
+      );
+      final direct = ContentIntake.resolveBytes(
+        path: IntakePath.drop,
+        bytes: png,
+        fileName: 'diagram.png',
+      );
+      expect(prepared.isAccepted, direct.isAccepted);
+      expect(prepared.attachment!.mimeType, direct.attachment!.mimeType);
+      expect(prepared.attachment!.kind, direct.attachment!.kind);
+      expect(prepared.attachment!.originalMimeType, 'image/png');
+    });
+
+    test('a rename without a re-encode is exactly what this avoids', () {
+      // The synchronous door does not prepare anything, so HEIC is refused
+      // there rather than being quietly renamed into an accepted type.
+      final r = ContentIntake.resolveBytes(
+        path: IntakePath.picker,
+        bytes: heic,
+        fileName: 'IMG_0001.heic',
+      );
+      expect(r.isAccepted, isFalse);
+      expect(r.rejection, AttachmentRejection.unsupportedType);
     });
   });
 }

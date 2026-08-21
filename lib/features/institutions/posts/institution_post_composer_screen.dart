@@ -770,7 +770,7 @@ class _InstitutionPostComposerScreenState
       // the filename answered — a guess, and the same class of defect as the
       // conversation composer's inline ladder. It then judged type and size
       // against constants only this screen knew about.
-      final resolution = ContentIntake.resolveBytes(
+      final resolution = await ContentIntake.resolveAndPrepareBytes(
         path: IntakePath.picker,
         bytes: bytes,
         fileName: file.name,

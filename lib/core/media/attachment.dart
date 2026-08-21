@@ -46,6 +46,7 @@ class Attachment {
     this.bytes,
     this.fileName,
     this.mimeType,
+    this.originalMimeType,
     this.sizeBytes,
     this.width,
     this.height,
@@ -74,6 +75,14 @@ class Attachment {
   /// memory; rendering switches to [url].
   XFile? file;
   Uint8List? bytes;
+
+  /// What the content was BEFORE normalization, when it was normalized.
+  ///
+  /// Provenance, not decoration. A HEIC photograph that Aura re-encoded to
+  /// JPEG so recipients could see it is still a photograph the person took as
+  /// HEIC, and erasing that would make the record of what they attached false.
+  /// Equal to [mimeType] when nothing was changed.
+  String? originalMimeType;
 
   /// File metadata. Populated either client-side (pickers fill these in)
   /// or server-side (the `/media/:id/confirm` response refines them).

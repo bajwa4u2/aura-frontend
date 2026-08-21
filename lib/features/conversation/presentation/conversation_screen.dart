@@ -234,7 +234,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     try {
       final bytes = await Pasteboard.image;
       if (bytes != null && bytes.isNotEmpty) {
-        await _admit(ContentIntake.resolveBytes(
+        await _admit(await ContentIntake.resolveAndPrepareBytes(
           path: IntakePath.paste,
           bytes: bytes,
           fileName: 'pasted-image.png',
@@ -368,7 +368,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     // here GUESSED, and guessed wrong for heic and webp. Intake infers from
     // the name when the platform declines to say, and refuses when neither
     // source of evidence answers.
-    await _admit(ContentIntake.resolveBytes(
+    await _admit(await ContentIntake.resolveAndPrepareBytes(
       path: IntakePath.picker,
       bytes: await picked.readAsBytes(),
       fileName: picked.name,
@@ -380,7 +380,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   Future<void> _attachVideo() async {
     final picked = await ImagePicker().pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
-    await _admit(ContentIntake.resolveBytes(
+    await _admit(await ContentIntake.resolveAndPrepareBytes(
       path: IntakePath.picker,
       bytes: await picked.readAsBytes(),
       fileName: picked.name,
@@ -443,7 +443,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final bytes = await picked.readAsBytes();
     // A video MESSAGE sends itself — capture IS the send. It goes through the
     // same governed door as everything else; capture earns no exemption.
-    await _uploadAndSendImmediately(ContentIntake.resolveBytes(
+    await _uploadAndSendImmediately(await ContentIntake.resolveAndPrepareBytes(
       path: IntakePath.picker,
       bytes: bytes,
       fileName: picked.name,
@@ -501,7 +501,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final file = result?.files.firstOrNull;
     final bytes = file?.bytes;
     if (file == null || bytes == null) return;
-    await _admit(ContentIntake.resolveBytes(
+    await _admit(await ContentIntake.resolveAndPrepareBytes(
       path: IntakePath.picker,
       bytes: bytes,
       fileName: file.name,
@@ -532,7 +532,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         if (bytes.isEmpty) throw Exception('empty recording');
         // Messenger ergonomics (founder): a voice MESSAGE sends itself —
         // stop recording IS the send.
-        await _uploadAndSendImmediately(ContentIntake.resolveBytes(
+        await _uploadAndSendImmediately(await ContentIntake.resolveAndPrepareBytes(
           path: IntakePath.picker,
           bytes: bytes,
           fileName: 'voice-note.webm',
@@ -726,7 +726,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       data: (c) => _DropIntake(
         onFiles: (files) async {
           for (final f in files) {
-            await _admit(ContentIntake.resolveBytes(
+            await _admit(await ContentIntake.resolveAndPrepareBytes(
               path: IntakePath.drop,
               bytes: await f.readAsBytes(),
               fileName: f.name,
@@ -1012,7 +1012,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                             onContentInserted: (content) async {
                               final data = content.data;
                               if (data != null && data.isNotEmpty) {
-                                await _admit(ContentIntake.resolveBytes(
+                                await _admit(await ContentIntake.resolveAndPrepareBytes(
                                   path: IntakePath.paste,
                                   bytes: Uint8List.fromList(data),
                                   fileName: 'pasted-image.png',

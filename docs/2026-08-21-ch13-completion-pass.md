@@ -217,6 +217,58 @@ accept an in-process HEVC decoder (patent + security surface).
 
 ---
 
+## 4b. NORMALIZATION — implemented
+
+HEIC/HEIF is no longer refused on the platforms that can prepare it.
+
+`ContentNormalizer` decodes through `ui.instantiateImageCodec` — the PLATFORM
+codec, the same mechanism `ProfileMediaEditor` already used — and re-encodes to
+JPEG with `package:image`, which was already a direct dependency and previously
+unused. **No new dependency, no HEVC decoder in Aura's process, no patent
+surface.**
+
+`ContentIntake.resolveAndPrepareBytes` normalizes BEFORE judging, so the
+allow-list governs what will actually be **stored** rather than what happened to
+be picked. HEIC therefore never reaches the wire — a JPEG does — and the
+allow-list needed no exception carved into it. All 14 intake sites across the
+six composers and the profile pipeline now use this door.
+
+What is kept apart, per the founder's list:
+
+| | |
+| --- | --- |
+| original identity | `Attachment.originalMimeType` — `image/heic` |
+| detected type | resolved from the BYTES, never the name |
+| normalized form | genuinely re-encoded, not a relabelling |
+| presentation format | `image/jpeg`, what is stored and served |
+
+`photo.heic` becomes `photo.jpg` — truthful **because** the bytes were
+re-encoded. The same rename without the re-encode is precisely the lie this
+avoids, and the synchronous door still refuses HEIC rather than performing it.
+
+JPEG rather than PNG on purpose: `dart:ui` can only emit PNG, and a 12 MP
+photograph as PNG is tens of megabytes — sending that over mobile data in place
+of a 2 MB original would be a worse product than the one being fixed.
+
+**Where it still does not work, and why that is honest.** The platform codec
+exists on iOS, macOS and Android 28+. On **web, Linux and Android < 28** it does
+not, and `normalize` returns null so intake refuses with
+`cannotBeMadePresentable` — a message naming what to do instead, rather than
+calling a legitimate photograph unsupported. There is no Dart fallback and there
+will not be one (the `image` maintainer requires a from-scratch MIT rewrite,
+because libheif is LGPL).
+
+**The remaining gap closes server-side, not with a different client package** —
+a derivative pipeline would cover web and old Android and would also solve
+large-image delivery and identity-imagery payload size. That is the one missing
+component, now named three times over.
+
+**Carried, not done:** `originalMimeType` is held client-side. Persisting it
+needs an additive field on `UpdateMediaDto` plus a column; that is a schema
+change and was not migrated in this pass.
+
+---
+
 ## 5. FINDING — the AI provenance subsystem has zero callers
 
 Raised because composers were asked to assess and label AI-generated media.
