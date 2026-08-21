@@ -26,6 +26,7 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart' show XFile;
 
 import '../media/attachment.dart';
+import '../media/content_normalizer.dart';
 import '../media/media_capacity.dart';
 import '../media/media_mime.dart';
 import 'attachment_lifecycle.dart';
@@ -87,6 +88,66 @@ class IntakeResolution {
 /// The intake authority.
 class ContentIntake {
   const ContentIntake._();
+
+  /// THE DOOR FOR CONTENT THAT MAY NEED PREPARING.
+  ///
+  /// Identical to [resolveBytes] except that content Aura accepts but cannot
+  /// serve unchanged — HEIC, today — is decoded and re-encoded into a
+  /// representation every recipient can render BEFORE it is judged.
+  ///
+  /// Order matters and is not arbitrary. Normalization happens first, so the
+  /// allow-list judges what will actually be STORED rather than what happened
+  /// to be picked. HEIC therefore never reaches the wire, a JPEG does, and the
+  /// allow-list needs no exception carved into it.
+  ///
+  /// When the content needs preparing and this device cannot decode it, the
+  /// answer is a refusal that says so — not a stored file no one can open.
+  static Future<IntakeResolution> resolveAndPrepareBytes({
+    required IntakePath path,
+    required Uint8List bytes,
+    String? fileName,
+    String? declaredMimeType,
+    AttachmentSource? source,
+    String? localId,
+  }) async {
+    final detected = _resolveMime(declaredMimeType, fileName, bytes: bytes);
+    if (!ContentNormalizer.needsNormalization(detected)) {
+      return resolveBytes(
+        path: path,
+        bytes: bytes,
+        fileName: fileName,
+        declaredMimeType: declaredMimeType,
+        source: source,
+        localId: localId,
+      );
+    }
+
+    final prepared = await ContentNormalizer.normalize(
+      bytes: bytes,
+      mimeType: detected!,
+      fileName: fileName,
+    );
+    if (prepared == null) {
+      return IntakeResolution.rejected(
+        path: path,
+        rejection: AttachmentRejection.cannotBeMadePresentable,
+        kind: AttachmentKind.image,
+      );
+    }
+
+    final resolution = resolveBytes(
+      path: path,
+      bytes: prepared.bytes,
+      fileName: prepared.fileName,
+      declaredMimeType: prepared.mimeType,
+      source: source,
+      localId: localId,
+    );
+    // Keep what it WAS. A photograph taken as HEIC is still a HEIC photograph
+    // after Aura re-encodes it so recipients can see it.
+    resolution.attachment?.originalMimeType = prepared.originalMimeType;
+    return resolution;
+  }
 
   /// Resolve bytes that arrived from any door.
   ///
@@ -150,6 +211,8 @@ class ContentIntake {
         bytes: bytes,
         fileName: fileName,
         mimeType: mime,
+        // Nothing was changed on this path, so origin and current agree.
+        originalMimeType: mime,
         sizeBytes: bytes.length,
       ),
     );

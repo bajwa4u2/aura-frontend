@@ -102,7 +102,7 @@ class ProfileMediaPipeline {
     // its own `_inferMime`, which is the same private answer every composer
     // had before CH-13 — and it refused a `.heic` or `.gif` with a message
     // naming three formats rather than the canonical vocabulary.
-    final resolution = ContentIntake.resolveBytes(
+    final resolution = await ContentIntake.resolveAndPrepareBytes(
       path: IntakePath.picker,
       bytes: bytes,
       fileName: file.name,

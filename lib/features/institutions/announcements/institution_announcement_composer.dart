@@ -280,7 +280,7 @@ class _InstitutionAnnouncementComposerState
     final picked = <Attachment>[];
     final refusals = <String>[];
     for (final file in result.files) {
-      final resolution = ContentIntake.resolveBytes(
+      final resolution = await ContentIntake.resolveAndPrepareBytes(
         path: IntakePath.picker,
         bytes: file.bytes ?? Uint8List(0),
         fileName: file.name,

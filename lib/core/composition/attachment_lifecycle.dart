@@ -74,6 +74,11 @@ enum AttachmentRejection {
   /// Larger than the canonical ceiling for its class. Refused at the door so a
   /// person is told before a long upload is attempted and then rejected.
   tooLarge,
+
+  /// A format Aura accepts in principle, but that this device cannot decode
+  /// into something recipients could render. Distinct from [unsupportedType]:
+  /// the content is legitimate and the same file would work elsewhere.
+  cannotBeMadePresentable,
 }
 
 /// The lifecycle authority.
@@ -166,6 +171,11 @@ class AttachmentLifecycle {
             ? 'That file is too large.'
             : 'That file is larger than the '
                 '${MediaCapacity.describeLimit(kind)} limit.';
+      case AttachmentRejection.cannotBeMadePresentable:
+        // Names what to do instead. The same photo works from a phone, and
+        // saying so is more use than calling the format unsupported.
+        return 'That photo could not be prepared for viewing here. '
+            'Try attaching it from your phone, or export it as JPEG first.';
     }
   }
 }

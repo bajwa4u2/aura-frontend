@@ -256,7 +256,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     try {
       // ONE governed door. `?? 'image/jpeg'` GUESSED, and guessed wrong for
       // every png, webp and heic the platform declined to name.
-      final resolution = ContentIntake.resolveBytes(
+      final resolution = await ContentIntake.resolveAndPrepareBytes(
         path: IntakePath.picker,
         bytes: await picked.readAsBytes(),
         fileName: picked.name,
@@ -326,7 +326,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
     try {
-      final resolution = ContentIntake.resolveBytes(
+      final resolution = await ContentIntake.resolveAndPrepareBytes(
         path: IntakePath.picker,
         bytes: await picked.readAsBytes(),
         fileName: picked.name,
