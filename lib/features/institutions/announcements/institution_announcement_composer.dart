@@ -326,6 +326,7 @@ class _InstitutionAnnouncementComposerState
         bytes: attachment.bytes ?? Uint8List(0),
         fileName: attachment.fileName ?? '',
         mimeType: attachment.mimeType ?? '',
+        originalMimeType: attachment.originalMimeType,
         kind: wireKind(attachment.kind),
         source: wireSource(attachment.source),
         metadataPatch: const <String, dynamic>{'caption': null},

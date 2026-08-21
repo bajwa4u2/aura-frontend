@@ -1281,6 +1281,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       bytes: await file.readAsBytes(),
       fileName: file.name,
       mimeType: mime,
+      originalMimeType: attachment.originalMimeType,
       kind: wireKind(attachment.kind),
       source: wireSource(attachment.source),
       width: attachment.isImage ? attachment.width : null,
