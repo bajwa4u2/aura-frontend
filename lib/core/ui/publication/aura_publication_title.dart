@@ -85,32 +85,62 @@ class PublicationTitleInputFormatter extends TextInputFormatter {
 /// only a screenshot can confirm.
 double publicationTitleFontSize({
   required int characters,
-  required double viewportWidth,
+  required double availableWidth,
 }) {
-  // Mobile starts lower for the same reason the publication hero does: 40px
-  // never fits a headline on a 360px screen.
-  final base = viewportWidth < 600 ? 28.0 : 40.0;
+  // BASE FOLLOWS THE COLUMN THE TITLE ACTUALLY OCCUPIES.
+  //
+  // This used to read the VIEWPORT width, which is not the space a title has.
+  // The article reader caps its column at 760px however wide the display is, so
+  // on any desktop a headline was sized as though it owned the whole screen and
+  // then wrapped inside a column half that width — the reported "dominates the
+  // viewport" defect.
+  //
+  // The ceiling also drops out of the type scale rather than being invented:
+  // AuraText.display (40) is documented "hero moments, landing page headlines
+  // only", and a long-form reading column is not a hero. Against 15px body
+  // text, 40px was a 2.7x jump; 32px keeps the title unmistakably dominant at
+  // a ratio long-form reading can carry.
+  final base = availableWidth < 380
+      ? 24.0
+      : availableWidth < 620
+          ? 28.0
+          : 32.0;
 
-  // A short headline keeps full display weight. Past that, the size steps
-  // down with length and stops at a floor that is still unmistakably a title.
+  if (characters <= 0) return base;
+
+  // A short headline keeps full weight. Past that, the size steps down with
+  // length and stops at a floor that is still unmistakably a title.
   const fullWeightUpTo = 48;
   const smallestAt = 170;
-  if (characters <= fullWeightUpTo) return base;
+  var size = base;
+  if (characters > fullWeightUpTo) {
+    final t = ((characters - fullWeightUpTo) / (smallestAt - fullWeightUpTo))
+        .clamp(0.0, 1.0);
+    size = base - (base - base * 0.55) * t;
+  }
 
-  final t = ((characters - fullWeightUpTo) / (smallestAt - fullWeightUpTo))
-      .clamp(0.0, 1.0);
-  final scaled = base - (base - base * 0.55) * t;
-  return scaled < 20.0 ? 20.0 : scaled;
+  // FIT CAP. Length alone cannot know how wide the column is, so a title that
+  // still would not fit steps down until it does. Three lines is the most a
+  // headline may claim before it stops being a title and becomes the page.
+  // 0.52em is a deliberately conservative average advance for this face —
+  // underestimating it would let a title overflow, which is the failure mode
+  // that matters.
+  const advancePerChar = 0.52;
+  const maxLines = 3;
+  final fit = (availableWidth * maxLines) / (characters * advancePerChar);
+  if (fit < size) size = fit;
+
+  return size < 20.0 ? 20.0 : size;
 }
 
 /// The title text style, matched to what is actually being displayed.
 TextStyle publicationTitleStyle({
   required String title,
-  required double viewportWidth,
+  required double availableWidth,
 }) {
   final size = publicationTitleFontSize(
     characters: title.trim().length,
-    viewportWidth: viewportWidth,
+    availableWidth: availableWidth,
   );
   // Long titles need a little more leading, or the descenders of a
   // three-line headline collide.
@@ -133,12 +163,18 @@ class AuraPublicationTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shown = title.trim().isEmpty ? (placeholder ?? '') : title.trim();
-    return Text(
-      shown,
-      style: publicationTitleStyle(
-        title: shown,
-        viewportWidth: MediaQuery.of(context).size.width,
-      ),
+    // LayoutBuilder, not MediaQuery: the title must be sized by the column it
+    // is placed in, which on a wide display is far narrower than the window.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
+        return Text(
+          shown,
+          style: publicationTitleStyle(title: shown, availableWidth: width),
+        );
+      },
     );
   }
 }

@@ -51,8 +51,16 @@ class ArticleScreen extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s12),
                 Row(
                   children: [
+                    // The byline carries the author's REAL likeness. It was
+                    // constructed from the name alone, so every article
+                    // rendered a generated initial while the API had been
+                    // sending a governed avatarUrl the whole time — the author
+                    // appeared anonymous on their own published work.
                     AuraAvatar(
-                        name: article.author?.proseName ?? '', size: 32),
+                      name: article.author?.proseName ?? '',
+                      imageUrl: article.author?.avatarUrl,
+                      size: 32,
+                    ),
                     const SizedBox(width: AuraSpace.s10),
                     Expanded(
                       child: InkWell(

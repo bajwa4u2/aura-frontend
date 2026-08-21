@@ -142,6 +142,15 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     );
   }
 
+  /// Width the title field actually occupies — the column minus its own
+  /// horizontal padding. Using the raw viewport here is what let the published
+  /// title and the field disagree about size on a wide screen.
+  double _titleFieldWidth(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    final column = w > 1000 ? w / 2 : w; // split-pane preview above 1000
+    return (column - AuraSpace.s20 * 2).clamp(240.0, 900.0);
+  }
+
   Future<void> _insertImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
@@ -266,9 +275,11 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
             // steps down to fit instead of clipping inside a fixed 40px box,
             // and the formatter strips the newlines a paste brings with it
             // without removing a single word.
+            // Sized by the editor's own field width, so the title looks the
+            // same size while it is being written as it will once published.
             style: publicationTitleStyle(
               title: _title.text,
-              viewportWidth: MediaQuery.of(context).size.width,
+              availableWidth: _titleFieldWidth(context),
             ),
             inputFormatters: const [PublicationTitleInputFormatter()],
             maxLines: 3,

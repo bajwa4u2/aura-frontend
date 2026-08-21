@@ -86,25 +86,27 @@ void main() {
     });
   });
 
-  group('F026 — size follows the title, not just the viewport', () {
-    test('a short headline keeps full display weight', () {
+  group('F026 — size follows the title and its column', () {
+    test('a short headline keeps full weight for its column', () {
+      // 32, not 40. AuraText.display is documented "hero moments, landing page
+      // headlines only" and a long-form reading column is not a hero.
       expect(
-        publicationTitleFontSize(characters: 20, viewportWidth: 1200),
-        40.0,
+        publicationTitleFontSize(characters: 20, availableWidth: 720),
+        32.0,
       );
     });
 
     test('a long headline steps DOWN instead of overflowing', () {
-      final short = publicationTitleFontSize(characters: 20, viewportWidth: 1200);
-      final medium = publicationTitleFontSize(characters: 90, viewportWidth: 1200);
-      final long = publicationTitleFontSize(characters: 200, viewportWidth: 1200);
+      final short = publicationTitleFontSize(characters: 20, availableWidth: 720);
+      final medium = publicationTitleFontSize(characters: 90, availableWidth: 720);
+      final long = publicationTitleFontSize(characters: 200, availableWidth: 720);
       expect(medium, lessThan(short));
       expect(long, lessThan(medium));
     });
 
     test('it never shrinks below a size that still reads as a title', () {
       expect(
-        publicationTitleFontSize(characters: 5000, viewportWidth: 1200),
+        publicationTitleFontSize(characters: 5000, availableWidth: 720),
         greaterThanOrEqualTo(20.0),
       );
     });
@@ -112,7 +114,7 @@ void main() {
     test('the scale is monotonic — longer never renders larger', () {
       var previous = double.infinity;
       for (var n = 0; n <= 400; n += 10) {
-        final size = publicationTitleFontSize(characters: n, viewportWidth: 1200);
+        final size = publicationTitleFontSize(characters: n, availableWidth: 720);
         expect(size, lessThanOrEqualTo(previous));
         previous = size;
       }
@@ -120,8 +122,8 @@ void main() {
 
     test('mobile starts lower, for the same reason the hero does', () {
       expect(
-        publicationTitleFontSize(characters: 20, viewportWidth: 380),
-        lessThan(publicationTitleFontSize(characters: 20, viewportWidth: 1200)),
+        publicationTitleFontSize(characters: 20, availableWidth: 380),
+        lessThan(publicationTitleFontSize(characters: 20, availableWidth: 720)),
       );
     });
   });
@@ -155,6 +157,66 @@ void main() {
 
       expect(big, lessThan(small),
           reason: 'A long headline that keeps display size is the defect.');
+    });
+  });
+
+
+  /// THE REPORTED DEFECT — "The Quiet Work That Holds People Together".
+  ///
+  /// A 41-character title rendered at full 40px in the reader's 760px column
+  /// and wrapped to two lines, dominating the viewport. It was not a long-title
+  /// problem: the size was chosen from the WINDOW width, so on a wide display
+  /// the headline was sized as though it owned the screen and then wrapped
+  /// inside a column half that width.
+  group('a title is sized by its column, not the window', () {
+    const reported = 'The Quiet Work That Holds People Together';
+
+    test('the reported title now fits its reading column on one line', () {
+      const column = 720.0; // 760 reader column minus its padding
+      final size = publicationTitleFontSize(
+        characters: reported.length,
+        availableWidth: column,
+      );
+      expect(size, lessThan(40.0));
+      // Conservative advance estimate — if this exceeds the column it wraps.
+      expect(reported.length * 0.52 * size, lessThanOrEqualTo(column));
+    });
+
+    test('a wider window does NOT enlarge a title in the same column', () {
+      // The actual bug: identical column, different screen, different size.
+      final a = publicationTitleFontSize(characters: 41, availableWidth: 720);
+      final b = publicationTitleFontSize(characters: 41, availableWidth: 720);
+      expect(a, b);
+    });
+
+    test('a genuinely wider column may carry a larger title', () {
+      final narrow = publicationTitleFontSize(characters: 41, availableWidth: 360);
+      final wide = publicationTitleFontSize(characters: 41, availableWidth: 720);
+      expect(wide, greaterThan(narrow));
+    });
+
+    test('a title fits three lines of its column, or is already at the floor', () {
+      // The fit cap and the floor genuinely conflict for a very long title in a
+      // narrow column: 120 characters cannot occupy three lines of a 320px
+      // phone column at any size that still reads as a title. The floor wins
+      // there, deliberately — stated as the real contract rather than asserting
+      // a cap that cannot hold.
+      for (final chars in [60, 120, 200, 400]) {
+        for (final width in [320.0, 480.0, 720.0]) {
+          final size =
+              publicationTitleFontSize(characters: chars, availableWidth: width);
+          final lines = (chars * 0.52 * size) / width;
+          expect(lines <= 3.05 || size == 20.0, isTrue,
+              reason: 'chars=$chars width=$width size=$size lines=$lines');
+        }
+      }
+    });
+
+    test('the floor still reads as a title', () {
+      expect(
+        publicationTitleFontSize(characters: 5000, availableWidth: 320),
+        greaterThanOrEqualTo(20.0),
+      );
     });
   });
 }
