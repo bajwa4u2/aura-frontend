@@ -1,3 +1,7 @@
+import '../../../core/ui/aura_surface.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/engagement/engagement_model.dart';
+import '../../../core/engagement/saved_publications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -57,7 +61,10 @@ class SavedScreen extends ConsumerWidget {
               AuraActionPill(
                 icon: Icons.refresh_rounded,
                 label: 'Refresh',
-                onTap: () => ref.invalidate(savedPostsProvider),
+                onTap: () {
+                  ref.invalidate(savedPostsProvider);
+                  ref.invalidate(savedPublicationsProvider);
+                },
               ),
             ],
           ),
@@ -66,7 +73,10 @@ class SavedScreen extends ConsumerWidget {
             data: (raw) {
               final posts = _coercePosts(raw);
 
-              if (posts.isEmpty) {
+              final anyOther = (ref.watch(savedPublicationsProvider).value ??
+                      const <SavedPublication>[])
+                  .any((s) => s.targetType != PublicationTarget.post);
+              if (posts.isEmpty && !anyOther) {
                 return const AuraEmptyState(
                   title: 'Nothing saved yet',
                   body:
@@ -75,15 +85,31 @@ class SavedScreen extends ConsumerWidget {
                 );
               }
 
+              // Posts keep their full card. Everything else a person saved —
+              // articles, institution posts, announcements — appears as a
+              // titled entry. The alternative was to flatten posts into
+              // entries too, which would have traded one incompleteness for a
+              // worse reading experience.
+              final others = ref
+                      .watch(savedPublicationsProvider)
+                      .value
+                      ?.where((s) => s.targetType != PublicationTarget.post)
+                      .toList() ??
+                  const <SavedPublication>[];
+
               return Column(
-                children: posts
-                    .map(
-                      (p) => Padding(
-                        padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                        child: PostCard(post: p, compact: false),
-                      ),
-                    )
-                    .toList(),
+                children: [
+                  for (final s in others)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                      child: _SavedEntry(entry: s),
+                    ),
+                  for (final p in posts)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                      child: PostCard(post: p, compact: false),
+                    ),
+                ],
               );
             },
             loading: () => const AuraLoadingState(message: 'Loading saved…'),
@@ -98,6 +124,65 @@ class SavedScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A saved publication that is not a post.
+///
+/// Deliberately compact and uniform: the reader is scanning a list of things
+/// they kept, and the kind matters as much as the title for telling them apart.
+class _SavedEntry extends StatelessWidget {
+  const _SavedEntry({required this.entry});
+
+  final SavedPublication entry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: entry.route != null,
+      label: '${entry.kindLabel}: ${entry.title}',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: entry.route == null ? null : () => context.push(entry.route!),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AuraSpace.s14),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.kindLabel.toUpperCase(),
+                style: AuraText.micro.copyWith(
+                  color: AuraSurface.muted,
+                  letterSpacing: 0.08,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                entry.title,
+                style: AuraText.body.copyWith(
+                  color: AuraSurface.ink,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if ((entry.subtitle ?? '').isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  entry.subtitle!,
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

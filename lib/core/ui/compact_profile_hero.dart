@@ -23,6 +23,8 @@ class CompactProfileHero extends StatelessWidget {
     super.key,
     required this.displayName,
     required this.handle,
+    this.onTapAvatar,
+    this.onTapCover,
     this.title = '',
     this.avatarUrl = '',
     this.coverUrl = '',
@@ -43,6 +45,19 @@ class CompactProfileHero extends StatelessWidget {
 
   final String avatarUrl;
   final String coverUrl;
+
+  /// Opens the identity image in Aura's canonical media viewer.
+  ///
+  /// FOUNDER RULING. On the profile itself, the meaningful action on an
+  /// identity image is to LOOK at it — the person is already where navigating
+  /// would take them. Away from the profile the same avatar means "go to this
+  /// person", which is why this is supplied by the surface rather than decided
+  /// by the widget: the image is the same, the context is not.
+  ///
+  /// Null leaves the image inert, which is correct for an institution logo:
+  /// a mark is not a photograph and has nothing to enlarge.
+  final VoidCallback? onTapAvatar;
+  final VoidCallback? onTapCover;
 
   /// Optional affiliation chip (e.g. "Speaks for Aura Platform"). Hidden when
   /// empty — never fabricate a role.
@@ -198,11 +213,21 @@ class CompactProfileHero extends StatelessWidget {
                 ),
               ),
             )
-          : Image.network(
-              url,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  const ColoredBox(color: AuraSurface.elevated),
+          : Semantics(
+              button: onTapCover != null,
+              image: true,
+              label: onTapCover == null
+                  ? 'Profile cover image'
+                  : 'Profile cover image. Activate to view full size.',
+              child: InkWell(
+                onTap: onTapCover,
+                child: Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      const ColoredBox(color: AuraSurface.elevated),
+                ),
+              ),
             ),
     );
   }
@@ -229,7 +254,16 @@ class CompactProfileHero extends StatelessWidget {
 
     if (url.isEmpty) return fallback;
 
-    return Container(
+    return Semantics(
+      button: onTapAvatar != null,
+      image: true,
+      label: onTapAvatar == null
+          ? 'Profile photo'
+          : 'Profile photo. Activate to view full size.',
+      child: InkWell(
+        onTap: onTapAvatar,
+        customBorder: const CircleBorder(),
+        child: Container(
       width: _avatarSize,
       height: _avatarSize,
       decoration: BoxDecoration(
@@ -242,6 +276,8 @@ class CompactProfileHero extends StatelessWidget {
         url,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => fallback,
+      ),
+        ),
       ),
     );
   }

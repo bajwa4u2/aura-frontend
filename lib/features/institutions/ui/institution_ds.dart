@@ -743,6 +743,7 @@ class InsCoverHeader extends StatelessWidget {
     this.tagline,
     this.logoUrl,
     this.coverUrl,
+    this.onTapCover,
     this.badges = const [],
     this.facts = const [],
     this.coverHeight = 220,
@@ -754,6 +755,13 @@ class InsCoverHeader extends StatelessWidget {
   final String? tagline;
   final String? logoUrl;
   final String? coverUrl;
+
+  /// Opens the cover in Aura's canonical media viewer.
+  ///
+  /// FOUNDER RULING: an institution COVER is a photograph and opens; an
+  /// institution LOGO stays static. A mark is an identifier, not an image
+  /// somebody wants to enlarge, and giving it a viewer would imply otherwise.
+  final VoidCallback? onTapCover;
   final List<Widget> badges;
   final List<InsFact> facts;
   final double coverHeight;
@@ -773,6 +781,7 @@ class InsCoverHeader extends StatelessWidget {
               name: name,
               coverHeight: coverHeight,
               avatarSize: avatarSize,
+              onTapCover: onTapCover,
             ),
             // The cover stack already includes the avatar's lower half — pad
             // upward so the identity row clears the avatar without touching
@@ -843,6 +852,7 @@ class _CoverWithAvatar extends StatelessWidget {
     required this.name,
     required this.coverHeight,
     required this.avatarSize,
+    this.onTapCover,
   });
 
   final String? coverUrl;
@@ -850,6 +860,7 @@ class _CoverWithAvatar extends StatelessWidget {
   final String name;
   final double coverHeight;
   final double avatarSize;
+  final VoidCallback? onTapCover;
 
   @override
   Widget build(BuildContext context) {
@@ -873,6 +884,7 @@ class _CoverWithAvatar extends StatelessWidget {
                   child: _CoverSurface(
                     coverUrl: coverUrl,
                     fallbackLogo: logoUrl,
+                    onTapCover: onTapCover,
                   ),
                 ),
               ),
@@ -910,10 +922,15 @@ class _CoverWithAvatar extends StatelessWidget {
 }
 
 class _CoverSurface extends StatelessWidget {
-  const _CoverSurface({required this.coverUrl, required this.fallbackLogo});
+  const _CoverSurface({
+    required this.coverUrl,
+    required this.fallbackLogo,
+    this.onTapCover,
+  });
 
   final String? coverUrl;
   final String? fallbackLogo;
+  final VoidCallback? onTapCover;
 
   @override
   Widget build(BuildContext context) {
@@ -930,10 +947,20 @@ class _CoverSurface extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           const _CoverFallback(),
-          Image.network(
-            url,
-            fit: BoxFit.fill,
-            errorBuilder: (_, __, ___) => const _CoverFallback(),
+          Semantics(
+            button: onTapCover != null,
+            image: true,
+            label: onTapCover == null
+                ? 'Institution cover image'
+                : 'Institution cover image. Activate to view full size.',
+            child: InkWell(
+              onTap: onTapCover,
+              child: Image.network(
+                url,
+                fit: BoxFit.fill,
+                errorBuilder: (_, __, ___) => const _CoverFallback(),
+              ),
+            ),
           ),
           // Soft bottom darkening so badges/text in the row below have
           // breathing room when the cover is bright.

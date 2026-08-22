@@ -1,3 +1,4 @@
+import '../../../core/media/aura_media_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -266,6 +267,21 @@ class _ProfileBody extends ConsumerWidget {
           tagline: tagline.isEmpty ? null : tagline,
           logoUrl: resolvedLogo.isEmpty ? null : resolvedLogo,
           coverUrl: coverUrl.isEmpty ? null : coverUrl,
+          // The cover opens; the logo deliberately does not. The header renders
+          // the DISPLAY derivative, and the viewer resolves full resolution
+          // through the same governed door.
+          onTapCover: coverUrl.isEmpty
+              ? null
+              : () => showAuraMediaViewer(
+                    context,
+                    items: [
+                      AuraViewerItem(
+                        originalUrl: coverUrl,
+                        caption: name,
+                        downloadContext: 'institution-cover',
+                      ),
+                    ],
+                  ),
           badges: badges,
           facts: facts,
         ),

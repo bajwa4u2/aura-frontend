@@ -1,3 +1,4 @@
+import '../../../core/media/aura_media_viewer.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -533,6 +534,38 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                   title: title,
                   avatarUrl: avatar,
                   coverUrl: cover,
+                  // FOUNDER RULING — on the profile itself, the meaningful
+                  // action on identity imagery is to LOOK at it: the reader is
+                  // already where navigating would take them. Away from the
+                  // profile the same avatar means "go to this person".
+                  //
+                  // Opened through Aura's CANONICAL media viewer, so full
+                  // resolution resolves over the same governed door and custody
+                  // path as every other image. No identity-private viewer.
+                  onTapAvatar: avatar.isEmpty
+                      ? null
+                      : () => showAuraMediaViewer(
+                            context,
+                            items: [
+                              AuraViewerItem(
+                                originalUrl: avatar,
+                                caption: name,
+                                downloadContext: 'profile-avatar',
+                              ),
+                            ],
+                          ),
+                  onTapCover: cover.isEmpty
+                      ? null
+                      : () => showAuraMediaViewer(
+                            context,
+                            items: [
+                              AuraViewerItem(
+                                originalUrl: cover,
+                                caption: name,
+                                downloadContext: 'profile-cover',
+                              ),
+                            ],
+                          ),
                   metaChips: trailingMeta,
                   actions: [
                     if (!isAuthed)

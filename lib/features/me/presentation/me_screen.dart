@@ -1,3 +1,4 @@
+import '../../../core/media/aura_media_viewer.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -1044,6 +1045,34 @@ class _MeScreenState extends ConsumerState<MeScreen>
       title: _titleText,
       avatarUrl: _avatarUrl,
       coverUrl: _coverUrl,
+      // Same rule as another person's profile: on the profile itself, identity
+      // imagery opens in the CANONICAL viewer. Your own profile is still a
+      // profile, and behaving differently here would be an inconsistency the
+      // person has no way to predict.
+      onTapAvatar: _avatarUrl.trim().isEmpty
+          ? null
+          : () => showAuraMediaViewer(
+                context,
+                items: [
+                  AuraViewerItem(
+                    originalUrl: _avatarUrl,
+                    caption: _displayName,
+                    downloadContext: 'profile-avatar',
+                  ),
+                ],
+              ),
+      onTapCover: _coverUrl.trim().isEmpty
+          ? null
+          : () => showAuraMediaViewer(
+                context,
+                items: [
+                  AuraViewerItem(
+                    originalUrl: _coverUrl,
+                    caption: _displayName,
+                    downloadContext: 'profile-cover',
+                  ),
+                ],
+              ),
       roleLabel: _roleChipLabel,
       metaChips: _buildHeroMeta(locationText, websiteUrl),
       actions: [

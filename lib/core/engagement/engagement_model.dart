@@ -9,12 +9,14 @@
 enum PublicationTarget {
   post,
   institutionPost,
-  article;
+  article,
+  announcement;
 
   String get wireValue => switch (this) {
         PublicationTarget.post => 'POST',
         PublicationTarget.institutionPost => 'INSTITUTION_POST',
         PublicationTarget.article => 'ARTICLE',
+        PublicationTarget.announcement => 'ANNOUNCEMENT',
       };
 }
 
