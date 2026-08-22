@@ -1,10 +1,40 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-21**
+**Last updated: 2026-08-22**
 
 ---
 
 ## Status
+
+> **2026-08-22 — CH-14 CLOSED. Founder-certified on the live article.**
+> Articles are first-class publications: reactions, saves, discussion, native reshare,
+> external share with real OG, translation, notifications, blocking, moderation,
+> Discourse Quality, retract/restore, media interaction, accessibility and canonical
+> deep linking are all implemented, certified and deployed. The founder confirmed the
+> article action row on the live reader — the last item that required observation
+> rather than a test.
+>
+> **One continuity model replaced four.** Boot, refresh, deep-link return and release
+> were the same problem: the router treated *restoring* as a destination and navigated
+> to `/_boot?redirect=…`. It now stays put and `BootGate` renders in place — and
+> renders **instead of** the routed child, so a destination cannot fire requests while
+> authentication is unknown. `bootRedirectFor`, `_bootParkFor` and the duplicate boot
+> screen are retired; nothing emits `/_boot`. F065, F068 and RC4 are all preserved —
+> F068's bounded, honest wait **moved** to `BootGate` rather than being weakened.
+> Evidence: all **171 registered routes** walked, plus 8 representative classes driven
+> through the real router.
+>
+> **`/og/*` retired** to 301s carrying no resolution logic; `/p/*` is the sole canonical
+> external identity. The share-return matrix passes **7/7 families** from external URL
+> back into Aura, with the transit page no longer painting.
+>
+> **Release is not navigation either.** A running client now detects a new build from
+> `flutter_bootstrap.js` and offers a reload that preserves the current URL; nothing
+> reloads by itself.
+>
+> **Translation length is a cost question, not a capability.** Segmented translation
+> with per-segment caching, byte-for-byte reassembly, and partial failure reported as
+> failure rather than returned half-done.
 
 > **2026-08-21 — canonical accounting reconciled; Meetings realtime parked.**
 > `RECONSTRUCTION_REGISTER.md` was regenerated through its own generator after four days of

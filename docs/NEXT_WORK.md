@@ -1,6 +1,39 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-21.** Roadmap frozen. C0–C3 executed. The native release-cutover workstream is **CLOSED**. G1 leg 5 is **COMPLETE**. Canonical accounting reconciled 2026-08-21; the next item is **awaiting founder selection** — see the top entry.
+**As of 2026-08-22.** Roadmap frozen. C0–C3 executed. The native release-cutover workstream is **CLOSED**. G1 leg 5 is **COMPLETE**. CH-14 **CLOSED** and founder-certified 2026-08-22; the next chapter is **awaiting founder selection** — see the top entry.
+
+---
+
+## 2026-08-22 — CH-14 CLOSED (founder-certified). NOTHING IS AUTHORISED NEXT.
+
+Every named CH-14 obligation is implemented, certified and deployed, and the founder
+confirmed the live article action row. **The next reconstruction chapter has not been
+selected**, and no work below is authorisation to start one.
+
+### Carried forward, not lost
+
+These were touched by CH-14 and remain open in their OWN workstreams. They are recorded
+here so they are not silently absorbed or forgotten:
+
+* **Uncropped identity-media acquisition** — belongs to the identity/media workstream.
+* **Remaining identity/media interaction rules** — the identity interaction ruling
+  governs avatars, logos and profile covers; article cover and inline imagery were
+  settled under CH-14 as publication content and are done.
+* **HEVC server-side licensing** — parked under the existing ruling. Unchanged.
+* **AI provenance** — still its own unresolved capability, still disconnected.
+* **Meetings/realtime** — protected. CH-14 touched only the authorised public share
+  representation (`getMeetingByCode`), and did so more strictly than the existing
+  boundary: only a `PUBLIC` meeting gets a card. No realtime behaviour was altered.
+
+### Honest debts from this batch
+
+* **Three attachment DTO contracts remain divergent** (`mediaLinks[].media.id` /
+  `media[].id` / `media[].mediaId`). The share authority reads all three; converging
+  them belongs to their owners and is not share work.
+* **Legacy engagement tables retained** (`Reaction`, `Save`, `InstitutionPostReaction`)
+  as the rollback path for the generalised migration. Retiring them is a separate
+  decision after live soak.
+* **`/_boot` route retained** to resolve addresses already in the wild. Nothing emits it.
 
 ---
 
