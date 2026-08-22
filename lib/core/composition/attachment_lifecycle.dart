@@ -75,9 +75,13 @@ enum AttachmentRejection {
   /// person is told before a long upload is attempted and then rejected.
   tooLarge,
 
-  /// A format Aura accepts in principle, but that this device cannot decode
-  /// into something recipients could render. Distinct from [unsupportedType]:
-  /// the content is legitimate and the same file would work elsewhere.
+  /// A format Aura accepts in principle, but that THIS DEVICE cannot yet
+  /// prepare into something recipients could render.
+  ///
+  /// Distinct from [unsupportedType] and the distinction is the point: the
+  /// content is legitimate, the photograph is not corrupt, and the same file
+  /// attaches successfully from a device whose platform provides the decoder.
+  /// The limit is the execution environment's, not the file's.
   cannotBeMadePresentable,
 }
 
@@ -172,10 +176,12 @@ class AttachmentLifecycle {
             : 'That file is larger than the '
                 '${MediaCapacity.describeLimit(kind)} limit.';
       case AttachmentRejection.cannotBeMadePresentable:
-        // Names what to do instead. The same photo works from a phone, and
-        // saying so is more use than calling the format unsupported.
-        return 'That photo could not be prepared for viewing here. '
-            'Try attaching it from your phone, or export it as JPEG first.';
+        // Says what to do, and says "yet". The refusal is about what this
+        // device can prepare today, so the wording must not imply the
+        // photograph is wrong or that Aura will never take it. Codec names and
+        // the reasons behind them are implementation, and stay out of it.
+        return 'This photo format cannot be prepared on this device yet. '
+            'Choose a JPEG, PNG, or another supported image.';
     }
   }
 }
