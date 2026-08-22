@@ -9,6 +9,7 @@ import '../core/auth/session_bootstrap.dart';
 import '../core/auth/session_providers.dart';
 import '../core/interactions/presence_repository.dart';
 import '../core/media/media_url_resolver.dart';
+import '../core/navigation/boot_gate.dart';
 import '../core/release_governance/update_gate.dart';
 import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_surface.dart';
@@ -332,9 +333,17 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           // ancestors and the gate watches its own provider without
           // forcing a rebuild of the rest of the tree.
           builder: (context, child) {
+            // BootGate is innermost so it can render INSTEAD of the routed
+            // child: a destination that is not in the tree cannot fire
+            // requests while authentication is still being restored. It sits
+            // inside UpdateGate because a pending release takes precedence
+            // over restoring a session for a client that is about to be
+            // replaced.
             return ThreadCallLifecycleHost(
               child: OrphanedSessionBanner(
-                child: UpdateGate(child: child ?? const SizedBox.shrink()),
+                child: UpdateGate(
+                  child: BootGate(child: child ?? const SizedBox.shrink()),
+                ),
               ),
             );
           },

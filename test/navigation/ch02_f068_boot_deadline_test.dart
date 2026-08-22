@@ -1,78 +1,58 @@
-// CH-02 / F068 — `/_boot` MUST NOT BE A PERMANENT SPINNER (root cause RC5).
+// CH-02 / F068 + CH-14 CONTINUITY — BOOT IS MACHINERY, NOT A DESTINATION.
 //
-// `/_boot` is the destination-resolution decision point. The router parks a
-// cold load there, holds the destination in `?redirect=`, and returns null for
-// that path while bootstrap settles — deliberately, so nothing moves the
-// person off it.
+// F068 fixed a real defect: a hung bootstrap left the person on a bare
+// spinner with no explanation and no recovery. Its fix was a BOUNDED, HONEST
+// wait that never ends by GUESSING an unknown session, because F065's frozen
+// doctrine is that UNKNOWN/RESTORING IS NOT UNAUTHENTICATED.
 //
-// That is correct while bootstrap is progressing and wrong the moment it is
-// not. A hung bootstrap left the person on a bare spinner with no explanation,
-// no recovery and no way back. The destination was not lost, but it was
-// unreachable, which for the person is the same thing.
+// F068 also asserted WHERE that wait happened: the router parked cold loads on
+// `/_boot?redirect=…`. A later founder ruling supersedes that clause, and only
+// that clause:
 //
-// THE FIX IS A BOUNDED, HONEST WAIT — NOT A TIMEOUT REDIRECT. A redirect would
-// have to decide the person's authentication state at the exact moment it is
-// genuinely UNKNOWN, and F065's frozen doctrine is that UNKNOWN/RESTORING IS
-// NOT UNAUTHENTICATED. These tests hold both properties at once: the wait ends,
-// and it never ends by guessing.
+//   "Aura must not expose an avoidable intermediate/transit experience, lose
+//    the destination, or move the person backward merely because the
+//    application cold-started, refreshed, or crossed a release boundary."
+//
+// Parking navigated Aura's own machinery into the address bar
+// (`/_boot?redirect=/articles/…` instead of the article), pushed a transit
+// page into history, and made a reload during restore re-enter `_boot`.
+//
+// So the WAIT MOVED and its PROPERTIES DID NOT. These tests now hold both:
+// F068's guarantees, at the new location, plus the continuity guarantee that
+// the location is never left at all.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
 const String kRouter = 'lib/router.dart';
+const String kBootGate = 'lib/core/navigation/boot_gate.dart';
 
-String _bootScreenSource() {
-  final src = File(kRouter).readAsStringSync();
-  final start = src.indexOf('class _RouterBootScreen');
-  expect(start, isNot(-1), reason: 'the boot screen must exist');
-  final end = src.indexOf('class GoRouterRefreshStream', start);
-  expect(end, isNot(-1), reason: 'could not bound the boot screen');
-  return src.substring(start, end);
-}
+String _bootGateSource() => File(kBootGate).readAsStringSync();
 
 void main() {
-  group('F068 — the wait is BOUNDED', () {
-    test('the boot screen arms a deadline', () {
-      final src = _bootScreenSource();
-      expect(RegExp(r'Timer\(').hasMatch(src), isTrue,
-          reason: 'Without a deadline the boot screen spins forever whenever '
-              'bootstrap hangs. That is RC5.');
-      expect(RegExp(r'Duration\(seconds:\s*\d+\)').hasMatch(src), isTrue,
-          reason: 'The deadline must be an explicit, readable duration.');
+  group('F068 — the wait is bounded, honest and recoverable', () {
+    test('it still ends, rather than spinning forever', () {
+      final src = _bootGateSource();
+      expect(src.contains('Duration _deadline'), isTrue);
+      expect(RegExp(r'_overdue\s*=\s*true').hasMatch(src), isTrue,
+          reason: 'A wait with no end is the defect F068 exists to remove.');
     });
 
-    test('the deadline is cancelled on dispose', () {
-      final src = _bootScreenSource();
-      expect(src.contains('dispose'), isTrue);
-      expect(RegExp(r'_timer\?\.cancel\(\)').hasMatch(src), isTrue,
-          reason: 'A timer that outlives its screen calls setState after '
-              'dispose.');
-    });
-  });
-
-  group('F068 — the wait ends HONESTLY, never by guessing', () {
-    test('the overdue state offers recovery', () {
-      final src = _bootScreenSource();
-      expect(src.contains('onRecover'), isTrue,
-          reason: 'An overdue boot with no way forward is the same dead end '
-              'in different words.');
-      expect(RegExp(r'ref\.invalidate\(\s*sessionBootstrapProvider\s*\)').hasMatch(src), isTrue,
-          reason: 'Recovery must actually re-run the bootstrap, not merely '
-              'redraw the screen.');
+    test('recovery re-runs the bootstrap rather than merely redrawing', () {
+      final src = _bootGateSource();
+      expect(src.contains('ref.invalidate(sessionBootstrapProvider)'), isTrue);
     });
 
     test('it uses the canonical product-state authority, not a bespoke screen', () {
-      final src = _bootScreenSource();
+      final src = _bootGateSource();
       expect(src.contains('AuraProductState'), isTrue);
       expect(src.contains('ProductState.loading'), isTrue);
     });
 
-    test('the boot screen NEVER redirects or decides authentication', () {
-      // The critical property. A timeout redirect would have to resolve an
-      // UNKNOWN/RESTORING session, and F065's founder-frozen doctrine forbids
-      // treating that as unauthenticated. It would also discard the
-      // destination the boot route is holding.
-      final src = _bootScreenSource();
+    test('it NEVER redirects or decides authentication', () {
+      // The critical F065 property, unchanged. Resolving a still-restoring
+      // session to signed-out is exactly the defect F065 exists to prevent.
+      final src = _bootGateSource();
       for (final forbidden in const [
         'context.go(',
         'context.push(',
@@ -82,26 +62,51 @@ void main() {
         'isLoggedIn',
       ]) {
         expect(src.contains(forbidden), isFalse,
-            reason: 'The boot screen must not $forbidden — resolving an '
-                'unknown session or navigating from here reintroduces F065 '
-                'or discards the preserved destination.');
+            reason: 'The boot gate must not $forbidden — resolving an unknown '
+                'session or navigating from here reintroduces F065.');
       }
     });
   });
 
-  group('F068 — the destination contract is untouched', () {
-    test('the router still parks cold loads on /_boot while bootstrapping', () {
+  group('CONTINUITY — the destination is the URL, and it is never left', () {
+    test('the router STAYS PUT while bootstrapping', () {
       final src = File(kRouter).readAsStringSync();
-      expect(RegExp(r'if \(isBootstrapping\)[\s\S]{0,120}isBootPath\(path\)\)\s*return null')
-          .hasMatch(src), isTrue,
-          reason: 'The bounded wait must not change WHERE the router waits, '
-              'only how long and how honestly.');
+      expect(
+        RegExp(r'if \(isBootstrapping\)\s*\{[\s\S]{0,2000}?return null;\s*\}')
+            .hasMatch(src),
+        isTrue,
+        reason: 'Restoring a session is not navigation. Staying at the '
+            'intended location is what preserves the URL, history and refresh.',
+      );
     });
 
-    test('the boot route still carries the redirect destination', () {
+    test('nothing in the router navigates TO the boot path any more', () {
       final src = File(kRouter).readAsStringSync();
-      expect(src.contains(r'$kRouterBootRoute?redirect='), isTrue,
-          reason: 'A retry is only useful if the destination survived the wait.');
+      // The transit page is the thing being removed; an address that is never
+      // emitted cannot become a visible destination.
+      expect(src.contains(r'$kRouterBootRoute?redirect='), isFalse,
+          reason: 'Emitting /_boot?redirect= is what put machinery in the '
+              'address bar and a transit page into history.');
+      expect(src.contains('bootRedirectFor'), isFalse,
+          reason: 'The helper that produced those addresses is retired, not '
+              'merely unused.');
+    });
+
+    test('the boot gate renders INSTEAD of the child, not on top of it', () {
+      // This is why staying put is safe: a destination that never mounts
+      // cannot fire requests while authentication is still unknown, which is
+      // the real work the old redirect was doing.
+      final src = _bootGateSource();
+      expect(src.contains('return widget.child;'), isTrue);
+      expect(RegExp(r'Stack\s*\(').hasMatch(src), isFalse,
+          reason: 'An overlay would leave the destination mounted.');
+    });
+
+    test('/_boot still RESOLVES, so an address already in the wild survives', () {
+      final src = File(kRouter).readAsStringSync();
+      expect(src.contains('if (isBootPath(path))'), isTrue,
+          reason: 'A stale /_boot?redirect= in history or a cached bundle must '
+              'still reach its destination rather than dead-end.');
     });
   });
 }

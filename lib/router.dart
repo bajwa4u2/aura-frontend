@@ -249,9 +249,16 @@ bool requiresInstitutionAccessForPath(String path) {
 /// the URL's institution id as something ambient state could overrule.
 ///
 /// The two entry points remain because the two route shapes genuinely
-/// differ — one carries no id and has no builder, so it must resolve to
-/// some address; the other carries a claim and can simply stay put.
-String _redirectShorthandToCanonical(
+/// differ — one carries no id, the other carries a claim.
+///
+/// Both can now STAY PUT while the authority is still resolving. The shorthand
+/// shape previously had no builder, so "unresolved" had to resolve to SOME
+/// address, and that address was `/_boot?redirect=…` — a real navigation that
+/// put Aura's machinery in the address bar and a transit page into history.
+/// Giving the shorthand routes a loading builder removes that requirement:
+/// "not resolved yet" renders in place, at the URL the person asked for, and
+/// the router re-evaluates the moment the authority settles.
+String? _redirectShorthandToCanonical(
   Ref ref,
   GoRouterState state,
   String section,
@@ -263,7 +270,6 @@ String _redirectShorthandToCanonical(
     ),
     section: section,
     dashboardRoute: kInstitutionDashboardRoute,
-    parkRoute: _bootParkFor(state.uri.toString()),
   );
 }
 
@@ -285,16 +291,6 @@ String? _enforceCanonicalIdMatch(
     section: section,
     dashboardRoute: kInstitutionDashboardRoute,
   );
-}
-
-/// Destination-preserving park for the shorthand shape. Mirrors
-/// `bootRedirectFor` inside the router closure; kept out here so the redirect
-/// helpers stay independent of it.
-String _bootParkFor(String target) {
-  final encoded = Uri.encodeComponent(
-    _normalizeRedirectDest(target, fallback: kInstitutionDashboardRoute),
-  );
-  return '$kRouterBootRoute?redirect=$encoded';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -453,13 +449,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     return institutionRoutePolicyFor(path) == InstitutionRoutePolicy.admin;
   }
 
-  String bootRedirectFor(String target, {required String fallback}) {
-    final encoded = Uri.encodeComponent(
-      _normalizeRedirectDest(target, fallback: fallback),
-    );
-    return '$kRouterBootRoute?redirect=$encoded';
-  }
-
   // ── MEETING KILL SWITCH ────────────────────────────────────────────
   //
   // A `/realtime/:sessionId` deep link must NEVER render RealtimeRoomScreen
@@ -593,9 +582,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           isLoggedIn && requiresAppAdmin(path) && appAdminAsync.isLoading;
 
       if (isBootstrapping) {
-        if (isBootPath(path)) return null;
-
-        return bootRedirectFor(currentLocation, fallback: defaultRedirect);
+        // RESTORING A SESSION IS NOT GOING SOMEWHERE.
+        //
+        // This used to navigate to `/_boot?redirect=<destination>`, which put
+        // Aura's own machinery in the address bar, pushed a transit page into
+        // history, and made a reload during restore re-enter `_boot` instead
+        // of the destination. Someone opening a shared article saw
+        // `/_boot?redirect=/articles/...` rather than the article.
+        //
+        // Staying put costs nothing that navigating away was buying: `BootGate`
+        // renders the restoring state IN PLACE and, crucially, renders it
+        // INSTEAD of the routed child — so the destination never mounts and
+        // cannot fire requests while authentication is still unknown, which is
+        // the real work the old redirect was doing.
+        //
+        // F065 doctrine is preserved exactly: authentication is UNKNOWN here,
+        // and nothing resolves it to signed-out. The destination is the URL
+        // itself, so there is nothing to carry, lose, or validate on return.
+        return null;
       }
 
       if (isLoggedIn &&
@@ -1648,6 +1652,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kInstitutionDomainsRoute,
             redirect: (context, state) =>
                 _redirectShorthandToCanonical(ref, state, 'domains'),
+            // Rendered only while the institution authority is still
+            // resolving; the redirect above takes over the instant it does.
+            builder: (_, __) =>
+                const Scaffold(body: AuraProductState(state: ProductState.loading)),
           ),
           GoRoute(
             path: '/institution/:institutionId/domains',
@@ -1696,6 +1704,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kInstitutionProfileRoute,
             redirect: (context, state) =>
                 _redirectShorthandToCanonical(ref, state, 'profile'),
+            // Rendered only while the institution authority is still
+            // resolving; the redirect above takes over the instant it does.
+            builder: (_, __) =>
+                const Scaffold(body: AuraProductState(state: ProductState.loading)),
           ),
           GoRoute(
             path: '/institution/:institutionId/profile',
@@ -1715,6 +1727,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kInstitutionEditProfileRoute,
             redirect: (context, state) =>
                 _redirectShorthandToCanonical(ref, state, 'edit-profile'),
+            // Rendered only while the institution authority is still
+            // resolving; the redirect above takes over the instant it does.
+            builder: (_, __) =>
+                const Scaffold(body: AuraProductState(state: ProductState.loading)),
           ),
           GoRoute(
             path: '/institution/:institutionId/edit-profile',
@@ -1734,6 +1750,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kInstitutionVerificationRoute,
             redirect: (context, state) =>
                 _redirectShorthandToCanonical(ref, state, 'request-verification'),
+            // Rendered only while the institution authority is still
+            // resolving; the redirect above takes over the instant it does.
+            builder: (_, __) =>
+                const Scaffold(body: AuraProductState(state: ProductState.loading)),
           ),
           GoRoute(
             path: '/institution/:institutionId/request-verification',
@@ -2124,90 +2144,28 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// F068 — `/_boot` MUST NOT BE A PERMANENT SPINNER (root cause RC5).
+/// `/_boot` — RETIRED AS A DESTINATION, KEPT AS CONTINUITY.
 ///
-/// `/_boot` is the destination-resolution decision point: the router parks a
-/// cold load here, holds the intended destination in `?redirect=`, and waits
-/// for `sessionBootstrapProvider` to settle. While it is settling the router
-/// deliberately returns null for this path, so nothing moves the person off it.
+/// Founder ruling: Aura must not expose an avoidable intermediate experience.
+/// Restoring a session is not going somewhere, so the router no longer parks
+/// cold loads here — it stays at the intended location and `BootGate` renders
+/// the restoring state in place, preserving the URL, history and refresh.
 ///
-/// That is correct while bootstrap is PROGRESSING and wrong the moment it is
-/// not. If the bootstrap request hangs — a stalled network, an unreachable
-/// API, a provider that never completes — the person sits on a bare spinner
-/// with no explanation, no recovery and no way back. The destination is not
-/// lost, but it is unreachable, which for the person is the same thing.
+/// The route survives only so that a `/_boot?redirect=…` address already
+/// captured in someone's history or a stale bundle still resolves: the
+/// redirect branch above sends it on to its destination. Nothing in Aura emits
+/// this address any more.
 ///
-/// WHY THIS IS NOT FIXED BY REDIRECTING AFTER A TIMEOUT. A silent redirect
-/// would have to decide what the person's authentication state is, and at this
-/// exact moment it is genuinely UNKNOWN. F065's founder-frozen doctrine is
-/// "AUTHENTICATION UNKNOWN/RESTORING IS NOT UNAUTHENTICATED" — resolving a
-/// still-restoring session to signed-out is the defect F065 exists to prevent,
-/// and doing it here would also discard the destination the boot route is
-/// holding. So the wait is BOUNDED and made HONEST rather than being resolved
-/// by a guess.
-///
-/// After the deadline the surface states what is true — restoring did not
-/// finish — and offers recovery. Retrying re-runs the bootstrap; the
-/// `?redirect=` destination is untouched throughout, so a successful retry
-/// still lands where the person was going.
-class _RouterBootScreen extends ConsumerStatefulWidget {
+/// F068's real property — a bounded, honest wait that never ends by GUESSING
+/// an unknown session, which F065 forbids — was not weakened; it moved to
+/// `BootGate` where the waiting now happens. This builder is what a person
+/// sees only in the instant before the redirect resolves.
+class _RouterBootScreen extends StatelessWidget {
   const _RouterBootScreen();
 
   @override
-  ConsumerState<_RouterBootScreen> createState() => _RouterBootScreenState();
-}
-
-class _RouterBootScreenState extends ConsumerState<_RouterBootScreen> {
-  /// Long enough that a slow-but-working cold load is never interrupted,
-  /// short enough that a hang does not become an indefinite spinner.
-  static const Duration _deadline = Duration(seconds: 12);
-
-  Timer? _timer;
-  bool _overdue = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer(_deadline, () {
-      if (mounted) setState(() => _overdue = true);
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _retry() {
-    setState(() => _overdue = false);
-    _timer?.cancel();
-    _timer = Timer(_deadline, () {
-      if (mounted) setState(() => _overdue = true);
-    });
-    // Re-run the bootstrap. The router is listening, so a successful retry
-    // resolves the boot path and consumes the preserved destination.
-    ref.invalidate(sessionBootstrapProvider);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_overdue) {
-      return const Scaffold(
-        body: AuraProductState(state: ProductState.loading),
-      );
-    }
-    return Scaffold(
-      body: AuraProductState(
-        state: ProductState.unavailable,
-        headline: 'Still restoring your session',
-        detail:
-            'This is taking longer than expected. Your place has been kept — '
-            'try again to pick up where you left off.',
-        onRecover: _retry,
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      const Scaffold(body: AuraProductState(state: ProductState.loading));
 }
 
 class GoRouterRefreshStream extends ChangeNotifier {

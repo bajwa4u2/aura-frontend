@@ -185,13 +185,12 @@ void main() {
       );
     }
 
-    String shorthand({required bool resolved, String? activeId,
+    String? shorthand({required bool resolved, String? activeId,
         List<String> authorized = const []}) {
       return institutionShorthandRedirect(
         decide(resolved: resolved, activeId: activeId, authorized: authorized, pathId: null),
         section: 'edit-profile',
         dashboardRoute: dash,
-        parkRoute: park,
       );
     }
 
@@ -202,10 +201,16 @@ void main() {
       expect(canonical(resolved: false, pathId: 'inst-1'), isNull);
     });
 
-    test('a shorthand route PARKS, preserving the destination', () {
-      // It has no builder, so it must resolve to some address. Landing on the
-      // dashboard because the answer had not arrived is exactly RC2.
-      expect(shorthand(resolved: false), park);
+    test('a shorthand route STAYS PUT, rather than parking on machinery', () {
+      // It used to have no builder, so "unresolved" had to resolve to SOME
+      // address — and that address was `/_boot?redirect=…`, a real navigation
+      // that put Aura's machinery in the address bar and a transit page into
+      // history. The shorthand routes now render a loading state, so both
+      // shapes express "decide nothing" the same way.
+      //
+      // The property that mattered is unchanged and still asserted below:
+      // never the dashboard merely because the answer had not arrived (RC2).
+      expect(shorthand(resolved: false), isNull);
       expect(shorthand(resolved: false), isNot(dash));
     });
 

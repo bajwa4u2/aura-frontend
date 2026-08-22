@@ -229,15 +229,23 @@ String? institutionCanonicalRedirect(
 /// destination-preserving park (`/_boot?redirect=`), never the dashboard —
 /// landing on the dashboard because the answer had not arrived yet is
 /// precisely RC2.
-String institutionShorthandRedirect(
+String? institutionShorthandRedirect(
   InstitutionRouteDecision decision, {
   required String section,
   required String dashboardRoute,
-  required String parkRoute,
 }) {
   switch (decision.outcome) {
     case InstitutionRouteOutcome.unresolved:
-      return parkRoute;
+      // STAY PUT. This used to park on `/_boot?redirect=…`, which is a real
+      // navigation: it put Aura's machinery in the address bar, pushed a
+      // transit page into history, and made a refresh mid-resolution re-enter
+      // the transit page instead of the destination.
+      //
+      // "Not resolved yet" is not a destination. Returning null leaves the
+      // person exactly where they asked to be while the authority settles, and
+      // the router re-evaluates as soon as it does — the same shape every
+      // other still-loading branch here already uses.
+      return null;
     case InstitutionRouteOutcome.proceed:
     case InstitutionRouteOutcome.canonicalize:
     case InstitutionRouteOutcome.authorizedElsewhere:
