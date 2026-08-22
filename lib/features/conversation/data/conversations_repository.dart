@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../core/translation/communication_translation.dart'
+    show CommunicationObjectType;
 
 /// AURA CONVERSATION SYSTEM — canonical client.
 /// Canon: aura-backend/docs/2026-08-16-aura-conversation-system-canon.md
@@ -423,7 +425,9 @@ class ConversationsRepository {
   Future<String> translateMessage(
       String messageId, String sourceText, String targetLanguage) async {
     final res = await _dio.post<dynamic>('/communication/translate', data: {
-      'objectType': 'CONVERSATION_MESSAGE',
+      // Was a hand-written literal, because the shared enum was missing this
+      // member. It is no longer missing, so the shared type is used.
+      'objectType': CommunicationObjectType.conversationMessage.wireValue,
       'objectId': messageId,
       'sourceText': sourceText,
       'targetLanguage': targetLanguage,

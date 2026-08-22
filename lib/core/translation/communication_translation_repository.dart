@@ -9,6 +9,7 @@ class CommunicationTranslationResult {
     this.sourceLanguage,
     this.provider,
     this.cached = false,
+    this.fallback = false,
   });
 
   final String translatedText;
@@ -16,6 +17,15 @@ class CommunicationTranslationResult {
   final String? sourceLanguage;
   final String? provider;
   final bool cached;
+
+  /// True when NO translation happened and [translatedText] is the source
+  /// text handed straight back — every provider declined or failed.
+  ///
+  /// The server reports this honestly and declines to cache it. A surface
+  /// that ignores the flag shows the reader their own untranslated words
+  /// under a "Translation" heading, which is worse than an error, so
+  /// surfaces are expected to say translation was unavailable instead.
+  final bool fallback;
 }
 
 Map<String, dynamic> _asMap(dynamic v) {
@@ -78,5 +88,6 @@ Future<CommunicationTranslationResult> translateCommunicationObject(
         ? null
         : _readString(payload['provider']),
     cached: payload['cached'] == true,
+    fallback: payload['fallback'] == true || payload['provider'] == 'fallback',
   );
 }

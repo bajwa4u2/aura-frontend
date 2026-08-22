@@ -66,6 +66,16 @@ String canonicalAnnouncementUrl(String slug) {
   return '${_trimSlash(_kAuraShareBaseUrl)}/p/a/${Uri.encodeComponent(slug)}';
 }
 
+/// External share URL for an article (by slug).
+///
+/// `/p/art/` rather than `/p/a/`, which announcements hold. This is the only
+/// address that produces a real preview card: the SPA host serves no
+/// crawler-readable metadata, so sharing an in-app `/articles/...` link shows
+/// the generic Aura homepage card instead of the author's own title and cover.
+String canonicalArticleUrl(String slug) {
+  return '${_trimSlash(_kAuraShareBaseUrl)}/p/art/${Uri.encodeComponent(slug)}';
+}
+
 /// In-app deep-link for a user post. Use this when navigating WITHIN
 /// the Flutter app, not for externally shared URLs.
 String appPostUrl(String postId) {

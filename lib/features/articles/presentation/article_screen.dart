@@ -11,6 +11,11 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/translation/communication_translate_action.dart';
+import '../../../core/translation/communication_translation.dart';
+import '../../posts/presentation/widgets/post_card/post_card_utils.dart'
+    show canonicalArticleUrl;
+import '../../share/aura_share_sheet.dart';
 import '../../../core/ui/publication/aura_publication_markdown.dart';
 import '../../../core/ui/publication/aura_publication_title.dart';
 import '../../conversation/presentation/conversation_identity.dart';
@@ -102,6 +107,29 @@ class ArticleScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    // Articles were the one publishable type with no way to
+                    // share them. The address deliberately points at the
+                    // marketing host, not at this screen's own URL: only that
+                    // host is crawled, so it is the only link that previews
+                    // as the author's title and cover rather than as the
+                    // generic Aura card.
+                    //
+                    // Offered only for a published article — a draft has no
+                    // slug, and there would be nothing on the other end.
+                    if ((article.slug ?? '').trim().isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.ios_share, size: 18),
+                        color: AuraSurface.muted,
+                        tooltip: 'Share this article',
+                        onPressed: () => showAuraShareSheet(
+                          context,
+                          shareUrl: canonicalArticleUrl(article.slug!),
+                          headline: 'Share this article',
+                          subtitle:
+                              'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                          emailSubject: article.title,
+                        ),
+                      ),
                     if (article.author?.userId ==
                         ref.watch(myUserIdProvider))
                       TextButton.icon(
@@ -118,6 +146,27 @@ class ArticleScreen extends ConsumerWidget {
                 const Divider(height: 1),
                 const SizedBox(height: AuraSpace.s20),
                 AuraPublicationMarkdown(data: article.bodyMarkdown),
+                const SizedBox(height: AuraSpace.s20),
+                // Articles reach translation through the SAME canonical action
+                // every other publishable surface uses. There is deliberately
+                // no article-specific translator: a new readable content type
+                // arriving without translation is the defect this closes, and
+                // closing it with a private copy would have re-created it one
+                // type later.
+                //
+                // The title travels WITH the body as a single Markdown
+                // document. A reader who cannot read the language cannot read
+                // the headline either, and one document keeps the translation
+                // a coherent whole rather than two independently-cached
+                // fragments — while the Markdown renderer below keeps the
+                // translated article looking like an article.
+                CommunicationTranslateAction(
+                  objectType: CommunicationObjectType.article,
+                  objectId: article.id,
+                  sourceText: '# ${article.title}\n\n${article.bodyMarkdown}',
+                  translatedBodyBuilder: (context, text) =>
+                      AuraPublicationMarkdown(data: text),
+                ),
                 const SizedBox(height: AuraSpace.s32),
               ],
             ),

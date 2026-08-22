@@ -27,6 +27,7 @@ class CommunicationTranslateAction extends ConsumerStatefulWidget {
     required this.sourceText,
     this.sourceLanguage,
     this.bodyStyle,
+    this.translatedBodyBuilder,
   });
 
   final CommunicationObjectType objectType;
@@ -34,6 +35,22 @@ class CommunicationTranslateAction extends ConsumerStatefulWidget {
   final String sourceText;
   final String? sourceLanguage;
   final TextStyle? bodyStyle;
+
+  /// Optional renderer for the translated text.
+  ///
+  /// The default renders plain text, which is right for a post, a reply or an
+  /// announcement. It is wrong for a surface whose source is structured: an
+  /// article body is Markdown, and rendering a translated article as plain
+  /// text would show the reader raw `##` and `**` where the original showed
+  /// headings and emphasis — a translation visibly poorer than the thing it
+  /// translated.
+  ///
+  /// This exists so that surface can pass its OWN renderer instead of growing
+  /// a parallel translate widget. Translation stays one capability; only the
+  /// final rendering step is delegated to the surface that already knows how
+  /// its body is written.
+  final Widget Function(BuildContext context, String translatedText)?
+      translatedBodyBuilder;
 
   @override
   ConsumerState<CommunicationTranslateAction> createState() =>
@@ -148,6 +165,16 @@ class _CommunicationTranslateActionState
 
       if (!mounted) return;
       setState(() {
+        // A fallback result is the SOURCE text returned unchanged. Presenting
+        // it as a translation would quietly mislead the reader, so it is
+        // reported as the unavailability it is and nothing is shown as
+        // translated.
+        if (result.fallback) {
+          _translatedText = null;
+          _showTranslation = false;
+          _error = 'Translation is unavailable right now. Please try again.';
+          return;
+        }
         _translatedText = result.translatedText;
         _resolvedTargetLanguage = result.targetLanguage;
         _showTranslation = true;
@@ -269,11 +296,13 @@ class _CommunicationTranslateActionState
                 const SizedBox(height: AuraSpace.s8),
                 Directionality(
                   textDirection: textDirectionFor(_resolvedTargetLanguage!),
-                  child: AuraTextBlock(
-                    _translatedText!,
-                    style: widget.bodyStyle,
-                    selectable: true,
-                  ),
+                  child: widget.translatedBodyBuilder
+                          ?.call(context, _translatedText!) ??
+                      AuraTextBlock(
+                        _translatedText!,
+                        style: widget.bodyStyle,
+                        selectable: true,
+                      ),
                 ),
               ],
             ),
