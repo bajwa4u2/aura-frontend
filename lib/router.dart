@@ -293,7 +293,35 @@ String? _enforceCanonicalIdMatch(
   );
 }
 
+// REFRESH IS NOT NAVIGATION — AND THE ADDRESS HAS TO KNOW WHERE YOU ARE.
+//
+// go_router does NOT reflect imperative navigation in the browser URL unless
+// this is set: `optionURLReflectsImperativeAPIs` defaults to false. Aura has
+// 186 `context.push(...)` call sites, so for every one of them the screen
+// changed and the address did not.
+//
+// That is the founder-observed defect, and it is why a route census kept
+// passing: a census navigates BY ADDRESS, so address and screen always agree
+// for it. A person navigates BY TAPPING. Their address therefore stays on
+// whatever they last arrived at by address — and a refresh faithfully
+// reconstructs THAT, moving them backward to a screen they had already left.
+//
+// Measured live on 2026-08-22: pressing the call button rendered the call room
+// while the browser still carried /messages/c/<id>. Screen identity and
+// navigational identity had diverged; refreshing there would have discarded
+// the call.
+//
+// The library documents this option as "for backward compatibility" and warns
+// that a pushed route's URL is not always deep-linkable. That warning does not
+// describe Aura: the C3 route-integrity gate already asserts every address the
+// Navigation Authority can emit is a registered route, and NO navigation site
+// passes `extra`, so no pushed destination depends on state the URL cannot
+// carry. Every pushed address here is reconstructible.
+//
+// Set once, at the canonical navigation boundary, rather than per route —
+// the divergence was never specific to the call route.
 final routerProvider = Provider<GoRouter>((ref) {
+  GoRouter.optionURLReflectsImperativeAPIs = true;
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
 

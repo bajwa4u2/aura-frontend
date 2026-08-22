@@ -202,9 +202,24 @@ class _SoftWarnBanner extends StatelessWidget {
                 child: Text(action.label),
               ),
             ],
+            // NO TOOLTIP HERE, DELIBERATELY.
+            //
+            // This banner is built inside MaterialApp.builder, which sits
+            // ABOVE the Navigator -- and the Navigator is what supplies the
+            // Overlay. Tooltip requires an Overlay ancestor, so `tooltip:`
+            // threw "No Overlay widget found." on every build, and the global
+            // ErrorWidget replaced the button with a 460x320 box sitting where
+            // the dismiss control should be. Founder-observed on the live site,
+            // 2026-08-22.
+            //
+            // The accessible name moves to the Icon, which carries it without
+            // needing an Overlay, so screen readers still announce "Dismiss".
             IconButton(
-              tooltip: 'Dismiss',
-              icon: const Icon(Icons.close, size: 18),
+              icon: const Icon(
+                Icons.close,
+                size: 18,
+                semanticLabel: 'Dismiss',
+              ),
               onPressed: onDismiss,
             ),
           ],
@@ -400,9 +415,16 @@ class _ReleaseAvailableBannerState extends State<_ReleaseAvailableBanner> {
                     ),
                   ),
                   const _ReloadButton(),
+                  // Same reason as the soft-warn banner above: this chrome
+                  // lives above the Navigator, so it has no Overlay and a
+                  // tooltip cannot build. This is the instance the founder
+                  // actually saw fail.
                   IconButton(
-                    tooltip: 'Dismiss',
-                    icon: const Icon(Icons.close, size: 16),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 16,
+                      semanticLabel: 'Dismiss',
+                    ),
                     color: AuraSurface.muted,
                     onPressed: () => setState(() => _dismissed = true),
                   ),

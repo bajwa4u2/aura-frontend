@@ -24,6 +24,8 @@ import '../../../shared/identity/aura_identity_badge.dart';
 import '../../public/widgets/mention_text.dart' show ResolvedTagText;
 import '../../institutions/domain/communication_type.dart';
 import '../../posts/data/reactions_repository.dart';
+import '../../../core/engagement/aura_engagement_bar.dart';
+import '../../../core/engagement/engagement_model.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
 import '../../topics/topic.dart';
@@ -420,6 +422,14 @@ class UnifiedFeedCard extends ConsumerWidget {
             ],
             if (showInteractionBar) ...[
               const SizedBox(height: AuraSpace.s12),
+              // An Article engages through the canonical publication
+              // authority, exactly as its reader surface does, so counts and
+              // actor state are one truth across both.
+              if (item.type == FeedItemType.article && item.id.trim().isNotEmpty)
+                AuraEngagementBar(
+                  target: PublicationTarget.article,
+                  publicationId: item.id,
+                ),
               if (_reactionTargetFor(item) case final reactionTarget?)
                 FeedInteractionBar(
                   target: reactionTarget,
@@ -750,6 +760,12 @@ ReactionTarget? _reactionTargetFor(FeedItem item) {
   // Announcements don't yet expose a reaction endpoint; hiding the
   // interaction bar is correct rather than wiring one up to a 404.
   if (item.type == FeedItemType.announcement) return null;
+  // Articles are NOT posts. Falling through to PostReactionTarget here sent
+  // an Article id to the Post reaction endpoint — a reaction addressed to the
+  // wrong object, which is worse than no reaction. Articles render the
+  // canonical AuraEngagementBar instead: the same authority, the same state
+  // and the same counts as the article reader, never a feed-private copy.
+  if (item.type == FeedItemType.article) return null;
   if (item.id.trim().isEmpty) return null;
   return PostReactionTarget(item.id);
 }
