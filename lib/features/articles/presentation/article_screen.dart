@@ -165,7 +165,7 @@ class ArticleScreen extends ConsumerWidget {
                         ),
                       ),
                     if (article.author?.userId ==
-                        ref.watch(myUserIdProvider))
+                        ref.watch(myUserIdProvider)) ...[
                       TextButton.icon(
                         icon: const Icon(Icons.edit_outlined, size: 16),
                         label: const Text('Edit'),
@@ -174,6 +174,18 @@ class ArticleScreen extends ConsumerWidget {
                                 NavigationAuthority.articleEditorRoute(
                                     article.id)),
                       ),
+                      // Retraction is visibility-changing and other people may
+                      // already have the link, so it is confirmed rather than
+                      // performed on a single tap — and the confirmation says
+                      // plainly what survives, because "delete" is what an
+                      // author will assume otherwise.
+                      IconButton(
+                        icon: const Icon(Icons.visibility_off_outlined, size: 18),
+                        color: AuraSurface.muted,
+                        tooltip: 'Retract from public view',
+                        onPressed: () => _retract(context, ref, article),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: AuraSpace.s20),
@@ -261,6 +273,62 @@ class ArticleScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Withdraws a published article from public view.
+  ///
+  /// Deliberately NOT called delete anywhere in this flow. The article keeps
+  /// its reactions, saves and discussion, and its public address keeps
+  /// resolving to a safe "unavailable" page rather than breaking — restoring
+  /// returns all of it together. Saying "delete" would make an author expect
+  /// destruction and then be surprised by a Restore button.
+  Future<void> _retract(
+    BuildContext context,
+    WidgetRef ref,
+    Article article,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.page,
+        title: const Text('Retract this article?'),
+        content: const Text(
+          'It stops appearing publicly and its link stops resolving for '
+          'readers. Its reactions and discussion are kept, and you can '
+          'restore it at any time from the editor.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Retract'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(articlesRepositoryProvider).retract(article.id);
+      ref.invalidate(publishedArticlesProvider);
+      if (!context.mounted) return;
+      // NOT a dead end. This screen reads the PUBLIC endpoint, which now
+      // correctly reports the article as gone, so staying here would strand
+      // the author on "Article unavailable" with no way back to their own
+      // work. The editor still resolves it and carries the Restore action.
+      context.go(NavigationAuthority.articleEditorRoute(article.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Retracted. You can restore it here.')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      final err = AppErrorMapper.from(e, feature: 'retract this article');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err.message)));
+    }
   }
 
   /// Native reshare with commentary.

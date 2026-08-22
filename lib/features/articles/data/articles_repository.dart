@@ -19,6 +19,7 @@ class Article {
     required this.publishedAt,
     this.author,
     this.revised = false,
+    this.retractedAt,
   });
 
   final String id;
@@ -41,7 +42,18 @@ class Article {
   /// preserved server-side; presentation shows an honest edited marker).
   final bool revised;
 
+  /// When the author withdrew a published article from public view.
+  ///
+  /// Retraction is not deletion: the article keeps its reactions, saves,
+  /// discussion and its public address, and restoring returns all of it
+  /// together. Only the author ever sees this — to everyone else a retracted
+  /// article simply is not there, and that is deliberate.
+  final DateTime? retractedAt;
+
   bool get isPublished => status == 'PUBLISHED';
+
+  /// A published article the author has withdrawn.
+  bool get isRetracted => retractedAt != null;
 
   factory Article.fromJson(Map<String, dynamic> json) => Article(
         id: _s(json['id']),
@@ -58,6 +70,9 @@ class Article {
             ? AuraPersonIdentity.fromJson(json['author'])
             : null,
         revised: json['revised'] == true,
+        retractedAt: json['deletedAt'] == null
+            ? null
+            : DateTime.tryParse(json['deletedAt'].toString()),
       );
 }
 
@@ -119,6 +134,22 @@ class ArticlesRepository {
   /// the key, so null genuinely clears it.
   Future<void> setCover(String id, String? mediaId) async {
     await _dio.patch<dynamic>('/articles/$id', data: {'coverMediaId': mediaId});
+  }
+
+  /// Withdraws a published article from public view. Reversible.
+  ///
+  /// A draft has never been public and carries nothing, so the server deletes
+  /// it outright; a published article is retracted instead. The client does
+  /// not decide which — it asks, and the server applies the rule.
+  Future<void> retract(String id) async {
+    await _dio.delete<dynamic>('/articles/$id');
+  }
+
+  /// Returns a retracted article to public view, with its discussion intact.
+  Future<Article> restore(String id) async {
+    final res = await _dio.post<dynamic>('/articles/$id/restore');
+    return Article.fromJson(
+        _unwrap(res.data)['article'] as Map<String, dynamic>);
   }
 
   Future<Article> publish(String id) async {

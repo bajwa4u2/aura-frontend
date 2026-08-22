@@ -77,11 +77,14 @@ class _AuraPublicationDiscussionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          replies.isEmpty
-              ? 'Discussion'
-              : 'Discussion · ${replies.length}',
-          style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+        Semantics(
+          header: true,
+          child: Text(
+            replies.isEmpty
+                ? 'Discussion'
+                : 'Discussion · ${replies.length}',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+          ),
         ),
         const SizedBox(height: AuraSpace.s12),
 
@@ -97,7 +100,11 @@ class _AuraPublicationDiscussionState
                 minLines: 1,
                 maxLines: 6,
                 textInputAction: TextInputAction.newline,
+                // A hint disappears the moment typing starts, so on its own it
+                // is not a label — a screen-reader user returning to a
+                // part-written reply had nothing naming the field.
                 decoration: const InputDecoration(
+                  labelText: 'Add to the discussion',
                   hintText: 'Add to the discussion',
                   filled: true,
                   fillColor: AuraSurface.elevated,

@@ -1,3 +1,4 @@
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/ui/publication/aura_article_cover.dart';
 import 'dart:async';
 
@@ -50,6 +51,10 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
   bool _publishing = false;
   bool _preview = false;
   bool _wasPublished = false;
+  /// Set when the author has withdrawn this published article from public
+  /// view. Retraction is reversible, so the editor is where it is reversed.
+  bool _retracted = false;
+  bool _restoring = false;
   String _saveState = '';
 
   /// The snapshot as last persisted. Null until the first save.
@@ -97,6 +102,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       // Reopening a draft must show its saved cover, not an empty slot.
       unawaited(_refreshCoverPreview());
       _wasPublished = article.isPublished;
+      _retracted = article.isRetracted;
       _title.text = article.title;
       _body.text = article.bodyMarkdown;
       // What was loaded IS what is saved. Without this baseline a freshly
@@ -387,6 +393,34 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
     }
   }
 
+  /// Returns a retracted article to public view, with its discussion intact.
+  Future<void> _restore() async {
+    final id = _articleId;
+    if (id == null || _restoring) return;
+    setState(() => _restoring = true);
+    try {
+      final article = await ref.read(articlesRepositoryProvider).restore(id);
+      ref.invalidate(publishedArticlesProvider);
+      if (!mounted) return;
+      setState(() {
+        _retracted = article.isRetracted;
+        _wasPublished = article.isPublished;
+      });
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Restored. It is publicly visible again.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final err = AppErrorMapper.from(e, feature: 'restore this article');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err.message)));
+    } finally {
+      if (mounted) setState(() => _restoring = false);
+    }
+  }
+
   Future<void> _publish() async {
     final id = _articleId;
     if (id == null || _publishing) return;
@@ -602,6 +636,37 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       showHeader: false,
       body: Column(
         children: [
+          // TRUTHFUL STATE. A retracted article looks identical to a published
+          // one in an editor, so without this the author would edit something
+          // nobody can read and have no way to know. It is also the only place
+          // Restore is offered, because the public reader deliberately reports
+          // a retracted article as gone.
+          if (_retracted)
+            Container(
+              width: double.infinity,
+              color: AuraSurface.elevated,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s16, vertical: AuraSpace.s12),
+              child: Row(
+                children: [
+                  const Icon(Icons.visibility_off_outlined,
+                      size: 18, color: AuraSurface.muted),
+                  const SizedBox(width: AuraSpace.s8),
+                  Expanded(
+                    child: Text(
+                      'Retracted — not publicly visible. Its reactions and '
+                      'discussion are kept.',
+                      style: AuraText.small.copyWith(color: AuraSurface.ink),
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s8),
+                  FilledButton(
+                    onPressed: _restoring ? null : _restore,
+                    child: Text(_restoring ? 'Restoring…' : 'Restore'),
+                  ),
+                ],
+              ),
+            ),
           // VISIBLE editor bar — AuraScaffold renders no chrome of its
           // own, so the editor owns Publish/Preview explicitly.
           Container(
