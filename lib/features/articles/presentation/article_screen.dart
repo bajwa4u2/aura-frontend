@@ -17,7 +17,11 @@ import '../../posts/presentation/widgets/post_card/post_card_utils.dart'
     show canonicalArticleUrl;
 import '../../share/aura_share_sheet.dart';
 import '../../../core/engagement/aura_engagement_bar.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/engagement/engagement_model.dart';
+import '../../../core/engagement/aura_publication_discussion.dart';
+import '../../../core/engagement/publication_discussion_repository.dart';
+import '../../../core/media/aura_media_viewer.dart';
 import '../../../core/ui/publication/aura_publication_markdown.dart';
 import '../../../core/ui/publication/aura_publication_title.dart';
 import '../../conversation/presentation/conversation_identity.dart';
@@ -63,7 +67,35 @@ class ArticleScreen extends ConsumerWidget {
                 // composer preview and this are the same widget and cannot
                 // disagree about framing.
                 if ((article.coverUrl ?? '').trim().isNotEmpty) ...[
-                  AuraArticleCover(article.coverUrl!),
+                  // PUBLICATION CONTENT, not identity imagery. The identity
+                  // interaction ruling governs avatars, logos and profile
+                  // covers; an article cover is the author's own published
+                  // work, so it opens in the CANONICAL media viewer — the same
+                  // one post attachments and conversation media use — rather
+                  // than staying inert or gaining an article-private viewer.
+                  //
+                  // The viewer receives the governed door URL and the media id,
+                  // so it resolves full resolution through the same custody
+                  // path as everything else. The page itself keeps rendering
+                  // the display derivative; only the viewer asks for more.
+                  Semantics(
+                    label: 'Article cover image. Activate to view full size.',
+                    button: true,
+                    child: InkWell(
+                      onTap: () => showAuraMediaViewer(
+                        context,
+                        items: [
+                          AuraViewerItem(
+                            originalUrl: article.coverUrl!,
+                            mediaId: article.coverMediaId,
+                            caption: article.title,
+                            downloadContext: 'article-cover',
+                          ),
+                        ],
+                      ),
+                      child: AuraArticleCover(article.coverUrl!),
+                    ),
+                  ),
                   const SizedBox(height: AuraSpace.s16),
                 ],
                 AuraPublicationTitle(article.title),
@@ -147,7 +179,23 @@ class ArticleScreen extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s20),
                 const Divider(height: 1),
                 const SizedBox(height: AuraSpace.s20),
-                AuraPublicationMarkdown(data: article.bodyMarkdown),
+                AuraPublicationMarkdown(
+                  data: article.bodyMarkdown,
+                  // Inline imagery is publication content too, and opens in the
+                  // same canonical viewer as the cover. The image is already a
+                  // governed URL the server emitted; the viewer resolves full
+                  // resolution through the ordinary custody path.
+                  onTapImage: (url, alt) => showAuraMediaViewer(
+                    context,
+                    items: [
+                      AuraViewerItem(
+                        originalUrl: url,
+                        caption: (alt ?? '').trim().isEmpty ? null : alt!.trim(),
+                        downloadContext: 'article-image',
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: AuraSpace.s20),
                 const Divider(height: 1),
                 const SizedBox(height: AuraSpace.s12),
@@ -157,6 +205,31 @@ class ArticleScreen extends ConsumerWidget {
                 // cloned for institution posts and missing for articles in the
                 // first place.
                 AuraEngagementBar(
+                  target: PublicationTarget.article,
+                  publicationId: article.id,
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                // NATIVE reshare — a different capability from external share.
+                // The share sheet above hands someone a link; this brings the
+                // article into Aura's own feed under the resharer's name, with
+                // the Article still the canonical object rather than a copy of
+                // its text.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.repeat_rounded, size: 16),
+                    label: const Text('Reshare on Aura'),
+                    onPressed: () => _reshare(context, ref, article.id),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s20),
+                const Divider(height: 1),
+                const SizedBox(height: AuraSpace.s20),
+                // Discussion through the SHARED authority. A reply is a Post,
+                // so it carries Aura's moderation gate, Discourse Quality,
+                // mention fan-out, acting authority and blocking without an
+                // article-specific comment system.
+                AuraPublicationDiscussion(
                   target: PublicationTarget.article,
                   publicationId: article.id,
                 ),
@@ -190,6 +263,60 @@ class ArticleScreen extends ConsumerWidget {
     );
   }
 
+  /// Native reshare with commentary.
+  ///
+  /// Commentary is required, not optional: Discourse Quality refuses an empty
+  /// reshare server-side, and asking for it here is honest about that rather
+  /// than letting the reader discover the rule through a rejection.
+  Future<void> _reshare(
+    BuildContext context,
+    WidgetRef ref,
+    String articleId,
+  ) async {
+    final controller = TextEditingController();
+    final commentary = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.page,
+        title: const Text('Reshare on Aura'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          minLines: 2,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText: 'Say why this is worth reading',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('Reshare'),
+          ),
+        ],
+      ),
+    );
+    if (commentary == null || commentary.isEmpty) return;
+    if (!context.mounted) return;
+    try {
+      await ref
+          .read(publicationDiscussionRepositoryProvider)
+          .reshare(PublicationTarget.article, articleId, commentary);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reshared to your feed.')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      final err = AppErrorMapper.from(e, feature: 'reshare this');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err.message)));
+    }
+  }
 }
 
 /// DISCOVER → ARTICLES — the fourth domain, now REAL: published articles,

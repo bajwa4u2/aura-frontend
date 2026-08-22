@@ -38,10 +38,23 @@ class AuraPublicationMarkdown extends StatelessWidget {
     super.key,
     required this.data,
     this.selectable = true,
+    this.onTapImage,
   });
 
   final String data;
   final bool selectable;
+
+  /// Called when a reader activates an inline image.
+  ///
+  /// Inline article imagery is PUBLICATION CONTENT — the author's own work,
+  /// not identity imagery — so it belongs in the canonical media viewer rather
+  /// than sitting inert. The surface supplies the handler because only it
+  /// knows which publication the image belongs to; the viewer itself is shared
+  /// and this widget stays presentation-only.
+  ///
+  /// Null leaves images inert, which is correct for surfaces (like a composer
+  /// preview) where opening a viewer would interrupt authoring.
+  final void Function(String url, String? alt)? onTapImage;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +69,34 @@ class AuraPublicationMarkdown extends StatelessWidget {
     return MarkdownBody(
       data: data,
       selectable: selectable,
+      // `sizedImageBuilder`, not the deprecated `imageBuilder`: it also hands
+      // over any width/height the author wrote into the Markdown, so the
+      // renderer honours the author's sizing instead of quietly discarding it.
+      sizedImageBuilder: onTapImage == null
+          ? null
+          : (config) {
+              final url = config.uri.toString();
+              final alt = config.alt;
+              return Semantics(
+                label: (alt ?? '').trim().isEmpty
+                    ? 'Image in this article. Activate to view full size.'
+                    : '${alt!.trim()}. Activate to view full size.',
+                button: true,
+                image: true,
+                child: InkWell(
+                  onTap: () => onTapImage!(url, alt),
+                  child: Image.network(
+                    url,
+                    width: config.width,
+                    height: config.height,
+                    fit: BoxFit.contain,
+                    // An image that fails to load must not collapse the
+                    // paragraph around it into a broken gap.
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              );
+            },
       onTapLink: (text, href, title) async {
         if (href == null) return;
         final uri = Uri.tryParse(href);
