@@ -211,8 +211,21 @@ class NavigationAuthority {
   /// Joining a session directly (accepting a ring, watching a Live). The
   /// `action=join` intent belongs to the address, not to scattered string
   /// building at each call site.
-  static String realtimeSessionJoinRoute(String sessionId) =>
-      '${realtimeSessionRoute(sessionId)}?action=join';
+  ///
+  /// [returnTo] travels WITH the intent rather than instead of it. The accept
+  /// path used to navigate to `?returnTo=…` alone, so the room mounted with no
+  /// join intent in its address: the person who had just accepted was shown
+  /// "Ready to join / Tap Join call to enter" and had to accept a second time
+  /// — the classical stall. F044 named this exact state (POST-ACCEPT) and
+  /// repaired the in-frame flash, but the address itself still said nothing,
+  /// so whenever the join did not survive the navigation the instruction was
+  /// not a flash but a dead end.
+  static String realtimeSessionJoinRoute(String sessionId, {String? returnTo}) {
+    final base = '${realtimeSessionRoute(sessionId)}?action=join';
+    final target = (returnTo ?? '').trim();
+    if (target.isEmpty) return base;
+    return '$base&returnTo=${Uri.encodeComponent(target)}';
+  }
 
   /// The global Live directory — "what is live on Aura right now".
   /// Discovery only; Live never originates here (founder ruling

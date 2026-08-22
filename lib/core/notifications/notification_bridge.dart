@@ -15,6 +15,7 @@ import '../../features/updates/providers.dart';
 import '../../router.dart';
 import 'native_call_notification_channel.dart';
 import 'notification_open_reconcile.dart';
+import 'notification_arrival_gate.dart';
 import 'notification_presentation.dart';
 import 'sw_message_bridge.dart';
 import '../navigation/canonical_destinations.dart';
@@ -35,7 +36,10 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   static const _browserRegisteredAtKey =
       'aura_browser_notification_registered_at';
 
-  final Set<String> _seenNotificationIds = <String>{};
+  /// Arrival truth lives in its own authority so it can be tested. See
+  /// `notification_arrival_gate.dart` for why the previous inline seen-set
+  /// could not express "the first load is history".
+  final NotificationArrivalGate _arrivals = NotificationArrivalGate();
   bool _browserRegistrationReady = false;
   bool _registrationSyncQueued = false;
 
@@ -316,7 +320,9 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     ref.listen<bool>(isAuthedProvider, (prev, next) {
       unawaited(_syncBrowserRegistration(next));
       if (!next) {
-        _seenNotificationIds.clear();
+        // Signing out ends the session, so the next one establishes its own
+        // baseline rather than inheriting this one.
+        _arrivals.reset();
       }
     });
 
@@ -327,8 +333,10 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
       },
     );
 
-    if (_seenNotificationIds.isEmpty && items.isNotEmpty) {
-      _seenNotificationIds.addAll(
+    // Re-mounting on top of an already-populated controller is also a
+    // baseline: those notifications existed before this widget did.
+    if (items.isNotEmpty) {
+      _arrivals.establishBaseline(
         items.map(_notificationIdOf).whereType<String>(),
       );
     }
@@ -383,20 +391,19 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   ) {
     if (next.isEmpty) return;
 
-    final previousIds = <String>{};
-    if (previous != null) {
-      for (final item in previous) {
-        final id = _notificationIdOf(item);
-        if (id != null) previousIds.add(id);
-      }
-    }
+    final admitted = _arrivals
+        .admit(
+          previousIds: (previous ?? const <Map<String, dynamic>>[])
+              .map(_notificationIdOf)
+              .whereType<String>(),
+          nextIds: next.map(_notificationIdOf).whereType<String>(),
+        )
+        .toSet();
+    if (admitted.isEmpty) return;
 
     for (final item in next) {
       final id = _notificationIdOf(item);
-      if (id == null || _seenNotificationIds.contains(id)) continue;
-
-      _seenNotificationIds.add(id);
-      if (previousIds.contains(id)) continue;
+      if (id == null || !admitted.contains(id)) continue;
 
       // Live interrupts are handled by AuraIncomingLiveLayer.
       if (_isLiveInterrupt(item)) continue;

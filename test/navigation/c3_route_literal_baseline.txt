@@ -95,7 +95,12 @@
 1 lib/features/public/widgets/public_composer.dart
 2 lib/features/public/widgets/space_card.dart
 1 lib/features/realtime/presentation/realtime_room_screen.dart
-2 lib/features/realtime/presentation/widgets/floating_call_widget.dart
+# 2026-08-22 join-intent repair: 2 -> 1. Returning to a call from the PiP
+# navigated to a BARE /realtime/<id>, so the room could conclude the person
+# had not asked to join and instruct them to join the call they were already
+# in -- the same stall measured live on the accept and initiator paths. Now
+# routed through NavigationAuthority.realtimeSessionJoinRoute.
+1 lib/features/realtime/presentation/widgets/floating_call_widget.dart
 1 lib/features/realtime/presentation/widgets/orphaned_session_banner.dart
 2 lib/features/search/presentation/search_screen.dart
 2 lib/features/updates/presentation/updates_screen.dart

@@ -15,6 +15,7 @@ import '../../../../core/ui/aura_text.dart';
 import '../../application/realtime_providers.dart';
 import '../../domain/realtime_enums.dart';
 import '../../domain/realtime_models.dart';
+import '../../../../core/navigation/navigation_authority.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DIMENSIONS
@@ -206,7 +207,12 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         return;
       }
     }
-    context.go('/realtime/${info.sessionId}');
+    // Returning to a call IS intent. A bare address let the room conclude
+    // the person had not asked to join and instruct them to join the call
+    // they were already in — the same stall as the accept path. The owner
+    // branch above proves an active local session; a non-owner reaches
+    // here without that proof, which is exactly who would be stranded.
+    context.go(NavigationAuthority.realtimeSessionJoinRoute(info.sessionId));
   }
 
   // A1+A5: End the call from PiP using the same authoritative controller path.

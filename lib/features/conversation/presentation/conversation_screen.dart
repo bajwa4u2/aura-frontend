@@ -625,7 +625,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           .startLive(widget.conversationId, kind: kind);
       if (sessionId.isEmpty) throw Exception('no session');
       if (mounted) {
-        context.push(NavigationAuthority.realtimeSessionRoute(sessionId));
+        // Pressing Call IS the intent. Navigating to the bare session
+        // address made the room ask the caller to join the call they had
+        // just started — measured live 2026-08-22: the initiator sat on
+        // "Ready to join" while the other side was already in the room
+        // seeing a two-participant call with no remote media.
+        context.push(NavigationAuthority.realtimeSessionJoinRoute(sessionId));
       }
     } catch (e) {
       if (mounted) {
@@ -1293,8 +1298,7 @@ class _ConversationLiveRibbon extends ConsumerWidget {
           AuraPrimaryButton(
             label: 'Join call',
             onPressed: () => context.push(
-              '${NavigationAuthority.realtimeSessionRoute(sessionId)}'
-              '?action=join',
+              NavigationAuthority.realtimeSessionJoinRoute(sessionId),
             ),
           ),
         ],

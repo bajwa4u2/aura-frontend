@@ -21,6 +21,7 @@ import '../domain/realtime_state.dart';
 import 'widgets/floating_call_widget.dart';
 import '../../../router.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../core/navigation/navigation_authority.dart';
 
 // ── TRACE BYPASS FLAGS — flip one at a time, hot-restart, reproduce scenario ──
 // Trace 5: bypass entire overlay → if blank clears, overlay is root cause
@@ -333,10 +334,24 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
         if (meetingId.isNotEmpty) {
           router.go('/meetings/$meetingId/live?sessionId=$sessionId');
         } else {
-          router.go('/realtime/$sessionId?returnTo=$returnTo');
+          // Accepting IS the intent, so it belongs in the address.
+          // Without `action=join` the room mounted able to conclude the
+          // person had not asked to join, and instructed them to accept
+          // again — the classical stall, measured live 2026-08-22.
+          router.go(NavigationAuthority.realtimeSessionJoinRoute(
+            sessionId,
+            returnTo: returnTo,
+          ));
         }
       } else {
-        router.go('/realtime/$sessionId?returnTo=$returnTo');
+        // Accepting IS the intent, so it belongs in the address.
+        // Without `action=join` the room mounted able to conclude the
+        // person had not asked to join, and instructed them to accept
+        // again — the classical stall, measured live 2026-08-22.
+        router.go(NavigationAuthority.realtimeSessionJoinRoute(
+          sessionId,
+          returnTo: returnTo,
+        ));
       }
     } catch (e) {
       final msg = e.toString().toLowerCase();
