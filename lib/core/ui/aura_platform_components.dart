@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../media/governed_image_variant.dart';
+
 import 'aura_card.dart';
 import 'aura_design_system.dart';
 import 'aura_radius.dart';
@@ -648,7 +650,22 @@ class AuraAvatar extends StatelessWidget {
     final initial = trimmed.isEmpty
         ? '?'
         : trimmed.substring(0, 1).toUpperCase();
-    final url = (imageUrl ?? '').trim();
+    // AVATARS ASK FOR THE SMALL REPRESENTATION.
+    //
+    // An avatar renders into a box measured in tens of pixels while its source
+    // is a full photograph, so sending the original is bytes spent on detail
+    // that cannot be seen — on every row of every list, which is where identity
+    // imagery actually costs something.
+    //
+    // The thumbnail is 480px on its longest edge: comfortably sharp at any
+    // avatar size this widget is asked for, including at the largest profile
+    // header on a high-density screen. Nothing here trades sharpness for bytes.
+    //
+    // Safe unconditionally: the door falls back to the canonical object when no
+    // thumbnail exists yet, and this is a no-op for an external or legacy URL.
+    final url = (governedImageVariant(imageUrl, GovernedImageVariant.thumbnail) ??
+            '')
+        .trim();
 
     return Container(
       width: size,

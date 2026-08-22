@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/media/governed_image_variant.dart';
+
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -915,7 +917,14 @@ class _CoverSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = (coverUrl ?? '').trim();
+    // A COVER FILLS A REGION, so it asks for the display representation
+    // rather than the original: 2048px on its longest edge is sharp on any
+    // banner this renders into, and spares a viewer the full photograph.
+    // A no-op for an external or legacy URL, and the door falls back to the
+    // canonical object when no display copy exists.
+    final url =
+        (governedImageVariant(coverUrl, GovernedImageVariant.display) ?? '')
+            .trim();
     if (url.isNotEmpty) {
       return Stack(
         fit: StackFit.expand,
