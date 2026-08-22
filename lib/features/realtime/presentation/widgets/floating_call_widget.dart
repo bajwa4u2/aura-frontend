@@ -16,6 +16,8 @@ import '../../application/realtime_providers.dart';
 import '../../domain/realtime_enums.dart';
 import '../../domain/realtime_models.dart';
 import '../../../../core/navigation/navigation_authority.dart';
+import '../../../../router.dart';
+import '../../domain/realtime_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DIMENSIONS
@@ -236,11 +238,31 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     // disappears within one heartbeat without polling.
     ref.watch(callPresenceBridgeProvider);
 
-    // A4: visibility is driven by RealtimeState, not route path. The room
-    // screen toggles `isCallRoomVisible` synchronously in initState/dispose,
-    // so the moment the room widget unmounts the PiP becomes eligible to
-    // render — no 1-2 frame window where neither surface is visible.
-    if (liveState.isCallRoomVisible) {
+    // THE ADDRESS SAYS WHICH SURFACE OWNS THE CALL.
+    //
+    // A4 drove this from `isCallRoomVisible`, which the room toggles in
+    // initState/dispose. `dispose` IS synchronous with leaving, so minimising
+    // was correct — but `initState` runs only after the route has been built,
+    // so ENTERING left a window in which the call was joined and the room was
+    // not yet on screen. The PiP filled that window: on accepting a call it
+    // appeared, expanded, and was then replaced by the full room. Founder-
+    // observed on the attendee side, 2026-08-22, and worse on mobile where the
+    // window is longer.
+    //
+    // Adding a second flag for "entering" would have been another race to
+    // arbitrate. The address changes SYNCHRONOUSLY with navigation, in both
+    // directions, and now reflects imperative navigation too — so it answers
+    // "is the call surface on screen" without a window to be caught in.
+    final addresses = ref.watch(routerProvider).routeInformationProvider;
+    return ValueListenableBuilder<RouteInformation>(
+      valueListenable: addresses,
+      builder: (context, routeInformation, _) =>
+          _buildPip(context, liveState, routeInformation.uri),
+    );
+  }
+
+  Widget _buildPip(BuildContext context, RealtimeState liveState, Uri location) {
+    if (callSurfaceOwnsTheScreen(location)) {
       return const SizedBox.shrink();
     }
 
@@ -649,4 +671,23 @@ class _Chip extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// Whether the current address IS a full call surface.
+///
+/// The PiP exists to represent a call the person is NOT looking at. When the
+/// address already names a call surface, a PiP would be a second
+/// representation of the same call — which is what produced the appear /
+/// expand / replace sequence on accept.
+///
+/// Deliberately covers BOTH systems without collapsing them: a conversation
+/// call room (/realtime/:id) and a Meeting's live room (/meetings/:id/live)
+/// are separate authorities that happen to share this one property — each owns
+/// the whole screen while it is the address.
+bool callSurfaceOwnsTheScreen(Uri location) {
+  final path = location.path;
+  if (path.startsWith('/realtime/')) return true;
+  if (path.startsWith('/meetings/') && path.endsWith('/live')) return true;
+  return false;
 }

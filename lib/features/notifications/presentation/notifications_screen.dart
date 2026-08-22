@@ -6,6 +6,7 @@ import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/notifications/notification_open_reconcile.dart';
+import '../../../core/notifications/notification_presentation.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -393,7 +394,28 @@ class _Tile extends StatelessWidget {
       case 'MEDIA_QUARANTINE_LIFTED':
         return 'An attachment of yours is available again';
       default:
-        return '$actorName interacted with your content';
+        // ONE RESOLVER, NOT TWO.
+        //
+        // This switch is a SECOND title resolver living beside the canonical
+        // one in core/notifications/notification_presentation.dart, and its
+        // fallback said "<name> interacted with your content" — true of every
+        // event and informative about none. Every call notification landed
+        // here, so the founder's Notifications list read "Muhammad Zakria
+        // interacted with your content" for calls that had actually rung,
+        // connected or been missed (observed 2026-08-22).
+        //
+        // The cases above are kept because they carry screen-specific
+        // phrasing the canonical resolver does not model (accountability
+        // tags, governed-media notices). What changes is the DEFAULT: instead
+        // of inventing a generic sentence, ask the canonical resolver, which
+        // knows calls and every other class. The generic phrase can only
+        // appear now if BOTH resolvers are ignorant of a kind.
+        return resolveNotificationTitle(<String, dynamic>{
+          'type': notification.type,
+          'actor': notification.actor,
+          'actorInstitution': notification.actorInstitution,
+          'data': notification.payload,
+        });
     }
   }
 
