@@ -16,6 +16,8 @@ import '../../../core/translation/communication_translation.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart'
     show canonicalArticleUrl;
 import '../../share/aura_share_sheet.dart';
+import '../../../core/engagement/aura_engagement_bar.dart';
+import '../../../core/engagement/engagement_model.dart';
 import '../../../core/ui/publication/aura_publication_markdown.dart';
 import '../../../core/ui/publication/aura_publication_title.dart';
 import '../../conversation/presentation/conversation_identity.dart';
@@ -147,6 +149,18 @@ class ArticleScreen extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s20),
                 AuraPublicationMarkdown(data: article.bodyMarkdown),
                 const SizedBox(height: AuraSpace.s20),
+                const Divider(height: 1),
+                const SizedBox(height: AuraSpace.s12),
+                // Articles become engageable through the SHARED authority. No
+                // ArticleReaction storage, no article-specific block check, no
+                // article reaction bar — those are how engagement ended up
+                // cloned for institution posts and missing for articles in the
+                // first place.
+                AuraEngagementBar(
+                  target: PublicationTarget.article,
+                  publicationId: article.id,
+                ),
+                const SizedBox(height: AuraSpace.s16),
                 // Articles reach translation through the SAME canonical action
                 // every other publishable surface uses. There is deliberately
                 // no article-specific translator: a new readable content type

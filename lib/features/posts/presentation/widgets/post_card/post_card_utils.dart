@@ -76,6 +76,30 @@ String canonicalArticleUrl(String slug) {
   return '${_trimSlash(_kAuraShareBaseUrl)}/p/art/${Uri.encodeComponent(slug)}';
 }
 
+/// External share URL for a person's profile (by handle).
+///
+/// Mirrors the server's `PERSON_PROFILE` share definition. Person and
+/// institution profiles had crawler markup for months that no crawler could
+/// reach, because only `/p/` is proxied by the marketing host — these helpers
+/// exist so no surface ever again invents its own address for a profile.
+String canonicalPersonProfileUrl(String handle) {
+  return '${_trimSlash(_kAuraShareBaseUrl)}/p/u/${Uri.encodeComponent(handle)}';
+}
+
+/// External share URL for an institution profile (by slug).
+String canonicalInstitutionProfileUrl(String slug) {
+  return '${_trimSlash(_kAuraShareBaseUrl)}/p/org/${Uri.encodeComponent(slug)}';
+}
+
+/// External share URL for a PUBLIC meeting (by meeting code).
+///
+/// The server publishes a card only for meetings whose visibility is genuinely
+/// PUBLIC; anything else renders the safe unavailable page. The link still
+/// works either way — only its subject is withheld from crawlers.
+String canonicalMeetingUrl(String meetingCode) {
+  return '${_trimSlash(_kAuraShareBaseUrl)}/p/m/${Uri.encodeComponent(meetingCode)}';
+}
+
 /// In-app deep-link for a user post. Use this when navigating WITHIN
 /// the Flutter app, not for externally shared URLs.
 String appPostUrl(String postId) {
