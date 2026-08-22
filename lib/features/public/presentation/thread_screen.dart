@@ -688,6 +688,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         // unified card already filters announcements out of the
         // interaction bar via _reactionTargetFor()'s null branch.
         return PostReactionTarget(item.id);
+      case FeedItemType.article:
+        // Articles ARE first-class for engagement server-side (the
+        // generalized publication engagement covers ARTICLE), but no
+        // ArticleReactionTarget exists in this client yet, so reacting
+        // happens on the article surface the card opens rather than
+        // in-feed. Stated plainly instead of wiring a target that would
+        // post to the wrong object.
+        return PostReactionTarget(item.id);
     }
   }
 }

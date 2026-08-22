@@ -468,8 +468,24 @@ class UnifiedFeedCard extends ConsumerWidget {
         return item.id.trim().isNotEmpty && item.author.id.trim().isNotEmpty;
       case FeedItemType.announcement:
         return false;
+      // CH-14 gave Articles canonical share URLs. The slug travels on the
+      // item's own target route, so the card can share what it renders.
+      case FeedItemType.article:
+        return _articleSlugOf(item).isNotEmpty;
     }
   }
+
+/// The slug an article feed item points at, or empty when the item predates
+/// slugging and can only be addressed by id.
+String _articleSlugOf(FeedItem item) {
+  const marker = '/articles/';
+  final route = item.targetRoute.trim();
+  final at = route.indexOf(marker);
+  if (at < 0) return '';
+  final rest = route.substring(at + marker.length);
+  final slug = rest.split('?').first.split('/').first.trim();
+  return slug;
+}
 
   Future<void> _shareItem(BuildContext context) async {
     final String url;
@@ -485,6 +501,10 @@ class UnifiedFeedCard extends ConsumerWidget {
         break;
       case FeedItemType.announcement:
         return;
+      case FeedItemType.article:
+        url = canonicalArticleUrl(_articleSlugOf(item));
+        headline = 'Share this article';
+        break;
     }
     await showAuraShareSheet(
       context,
@@ -981,6 +1001,8 @@ String _mediaDownloadContext(FeedItemType type) {
       return 'institution-post-media';
     case FeedItemType.announcement:
       return 'announcement-media';
+    case FeedItemType.article:
+      return 'article-media';
     case FeedItemType.userPost:
       return 'post-media';
   }
@@ -1607,6 +1629,8 @@ comm_translation.CommunicationObjectType _communicationObjectTypeFor(
       return comm_translation.CommunicationObjectType.institutionPost;
     case FeedItemType.announcement:
       return comm_translation.CommunicationObjectType.announcement;
+    case FeedItemType.article:
+      return comm_translation.CommunicationObjectType.article;
     case FeedItemType.userPost:
       return comm_translation.CommunicationObjectType.post;
   }

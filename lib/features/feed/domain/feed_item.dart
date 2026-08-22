@@ -16,7 +16,8 @@ export 'feed_media.dart';
 enum FeedItemType {
   userPost,
   institutionPost,
-  announcement;
+  announcement,
+  article;
 
   /// Backend wire token for this type.
   String get wire {
@@ -27,6 +28,8 @@ enum FeedItemType {
         return 'INSTITUTION_POST';
       case FeedItemType.announcement:
         return 'ANNOUNCEMENT';
+      case FeedItemType.article:
+        return 'ARTICLE';
     }
   }
 
@@ -34,6 +37,7 @@ enum FeedItemType {
     final s = (raw ?? '').toString().trim().toUpperCase();
     if (s == 'INSTITUTION_POST') return FeedItemType.institutionPost;
     if (s == 'ANNOUNCEMENT') return FeedItemType.announcement;
+    if (s == 'ARTICLE') return FeedItemType.article;
     return FeedItemType.userPost;
   }
 }
