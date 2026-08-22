@@ -22,11 +22,21 @@ class AuraEngagementBar extends ConsumerStatefulWidget {
     required this.target,
     required this.publicationId,
     this.showSave = true,
+    this.inlineAction,
   });
 
   final PublicationTarget target;
   final String publicationId;
   final bool showSave;
+
+  /// An additional publication-level action rendered in this row, between the
+  /// reaction controls and Save.
+  ///
+  /// Exists so an action that operates on the PUBLICATION — Translate — sits
+  /// with React and Save rather than drifting below the discussion, where it
+  /// reads as acting on the discussion instead. Deliberately a plain slot: the
+  /// bar does not know or care what is placed in it.
+  final Widget? inlineAction;
 
   @override
   ConsumerState<AuraEngagementBar> createState() => _AuraEngagementBarState();
@@ -198,6 +208,10 @@ class _AuraEngagementBarState extends ConsumerState<AuraEngagementBar> {
                     style: AuraText.micro.copyWith(color: AuraSurface.muted)),
               ),
             ),
+        ],
+        if (widget.inlineAction != null) ...[
+          const SizedBox(width: AuraSpace.s8),
+          widget.inlineAction!,
         ],
         const Spacer(),
         if (widget.showSave)

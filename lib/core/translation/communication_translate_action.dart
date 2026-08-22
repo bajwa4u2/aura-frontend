@@ -28,6 +28,8 @@ class CommunicationTranslateAction extends ConsumerStatefulWidget {
     this.sourceLanguage,
     this.bodyStyle,
     this.translatedBodyBuilder,
+    this.inline = false,
+    this.onResultChanged,
   });
 
   final CommunicationObjectType objectType;
@@ -51,6 +53,26 @@ class CommunicationTranslateAction extends ConsumerStatefulWidget {
   /// its body is written.
   final Widget Function(BuildContext context, String translatedText)?
       translatedBodyBuilder;
+
+  /// Renders the CONTROL only, leaving the translation to appear beneath
+  /// whatever row the control was placed in.
+  ///
+  /// Translate belongs to the thing being read, so on a surface with an action
+  /// row it should sit beside React and Save rather than below the discussion —
+  /// where it silently reads as translating the discussion. But a translated
+  /// article is full-width prose and cannot live inside a horizontal row, so
+  /// the two halves are separated rather than the control being wedged in.
+  ///
+  /// The result is still rendered by this widget, immediately below the row,
+  /// using the same presentation as the default layout — separating them must
+  /// not mean maintaining two of them.
+  final bool inline;
+
+  /// Reports the currently-shown translation, or null when the reader has
+  /// switched back to the original. Only meaningful with [inline]; the host
+  /// renders [AuraTranslationResult] wherever the translation belongs.
+  final void Function(String? translatedText, String targetLanguage)?
+      onResultChanged;
 
   @override
   ConsumerState<CommunicationTranslateAction> createState() =>
@@ -173,12 +195,14 @@ class _CommunicationTranslateActionState
           _translatedText = null;
           _showTranslation = false;
           _error = 'Translation is unavailable right now. Please try again.';
+          _publish();
           return;
         }
         _translatedText = result.translatedText;
         _resolvedTargetLanguage = result.targetLanguage;
         _showTranslation = true;
       });
+      _publish();
     } catch (e) {
       if (!mounted) return;
       final appError = AppErrorMapper.from(e, feature: 'translate this');
@@ -201,22 +225,41 @@ class _CommunicationTranslateActionState
     }
   }
 
+  /// Tells the host what is currently on show, so an inline control can have
+  /// its translation rendered elsewhere on the page.
+  void _publish() {
+    if (!widget.inline) return;
+    widget.onResultChanged?.call(
+      _showTranslation ? _translatedText : null,
+      _resolvedTargetLanguage ?? '',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     _resolvedTargetLanguage ??= defaultTranslationLanguage(context);
     final label = translationLanguageLabel(_resolvedTargetLanguage!);
+    final inline = widget.inline;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      // Inline, this control is placed INSIDE a horizontal action row, where a
+      // max-width Column or Row would demand unbounded width and overflow.
+      // Sizing to content is what lets Translate sit beside React and Save.
+      mainAxisSize: inline ? MainAxisSize.min : MainAxisSize.max,
       children: [
         Row(
+          mainAxisSize: inline ? MainAxisSize.min : MainAxisSize.max,
           children: [
             InkWell(
               borderRadius: BorderRadius.circular(AuraRadius.pill),
               onTap: _busy
                   ? null
                   : (_showTranslation
-                        ? () => setState(() => _showTranslation = false)
+                        ? () {
+                            setState(() => _showTranslation = false);
+                            _publish();
+                          }
                         : (_translatedText != null ? _runTranslate : _pickLanguage)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -273,42 +316,74 @@ class _CommunicationTranslateActionState
             style: AuraText.small.copyWith(color: AuraSurface.coSun),
           ),
         ],
-        if (_showTranslation && (_translatedText ?? '').trim().isNotEmpty) ...[
+        if (!widget.inline && _showTranslation && (_translatedText ?? '').trim().isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            decoration: BoxDecoration(
-              color: AuraSurface.elevated,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Translation · $label',
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s8),
-                Directionality(
-                  textDirection: textDirectionFor(_resolvedTargetLanguage!),
-                  child: widget.translatedBodyBuilder
-                          ?.call(context, _translatedText!) ??
-                      AuraTextBlock(
-                        _translatedText!,
-                        style: widget.bodyStyle,
-                        selectable: true,
-                      ),
-                ),
-              ],
-            ),
+          AuraTranslationResult(
+            translatedText: _translatedText!,
+            targetLanguage: _resolvedTargetLanguage!,
+            bodyStyle: widget.bodyStyle,
+            bodyBuilder: widget.translatedBodyBuilder,
           ),
         ],
       ],
+    );
+  }
+}
+
+/// The translated body, presented.
+///
+/// Extracted so an inline control can place its result somewhere else on the
+/// page WITHOUT a second copy of this presentation existing. Separating the
+/// control from the result must not mean maintaining two results.
+class AuraTranslationResult extends StatelessWidget {
+  const AuraTranslationResult({
+    super.key,
+    required this.translatedText,
+    required this.targetLanguage,
+    this.bodyStyle,
+    this.bodyBuilder,
+  });
+
+  final String translatedText;
+  final String targetLanguage;
+  final TextStyle? bodyStyle;
+  final Widget Function(BuildContext context, String translatedText)?
+      bodyBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Names what is being shown and in which language, so a translation
+          // is never mistaken for the author's own words.
+          Text(
+            'Translation · ${translationLanguageLabel(targetLanguage)}',
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Directionality(
+            textDirection: textDirectionFor(targetLanguage),
+            child: bodyBuilder?.call(context, translatedText) ??
+                AuraTextBlock(
+                  translatedText,
+                  style: bodyStyle,
+                  selectable: true,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }

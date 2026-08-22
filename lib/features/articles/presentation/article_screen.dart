@@ -211,29 +211,14 @@ class ArticleScreen extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s20),
                 const Divider(height: 1),
                 const SizedBox(height: AuraSpace.s12),
-                // Articles become engageable through the SHARED authority. No
-                // ArticleReaction storage, no article-specific block check, no
-                // article reaction bar — those are how engagement ended up
-                // cloned for institution posts and missing for articles in the
-                // first place.
-                AuraEngagementBar(
-                  target: PublicationTarget.article,
-                  publicationId: article.id,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                // NATIVE reshare — a different capability from external share.
-                // The share sheet above hands someone a link; this brings the
-                // article into Aura's own feed under the resharer's name, with
-                // the Article still the canonical object rather than a copy of
-                // its text.
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.repeat_rounded, size: 16),
-                    label: const Text('Reshare on Aura'),
-                    onPressed: () => _reshare(context, ref, article.id),
-                  ),
-                ),
+                // ARTICLE ACTIONS — everything here acts on the ARTICLE.
+                //
+                // Translate used to sit BELOW the discussion, where it read as
+                // translating the replies rather than the article. Placement
+                // was the whole meaning of the control: it belongs with React
+                // and Save, above the discussion boundary, and its result
+                // appears attached to the article it translated.
+                _ArticleActions(article: article, onReshare: () => _reshare(context, ref, article.id)),
                 const SizedBox(height: AuraSpace.s20),
                 const Divider(height: 1),
                 const SizedBox(height: AuraSpace.s20),
@@ -244,27 +229,6 @@ class ArticleScreen extends ConsumerWidget {
                 AuraPublicationDiscussion(
                   target: PublicationTarget.article,
                   publicationId: article.id,
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                // Articles reach translation through the SAME canonical action
-                // every other publishable surface uses. There is deliberately
-                // no article-specific translator: a new readable content type
-                // arriving without translation is the defect this closes, and
-                // closing it with a private copy would have re-created it one
-                // type later.
-                //
-                // The title travels WITH the body as a single Markdown
-                // document. A reader who cannot read the language cannot read
-                // the headline either, and one document keeps the translation
-                // a coherent whole rather than two independently-cached
-                // fragments — while the Markdown renderer below keeps the
-                // translated article looking like an article.
-                CommunicationTranslateAction(
-                  objectType: CommunicationObjectType.article,
-                  objectId: article.id,
-                  sourceText: '# ${article.title}\n\n${article.bodyMarkdown}',
-                  translatedBodyBuilder: (context, text) =>
-                      AuraPublicationMarkdown(data: text),
                 ),
                 const SizedBox(height: AuraSpace.s32),
               ],
@@ -384,6 +348,88 @@ class ArticleScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(err.message)));
     }
+  }
+}
+
+/// The article's own action region.
+///
+/// Stateful only because an INLINE translate control reports its result here,
+/// so the translation can render full-width beneath the action row instead of
+/// being wedged into it. A translated article is prose; it cannot live inside
+/// a horizontal row, and the control cannot leave the row without ceasing to
+/// look like an article action.
+class _ArticleActions extends StatefulWidget {
+  const _ArticleActions({required this.article, required this.onReshare});
+
+  final Article article;
+  final VoidCallback onReshare;
+
+  @override
+  State<_ArticleActions> createState() => _ArticleActionsState();
+}
+
+class _ArticleActionsState extends State<_ArticleActions> {
+  String? _translated;
+  String _language = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final article = widget.article;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // React · Translate · Save — one row of article-level actions.
+        AuraEngagementBar(
+          target: PublicationTarget.article,
+          publicationId: article.id,
+          // Articles reach translation through the SAME canonical action every
+          // other publishable surface uses. There is deliberately no
+          // article-specific translator: a readable content type arriving
+          // without translation is the defect this closed, and closing it with
+          // a private copy would have re-created it one type later.
+          //
+          // The title travels WITH the body as one Markdown document. A reader
+          // who cannot read the language cannot read the headline either.
+          inlineAction: CommunicationTranslateAction(
+            objectType: CommunicationObjectType.article,
+            objectId: article.id,
+            sourceText: '# ${article.title}\n\n${article.bodyMarkdown}',
+            inline: true,
+            onResultChanged: (text, language) {
+              if (!mounted) return;
+              setState(() {
+                _translated = text;
+                _language = language;
+              });
+            },
+          ),
+        ),
+        // The translation, attributed to the article and rendered as an
+        // article — headings and paragraphs, not a flattened block.
+        if ((_translated ?? '').trim().isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s12),
+          AuraTranslationResult(
+            translatedText: _translated!,
+            targetLanguage: _language,
+            bodyBuilder: (context, text) =>
+                AuraPublicationMarkdown(data: text),
+          ),
+        ],
+        const SizedBox(height: AuraSpace.s12),
+        // NATIVE reshare — a different capability from external share. The
+        // share control at the top hands someone a link; this brings the
+        // article into Aura's own feed under the resharer's name, with the
+        // Article still the canonical object rather than a copy of its text.
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            icon: const Icon(Icons.repeat_rounded, size: 16),
+            label: const Text('Reshare on Aura'),
+            onPressed: widget.onReshare,
+          ),
+        ),
+      ],
+    );
   }
 }
 
