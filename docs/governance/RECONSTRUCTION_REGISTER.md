@@ -129,7 +129,7 @@ reporting comes back later looking like new work — the exact failure F119 name
 |---|---|---|---|---|
 | **DEFECT-1** | CH-04 | `OPEN_ASSIGNED` | Realtime rendered presentation currently lacks automated visual proof despite the broader realtime suite being green. | Restoration or replacement of meaningful realtime-room presentation verification is a CH-04 certification/closure requirement. |
 | **D7-DEFECT** | CH-11 | `CLOSED_LOCALLY_NOT_LIVE_CERTIFIED` | Institution-post media authority — URL match treated as attachment and visibility authority | - |
-| **ARTICLES-FIRST-CLASS-DEFECT** | CH-14 | `OPEN_ASSIGNED` | Articles are not established as a first-class publication surface | Audit Articles against the canonical publication/interaction capability set - like/reaction, reply/discussion, share/reshare, translation - confirming each against the running product rather than assuming Posts are the template. |
+| **ARTICLES-FIRST-CLASS-DEFECT** | CH-14 | `CLOSED` (2026-08-22, founder-certified) | Articles are not established as a first-class publication surface | Audit Articles against the canonical publication/interaction capability set - like/reaction, reply/discussion, share/reshare, translation - confirming each against the running product rather than assuming Posts are the template. |
 
 ---
 
@@ -179,7 +179,9 @@ retained verbatim and superseded only as to current status.
 
 Recorded from founder-observed live evidence bound to a technically established deployed artifact.
 Stage-0 evidence is NOT rewritten; a certification is a new evidenced fact, and it becomes a register
-state transition at chapter closure. **No chapter has closed.**
+state transition at chapter closure. ~~**No chapter has closed.**~~ **SUPERSEDED 2026-08-22: CH-14
+CLOSED, founder-certified.** No other chapter has closed. CH-13 remains IN PROGRESS with live
+certification owed on F011/F125/F014/F025/F026.
 
 | Item | Verdict | Against artifact | Limit of what is proven |
 |---|---|---|---|
@@ -203,6 +205,7 @@ why the certification dimension is printed separately on every row.
 | Item | Stage-0 state | Terminal state | Basis | Structural | Live certification |
 |---|---|---|---|---|---|
 | **F017** | `PARTIALLY_VALIDATED` | `FOUNDER_CLOSED` | FOUNDER RULING 2026-08-19 | CLOSED | NOT CERTIFIED |
+| **ARTICLES-FIRST-CLASS-DEFECT** | `OPEN_ASSIGNED` | `CLOSED` | FOUNDER CERTIFICATION 2026-08-22 | CLOSED — Articles carry reactions, saves, discussion, native reshare, external share with real OG, translation, notifications, blocking, moderation, Discourse Quality, retract/restore, media interaction, accessibility and canonical deep linking, each through the SHARED authority rather than an article-private copy. | CERTIFIED — founder observed the live article action row 2026-08-22, the last item requiring observation rather than a test. |
 | **F137** | `OPEN` | `FOUNDER_CLOSED` | FOUNDER RULING 2026-08-21 | CLOSED - every governed media class present in production is covered at the current examiner identity, every deliverable object holds a malware pass, and the accepted envelope is examinable end to end with the deployment verified live against it. | NOT CERTIFIED as a chapter. E6 is live-certified in its own right; F137's closure is terminal by founder authority and must never be read as certifying CH-12. |
 
 ---
