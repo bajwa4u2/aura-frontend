@@ -15,6 +15,7 @@ import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
 import '../../../shared/media/profile_media_editor.dart';
 import '../../../core/media/media_capacity.dart';
+import '../../../core/media/governed_image_variant.dart';
 import '../../../shared/media/profile_media_pipeline.dart';
 import 'edit_profile/edit_profile_widgets.dart';
 
@@ -568,8 +569,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return out;
   }
 
+  /// Identity imagery here is rendered into a banner or an avatar well, never
+  /// examined at full resolution, so it asks for the display representation.
+  /// A no-op for an external or legacy URL, and the door falls back to the
+  /// canonical object when no derivative exists.
   ImageProvider? _imageProviderFromUrl(String? value) {
-    final url = (value ?? '').trim();
+    final url =
+        (governedImageVariant(value, GovernedImageVariant.display) ?? '').trim();
     if (url.isEmpty) return null;
     return NetworkImage(url);
   }
