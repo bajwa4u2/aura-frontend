@@ -312,12 +312,8 @@ class _Tile extends StatelessWidget {
   AppNotification get notification => group.representative;
 
   String _label() {
-    // F053/F116 — one reader, one fallback order. The chain this replaces
-    // ended in a literal 'Someone' composed here; the canonical model
-    // supplies the same honest fallback everywhere instead.
-    final actorName = notification.isInstitutionVoice
-        ? (notification.actorInstitution?['name']?.toString() ?? 'Institution')
-        : AuraPersonIdentity.fromJson(notification.actor).label;
+    // The actor name is resolved by the canonical resolver now, from the same
+    // identity model this used (F053/F116: one reader, one fallback order).
     // Rollup label first — overrides per-type wording when multiple.
     if (group.isGroup) {
       final n = group.items.length;
@@ -327,96 +323,25 @@ class _Tile extends StatelessWidget {
       }
       return '$n new replies in this discussion';
     }
-    switch (notification.type.toUpperCase()) {
-      case 'LIKE':
-        return '$actorName liked your post';
-      case 'REPLY':
-        return '$actorName replied to your post';
-      case 'REPOST':
-        return '$actorName reposted your post';
-      case 'FOLLOW':
-        return '$actorName started following you';
-      case 'MESSAGE':
-        return '$actorName sent you a message';
-      case 'MENTION':
-        return '$actorName mentioned you';
-      case 'THREAD_ACTIVITY':
-        return '$actorName replied in a discussion you follow';
-      case 'SPACE_ACTIVITY':
-        final spaceName =
-            notification.payload['spaceName']?.toString().trim() ?? '';
-        return spaceName.isNotEmpty
-            ? '$actorName posted in $spaceName'
-            : '$actorName posted in a space you follow';
-      // Participant continuity — meeting lifecycle. The actor is the
-      // meeting's owner (institution or host), so the row reads in their
-      // voice; the meeting title arrives in the payload.
-      case 'MEETING_BOOKED':
-        return notification.payload['pendingConfirmation'] == true
-            ? 'A meeting with $actorName was booked with your email'
-            : 'Your meeting with $actorName is scheduled';
-      case 'MEETING_REMINDER':
-        return 'Upcoming meeting with $actorName';
-      case 'MEETING_STARTING':
-        return 'Your meeting with $actorName is starting';
-      case 'MEETING_SUMMARY_SHARED':
-        return '$actorName shared the meeting summary';
-      // Communication Governance v1.0 — Accountability Lifecycle progress.
-      // One notification type covers every stage regardless of which
-      // backend path produced it (legacy InstitutionPost accountability
-      // tag, or the newer dedicated Resolve/Reopen endpoints); the
-      // specific stage rides in payload.accountabilityTag.
-      case 'ACCOUNTABILITY_TAGGED':
-        final tag = (notification.payload['accountabilityTag'] ?? '')
-            .toString()
-            .toUpperCase();
-        switch (tag) {
-          case 'RESOLVED':
-            return '$actorName marked your issue as Resolved';
-          case 'COMMITMENT':
-            return '$actorName committed to a response on your issue';
-          case 'UPDATE':
-            return '$actorName posted an update on your issue';
-          case 'REOPENED':
-            return '$actorName reopened a resolved issue';
-          default:
-            return '$actorName updated the status of your issue';
-        }
-      // CH-12 E5/E6 — governed media restriction notices.
-      //
-      // Deliberately NOT actor-voiced. Every other row here reads "$actorName
-      // did something", but no person acted on these: an examiner produced a
-      // verdict. Rendering them in an actor's voice would tell the member a
-      // human reviewed their file when nobody has, which is the same
-      // misstatement that keeping MODERATION_ACTION_TAKEN separate avoids.
-      case 'MEDIA_QUARANTINED':
-        return 'An attachment of yours is under review';
-      case 'MEDIA_QUARANTINE_LIFTED':
-        return 'An attachment of yours is available again';
-      default:
-        // ONE RESOLVER, NOT TWO.
-        //
-        // This switch is a SECOND title resolver living beside the canonical
-        // one in core/notifications/notification_presentation.dart, and its
-        // fallback said "<name> interacted with your content" — true of every
-        // event and informative about none. Every call notification landed
-        // here, so the founder's Notifications list read "Muhammad Zakria
-        // interacted with your content" for calls that had actually rung,
-        // connected or been missed (observed 2026-08-22).
-        //
-        // The cases above are kept because they carry screen-specific
-        // phrasing the canonical resolver does not model (accountability
-        // tags, governed-media notices). What changes is the DEFAULT: instead
-        // of inventing a generic sentence, ask the canonical resolver, which
-        // knows calls and every other class. The generic phrase can only
-        // appear now if BOTH resolvers are ignorant of a kind.
-        return resolveNotificationTitle(<String, dynamic>{
-          'type': notification.type,
-          'actor': notification.actor,
-          'actorInstitution': notification.actorInstitution,
-          'data': notification.payload,
-        });
-    }
+    // ONE RESOLVER FOR THE WHOLE CLIENT.
+    //
+    // A switch lived here that answered the same question as
+    // core/notifications/notification_presentation.dart, and the two disagreed:
+    // this one knew accountability stages and media notices, that one knew
+    // calls — so calls rendered here as "<name> interacted with your content"
+    // (founder-observed 2026-08-22) while the backend had specific wording for
+    // all forty classes.
+    //
+    // The cases that were genuinely richer here — the accountability stages,
+    // the non-actor-voiced media notices, the space name, the pending meeting
+    // booking — moved INTO the canonical resolver rather than being deleted,
+    // so nothing reads worse and there is now one place to change wording.
+    return resolveNotificationTitle(<String, dynamic>{
+      'type': notification.type,
+      'actor': notification.actor,
+      'actorInstitution': notification.actorInstitution,
+      'data': notification.payload,
+    });
   }
 
   /// Supporting line for a media-restriction notice: the file's name.

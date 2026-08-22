@@ -38,6 +38,14 @@ String resolveNotificationTitle(Map<String, dynamic> payload) {
     return _callTitle(payload, actorName);
   }
 
+  // Payload-refined titles come FIRST: these classes say something more
+  // specific when the payload carries the detail. They lived in the
+  // Notifications screen's own switch, which is exactly how the client came to
+  // have two resolvers that disagreed — the screen knew these, the canonical
+  // resolver knew calls, and neither knew both.
+  final refined = _payloadRefinedTitle(kind, payload, data, actorName);
+  if (refined != null) return refined;
+
   final phrase = _kindPhrase(kind);
   if (phrase != null) {
     return actorName.isNotEmpty ? '$actorName $phrase' : _capitalize(phrase);
@@ -91,6 +99,91 @@ String _callTitle(Map<String, dynamic> payload, String actorName) {
 /// Returns null for kinds handled elsewhere (calls) or genuinely unknown
 /// ones, which fall through to the backend-title / bare-name / 'Update'
 /// chain above.
+/// Titles that depend on the payload, not only on the kind.
+String? _payloadRefinedTitle(
+  String kind,
+  Map<String, dynamic> payload,
+  Map<String, dynamic> data,
+  String actorName,
+) {
+  String field(String key) =>
+      _stringOf(payload[key]).isNotEmpty ? _stringOf(payload[key]) : _stringOf(data[key]);
+
+  switch (kind) {
+    // Not actor-voiced, deliberately. No person acted on these: an examiner
+    // produced a verdict. Rendering them in someone's voice would tell a member
+    // a human reviewed their file when nobody has.
+    case 'MEDIA_QUARANTINED':
+      return 'An attachment of yours is under review';
+    case 'MEDIA_QUARANTINE_LIFTED':
+      return 'An attachment of yours is available again';
+
+    case 'SPACE_ACTIVITY':
+      final spaceName = field('spaceName');
+      if (actorName.isEmpty) return null;
+      return spaceName.isNotEmpty
+          ? '$actorName posted in $spaceName'
+          : '$actorName posted in a space you follow';
+
+    case 'MEETING_BOOKED':
+      if (actorName.isEmpty) return null;
+      final pending = payload['pendingConfirmation'] == true ||
+          data['pendingConfirmation'] == true;
+      return pending
+          ? 'A meeting with $actorName was booked with your email'
+          : 'Your meeting with $actorName is scheduled';
+
+    // The announcement's own title says more than "published an announcement".
+    case 'ANNOUNCEMENT_PUBLISHED':
+      final announcementTitle = field('title');
+      if (announcementTitle.isNotEmpty) return announcementTitle;
+      return null;
+
+    // Moderation outcomes name what actually happened to what. These were the
+    // richest cases in the Activity screen's own resolver and are kept, not
+    // flattened into "your content was reviewed". Never actor-voiced: the
+    // member is not told a named person judged them.
+    case 'MODERATION_ACTION_TAKEN':
+      switch (field('action').toUpperCase()) {
+        case 'SOFT_DELETE_POST':
+        case 'SOFT_DELETE_MESSAGE':
+        case 'SOFT_DELETE_ANNOUNCEMENT':
+          return 'Your content was removed by moderation';
+        case 'ARCHIVE_INSTITUTION_POST':
+          return 'Your institution post was archived';
+        case 'DISABLE_USER':
+          return 'Your account was disabled';
+        case 'RESTORE_POST':
+        case 'RESTORE_MESSAGE':
+        case 'RESTORE_ANNOUNCEMENT':
+        case 'RESTORE_INSTITUTION_POST':
+          return 'Your content was restored';
+        case 'RESTORE_USER':
+          return 'Your account was restored';
+        default:
+          return 'Your content was reviewed by moderation';
+      }
+
+    // One class covers every stage of the accountability lifecycle; the stage
+    // rides in the payload.
+    case 'ACCOUNTABILITY_TAGGED':
+      if (actorName.isEmpty) return null;
+      switch (field('accountabilityTag').toUpperCase()) {
+        case 'RESOLVED':
+          return '$actorName marked your issue as Resolved';
+        case 'COMMITMENT':
+          return '$actorName committed to a response on your issue';
+        case 'UPDATE':
+          return '$actorName posted an update on your issue';
+        case 'REOPENED':
+          return '$actorName reopened a resolved issue';
+        default:
+          return '$actorName updated the status of your issue';
+      }
+  }
+  return null;
+}
+
 String? _kindPhrase(String kind) {
   switch (kind) {
     case 'LIKE':

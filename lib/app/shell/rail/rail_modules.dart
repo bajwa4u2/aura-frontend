@@ -22,6 +22,7 @@ import '../../../features/realtime/domain/realtime_enums.dart';
 import '../../../features/realtime/domain/realtime_models.dart';
 import '../../../features/saves/providers.dart';
 import '../../../features/updates/providers.dart';
+import '../../../core/notifications/notification_presentation.dart';
 
 /// Real-data right-rail modules.
 ///
@@ -531,27 +532,22 @@ class _ActivityRow extends StatelessWidget {
 
   final dynamic notification;
 
-  String get _label {
-    final type = (notification.type as String).toUpperCase();
-    switch (type) {
-      case 'LIKE':
-        return 'Someone liked your post';
-      case 'REPLY':
-        return 'New reply to your post';
-      case 'REPOST':
-        return 'Someone reposted your work';
-      case 'FOLLOW':
-        return 'New follower';
-      case 'MESSAGE':
-        return 'New message';
-      case 'INSTITUTION_REPLY':
-        return 'An institution responded';
-      case 'INVITE':
-        return 'You were invited';
-      default:
-        return 'New activity';
-    }
-  }
+  /// ONE RESOLVER FOR THE WHOLE CLIENT.
+  ///
+  /// This was a FIFTH place composing notification text, with wording of its
+  /// own again ("Someone liked your post", "New reply to your post", and a
+  /// "New activity" default that said nothing at all). Five client resolvers
+  /// and three backend ones is how one event came to read differently in the
+  /// rail, the Notifications screen, the ribbon and the inbox.
+  ///
+  /// Nothing is lost: the canonical resolver names the actor when one is
+  /// known, so "Someone liked your post" becomes "Amjad liked your post".
+  String get _label => resolveNotificationTitle(<String, dynamic>{
+        'type': notification.type,
+        'actor': notification.actor,
+        'actorInstitution': notification.actorInstitution,
+        'data': notification.payload,
+      });
 
   void _go(BuildContext context) {
     final deeplink = notification.deeplink as String?;
