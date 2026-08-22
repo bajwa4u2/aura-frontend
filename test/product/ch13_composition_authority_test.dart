@@ -623,7 +623,16 @@ void main() {
       );
       expect(r.isAccepted, isFalse);
       expect(r.rejection, AttachmentRejection.cannotBeMadePresentable);
-      expect(r.rejectionMessage, contains('phone'));
+      // Actionable, and provisional. "yet" matters: the limit is this
+      // device's, not the photograph's, and the wording must not harden a
+      // present processing boundary into a permanent product claim.
+      expect(r.rejectionMessage, contains('yet'));
+      expect(r.rejectionMessage, contains('JPEG'));
+      // Codec and licensing language is implementation and stays out of the
+      // product surface entirely.
+      for (final leak in ['HEVC', 'HEIC', 'codec', 'licen']) {
+        expect(r.rejectionMessage, isNot(contains(leak)));
+      }
     });
 
     test('the preparing door is transparent for ordinary content', () async {
