@@ -20,6 +20,7 @@ import '../../../core/media/aura_voice_player.dart';
 import '../../../core/media/aura_media_viewer.dart';
 import '../../../core/media/aura_attachment_open.dart';
 import '../../../core/compliance/report_content_sheet.dart';
+import '../../updates/providers.dart';
 import '../../../core/compliance/report_repository.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/navigation/navigation_authority.dart';
@@ -701,13 +702,26 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final myUserId = ref.watch(myUserIdProvider);
 
     // Reading the conversation marks it read (cursor truth server-side).
+    //
+    // The server now also clears the MESSAGE notifications addressed to this
+    // conversation, so attention converges with reading wherever it is read.
+    // The badge still has to be told: the unread count refreshes on a 120s
+    // poll, so without this the person reads the messages and watches the
+    // badge keep counting them for up to two minutes -- which is the defect
+    // as they experience it, whatever the database says.
     ref.listen(conversationMessagesProvider(widget.conversationId),
         (prev, next) {
       next.whenData((_) {
         ref
             .read(conversationsRepositoryProvider)
             .markRead(widget.conversationId)
-            .ignore();
+            .then((_) {
+          if (!mounted) return;
+          ref
+              .read(notificationsControllerProvider.notifier)
+              .refresh(force: true)
+              .ignore();
+        }).ignore();
       });
     });
 

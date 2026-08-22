@@ -6,6 +6,43 @@
 
 ## Status
 
+> **2026-08-22 — RELEASE-CLIENT CLOSURE AUTHORISATION: 2 of 4 MUST-CLOSE items corrected, 2 OPEN.**
+> Reconstruction is **NOT** closed.
+>
+> **Attention converges with reading.** Reading a conversation could not clear its
+> badge: `notifyRecipients` wrote the `Notification` table directly, so the row carried
+> its destination only in `data.conversationId` and had **no relational target** —
+> `markReadForTarget` matches on columns and could never match it. Its dedup key
+> embedded wall-clock time, so the `(userId, dedupKey)` unique index could never
+> collide and dedup was structurally impossible. Proven in production before the fix:
+> unread-count 22 → mark the conversation read (201) → unread-count still 22.
+> A conversation is now a first-class notification target (column + FK + backfill),
+> both bypass producers route through the canonical service, `markRead` clears
+> attention **server-side** so no client can forget, and the screen refreshes the count
+> so the person does not watch their own read messages counted for 120s.
+> **SAVE notifications** were the last consumer of the legacy `Communication`-only
+> path — emailed, invisible in-app. Also converged.
+>
+> **Refresh continuity NOT reproduced, and therefore NOT closed.** `/home` survived 7
+> consecutive reloads and `/saved` 5, authenticated and unchanged; every route family
+> tested preserved both destination and render. RC1/RC2/RC3/RC9 verified closed in
+> current code. Two apparent failures during this work were **my instrument** —
+> `/auth/refresh` rotates the cookie and a harness reusing one single-use token
+> exhausts the chain mid-run; controls disproved both. Not reproducing is not evidence
+> of correctness: the founder's screen and sequence is the missing input. Untested:
+> native binaries, institution-affiliated accounts, institution workspace routes.
+>
+> **Meetings/Live audited, NOT closed.** Both one-way-media repairs are **reverted and
+> not in effect** — `9815742` by `4420602`, `381c452` by `a77b62e` (which also deleted
+> `silent_peer_repair_test.dart`). Current main has neither repair nor test.
+> `merge-base --is-ancestor 381c452 HEAD` says YES — the commit is in history and so is
+> its revert. One-way media can still occur; leave/rejoin remains the workaround.
+> Re-landing reverted realtime work blindly is forbidden and `9815742` already failed
+> founder certification; certification needs two live participants.
+>
+> Record: `aura-backend/docs/2026-08-22-release-client-closure-attention-and-continuity.md`
+
+
 > **2026-08-22 — CH-14 CLOSED. Founder-certified on the live article.**
 > Articles are first-class publications: reactions, saves, discussion, native reshare,
 > external share with real OG, translation, notifications, blocking, moderation,

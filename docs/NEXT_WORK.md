@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-08-22 — RELEASE-CLIENT CLOSURE: TWO ITEMS STILL OWED TO THE FOUNDER
+
+The closure authorisation named four MUST-CLOSE items. Two are corrected and
+evidenced. **Two are open, and both need the founder rather than more
+engineering.**
+
+### OWED — refresh continuity (MUST-CLOSE 1)
+
+Not reproduced. `/home` survived 7 consecutive reloads, `/saved` 5, and every
+tested route family preserved destination *and* render. The 2026-08-17 shared
+causes (RC1, RC2, RC3, RC9) are closed in current code.
+
+**What is needed: the founder's actual reproduction** — which screen, which
+client (web or an installed native binary), and the sequence. Two apparent
+failures during this pass were harness artifacts (`/auth/refresh` rotates the
+cookie; a reused single-use token exhausts the chain), so they must not be
+mistaken for evidence either way.
+
+Never measured: native iOS/Android binaries, institution-affiliated accounts,
+institution workspace routes, Meetings/Live surfaces mid-session.
+
+### OWED — realtime certification (MUST-CLOSE 4)
+
+Both one-way-media repairs are reverted and not in effect; current main carries
+no repair and no test. Re-landing them blindly is forbidden by the
+authorisation, and `9815742` already failed founder production certification.
+
+**What is needed: a two-participant live certification.** One account cannot
+prove media flows both ways, and placing a call from the reviewer account would
+ring a real person.
+
+### OPEN — the per-class notification matrix (part of MUST-CLOSE 3)
+
+Conversation, invitation and save classes are verified end to end. Every other
+released notification class is unaudited against the eight-point matrix
+(recipient, actor, dedup, read lifecycle, content, destination, tap-landing,
+refresh-after-arrival). Not claimed as correct.
+
+### NOT YET IN PRODUCTION
+
+The attention convergence is committed but **not deployed**. It carries a
+migration (`20260918000000_notification_conversation_target`) that backfills the
+conversation target on existing rows. Production evidence for the *fix* is owed
+— the defect's production evidence is already recorded.
+
+---
+
 ## 2026-08-22 — CH-14 CLOSED (founder-certified). NOTHING IS AUTHORISED NEXT.
 
 Every named CH-14 obligation is implemented, certified and deployed, and the founder
