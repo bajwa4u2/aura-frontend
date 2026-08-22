@@ -412,15 +412,28 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     }
   }
 
-  // Deliberately does NOT check terminal status (unlike `_isCallInterrupt`
-  // above) — this only decides whether to skip a duplicate snackbar because
-  // AuraIncomingLiveLayer already renders the ringing card; a terminal call
-  // notification legitimately still wants its own history/toast treatment.
+  /// A CALL IS NEVER ANNOUNCED BY THE GLOBAL RIBBON.
+  ///
+  /// This used to require `attention == 'INTERRUPT'` before suppressing a
+  /// call, and NO real call payload carries that key — production rows carry
+  /// `sessionId`, `threadId`, `spaceId`, `mediaMode`, `contextName`,
+  /// `realtimeType`, `notificationKind` and nothing else. So the suppression
+  /// never fired and every call notification fell through to the floating
+  /// snackbar, including the one for the call the person had just ACCEPTED:
+  /// a transient ribbon announcing the call they were already in.
+  /// Founder-observed on the attendee side, 2026-08-22.
+  ///
+  /// Calls already have canonical presentation at every stage —
+  /// AuraIncomingLiveLayer while ringing, the room once joined, the PiP when
+  /// minimised, and the Activity list as history. The ribbon adds nothing to
+  /// any of those and contradicts the first two.
+  ///
+  /// The previous comment argued a terminal call "legitimately still wants its
+  /// own history/toast treatment". History is the list, which still shows it.
+  /// A four-second ribbon is not history.
   bool _isLiveInterrupt(Map<String, dynamic> item) {
     final kind = _resolveNotificationKindFromItem(item).toUpperCase();
-    final data = _mapOf(item['data']);
-    final attention = _stringOf(data['attention']).toUpperCase();
-    return projection.isCallKind(kind) && attention == 'INTERRUPT';
+    return projection.isCallKind(kind);
   }
 
   String _resolveNotificationKindFromItem(Map<String, dynamic> item) =>
@@ -462,12 +475,6 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
       if (text.isNotEmpty) return text;
     }
     return '';
-  }
-
-  Map<String, dynamic> _mapOf(dynamic value) {
-    if (value is Map<String, dynamic>) return value;
-    if (value is Map) return Map<String, dynamic>.from(value);
-    return <String, dynamic>{};
   }
 
   String _stringOf(dynamic value) => value?.toString().trim() ?? '';
