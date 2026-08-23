@@ -226,7 +226,7 @@ Without this section a reader sees a 2026-08-18 snapshot and no way to reconcile
 | **F061** | CH-02 | `OPEN` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-19 | RC4 repaired; RC8 proven inapplicable (its whole surface is booking/meeting entry). |
 | **F063** | CH-02 | `OPEN` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-19 | RC7 repaired in both halves. |
 | **F053** | CH-03 | `PARTIALLY_VALIDATED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | Founder-authorised promotion. |
-| **F116** | CH-03 | `PARTIALLY_VALIDATED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | Founder-authorised promotion. |
+| **F116** | CH-03 | `PARTIALLY_VALIDATED` | `CLOSED` | 2026-08-23 | Measured consumer set converged and gated; founder live validation on the deployed Members surface supplied the release-client evidence. See the CH-03 section below. |
 | **F044** | CH-05 | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | UNCHANGED and explicitly NOT promoted across the Phase 5 work. |
 
 ### CH-03 — 2026-08-23 consumption completion (F053 / F116 NOT closed)
@@ -247,14 +247,24 @@ projection is now APPLIED rather than only selected — `accountStatus` and
 neither. The client model now carries verification, so trust is part of who
 someone is rather than something each surface fetches or forgets.
 
-**STATUS UNCHANGED: `IMPLEMENTED_NOT_LIVE_CERTIFIED`.** PB-05 forbids closing
-F116 by fixing one consumer, and it is equally not closed by fixing four:
+**STATUS: `CLOSED` for this measured identity-consumption obligation
+(founder live validation, 2026-08-23).**
 
-- the convergence is proven by a gate that walks the whole consumer set, and
-  that walk currently finds zero remaining partial adopters — but a source walk
-  is not a live observation;
-- Members rendering an actual avatar in production is NOT yet verified; it
-  needs the deploy plus a founder or browser check;
+PB-05 forbids closing F116 by fixing one consumer, and it was equally not
+closed by fixing four. What closed it is the combination: the measured
+consumer set converged, a gate that walks the whole set and finds zero
+remaining partial adopters, and then the release-client observation that a
+source walk can never supply.
+
+Founder validation on the deployed surface recorded: canonical member avatars
+render; members expected to have photos have them; genuine no-avatar identity
+retains initials; names and handles correct; Owner / Member / Representative /
+Host remain institutional overlays rather than person identity; no incorrect
+trust marks; no roster regression. That matches the falsifiable target stated
+below in every particular, including the negative one — no marks appeared,
+which is what the census predicted.
+
+Remaining notes on the same chapter, neither of which reopens F116:
 - Institution Activity renders the actor's avatar and deliberately does NOT
   render verification marks. **Founder ruling 2026-08-23:** Activity is an
   event / continuity / accountability presentation, so default actor
