@@ -89,9 +89,10 @@ capability set and then largely ignores it:
   and `Invites` which do have one.
 * Screens gate on role labels where capabilities exist:
   `institution_spaces_screen` **7 role checks / 0 capability checks**;
-  `institution_live_rooms_screen` **0 / 0** — no gating of either kind;
   `institution_members_screen` **9 / 2**; `institution_announcements_screen`
-  **5 / 3**.
+  **5 / 3**. (`institution_live_rooms_screen` was reported as ungated and is
+  not — see Finding B2. The counts above measure `can*` style checks only and
+  therefore undercount `CapabilityProjection` adoption by roughly six files.)
 * Client-wide: **139** role-label checks against **19** capability checks.
 
 So the repair is architectural, not cosmetic: the workspace must be **composed
@@ -132,9 +133,20 @@ holding delegated `MANAGE_JOIN_REQUESTS` sees the entry but never the badge.
 
 1. **Navigation is not composed from capabilities.** 10 of 16 entries have no
    predicate; the capability accessors they would use already exist.
-2. **Live**: `institution_live_rooms_screen` has no gating at all, while
-   `START_LIVE`/`END_LIVE` are enforced server-side. A member without the
-   capability is offered an action that can only 403.
+2. ~~**Live**: `institution_live_rooms_screen` has no gating at all.~~
+   **CORRECTED 2026-08-23.** This was wrong, and it was wrong because the
+   measurement was too narrow. The screen *does* gate starting a session, via
+   `capabilityProjectionProvider.presentationFor(ConsequentialAct.startLive)`,
+   with a comment stating the gate is the capability projection "never a role
+   label". My grep matched only `can*`/`.can(` and so could not see it.
+
+   The correction matters beyond one screen: the client has a **third**
+   canonical authority I under-counted — `CapabilityProjection` (C1), whose
+   doctrine is *"what may I do in this context"*, consuming the backend's
+   effective set and never recomputing it. It is the RIGHT mechanism for
+   controls and navigation alike. The defect is therefore **thin adoption**
+   (6 files) rather than absence, and the reconstruction is to consume it more
+   widely — not to introduce anything new.
 3. **Spaces**: 7 role checks where `canManageSpaces` exists.
 4. **Announcements**: partial — 5 role checks alongside 3 capability checks.
 5. **Members**: 9 role checks where `canManageMembers` exists; the *roster* is
