@@ -225,8 +225,12 @@ class NavigationAuthority {
   static String institutionSpacesRoute(String address) =>
       '/institution/$address/spaces';
 
-  static String institutionSpaceRoute(String address, String spaceId) =>
-      '/institution/$address/spaces/$spaceId';
+  /// A Space is addressed by ITS OWN product address too — founder ruling
+  /// 2026-08-23. Both segments are product addresses: the institution's slug
+  /// and the Space's slug, scoped to that institution. Naming the parameter
+  /// `spaceId` is what invited every caller to pass one.
+  static String institutionSpaceRoute(String address, String spaceAddress) =>
+      '/institution/$address/spaces/$spaceAddress';
   static String threadRoute(String id) => '/thread/$id';
   static String directThreadRoute(String id) => '/direct/$id';
   static String postRoute(String id) => '/posts/$id';

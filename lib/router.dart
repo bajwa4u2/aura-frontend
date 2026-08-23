@@ -19,6 +19,7 @@ import 'core/authority/authority_providers.dart';
 import 'core/institutions/institution_destination_authority.dart';
 import 'core/institutions/institution_route_authority.dart';
 import 'core/institutions/institution_route_scope.dart';
+import 'core/institutions/institution_space_route_scope.dart';
 import 'core/navigation/destination_continuity.dart';
 import 'features/meetings/presentation/booking_route_entry.dart';
 import 'features/meetings/application/meetings_provider.dart';
@@ -2096,12 +2097,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           // communication. The legacy route remains for personal
           // correspondence until that family is retired.
           GoRoute(
-            path: '/institution/:institutionId/spaces/:spaceId',
+            // BOTH SEGMENTS ARE PRODUCT ADDRESSES (founder ruling 2026-08-23),
+            // and each is resolved to a persistence id at its own boundary
+            // before any screen sees it. The Space scope is nested inside the
+            // institution scope because a Space address is scoped to its
+            // parent institution — resolving it needs the institution first.
+            path: '/institution/:institutionId/spaces/:spaceAddress',
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
-              builder: (institutionId) => InstitutionSpaceScreen(
+              builder: (institutionId) => InstitutionSpaceRouteScope(
                 institutionId: institutionId,
-                spaceId: state.pathParameters['spaceId'] ?? '',
+                address: state.pathParameters['spaceAddress'],
+                builder: (spaceId) => InstitutionSpaceScreen(
+                  institutionId: institutionId,
+                  spaceId: spaceId,
+                ),
               ),
             ),
           ),

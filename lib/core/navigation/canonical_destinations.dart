@@ -31,12 +31,22 @@ String? conversationDestination(String? conversationId) {
   return id == null ? null : '/messages/c/$id';
 }
 
-/// `/institution/:institutionId/spaces/:spaceId` — the reconstructed
-/// Institution Space. Both identifiers are required: a Space with no
-/// institution is a legacy personal space, which has no surviving surface.
-String? institutionSpaceDestination(String? institutionId, String? spaceId) {
-  final institution = _clean(institutionId);
-  final space = _clean(spaceId);
+/// `/institution/:institutionAddress/spaces/:spaceAddress` — the reconstructed
+/// Institution Space.
+///
+/// BOTH SEGMENTS ARE PRODUCT ADDRESSES (founder ruling 2026-08-23). The Space
+/// address is scoped to its parent institution, so the institution half is not
+/// decoration — it is the namespace that makes the second half mean anything.
+///
+/// Both are required for a second reason that has not changed: a Space with no
+/// institution is a private member context, which has no Space address at all
+/// and is reached through the Conversation it owns.
+String? institutionSpaceDestination(
+  String? institutionAddress,
+  String? spaceAddress,
+) {
+  final institution = _clean(institutionAddress);
+  final space = _clean(spaceAddress);
   if (institution == null || space == null) return null;
   return '/institution/$institution/spaces/$space';
 }

@@ -1,3 +1,4 @@
+import '../../../core/navigation/navigation_authority.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -432,8 +433,16 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
                 ),
               ] else ...[
                 GestureDetector(
+                  // The Space's product address, falling back to its id only
+                  // when it has none — an id still resolves and canonicalizes
+                  // on arrival, so the link works either way.
                   onTap: () => context.push(
-                    '/institution/${widget.institutionId}/spaces/$id',
+                    NavigationAuthority.institutionSpaceRoute(
+                      widget.institutionId,
+                      (space['slug']?.toString().trim().isNotEmpty ?? false)
+                          ? space['slug'].toString()
+                          : id,
+                    ),
                   ),
                   child: Text('Open', style: AuraText.small.copyWith(color: AuraSurface.accentText, fontWeight: FontWeight.w700)),
                 ),

@@ -1,3 +1,4 @@
+import '../../../core/navigation/navigation_authority.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -195,9 +196,18 @@ class _SpaceTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s10),
       child: InkWell(
+        // The Space's product address; its id remains the fallback and still
+        // resolves, canonicalizing on arrival.
         onTap: id.isEmpty
             ? null
-            : () => context.push('/institution/$institutionId/spaces/$id'),
+            : () => context.push(
+                  NavigationAuthority.institutionSpaceRoute(
+                    institutionId,
+                    (space['slug']?.toString().trim().isNotEmpty ?? false)
+                        ? space['slug'].toString()
+                        : id,
+                  ),
+                ),
         borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
           padding: const EdgeInsets.all(AuraSpace.s14),
