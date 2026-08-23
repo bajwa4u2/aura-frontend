@@ -25,6 +25,7 @@ import '../../features/meetings/presentation/widgets/active_meeting_return_layer
 import '../../features/institutions/ui/institution_ds.dart';
 import 'rail/rail_composition.dart';
 import '../../core/identity/person_identity_model.dart';
+import '../../core/institutions/institution_route_authority.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION COLOR PALETTE — teal authority, calm workspace
@@ -1055,7 +1056,20 @@ class _AffiliationLine extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.go('/institution/dashboard'),
+          // ENTERING AN INSTITUTION LANDS ON EXPLORE.
+          //
+          // Founder ruling 2026-08-22. This tapped through to the dashboard,
+          // which is Overview -- standing, verification state and a setup
+          // checklist. That is administrative/operational information, not the
+          // institution's primary experience, so entering an institution began
+          // by showing a person its paperwork.
+          //
+          // The destination comes from the authority rather than a literal,
+          // because ENTRY, REFUSAL and NO-AFFILIATION are three different
+          // questions that used to share one constant.
+          onTap: () => context.go(
+            institutionEntryDestination(primary.id),
+          ),
           borderRadius: BorderRadius.circular(AuraRadius.r10),
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -1452,7 +1466,8 @@ List<_InstEntry> _buildInstEntries(
   int pendingInvites = 0,
 }) {
   final id = identity?.id ?? '';
-  final slug = identity?.slug ?? '';
+  // `slug` was only ever needed by the Public Preview rail entry, which is a
+  // contextual action on Profile rather than a destination of its own.
 
   String? sectionPath(String section) =>
       id.isNotEmpty ? '/institution/$id/$section' : null;
@@ -1617,16 +1632,19 @@ List<_InstEntry> _buildInstEntries(
           ? institutionWorkspacePath(id, InstitutionSection.editProfile)
           : null,
     ),
-    _InstEntry(
-      label: 'Public Preview',
-      icon: Icons.open_in_new_rounded,
-      selectedIcon: Icons.open_in_new_rounded,
-      pathBuilder: (_) => (slug.isNotEmpty && id.isNotEmpty)
-          ? '/institutions/$slug'
-          : null,
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/institutions/'),
-    ),
+    // PUBLIC PREVIEW IS AN ACTION, NOT A DESTINATION.
+    //
+    // Founder refinement 2026-08-22: seeing how the institution looks to the
+    // public is something you do WHILE looking at the profile, not a separate
+    // place you go. The capability and its route are unchanged and remain
+    // reachable contextually from Profile; only the duplicate rail entry is
+    // removed.
+    //
+    // The general rule this states: a rail entry earns its place by being a
+    // DESTINATION -- somewhere with its own standing content and its own
+    // reason to return. A contextual action or an alternate view of a
+    // destination already in the rail inflates the rail without adding
+    // anywhere to go.
   ];
 
   // Filter to entries the acting member may use, then reflow section labels

@@ -269,7 +269,7 @@ String? _redirectShorthandToCanonical(
       pathId: null,
     ),
     section: section,
-    dashboardRoute: kInstitutionDashboardRoute,
+    dashboardRoute: kInstitutionNoAffiliationDestination,
   );
 }
 
@@ -289,7 +289,7 @@ String? _enforceCanonicalIdMatch(
       pathId: pathId,
     ),
     section: section,
-    dashboardRoute: kInstitutionDashboardRoute,
+    dashboardRoute: kInstitutionNoAffiliationDestination,
   );
 }
 
@@ -774,7 +774,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         // into the same refusal.
         if (requiresInstitutionAdmin(path) && !isInstitutionAdmin) {
           return gateRedirect(
-            gate: kInstitutionDashboardRoute,
+            // RC4 terminal denial -- deliberately NOT the entry destination.
+            // A person refused admin standing has not thereby earned the
+            // workspace front door.
+            gate: kInstitutionDenialDestination,
             target: currentLocation,
             kind: ExitKind.terminalDenial,
           );
@@ -783,7 +786,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (requiresInstitutionAdminOrSpeaker(path) &&
             !isInstitutionSpeakerOrAdmin) {
           return gateRedirect(
-            gate: kInstitutionDashboardRoute,
+            // RC4 terminal denial -- see above.
+            gate: kInstitutionDenialDestination,
             target: currentLocation,
             kind: ExitKind.terminalDenial,
           );
@@ -1811,7 +1815,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               final id = state.pathParameters['institutionId'] ?? '';
               return id.isNotEmpty
                   ? '/institution/$id/messages'
-                  : kInstitutionDashboardRoute;
+                  : kInstitutionNoAffiliationDestination;
             },
           ),
 

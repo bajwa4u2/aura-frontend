@@ -255,3 +255,48 @@ String? institutionShorthandRedirect(
       return dashboardRoute;
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THREE DESTINATIONS THAT WERE ONE CONSTANT
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// `kInstitutionDashboardRoute` was doing three different jobs at once:
+//
+//   1. where a person LANDS when they enter an institution;
+//   2. where a person is SENT when an institution refuses them (RC4 terminal
+//      denial);
+//   3. where a shorthand resolves when the person holds NO institution at all.
+//
+// One string, three meanings, so any change to one silently changed the other
+// two. Founder ruling 2026-08-22 moves institution ENTRY to Explore — and
+// repointing the shared constant would have made Explore the refusal
+// destination too, handing a denied person the very workspace they were just
+// refused.
+//
+// These are now named separately. They may currently resolve to the same
+// address in some cases; what matters is that they are separate QUESTIONS, so
+// answering one never silently answers another.
+
+/// Where entering an institution lands.
+///
+/// Founder ruling 2026-08-22: **Explore**, not Overview. Overview is
+/// administrative/operational standing and setup information; the institution's
+/// primary experience is what is happening inside it.
+String institutionEntryDestination(String institutionId) {
+  final id = institutionId.trim();
+  return id.isEmpty ? kInstitutionNoAffiliationDestination : '/institution/$id/explore';
+}
+
+/// Where a person is sent when an institution REFUSES them.
+///
+/// RC4 terminal denial: standing inside an institution is granted by that
+/// institution, never by arriving at a screen, so this deliberately keeps
+/// nothing to return to. It must never follow the entry destination — a person
+/// refused admin access has not earned the workspace front door.
+const String kInstitutionDenialDestination = '/institution/dashboard';
+
+/// Where a shorthand resolves for a person who holds NO institution.
+///
+/// Not a refusal and not an entry: there is nothing to enter and nobody has
+/// said no. The selector/standing surface is the honest answer.
+const String kInstitutionNoAffiliationDestination = '/institution/dashboard';

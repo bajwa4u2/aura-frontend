@@ -5,7 +5,11 @@
 # reconstructs it; the integrity gate keeps every literal VALID
 # against the declared route table meanwhile.
 
-4 lib/app/shell/member_shell.dart
+# 2026-08-22 institution entry separation: 4 -> 3. Entering an institution
+# tapped a literal '/institution/dashboard' (Overview). Entry now comes from
+# institutionEntryDestination(), because ENTRY, REFUSAL and NO-AFFILIATION
+# were three questions sharing one constant.
+3 lib/app/shell/member_shell.dart
 3 lib/app/shell/public_shell.dart
 13 lib/app/shell/rail/rail_modules.dart
 4 lib/app/shell/shell_header_tools.dart
