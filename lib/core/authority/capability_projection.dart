@@ -271,6 +271,17 @@ enum ConsequentialAct {
   appointAdmin,
   transferOwnership,
 
+  /// Creating, editing, archiving an institution UNIT.
+  ///
+  /// Deliberately a ROLE requirement, matching what the backend actually
+  /// enforces (`@RequireInstitutionRole('ADMIN')`). No MANAGE_UNITS capability
+  /// exists, and the founder ruling of 2026-08-23 forbids inventing one before
+  /// the Unit doctrine is recovered — so this NAMES the authority already in
+  /// force rather than creating a new one. Keeping it role-shaped also leaves
+  /// §11 open: creating or retiring a subordinate operating context may prove
+  /// to be governance-different from operating inside one.
+  administerUnits,
+
   /// Correspond in the institution's voice.
   ///
   /// The contract **C7 must consume** when it rebuilds correspondence: if this
@@ -338,6 +349,8 @@ extension ConsequentialActAuthority on ConsequentialAct {
           const ActingRequirement.governance(InstitutionRole.owner),
         ConsequentialAct.transferOwnership =>
           const ActingRequirement.governance(InstitutionRole.owner),
+        ConsequentialAct.administerUnits =>
+          const ActingRequirement.governance(InstitutionRole.admin),
 
         // Speaking for the institution in correspondence is the same authority
         // as speaking for it anywhere: official representation.

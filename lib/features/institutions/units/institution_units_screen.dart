@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/authority/capability_projection.dart';
+
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -20,6 +23,19 @@ class InstitutionUnitsScreen extends ConsumerStatefulWidget {
   ConsumerState<InstitutionUnitsScreen> createState() =>
       _InstitutionUnitsScreenState();
 }
+
+/// Whether this viewer may administer units.
+///
+/// The destination itself is participation baseline — units are part of how an
+/// institution describes itself, and the server already withholds non-public
+/// and archived ones. These CONTROLS are not baseline: creating, editing and
+/// archiving an operating context is administration, and the backend enforces
+/// it as institution ADMIN.
+bool _canAdministerUnits(WidgetRef ref) =>
+    ref.watch(capabilityProjectionProvider).presentationFor(
+          ConsequentialAct.administerUnits,
+        ) ==
+    ControlPresentation.available;
 
 class _InstitutionUnitsScreenState
     extends ConsumerState<InstitutionUnitsScreen> {
@@ -115,6 +131,7 @@ class _InstitutionUnitsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final canAdminister = _canAdministerUnits(ref);
     return DocumentScaffold(
       title: 'Units & branches',
       child: Column(
@@ -128,7 +145,7 @@ class _InstitutionUnitsScreenState
             'that appear on the public institution profile.',
           ),
           const SizedBox(height: AuraSpace.s16),
-          AuraPrimaryButton(
+          if (canAdminister) AuraPrimaryButton(
             label: 'Add unit',
             icon: Icons.add,
             onPressed: () => _openUpsertSheet(),
@@ -147,13 +164,13 @@ class _InstitutionUnitsScreenState
               ),
             )
           else
-            ..._buildUnitList(),
+            ..._buildUnitList(canAdminister: canAdminister),
         ],
       ),
     );
   }
 
-  List<Widget> _buildUnitList() {
+  List<Widget> _buildUnitList({required bool canAdminister}) {
     final active = _units.where((u) => !u.isArchived).toList();
     final archived = _units.where((u) => u.isArchived).toList();
 
@@ -164,8 +181,12 @@ class _InstitutionUnitsScreenState
             padding: const EdgeInsets.only(bottom: AuraSpace.s10),
             child: _UnitCard(
               unit: u,
-              onEdit: () => _openUpsertSheet(existing: u),
-              onArchive: () => _archiveUnit(u.id, false),
+              onEdit: canAdminister
+                  ? () => _openUpsertSheet(existing: u)
+                  : null,
+              onArchive: canAdminister
+                  ? () => _archiveUnit(u.id, false)
+                  : null,
             ),
           ),
         ),
@@ -190,7 +211,9 @@ class _InstitutionUnitsScreenState
             child: _UnitCard(
               unit: u,
               onEdit: () => _openUpsertSheet(existing: u),
-              onArchive: () => _archiveUnit(u.id, true),
+              onArchive: canAdminister
+                  ? () => _archiveUnit(u.id, true)
+                  : null,
             ),
           ),
         ),
@@ -209,8 +232,10 @@ class _UnitCard extends StatelessWidget {
   });
 
   final InstitutionUnit unit;
-  final VoidCallback onEdit;
-  final VoidCallback onArchive;
+  /// Null when the viewer may not administer units. Absent, not disabled —
+  /// a control someone can never enable is noise, not information.
+  final VoidCallback? onEdit;
+  final VoidCallback? onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -290,14 +315,16 @@ class _UnitCard extends StatelessWidget {
           Wrap(
             spacing: AuraSpace.s8,
             children: [
-              AuraGhostButton(
-                label: 'Edit',
-                onPressed: onEdit,
-              ),
-              AuraGhostButton(
-                label: unit.isArchived ? 'Restore' : 'Archive',
-                onPressed: onArchive,
-              ),
+              if (onEdit != null)
+                AuraGhostButton(
+                  label: 'Edit',
+                  onPressed: onEdit,
+                ),
+              if (onArchive != null)
+                AuraGhostButton(
+                  label: unit.isArchived ? 'Restore' : 'Archive',
+                  onPressed: onArchive,
+                ),
             ],
           ),
         ],
