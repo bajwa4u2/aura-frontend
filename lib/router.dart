@@ -1837,8 +1837,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'domains',
             ),
-            builder: (_, state) => InstitutionDomainsScreen(
-              institutionId: state.pathParameters['institutionId'],
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionDomainsScreen(institutionId: institutionId),
             ),
           ),
 
@@ -1872,29 +1874,38 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'units',
             ),
-            builder: (_, state) => InstitutionUnitsScreen(
-              institutionId: state.pathParameters['institutionId']!,
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionUnitsScreen(institutionId: institutionId),
             ),
           ),
 
           // Public Engagement workspace — list + detail + participation settings.
           GoRoute(
             path: '/institution/:institutionId/public-engagement',
-            builder: (_, state) => EngagementListScreen(
-              institutionId: state.pathParameters['institutionId']!,
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  EngagementListScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/public-engagement/participation',
-            builder: (_, state) => ParticipationScreen(
-              institutionId: state.pathParameters['institutionId']!,
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  ParticipationScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/public-engagement/:recordId',
-            builder: (_, state) => EngagementDetailScreen(
-              institutionId: state.pathParameters['institutionId']!,
-              recordId: state.pathParameters['recordId']!,
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => EngagementDetailScreen(
+                institutionId: institutionId,
+                recordId: state.pathParameters['recordId']!,
+              ),
             ),
           ),
 
@@ -1917,8 +1928,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'profile',
             ),
-            builder: (_, state) => InstitutionProfileScreen(
-              institutionId: state.pathParameters['institutionId'],
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionProfileScreen(institutionId: institutionId),
             ),
           ),
 
@@ -1941,8 +1954,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'edit-profile',
             ),
-            builder: (_, state) => InstitutionEditProfileScreen(
-              institutionId: state.pathParameters['institutionId'],
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionEditProfileScreen(institutionId: institutionId),
             ),
           ),
 
@@ -2307,15 +2322,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/messages/direct',
-            builder: (_, state) => InboxScreen(
-              institutionContextId: state.pathParameters['institutionId'],
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InboxScreen(institutionContextId: institutionId),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/messages/direct/archived',
-            builder: (_, state) => InboxScreen(
-              archived: true,
-              institutionContextId: state.pathParameters['institutionId'],
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => InboxScreen(
+                archived: true,
+                institutionContextId: institutionId,
+              ),
             ),
           ),
         ],
