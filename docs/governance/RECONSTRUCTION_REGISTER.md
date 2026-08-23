@@ -229,6 +229,44 @@ Without this section a reader sees a 2026-08-18 snapshot and no way to reconcile
 | **F116** | CH-03 | `PARTIALLY_VALIDATED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | Founder-authorised promotion. |
 | **F044** | CH-05 | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | `IMPLEMENTED_NOT_LIVE_CERTIFIED` | 2026-08-20 | UNCHANGED and explicitly NOT promoted across the Phase 5 work. |
 
+### CH-03 — 2026-08-23 consumption completion (F053 / F116 NOT closed)
+
+Founder observed on the live Institution → Members surface that established
+people rendered as generic initials. The trace found a failure mode that only
+became possible AFTER the canonical model landed:
+
+> **PARTIAL ADOPTION** — a surface calls the canonical reader, uses it for the
+> name, and discards the avatar, the verification and the lifecycle. It reads
+> as converged in review, because the canonical reader is right there.
+
+Four measured surfaces converged: Institution Members, Join Requests,
+Institution Activity, People Discovery. Backend upgraded from the reduced
+person reference to the canonical person identity on all four, and the
+projection is now APPLIED rather than only selected — `accountStatus` and
+`verification` are derived, so a governed select returning a raw row emitted
+neither. The client model now carries verification, so trust is part of who
+someone is rather than something each surface fetches or forgets.
+
+**STATUS UNCHANGED: `IMPLEMENTED_NOT_LIVE_CERTIFIED`.** PB-05 forbids closing
+F116 by fixing one consumer, and it is equally not closed by fixing four:
+
+- the convergence is proven by a gate that walks the whole consumer set, and
+  that walk currently finds zero remaining partial adopters — but a source walk
+  is not a live observation;
+- Members rendering an actual avatar in production is NOT yet verified; it
+  needs the deploy plus a founder or browser check;
+- Institution Activity renders the actor's avatar but no trust marks, which is
+  a deliberate scope boundary rather than an oversight: it presents an EVENT,
+  and whether an actor's verification belongs on an audit row is a
+  presentation decision the ruling did not make.
+
+An independent finding in the same investigation was WITHDRAWN. The stored
+avatar URLs were reported as a non-renderable `/media/<id>` shape; that was an
+artefact of a 48-character truncation in the census query used to gather the
+evidence. All six production values are the governed `/media/<id>/raw` form,
+the write path already converts to it, and the door returns real image bytes.
+No media-address defect existed and no production repair was required.
+
 ---
 
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER
