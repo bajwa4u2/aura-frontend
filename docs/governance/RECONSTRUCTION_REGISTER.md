@@ -339,6 +339,61 @@ Attention / Notification / Communication / Realtime / Events certification.
 
 ---
 
+### Live production certification — baseline captured, exercise BLOCKED (2026-08-23)
+
+Founder confirmed the connected browser holds their own account, and the app
+corroborated it directly: **M S Bajwa, Founder & Steward, "Speaks for Aura
+Platform"**.
+
+**BASELINE CAPTURED AT BOTH LAYERS**, which is the "before" half of *verify
+public state clears*:
+
+- persistence: every `RealtimeSession` is `liveState = NORMAL`; 640 ENDED, 2
+  CANCELLED, 0 SCHEDULED, and no session in any published state;
+- released client: the header Live surface renders its empty state
+  ("…sessions right now") — nothing live is discoverable.
+
+**THE EXERCISE DID NOT RUN, and the reason is structural rather than
+environmental.** `goLive` requires `session.status === ACTIVE` *and* the caller
+to be an ACTIVE participant. A session is born ACTIVE, so the founder does not
+need anyone to *answer* — but reaching that state means placing a call into a
+real conversation, and every conversation on this account addresses actual
+people (Mr Shah, Mrs Bajwa, Iffat, and two institution conversations).
+
+The authorisation is for a **controlled founder/reviewer session**. Ringing an
+uninvolved person's devices is not that exercise, and they never consented to
+being a certification subject. So Live is blocked by the SAME prerequisite as
+Meetings — a second controlled authenticated session — which was not previously
+understood: Live was believed independently executable.
+
+An Institution Live Room (`POST /rooms`, `rooms/:id/audio|video/start`) is a
+plausible non-intrusive surface, but it is NOT the Go Live mechanism
+(`conversations/:id/live/:sessionId/go-live`, PUBLIC_STAGE escalation).
+Substituting it would be redefining the certification rather than performing
+it, so it was not done.
+
+STATUS: `UNVERIFIED_BY_CONTROLLED_LIVE_EXERCISE`.
+
+#### Adjacent finding — `/realtime/live/broadcasts` returns 401 unauthenticated
+
+Recorded rather than judged from the endpoint name. The handler's own stated
+contract resolves it:
+
+> "GO LIVE viewer path (2026-08-17, task #172): ACTIVE PUBLIC_STAGE broadcasts,
+> listable by any authenticated user — the discovery feed behind the header
+> Live surface."
+
+So 401 is **consistent with the documented intent**: the Live discovery feed is
+authenticated-only by design, and "public" here means publicly *stageable to
+the signed-in audience*, not anonymously listable. That is a determination from
+the contract, not from the path segment — but it is worth carrying into the
+Live product reconstruction as an explicit audience-policy question, because a
+surface called "public" that no signed-out visitor can enumerate is a policy
+choice that should be stated in doctrine rather than inferred from a handler
+comment.
+
+---
+
 ## AUDIT-INSTRUMENT RULE (founder ruling, 2026-08-23)
 
 **A negative finding is not admissible until the instrument proves coverage of
