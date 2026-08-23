@@ -476,20 +476,14 @@ class _ProfileBody extends ConsumerWidget {
                   if (slug.isNotEmpty &&
                       identity?.id != null &&
                       identity!.id.isNotEmpty) ...[
+                    // The posts stay; the framing around them does not. A
+                    // heading that labels the institution's own posts as
+                    // "recent public posts", plus a second door to the public
+                    // profile, added chrome to a surface whose contextual
+                    // actions already sit above.
                     const InsSectionGap(),
-                    InsSection(
-                      eyebrow: 'Public',
-                      title: 'Recent public posts',
-                      trailing: AuraGhostButton(
-                        label: 'Open public profile',
-                        icon: Icons.open_in_new_rounded,
-                        onPressed: () => context.push(
-                          '/institutions/$slug',
-                        ),
-                      ),
-                      child: _PublicPostsPreview(
-                        institutionId: identity!.id,
-                      ),
+                    _PublicPostsPreview(
+                      institutionId: identity!.id,
                     ),
                   ],
                 ],

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/authority/capability_projection.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -41,18 +43,30 @@ class _InstitutionMembersScreenState
   InstitutionsRepository get _repo =>
       ref.read(institutionsRepositoryProvider);
 
-  bool get _isAdmin {
-    final r = _callerRole.toUpperCase();
-    // PLATFORM_ADMIN is what listMembers returns when the caller is a platform
-    // admin — the service short-circuits on the platform-admin check before it
-    // ever reads their institution membership role. Such a caller has full
-    // member-management authority on the backend (updateMemberRole/removeMember
-    // both honor the platform-admin bypass), so the workspace controls must be
-    // visible to them too. Without this, an operator who is also a platform
-    // admin (the common case for a verified institution's founder) sees a
-    // read-only member list and cannot change roles from the workspace.
-    return r == 'ADMIN' || r == 'OWNER' || r == 'PLATFORM_ADMIN';
-  }
+  /// PLATFORM_ADMIN is what listMembers returns when the caller is a platform
+  /// admin — the service short-circuits on that check before it ever reads
+  /// their institution membership role, and updateMemberRole/removeMember both
+  /// honour the same bypass. This is SERVER truth about which authority
+  /// applied, not a client role label, so it is consumed as reported.
+  ///
+  /// It is a genuinely different axis from institutional capability: platform
+  /// administration is accountable oversight of the platform, not standing
+  /// inside this institution.
+  bool get _platformAdminBypass =>
+      _callerRole.toUpperCase() == 'PLATFORM_ADMIN';
+
+  /// MAY THIS VIEWER MANAGE MEMBERSHIP?
+  ///
+  /// The role labels this replaced were approximating MANAGE_MEMBERS, which
+  /// the backend actually enforces and an OWNER may delegate to someone who is
+  /// not an admin at all. Seeing the roster is baseline participation; acting
+  /// on it is this.
+  bool get _canManageMembers =>
+      _platformAdminBypass ||
+      ref.watch(capabilityProjectionProvider).presentationFor(
+            ConsequentialAct.manageMembers,
+          ) ==
+          ControlPresentation.available;
 
   @override
   void didChangeDependencies() {
@@ -72,11 +86,22 @@ class _InstitutionMembersScreenState
     });
   }
 
-  bool get _isOwner {
-    final r = _callerRole.toUpperCase();
-    // Platform admins outrank owners, so they get the owner-tier options too.
-    return r == 'OWNER' || r == 'PLATFORM_ADMIN';
-  }
+  /// MAY THIS VIEWER CHANGE ROLES?
+  ///
+  /// DELIBERATELY STILL ROLE AUTHORITY. Appointing and removing ADMINs is
+  /// governance-exclusive: canonical doctrine keeps it OUT of the capability
+  /// model precisely so it can never be delegated away. Converting this to a
+  /// capability check would quietly make an ungovernable act delegable.
+  ///
+  /// So it asks the canonical authority for a GOVERNANCE act
+  /// (`ActingRequirement.governance(InstitutionRole.owner)`) rather than
+  /// comparing a role string here.
+  bool get _canGovernRoles =>
+      _platformAdminBypass ||
+      ref.watch(capabilityProjectionProvider).presentationFor(
+            ConsequentialAct.appointAdmin,
+          ) ==
+          ControlPresentation.available;
 
   @override
   void initState() {
@@ -286,21 +311,21 @@ class _InstitutionMembersScreenState
                   // GOVERNANCE: appointing/removing admins and transferring
                   // ownership are OWNER-exclusive; delegating Representative
                   // and Host is available to admins.
-                  if (_isOwner && role.toUpperCase() == 'MEMBER')
+                  if (_canGovernRoles && role.toUpperCase() == 'MEMBER')
                     PopupMenuItem(
                       value: 'PROMOTE',
                       child: Text('Promote to Admin',
                           style: AuraText.small
                               .copyWith(color: AuraSurface.accentText)),
                     ),
-                  if (_isOwner && role.toUpperCase() == 'ADMIN')
+                  if (_canGovernRoles && role.toUpperCase() == 'ADMIN')
                     PopupMenuItem(
                       value: 'DEMOTE',
                       child: Text('Demote to Member',
                           style:
                               AuraText.small.copyWith(color: AuraSurface.coSun)),
                     ),
-                  if (_isOwner && role.toUpperCase() != 'OWNER')
+                  if (_canGovernRoles && role.toUpperCase() != 'OWNER')
                     PopupMenuItem(
                       value: 'TRANSFER',
                       child: Text('Transfer ownership…',
@@ -370,8 +395,8 @@ class _InstitutionMembersScreenState
   bool _canManageThisMember(String role) {
     final r = role.toUpperCase();
     if (r == 'OWNER') return false;
-    if (r == 'ADMIN') return _isOwner;
-    return _isAdmin;
+    if (r == 'ADMIN') return _canGovernRoles;
+    return _canManageMembers;
   }
 
   Widget _pill(String label, Color fg, Color bg) => Container(
@@ -558,7 +583,7 @@ class _InstitutionMembersScreenState
               style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
             const Spacer(),
-            if (_isAdmin)
+            if (_canManageMembers)
               Text(
                 'Tap ⋮ for options',
                 style: AuraText.micro.copyWith(color: AuraSurface.faint),
@@ -587,7 +612,7 @@ class _InstitutionMembersScreenState
       // as admin-panel language in a regular workspace surface; use the
       // plain product terms (people who belong, what they can do).
       subtitle: 'People who belong to this institution, what they can do, and pending join requests.',
-      trailing: _isAdmin
+      trailing: _canManageMembers
           ? AuraPrimaryButton(
               label: 'Invite',
               icon: Icons.person_add_alt_1_rounded,
