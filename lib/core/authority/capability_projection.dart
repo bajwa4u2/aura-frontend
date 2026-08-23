@@ -247,6 +247,11 @@ enum ConsequentialAct {
   manageMeetings,
   hostMeeting,
   startLive,
+
+  /// Named so NAVIGATION can ask the same question controls ask. Both map to
+  /// capabilities the backend enum already defines -- nothing new is granted.
+  manageAvailability,
+  manageAnalytics,
   manageBranding,
   manageDomains,
   manageBilling,
@@ -297,6 +302,11 @@ extension ConsequentialActAuthority on ConsequentialAct {
             InstitutionCapabilityToken.manageMeetings),
         ConsequentialAct.hostMeeting => const ActingRequirement.capability(
             InstitutionCapabilityToken.hostMeetings),
+        ConsequentialAct.manageAvailability =>
+          const ActingRequirement.capability(
+              InstitutionCapabilityToken.manageAvailability),
+        ConsequentialAct.manageAnalytics => const ActingRequirement.capability(
+            InstitutionCapabilityToken.manageAnalytics),
         ConsequentialAct.startLive =>
           const ActingRequirement.capability(InstitutionCapabilityToken.startLive),
         ConsequentialAct.manageBranding => const ActingRequirement.capability(

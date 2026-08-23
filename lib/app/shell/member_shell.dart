@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../route_classification.dart';
 import '../../core/auth/session_providers.dart';
+import '../../core/authority/capability_projection.dart';
 import '../../core/institutions/institution_access_provider.dart';
 import '../../core/institutions/institution_paths.dart';
 import '../../core/media/aura_attachment_image.dart';
@@ -1394,16 +1395,15 @@ class _MemberSideNavTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Describes a single entry in the institution side nav.
-class _InstEntry {
-  const _InstEntry({
+class InstWorkspaceEntry {
+  const InstWorkspaceEntry({
     required this.label,
     required this.icon,
     required this.selectedIcon,
     this.sectionLabel,
     this.pathBuilder,
     this.pathMatcher,
-    this.adminOnly = false,
-    this.visibleWhen,
+    this.requiresAny = const <ConsequentialAct>[],
     this.badge = 0,
     // ignore: unused_element_parameter
     this.disabled = false,
@@ -1416,10 +1416,51 @@ class _InstEntry {
   final IconData selectedIcon;
   final String? sectionLabel;
 
-  /// GOVERNANCE V1: capability-based visibility. When it returns false the
-  /// entry is HIDDEN (doctrine: hide what a user cannot use — never grey an
-  /// administrative control). Null means always visible.
-  final bool Function(InstitutionIdentity?)? visibleWhen;
+  /// THE AUTHORITY THIS DESTINATION REQUIRES, as canonical acts.
+  ///
+  /// Compositional, never role-shaped (founder ruling §9): a destination names
+  /// the act it exists for, and the person's effective authority answers.
+  /// Holding any one suffices, so Member+Host and Member+Representative compose
+  /// without a variant of this list per role.
+  ///
+  /// Expressed as [ConsequentialAct] so navigation asks the SAME authority that
+  /// governs controls — `CapabilityProjection`, whose own doctrine is "what may
+  /// I do in this context", consuming the backend's effective set and never
+  /// recomputing it. A parallel list of raw capability strings here would be a
+  /// second client authority answering one question, which is the drift this
+  /// reconstruction removes.
+  ///
+  /// EMPTY means the PARTICIPATION BASELINE (D1): standing in the institution
+  /// is itself the authority. It does not mean "always visible" — a person with
+  /// no standing has no workspace at all.
+  final List<ConsequentialAct> requiresAny;
+
+  /// Whether this viewer may hold this destination. Standing is the floor;
+  /// the act's own requirement is the test above it.
+  ///
+  /// Hiding is not the security boundary and never was — the backend enforces.
+  /// This decides what is OFFERED, so nobody navigates around controls built
+  /// for authority they do not hold.
+  bool permits(InstitutionIdentity? identity) {
+    if (identity == null || identity.id.isEmpty) return false;
+    if (requiresAny.isEmpty) return true;
+
+    final projection = CapabilityProjection(
+      InstitutionStanding.fromBackend(
+        institutionId: identity.id,
+        institutionName: identity.name,
+        institutionLogoUrl: identity.logoUrl,
+        capabilities: identity.capabilities,
+        roleWire: identity.role,
+        isInstitutionAccount:
+            identity.isAuthorizedSpeaker && (identity.role ?? '').isEmpty,
+      ),
+    );
+
+    return requiresAny.any(
+      (act) => projection.presentationFor(act) == ControlPresentation.available,
+    );
+  }
 
   /// Pending-attention count rendered as a badge (0 = none).
   final int badge;
@@ -1430,7 +1471,6 @@ class _InstEntry {
   /// Custom path matcher: returns true if this item is "selected" for path.
   final bool Function(String)? pathMatcher;
 
-  final bool adminOnly;
   final bool disabled;
   final String? disabledReason;
 
@@ -1439,15 +1479,14 @@ class _InstEntry {
 
   /// Returns a copy carrying [section] as its section label (used to reflow
   /// section headers onto the first visible entry after capability filtering).
-  _InstEntry withSectionLabel(String section) => _InstEntry(
+  InstWorkspaceEntry withSectionLabel(String section) => InstWorkspaceEntry(
         label: label,
         icon: icon,
         selectedIcon: selectedIcon,
         sectionLabel: section,
         pathBuilder: pathBuilder,
         pathMatcher: pathMatcher,
-        adminOnly: adminOnly,
-        visibleWhen: visibleWhen,
+        requiresAny: requiresAny,
         badge: badge,
       );
 
@@ -1460,7 +1499,7 @@ class _InstEntry {
   }
 }
 
-List<_InstEntry> _buildInstEntries(
+List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
   InstitutionIdentity? identity, {
   int pendingJoinRequests = 0,
   int pendingInvites = 0,
@@ -1475,19 +1514,10 @@ List<_InstEntry> _buildInstEntries(
   // The left rail is the single home for ALL institution navigation, grouped
   // by intent (WORKSPACE / ADMIN / GOVERNANCE / IDENTITY). GOVERNANCE V1:
   // entries a member lacks authority for are HIDDEN, not greyed.
-  final all = <_InstEntry>[
+  final all = <InstWorkspaceEntry>[
     // ── WORKSPACE ──────────────────────────────────────────────────────────
-    _InstEntry(
+    InstWorkspaceEntry(
       sectionLabel: 'WORKSPACE',
-      label: 'Overview',
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view_rounded,
-      pathBuilder: (_) => '/institution/dashboard',
-      pathMatcher: (p) =>
-          p == '/institution/dashboard' ||
-          (p.startsWith('/institution/') && p.endsWith('/dashboard')),
-    ),
-    _InstEntry(
       label: 'Explore',
       icon: Icons.explore_outlined,
       selectedIcon: Icons.explore_rounded,
@@ -1496,7 +1526,7 @@ List<_InstEntry> _buildInstEntries(
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/explore'),
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Activity',
       icon: Icons.timeline_outlined,
       selectedIcon: Icons.timeline_rounded,
@@ -1504,7 +1534,7 @@ List<_InstEntry> _buildInstEntries(
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/activity'),
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Announcements',
       icon: Icons.campaign_outlined,
       selectedIcon: Icons.campaign_rounded,
@@ -1512,7 +1542,7 @@ List<_InstEntry> _buildInstEntries(
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/announcements'),
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Live',
       icon: Icons.sensors_outlined,
       selectedIcon: Icons.sensors_rounded,
@@ -1520,7 +1550,7 @@ List<_InstEntry> _buildInstEntries(
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/live'),
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Spaces',
       icon: Icons.forum_outlined,
       selectedIcon: Icons.forum_rounded,
@@ -1528,7 +1558,7 @@ List<_InstEntry> _buildInstEntries(
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/spaces'),
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Messages',
       icon: Icons.chat_bubble_outline_rounded,
       selectedIcon: Icons.chat_bubble_rounded,
@@ -1536,7 +1566,7 @@ List<_InstEntry> _buildInstEntries(
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/messages'),
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Meetings',
       icon: Icons.videocam_outlined,
       selectedIcon: Icons.videocam_rounded,
@@ -1547,44 +1577,74 @@ List<_InstEntry> _buildInstEntries(
     ),
 
     // ── ADMIN ──────────────────────────────────────────────────────────────
-    _InstEntry(
+    InstWorkspaceEntry(
       sectionLabel: 'ADMIN',
       label: 'Members',
       icon: Icons.people_outline_rounded,
       selectedIcon: Icons.people_rounded,
+      // PARTICIPATION BASELINE, deliberately. Canonical doctrine, stated in
+      // institutions.service.ts: "Visibility follows responsibility: every
+      // member sees who holds delegated capabilities." Knowing who speaks and
+      // hosts for your institution is participation, not administration.
+      // MANAGE_MEMBERS governs the ACTIONS inside, not the destination.
       pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/members' : null,
       pathMatcher: (p) =>
           p.contains('/members') && p.startsWith('/institution/'),
     ),
-    _InstEntry(
+    // D6: Overview is the OPERATIONAL institution destination and belongs in
+    // ADMIN immediately after Members. It is no longer the standing surface
+    // and no longer the id-less address -- both were the dual-purpose overload
+    // the ruling retires.
+    //
+    // "Operational authority" is expressed compositionally, as holding ANY
+    // administrative capability, rather than as a role test. That is what
+    // keeps a pure Representative or Host -- who hold real authority, but not
+    // administrative authority -- out of an operational surface without
+    // needing a variant of this entry per role.
+    InstWorkspaceEntry(
+      label: 'Overview',
+      icon: Icons.grid_view_outlined,
+      selectedIcon: Icons.grid_view_rounded,
+      requiresAny: const [
+        ConsequentialAct.manageMembers,
+        ConsequentialAct.manageJoinRequests,
+        ConsequentialAct.manageInvitations,
+        ConsequentialAct.manageSpaces,
+        ConsequentialAct.publishAnnouncement,
+        ConsequentialAct.manageMeetings,
+        ConsequentialAct.manageAvailability,
+        ConsequentialAct.manageAnalytics,
+      ],
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/dashboard' : null,
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.endsWith('/dashboard'),
+    ),
+    InstWorkspaceEntry(
       label: 'Join Requests',
       icon: Icons.person_add_outlined,
       selectedIcon: Icons.person_add_rounded,
-      adminOnly: true,
-      visibleWhen: (idn) => idn?.canManageJoinRequests ?? false,
+      requiresAny: const [ConsequentialAct.manageJoinRequests],
       badge: pendingJoinRequests,
       pathBuilder: (_) =>
           id.isNotEmpty ? '/institution/$id/join-requests' : null,
       pathMatcher: (p) =>
           p.contains('/join-requests') && p.startsWith('/institution/'),
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Invites',
       icon: Icons.mail_outline_rounded,
       selectedIcon: Icons.mail_rounded,
-      adminOnly: true,
-      visibleWhen: (idn) => idn?.canManageInvitations ?? false,
+      requiresAny: const [ConsequentialAct.manageInvitations],
       badge: pendingInvites,
       pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/invites' : null,
       pathMatcher: (p) =>
           p.contains('/invite') && p.startsWith('/institution/'),
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Booking pages',
       icon: Icons.calendar_today_outlined,
       selectedIcon: Icons.calendar_today_rounded,
-      adminOnly: true,
-      visibleWhen: (idn) => idn?.canManageAvailability ?? false,
+      requiresAny: const [ConsequentialAct.manageAvailability],
       pathBuilder: (_) =>
           id.isNotEmpty ? '/institution/$id/availability' : null,
       pathMatcher: (p) =>
@@ -1592,28 +1652,28 @@ List<_InstEntry> _buildInstEntries(
     ),
 
     // ── GOVERNANCE (owner-held; hidden from operators without the capability)
-    _InstEntry(
+    InstWorkspaceEntry(
       sectionLabel: 'GOVERNANCE',
       label: 'Domains',
       icon: Icons.language_rounded,
       selectedIcon: Icons.language_rounded,
-      visibleWhen: (idn) => idn?.canManageDomains ?? false,
+      requiresAny: const [ConsequentialAct.manageDomains],
       pathBuilder: (_) => id.isNotEmpty
           ? institutionWorkspacePath(id, InstitutionSection.domains)
           : null,
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Billing',
       icon: Icons.account_balance_wallet_outlined,
       selectedIcon: Icons.account_balance_wallet_rounded,
-      visibleWhen: (idn) => idn?.canManageBilling ?? false,
+      requiresAny: const [ConsequentialAct.manageBilling],
       pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/billing' : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.endsWith('/billing'),
     ),
 
     // ── IDENTITY ───────────────────────────────────────────────────────────
-    _InstEntry(
+    InstWorkspaceEntry(
       sectionLabel: 'IDENTITY',
       label: 'Profile',
       icon: Icons.badge_outlined,
@@ -1622,12 +1682,11 @@ List<_InstEntry> _buildInstEntries(
           ? institutionWorkspacePath(id, InstitutionSection.profile)
           : null,
     ),
-    _InstEntry(
+    InstWorkspaceEntry(
       label: 'Edit Profile',
       icon: Icons.edit_outlined,
       selectedIcon: Icons.edit_rounded,
-      adminOnly: true,
-      visibleWhen: (idn) => idn?.canManageBranding ?? false,
+      requiresAny: const [ConsequentialAct.manageBranding],
       pathBuilder: (_) => id.isNotEmpty
           ? institutionWorkspacePath(id, InstitutionSection.editProfile)
           : null,
@@ -1650,12 +1709,11 @@ List<_InstEntry> _buildInstEntries(
   // Filter to entries the acting member may use, then reflow section labels
   // so a section whose anchor was hidden still labels its first visible entry
   // (and a fully hidden section disappears entirely).
-  final visible = <_InstEntry>[];
+  final visible = <InstWorkspaceEntry>[];
   String? pendingSection;
   for (final e in all) {
     if (e.sectionLabel != null) pendingSection = e.sectionLabel;
-    final allowed = e.visibleWhen?.call(identity) ?? true;
-    if (!allowed) continue;
+    if (!e.permits(identity)) continue;
     if (pendingSection != null && pendingSection != e.sectionLabel) {
       visible.add(e.withSectionLabel(pendingSection));
     } else {
@@ -1686,7 +1744,7 @@ class _InstitutionSideNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = _buildInstEntries(
+    final entries = buildInstitutionWorkspaceEntries(
       identity,
       pendingJoinRequests: pendingJoinRequests,
       pendingInvites: pendingInvites,
@@ -1811,7 +1869,7 @@ class _InstitutionSideNavTile extends StatelessWidget {
     this.onNavigate,
   });
 
-  final _InstEntry entry;
+  final InstWorkspaceEntry entry;
   final bool selected;
   final InstitutionIdentity? identity;
   final String currentPath;
@@ -1915,27 +1973,6 @@ class _InstitutionSideNavTile extends StatelessWidget {
                               color: AuraSurface.faint.withValues(alpha: 0.5),
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                        if (isDisabled && entry.adminOnly && !isDisabled) ...[
-                          const SizedBox(width: AuraSpace.s6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _institutionAccentSoft,
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: Text(
-                              'Admin',
-                              style: AuraText.micro.copyWith(
-                                color: _institutionAccentText,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                              ),
                             ),
                           ),
                         ],
