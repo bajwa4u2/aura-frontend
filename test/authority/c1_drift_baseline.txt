@@ -27,7 +27,6 @@ R1 3 lib/features/communications/presentation/widgets/communication_status_cards
 R1 2 lib/features/create/presentation/create_hub_screen.dart
 R1 2 lib/features/institutions/activity/institution_activity_screen.dart
 R1 9 lib/features/institutions/correspondence/institution_correspondence_screen.dart
-R1 2 lib/features/institutions/explore/institution_explore_screen.dart
 # live_rooms 4 -> 0: startLive gate converged onto C1 capability projection (C2 closeout, 2026-08-16)
 R1 1 lib/features/institutions/presentation/admin_workspace_screen.dart
 R1 3 lib/features/institutions/presentation/institution_invites_screen.dart
@@ -39,7 +38,6 @@ R1 4 lib/router.dart
 
 # -- R2 -- 3 files / 6 sites
 R2 3 lib/features/admin/presentation/admin_institution_members_screen.dart
-R2 1 lib/features/institutions/explore/institution_explore_screen.dart
 R2 2 lib/features/posts/presentation/widgets/communication_continuity_view.dart
 
 # -- A1 -- route-derived acting identity: 0 files / 0 sites

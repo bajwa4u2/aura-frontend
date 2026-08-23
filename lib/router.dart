@@ -1790,6 +1790,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Units (already canonical, kept here for proximity).
           GoRoute(
             path: '/institution/:institutionId/units',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'units',
+            ),
             builder: (_, state) => InstitutionUnitsScreen(
               institutionId: state.pathParameters['institutionId']!,
             ),
@@ -1932,12 +1938,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/announcements',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'announcements',
+            ),
             builder: (context, state) => InstitutionAnnouncementsScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/announcements/new',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'announcements/new',
+            ),
             builder: (context, state) => InstitutionAnnouncementComposer(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
@@ -1952,6 +1970,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/spaces',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'spaces',
+            ),
             builder: (context, state) => InstitutionSpacesScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
@@ -2036,6 +2060,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/posts/new',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'posts/new',
+            ),
             builder: (context, state) => InstitutionPostComposerScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
               defaultScope: state.uri.queryParameters['scope'],
@@ -2098,6 +2128,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/posts/:postId/edit',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'posts/edit',
+            ),
             builder: (context, state) => InstitutionPostComposerScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
               postId: state.pathParameters['postId'],
@@ -2105,6 +2141,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/activity',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'activity',
+            ),
             builder: (context, state) => InstitutionActivityScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),

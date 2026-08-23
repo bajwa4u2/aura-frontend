@@ -252,6 +252,16 @@ enum ConsequentialAct {
   /// capabilities the backend enum already defines -- nothing new is granted.
   manageAvailability,
   manageAnalytics,
+
+  /// AUTHORING in the institution's voice, as distinct from PUBLISHING it.
+  ///
+  /// The backend draws this line consistently: creating and editing an
+  /// institution post or announcement requires OFFICIAL_REPRESENTATION, while
+  /// publishing requires PUBLISH_OFFICIAL / MANAGE_ANNOUNCEMENTS. That is what
+  /// lets a Representative draft official content without holding the
+  /// authority to release it, which is the whole point of the role being a
+  /// speaking authority rather than an administrative one.
+  authorOfficialContent,
   manageBranding,
   manageDomains,
   manageBilling,
@@ -307,6 +317,9 @@ extension ConsequentialActAuthority on ConsequentialAct {
               InstitutionCapabilityToken.manageAvailability),
         ConsequentialAct.manageAnalytics => const ActingRequirement.capability(
             InstitutionCapabilityToken.manageAnalytics),
+        ConsequentialAct.authorOfficialContent =>
+          const ActingRequirement.capability(
+              InstitutionCapabilityToken.officialRepresentation),
         ConsequentialAct.startLive =>
           const ActingRequirement.capability(InstitutionCapabilityToken.startLive),
         ConsequentialAct.manageBranding => const ActingRequirement.capability(

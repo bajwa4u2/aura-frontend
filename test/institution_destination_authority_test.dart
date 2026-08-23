@@ -164,6 +164,47 @@ void main() {
     });
   });
 
+  group('authoring is Representative authority, not administration', () {
+    final representative = projectionFor(
+      role: 'MEMBER',
+      capabilities: {InstitutionCapabilities.officialRepresentation},
+    );
+    final member = projectionFor(role: 'MEMBER');
+
+    test('a Representative may reach the authoring destinations', () {
+      // The backend draws this line: authoring requires
+      // OFFICIAL_REPRESENTATION, publishing requires PUBLISH_OFFICIAL /
+      // MANAGE_ANNOUNCEMENTS. A Representative drafts; releasing is separate.
+      for (final section in ['posts/new', 'posts/edit', 'announcements/new']) {
+        expect(institutionDestinationPermits(representative, section), isTrue,
+            reason: '$section is authoring in the institution voice');
+      }
+    });
+
+    test('and still reaches nothing administrative', () {
+      for (final section in ['dashboard', 'invites', 'billing', 'domains']) {
+        expect(institutionDestinationPermits(representative, section), isFalse);
+      }
+    });
+
+    test('a plain member may read but not author', () {
+      expect(institutionDestinationPermits(member, 'announcements'), isTrue);
+      expect(institutionDestinationPermits(member, 'announcements/new'), isFalse);
+      expect(institutionDestinationPermits(member, 'posts/new'), isFalse);
+    });
+
+    test('an authoring verb is part of the destination identity', () {
+      // Reading a post and composing one are different acts, so the address
+      // must not collapse them into one section.
+      expect(institutionSectionOf('/institution/i1/posts/new'), 'posts/new');
+      expect(
+        institutionSectionOf('/institution/i1/posts/p1/edit'),
+        'posts/edit',
+      );
+      expect(institutionSectionOf('/institution/i1/posts/p1'), 'posts');
+    });
+  });
+
   group('unresolved standing decides nothing (RC2)', () {
     test('a null projection refuses rather than admits', () {
       // The ROUTER checks `resolved` before consulting this, so a person mid

@@ -56,6 +56,12 @@ const Map<String, List<ConsequentialAct>> kInstitutionDestinationAuthority =
   'domains': [ConsequentialAct.manageDomains],
   'billing': [ConsequentialAct.manageBilling],
   'edit-profile': [ConsequentialAct.manageBranding],
+
+  // AUTHORING destinations. Representative authority reaches these; publishing
+  // is separately governed at the act itself, not at the door.
+  'posts/new': [ConsequentialAct.authorOfficialContent],
+  'posts/edit': [ConsequentialAct.authorOfficialContent],
+  'announcements/new': [ConsequentialAct.authorOfficialContent],
 };
 
 /// The acts required to hold [section], or an empty list for the
@@ -86,11 +92,21 @@ bool institutionDestinationPermits(
 /// The section a canonical institution path names, or null when the path is
 /// not an id-scoped institution destination.
 ///
-/// `/institution/<id>/<section>[/...]` → `<section>`.
+/// `/institution/<id>/<section>[/...]` → `<section>`, except that an authoring
+/// verb is part of the destination's identity: composing an institution post
+/// is a different act from reading one, so `/posts/new` and
+/// `/posts/<id>/edit` resolve to `posts/new` and `posts/edit` rather than
+/// collapsing into `posts`.
 String? institutionSectionOf(String path) {
   final parts = path.split('?').first.split('/')
     ..removeWhere((p) => p.isEmpty);
   if (parts.length < 3) return null;
   if (parts[0] != 'institution') return null;
-  return parts[2];
+
+  final section = parts[2];
+  final last = parts.last;
+  if (parts.length > 3 && (last == 'new' || last == 'edit')) {
+    return '$section/$last';
+  }
+  return section;
 }

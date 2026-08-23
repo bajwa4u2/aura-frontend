@@ -108,16 +108,26 @@ Permission to participate is not permission to measure the institution. It now
 requires `MANAGE_ANALYTICS` *within* the MEMBER floor — so a delegated analyst
 who is not an admin qualifies, and an admin without the capability does not.
 
-**Positive finding:** there is no endpoint returning another identifiable
-person's private engagement. The per-person disclosure question has no surface
-to defend, which is the right answer rather than a gap.
+**PRESERVED PRIVACY PROPERTY (founder-ratified):** Aura exposes **no endpoint
+returning another identifiable person's private engagement**. This is recorded
+as a property to keep, not as a missing capability — any future need would
+require a separately named accountability authority and a defined product
+purpose.
 
-**Recorded, deliberately NOT changed:** `list` / `:recordId` return *public*
-records behind a MEMBER gate. Under the D4 ruling ("visible according to the
-underlying publication policy") that gate is **stricter than the policy** —
-under-exposure, not a privacy defect. Loosening access is a disclosure decision
-and is not made silently here; the institutional *routing* of a public record
-may itself be operational information. Flagged for a founder decision.
+### FOUNDER RULING — `engagement/list` stays gated
+
+The MEMBER gate is **correct and stays**. It is *not* under-exposure and must
+not be characterised as awaiting loosening.
+
+> Individual public visibility does not automatically authorise a compiled,
+> institution-scoped engagement index. Aggregation, institutional grouping,
+> chronology, filtering and discoverability create a **materially different
+> disclosure** from the sum of the individually public records.
+
+`list` / `:recordId` are therefore classified **operational / member-context**,
+not public. If Aura later needs public institutional engagement discovery, it
+gets a deliberate public projection built under public audience policy — never
+by weakening an operational endpoint's gate.
 
 ---
 
@@ -126,7 +136,7 @@ may itself be operational information. Flagged for a founder decision.
 | Surface | Data a MEMBER sees | Representative changes? | Operational authority adds | Classification |
 |---|---|---|---|---|
 | Activity | PUBLIC + MEMBER events | **no** | ADMIN-tier operational trail | member-contextual → operational |
-| Engagement list | public routed records | no | — | public |
+| Engagement list | routed public records, as a member-context index | no | — | **operational / member-context** (ruled) |
 | Engagement summary | **nothing** | no | aggregate counts | analytical |
 | Members | roster + who holds delegated capabilities | no | management actions | member-contextual (doctrine A5) |
 | Spaces | spaces their standing admits (server-filtered) | no | management + archived scope | member-contextual |
@@ -138,9 +148,29 @@ No surface grants identifiable-person engagement to any authority.
 
 ---
 
-## 5. Still open — nothing marked resolved by inference
+## 5. The frozen governing distinction
 
-* Engagement `list` gate vs publication policy (§3) — **founder decision**.
+> **Institutional visibility follows the responsibility actually held, not role
+> rank.**
+
+A person holding delegated operational capability may receive the operational
+context needed to exercise and account for that responsibility. Conversely:
+
+* an **ADMIN label alone** must not manufacture operational visibility the
+  effective capability set does not provide;
+* **Representative / Speaker** must not imply administrative or analytical
+  visibility;
+* **Host** must not imply administrative or analytical visibility;
+* **MEMBER standing alone** must not expose institution-wide operational or
+  analytical information.
+
+`OPERATIONAL_CAPABILITIES` is approved **on condition** that it stays derived
+from canonical effective capabilities and never becomes an independent
+entitlement system. It is a named subset of the backend enum, computed against
+`getContext()`; it grants nothing on its own.
+
+## 6. Still open — nothing marked resolved by inference
+
 * Explore entry scope ambiguity (D2 partially ruled; the *entry* remains
   unvalidated in the router).
 * Audit destinations still unvalidated and recommended: `/announcements`,

@@ -121,23 +121,42 @@ class _InstitutionExploreScreenState
       _visibleScopes = newScopes;
       _tabController = TabController(
         length: newScopes.length.clamp(1, 3),
+        initialIndex: _entryScopeIndex(newScopes)
+            .clamp(0, newScopes.length.clamp(1, 3) - 1),
         vsync: this,
       );
     });
   }
 
   List<_ExploreScopeKey> _scopesFor(InstitutionIdentity? identity) {
-    final role = (identity?.role ?? '').toUpperCase();
-    final isAdminLike = identity?.canPublishPosts ?? false;
+    final canPublishOfficially = identity?.canPublishPosts ?? false;
     final isMember = identity != null;
     return [
-      // Public is always visible — it is the global feed and any user can
-      // see it. Member requires institution membership; Internal requires
-      // editor/admin/owner.
+      // Public is the global feed and needs no standing. Member requires
+      // standing. Internal requires PUBLISH_OFFICIAL.
+      //
+      // The `role == 'EDITOR'` half of this test was dead: EDITOR was retired
+      // in the Governance V1 establishment and its rows were migrated to
+      // MEMBER with capabilities, so the client was carrying a role concept
+      // the product no longer has. The capability beside it is the real answer.
       _ExploreScopeKey.public,
       if (isMember) _ExploreScopeKey.member,
-      if (isAdminLike || role == 'EDITOR') _ExploreScopeKey.internal,
+      if (canPublishOfficially) _ExploreScopeKey.internal,
     ];
+  }
+
+  /// WHERE EXPLORE OPENS (founder ruling D2, 2026-08-23).
+  ///
+  /// Entering the institution workspace as a member opens the MEMBER
+  /// projection. Public remains a legitimate scope and stays available — but
+  /// the entry to a workspace should be the workspace's own view, not the
+  /// global feed that happens to sit first in the list.
+  ///
+  /// Contextual, not a global default: someone with no standing has no member
+  /// scope, so they open on Public, which is the correct public experience.
+  int _entryScopeIndex(List<_ExploreScopeKey> scopes) {
+    final member = scopes.indexOf(_ExploreScopeKey.member);
+    return member >= 0 ? member : 0;
   }
 
   void _onCompose(_ExploreScopeKey scope) {
