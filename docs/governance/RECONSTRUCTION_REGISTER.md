@@ -411,6 +411,74 @@ Behaviour is unchanged and preserved until ruled.
 
 ---
 
+### CANONICAL CONVERSATION MESSAGE LIFECYCLE (founder ruling, 2026-08-23)
+
+**Accounting correction: this was not only an unread-lifecycle defect.** After
+the DirectThread and member-Space authority convergence, Conversation was
+canonical for persistence, read and write — but realtime message propagation
+still belonged only to the retired Thread runtime. **Conversation convergence
+had an incomplete runtime boundary.** The stalled badge was the symptom that
+led to it; the messaging surface was not live.
+
+```
+WRITE
+  → Conversation persistence authority
+  → canonical Conversation realtime change signal
+  → addressed authenticated user room
+  → client receives TRIGGER
+  → client re-reads canonical Conversation endpoint
+  → presentation updates
+```
+
+The socket payload is a **change trigger, not message-content authority**. A
+socket that carried content would become a second source of messages with its
+own shape and its own staleness.
+
+**Addressing uses the existing authenticated user rooms.** Every client already
+joins `user:<id>` on connect, so authority is inherent — a socket receives only
+what was addressed to its own user. Conversation socket-room membership is NOT
+to be created for symmetry; it would need its own handshake, a second place for
+access to drift from the Conversation party list. Revisit only if evidence
+exposes a requirement user rooms cannot satisfy.
+
+```
+READ LIFECYCLE:  delivery ≠ presentation ≠ read
+```
+
+Read state may advance only when qualifying Conversation content is **visibly
+presented**: the conversation route is foreground and on top, the application
+is resumed, and the canonical content has been presented. Background delivery,
+covered routes, socket receipt, notification delivery, or persistence alone
+must **never** assert human reading.
+
+#### Compatibility, with a retirement condition
+
+`thread:message.created` / `thread:message.updated` client subscriptions are
+**compatibility consumers only**. They are not canonical Conversation realtime
+authority and must not become a path back toward Thread authority.
+
+**RETIREMENT CONDITION:** they are removed once `MessagesGateway` no longer
+emits either event — that is, when the legacy Thread runtime has no remaining
+producer — which is gated by the Thread legacy retirement already recorded as
+OPEN / BOUNDED. No separate authorisation is needed; when the producer is gone
+the subscriptions go with it.
+
+---
+
+### CERTIFICATION DISCIPLINE — a green Jest run is not a typecheck
+
+`ts-jest` transpiles without type-checking in this repository, so type-invalid
+code can pass a fully green suite. This was not hypothetical: a DirectThread
+cutover spec constructed a service with the wrong arity, passed Jest, and was
+caught only by `tsc --noEmit`.
+
+For backend changes, certification includes the **TypeScript typecheck boundary
+in addition to behavioural tests**. Scoped to what the toolchain evidence
+supports — this is a statement about ts-jest transpilation here, not a general
+claim about test suites.
+
+---
+
 ## AUDIT-INSTRUMENT RULE (founder ruling, 2026-08-23)
 
 **A negative finding is not admissible until the instrument proves coverage of

@@ -152,14 +152,19 @@ class CorrespondenceLiveService {
       'space:member.updated',
       'thread:member.joined',
       'thread:member.updated',
-      // CANONICAL CONVERSATION MESSAGES.
-      //
-      // The `thread:*` names below are the legacy Thread runtime, retired as
-      // an authority by the DirectThread and member-Space cutovers. They are
-      // kept as compatibility for anything still emitting them; this is the
-      // canonical one, and it is why a conversation open on screen now
-      // receives what arrives in it.
+      // CANONICAL CONVERSATION MESSAGES. This is the authority.
       'conversation:message.created',
+
+      // COMPATIBILITY CONSUMERS ONLY — the legacy Thread runtime, retired as
+      // an authority by the DirectThread and member-Space cutovers. They are
+      // NOT canonical Conversation realtime authority and must not become a
+      // path back toward Thread authority.
+      //
+      // RETIREMENT CONDITION: removed once MessagesGateway no longer emits
+      // either event — i.e. when the legacy Thread runtime has no remaining
+      // producer. That is gated by the Thread legacy retirement, already
+      // recorded OPEN / BOUNDED. When the producer goes, these go with it; no
+      // separate authorisation is needed.
       'thread:message.created',
       'thread:message.updated',
       'thread:message.deleted',
