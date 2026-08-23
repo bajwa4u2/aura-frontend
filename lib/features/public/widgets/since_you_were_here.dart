@@ -8,7 +8,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../updates/providers.dart';
-import '../../../core/identity/person_identity_model.dart';
+import '../../../core/notifications/notification_presentation.dart';
 
 /// Public-UX Phase 6 — re-entry "Since you were here" section.
 ///
@@ -69,54 +69,25 @@ class _SinceYouWereHereSectionState
     return out;
   }
 
+  /// ONE RESOLVER FOR THE WHOLE CLIENT.
+  ///
+  /// This band reads notification rows straight from
+  /// `notificationsControllerProvider`, so it IS notification presentation --
+  /// and it had a vocabulary of its own for the same events ("replied to your
+  /// discussion" against "replied to your post", "mentioned you" duplicated
+  /// outright). Three surfaces, three sentences, one event.
+  ///
+  /// The discussion framing is not lost product voice; it is the drift. A
+  /// reply is the same reply whether it is read here, in the rail, in the
+  /// Notifications screen or in an email.
   String _headlineFor(Map<String, dynamic> item) {
-    final kind =
-        (item['type'] ?? item['kind'] ?? '').toString().toUpperCase();
-    final actor = item['actor'];
-    final actorInst = item['actorInstitution'];
-    // F053/F116 — institution identity keeps its own read; the PERSON half
-    // goes through the canonical model.
-    final actorName = actorInst is Map
-        ? (actorInst['name'] ?? '').toString()
-        : AuraPersonIdentity.fromJson(actor).displayName;
-    switch (kind) {
-      case 'ACCOUNTABILITY_TAGGED':
-        final tag = ((item['payload'] is Map ? item['payload'] : item['data'])
-                as Map?)?['accountabilityTag']
-            ?.toString()
-            .toUpperCase();
-        switch (tag) {
-          case 'COMMITMENT':
-            return actorName.isNotEmpty
-                ? '$actorName committed to address your discussion'
-                : 'An institution committed to address your discussion';
-          case 'UPDATE':
-            return actorName.isNotEmpty
-                ? '$actorName posted an update on your discussion'
-                : 'An institution posted an update on your discussion';
-          case 'RESOLVED':
-            return actorName.isNotEmpty
-                ? 'Your discussion was resolved by $actorName'
-                : 'Your discussion was resolved';
-          default:
-            return actorName.isNotEmpty
-                ? '$actorName updated your discussion'
-                : 'An institution updated your discussion';
-        }
-      case 'PRIORITY_PINNED':
-        return actorName.isNotEmpty
-            ? '$actorName pinned a priority response to your discussion'
-            : 'A priority response was pinned to your discussion';
-      case 'MENTION':
-        return actorName.isNotEmpty
-            ? '$actorName mentioned you'
-            : 'You were mentioned';
-      case 'REPLY':
-      default:
-        return actorName.isNotEmpty
-            ? '$actorName replied to your discussion'
-            : 'Someone replied to your discussion';
-    }
+    return resolveNotificationTitle(<String, dynamic>{
+      'type': (item['type'] ?? item['kind'] ?? '').toString(),
+      'actor': item['actor'],
+      'actorInstitution': item['actorInstitution'],
+      'data': item['payload'] ?? item['data'],
+      'title': item['title'],
+    });
   }
 
   IconData _iconFor(String kind) {

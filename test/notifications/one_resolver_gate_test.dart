@@ -30,9 +30,23 @@ const _authority = 'lib/core/notifications/notification_presentation.dart';
 /// This list may only ever SHRINK. Adding to it is the drift the gate exists
 /// to stop; the honest move when a new surface needs notification text is to
 /// consume the authority.
+/// EMPTY, AND IT MUST STAY THAT WAY.
+///
+/// This carried the two surfaces that still composed their own notification
+/// text. Both are now adjudicated and converged:
+///
+///   * `since_you_were_here.dart` reads notification rows straight from the
+///     controller, so it IS notification presentation — its "discussion"
+///     framing was drift, not product voice, and it now derives.
+///   * `activity_screen.dart` holds TWO domains. Its LIVE block renders the
+///     viewer's OWN outgoing actions using Communication Timeline direction
+///     ("You cancelled a call"), which no notification describes — that is a
+///     genuinely distinct domain and stays local, by design rather than by
+///     omission. Everything else there was notification presentation with a
+///     third vocabulary, and now derives.
+///
+/// A list that may only shrink, and has.
 const _notYetConverged = <String>[
-  'lib/features/activity/presentation/activity_screen.dart',
-  'lib/features/public/widgets/since_you_were_here.dart',
 ];
 
 /// Sentences that only a notification resolver would ever compose.

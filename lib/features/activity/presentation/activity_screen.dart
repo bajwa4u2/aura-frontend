@@ -19,6 +19,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../updates/providers.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../core/notifications/notification_presentation.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -1166,116 +1167,27 @@ String _buildTitle(Map<String, dynamic> item) {
     return '$actorName started a $callType';
   }
 
-  switch (type) {
-    case 'FOLLOW_REQUEST':
-      return '$actorName sent you a follow request';
-    case 'FOLLOW_ACCEPTED':
-      return '$actorName accepted your follow request';
-    case 'FOLLOW':
-      return '$actorName followed you';
-    case 'LIKE':
-      return '$actorName appreciated your work';
-    case 'SAVE':
-      return '$actorName saved your work';
-    case 'REPLY':
-      return '$actorName replied to your work';
-    case 'REPOST':
-      return '$actorName reposted your work';
-    case 'MENTION':
-      return '$actorName mentioned you';
-    case 'SPACE_INVITE':
-      return '$actorName invited you to a space';
-    case 'THREAD_INVITE':
-      return '$actorName invited you to a thread';
-    case 'MESSAGE_RECEIVED':
-      return '$actorName sent you a message';
-    case 'INVITE_ACCEPTED':
-      return '$actorName accepted your invitation';
-    case 'INVITE_DECLINED':
-      return '$actorName declined your invitation';
-    case 'INVITE_REVOKED':
-      return '$actorName revoked an invitation';
-    case 'ANNOUNCEMENT_PUBLISHED':
-      final title = _firstNonEmpty([
-        _stringOf(item['title']),
-        _stringOf(data['title']),
-      ]);
-      return title.isNotEmpty ? title : 'New announcement';
-    case 'POST_PUBLISHED':
-      return 'Your work was published';
-    case 'POST_PUBLISH_FAILED':
-      return 'A work could not be published';
-    case 'THREAD_ACTIVITY':
-      return '$actorName replied in a discussion you follow';
-    case 'SPACE_ACTIVITY':
-      final spaceName = _stringOf(data['spaceName']);
-      return spaceName.isNotEmpty
-          ? '$actorName posted in $spaceName'
-          : '$actorName posted in a space you follow';
-    case 'INSTITUTION_POST_PUBLISHED':
-      return '$actorName published a new post';
-    case 'PRIORITY_PINNED':
-      return '$actorName pinned a reply as priority';
-    // Communication Governance v1.0 — Accountability Lifecycle progress.
-    // One notification type covers Committed/Updated/Resolved/Reopened
-    // regardless of which backend path produced it; the specific stage
-    // rides in data.accountabilityTag.
-    case 'ACCOUNTABILITY_TAGGED':
-      final tag = _stringOf(data['accountabilityTag']).toUpperCase();
-      switch (tag) {
-        case 'RESOLVED':
-          return '$actorName marked your issue as Resolved';
-        case 'COMMITMENT':
-          return '$actorName committed to a response on your issue';
-        case 'UPDATE':
-          return '$actorName posted an update on your issue';
-        case 'REOPENED':
-          return '$actorName reopened a resolved issue';
-        default:
-          return '$actorName updated the status of your issue';
-      }
-    // Governed Event & Attention Doctrine, F24 — moderation severity is
-    // governed by the existing ModerationActionType values (data.actionType),
-    // not a flat, unlabeled default. Deliberately neutral/passive phrasing —
-    // the acting moderator's identity is never surfaced here.
-    case 'MODERATION_ACTION_TAKEN':
-      switch (_stringOf(data['actionType']).toUpperCase()) {
-        case 'WARN':
-          return 'You received a warning about your content';
-        case 'REQUEST_CLARIFICATION':
-          return 'Clarification was requested on your content';
-        case 'REQUEST_REVISION':
-          return 'A revision was requested on your content';
-        case 'SOFT_DELETE_POST':
-        case 'SOFT_DELETE_MESSAGE':
-        case 'SOFT_DELETE_ANNOUNCEMENT':
-          return 'Your content was removed by moderation';
-        case 'ARCHIVE_INSTITUTION_POST':
-          return 'Your institution post was archived';
-        case 'DISABLE_USER':
-          return 'Your account was disabled';
-        case 'RESTORE_POST':
-        case 'RESTORE_MESSAGE':
-        case 'RESTORE_ANNOUNCEMENT':
-        case 'RESTORE_INSTITUTION_POST':
-          return 'Your content was restored';
-        case 'RESTORE_USER':
-          return 'Your account was restored';
-        default:
-          return 'Your content was reviewed by moderation';
-      }
-    case 'REPORT_RESOLVED':
-      return 'A report you filed was resolved';
-    case 'SYSTEM':
-      final title = _stringOf(data['title']);
-      return title.isNotEmpty ? title : 'System notice';
-    default:
-      final fallbackTitle = _firstNonEmpty([
-        _stringOf(item['title']),
-        _stringOf(data['title']),
-      ]);
-      return fallbackTitle.isNotEmpty ? fallbackTitle : 'New notification';
-  }
+  // TWO DOMAINS LIVE IN THIS TIMELINE, AND ONLY ONE OF THEM IS NOTIFICATION.
+  //
+  // The LIVE block above is genuinely NOT notification presentation: it renders
+  // the viewer's OWN outgoing actions ("You cancelled a call") using the
+  // Communication Timeline Authority's direction, and no notification ever
+  // describes what you yourself did. That stays here, and stays local.
+  //
+  // Everything below WAS notification presentation, with a vocabulary of its
+  // own for the same events -- "appreciated your work" against "liked your
+  // post", "followed you" against "started following you", "saved your work"
+  // against "saved your post". Same event, different sentence, chosen by which
+  // screen you happened to open. Those now derive from the one authority.
+  return resolveNotificationTitle(<String, dynamic>{
+    'type': type,
+    'actor': item['actor'],
+    'actorInstitution': item['actorInstitution'],
+    'actorName': actorName,
+    'data': data,
+    'title': item['title'],
+  });
+
 }
 
 String _buildSubtitle(Map<String, dynamic> item) {
