@@ -44,6 +44,9 @@ import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/media/attachment.dart';
+import '../../../core/tagging/governed_tag_field.dart';
+import '../../../core/tagging/mention_scope.dart';
+import '../../../core/tagging/tag_entities.dart';
 
 /// Durable ringing/active-call truth for a conversation (founder charter
 /// 2026-08-17). A call must never be reachable ONLY through an ephemeral
@@ -137,6 +140,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   void dispose() {
     _linkDebounce?.cancel();
     _composer.dispose();
+    _composerFocus.dispose();
     _recorder.dispose();
     super.dispose();
   }
@@ -221,6 +225,98 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   /// Ctrl/Cmd+V with an image on the clipboard becomes an attachment
   /// through the same coherent intake as drag/drop; text paste untouched.
+  /// Focus for the composer, required by the governed tag autocomplete so it
+  /// can attach and dismiss its suggestion overlay.
+  final FocusNode _composerFocus = FocusNode();
+
+  /// Structured references chosen in this composer, kept until send.
+  ///
+  /// Collected rather than re-parsed from the text: a reference is an identity,
+  /// and re-deriving it from what the text happens to say is how a rename or a
+  /// duplicate display name turns into the wrong person.
+  final List<TagReference> _selectedTagReferences = <TagReference>[];
+
+  /// The references still genuinely present in the composed text.
+  ///
+  /// A reference whose text the person deleted is no longer a reference, so it
+  /// is dropped rather than sent for text that is not there. Deduplicated by
+  /// (kind, entity) so editing around a name cannot send the same person twice.
+  List<Map<String, dynamic>> _currentTagPayload() {
+    final text = _composer.text;
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final reference in _selectedTagReferences) {
+      if (!reference.isMention) continue;
+      if (!text.contains(reference.durableSourceText)) continue;
+      final key = '${reference.kind.name}:${reference.durableEntityId}';
+      if (!seen.add(key)) continue;
+      out.add(reference.toJson());
+    }
+    return out;
+  }
+
+  void _rememberSelectedTag(TagReference reference) {
+    if (!reference.isMention) return;
+    final id = reference.durableEntityId;
+    if (id.isEmpty || reference.durableSourceText.isEmpty) return;
+    _selectedTagReferences.removeWhere(
+      (existing) =>
+          existing.kind == reference.kind && existing.durableEntityId == id,
+    );
+    _selectedTagReferences.add(reference);
+  }
+
+  /// The people and institutions actually in this conversation.
+  ///
+  /// Bounded scope, matching what the server will accept: referencing someone
+  /// who is not here would be refused, so offering them would be a lie.
+  List<TagSuggestion> _eligibleTagSuggestions(Conversation c) {
+    final out = <TagSuggestion>[];
+    for (final p in c.parties) {
+      if (p.leftAt != null) continue;
+
+      // Person and institution identity are read through their OWN
+      // accessors -- the party model keeps them deliberately separate so no
+      // path can read an institution's name through a person-shaped field.
+      if (p.kind == 'INSTITUTION') {
+        final id = (p.institutionId ?? '').trim();
+        final label = (p.institutionName ?? '').trim();
+        if (id.isEmpty || label.isEmpty) continue;
+        out.add(
+          TagSuggestion(
+            kind: TagKind.institution,
+            canonicalId: id,
+            display: label,
+            insertText: '@$label',
+            imageUrl: p.institutionLogoUrl,
+          ),
+        );
+        continue;
+      }
+
+      final person = p.person;
+      if (person == null) continue;
+      final label = person.displayName.trim();
+      final handle = person.handle.trim();
+      if (person.userId.trim().isEmpty || label.isEmpty) continue;
+      // insertText is the sigil form written into the text; canonicalId is
+      // the public key. A party with no handle stays referenceable by id
+      // rather than silently absent from their own conversation.
+      final publicKey = handle.isNotEmpty ? handle : person.userId;
+      out.add(
+        TagSuggestion(
+          kind: TagKind.member,
+          canonicalId: publicKey,
+          display: label,
+          insertText: '@$publicKey',
+          subtitle: handle.isNotEmpty ? '@$handle' : null,
+          imageUrl: person.avatarUrl,
+        ),
+      );
+    }
+    return out;
+  }
+
   KeyEventResult _composerKeyEvent(FocusNode node, KeyEvent event) {
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.keyV &&
@@ -582,6 +678,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             widget.conversationId,
             text.isEmpty ? '…' : text,
             mediaIds: mediaIds,
+            tagReferences: _currentTagPayload(),
             replyToMessageId: _replyTo?.id,
             linkPreviewId: previewId,
           );
@@ -1021,7 +1118,23 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     Expanded(
                       child: Focus(
                         onKeyEvent: _composerKeyEvent,
-                        child: TextField(
+                        // TAGS ARE AUTHORED THROUGH THE ONE CANONICAL
+                        // COMPOSER. This surface could render migrated tag
+                        // references and had no way to create one -- the
+                        // convergence must not leave Conversation less capable
+                        // than the DirectMessage lineage it replaces.
+                        //
+                        // Bounded scope, like every other bounded surface:
+                        // the candidates are this conversation's own parties,
+                        // which is also exactly what the server will accept.
+                        child: GovernedTagAutocomplete(
+                          controller: _composer,
+                          focusNode: _composerFocus,
+                          onTagSelected: _rememberSelectedTag,
+                          mentionScope: MentionScope.bounded(
+                            _eligibleTagSuggestions(c),
+                          ),
+                          child: TextField(
                           controller: _composer,
                           minLines: 1,
                           maxLines: 5,
@@ -1055,6 +1168,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                                 horizontal: AuraSpace.s16,
                                 vertical: AuraSpace.s10),
                           ),
+                        ),
                         ),
                       ),
                     ),

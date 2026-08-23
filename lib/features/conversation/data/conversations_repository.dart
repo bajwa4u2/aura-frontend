@@ -398,7 +398,12 @@ class ConversationsRepository {
       {String? speakingForInstitutionId,
       List<String> mediaIds = const [],
       String? replyToMessageId,
-      String? linkPreviewId}) async {
+      String? linkPreviewId,
+      String? linkSourceUrl,
+      // Structured identity references from the canonical tag composer --
+      // never display-name text. Same wire shape every other mention-bearing
+      // surface already sends.
+      List<Map<String, dynamic>> tagReferences = const []}) async {
     final res = await _dio.post<dynamic>('/conversations/$id/messages', data: {
       'body': body,
       if (speakingForInstitutionId != null)
@@ -406,6 +411,9 @@ class ConversationsRepository {
       if (mediaIds.isNotEmpty) 'mediaIds': mediaIds,
       if (replyToMessageId != null) 'replyToMessageId': replyToMessageId,
       if (linkPreviewId != null) 'linkPreviewId': linkPreviewId,
+      if (linkSourceUrl != null && linkSourceUrl.trim().isNotEmpty)
+        'linkSourceUrl': linkSourceUrl,
+      if (tagReferences.isNotEmpty) 'tagReferences': tagReferences,
     });
     return ConversationMessage.fromJson(
         _unwrap(res.data)['message'] as Map<String, dynamic>);
