@@ -34,6 +34,11 @@ class AdminRepository {
         .toList();
   }
 
+  Future<AdminConvergenceReport> fetchDirectThreadConvergence() async {
+    final res = await _dio.get('/v1/admin/migrations/direct-thread-convergence');
+    return AdminConvergenceReport.fromJson(_asMap(res.data));
+  }
+
   Future<AdminAccess> fetchMe() async {
     final res = await _dio.get('/v1/admin/me');
     return AdminAccess.fromJson(_asMap(res.data));

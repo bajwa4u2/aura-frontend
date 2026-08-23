@@ -148,6 +148,12 @@ class _AdminShellLayout extends StatelessWidget {
       path: '/admin/feature-flags',
     ),
     _NavItem(
+      label: 'Migrations',
+      icon: Icons.swap_horiz_outlined,
+      selectedIcon: Icons.swap_horiz_rounded,
+      path: '/admin/migrations',
+    ),
+    _NavItem(
       label: 'Comms',
       icon: Icons.mark_email_unread_outlined,
       selectedIcon: Icons.mark_email_unread_rounded,
@@ -158,18 +164,26 @@ class _AdminShellLayout extends StatelessWidget {
   static const double _desktopBreakpoint = kDesktopBreak; // 1200
   static const double _tabletBreakpoint = kTabletBreak; // 900
 
+  /// Derived from `_items`, never hand-maintained alongside it.
+  ///
+  /// The previous form was a parallel switch that had drifted: it omitted
+  /// Appeals entirely and then returned every later index one short, so eight
+  /// of eleven destinations highlighted the wrong nav item. A list that already
+  /// knows its own paths is the only authority that can answer this.
   int _indexForPath(String path) {
-    if (path == '/admin') return 0;
-    if (path == '/admin/review-queue') return 1;
-    if (path == '/admin/users') return 2;
-    if (path == '/admin/grants') return 3;
-    if (path == '/admin/audit-logs') return 4;
-    if (path == '/admin/institution-domains') return 5;
-    if (path == '/admin/policies') return 6;
-    if (path == '/admin/settings') return 7;
-    if (path == '/admin/feature-flags') return 8;
-    if (path == '/admin/communications') return 9;
-    return 0;
+    var best = 0;
+    var bestLength = -1;
+    for (var i = 0; i < _items.length; i++) {
+      final candidate = _items[i].path;
+      final matches = candidate == '/admin'
+          ? path == '/admin'
+          : path == candidate || path.startsWith('$candidate/');
+      if (matches && candidate.length > bestLength) {
+        best = i;
+        bestLength = candidate.length;
+      }
+    }
+    return best;
   }
 
   @override

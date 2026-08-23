@@ -1337,3 +1337,76 @@ String? _orNull(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
 }
+
+/// Reconciliation evidence for the DirectThread -> Conversation convergence.
+///
+/// This exists as an in-product surface for one concrete reason: the report is
+/// Bearer-guarded, so opening the API URL in a browser sends only the HttpOnly
+/// refresh cookie and returns UNAUTHORIZED. Evidence that can only be reached
+/// by a raw URL is evidence nobody can actually check.
+class AdminConvergenceReport {
+  const AdminConvergenceReport({
+    required this.migrated,
+    this.reason,
+    this.sourceThreads = 0,
+    this.auditedThreads = 0,
+    this.destinationCreated = 0,
+    this.destinationMergedIntoExisting = 0,
+    this.legacyMessages = 0,
+    this.migratedMessages = 0,
+    this.unreconciledThreads = 0,
+    this.institutionSideReadStateDropped = 0,
+    this.skippedThreads = 0,
+    this.migrationFinishedAt,
+    this.legacyMessagesNotConverged = 0,
+    this.legacyCursorsMovedSinceMigration = 0,
+  });
+
+  final bool migrated;
+  final String? reason;
+  final int sourceThreads;
+  final int auditedThreads;
+  final int destinationCreated;
+  final int destinationMergedIntoExisting;
+  final int legacyMessages;
+  final int migratedMessages;
+  final int unreconciledThreads;
+  final int institutionSideReadStateDropped;
+  final int skippedThreads;
+  final DateTime? migrationFinishedAt;
+  final int legacyMessagesNotConverged;
+  final int legacyCursorsMovedSinceMigration;
+
+  /// The migration was complete WHEN IT RAN.
+  bool get auditClean => unreconciledThreads == 0 && skippedThreads == 0;
+
+  /// The two systems agree RIGHT NOW. Strictly stronger than [auditClean], and
+  /// the condition a cutover actually depends on: a point-in-time audit decays
+  /// while the legacy writer is still live.
+  bool get cutoverReady =>
+      auditClean &&
+      legacyMessagesNotConverged == 0 &&
+      legacyCursorsMovedSinceMigration == 0;
+
+  factory AdminConvergenceReport.fromJson(Map<String, dynamic> json) {
+    int i(String k) => (json[k] as num?)?.toInt() ?? 0;
+    final finished = json['migrationFinishedAt']?.toString();
+    return AdminConvergenceReport(
+      migrated: json['migrated'] == true,
+      reason: json['reason'] == null ? null : _orNull(json['reason'].toString()),
+      sourceThreads: i('sourceThreads'),
+      auditedThreads: i('auditedThreads'),
+      destinationCreated: i('destinationCreated'),
+      destinationMergedIntoExisting: i('destinationMergedIntoExisting'),
+      legacyMessages: i('legacyMessages'),
+      migratedMessages: i('migratedMessages'),
+      unreconciledThreads: i('unreconciledThreads'),
+      institutionSideReadStateDropped: i('institutionSideReadStateDropped'),
+      skippedThreads: i('skippedThreads'),
+      migrationFinishedAt:
+          finished == null || finished.isEmpty ? null : DateTime.tryParse(finished),
+      legacyMessagesNotConverged: i('legacyMessagesNotConverged'),
+      legacyCursorsMovedSinceMigration: i('legacyCursorsMovedSinceMigration'),
+    );
+  }
+}

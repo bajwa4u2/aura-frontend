@@ -219,3 +219,18 @@ final adminModerationQueueProvider =
     rethrow;
   }
 });
+
+// ── /v1/admin/migrations/direct-thread-convergence ───────────────────────
+
+/// Unlike the list providers above, a permission failure here is NOT collapsed
+/// into an empty value. Reconciliation evidence that silently renders as
+/// "nothing to see" would be indistinguishable from "converged", which is the
+/// exact confusion this surface exists to remove.
+final adminConvergenceReportProvider =
+    FutureProvider<AdminConvergenceReport>((ref) async {
+  final me = await ref.watch(adminMeProvider.future);
+  if (me == null) {
+    throw StateError('Admin access is required to read migration reconciliation.');
+  }
+  return ref.watch(adminRepositoryProvider).fetchDirectThreadConvergence();
+});
