@@ -67,7 +67,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 'server {' \
 '  listen       ${PORT};' \
 '  listen  [::]:${PORT};' \
-'  server_name  app.auraplatform.org;' \
+'  server_name  app.auraplatform.org www.auraplatform.org;' \
 '  return 301 https://auraplatform.org$request_uri;' \
 '}' \
 '' \
@@ -151,6 +151,42 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  # proxy_redirect off is load-bearing: the 302 must reach the BROWSER' \
 '  # untouched so the BROWSER follows it to R2. Following or rewriting it' \
 '  # here would put media bytes back on Railway.' \
+'  # PUBLIC OG DOOR (same-origin, STABLE BYTES).' \
+'  #' \
+'  # Unlike /raw below, no redirect passes through here. og:image used to' \
+'  # resolve to /raw, which answers 302 to a presigned storage URL that' \
+'  # expires in ten minutes. LinkedIn fetches inside that window and' \
+'  # hydrates; Facebook re-fetches on cache refresh and lost the race. This' \
+'  # door streams bytes from an address that never expires.' \
+'  #' \
+'  # nginx is TRANSPORT ONLY here too: the API re-decides visibility on' \
+'  # every request with the identity that arrives, so an anonymous caller' \
+'  # with no entitlement is refused there, not here.' \
+'  location ~ ^/media/[^/]+/public$ {' \
+'    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;' \
+'    resolver_timeout 5s;' \
+'    proxy_pass ${AURA_BACKEND_API_ORIGIN}/v1$request_uri;' \
+'    proxy_http_version 1.1;' \
+'    proxy_ssl_server_name on;' \
+'    proxy_set_header Host api.auraplatform.org;' \
+'    proxy_set_header X-Forwarded-Host $host;' \
+'    proxy_set_header X-Forwarded-Proto $scheme;' \
+'    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'    proxy_set_header X-Real-IP $remote_addr;' \
+'    proxy_read_timeout 30s;' \
+'    proxy_connect_timeout 5s;' \
+'    proxy_buffering off;' \
+'  }' \
+'' \
+'  # A real robots policy, never the SPA fallback. A crawler asking for a' \
+'  # policy used to receive index.html, which is not a policy -- it is an' \
+'  # HTML page a parser has to guess about. Permissive for exactly what' \
+'  # external previews need, closed for the application surface.' \
+'  location = /robots.txt {' \
+'    default_type text/plain;' \
+'    return 200 "User-agent: *\nAllow: /p/\nAllow: /media/\nAllow: /institutions\nAllow: /u/\nDisallow: /admin\nDisallow: /institution/\nDisallow: /messages\nDisallow: /conversations\nDisallow: /activity\nDisallow: /notifications\nDisallow: /saved\nDisallow: /settings\nDisallow: /me\n";' \
+'  }' \
+'' \
 '  location ~ ^/media/[^/]+/raw$ {' \
 '    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;' \
 '    resolver_timeout 5s;' \
