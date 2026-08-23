@@ -999,15 +999,26 @@ class _UnitsSectionState extends ConsumerState<_UnitsSection> {
                               u['name']?.toString() ?? '',
                               style: AuraText.small,
                             ),
+                            // THE DESCRIPTION IS WHAT THE UNIT IS FOR.
+                            //
+                            // It was rendered in micro text, muted, clipped to
+                            // one line — so a saved description was present in
+                            // the payload and invisible to the reader, which
+                            // reads as "it did not save". A unit's purpose is
+                            // the point of listing it, so it is legible; three
+                            // lines still keeps a long one from dominating an
+                            // identity surface.
                             if ((u['description']?.toString().trim() ?? '')
-                                .isNotEmpty)
+                                .isNotEmpty) ...[
+                              const SizedBox(height: AuraSpace.s4),
                               Text(
-                                u['description'].toString(),
-                                maxLines: 1,
+                                u['description'].toString().trim(),
+                                maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: AuraText.micro
+                                style: AuraText.small
                                     .copyWith(color: AuraSurface.muted),
                               ),
+                            ],
                           ],
                         ),
                       ),
