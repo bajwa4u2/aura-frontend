@@ -288,10 +288,34 @@ String? _enforceCanonicalIdMatch(
   String? pathId,
   String section,
 ) {
+  // ADDRESS FIRST, AUTHORITY SECOND (founder ruling AD2).
+  //
+  // The segment may be the canonical slug, a legacy id, or a differently-cased
+  // slug. Resolving it says WHICH institution is addressed and nothing more —
+  // the standing and capability checks below are untouched and still run
+  // against the resolved id.
+  //
+  // A non-canonical form is REDIRECTED rather than tolerated: production holds
+  // durable id-shaped links (23 notification rows), and leaving them working
+  // in place would keep two address forms alive forever instead of converging
+  // them on arrival.
+  final snapshot = ref.read(institutionAuthoritySnapshotProvider);
+  final address = resolveInstitutionAddress(snapshot, pathId);
+  if (address != null && !address.isCanonical) {
+    final path = state.uri.path;
+    final rest = path.startsWith('/institution/${pathId ?? ''}')
+        ? path.substring('/institution/${pathId ?? ''}'.length)
+        : '';
+    final query = state.uri.hasQuery ? '?${state.uri.query}' : '';
+    return '/institution/${address.canonicalSlug}$rest$query';
+  }
+
   final canonical = institutionCanonicalRedirect(
     decideInstitutionRoute(
-      snapshot: ref.read(institutionAuthoritySnapshotProvider),
-      pathId: pathId,
+      snapshot: snapshot,
+      // The RESOLVED id, so the existing authority logic is unchanged: it
+      // still compares an institution id against held memberships.
+      pathId: address?.institutionId ?? pathId,
     ),
     section: section,
     dashboardRoute: kInstitutionNoAffiliationDestination,
@@ -310,7 +334,6 @@ String? _enforceCanonicalIdMatch(
   //
   // Both consumers read ONE table, so the rail and the address can never
   // disagree about who may hold a destination.
-  final snapshot = ref.read(institutionAuthoritySnapshotProvider);
   if (!snapshot.resolved) return null; // RC2 — deciding on unresolved is the bug.
 
   final required = institutionDestinationAuthority(section);

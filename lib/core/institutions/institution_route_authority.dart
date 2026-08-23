@@ -101,7 +101,24 @@ class InstitutionAuthoritySnapshot {
     required this.resolved,
     this.activeId,
     this.authorizedIds = const <String>[],
+    this.slugToId = const <String, String>{},
+    this.idToSlug = const <String, String>{},
   });
+
+  /// ADDRESS → IDENTITY, for institutions this person holds.
+  ///
+  /// Founder ruling AD2 (2026-08-23): the workspace addresses an institution by
+  /// its canonical slug. Authorization is unchanged and still runs against the
+  /// resolved id, so this map only answers WHICH institution an address names —
+  /// never whether the viewer may be there.
+  ///
+  /// Keys are lower-cased, because two addresses differing only in case are one
+  /// identity and must not resolve differently.
+  final Map<String, String> slugToId;
+
+  /// The reverse, so a legacy id-shaped address can be canonicalized to the
+  /// slug rather than merely tolerated.
+  final Map<String, String> idToSlug;
 
   /// False while `/institutions/me` is still in flight. The single most
   /// important bit in this file.
@@ -177,6 +194,18 @@ final institutionAuthoritySnapshotProvider =
   }
 
   final identity = ref.watch(institutionIdentityProvider);
+  final slugToId = <String, String>{};
+  final idToSlug = <String, String>{};
+  for (final m in access.memberships) {
+    final id = m.id.trim();
+    final slug = m.slug.trim();
+    if (id.isEmpty) continue;
+    if (slug.isNotEmpty) {
+      slugToId[slug.toLowerCase()] = id;
+      idToSlug[id] = slug;
+    }
+  }
+
   return InstitutionAuthoritySnapshot(
     resolved: true,
     activeId: identity?.id,
@@ -184,8 +213,68 @@ final institutionAuthoritySnapshotProvider =
       for (final m in access.memberships)
         if (m.id.trim().isNotEmpty) m.id.trim(),
     ],
+    slugToId: slugToId,
+    idToSlug: idToSlug,
   );
 });
+
+/// What an address in a workspace path names, and whether it is canonical.
+///
+/// Founder ruling AD2/step 7: a legacy id-shaped address must RESOLVE and then
+/// be canonicalized to the slug — never merely tolerated, or production would
+/// keep both forms alive indefinitely.
+class InstitutionAddress {
+  const InstitutionAddress({
+    required this.institutionId,
+    required this.canonicalSlug,
+    required this.isCanonical,
+  });
+
+  final String institutionId;
+  final String canonicalSlug;
+
+  /// True when the caller already used the current slug.
+  final bool isCanonical;
+}
+
+/// Resolve a workspace address segment to an institution this person holds.
+///
+/// Returns null when the segment names nothing the snapshot knows — which
+/// includes a HISTORICAL slug, since retired addresses live server-side. The
+/// caller treats null as "not resolvable here" and falls through to the
+/// existing governed decision rather than guessing.
+///
+/// RESOLUTION IS NOT AUTHORIZATION. This answers which institution is
+/// addressed; standing and capability are decided afterwards, unchanged.
+InstitutionAddress? resolveInstitutionAddress(
+  InstitutionAuthoritySnapshot snapshot,
+  String? segment,
+) {
+  final raw = (segment ?? '').trim();
+  if (raw.isEmpty) return null;
+
+  final bySlug = snapshot.slugToId[raw.toLowerCase()];
+  if (bySlug != null) {
+    return InstitutionAddress(
+      institutionId: bySlug,
+      canonicalSlug: snapshot.idToSlug[bySlug] ?? raw,
+      // Canonical only when the case matches too: two spellings of one address
+      // are one identity, and the canonical one is what gets linked.
+      isCanonical: snapshot.idToSlug[bySlug] == raw,
+    );
+  }
+
+  final slugForId = snapshot.idToSlug[raw];
+  if (slugForId != null) {
+    return InstitutionAddress(
+      institutionId: raw,
+      canonicalSlug: slugForId,
+      isCanonical: false,
+    );
+  }
+
+  return null;
+}
 
 
 /// ─────────────────────────────────────────────────────────────────────────
