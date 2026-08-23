@@ -1575,24 +1575,28 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
           p.startsWith('/meetings/') ||
           (p.startsWith('/institution/') && p.contains('/meetings')),
     ),
-
-    // ── ADMIN ──────────────────────────────────────────────────────────────
+    // MEMBERS IS A PARTICIPATION DESTINATION, not an administrative one
+    // (founder ruling 2026-08-23, superseding the earlier ordering
+    // assumption). Canonical doctrine in institutions.service.ts states
+    // "visibility follows responsibility: every member sees who holds
+    // delegated capabilities" -- so seeing who speaks and hosts for your
+    // institution IS participation. A member must not have to enter an ADMIN
+    // section to reach something doctrine says members may see.
+    //
+    // The RESOURCE is separated from AUTHORITY OVER THE RESOURCE: the roster
+    // is baseline, while MANAGE_MEMBERS governs the controls inside it.
     InstWorkspaceEntry(
-      sectionLabel: 'ADMIN',
       label: 'Members',
       icon: Icons.people_outline_rounded,
       selectedIcon: Icons.people_rounded,
-      // PARTICIPATION BASELINE, deliberately. Canonical doctrine, stated in
-      // institutions.service.ts: "Visibility follows responsibility: every
-      // member sees who holds delegated capabilities." Knowing who speaks and
-      // hosts for your institution is participation, not administration.
-      // MANAGE_MEMBERS governs the ACTIONS inside, not the destination.
       pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/members' : null,
       pathMatcher: (p) =>
           p.contains('/members') && p.startsWith('/institution/'),
     ),
-    // D6: Overview is the OPERATIONAL institution destination and belongs in
-    // ADMIN immediately after Members. It is no longer the standing surface
+
+    // ── ADMIN ──────────────────────────────────────────────────────────────
+    // D6: Overview is the OPERATIONAL institution destination and now ANCHORS
+    // the ADMIN section. It is no longer the standing surface
     // and no longer the id-less address -- both were the dual-purpose overload
     // the ruling retires.
     //
@@ -1602,6 +1606,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
     // administrative authority -- out of an operational surface without
     // needing a variant of this entry per role.
     InstWorkspaceEntry(
+      sectionLabel: 'ADMIN',
       label: 'Overview',
       icon: Icons.grid_view_outlined,
       selectedIcon: Icons.grid_view_rounded,

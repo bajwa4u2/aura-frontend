@@ -32,7 +32,6 @@ R1 2 lib/features/institutions/explore/institution_explore_screen.dart
 R1 1 lib/features/institutions/presentation/admin_workspace_screen.dart
 R1 3 lib/features/institutions/presentation/institution_invites_screen.dart
 R1 1 lib/features/institutions/presentation/institution_join_requests_screen.dart
-R1 1 lib/features/institutions/presentation/institution_spaces_screen.dart
 R1 3 lib/features/me/presentation/me_screen.dart
 R1 1 lib/features/public/widgets/reply_unit.dart
 R1 14 lib/features/realtime/presentation/widgets/floating_call_widget.dart

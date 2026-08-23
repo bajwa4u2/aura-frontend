@@ -208,6 +208,37 @@ void main() {
     });
   });
 
+  group('Members is a participation destination (founder ruling 2026-08-23)', () {
+    test('it is reachable without entering an administrative section', () {
+      // Doctrine: "visibility follows responsibility". A member must not have
+      // to hold administrative authority to see who speaks and hosts for their
+      // institution.
+      final entries = buildInstitutionWorkspaceEntries(member);
+      final members = entries.firstWhere((e) => e.label == 'Members');
+      expect(members.requiresAny, isEmpty);
+
+      // The section a destination belongs to is carried by the first entry of
+      // that section; Members must not be the one that opens ADMIN.
+      expect(members.sectionLabel, isNot('ADMIN'));
+    });
+
+    test('ADMIN is anchored by a genuinely administrative destination', () {
+      final entries = buildInstitutionWorkspaceEntries(owner);
+      final adminAnchor =
+          entries.firstWhere((e) => e.sectionLabel == 'ADMIN');
+      expect(adminAnchor.label, 'Overview');
+      expect(adminAnchor.requiresAny, isNotEmpty);
+    });
+
+    test('seeing the roster is not authority over it', () {
+      // Member holds the destination; the administrative acts remain absent.
+      expect(labelsFor(member), contains('Members'));
+      for (final forbidden in ['Join Requests', 'Invites', 'Overview']) {
+        expect(labelsFor(member), isNot(contains(forbidden)));
+      }
+    });
+  });
+
   group('standing is the floor', () {
     test('no standing projects no workspace at all', () {
       expect(labelsFor(null), isEmpty);

@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/directory/directory_entry.dart';
 import '../../../core/directory/member_picker_field.dart';
-import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/authority/capability_projection.dart';
+import '../../../core/authority/authority_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -60,8 +61,17 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 
   /// Single source of truth for admin gating — never trust route query params.
-  bool get _isAdmin =>
-      ref.watch(institutionIdentityProvider)?.isAdmin ?? false;
+  /// MAY THIS VIEWER MANAGE SPACES?
+  ///
+  /// The canonical question, asked of the canonical authority. The previous
+  /// `identity.isAdmin` was a role label standing in for MANAGE_SPACES — which
+  /// the backend actually enforces (`assertCapability(MANAGE_SPACES)`), and
+  /// which an OWNER may delegate to a member who is not an admin at all.
+  bool get _canManageSpaces =>
+      ref.watch(capabilityProjectionProvider).presentationFor(
+            ConsequentialAct.manageSpaces,
+          ) ==
+      ControlPresentation.available;
 
   @override
   void initState() {
@@ -427,14 +437,19 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
                   ),
                   child: Text('Open', style: AuraText.small.copyWith(color: AuraSurface.accentText, fontWeight: FontWeight.w700)),
                 ),
-                if (!_isAdmin) ...[
+                // JOIN IS RESOURCE MEMBERSHIP, NOT AUTHORITY. This used to
+                // read `!isAdmin`, which was wrong in both directions: an
+                // admin outside a space lost the affordance, and a member
+                // already inside one was still invited to join it. The server
+                // now reports whether this viewer belongs to the space.
+                if (!(space['viewerIsMember'] == true)) ...[
                   const SizedBox(width: AuraSpace.s12),
                   GestureDetector(
                     onTap: () => _join(id),
                     child: Text('Join', style: AuraText.small.copyWith(color: AuraSurface.coVerdant, fontWeight: FontWeight.w700)),
                   ),
                 ],
-                if (_isAdmin) ...[
+                if (_canManageSpaces) ...[
                   const SizedBox(width: AuraSpace.s12),
                   GestureDetector(
                     onTap: () => _archive(id),
@@ -481,8 +496,8 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
             ),
           ),
         ],
-        if (_showCreate && _isAdmin) _buildCreateForm(),
-        if (_isAdmin) ...[
+        if (_showCreate && _canManageSpaces) _buildCreateForm(),
+        if (_canManageSpaces) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: AuraSpace.s12),
             child: GestureDetector(
@@ -528,7 +543,7 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
       title: 'Spaces',
       subtitle:
           'Coordinate internal groups, teams, and working rooms.',
-      trailing: _isAdmin
+      trailing: _canManageSpaces
           ? AuraPrimaryButton(
               label: _showCreate ? 'Hide form' : 'New Space',
               onPressed: () => setState(() {

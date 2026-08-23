@@ -127,12 +127,17 @@ Widget _wrap(Dio dio) {
     overrides: [
       dioProvider.overrideWithValue(dio),
       institutionIdentityProvider.overrideWithValue(
+        // A real OWNER projection. The previous fixture paired role OWNER with
+        // an EMPTY capability set -- a combination the backend cannot produce,
+        // since ROLE_CAPABILITIES[OWNER] is every capability. It only passed
+        // because the screen trusted the role label; now that the gate asks
+        // the capability, the fixture has to be honest.
         const InstitutionIdentity(
           id: 'inst-1',
           name: 'Test Institution',
           slug: 'test-institution',
           isAuthorizedSpeaker: true,
-          capabilities: {},
+          capabilities: {InstitutionCapabilities.manageSpaces},
           role: 'OWNER',
         ),
       ),

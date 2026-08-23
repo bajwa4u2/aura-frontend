@@ -1049,6 +1049,7 @@ class _StudioBody extends StatelessWidget {
             saving: state._saving,
             busy: state._busy,
             dirty: state._dirty,
+            error: state._error,
             onSave: () => state._save(institutionId),
             onCancel: () => context.go(
               institutionId.isNotEmpty
@@ -1269,6 +1270,7 @@ class _SaveBar extends StatelessWidget {
     required this.saving,
     required this.busy,
     required this.dirty,
+    required this.error,
     required this.onSave,
     required this.onCancel,
     required this.onPreview,
@@ -1277,6 +1279,15 @@ class _SaveBar extends StatelessWidget {
   final bool saving;
   final bool busy;
   final bool dirty;
+
+  /// WHY THE BAR CARRIES THE ERROR.
+  ///
+  /// The failure message renders in a banner at the TOP of a long form while
+  /// Save is a sticky bar at the BOTTOM. Someone who scrolls down, presses
+  /// Save and stays there sees nothing change — which reads exactly like
+  /// "saving is broken" even when the server said precisely why it refused.
+  /// The outcome belongs where the action was taken.
+  final String? error;
   final VoidCallback onSave;
   final VoidCallback onCancel;
   final VoidCallback onPreview;
@@ -1321,7 +1332,9 @@ class _SaveBar extends StatelessWidget {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: dirty ? AuraSurface.coSun : AuraSurface.faint,
+                      color: error != null
+                          ? AuraSurface.coRose
+                          : (dirty ? AuraSurface.coSun : AuraSurface.faint),
                       shape: BoxShape.circle,
                     ),
                   );
@@ -1354,11 +1367,13 @@ class _SaveBar extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                saving
-                                    ? 'Saving changes…'
-                                    : (dirty
-                                          ? 'You have unsaved changes'
-                                          : 'All changes saved'),
+                                error != null
+                                    ? error!
+                                    : saving
+                                        ? 'Saving changes…'
+                                        : (dirty
+                                              ? 'You have unsaved changes'
+                                              : 'All changes saved'),
                                 style: AuraText.small.copyWith(
                                   color: AuraSurface.muted,
                                   fontWeight: FontWeight.w600,
