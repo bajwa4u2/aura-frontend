@@ -18,6 +18,7 @@ import 'core/institutions/institution_access_provider.dart';
 import 'core/authority/authority_providers.dart';
 import 'core/institutions/institution_destination_authority.dart';
 import 'core/institutions/institution_route_authority.dart';
+import 'core/institutions/institution_route_scope.dart';
 import 'core/navigation/destination_continuity.dart';
 import 'features/meetings/presentation/booking_route_entry.dart';
 import 'features/meetings/application/meetings_provider.dart';
@@ -334,7 +335,8 @@ String? _enforceCanonicalIdMatch(
   //
   // Both consumers read ONE table, so the rail and the address can never
   // disagree about who may hold a destination.
-  if (!snapshot.resolved) return null; // RC2 — deciding on unresolved is the bug.
+  // RC2 — deciding on unresolved is the bug.
+  if (!snapshot.resolved) return null;
 
   final required = institutionDestinationAuthority(section);
   if (required.isEmpty) return null;
@@ -1014,8 +1016,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => BookingRouteEntry(
               slug: state.pathParameters['slug'] ?? '',
               slot: slotFromQuery(state.uri.queryParameters),
-              durationMinutes:
-                  int.tryParse(state.uri.queryParameters['duration'] ?? ''),
+              durationMinutes: int.tryParse(
+                state.uri.queryParameters['duration'] ?? '',
+              ),
             ),
           ),
 
@@ -1183,19 +1186,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           // order resolves them correctly.
           GoRoute(
             path: '/institution/:institutionId/meetings',
-            builder: (context, state) => MeetingsHomeScreen(
-              institutionId: state.pathParameters['institutionId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  MeetingsHomeScreen(institutionId: institutionId),
             ),
           ),
           // Institution-owned scheduling — created meetings carry the
           // institution's ownership from birth.
           GoRoute(
             path: '/institution/:institutionId/meetings/new',
-            builder: (context, state) => CreateMeetingScreen(
-              institutionId: state.pathParameters['institutionId'],
-              startNow:
-                  state.uri.queryParameters['instant'] == '1' ||
-                  state.uri.queryParameters['instant'] == 'true',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => CreateMeetingScreen(
+                institutionId: institutionId,
+                startNow:
+                    state.uri.queryParameters['instant'] == '1' ||
+                    state.uri.queryParameters['instant'] == 'true',
+              ),
             ),
           ),
           // Codeless recovery route — MUST precede `/meetings/join/:code` and
@@ -1296,59 +1304,80 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-              institutionId: state.pathParameters['institutionId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => MeetingDetailScreen(
+                meetingId: state.pathParameters['meetingId'] ?? '',
+                institutionId: institutionId,
+              ),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/prep',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-              institutionId: state.pathParameters['institutionId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => MeetingDetailScreen(
+                meetingId: state.pathParameters['meetingId'] ?? '',
+                institutionId: institutionId,
+              ),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/room',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-              institutionId: state.pathParameters['institutionId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => MeetingDetailScreen(
+                meetingId: state.pathParameters['meetingId'] ?? '',
+                institutionId: institutionId,
+              ),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/waiting',
-            builder: (context, state) => GuestWaitingRoomScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-              institutionId: state.pathParameters['institutionId'],
-              sessionId: state.uri.queryParameters['sessionId'],
-              returnTo: state.uri.queryParameters['returnTo'],
-              guestId: state.uri.queryParameters['guestId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => GuestWaitingRoomScreen(
+                meetingId: state.pathParameters['meetingId'] ?? '',
+                institutionId: institutionId,
+                sessionId: state.uri.queryParameters['sessionId'],
+                returnTo: state.uri.queryParameters['returnTo'],
+                guestId: state.uri.queryParameters['guestId'],
+              ),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/live',
-            builder: (context, state) => MeetingLiveRoomScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-              institutionId: state.pathParameters['institutionId'],
-              sessionId: state.uri.queryParameters['sessionId'] ?? '',
-              isHost: state.uri.queryParameters['isHost'] == 'true',
-              meetingCode: state.uri.queryParameters['code'],
-              guestUserId: state.uri.queryParameters['guestId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => MeetingLiveRoomScreen(
+                meetingId: state.pathParameters['meetingId'] ?? '',
+                institutionId: institutionId,
+                sessionId: state.uri.queryParameters['sessionId'] ?? '',
+                isHost: state.uri.queryParameters['isHost'] == 'true',
+                meetingCode: state.uri.queryParameters['code'],
+                guestUserId: state.uri.queryParameters['guestId'],
+              ),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/summary',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-              institutionId: state.pathParameters['institutionId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => MeetingDetailScreen(
+                meetingId: state.pathParameters['meetingId'] ?? '',
+                institutionId: institutionId,
+              ),
             ),
           ),
           GoRoute(
             path:
                 '/institution/:institutionId/meetings/:meetingId/post-meeting',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-              institutionId: state.pathParameters['institutionId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => MeetingDetailScreen(
+                meetingId: state.pathParameters['meetingId'] ?? '',
+                institutionId: institutionId,
+              ),
             ),
           ),
           // Institution admin booking pages — gated by InstitutionRoleGuard (ADMIN) on backend
@@ -1364,8 +1393,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'availability',
             ),
-            builder: (context, state) => InstitutionAvailabilityScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionAvailabilityScreen(institutionId: institutionId),
             ),
           ),
           // Institution-owned public booking — /i/:institutionSlug/meet/:bookingSlug
@@ -1420,8 +1451,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               slug: state.pathParameters['bookingSlug'] ?? '',
               institutionSlug: state.pathParameters['institutionSlug'],
               slot: slotFromQuery(state.uri.queryParameters),
-              durationMinutes:
-                  int.tryParse(state.uri.queryParameters['duration'] ?? ''),
+              durationMinutes: int.tryParse(
+                state.uri.queryParameters['duration'] ?? '',
+              ),
             ),
           ),
           // /messages — restored to MessagesHubScreen (existing
@@ -1483,9 +1515,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/articles/:slug',
-            builder: (context, state) => ArticleScreen(
-              slug: state.pathParameters['slug'] ?? '',
-            ),
+            builder: (context, state) =>
+                ArticleScreen(slug: state.pathParameters['slug'] ?? ''),
           ),
           // External invitation claim landing — PUBLIC by nature (the
           // recipient may not have an account). Single-segment /i/:token;
@@ -1528,10 +1559,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/security',
             builder: (_, __) => const SecurityScreen(),
           ),
-          GoRoute(
-            path: '/devices',
-            builder: (_, __) => const DevicesScreen(),
-          ),
+          GoRoute(path: '/devices', builder: (_, __) => const DevicesScreen()),
           GoRoute(
             path: '/change-password',
             builder: (_, __) => const ChangePasswordScreen(),
@@ -1669,7 +1697,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           // front of it.
           //
           // Canonical messaging is unaffected and lives at /messages.
-
           GoRoute(
             path: '/compose',
             builder: (context, state) {
@@ -1757,8 +1784,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kInstitutionDashboardRoute,
             redirect: (context, state) =>
                 _redirectShorthandToCanonical(ref, state, 'dashboard'),
-            builder: (_, __) =>
-                const Scaffold(body: AuraProductState(state: ProductState.loading)),
+            builder: (_, __) => const Scaffold(
+              body: AuraProductState(state: ProductState.loading),
+            ),
           ),
           // OVERVIEW IS ADDRESSABLE (founder ruling, institution addendum).
           //
@@ -1783,8 +1811,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'dashboard',
             ),
-            builder: (context, state) => InstitutionDashboardScreen(
-              institutionId: state.pathParameters['institutionId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionDashboardScreen(institutionId: institutionId),
             ),
           ),
 
@@ -1795,8 +1825,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 _redirectShorthandToCanonical(ref, state, 'domains'),
             // Rendered only while the institution authority is still
             // resolving; the redirect above takes over the instant it does.
-            builder: (_, __) =>
-                const Scaffold(body: AuraProductState(state: ProductState.loading)),
+            builder: (_, __) => const Scaffold(
+              body: AuraProductState(state: ProductState.loading),
+            ),
           ),
           GoRoute(
             path: '/institution/:institutionId/domains',
@@ -1825,9 +1856,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'units',
             ),
-            builder: (context, state) => InstitutionUnitContextScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
-              unitId: state.pathParameters['unitId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => InstitutionUnitContextScreen(
+                institutionId: institutionId,
+                unitId: state.pathParameters['unitId'] ?? '',
+              ),
             ),
           ),
           GoRoute(
@@ -1871,8 +1905,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 _redirectShorthandToCanonical(ref, state, 'profile'),
             // Rendered only while the institution authority is still
             // resolving; the redirect above takes over the instant it does.
-            builder: (_, __) =>
-                const Scaffold(body: AuraProductState(state: ProductState.loading)),
+            builder: (_, __) => const Scaffold(
+              body: AuraProductState(state: ProductState.loading),
+            ),
           ),
           GoRoute(
             path: '/institution/:institutionId/profile',
@@ -1894,8 +1929,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 _redirectShorthandToCanonical(ref, state, 'edit-profile'),
             // Rendered only while the institution authority is still
             // resolving; the redirect above takes over the instant it does.
-            builder: (_, __) =>
-                const Scaffold(body: AuraProductState(state: ProductState.loading)),
+            builder: (_, __) => const Scaffold(
+              body: AuraProductState(state: ProductState.loading),
+            ),
           ),
           GoRoute(
             path: '/institution/:institutionId/edit-profile',
@@ -1913,12 +1949,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Request verification.
           GoRoute(
             path: kInstitutionVerificationRoute,
-            redirect: (context, state) =>
-                _redirectShorthandToCanonical(ref, state, 'request-verification'),
+            redirect: (context, state) => _redirectShorthandToCanonical(
+              ref,
+              state,
+              'request-verification',
+            ),
             // Rendered only while the institution authority is still
             // resolving; the redirect above takes over the instant it does.
-            builder: (_, __) =>
-                const Scaffold(body: AuraProductState(state: ProductState.loading)),
+            builder: (_, __) => const Scaffold(
+              body: AuraProductState(state: ProductState.loading),
+            ),
           ),
           GoRoute(
             path: '/institution/:institutionId/request-verification',
@@ -1974,8 +2014,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'live-rooms',
             ),
-            builder: (context, state) => InstitutionLiveRoomsScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionLiveRoomsScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(
@@ -1986,8 +2028,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'announcements',
             ),
-            builder: (context, state) => InstitutionAnnouncementsScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionAnnouncementsScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(
@@ -1998,16 +2042,21 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'announcements/new',
             ),
-            builder: (context, state) => InstitutionAnnouncementComposer(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionAnnouncementComposer(institutionId: institutionId),
             ),
           ),
           GoRoute(
             path:
                 '/institution/:institutionId/announcements/:announcementId/edit',
-            builder: (context, state) => InstitutionAnnouncementComposer(
-              institutionId: state.pathParameters['institutionId'] ?? '',
-              announcementId: state.pathParameters['announcementId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => InstitutionAnnouncementComposer(
+                institutionId: institutionId,
+                announcementId: state.pathParameters['announcementId'],
+              ),
             ),
           ),
           GoRoute(
@@ -2018,8 +2067,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'spaces',
             ),
-            builder: (context, state) => InstitutionSpacesScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionSpacesScreen(institutionId: institutionId),
             ),
           ),
           // RC-C7 RECONSTRUCTION (2026-08-20). This route used to build the
@@ -2031,9 +2082,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           // correspondence until that family is retired.
           GoRoute(
             path: '/institution/:institutionId/spaces/:spaceId',
-            builder: (context, state) => InstitutionSpaceScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
-              spaceId: state.pathParameters['spaceId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => InstitutionSpaceScreen(
+                institutionId: institutionId,
+                spaceId: state.pathParameters['spaceId'] ?? '',
+              ),
             ),
           ),
           // The institution thread/archived-thread routes are RETIRED with
@@ -2054,8 +2108,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'members',
             ),
-            builder: (context, state) => InstitutionMembersScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionMembersScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(
@@ -2072,8 +2128,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'invites',
             ),
-            builder: (context, state) => InstitutionInvitesScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionInvitesScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(
@@ -2090,14 +2148,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'join-requests',
             ),
-            builder: (context, state) => InstitutionJoinRequestsScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionJoinRequestsScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/explore',
-            builder: (context, state) => InstitutionExploreScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionExploreScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(
@@ -2108,16 +2170,22 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'posts/new',
             ),
-            builder: (context, state) => InstitutionPostComposerScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
-              defaultScope: state.uri.queryParameters['scope'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => InstitutionPostComposerScreen(
+                institutionId: institutionId,
+                defaultScope: state.uri.queryParameters['scope'],
+              ),
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/posts/:postId',
-            builder: (context, state) => InstitutionPostDetailScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
-              postId: state.pathParameters['postId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => InstitutionPostDetailScreen(
+                institutionId: institutionId,
+                postId: state.pathParameters['postId'] ?? '',
+              ),
             ),
           ),
           GoRoute(
@@ -2163,9 +2231,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/direct/:threadId',
-            builder: (context, state) => DirectThreadScreen(
-              threadId: state.pathParameters['threadId'] ?? '',
-              institutionContextId: state.pathParameters['institutionId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => DirectThreadScreen(
+                threadId: state.pathParameters['threadId'] ?? '',
+                institutionContextId: institutionId,
+              ),
             ),
           ),
           GoRoute(
@@ -2176,9 +2247,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'posts/edit',
             ),
-            builder: (context, state) => InstitutionPostComposerScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
-              postId: state.pathParameters['postId'],
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) => InstitutionPostComposerScreen(
+                institutionId: institutionId,
+                postId: state.pathParameters['postId'],
+              ),
             ),
           ),
           GoRoute(
@@ -2189,8 +2263,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'activity',
             ),
-            builder: (context, state) => InstitutionActivityScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionActivityScreen(institutionId: institutionId),
             ),
           ),
           // Institution billing — backend-gated to OWNER/ADMIN at the
@@ -2210,8 +2286,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'billing',
             ),
-            builder: (context, state) => InstitutionBillingScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionBillingScreen(institutionId: institutionId),
             ),
           ),
           // /institution/:id/messages — restored to InstitutionMessagingScreen
@@ -2221,8 +2299,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/messages',
             // C3 — the institution-inbox destination states its context
             // EXPLICITLY; the path itself confers nothing.
-            builder: (context, state) => InstitutionMessagingScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionMessagingScreen(institutionId: institutionId),
             ),
           ),
           GoRoute(

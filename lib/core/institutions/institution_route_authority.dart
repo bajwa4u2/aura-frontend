@@ -47,7 +47,10 @@
 /// make someone an institution").
 library;
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../net/dio_provider.dart';
 
 import 'institution_access_provider.dart';
 
@@ -216,6 +219,42 @@ final institutionAuthoritySnapshotProvider =
     slugToId: slugToId,
     idToSlug: idToSlug,
   );
+});
+
+/// SERVER-SIDE ADDRESS RESOLUTION, for addresses the client cannot know.
+///
+/// Founder ruling step 4 (2026-08-23). A HISTORICAL slug lives only on the
+/// server — the client's membership snapshot carries current slugs, so a link
+/// issued before a rename is unresolvable locally. Requiring prior local
+/// knowledge of slug history would mean an old link fails for exactly the
+/// people it was shared with.
+///
+/// Returns the canonical institution id, or null when the address names
+/// nothing. RESOLUTION IS NOT AUTHORIZATION: the caller still runs standing
+/// and capability against the id, unchanged.
+final remoteInstitutionAddressProvider =
+    FutureProvider.family<String?, String>((ref, address) async {
+  final a = address.trim();
+  if (a.isEmpty) return null;
+
+  try {
+    final res = await ref
+        .read(dioProvider)
+        .get('/institutions/address/$a/resolve');
+    final body = res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : <String, dynamic>{};
+    final data = body['data'] is Map
+        ? Map<String, dynamic>.from(body['data'] as Map)
+        : body;
+    final id = data['institutionId']?.toString().trim() ?? '';
+    return id.isEmpty ? null : id;
+  } on DioException catch (e) {
+    // A 404 is a real answer: the address names nothing. Anything else is a
+    // failure to find out, and must not be reported as "does not exist".
+    if (e.response?.statusCode == 404) return null;
+    rethrow;
+  }
 });
 
 /// What an address in a workspace path names, and whether it is canonical.
