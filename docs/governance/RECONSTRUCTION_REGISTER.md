@@ -311,6 +311,69 @@ the person, never part of their identity.
 
 ---
 
+### CH-05 / Live — `live.invited` is a LIVE production path (2026-08-23)
+
+Corrected production truth, recorded because it was previously recorded wrongly:
+
+- `live.invited` is a canonical registered event (PERSISTED, DIRECT_TARGET_ONLY);
+- `AttentionPolicyService.evaluate()` dispatches to `evaluateForLiveInvited`;
+- `realtime-policy.service.ts` invokes `evaluate()` in production;
+- the path is therefore LIVE. Nothing was deleted.
+
+The two §7 changes already shipped against it are reclassified accordingly:
+
+1. **`resolveDeeplink`** — a BEHAVIOURAL CORRECTION on a live production path,
+   not a tidy-up of dead code. It stops a Space address being composed from
+   persistence ids and prefers the upstream-resolved canonical destination.
+
+2. **`/realtime/<session>?action=join`** — a REAL PRODUCTION DEFECT REPAIR. The
+   fallback sat after an unconditional `return` and was unreachable, so a live
+   invitation carrying session context but no conversation produced no
+   destination at all: a ringing call with nowhere to answer it.
+
+Certified through the PUBLIC entry point — six assertions in
+`live-invited-destination.spec.ts` — deliberately not by calling the private
+helper, because a test that reached past `evaluate()` would reproduce the exact
+blind spot that caused the misdiagnosis. Held alongside the 437-test
+Attention / Notification / Communication / Realtime / Events certification.
+
+---
+
+## AUDIT-INSTRUMENT RULE (founder ruling, 2026-08-23)
+
+**A negative finding is not admissible until the instrument proves coverage of
+the search space relevant to the claim.**
+
+Absence is the most persuasive evidence a reconstruction produces and the
+easiest to manufacture by accident. Two findings in one session were wrong in
+the same shape — the instrument excluded the answer, and the result read as a
+clean negative:
+
+| Claim | Instrument | What it excluded |
+|---|---|---|
+| "production avatar URLs are malformed" | `left(avatarUrl, 48)` | the `/raw` suffix — the governed values are 60 chars, so every one was cut into the malformed shape being looked for |
+| "`evaluateForLiveInvited` has zero callers" | `grep -v` on the defining file | the only caller, which is same-class dispatch inside `evaluate()` |
+
+The first nearly authorised a migration against healthy data. The second nearly
+deleted the ringing-call destination for every live invitation.
+
+So, specifically:
+
+- **call-graph searches** must include the defining class/file and account for
+  same-class dispatch;
+- **field-shape investigations** must inspect complete values, never truncated
+  samples — least of all a prefix of the field whose shape IS the question;
+- **"zero callers", "zero rows", "no consumer", "not used"** and their kin
+  require a coverage statement: what was searched, and what was intentionally
+  excluded.
+
+**This is not a general process tax.** Apply it where absence is being used to
+justify deletion, retirement, migration, or a product-policy conclusion. A
+negative used to decide where to look next needs no ceremony; a negative used
+to remove something does.
+
+---
+
 ## WHAT MAY NEVER HAPPEN TO THIS REGISTER
 
 - Removing an item because it is implemented, green, deployed or merged.
