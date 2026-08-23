@@ -453,14 +453,16 @@ class _PublicPreviewToolbar extends StatelessWidget {
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 760;
             final headline = _PreviewHeadline(link: link, tone: tone);
-            final id = identity?.id ?? '';
+            // The canonical ADDRESS, so preview actions link the same way the
+            // rail does rather than reintroducing a persistence id here.
+            final address = identity?.workspaceAddress ?? '';
             final actions = _PreviewActions(
               link: link,
               tone: tone,
               onEdit: () => context.go(
-                id.isNotEmpty
+                address.isNotEmpty
                     ? institutionWorkspacePath(
-                        id, InstitutionSection.editProfile)
+                        address, InstitutionSection.editProfile)
                     : '/institution/dashboard',
               ),
               onCopy: () => _copy(context, link),
@@ -468,9 +470,9 @@ class _PublicPreviewToolbar extends StatelessWidget {
                   ? () => _openExternal(context, link)
                   : null,
               onExit: () => context.go(
-                id.isNotEmpty
+                address.isNotEmpty
                     ? institutionWorkspacePath(
-                        id, InstitutionSection.profile)
+                        address, InstitutionSection.profile)
                     : '/institution/dashboard',
               ),
             );
@@ -1505,12 +1507,14 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
   int pendingJoinRequests = 0,
   int pendingInvites = 0,
 }) {
-  final id = identity?.id ?? '';
-  // `slug` was only ever needed by the Public Preview rail entry, which is a
-  // contextual action on Profile rather than a destination of its own.
+  // THE ADDRESS, NOT THE ID (founder ruling AD2, 2026-08-23). Every rail
+  // destination is minted from the institution's canonical slug; the raw
+  // persistence id is no longer a product address, only a compatibility input
+  // the router canonicalizes on arrival.
+  final address = identity?.workspaceAddress ?? '';
 
   String? sectionPath(String section) =>
-      id.isNotEmpty ? '/institution/$id/$section' : null;
+      address.isNotEmpty ? '/institution/$address/$section' : null;
 
   // The left rail is the single home for ALL institution navigation, grouped
   // by intent (WORKSPACE / ADMIN / GOVERNANCE / IDENTITY). GOVERNANCE V1:
@@ -1523,7 +1527,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       icon: Icons.explore_outlined,
       selectedIcon: Icons.explore_rounded,
       pathBuilder: (_) =>
-          id.isNotEmpty ? '/institution/$id/explore' : '/institution/dashboard',
+          address.isNotEmpty ? '/institution/$address/explore' : '/institution/dashboard',
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/explore'),
     ),
@@ -1547,7 +1551,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Live',
       icon: Icons.sensors_outlined,
       selectedIcon: Icons.sensors_rounded,
-      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/live-rooms' : null,
+      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/live-rooms' : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.contains('/live'),
     ),
@@ -1571,7 +1575,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Meetings',
       icon: Icons.videocam_outlined,
       selectedIcon: Icons.videocam_rounded,
-      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/meetings' : null,
+      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/meetings' : null,
       pathMatcher: (p) =>
           p.startsWith('/meetings/') ||
           (p.startsWith('/institution/') && p.contains('/meetings')),
@@ -1590,7 +1594,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Members',
       icon: Icons.people_outline_rounded,
       selectedIcon: Icons.people_rounded,
-      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/members' : null,
+      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/members' : null,
       pathMatcher: (p) =>
           p.contains('/members') && p.startsWith('/institution/'),
     ),
@@ -1612,7 +1616,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       icon: Icons.grid_view_outlined,
       selectedIcon: Icons.grid_view_rounded,
       requiresAny: kOperationalInstitutionAuthority,
-      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/dashboard' : null,
+      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/dashboard' : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.endsWith('/dashboard'),
     ),
@@ -1623,7 +1627,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       requiresAny: kInstitutionDestinationAuthority['join-requests']!,
       badge: pendingJoinRequests,
       pathBuilder: (_) =>
-          id.isNotEmpty ? '/institution/$id/join-requests' : null,
+          address.isNotEmpty ? '/institution/$address/join-requests' : null,
       pathMatcher: (p) =>
           p.contains('/join-requests') && p.startsWith('/institution/'),
     ),
@@ -1633,7 +1637,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       selectedIcon: Icons.mail_rounded,
       requiresAny: kInstitutionDestinationAuthority['invites']!,
       badge: pendingInvites,
-      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/invites' : null,
+      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/invites' : null,
       pathMatcher: (p) =>
           p.contains('/invite') && p.startsWith('/institution/'),
     ),
@@ -1643,7 +1647,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       selectedIcon: Icons.calendar_today_rounded,
       requiresAny: kInstitutionDestinationAuthority['availability']!,
       pathBuilder: (_) =>
-          id.isNotEmpty ? '/institution/$id/availability' : null,
+          address.isNotEmpty ? '/institution/$address/availability' : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.endsWith('/availability'),
     ),
@@ -1655,8 +1659,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       icon: Icons.language_rounded,
       selectedIcon: Icons.language_rounded,
       requiresAny: kInstitutionDestinationAuthority['domains']!,
-      pathBuilder: (_) => id.isNotEmpty
-          ? institutionWorkspacePath(id, InstitutionSection.domains)
+      pathBuilder: (_) => address.isNotEmpty
+          ? institutionWorkspacePath(address, InstitutionSection.domains)
           : null,
     ),
     InstWorkspaceEntry(
@@ -1664,7 +1668,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       icon: Icons.account_balance_wallet_outlined,
       selectedIcon: Icons.account_balance_wallet_rounded,
       requiresAny: kInstitutionDestinationAuthority['billing']!,
-      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/billing' : null,
+      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/billing' : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.endsWith('/billing'),
     ),
@@ -1675,8 +1679,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Profile',
       icon: Icons.badge_outlined,
       selectedIcon: Icons.badge_rounded,
-      pathBuilder: (_) => id.isNotEmpty
-          ? institutionWorkspacePath(id, InstitutionSection.profile)
+      pathBuilder: (_) => address.isNotEmpty
+          ? institutionWorkspacePath(address, InstitutionSection.profile)
           : null,
     ),
     InstWorkspaceEntry(
@@ -1684,8 +1688,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       icon: Icons.edit_outlined,
       selectedIcon: Icons.edit_rounded,
       requiresAny: kInstitutionDestinationAuthority['edit-profile']!,
-      pathBuilder: (_) => id.isNotEmpty
-          ? institutionWorkspacePath(id, InstitutionSection.editProfile)
+      pathBuilder: (_) => address.isNotEmpty
+          ? institutionWorkspacePath(address, InstitutionSection.editProfile)
           : null,
     ),
     // PUBLIC PREVIEW IS AN ACTION, NOT A DESTINATION.

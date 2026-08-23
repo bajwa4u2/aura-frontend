@@ -584,7 +584,7 @@ class _InstitutionEditProfileScreenState
                   onPressed: () => context.go(
                     (identity?.id.isNotEmpty ?? false)
                         ? institutionWorkspacePath(
-                            identity!.id,
+                                    identity!.workspaceAddress,
                             InstitutionSection.profile,
                           )
                         : '/institution/dashboard',

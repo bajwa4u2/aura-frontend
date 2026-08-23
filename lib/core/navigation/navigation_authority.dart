@@ -215,13 +215,18 @@ class NavigationAuthority {
 
   /// The institution's own Spaces list. RC-C7 reconstruction: Spaces are an
   /// institution-owned contextual destination, so their address lives in the
-  /// `/institution/:id/…` space this authority already governs, and the
+  /// `/institution/:address/…` space this authority already governs, and the
   /// reconstructed Space surface asks here rather than composing a literal.
-  static String institutionSpacesRoute(String institutionId) =>
-      '/institution/$institutionId/spaces';
+  ///
+  /// Takes the institution's canonical ADDRESS (its slug), not its persistence
+  /// id — founder ruling AD2, 2026-08-23. The parameter is named for what it
+  /// is, because a parameter called `institutionId` invites the next caller to
+  /// pass one.
+  static String institutionSpacesRoute(String address) =>
+      '/institution/$address/spaces';
 
-  static String institutionSpaceRoute(String institutionId, String spaceId) =>
-      '/institution/$institutionId/spaces/$spaceId';
+  static String institutionSpaceRoute(String address, String spaceId) =>
+      '/institution/$address/spaces/$spaceId';
   static String threadRoute(String id) => '/thread/$id';
   static String directThreadRoute(String id) => '/direct/$id';
   static String postRoute(String id) => '/posts/$id';

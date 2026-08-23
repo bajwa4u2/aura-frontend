@@ -44,32 +44,45 @@ enum InstitutionSection {
 /// when [institutionId] is empty so callers can decide whether to gate
 /// the CTA (e.g. show the tab as disabled) instead of producing a
 /// shorthand path that would route through a redirect.
+/// THE ADDRESS IS THE SLUG (founder ruling AD2, 2026-08-23).
+///
+/// Callers pass an institution's canonical ADDRESS, not its persistence id.
+/// The parameter is named `address` deliberately: `institutionId` is what let
+/// database identity become the product's information architecture by
+/// accident, and a name that says "id" invites the next caller to pass one.
+///
+/// A raw id still RESOLVES (the router canonicalizes it on arrival, so durable
+/// links keep working) but nothing here may MINT one — that is the difference
+/// between compatibility and drift.
 String institutionWorkspacePath(
-  String institutionId,
+  String address,
   InstitutionSection section,
 ) {
-  final id = institutionId.trim();
-  if (id.isEmpty) return '';
-  return '/institution/$id/${section.wire}';
+  final a = address.trim();
+  if (a.isEmpty) return '';
+  return '/institution/$a/${section.wire}';
 }
 
 /// One UNIT, as an operating context inside the institution.
 ///
 /// Owned here rather than minted at call sites: a unit's address is navigation
 /// grammar like any other, and the Navigation Authority is where that lives.
-String institutionUnitContextPath(String institutionId, String unitId) {
-  final id = institutionId.trim();
-  final unit = unitId.trim();
-  if (id.isEmpty || unit.isEmpty) return '';
-  return '/institution/$id/units/$unit';
+/// A unit's address is BOTH slugs — matching the public precedent
+/// `/institutions/:slug/units/:unitSlug` rather than inventing a second shape
+/// for the same resource inside the workspace.
+String institutionUnitContextPath(String address, String unitAddress) {
+  final a = address.trim();
+  final unit = unitAddress.trim();
+  if (a.isEmpty || unit.isEmpty) return '';
+  return '/institution/$a/units/$unit';
 }
 
 /// String overload — handy when the section is a constant literal that
 /// hasn't been promoted to the enum yet (e.g. legacy code paths).
 /// Prefer the enum variant for type safety.
-String institutionWorkspacePathString(String institutionId, String section) {
-  final id = institutionId.trim();
+String institutionWorkspacePathString(String address, String section) {
+  final a = address.trim();
   final s = section.trim();
-  if (id.isEmpty || s.isEmpty) return '';
-  return '/institution/$id/$s';
+  if (a.isEmpty || s.isEmpty) return '';
+  return '/institution/$a/$s';
 }

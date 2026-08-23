@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/institutions/institution_paths.dart';
 
 import '../../../core/authority/authority_providers.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/authority/capability_projection.dart';
 
 import '../../../core/net/dio_provider.dart';
@@ -174,6 +175,9 @@ class _InstitutionUnitsScreenState
   }
 
   List<Widget> _buildUnitList({required bool canAdminister}) {
+    // The institution's canonical address, so unit links carry the same
+    // identity the rest of the workspace does.
+    final identity = ref.watch(institutionIdentityProvider);
     final active = _units.where((u) => !u.isArchived).toList();
     final archived = _units.where((u) => u.isArchived).toList();
 
@@ -186,8 +190,15 @@ class _InstitutionUnitsScreenState
               unit: u,
               // A unit is an operating context, so the card leads INTO it.
               // Opening is participation; administering it is gated above.
+              // BOTH SLUGS (founder ruling, step 2), matching the public
+              // precedent /institutions/:slug/units/:unitSlug rather than
+              // inventing a second shape for the same resource. A unit slug is
+              // unique within its institution, so the pair is exact.
               onOpen: () => context.push(
-                institutionUnitContextPath(widget.institutionId, u.id),
+                institutionUnitContextPath(
+                  identity?.workspaceAddress ?? widget.institutionId,
+                  u.slug.trim().isNotEmpty ? u.slug : u.id,
+                ),
               ),
               onEdit: canAdminister
                   ? () => _openUpsertSheet(existing: u)

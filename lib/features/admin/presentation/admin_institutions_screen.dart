@@ -196,11 +196,15 @@ class _AdminInstitutionsScreenState extends ConsumerState<AdminInstitutionsScree
                     final name = Uri.encodeQueryComponent(inst.name);
                     context.go('/admin/institutions/${inst.id}/members?name=$name');
                   },
+                  // AD5: an admin surface may keep opaque identity for its OWN
+                  // operations, but a link it hands onward into the workspace
+                  // carries the institution's PRODUCT identity. Internal ids
+                  // must not leak outward through admin.
                   onViewAnnouncements: (inst) => context.go(
-                    '/institution/${inst.id}/announcements',
+                    '/institution/${inst.slug}/announcements',
                   ),
                   onViewSpaces: (inst) => context.go(
-                    '/institution/${inst.id}/spaces',
+                    '/institution/${inst.slug}/spaces',
                   ),
                 ),
                 _RequestList(
@@ -225,11 +229,15 @@ class _AdminInstitutionsScreenState extends ConsumerState<AdminInstitutionsScree
                     final name = Uri.encodeQueryComponent(inst.name);
                     context.go('/admin/institutions/${inst.id}/members?name=$name');
                   },
+                  // AD5: an admin surface may keep opaque identity for its OWN
+                  // operations, but a link it hands onward into the workspace
+                  // carries the institution's PRODUCT identity. Internal ids
+                  // must not leak outward through admin.
                   onViewAnnouncements: (inst) => context.go(
-                    '/institution/${inst.id}/announcements',
+                    '/institution/${inst.slug}/announcements',
                   ),
                   onViewSpaces: (inst) => context.go(
-                    '/institution/${inst.id}/spaces',
+                    '/institution/${inst.slug}/spaces',
                   ),
                 ),
               ],

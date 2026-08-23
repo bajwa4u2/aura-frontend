@@ -312,7 +312,7 @@ class _ProfileBody extends ConsumerWidget {
                                 icon: Icons.edit_outlined,
                                 onPressed: () => context.go(
                                   institutionWorkspacePath(
-                                    identity!.id,
+                                    identity!.workspaceAddress,
                                     InstitutionSection.editProfile,
                                   ),
                                 ),
@@ -569,7 +569,7 @@ class _ActionGroup extends StatelessWidget {
           onPressed: () => context.go(
             (identity?.id.isNotEmpty ?? false)
                 ? institutionWorkspacePath(
-                    identity!.id, InstitutionSection.domains)
+                                    identity!.workspaceAddress, InstitutionSection.domains)
                 : '/institution/dashboard',
           ),
         ),
@@ -582,7 +582,7 @@ class _ActionGroup extends StatelessWidget {
             label: 'Manage billing',
             icon: Icons.receipt_long_rounded,
             onPressed: () => context.go(
-              '/institution/${identity!.id}/billing',
+              '/institution/${identity!.workspaceAddress}/billing',
             ),
           ),
       ],

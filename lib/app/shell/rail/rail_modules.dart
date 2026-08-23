@@ -731,7 +731,14 @@ class InstitutionRecentActivityRailModule extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(institutionIdentityProvider);
+    // TWO IDENTITIES, DELIBERATELY SEPARATE (founder ruling, 2026-08-23).
+    //
+    // `id` is persistence identity and is what the API is keyed by. `address`
+    // is the institution's canonical product address and is what a human-facing
+    // link may contain. Using one for the other is exactly how database
+    // identity became the address space.
     final id = identity?.id ?? '';
+    final address = identity?.workspaceAddress ?? '';
     if (id.isEmpty) return const SizedBox.shrink();
     final async = ref.watch(
       institutionActivityFirstPageProvider(
@@ -759,7 +766,7 @@ class InstitutionRecentActivityRailModule extends ConsumerWidget {
           const SizedBox(height: AuraSpace.s8),
           InkWell(
             borderRadius: BorderRadius.circular(AuraRadius.r10),
-            onTap: () => context.go('/institution/$id/activity'),
+            onTap: () => context.go('/institution/$address/activity'),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AuraSpace.s4,

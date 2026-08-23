@@ -178,6 +178,18 @@ class InstitutionIdentity {
     return r == 'OWNER' || r == 'ADMIN';
   }
 
+  /// THE INSTITUTION'S CANONICAL PRODUCT ADDRESS.
+  ///
+  /// The slug, always, when there is one. Falls back to the persistence id
+  /// ONLY when an institution somehow has no slug — a broken address is worse
+  /// than an ugly one, and the router canonicalizes an id on arrival anyway.
+  ///
+  /// Every human-facing workspace link is built from this rather than from
+  /// `id`, so persistence identity cannot leak into the address space by a
+  /// caller reaching for the nearest field.
+  String get workspaceAddress =>
+      slug.trim().isNotEmpty ? slug.trim() : id;
+
   bool can(String capability) => capabilities.contains(capability);
 
   /// Official institutional voice (Representative or higher).
