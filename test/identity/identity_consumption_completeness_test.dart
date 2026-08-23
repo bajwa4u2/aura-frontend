@@ -150,6 +150,81 @@ void main() {
     });
   });
 
+  group('presentation may differ; the DATA may not', () {
+    /// FOUNDER RULING 2026-08-23 — Institution Activity.
+    ///
+    /// Activity is an event / continuity / accountability surface. Its default
+    /// actor presentation is the canonical name, avatar and handle WITHOUT
+    /// mechanically drawing verification glyphs on every row. That is a
+    /// legitimate destination-specific presentation difference.
+    ///
+    /// The distinction this group protects is exact, and both halves have a
+    /// plausible-looking way to go wrong:
+    ///
+    ///   - someone "completes" the convergence by adding trust marks to every
+    ///     Activity row, making an audit log noisier without making it truer;
+    ///   - someone "simplifies" the model by dropping verification from the
+    ///     identity Activity reads, because Activity does not draw it — which
+    ///     WOULD be partial adoption, and would silently degrade every other
+    ///     consumer that shares the reader.
+    const activity =
+        'lib/features/institutions/activity/institution_activity_screen.dart';
+
+    test('Activity consumes the canonical actor, avatar included', () {
+      final source = File(activity).readAsStringSync();
+      expect(source, contains('AuraPersonIdentity.fromJson'));
+      expect(source, contains('imageUrl:'));
+    });
+
+    test('Activity deliberately draws no verification marks', () {
+      final source = File(activity).readAsStringSync();
+      expect(
+        source.contains('PersonVerificationMarks'),
+        isFalse,
+        reason:
+            'Founder ruling: Activity presents EVENTS, and verification glyphs '
+            'on every row are not required. Render a mark here only where the '
+            'event or actor context makes it materially relevant — and record '
+            'that reasoning if you do.',
+      );
+    });
+
+    test('...while the verification still TRAVELS to it', () {
+      // The data is not stripped because one destination declines to draw it.
+      // This is what separates a presentation choice from partial adoption.
+      final actor = AuraPersonIdentity.fromJson({
+        'actor': {
+          'id': 'u1',
+          'displayName': 'A Person',
+          'handle': 'aperson',
+          'verification': {
+            'classes': ['IDENTITY'],
+          },
+        },
+      });
+
+      expect(actor.verification.hasAny, isTrue);
+    });
+
+    test('Activity defines no trust model of its own', () {
+      // The ruling forbids an Activity-specific trust model, not the presence
+      // of verification code elsewhere — the admin review sheet and the
+      // institution verification request screen are legitimate surfaces about
+      // verification, which is a different thing from a parallel model of it.
+      final source = File(activity).readAsStringSync();
+
+      // Widget classes are expected here. A class that models VERIFICATION or
+      // TRUST is not — that would be the parallel model the ruling forbids.
+      final localTrustModel =
+          RegExp(r'class \w*(Verification|Trust)\w*').allMatches(source);
+      expect(localTrustModel, isEmpty);
+
+      // Nor may it reach past the projection into the raw column the canonical
+      // authority exists to interpret.
+      expect(source, isNot(contains('verifiedClasses')));
+    });
+  });
+
   test('the four measured surfaces consume the identity they read', () {
     // Named explicitly, because the walker above can only prove that nothing
     // is partially adopted — not that these particular surfaces, the ones the

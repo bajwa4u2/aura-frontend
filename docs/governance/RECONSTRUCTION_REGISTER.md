@@ -255,10 +255,20 @@ F116 by fixing one consumer, and it is equally not closed by fixing four:
   is not a live observation;
 - Members rendering an actual avatar in production is NOT yet verified; it
   needs the deploy plus a founder or browser check;
-- Institution Activity renders the actor's avatar but no trust marks, which is
-  a deliberate scope boundary rather than an oversight: it presents an EVENT,
-  and whether an actor's verification belongs on an audit row is a
-  presentation decision the ruling did not make.
+- Institution Activity renders the actor's avatar and deliberately does NOT
+  render verification marks. **Founder ruling 2026-08-23:** Activity is an
+  event / continuity / accountability presentation, so default actor
+  presentation is the canonical name, avatar and handle without mechanically
+  displaying verification glyphs on every row. Trust marks belong there only
+  where the event or actor context makes them materially relevant.
+
+  This is a legitimate destination-specific presentation difference, **not**
+  partial identity adoption. The distinction is exact and load-bearing: the
+  canonical verification state still TRAVELS in the identity model — it is not
+  stripped from the projection because one destination declines to draw it, and
+  no Activity-specific trust model exists. An identity-bearing surface is not
+  required to display every canonical decoration; it is required not to discard
+  the data.
 
 An independent finding in the same investigation was WITHDRAWN. The stored
 avatar URLs were reported as a non-renderable `/media/<id>` shape; that was an
@@ -266,6 +276,28 @@ artefact of a 48-character truncation in the census query used to gather the
 evidence. All six production values are the governed `/media/<id>/raw` form,
 the write path already converts to it, and the door returns real image bytes.
 No media-address defect existed and no production repair was required.
+
+The instrument itself was corrected, because the cause matters more than the
+finding: the census column now carries `avatarUrl` whole and asserts its shape
+with a regex, rather than sampling a fixed-width prefix of the exact field
+whose shape was the question.
+
+**LIVE CERTIFICATION TARGET (aura-platform-llc Members), from the corrected
+census on 2026-08-23** — stated in advance so the check has a falsifiable
+expectation rather than an impression:
+
+| Member | Expected |
+|---|---|
+| `bajwawrites` (OWNER) | photo |
+| `iffat13` | photo |
+| `mrshah` | photo |
+| `nimi` | photo |
+| `amc3212` | initials — genuinely has no avatar |
+
+No member of this institution holds any verified class, so **no trust marks
+should appear on the roster**. A mark rendering here would itself be a defect.
+Owner / Member / Representative / Host must remain relationship overlays beside
+the person, never part of their identity.
 
 ---
 
