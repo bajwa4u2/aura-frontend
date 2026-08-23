@@ -48,11 +48,34 @@
 library;
 
 /// The four founder-approved authenticated primary destinations.
+///
+/// DECLARATION ORDER IS THE CANONICAL ORDER. Founder ruling 2026-08-22:
+/// **Home · Create · Messages · Discover.** Create is a primary product
+/// action, not a trailing destination parked after the browsing surfaces, so
+/// it sits immediately after Home.
+///
+/// The order lived in a private `static const` list inside `MemberShell`. That
+/// happened to feed all three of that shell's forms — rail, bottom bar and
+/// drawer — so mobile and desktop agreed by construction. But nothing ENFORCED
+/// it: another shell, or another platform presentation, could declare its own
+/// list and drift, and no test would notice because each list would be
+/// internally consistent on its own. That is the shape the notification
+/// resolvers had, where ten places each answered one question correctly and
+/// disagreed with each other.
+///
+/// So order is stated once, here, and shells consume `values`. A shell decides
+/// how a destination LOOKS on its form factor — icon, label visibility, rail
+/// versus bar versus drawer. It does not decide what the destinations are, or
+/// what order they come in.
+///
+/// The PUBLIC shell is deliberately not a consumer: signed-out navigation is a
+/// separately frozen set (Home · Discover), because Create and Messages are
+/// not public destinations. A different question, not a divergent answer.
 enum PrimaryDestination {
   home('Home', '/home'),
+  create('Create', '/create'),
   messages('Messages', '/messages'),
-  discover('Discover', '/discover'),
-  create('Create', '/create');
+  discover('Discover', '/discover');
 
   const PrimaryDestination(this.label, this.route);
 

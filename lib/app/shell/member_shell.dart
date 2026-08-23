@@ -70,41 +70,44 @@ class MemberShell extends StatelessWidget {
 
   final Widget child;
 
-  // FOUNDER-APPROVED authenticated primaries (founder-observed correction,
-  // 2026-08-16, amending the original C3 five): Home · Messages · Discover
-  // · Create — the four recurring human intentions (see/continue ·
-  // communicate · discover · create), identical on mobile and desktop.
-  // ME was removed (personal depth lives behind the identity/avatar
-  // chrome — /me is unchanged as a destination). MEETINGS was removed
-  // (an institutional domain; personal relationships to meetings are
-  // contextual). No fifth slot exists or is reserved — Attention argues
-  // its own case at C4's founder checkpoint.
-  static const List<_NavItem> _items = [
-    _NavItem(
-      label: 'Home',
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home_rounded,
-      path: '/home',
+  // ORDER IS NOT THIS SHELL'S TO DECIDE.
+  //
+  // These four were a private `static const` list here, which fed the rail,
+  // the bottom bar and the drawer — so this shell's forms agreed by
+  // construction, and nothing enforced that any OTHER shell would. Founder
+  // ruling 2026-08-22 moved Create immediately after Home, and the right place
+  // for that ruling to live is the navigation authority that already names the
+  // four destinations, not a list inside one presentation.
+  //
+  // This shell now derives them from `PrimaryDestination.values` and supplies
+  // only what is genuinely presentational: which icon represents each
+  // destination on this form factor. Labels and addresses come from the
+  // authority so a destination cannot acquire a second name or a second
+  // address by being written down twice.
+  static const Map<PrimaryDestination, (IconData, IconData)> _icons = {
+    PrimaryDestination.home: (Icons.home_outlined, Icons.home_rounded),
+    PrimaryDestination.create: (
+      Icons.add_circle_outline_rounded,
+      Icons.add_circle_rounded,
     ),
-    _NavItem(
-      label: 'Messages',
-      icon: Icons.mail_outline_rounded,
-      selectedIcon: Icons.mail_rounded,
-      path: '/messages',
+    PrimaryDestination.messages: (
+      Icons.mail_outline_rounded,
+      Icons.mail_rounded,
     ),
-    _NavItem(
-      label: 'Discover',
-      icon: Icons.explore_outlined,
-      selectedIcon: Icons.explore_rounded,
-      path: '/discover',
+    PrimaryDestination.discover: (
+      Icons.explore_outlined,
+      Icons.explore_rounded,
     ),
-    _NavItem(
-      label: 'Create',
-      icon: Icons.add_circle_outline_rounded,
-      selectedIcon: Icons.add_circle_rounded,
-      path: '/create',
-    ),
-  ];
+  };
+
+  static final List<_NavItem> _items = PrimaryDestination.values
+      .map((d) => _NavItem(
+            label: d.label,
+            icon: _icons[d]!.$1,
+            selectedIcon: _icons[d]!.$2,
+            path: d.route,
+          ))
+      .toList(growable: false);
 
   static const double _tabletBreakpoint = kTabletBreak; // 900
 
