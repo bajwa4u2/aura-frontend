@@ -153,16 +153,44 @@ The evidence supports a specific and narrow direction:
 4. **Creation/retirement stays institutional.** Consistent with §11 and with the
    role gate already in force.
 
-## 10. Founder decisions required
+## 9a. IMPLEMENTED after the ruling (2026-08-23)
+
+Sequence steps 2–5 are done; the audit above stands as the evidence they were
+built from.
+
+| Step | State |
+|---|---|
+| 2 — assignment model | **done** — `InstitutionUnitAssignment` hangs off `InstitutionMember`; association, not authority; `endedAt` lifecycle with history preserved |
+| 3 — scoped delegation | **done** — `InstitutionMemberCapability.scopeUnitId`; NULL = institution-wide; `getContext` reads NULL-scope only, `getUnitContext` unions |
+| 4 — UNIT meeting cohort | **done** — resolves through active assignment; proven end-to-end on disposable Postgres |
+| 5 — inert cohort kinds | **retired** — see below |
+
+**U6 resolved by evidence.** `DEPARTMENT`, `COMMITTEE`, `BOARD`, `LEADERSHIP`,
+`WORKING_GROUP` appeared **only** in the DTO validator: no resolution logic, no
+client consumer on any platform, no doctrine, and zero production rows. They
+were a promise the product could not keep — a meeting addressed to "the Board"
+admitted nobody. Refused at the boundary rather than preserved with fabricated
+membership. `DEPARTMENT` converges onto `UNIT` because `InstitutionUnitType`
+already has `DEPARTMENT`; two meanings for one organizational form was the
+drift. The enum values stay in the database — dropping a Postgres enum value
+requires recreating the type, and with zero dependent rows there is nothing to
+gain from destructive DDL.
+
+**U5 partially resolved.** Creation/retirement remains institution-level
+(`administerUnits`, role-shaped, matching what the backend enforces). Operating
+inside a unit is now delegable through scoped grants. No `MANAGE_UNITS` was
+invented.
+
+## 10. Founder decisions still required
 
 | # | Decision |
 |---|---|
-| **U1** | Does a Unit get **membership/assignment**? Nothing else in §9 or the meeting cohort feature is implementable without it. |
-| **U2** | Should existing capabilities gain an **optional unit scope**, or should unit responsibility be a separate delegation? This is the "Representative for Orchestrate" question. |
+| ~~U1~~ | **RULED + IMPLEMENTED** — assignment under `InstitutionMember`. |
+| ~~U2~~ | **RULED + IMPLEMENTED** — scope on the canonical grant. |
+| ~~U6~~ | **RULED + IMPLEMENTED** — phantom cohorts retired. |
 | **U3** | Which operational systems become unit-scopable, and in what order — Meetings (already half-built), Spaces, Announcements, Activity? |
 | **U4** | **Public Unit presence**: units render publicly today with no stated provenance rule. What must a public Unit show about its parent Institution, and may it be discoverable/searchable independently? |
-| **U5** | Is unit **creation/retirement** institution-governance (current behaviour) or delegable operation? |
-| **U6** | Should the inert `UNIT`/`DEPARTMENT`/`COMMITTEE`/`BOARD`/`LEADERSHIP`/`WORKING_GROUP` cohort kinds be **implemented or retired**? They are schema intent with no runtime and zero production use. |
+| **U5** | Partially ruled. Remaining: is *editing unit identity* structural governance or delegable operation? |
 | **U7** | Does a Unit get its own **contact/address/website**, duplicating institution fields, or inherit with overrides? |
 
 ## 11. Cross-platform
