@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/institutions/institution_paths.dart';
 import '../../../core/diagnostics/runtime_trace.dart';
 import '../../../core/interactions/follow_invalidation.dart';
 import '../../../core/institutions/institution_access_provider.dart';
@@ -1129,6 +1128,13 @@ class _InstitutionProfileCtaRowState
     final viewingOwnInstitution =
         ownIdentity != null && ownIdentity.id == widget.institutionId;
     if (viewingOwnInstitution) {
+      // THIS IS THE PUBLIC PAGE. Editing belongs to the workspace's Profile
+      // controls, where it already lives as the primary action and is gated on
+      // MANAGE_BRANDING. The copy that used to sit here carried NO capability
+      // check at all -- it appeared for any member of the institution, so a
+      // plain member was offered an edit control that could only ever 403.
+      // Removing it un-buries the real control and closes that overexposure in
+      // one move.
       return Wrap(
         spacing: AuraSpace.s10,
         runSpacing: AuraSpace.s10,
@@ -1137,18 +1143,6 @@ class _InstitutionProfileCtaRowState
             label: 'Open workspace',
             icon: Icons.dashboard_rounded,
             onPressed: () => context.push('/institution/dashboard'),
-          ),
-          AuraSecondaryButton(
-            label: 'Edit profile',
-            icon: Icons.edit_outlined,
-            onPressed: () => context.push(
-              widget.institutionId.isNotEmpty
-                  ? institutionWorkspacePath(
-                      widget.institutionId,
-                      InstitutionSection.editProfile,
-                    )
-                  : '/institution/dashboard',
-            ),
           ),
         ],
       );
