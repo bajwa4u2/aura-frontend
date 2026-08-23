@@ -28,12 +28,17 @@ class ActivityScreen extends ConsumerStatefulWidget {
   ConsumerState<ActivityScreen> createState() => _ActivityScreenState();
 }
 
-enum _ActivityFilter { all, messages, social, announcements, system }
+/// Filters are the canonical notification GROUPS plus "all". The screen no
+/// longer keeps its own list of type strings: that list had drifted so far from
+/// the enum that 68% of production notifications matched no filter, and the
+/// Messages filter matched nothing at all.
+typedef _ActivityFilter = NotificationGroup?;
+const _ActivityFilter _kAllActivity = null;
 
 class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   static const _resolver = CommunicationResolver();
 
-  _ActivityFilter _activeFilter = _ActivityFilter.all;
+  _ActivityFilter _activeFilter = _kAllActivity;
 
   /// Shell-safe push: rewrites canonical routes (`/posts/:id`, `/u/:handle`,
   /// `/institutions/:slug`) for the current shell context so a user inside an
@@ -52,43 +57,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   }
 
   List<Map<String, dynamic>> _applyFilter(List<Map<String, dynamic>> items) {
-    if (_activeFilter == _ActivityFilter.all) return items;
-    return items.where((item) {
-      final type = (item['type'] ?? '').toString().toUpperCase();
-      switch (_activeFilter) {
-        case _ActivityFilter.messages:
-          return type == 'MESSAGE_RECEIVED' ||
-              type == 'THREAD_INVITE' ||
-              type == 'SPACE_INVITE';
-        case _ActivityFilter.social:
-          return type == 'FOLLOW' ||
-              type == 'FOLLOW_REQUEST' ||
-              type == 'FOLLOW_ACCEPTED' ||
-              type == 'LIKE' ||
-              type == 'SAVE' ||
-              type == 'REPLY' ||
-              type == 'REPOST' ||
-              type == 'MENTION' ||
-              type == 'ACCOUNTABILITY_TAGGED' ||
-              type == 'THREAD_ACTIVITY' ||
-              type == 'SPACE_ACTIVITY' ||
-              type == 'PRIORITY_PINNED';
-        case _ActivityFilter.announcements:
-          return type == 'ANNOUNCEMENT_PUBLISHED' ||
-              type == 'INSTITUTION_POST_PUBLISHED';
-        case _ActivityFilter.system:
-          return type == 'POST_PUBLISHED' ||
-              type == 'POST_PUBLISH_FAILED' ||
-              type == 'SYSTEM' ||
-              type == 'INVITE_ACCEPTED' ||
-              type == 'INVITE_DECLINED' ||
-              type == 'INVITE_REVOKED' ||
-              type == 'MODERATION_ACTION_TAKEN' ||
-              type == 'REPORT_RESOLVED';
-        case _ActivityFilter.all:
-          return true;
-      }
-    }).toList();
+    final filter = _activeFilter;
+    if (filter == _kAllActivity) return items;
+    return items
+        .where((item) => resolveNotificationGroup(item) == filter)
+        .toList();
   }
 
   Future<void> _markAllRead() async {
@@ -483,7 +456,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       ),
                     )
                   else if (filteredItems.isEmpty)
-                    const _ActivityEmptyState()
+                    _ActivityEmptyState(
+                      filter: _activeFilter,
+                      hasActivityOutsideFilter: allItems.isNotEmpty,
+                    )
                   else ...[
                     if (unread.isNotEmpty) ...[
                       _ActivitySectionLabel(
@@ -549,12 +525,14 @@ class _ActivityFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const filters = [
-      (_ActivityFilter.all, 'All'),
-      (_ActivityFilter.messages, 'Messages'),
-      (_ActivityFilter.social, 'Social'),
-      (_ActivityFilter.announcements, 'Announcements'),
-      (_ActivityFilter.system, 'System'),
+    // Derived from the canonical groups, so a group added there appears here
+    // rather than being silently unreachable. Calls and Meetings are visible
+    // for the first time: between them they are the largest share of real
+    // notifications, and no filter previously reached either.
+    final filters = <(_ActivityFilter, String)>[
+      (_kAllActivity, 'All'),
+      for (final group in NotificationGroup.values)
+        (group, notificationGroupLabel(group)),
     ];
 
     // Wrap (not horizontal scroll) so narrow viewports lay the pills
@@ -830,11 +808,24 @@ class _ActivitySkeletonList extends StatelessWidget {
   }
 }
 
+/// Says WHICH emptiness this is. "All caught up" while a filter hides real
+/// activity claims the account is quiet when it is not -- the filter is empty,
+/// not the inbox.
 class _ActivityEmptyState extends StatelessWidget {
-  const _ActivityEmptyState();
+  const _ActivityEmptyState({
+    required this.filter,
+    required this.hasActivityOutsideFilter,
+  });
+
+  final _ActivityFilter filter;
+  final bool hasActivityOutsideFilter;
 
   @override
   Widget build(BuildContext context) {
+    final group = filter;
+    final filtered = group != _kAllActivity && hasActivityOutsideFilter;
+    final label = group == _kAllActivity ? '' : notificationGroupLabel(group!);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s32),
       child: Column(
@@ -855,12 +846,14 @@ class _ActivityEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s14),
           Text(
-            'All caught up',
+            filtered ? 'Nothing in $label' : 'All caught up',
             style: AuraText.subtitle.copyWith(color: AuraSurface.ink),
           ),
           const SizedBox(height: AuraSpace.s6),
           Text(
-            'You\'re up to date.',
+            filtered
+                ? 'You have other activity — choose All to see it.'
+                : 'You\'re up to date.',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
             textAlign: TextAlign.center,
           ),

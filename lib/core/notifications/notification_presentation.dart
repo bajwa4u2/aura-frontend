@@ -332,3 +332,112 @@ Map<String, dynamic> _mapOf(dynamic value) {
 }
 
 String _stringOf(dynamic value) => value?.toString().trim() ?? '';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUBJECT GROUPING
+//
+// The Activity surface used to classify notifications with its own hand-listed
+// type strings. Measured against production on 2026-08-23, that list matched
+// 73 of 228 notifications: 68% were reachable by no filter at all, the Messages
+// filter was entirely dead (it looked for `MESSAGE_RECEIVED` while the enum
+// value is `MESSAGE`), and the single largest kind -- CALL_MISSED, 95 rows --
+// belonged to no group. Two of its entries were not valid enum values.
+//
+// So grouping lives here, beside the title and body resolvers, and Activity
+// consumes it. One authority answering "what kind of thing is this", not a
+// second list drifting beside the first.
+//
+// EXHAUSTIVE BY CONSTRUCTION: every value of the backend NotificationType enum
+// is named below, and an unrecognised kind falls to `system` rather than
+// vanishing -- a notification the product cannot classify is still a
+// notification the recipient must be able to reach.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum NotificationGroup { conversations, calls, meetings, social, announcements, system }
+
+NotificationGroup resolveNotificationGroup(Map<String, dynamic> payload) =>
+    notificationGroupForKind(_resolveKind(payload));
+
+/// The classification itself, as data. A map rather than a switch so the set
+/// of NAMED kinds is inspectable -- a gate can then assert that every backend
+/// enum value is named here, which a switch with a default cannot express.
+const Map<String, NotificationGroup> kNotificationGroups = <String, NotificationGroup>{
+  'MESSAGE': NotificationGroup.conversations,
+  'MENTION': NotificationGroup.conversations,
+  'SPACE_INVITE': NotificationGroup.conversations,
+  'THREAD_INVITE': NotificationGroup.conversations,
+  'INVITATION': NotificationGroup.conversations,
+  'INVITE_ACCEPTED': NotificationGroup.conversations,
+
+  'CALL_MISSED': NotificationGroup.calls,
+
+  'MEETING_BOOKED': NotificationGroup.meetings,
+  'MEETING_REMINDER': NotificationGroup.meetings,
+  'MEETING_STARTING': NotificationGroup.meetings,
+  'MEETING_SUMMARY_SHARED': NotificationGroup.meetings,
+  'MEETING_RESCHEDULED': NotificationGroup.meetings,
+  'MEETING_CANCELLED': NotificationGroup.meetings,
+  'MEETING_RSVP_ACCEPTED': NotificationGroup.meetings,
+  'MEETING_RSVP_DECLINED': NotificationGroup.meetings,
+  'MEETING_WAITING_ROOM_ARRIVAL': NotificationGroup.meetings,
+
+  'FOLLOW': NotificationGroup.social,
+  'FOLLOW_REQUEST': NotificationGroup.social,
+  'FOLLOW_ACCEPTED': NotificationGroup.social,
+  'LIKE': NotificationGroup.social,
+  'SAVE': NotificationGroup.social,
+  'REPLY': NotificationGroup.social,
+  'REPOST': NotificationGroup.social,
+  'ACCOUNTABILITY_TAGGED': NotificationGroup.social,
+  'PRIORITY_PINNED': NotificationGroup.social,
+  'THREAD_ACTIVITY': NotificationGroup.social,
+  'SPACE_ACTIVITY': NotificationGroup.social,
+
+  'ANNOUNCEMENT_PUBLISHED': NotificationGroup.announcements,
+  'INSTITUTION_POST_PUBLISHED': NotificationGroup.announcements,
+
+  'POST_PUBLISHED': NotificationGroup.system,
+  'POST_PUBLISH_FAILED': NotificationGroup.system,
+  'SYSTEM': NotificationGroup.system,
+  'MODERATION_ACTION_TAKEN': NotificationGroup.system,
+  'REPORT_RESOLVED': NotificationGroup.system,
+  'ROLE_CHANGED': NotificationGroup.system,
+  'CAPABILITY_GRANTED': NotificationGroup.system,
+  'CAPABILITY_REVOKED': NotificationGroup.system,
+  'INSTITUTION_OWNERSHIP_RECOVERED': NotificationGroup.system,
+  'MEDIA_QUARANTINED': NotificationGroup.system,
+  'MEDIA_QUARANTINE_LIFTED': NotificationGroup.system,
+  'IDENTITY': NotificationGroup.system,
+  'INSTITUTION_AFFILIATION': NotificationGroup.system,
+  'ROLE_OR_CREDENTIAL': NotificationGroup.system,
+  'NOT_VERIFIED': NotificationGroup.system,
+};
+
+NotificationGroup notificationGroupForKind(String rawKind) {
+  final kind = rawKind.trim().toUpperCase();
+
+  // Defer to the call authority rather than restating which kinds are calls.
+  if (call_kinds.isCallKind(kind)) return NotificationGroup.calls;
+
+  // Never hidden. An unrecognised kind is reachable under System until it is
+  // named, because a notification the product cannot classify is still a
+  // notification the recipient must be able to find.
+  return kNotificationGroups[kind] ?? NotificationGroup.system;
+}
+
+String notificationGroupLabel(NotificationGroup group) {
+  switch (group) {
+    case NotificationGroup.conversations:
+      return 'Messages';
+    case NotificationGroup.calls:
+      return 'Calls';
+    case NotificationGroup.meetings:
+      return 'Meetings';
+    case NotificationGroup.social:
+      return 'Social';
+    case NotificationGroup.announcements:
+      return 'Announcements';
+    case NotificationGroup.system:
+      return 'System';
+  }
+}
