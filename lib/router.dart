@@ -83,6 +83,7 @@ import 'features/admin/presentation/admin_migrations_screen.dart';
 import 'features/admin/presentation/admin_policies_screen.dart';
 import 'features/admin/presentation/admin_moderation_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
+import 'features/institutions/units/institution_unit_context_screen.dart';
 import 'features/institutions/units/institution_units_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/profile/institution_edit_profile_screen.dart';
@@ -1788,6 +1789,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
 
           // Units (already canonical, kept here for proximity).
+          // UNIT CONTEXT — inside the institution, not a second workspace.
+          // Participation baseline: understanding a unit of the institution
+          // you belong to is participation. What the viewer SEES inside is
+          // decided by the server projection, and administering it is gated
+          // separately on the Units surface.
+          GoRoute(
+            path: '/institution/:institutionId/units/:unitId',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'units',
+            ),
+            builder: (context, state) => InstitutionUnitContextScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+              unitId: state.pathParameters['unitId'] ?? '',
+            ),
+          ),
           GoRoute(
             path: '/institution/:institutionId/units',
             redirect: (context, state) => _enforceCanonicalIdMatch(

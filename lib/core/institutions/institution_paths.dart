@@ -53,6 +53,17 @@ String institutionWorkspacePath(
   return '/institution/$id/${section.wire}';
 }
 
+/// One UNIT, as an operating context inside the institution.
+///
+/// Owned here rather than minted at call sites: a unit's address is navigation
+/// grammar like any other, and the Navigation Authority is where that lives.
+String institutionUnitContextPath(String institutionId, String unitId) {
+  final id = institutionId.trim();
+  final unit = unitId.trim();
+  if (id.isEmpty || unit.isEmpty) return '';
+  return '/institution/$id/units/$unit';
+}
+
 /// String overload — handy when the section is a constant literal that
 /// hasn't been promoted to the enum yet (e.g. legacy code paths).
 /// Prefer the enum variant for type safety.

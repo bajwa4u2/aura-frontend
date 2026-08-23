@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/institutions/institution_paths.dart';
 
 import '../../../core/authority/authority_providers.dart';
 import '../../../core/authority/capability_projection.dart';
@@ -181,6 +184,11 @@ class _InstitutionUnitsScreenState
             padding: const EdgeInsets.only(bottom: AuraSpace.s10),
             child: _UnitCard(
               unit: u,
+              // A unit is an operating context, so the card leads INTO it.
+              // Opening is participation; administering it is gated above.
+              onOpen: () => context.push(
+                institutionUnitContextPath(widget.institutionId, u.id),
+              ),
               onEdit: canAdminister
                   ? () => _openUpsertSheet(existing: u)
                   : null,
@@ -226,6 +234,7 @@ class _InstitutionUnitsScreenState
 
 class _UnitCard extends StatelessWidget {
   const _UnitCard({
+    this.onOpen,
     required this.unit,
     required this.onEdit,
     required this.onArchive,
@@ -234,6 +243,10 @@ class _UnitCard extends StatelessWidget {
   final InstitutionUnit unit;
   /// Null when the viewer may not administer units. Absent, not disabled —
   /// a control someone can never enable is noise, not information.
+  /// Entering the unit as an operating context. Always available to whoever
+  /// can already see the unit — the server decides what they find inside.
+  final VoidCallback? onOpen;
+
   final VoidCallback? onEdit;
   final VoidCallback? onArchive;
 
@@ -315,6 +328,11 @@ class _UnitCard extends StatelessWidget {
           Wrap(
             spacing: AuraSpace.s8,
             children: [
+              if (onOpen != null)
+                AuraGhostButton(
+                  label: 'Open',
+                  onPressed: onOpen,
+                ),
               if (onEdit != null)
                 AuraGhostButton(
                   label: 'Edit',
