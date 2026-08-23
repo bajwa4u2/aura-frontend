@@ -78,7 +78,7 @@ addressed institution changes.
 | Destination | Why the id is context |
 |---|---|
 | `/meetings`, `/meetings/new`, `/meetings/:id`, `/prep`, `/room`, `/waiting`, `/live`, `/summary` | attendees are frequently non-members; the institution owns the lifecycle, the visitor's relationship is contextual |
-| `/availability` | public booking surface |
+| ~~`/availability`~~ | **CORRECTED — see below** |
 | `/public-engagement` (+2) | public record by definition |
 | `/profile` | validates today, but is a *public* identity surface — worth re-examining |
 | `/u/:handle`, `/institutions/:slug` | shell-adaptation aliases, not institution destinations |
@@ -89,6 +89,14 @@ returns content without a token, `scope=member` returns 403). So the address is
 partly context and partly claim — the one destination where the classification
 is genuinely ambiguous, and the one place the IA freeze should record a
 deliberate decision rather than inherit an accident.
+
+### Correction — `/availability` is not a context destination
+
+Filed above as a "public booking surface" on the strength of the word booking.
+It is the **Booking pages management** screen. The genuinely public booking
+surface is a separate unauthenticated route, `/i/:institutionSlug/meet/:bookingSlug`.
+It is now capability-gated on `MANAGE_AVAILABILITY` in both the rail and the
+router.
 
 ## 5. Redirect-only destinations
 

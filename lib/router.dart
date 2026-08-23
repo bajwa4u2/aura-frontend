@@ -15,6 +15,8 @@ import 'core/product/product_state_view.dart';
 import 'core/auth/session_providers.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
+import 'core/authority/authority_providers.dart';
+import 'core/institutions/institution_destination_authority.dart';
 import 'core/institutions/institution_route_authority.dart';
 import 'core/navigation/destination_continuity.dart';
 import 'features/meetings/presentation/booking_route_entry.dart';
@@ -284,7 +286,7 @@ String? _enforceCanonicalIdMatch(
   String? pathId,
   String section,
 ) {
-  return institutionCanonicalRedirect(
+  final canonical = institutionCanonicalRedirect(
     decideInstitutionRoute(
       snapshot: ref.read(institutionAuthoritySnapshotProvider),
       pathId: pathId,
@@ -292,6 +294,30 @@ String? _enforceCanonicalIdMatch(
     section: section,
     dashboardRoute: kInstitutionNoAffiliationDestination,
   );
+  if (canonical != null) return canonical;
+
+  // DENIAL PROTECTS THE BOUNDARY SECOND.
+  //
+  // Standing said yes; this asks whether the person may hold THIS destination.
+  // Navigation already declined to offer it, so ordinarily nobody arrives here
+  // — but a bookmark, a pasted URL, a notification whose authority has since
+  // changed, or a refresh after a capability was revoked all reach an address
+  // the rail no longer shows. Those are the exceptional paths, and they must
+  // fail to a truthful standing surface rather than render an operational
+  // screen that then falls apart on 403s.
+  //
+  // Both consumers read ONE table, so the rail and the address can never
+  // disagree about who may hold a destination.
+  final snapshot = ref.read(institutionAuthoritySnapshotProvider);
+  if (!snapshot.resolved) return null; // RC2 — deciding on unresolved is the bug.
+
+  final required = institutionDestinationAuthority(section);
+  if (required.isEmpty) return null;
+
+  final projection = ref.read(capabilityProjectionProvider);
+  return institutionDestinationPermits(projection, section)
+      ? null
+      : kInstitutionDenialDestination;
 }
 
 // REFRESH IS NOT NAVIGATION — AND THE ADDRESS HAS TO KNOW WHERE YOU ARE.
@@ -1303,6 +1329,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Institution admin booking pages — gated by InstitutionRoleGuard (ADMIN) on backend
           GoRoute(
             path: '/institution/:institutionId/availability',
+            // Booking PAGES management, not the public booking surface -- that
+            // lives unauthenticated at /i/:slug/meet/:bookingSlug. An earlier
+            // audit filed this as a context destination on the strength of the
+            // word "booking"; the route it serves says otherwise.
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'availability',
+            ),
             builder: (context, state) => InstitutionAvailabilityScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),

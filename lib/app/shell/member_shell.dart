@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../route_classification.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/authority/capability_projection.dart';
+import '../../core/institutions/institution_destination_authority.dart';
 import '../../core/institutions/institution_access_provider.dart';
 import '../../core/institutions/institution_paths.dart';
 import '../../core/media/aura_attachment_image.dart';
@@ -1610,16 +1611,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Overview',
       icon: Icons.grid_view_outlined,
       selectedIcon: Icons.grid_view_rounded,
-      requiresAny: const [
-        ConsequentialAct.manageMembers,
-        ConsequentialAct.manageJoinRequests,
-        ConsequentialAct.manageInvitations,
-        ConsequentialAct.manageSpaces,
-        ConsequentialAct.publishAnnouncement,
-        ConsequentialAct.manageMeetings,
-        ConsequentialAct.manageAvailability,
-        ConsequentialAct.manageAnalytics,
-      ],
+      requiresAny: kOperationalInstitutionAuthority,
       pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/dashboard' : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.endsWith('/dashboard'),
@@ -1628,7 +1620,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Join Requests',
       icon: Icons.person_add_outlined,
       selectedIcon: Icons.person_add_rounded,
-      requiresAny: const [ConsequentialAct.manageJoinRequests],
+      requiresAny: kInstitutionDestinationAuthority['join-requests']!,
       badge: pendingJoinRequests,
       pathBuilder: (_) =>
           id.isNotEmpty ? '/institution/$id/join-requests' : null,
@@ -1639,7 +1631,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Invites',
       icon: Icons.mail_outline_rounded,
       selectedIcon: Icons.mail_rounded,
-      requiresAny: const [ConsequentialAct.manageInvitations],
+      requiresAny: kInstitutionDestinationAuthority['invites']!,
       badge: pendingInvites,
       pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/invites' : null,
       pathMatcher: (p) =>
@@ -1649,7 +1641,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Booking pages',
       icon: Icons.calendar_today_outlined,
       selectedIcon: Icons.calendar_today_rounded,
-      requiresAny: const [ConsequentialAct.manageAvailability],
+      requiresAny: kInstitutionDestinationAuthority['availability']!,
       pathBuilder: (_) =>
           id.isNotEmpty ? '/institution/$id/availability' : null,
       pathMatcher: (p) =>
@@ -1662,7 +1654,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Domains',
       icon: Icons.language_rounded,
       selectedIcon: Icons.language_rounded,
-      requiresAny: const [ConsequentialAct.manageDomains],
+      requiresAny: kInstitutionDestinationAuthority['domains']!,
       pathBuilder: (_) => id.isNotEmpty
           ? institutionWorkspacePath(id, InstitutionSection.domains)
           : null,
@@ -1671,7 +1663,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Billing',
       icon: Icons.account_balance_wallet_outlined,
       selectedIcon: Icons.account_balance_wallet_rounded,
-      requiresAny: const [ConsequentialAct.manageBilling],
+      requiresAny: kInstitutionDestinationAuthority['billing']!,
       pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/billing' : null,
       pathMatcher: (p) =>
           p.startsWith('/institution/') && p.endsWith('/billing'),
@@ -1691,7 +1683,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Edit Profile',
       icon: Icons.edit_outlined,
       selectedIcon: Icons.edit_rounded,
-      requiresAny: const [ConsequentialAct.manageBranding],
+      requiresAny: kInstitutionDestinationAuthority['edit-profile']!,
       pathBuilder: (_) => id.isNotEmpty
           ? institutionWorkspacePath(id, InstitutionSection.editProfile)
           : null,

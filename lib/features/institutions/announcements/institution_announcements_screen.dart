@@ -54,7 +54,11 @@ class _InstitutionAnnouncementsScreenState
   // GOVERNANCE V1: managing announcements (publish/unpublish/delete + draft
   // list) requires MANAGE_ANNOUNCEMENTS; composing in the institution's voice
   // requires official representation. Representatives can draft; admins manage.
-  bool get _isAdmin =>
+  /// Named for the authority it actually asks. It was called `_canManageAnnouncements`, which
+  /// read as a role check and invited the next reader to copy the pattern —
+  /// but MANAGE_ANNOUNCEMENTS is delegable, so an OWNER may grant it to someone
+  /// who is not an admin, and an admin may hold it without being an owner.
+  bool get _canManageAnnouncements =>
       ref.read(institutionIdentityProvider)?.canManageAnnouncements ?? false;
 
   bool get _canCompose {
@@ -87,7 +91,7 @@ class _InstitutionAnnouncementsScreenState
       final published = await _repo.listInstitutionAnnouncements(
         widget.institutionId,
       );
-      final drafts = _isAdmin
+      final drafts = _canManageAnnouncements
           ? await _repo.listInstitutionDrafts(widget.institutionId)
           : <Map<String, dynamic>>[];
       setState(() {
@@ -383,7 +387,7 @@ class _InstitutionAnnouncementsScreenState
               ),
             ),
           ],
-          if (_isAdmin) ...[
+          if (_canManageAnnouncements) ...[
             const SizedBox(height: AuraSpace.s12),
             if (isActing)
               const SizedBox(
@@ -510,7 +514,7 @@ class _InstitutionAnnouncementsScreenState
       );
     }
 
-    if (!_isAdmin) {
+    if (!_canManageAnnouncements) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [_buildErrorBanner(), _buildPublishedList()],
@@ -547,7 +551,7 @@ class _InstitutionAnnouncementsScreenState
 
   @override
   Widget build(BuildContext context) {
-    // Subscribe explicitly so role changes drive a rebuild — the `_isAdmin`
+    // Subscribe explicitly so role changes drive a rebuild — the `_canManageAnnouncements`
     // getter intentionally uses `ref.read` so it can be called from
     // initState / async handlers.
     ref.watch(institutionIdentityProvider);
