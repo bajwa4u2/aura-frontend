@@ -293,10 +293,14 @@ String institutionEntryDestination(String institutionId) {
 /// institution, never by arriving at a screen, so this deliberately keeps
 /// nothing to return to. It must never follow the entry destination — a person
 /// refused admin access has not earned the workspace front door.
-const String kInstitutionDenialDestination = '/institution/dashboard';
+const String kInstitutionStandingRoute = '/institution/standing';
+
+const String kInstitutionDenialDestination =
+    '$kInstitutionStandingRoute?reason=denied';
 
 /// Where a shorthand resolves for a person who holds NO institution.
 ///
 /// Not a refusal and not an entry: there is nothing to enter and nobody has
 /// said no. The selector/standing surface is the honest answer.
-const String kInstitutionNoAffiliationDestination = '/institution/dashboard';
+const String kInstitutionNoAffiliationDestination =
+    '$kInstitutionStandingRoute?reason=no-affiliation';

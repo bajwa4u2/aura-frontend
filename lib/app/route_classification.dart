@@ -202,6 +202,11 @@ bool isAdminShellPath(String path) {
 }
 
 bool isInstitutionShellPath(String path) {
+  // STANDING IS NOT THE WORKSPACE (founder ruling D5). A person who was
+  // refused, or who holds no institution, must not be dressed in workspace
+  // chrome — that would present a denial as though they had entered.
+  if (path == '/institution/standing') return false;
+
   if (path == '/institution/create' ||
       path == '/institution/dashboard' ||
       path == '/institution/domains' ||
@@ -219,6 +224,11 @@ bool isInstitutionShellPath(String path) {
 
 bool isMemberShellPath(String path) {
   return path == '/home' ||
+      // Institution STANDING (D5). A person who was refused, or who holds no
+      // institution, is still a member of Aura — they get ordinary member
+      // chrome, never workspace chrome. Classified explicitly so a refresh on
+      // this address reconstructs it instead of falling through unknown.
+      path == '/institution/standing' ||
       // CH-12 E6 — the restricted-attachment surface. MEMBER, not public: it
       // is reached from a quarantine notice addressed to one person, and the
       // server shows nothing at all to a caller without standing. Classifying

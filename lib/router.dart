@@ -63,6 +63,7 @@ import 'features/profile/presentation/followers_screen.dart';
 import 'features/profile/presentation/following_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
 import 'features/institutions/presentation/institution_dashboard_screen.dart';
+import 'features/institutions/presentation/institution_standing_screen.dart';
 import 'features/institutions/presentation/institution_members_screen.dart';
 import 'features/institutions/presentation/institution_invites_screen.dart';
 import 'features/institutions/presentation/institution_join_requests_screen.dart';
@@ -1709,10 +1710,31 @@ final routerProvider = Provider<GoRouter>((ref) {
           // resolved. The id-aware alias `/institution/:id/dashboard`
           // exists for symmetry and redirects to the global path.
 
-          // Global institution selector (no id required).
+          // STANDING — the non-workspace answer (founder ruling D5/D6).
+          //
+          // Terminal denial and "you hold no institution" used to resolve to
+          // /institution/dashboard, which is also the Overview. Once Overview
+          // became an ADMIN destination, a refusal would have landed a person
+          // on an administrative surface. This is its own address, outside the
+          // workspace shell, and it never pretends the person entered.
+          GoRoute(
+            path: kInstitutionStandingRoute,
+            builder: (_, state) => InstitutionStandingScreen(
+              reason: institutionStandingReasonFrom(
+                state.uri.queryParameters['reason'],
+              ),
+            ),
+          ),
+          // The id-less Overview address is now a SHORTHAND, not a surface:
+          // Overview is id-scoped and administrative, so this resolves to the
+          // canonical address of the institution in context (where the same
+          // authority check then applies) or to standing.
           GoRoute(
             path: kInstitutionDashboardRoute,
-            builder: (_, __) => const InstitutionDashboardScreen(),
+            redirect: (context, state) =>
+                _redirectShorthandToCanonical(ref, state, 'dashboard'),
+            builder: (_, __) =>
+                const Scaffold(body: AuraProductState(state: ProductState.loading)),
           ),
           // OVERVIEW IS ADDRESSABLE (founder ruling, institution addendum).
           //
