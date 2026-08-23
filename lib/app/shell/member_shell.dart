@@ -1641,6 +1641,27 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       pathMatcher: (p) =>
           p.contains('/invite') && p.startsWith('/institution/'),
     ),
+    // UNITS — STRUCTURAL MANAGEMENT ONLY.
+    //
+    // Discovery lives on Profile, where institutional identity lives: a unit is
+    // an operating context INSIDE the institution, not a peer destination, so
+    // it earns no primary navigation entry. What earns an ADMIN entry is the
+    // structural act — creating, retiring and editing the institution's
+    // operating topology — which founder ruling U5 keeps separate from
+    // operating inside a unit.
+    //
+    // Gated on the same authority the backend enforces, so a member who may
+    // participate in a unit is not offered the surface that restructures them.
+    InstWorkspaceEntry(
+      label: 'Units',
+      icon: Icons.account_tree_outlined,
+      selectedIcon: Icons.account_tree_rounded,
+      requiresAny: const [ConsequentialAct.administerUnits],
+      pathBuilder: (_) =>
+          address.isNotEmpty ? '/institution/$address/units' : null,
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.endsWith('/units'),
+    ),
     InstWorkspaceEntry(
       label: 'Booking pages',
       icon: Icons.calendar_today_outlined,

@@ -1856,7 +1856,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ref,
               state,
               state.pathParameters['institutionId'],
-              'units',
+              'units/context',
             ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],

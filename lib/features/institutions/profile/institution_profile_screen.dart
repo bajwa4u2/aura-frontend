@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/institutions/institution_paths.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -473,6 +474,25 @@ class _ProfileBody extends ConsumerWidget {
                     ),
                   ],
 
+                  // UNITS ARE INSTITUTIONAL IDENTITY, so this is where they
+                  // belong and where a legitimate viewer discovers them.
+                  //
+                  // Founder finding (2026-08-23): the Unit architecture existed
+                  // but nothing in the workspace linked to it, so a real
+                  // capability was unreachable. The answer is NOT a primary nav
+                  // entry -- a unit is an operating context inside the
+                  // institution, not a peer destination. Profile already
+                  // carries what the institution IS; its operating contexts are
+                  // part of that, and each one is a door into its context.
+                  //
+                  // Structural management (create, retire, edit) is separately
+                  // administrative and lives under ADMIN, gated on the
+                  // capability -- discovery and governance are different acts.
+                  if (identity?.id != null && identity!.id.isNotEmpty) ...[
+                    const InsSectionGap(),
+                    _UnitsSection(institutionId: identity!.id),
+                  ],
+
                   if (slug.isNotEmpty &&
                       identity?.id != null &&
                       identity!.id.isNotEmpty) ...[
@@ -875,6 +895,133 @@ class _PublicPostsPreview extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// The institution's operating contexts, on the surface that carries what the
+/// institution IS.
+///
+/// Founder finding (2026-08-23): Units were reconstructed but unreachable —
+/// present in the architecture, absent from the product. They surface here
+/// rather than in primary navigation because a Unit is a context INSIDE the
+/// institution, not a peer of Messages or Meetings, and because Profile is
+/// already where institutional identity lives.
+///
+/// Every viewer sees what the server projected for them: the audience filter
+/// decides which units travel, so a non-public unit simply is not in the list
+/// for someone without standing. This widget adds no visibility of its own.
+class _UnitsSection extends ConsumerStatefulWidget {
+  const _UnitsSection({required this.institutionId});
+
+  final String institutionId;
+
+  @override
+  ConsumerState<_UnitsSection> createState() => _UnitsSectionState();
+}
+
+class _UnitsSectionState extends ConsumerState<_UnitsSection> {
+  bool _loading = true;
+  List<Map<String, dynamic>> _units = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await ref
+          .read(dioProvider)
+          .get('/institutions/${widget.institutionId}/units');
+      final body = res.data is Map
+          ? Map<String, dynamic>.from(res.data as Map)
+          : <String, dynamic>{};
+      final data = body['data'] is Map
+          ? Map<String, dynamic>.from(body['data'] as Map)
+          : body;
+      if (!mounted) return;
+      setState(() {
+        _units = (data['units'] as List? ?? const [])
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Nothing to say is better than an empty box on an identity surface: an
+    // institution with no operating contexts is the ordinary case, not a gap.
+    if (_loading || _units.isEmpty) return const SizedBox.shrink();
+
+    final identity = ref.watch(institutionIdentityProvider);
+    final address = identity?.workspaceAddress ?? widget.institutionId;
+
+    return InsSection(
+      eyebrow: 'Operating contexts',
+      title: 'Units',
+      child: InsCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final u in _units)
+              InkWell(
+                borderRadius: BorderRadius.circular(AuraRadius.r10),
+                onTap: () {
+                  final unitAddress =
+                      (u['slug']?.toString().trim().isNotEmpty ?? false)
+                          ? u['slug'].toString()
+                          : (u['id']?.toString() ?? '');
+                  if (unitAddress.isEmpty) return;
+                  context.push(
+                    institutionUnitContextPath(address, unitAddress),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AuraSpace.s10,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              u['name']?.toString() ?? '',
+                              style: AuraText.small,
+                            ),
+                            if ((u['description']?.toString().trim() ?? '')
+                                .isNotEmpty)
+                              Text(
+                                u['description'].toString(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AuraText.micro
+                                    .copyWith(color: AuraSurface.muted),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: AuraSurface.faint,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

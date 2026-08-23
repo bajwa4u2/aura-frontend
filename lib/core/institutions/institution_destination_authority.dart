@@ -57,6 +57,12 @@ const Map<String, List<ConsequentialAct>> kInstitutionDestinationAuthority =
   'billing': [ConsequentialAct.manageBilling],
   'edit-profile': [ConsequentialAct.manageBranding],
 
+  // The units LIST is the structural management surface (create, retire,
+  // edit). Entering one unit is participation and stays baseline — the
+  // destination table keys on the section, and `units/<address>` is a
+  // different destination from `units`.
+  'units': [ConsequentialAct.administerUnits],
+
   // AUTHORING destinations. Representative authority reaches these; publishing
   // is separately governed at the act itself, not at the door.
   'posts/new': [ConsequentialAct.authorOfficialContent],
@@ -108,5 +114,19 @@ String? institutionSectionOf(String path) {
   if (parts.length > 3 && (last == 'new' || last == 'edit')) {
     return '$section/$last';
   }
+
+  // ENTERING a unit is not MANAGING the institution's unit topology.
+  //
+  // `/units` is the structural surface — create, retire, edit — and is
+  // administrative. `/units/<address>` is one operating context, and
+  // participating in it is baseline. Collapsing both to `units` would have
+  // gated a member out of a unit they belong to, using the authority meant to
+  // govern restructuring.
+  //
+  // Meetings deliberately do NOT work this way: `/meetings/<id>/room` stays
+  // `meetings`, because a meeting instance is not a different authority from
+  // the meetings surface. The distinction is specific, not a general rule.
+  if (section == 'units' && parts.length > 3) return 'units/context';
+
   return section;
 }

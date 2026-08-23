@@ -205,6 +205,44 @@ void main() {
     });
   });
 
+  group('units: entering is not managing', () {
+    final member = projectionFor(role: 'MEMBER');
+    final admin = projectionFor(role: 'ADMIN', capabilities: _adminCapabilities);
+
+    test('a member may ENTER a unit', () {
+      // Discovery lives on Profile and entry is participation; gating this on
+      // the restructuring authority would lock members out of the operating
+      // context they belong to.
+      expect(institutionDestinationPermits(member, 'units/context'), isTrue);
+    });
+
+    test('a member may NOT reach the structural surface', () {
+      // Creating, retiring and editing the institution's unit topology is
+      // administrative (U5), and stays separate from operating inside one.
+      expect(institutionDestinationPermits(member, 'units'), isFalse);
+    });
+
+    test('the address distinguishes the two destinations', () {
+      expect(institutionSectionOf('/institution/aura/units'), 'units');
+      expect(
+        institutionSectionOf('/institution/aura/units/orchestrate'),
+        'units/context',
+      );
+    });
+
+    test('meetings deliberately do NOT split the same way', () {
+      // A meeting instance is not a different authority from the meetings
+      // surface, so the unit rule is specific rather than a general one.
+      expect(institutionSectionOf('/institution/aura/meetings/m-1/room'),
+          'meetings');
+    });
+
+    test('an administrator reaches both', () {
+      expect(institutionDestinationPermits(admin, 'units'), isTrue);
+      expect(institutionDestinationPermits(admin, 'units/context'), isTrue);
+    });
+  });
+
   group('unresolved standing decides nothing (RC2)', () {
     test('a null projection refuses rather than admits', () {
       // The ROUTER checks `resolved` before consulting this, so a person mid

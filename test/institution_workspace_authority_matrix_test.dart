@@ -246,16 +246,41 @@ void main() {
   });
 
   group('the projection is authority-shaped, not role-shaped', () {
-    test('a capability set alone determines the projection', () {
-      // Same capabilities, different role label -> identical projection.
+    test('a capability set alone determines every CAPABILITY destination', () {
+      // Same capabilities, different role label -> identical projection, for
+      // everything capabilities govern.
       final asAdmin = identity(role: 'ADMIN', capabilities: _adminCapabilities);
       final asMember = identity(
         role: 'MEMBER',
         capabilities: _adminCapabilities,
       );
-      expect(labelsFor(asMember), labelsFor(asAdmin),
-          reason: 'the role label explains standing; '
-              'capabilities govern authority');
+
+      // GOVERNANCE ACTS ARE THE DELIBERATE EXCEPTION, and the model says so:
+      // restructuring the institution's unit topology is role authority,
+      // matching what the backend enforces, precisely so it can never be
+      // delegated away as a capability. No MANAGE_UNITS exists, and inventing
+      // one to make this assertion simpler would be inventing a permission to
+      // satisfy a test.
+      const governanceDestinations = {'Units'};
+
+      expect(
+        labelsFor(asMember).difference(governanceDestinations),
+        labelsFor(asAdmin).difference(governanceDestinations),
+        reason: 'the role label explains standing; '
+            'capabilities govern authority',
+      );
+    });
+
+    test('a governance destination follows the ROLE, not the capability set', () {
+      final asAdmin = identity(role: 'ADMIN', capabilities: _adminCapabilities);
+      final asMember = identity(
+        role: 'MEMBER',
+        capabilities: _adminCapabilities,
+      );
+
+      expect(labelsFor(asAdmin), contains('Units'));
+      expect(labelsFor(asMember), isNot(contains('Units')),
+          reason: 'restructuring is governance-exclusive and not delegable');
     });
   });
 }
