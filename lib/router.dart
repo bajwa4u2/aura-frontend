@@ -1678,10 +1678,32 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kInstitutionDashboardRoute,
             builder: (_, __) => const InstitutionDashboardScreen(),
           ),
-          // Symmetric canonical alias — redirects to the global selector.
+          // OVERVIEW IS ADDRESSABLE (founder ruling, institution addendum).
+          //
+          // This used to redirect to the id-less address, which DISCARDED the
+          // institution the URL named. A person holding two institutions could
+          // not bookmark, link or refresh institution B's Overview: every
+          // id-bearing address collapsed to whichever institution the ambient
+          // membership happened to be. That is the same truthfulness defect
+          // RC3 names -- a validated claim must be honoured, not swapped for
+          // ambient state.
+          //
+          // The backend already answers per institution: `/institutions/me`
+          // takes an optional `institutionId`, and the caller's own membership
+          // of it is what authorises the answer. So the id travels to the
+          // screen, and an id the person does not hold resolves through the
+          // same authority every other canonical destination uses.
           GoRoute(
             path: '/institution/:institutionId/dashboard',
-            redirect: (_, __) => kInstitutionDashboardRoute,
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'dashboard',
+            ),
+            builder: (context, state) => InstitutionDashboardScreen(
+              institutionId: state.pathParameters['institutionId'],
+            ),
           ),
 
           // Domains — shorthand redirects, canonical builds.
@@ -1896,18 +1918,54 @@ final routerProvider = Provider<GoRouter>((ref) {
           // and the only code that ever did was space_screen itself.
           GoRoute(
             path: '/institution/:institutionId/members',
+            // STANDING-ONLY DESTINATION. Unlike Meetings, where the
+            // institutionId is CONTEXT for a participant who may hold no
+            // membership, this surface exists only for someone with standing.
+            // Without validation a stale or foreign id rendered the workspace
+            // chrome and then failed piecemeal on backend 403s -- the refusal
+            // arriving as a broken screen instead of a governed answer.
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'members',
+            ),
             builder: (context, state) => InstitutionMembersScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/invites',
+            // STANDING-ONLY DESTINATION. Unlike Meetings, where the
+            // institutionId is CONTEXT for a participant who may hold no
+            // membership, this surface exists only for someone with standing.
+            // Without validation a stale or foreign id rendered the workspace
+            // chrome and then failed piecemeal on backend 403s -- the refusal
+            // arriving as a broken screen instead of a governed answer.
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'invites',
+            ),
             builder: (context, state) => InstitutionInvitesScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
           ),
           GoRoute(
             path: '/institution/:institutionId/join-requests',
+            // STANDING-ONLY DESTINATION. Unlike Meetings, where the
+            // institutionId is CONTEXT for a participant who may hold no
+            // membership, this surface exists only for someone with standing.
+            // Without validation a stale or foreign id rendered the workspace
+            // chrome and then failed piecemeal on backend 403s -- the refusal
+            // arriving as a broken screen instead of a governed answer.
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'join-requests',
+            ),
             builder: (context, state) => InstitutionJoinRequestsScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
@@ -1998,6 +2056,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Android via defaultTargetPlatform.
           GoRoute(
             path: '/institution/:institutionId/billing',
+            // STANDING-ONLY DESTINATION. Unlike Meetings, where the
+            // institutionId is CONTEXT for a participant who may hold no
+            // membership, this surface exists only for someone with standing.
+            // Without validation a stale or foreign id rendered the workspace
+            // chrome and then failed piecemeal on backend 403s -- the refusal
+            // arriving as a broken screen instead of a governed answer.
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'billing',
+            ),
             builder: (context, state) => InstitutionBillingScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),

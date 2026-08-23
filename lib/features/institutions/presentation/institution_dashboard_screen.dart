@@ -31,7 +31,16 @@ import '../ui/institution_ds.dart';
 /// Data still comes from `/institutions/me`; nothing else changed about the
 /// load contract or the underlying state machine.
 class InstitutionDashboardScreen extends ConsumerStatefulWidget {
-  const InstitutionDashboardScreen({super.key});
+  const InstitutionDashboardScreen({super.key, this.institutionId});
+
+  /// The institution this Overview is ABOUT, when the address names one.
+  ///
+  /// Null at the id-less address, which answers "your standing" for whichever
+  /// institution the caller currently holds. When present it is a claim the
+  /// backend validates: `/institutions/me?institutionId=` answers only if the
+  /// caller's own membership authorises it, so an institution they do not hold
+  /// yields the no-access state rather than someone else's workspace.
+  final String? institutionId;
 
   @override
   ConsumerState<InstitutionDashboardScreen> createState() =>
@@ -104,6 +113,16 @@ class _InstitutionDashboardScreenState
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant InstitutionDashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Now that the address names an institution, the same screen can be
+    // rebuilt for a DIFFERENT one. Without this it would keep showing the
+    // previous institution's standing under the new institution's URL --
+    // exactly the substitution making Overview addressable was meant to end.
+    if (oldWidget.institutionId != widget.institutionId) _load();
+  }
+
   // ── Data loading ────────────────────────────────────────────────────────
 
   Future<void> _load() async {
@@ -113,7 +132,11 @@ class _InstitutionDashboardScreenState
     });
 
     try {
-      final res = await _dio.get('/institutions/me');
+      final asked = widget.institutionId?.trim() ?? '';
+      final res = await _dio.get(
+        '/institutions/me',
+        queryParameters: asked.isEmpty ? null : {'institutionId': asked},
+      );
       final data = _map(res.data);
 
       final membership = _mapOrNull(data['membership']);
