@@ -20,6 +20,7 @@ import 'core/institutions/institution_destination_authority.dart';
 import 'core/institutions/institution_route_authority.dart';
 import 'core/institutions/institution_route_scope.dart';
 import 'core/institutions/institution_space_route_scope.dart';
+import 'core/interactions/direct_thread_cutover_scope.dart';
 import 'core/navigation/destination_continuity.dart';
 import 'features/meetings/presentation/booking_route_entry.dart';
 import 'features/meetings/application/meetings_provider.dart';
@@ -2214,8 +2215,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            // CUTOVER (founder authorisation 2026-08-23). A legacy direct
+            // address resolves INTO the canonical Conversation rather than
+            // reopening the legacy surface. Durable links keep working; a
+            // second messaging authority does not stay alive to serve them.
             path: '/direct/:threadId',
-            builder: (context, state) => DirectThreadScreen(
+            builder: (context, state) => DirectThreadCutoverScope(
               threadId: state.pathParameters['threadId'] ?? '',
             ),
           ),
