@@ -152,6 +152,14 @@ class CorrespondenceLiveService {
       'space:member.updated',
       'thread:member.joined',
       'thread:member.updated',
+      // CANONICAL CONVERSATION MESSAGES.
+      //
+      // The `thread:*` names below are the legacy Thread runtime, retired as
+      // an authority by the DirectThread and member-Space cutovers. They are
+      // kept as compatibility for anything still emitting them; this is the
+      // canonical one, and it is why a conversation open on screen now
+      // receives what arrives in it.
+      'conversation:message.created',
       'thread:message.created',
       'thread:message.updated',
       'thread:message.deleted',

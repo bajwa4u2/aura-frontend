@@ -1,3 +1,4 @@
+import '../../correspondence/data/correspondence_live_service.dart';
 import '../data/conversation_unread_authority.dart';
 import 'dart:async';
 
@@ -101,6 +102,42 @@ class ConversationScreen extends ConsumerStatefulWidget {
 // about what a half-uploaded file means.
 
 class _ConversationScreenState extends ConsumerState<ConversationScreen> {
+  /// Whether this conversation is actually in front of the human right now.
+  ///
+  /// Two conditions, and both are needed. `isCurrent` answers "is this route
+  /// on top" — a conversation sitting beneath a pushed profile or composer is
+  /// not being read. The lifecycle state answers "is the app in front of
+  /// them" — a backgrounded app can still receive messages, and marking those
+  /// read would be the system asserting something about a person who was not
+  /// there.
+  bool _isVisiblyPresented() {
+    if (!mounted) return false;
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return false;
+    }
+    return ModalRoute.of(context)?.isCurrent ?? false;
+  }
+
+  /// The canonical Conversation runtime now announces its own messages, so a
+  /// conversation open on screen receives what arrives in it. The payload is a
+  /// trigger: this re-reads through the canonical endpoint rather than
+  /// trusting a socket to carry message content.
+  void _listenForIncoming() {
+    _incomingSub?.cancel();
+    _incomingSub = ref
+        .read(correspondenceLiveServiceProvider)
+        .events
+        .listen((event) {
+      if (event.name != 'conversation:message.created') return;
+      final id = (event.payload['conversationId'] ?? '').toString().trim();
+      if (id != widget.conversationId) return;
+      if (!mounted) return;
+      ref.invalidate(conversationMessagesProvider(widget.conversationId));
+    });
+  }
+
+  StreamSubscription<CorrespondenceLiveEvent>? _incomingSub;
+
   final _composer = TextEditingController();
 
   /// CH-13 - the canonical composition.
@@ -138,7 +175,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   List<ConversationParty> _mentionMatches = const [];
 
   @override
+  void initState() {
+    super.initState();
+    _listenForIncoming();
+  }
+
+  @override
   void dispose() {
+    _incomingSub?.cancel();
     _linkDebounce?.cancel();
     _composer.dispose();
     _composerFocus.dispose();
@@ -822,6 +866,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     ref.listen(conversationMessagesProvider(widget.conversationId),
         (prev, next) {
       next.whenData((_) {
+        // READ IS NOT INFERRED FROM DELIVERY (founder ruling §4).
+        //
+        // This fired whenever messages arrived, including while the route sat
+        // beneath another screen or the app was backgrounded — which would
+        // mark content read that no human had been shown. Read advancement
+        // requires the content to actually be presented: this route on top,
+        // and the app in the foreground.
+        if (!_isVisiblyPresented()) return;
         advanceConversationRead(
           ref,
           widget.conversationId,

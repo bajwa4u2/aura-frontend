@@ -1,3 +1,5 @@
+import '../../conversation/data/conversations_repository.dart';
+import '../../conversation/data/conversation_unread_authority.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -74,6 +76,14 @@ class RealtimeReconciliationController {
       case 'follow:state.changed':
       case 'feed:item.changed':
         _scheduleFeedRefresh();
+        break;
+      // A message arriving anywhere changes what the Messages badge and the
+      // conversation list should say. The open conversation refreshes its own
+      // content in ConversationScreen — this is only the unread/list truth, so
+      // a person outside that conversation still sees it arrive.
+      case 'conversation:message.created':
+        _ref.invalidate(conversationUnreadProvider);
+        _ref.invalidate(conversationsListProvider);
         break;
       case 'socket:connected':
         _onConnect();
