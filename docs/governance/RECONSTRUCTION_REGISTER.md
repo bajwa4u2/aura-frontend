@@ -372,7 +372,11 @@ plausible non-intrusive surface, but it is NOT the Go Live mechanism
 Substituting it would be redefining the certification rather than performing
 it, so it was not done.
 
-STATUS: `UNVERIFIED_BY_CONTROLLED_LIVE_EXERCISE`.
+STATUS: **`UNVERIFIED_BY_TWO_PARTY_LIVE_EXERCISE`** — the same status and the
+same single prerequisite as Meetings active-media: a second controlled
+Chrome/profile session already authenticated as the designated reviewer.
+Reviewer credentials are never requested, received, stored or typed by Claude.
+Both certifications resume from exactly this point once that session exists.
 
 #### Adjacent finding — `/realtime/live/broadcasts` returns 401 unauthenticated
 
@@ -383,14 +387,27 @@ contract resolves it:
 > listable by any authenticated user — the discovery feed behind the header
 > Live surface."
 
-So 401 is **consistent with the documented intent**: the Live discovery feed is
-authenticated-only by design, and "public" here means publicly *stageable to
-the signed-in audience*, not anonymously listable. That is a determination from
-the contract, not from the path segment — but it is worth carrying into the
-Live product reconstruction as an explicit audience-policy question, because a
-surface called "public" that no signed-out visitor can enumerate is a policy
-choice that should be stated in doctrine rather than inferred from a handler
-comment.
+**THE FACTS, NOT A RULING (founder direction, 2026-08-23).** PUBLIC_STAGE
+broadcasts are currently enumerable only through an authenticated endpoint;
+unauthenticated access returns 401; the handler contract describes the feed as
+authenticated-user visibility. All three are implementation state.
+
+That state must NOT be converted into canonical product doctrine, and an
+earlier draft of this entry came too close to doing so by calling the 401
+"consistent with intent". A handler comment is evidence of what was built, not
+of what the product means. "PUBLIC_STAGE" and "public" carry a product meaning
+that may be inconsistent with requiring an Aura account merely to discover or
+watch publicly broadcast institutional or personal content.
+
+CARRIED AS A NAMED PRODUCT-POLICY QUESTION into Live reconstruction — should
+PUBLIC_STAGE mean:
+
+  A. public inside authenticated Aura only;
+  B. publicly discoverable and viewable without authentication;
+  C. a deliberately differentiated model where DISCOVERY, VIEWING and
+     PARTICIPATION each carry their own audience policy.
+
+Behaviour is unchanged and preserved until ruled.
 
 ---
 
@@ -408,6 +425,7 @@ clean negative:
 |---|---|---|
 | "production avatar URLs are malformed" | `left(avatarUrl, 48)` | the `/raw` suffix — the governed values are 60 chars, so every one was cut into the malformed shape being looked for |
 | "`evaluateForLiveInvited` has zero callers" | `grep -v` on the defining file | the only caller, which is same-class dispatch inside `evaluate()` |
+| "the browser session is authenticated" | HTTP status alone, against the APP origin | the response was the SPA shell — 200 `text/html`, not an API answer. The API origin returned 401. |
 
 The first nearly authorised a migration against healthy data. The second nearly
 deleted the ringing-call destination for every live invitation.
@@ -420,7 +438,12 @@ So, specifically:
   samples — least of all a prefix of the field whose shape IS the question;
 - **"zero callers", "zero rows", "no consumer", "not used"** and their kin
   require a coverage statement: what was searched, and what was intentionally
-  excluded.
+  excluded;
+- **an HTTP 200 from an application origin is not evidence that an API request
+  succeeded.** Where API behaviour is being established, verify the origin, the
+  content type and shape, the authentication context, and the expected body —
+  never the status code alone. A single-page app answers 200 to almost
+  anything.
 
 **This is not a general process tax.** Apply it where absence is being used to
 justify deletion, retirement, migration, or a product-policy conclusion. A
