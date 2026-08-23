@@ -85,6 +85,21 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # NATIVE CERTIFICATION HARNESS.
+  #
+  # Calls, Live, Meetings, Notifications and Interactions are cross-platform
+  # certification domains: a Web pass says nothing about how a released native
+  # client consumes them. Until now the only way to exercise a native build was
+  # for a person to drive it by hand, which is neither repeatable nor something
+  # a gate can hold.
+  #
+  # integration_test runs the REAL app on the REAL platform with real plugins,
+  # driven without manual operation:
+  #     flutter test integration_test -d windows
+  # Windows desktop is a released Aura client (MSIX), so this is certification,
+  # not a simulation of one.
+  integration_test:
+    sdk: flutter
   flutter_lints: ^4.0.0
   msix: ^3.16.8
   # Pure-Dart image library used by tool/generate_store_assets.dart to

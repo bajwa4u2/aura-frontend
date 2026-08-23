@@ -38,6 +38,30 @@ String resolveNotificationTitle(Map<String, dynamic> payload) {
     return _callTitle(payload, actorName);
   }
 
+  // TERMINAL CALL CLASSES ARE CALLS TOO.
+  //
+  // `isCallKind` covers the RINGING vocabulary (LIVE / CALL / REALTIME /
+  // *_RINGING) because that set also drives ringing behaviour, and adding
+  // terminal outcomes to it would make the incoming-call layer treat a missed
+  // call as an arriving one. But a NotificationType of CALL_MISSED is
+  // unquestionably about a call, and it was reaching neither the call titler
+  // nor `_kindPhrase` — so it fell through to the bare actor name and rendered
+  // as "Zakria". That is the exact vague presentation this module exists to
+  // remove, and it was caught by the Windows desktop certification run rather
+  // than by any web check.
+  const terminalCallTypes = <String, String>{
+    'CALL_MISSED': 'MISSED',
+    'CALL_ENDED': 'ENDED',
+    'CALL_DECLINED': 'DECLINED',
+  };
+  final terminalState = terminalCallTypes[kind];
+  if (terminalState != null) {
+    return _callTitle(
+      <String, dynamic>{...payload, 'callState': terminalState},
+      actorName,
+    );
+  }
+
   // Payload-refined titles come FIRST: these classes say something more
   // specific when the payload carries the detail. They lived in the
   // Notifications screen's own switch, which is exactly how the client came to
