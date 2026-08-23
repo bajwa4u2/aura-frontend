@@ -157,9 +157,23 @@ void main() {
 
     test('visible at EVERY width for a person with no institution — gated '
         'only by canonical relationship truth', () {
-      expect(headerSrc.contains('if (!hasInstitution) ...['), isTrue,
-          reason: 'The Add Institution action must render whenever the '
-              'person has no institution relationship — not desktop-only.');
+      // 2026-08-22: the gate gained a RESOLUTION term. Offering to ADD an
+      // institution asserts the person has none, and an empty affiliation list
+      // means "none" only after access resolves — before that it means "not
+      // yet". A member who already speaks for an institution was being invited
+      // to acquire one on every entry and refresh (the founder-observed
+      // public -> institution transit).
+      //
+      // The pin's original intent is unchanged and still asserted below: the
+      // action must never be gated on width, route or shell. Resolution truth
+      // is not one of those.
+      expect(
+          RegExp(r'if \(affiliationsResolved && !hasInstitution\) \.\.\.\[')
+              .hasMatch(headerSrc),
+          isTrue,
+          reason: 'The Add Institution action must render whenever the person '
+              'is KNOWN to have no institution relationship — not desktop-only, '
+              'and not while that is still unknown.');
       expect(headerSrc.contains('myAffiliationsProvider'), isTrue,
           reason: 'Visibility must derive from canonical relationship '
               'truth, never route/shell/cached assumptions.');

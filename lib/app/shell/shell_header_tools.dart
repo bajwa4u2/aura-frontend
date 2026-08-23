@@ -132,6 +132,13 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
     // Lifecycle signal for the institution-acquisition action: does the
     // member already participate in any institution?
     final hasInstitution = ref.watch(myAffiliationsProvider).isNotEmpty;
+    // UNKNOWN IS NOT ABSENT. An empty affiliation list means "none" only once
+    // access has resolved. Before that it means "not yet" -- and offering to
+    // ADD an institution is an assertion that the person has none, so a member
+    // who already speaks for one was invited to acquire one on every entry and
+    // refresh, until the answer arrived and the button vanished. That flicker
+    // is half of the founder-observed public -> institution transit.
+    final affiliationsResolved = ref.watch(myAffiliationsResolvedProvider);
     const gap = SizedBox(width: AuraSpace.s6);
 
     final tools = <Widget>[
@@ -161,7 +168,7 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
       // canonical relationship truth (myAffiliationsProvider); never from
       // route, shell, or cached assumptions. Not a Discover domain, not a
       // Create domain, never buried in menus/settings/redirect chains.
-      if (!hasInstitution) ...[
+      if (affiliationsResolved && !hasInstitution) ...[
         gap,
         _HeaderAddInstitutionBtn(compact: !widget.isTablet),
       ],

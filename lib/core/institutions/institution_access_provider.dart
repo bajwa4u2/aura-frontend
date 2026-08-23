@@ -333,6 +333,29 @@ final myAffiliationsProvider = Provider<List<MemberAffiliation>>((ref) {
   return access?.memberships ?? const <MemberAffiliation>[];
 });
 
+/// UNKNOWN IS NOT ABSENT — for the shell's own identity block.
+///
+/// `myAffiliationsProvider` answers with an empty list in BOTH states: "this
+/// person holds no institution" and "we have not found out yet", because
+/// `valueOrNull` destroys that distinction (the same trap
+/// `institutionAuthoritySnapshotProvider` documents for routing).
+///
+/// The shell hid its affiliation line on empty, so on every entry and refresh a
+/// person who DOES speak for an institution was first presented as though they
+/// did not, and the institution appeared a moment later. Founder-observed
+/// 2026-08-22: "a transit phase between public user and institution context —
+/// narrow, but visibly noted."
+///
+/// Nothing here fetches or decides anything new; it exposes the resolution
+/// state that already exists so presentation can say "not yet" instead of
+/// asserting "none".
+final myAffiliationsResolvedProvider = Provider<bool>((ref) {
+  final async = ref.watch(institutionAccessProvider);
+  // An error is RESOLVED-but-unknown, not still loading: an eternal skeleton
+  // would be its own lie, and F068 forbids an unbounded wait.
+  return !(async.isLoading && !async.hasValue);
+});
+
 /// RC3 (screen-binding half) — the workspace record for a SPECIFIC
 /// institution the person holds.
 ///

@@ -899,6 +899,11 @@ class _MemberIdentityHeader extends ConsumerWidget {
     final avatarUrl = person.avatarUrl ?? '';
     final initials = name.isNotEmpty ? name[0].toUpperCase() : '';
     final affiliations = ref.watch(myAffiliationsProvider);
+    // UNKNOWN IS NOT ABSENT. An empty list means "none" only once institution
+    // access has actually resolved; before that it means "not yet", and
+    // presenting it as none is what made a person who speaks for an
+    // institution appear briefly as though they did not.
+    final affiliationsResolved = ref.watch(myAffiliationsResolvedProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -970,7 +975,9 @@ class _MemberIdentityHeader extends ConsumerWidget {
         ),
       ),
     ),
-        if (affiliations.isNotEmpty)
+        if (!affiliationsResolved)
+          const _AffiliationLineResolving()
+        else if (affiliations.isNotEmpty)
           _AffiliationLine(affiliations: affiliations),
       ],
     );
@@ -982,6 +989,33 @@ class _MemberIdentityHeader extends ConsumerWidget {
 /// a verified tick, and "+N" when the member belongs to several. Self-hides
 /// when the member has no affiliation. Tapping opens the institution
 /// workspace selector.
+/// The affiliation line while institution access is still being resolved.
+///
+/// It occupies the same vertical space the real line will, so the identity
+/// block does not reflow when the answer arrives, and it says nothing about
+/// whether the person holds an institution — because that is not yet known.
+class _AffiliationLineResolving extends StatelessWidget {
+  const _AffiliationLineResolving();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.only(
+        left: AuraSpace.s8,
+        right: AuraSpace.s8,
+        top: AuraSpace.s4,
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: AuraSpace.s8,
+          vertical: AuraSpace.s6,
+        ),
+        child: SizedBox(height: 18),
+      ),
+    );
+  }
+}
+
 class _AffiliationLine extends StatelessWidget {
   const _AffiliationLine({required this.affiliations});
 
