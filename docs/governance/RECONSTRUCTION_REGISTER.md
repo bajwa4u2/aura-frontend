@@ -411,6 +411,33 @@ Behaviour is unchanged and preserved until ruled.
 
 ---
 
+### CERTIFICATION SEQUENCE (founder ruling, 2026-08-23)
+
+Live certification is **not externally blocked**. It is **authorized and
+sequenced after product-surface reconstruction**, so the final exercise
+certifies the reconstructed product as a whole rather than certifying runtime
+mechanics through surfaces we already intend to change.
+
+| State | Status |
+|---|---|
+| Conversation realtime runtime | IMPLEMENTED / LIVE CERTIFICATION DEFERRED BY FOUNDER SEQUENCE |
+| Conversation unread authority | IMPLEMENTED / LIVE CERTIFICATION DEFERRED BY FOUNDER SEQUENCE |
+| Meetings active-media | AUTHORIZED / LIVE CERTIFICATION SEQUENCED AFTER RECONSTRUCTION |
+| Live Broadcast | AUTHORIZED / LIVE CERTIFICATION SEQUENCED AFTER RECONSTRUCTION |
+
+The order: unread/badge reconstruction (including Activity convergence) →
+Discover → Messages → Meetings → Live → controlled two-party integrated
+certification. The founder establishes the second identity at that boundary;
+it is not to be requested repeatedly while reconstruction is underway.
+
+**Reconstruction follows the journey, not the landing screen.** Where Discover
+→ content → conversation, Messages → conversation → call, or Meetings → join →
+active media exposes an adjacent surface belonging to the same user journey,
+that surface is in scope. Completing the first route is not completing the
+experience.
+
+---
+
 ### CANONICAL CONVERSATION MESSAGE LIFECYCLE (founder ruling, 2026-08-23)
 
 **Accounting correction: this was not only an unread-lifecycle defect.** After
