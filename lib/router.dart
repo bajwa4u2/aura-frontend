@@ -115,7 +115,6 @@ import 'features/discover/presentation/people_discovery_screen.dart';
 import 'features/articles/presentation/article_editor_screen.dart';
 import 'features/articles/presentation/article_screen.dart';
 import 'features/institutions/messaging/institution_messaging_screen.dart';
-import 'features/notifications/presentation/notifications_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
 import 'features/monetization/presentation/institution_billing_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
@@ -2272,8 +2271,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            // COMPATIBILITY ONLY (founder ruling §8, 2026-08-23).
+            //
+            // Notifications and Activity were two doors onto one data source —
+            // measured: both screens consumed the same client provider. Activity
+            // is the surviving destination, so this no longer renders a second
+            // implementation of it. Durable links keep working by RESOLVING into
+            // the canonical destination, which is the same rule applied to legacy
+            // direct addresses.
+            //
+            // RETIREMENT CONDITION: removed once no persisted notification
+            // deeplink and no released client still names `/notifications`.
+            // Production currently holds such deeplinks, so it stays.
             path: '/notifications',
-            builder: (_, __) => const NotificationsScreen(),
+            redirect: (_, __) => '/activity',
           ),
           // Phase-2 shell-preserving variants: opening a profile from inside
           // the institution shell keeps the institution actor context (no

@@ -13,7 +13,6 @@ import '../route_classification.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/authority/capability_projection.dart';
 import '../../core/institutions/institution_destination_authority.dart';
-import '../../core/institutions/institution_access_provider.dart';
 import '../../core/institutions/institution_paths.dart';
 import '../../core/media/aura_attachment_image.dart';
 import '../../core/ui/aura_design_system.dart';
@@ -1030,23 +1029,20 @@ class _MemberDrawerSecondary extends ConsumerWidget {
             onTap: () => go(NavigationAuthority.institutionOnboardingRoute),
           ),
 
-        // NOTIFICATIONS — the attention signal, relocated rather than removed.
+        // ONE ATTENTION/HISTORY DESTINATION (founder ruling §7/§8).
         //
-        // It was the header's last control and the founder ruled the mobile
-        // header empty. The unread COUNT travels with it: the earlier ruling
-        // required that attention semantics be preserved, and nothing else on
-        // mobile projects notification unread — the bottom bar badges
-        // Messages, which is a different thing.
-        _DrawerEntry(
-          icon: Icons.notifications_none_rounded,
-          label: 'Notifications',
-          badgeCount: ref.watch(notificationsUnreadCountProvider),
-          onTap: () => go('/notifications'),
-        ),
-
+        // Notifications and Activity were the same thing twice: measured, both
+        // screens consume the SAME client provider, so the drawer offered two
+        // doors onto one data source. Activity is the surviving destination
+        // and carries the attention count; /notifications is compatibility.
+        //
+        // The count is ATTENTION — directed items not yet acknowledged. It is
+        // not conversation unread, which lives on Messages and answers a
+        // different question through Conversation authority.
         _DrawerEntry(
           icon: Icons.history_rounded,
           label: 'Activity',
+          badgeCount: ref.watch(notificationsUnreadCountProvider),
           onTap: () => go('/activity'),
         ),
 
