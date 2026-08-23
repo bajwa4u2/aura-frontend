@@ -1,3 +1,7 @@
+import 'dart:async';
+import '../../core/auth/admin_access_provider.dart';
+import '../../core/auth/sign_out.dart';
+import '../../core/institutions/institution_access_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -852,19 +856,38 @@ class _MemberSideNav extends ConsumerWidget {
           // as a page hero on member surfaces).
           const _MemberIdentityHeader(),
           const SizedBox(height: AuraSpace.s10),
-          for (var i = 0; i < items.length; i++) ...[
-            _MemberSideNavTile(
-              item: items[i],
-              selected: i == selectedIndex,
-              badgeCount: _memberBadgeFor(items[i], attention),
-              onTap: () {
-                final target = items[i].path;
-                if (target != currentPath) context.go(target);
-                if (inDrawer) Navigator.of(context).maybePop();
-              },
-            ),
-            if (i != items.length - 1) const SizedBox(height: AuraSpace.s4),
-          ],
+
+          // PRIMARY DESTINATIONS ARE NOT REPEATED IN THE MOBILE DRAWER.
+          //
+          // Founder ruling (2026-08-23): Home, Create, Messages and Discover
+          // already have their natural home in the bottom navigation, which is
+          // permanently visible on mobile. Rendering them here as well made the
+          // drawer a second copy of the bar directly beneath it — three chrome
+          // regions competing to answer the same question.
+          //
+          // This removes DUPLICATE NAVIGATION, not capability: every one of the
+          // four remains reachable, one tap away, from the bar that owns them.
+          // On desktop there is no bottom bar, so the rail keeps them and
+          // remains their primary projection.
+          if (!inDrawer)
+            for (var i = 0; i < items.length; i++) ...[
+              _MemberSideNavTile(
+                item: items[i],
+                selected: i == selectedIndex,
+                badgeCount: _memberBadgeFor(items[i], attention),
+                onTap: () {
+                  final target = items[i].path;
+                  if (target != currentPath) context.go(target);
+                },
+              ),
+              if (i != items.length - 1) const SizedBox(height: AuraSpace.s4),
+            ],
+
+          // What the drawer is actually FOR on mobile: account, institutional
+          // context, and the global destinations that do not belong in primary
+          // navigation.
+          if (inDrawer) const _MemberDrawerSecondary(),
+
           const Spacer(),
         ],
       ),
@@ -888,6 +911,152 @@ class _MemberSideNav extends ConsumerWidget {
 }
 
 /// Compact current-user identity block for the member rail / drawer.
+/// WHAT THE MOBILE DRAWER IS FOR.
+///
+/// Founder ruling (2026-08-23). Each chrome region carries a distinct
+/// responsibility, and the drawer's is account, institutional context, and the
+/// global destinations that are not primary product movement:
+///
+///   bottom navigation  → Home, Create, Messages, Discover
+///   drawer             → account, institutional context, global/secondary
+///   Discover           → global search and exploration
+///   header             → contextual identity, and attention only where earned
+///
+/// Nothing here is a duplicate of the bar below it. Every entry either had no
+/// mobile home at all (Activity, Live), or was consuming permanent header
+/// width for something contextual rather than immediate (Add institution,
+/// Account).
+class _MemberDrawerSecondary extends ConsumerWidget {
+  const _MemberDrawerSecondary();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasInstitution = ref.watch(myAffiliationsProvider).isNotEmpty;
+    // UNKNOWN IS NOT ABSENT — the same rule the header applied. Offering to
+    // ADD an institution asserts the person has none, so it waits for the
+    // answer rather than flickering on every open.
+    final affiliationsResolved = ref.watch(myAffiliationsResolvedProvider);
+    final isAdmin = ref.watch(appAdminCachedDisplayProvider);
+
+    void go(String route) {
+      Navigator.of(context).maybePop();
+      context.push(route);
+    }
+
+    return Column(
+      children: [
+        const SizedBox(height: AuraSpace.s4),
+        const Divider(height: 1, color: AuraSurface.divider),
+        const SizedBox(height: AuraSpace.s8),
+
+        _DrawerEntry(
+          icon: Icons.person_outline_rounded,
+          label: 'Profile',
+          onTap: () => go('/me'),
+        ),
+
+        // ADD INSTITUTION — same frozen lifecycle rule, new home. It is shown
+        // only to a person who holds no institution, and it is contextual to
+        // their participation rather than an immediate signal, so it no longer
+        // occupies permanent header width.
+        if (affiliationsResolved && !hasInstitution)
+          _DrawerEntry(
+            icon: Icons.add_business_outlined,
+            label: 'Add your institution',
+            onTap: () => go(NavigationAuthority.institutionOnboardingRoute),
+          ),
+
+        _DrawerEntry(
+          icon: Icons.history_rounded,
+          label: 'Activity',
+          onTap: () => go('/activity'),
+        ),
+
+        // LIVE — CLASSIFIED, NOT INHERITED.
+        //
+        // The ruling did not name Live, so this is an application of its own
+        // taxonomy rather than a new decision: Live is global exploration of
+        // what is happening now, and its indicator is AMBIENT (someone,
+        // somewhere, is live) rather than personal unread. The header is
+        // reserved for immediate attention that is genuinely the reader's, so
+        // ambient liveness belongs with the other global destinations.
+        _DrawerEntry(
+          icon: Icons.sensors_rounded,
+          label: 'Live',
+          onTap: () => go(NavigationAuthority.liveDirectoryRoute),
+        ),
+
+        const SizedBox(height: AuraSpace.s8),
+        const Divider(height: 1, color: AuraSurface.divider),
+        const SizedBox(height: AuraSpace.s8),
+
+        _DrawerEntry(
+          icon: Icons.tune_outlined,
+          label: 'Preferences',
+          onTap: () => go('/me/settings/communications'),
+        ),
+        _DrawerEntry(
+          icon: Icons.shield_outlined,
+          label: 'Settings',
+          onTap: () => go('/security'),
+        ),
+        if (isAdmin)
+          _DrawerEntry(
+            icon: Icons.fact_check_outlined,
+            label: 'Claim audit',
+            onTap: () => go('/ai/claim-audit'),
+          ),
+        _DrawerEntry(
+          icon: Icons.logout_rounded,
+          label: 'Sign out',
+          onTap: () {
+            Navigator.of(context).maybePop();
+            unawaited(signOutAura(context, ref));
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _DrawerEntry extends StatelessWidget {
+  const _DrawerEntry({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.r10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s10,
+          vertical: AuraSpace.s12,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: AuraSurface.muted),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
+              child: Text(
+                label,
+                style: AuraText.small.copyWith(color: AuraSurface.ink),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MemberIdentityHeader extends ConsumerWidget {
   const _MemberIdentityHeader();
 

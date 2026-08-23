@@ -142,3 +142,59 @@ Five distinct fail-closed behaviours, each already implemented and each gated:
   it is the chapter's own first gate and requires founder observation under PB-11.
 - **No chapter is closed.** CH-02 remains open; CH-10 has not been entered.
 - **CH-10's experience work is not started.** Only the boundary is published.
+
+---
+
+## MOBILE NAVIGATION DOCTRINE (founder ruling, 2026-08-23)
+
+Recorded as doctrine, not as a Pixel-specific workaround. It governs Android,
+iOS and equivalent narrow presentations. Desktop is deliberately NOT forced
+into the same model.
+
+**Mobile Aura does not duplicate primary destinations across bottom
+navigation, drawer and header merely because all three containers exist.**
+Each chrome region has a distinct responsibility:
+
+| Region | Owns |
+|---|---|
+| Bottom navigation | Home, Create, Messages, Discover — primary product movement |
+| Drawer | account, institutional context, global/secondary destinations |
+| Discover | global search and exploration |
+| Top header | contextual identity, and attention only where genuinely earned |
+
+**The top header may legitimately become very light. Its emptiness is not a
+problem and is not backfilled.** Do not optimise for filling available chrome;
+optimise for clear hierarchy and contextual relevance.
+
+### What the audit found, and what it changed
+
+The defect that exposed this was reported as a header collision. It was not
+primarily a layout bug: at 411dp the tools row pushed the ACCOUNT BUTTON off
+the screen entirely, taking identity and sign-out with it. Narrowing the pill
+made it fit; it did not make the architecture right.
+
+- **The drawer was a copy of the bar beneath it.** It rendered the same four
+  `PrimaryDestination`s the bottom bar owns, and nothing else but the identity
+  header. Removing them removes duplicate NAVIGATION, not capability.
+- **"Activity" and the bell are ONE control, not two.** `activityPath` is
+  `/notifications`, and the same button carries the unread count. The ruling
+  listed them separately; the built product had merged them.
+- **Notification attention stays in the header, and that is evidence-based.**
+  It is personal and immediate, and nothing else projects it persistently —
+  the bottom bar badges Messages, not notifications — so burying it would have
+  destroyed the signal rather than relocated it.
+- **Search needed no new home.** Discover already embedded it as its primary
+  affordance. The convergence was removing the header's competing copy.
+- **Live was classified, not inherited.** The ruling did not name it. Applying
+  the ruling's own taxonomy: Live is global exploration, and its indicator is
+  AMBIENT (someone is live) rather than personal unread, so it joins the other
+  global destinations in the drawer. Flagged as a classification call.
+
+### The boundary that must not move
+
+Responsive presentation difference is legitimate; authority difference is not.
+Shared across form factors: destination identity, authority, audience/privacy,
+contextual projection, navigation semantics. May differ: where a destination is
+presented — drawer, rail, header or bottom bar. No separate mobile permission
+or navigation authority was created; the same canonical Navigation and
+Capability Authorities are consumed.

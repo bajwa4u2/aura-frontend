@@ -239,13 +239,17 @@ class _PlatformBar extends StatelessWidget {
               children: [
                 AuraShellWordmark(onTap: () => _goHome(context)),
                 const Spacer(),
-                ShellHeaderTools(
+                // BOUNDED, so a future addition degrades inside the header
+                // instead of pushing the account button off the screen edge.
+                Flexible(
+                  child: ShellHeaderTools(
                   isTablet: isTablet,
                   isDesktop: isDesktop,
                   showLive: showLive,
                   searchPath: searchPath,
                   activityPath: activityPath,
-                    ),
+                  ),
+                ),
               ],
             ),
           ),

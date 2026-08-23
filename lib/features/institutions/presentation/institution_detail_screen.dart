@@ -61,9 +61,26 @@ class InstitutionDetailScreen extends ConsumerWidget {
             AuraSpace.s32,
           ),
           children: [
+            // A READER IS NOT SHOWN THE EXCEPTION.
+            //
+            // Android certification surfaced this in production: an address
+            // that names no institution rendered
+            // "DioException [bad response]: This could not be found" — the
+            // transport's own words, in front of a person who cannot act on
+            // them. Worse, it reads as a malfunction when the truthful answer
+            // is simply that nothing lives at this address.
+            //
+            // 404 is a real answer and is stated as one. Anything else is a
+            // failure to find out, which is a different thing and must not be
+            // reported as absence (RC2/F065).
             AuraErrorState(
-              title: 'Institution could not be loaded',
-              body: '$e',
+              title: _isNotFound(e)
+                  ? 'That institution could not be found'
+                  : 'Institution could not be loaded',
+              body: _isNotFound(e)
+                  ? 'This address does not name an institution on Aura.'
+                  : 'Something went wrong loading this institution. '
+                      'Please try again.',
             ),
           ],
         ),
@@ -72,6 +89,12 @@ class InstitutionDetailScreen extends ConsumerWidget {
     );
   }
 }
+
+/// Whether a load failure means "nothing lives here" rather than "we could not
+/// find out". The distinction is the difference between a truthful empty
+/// answer and a false one.
+bool _isNotFound(Object e) =>
+    e is DioException && e.response?.statusCode == 404;
 
 class _InstitutionDetailBody extends ConsumerWidget {
   const _InstitutionDetailBody({required this.institution});

@@ -694,6 +694,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
+      // A SIGNED-IN MEMBER DOES NOT LAND ON THE ACQUISITION PAGE.
+      //
+      // `/` renders PublicHomeScreen unconditionally, and nothing sent an
+      // authenticated member anywhere else. On the web that never showed:
+      // the browser retains a URL, so a returning member reopens `/messages`
+      // or `/home` and never sees the root. Android has no such memory — a
+      // cold start begins at `/` — so every launch put a signed-in member on
+      // the page that explains what Aura is, with the bottom nav highlighting
+      // "Home" beside content that is not their home.
+      //
+      // Deliberately placed AFTER the loading guards above: deciding this
+      // while authority is still resolving is the RC2 defect, and it would
+      // bounce a member off a legitimate deep link mid-resolution. Only the
+      // bare root is redirected, so every other address — including a
+      // notification's destination — is untouched.
+      if (isLoggedIn && path == '/') {
+        return '/home';
+      }
+
       if (isBootPath(path)) {
         if (!isLoggedIn) {
           if (isPublicPath(redirectDest) || isAuthActionPath(redirectDest)) {
@@ -807,13 +826,32 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Platform admins bypass all institution membership gates — the backend
       // enforces INSTITUTIONS_READ/WRITE via its own bypass logic.
       if (!appAdmin.isAdmin) {
-        // RC4 — TEMPORARY GATE. Institution access is something the person
-        // can obtain: this is the one institution exit they can pass, so the
-        // destination travels with them and the gate returns them to it.
+        // A PERSON WITHOUT STANDING IS TOLD SO — NOT ASKED TO LOG IN AGAIN.
+        //
+        // Founder ruling D5/D6, and the frozen doctrine that institution
+        // standing is a RELATIONSHIP a person holds, never a second account.
+        // This gate used to send them to `/enter-institution`, which asks for
+        // an institution email and password and offers to create an
+        // institutional account — the legacy model, in which an institution
+        // was its own login. Android certification caught it: an already
+        // authenticated member, named in the header, was shown "Institution
+        // sign in — Private institutional access".
+        //
+        // That is the same shape as the 2026-08-14 meetings regression
+        // (institutionId-in-path != institution-actor identity), on a
+        // different route family, and it contradicted the standing route
+        // declared a few lines below in this very file: standing "never
+        // pretends the person entered".
+        //
+        // Terminal, like the `/home` denial above: there is nothing here for
+        // the person to pass. The standing surface states what they hold and
+        // carries the legitimate way to obtain more — which is onboarding an
+        // institution, not signing into one.
         if (requiresInstitutionAccess(path) && !institutionAccess.hasAccess) {
           return gateRedirect(
-            gate: kEnterInstitutionRoute,
+            gate: kInstitutionNoAffiliationDestination,
             target: currentLocation,
+            kind: ExitKind.terminalDenial,
           );
         }
 

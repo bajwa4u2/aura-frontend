@@ -13,7 +13,16 @@
 # -- R1 -- measured 2026-08-15 after C2 §9: the institution profile gates now
 # ask the capability question (MANAGE_BRANDING) instead of isAdmin.
 # -- R1 -- 23 files / 82 sites
-R1 1 lib/app/shell/member_shell.dart
+# 1 -> 3 (2026-08-23, mobile chrome reconstruction): the drawer took over
+# account/secondary destinations from the header, and with them the admin-only
+# Claim audit entry. This is `appAdminCachedDisplayProvider` — the canonical
+# DISPLAY-ONLY platform-admin signal, used to display an admin-only entry —
+# which is the "surfaces that DISPLAY a role" case this baseline exempts in
+# prose. It is not an institution capability question in disguise: platform
+# admin is not part of CapabilityProjection, and asking a capability here
+# would be inventing one. The header keeps its own count for desktop, so this
+# is a genuine addition rather than a move, and it is recorded as such.
+R1 3 lib/app/shell/member_shell.dart
 R1 6 lib/app/shell/shell_header_tools.dart
 R1 1 lib/core/auth/admin_access_provider.dart
 R1 4 lib/core/institutions/institution_access_provider.dart

@@ -141,6 +141,41 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
     final affiliationsResolved = ref.watch(myAffiliationsResolvedProvider);
     const gap = SizedBox(width: AuraSpace.s6);
 
+    // ─────────────────────────────────────────────────────────────────────
+    // MOBILE CHROME (founder ruling 2026-08-23)
+    // ─────────────────────────────────────────────────────────────────────
+    //
+    // The top header is NOT a second global navigation bar. On mobile the
+    // primary destinations live in the bottom bar, account and institutional
+    // context live in the drawer, and global search belongs to Discover. What
+    // is left for the header is contextual identity and — only where genuinely
+    // earned — an immediate attention signal.
+    //
+    // ONE control earns it. The audit found that "Activity" and the bell are
+    // not two things: `activityPath` is `/notifications`, and the same button
+    // carries the unread count. Notification attention is personal and
+    // immediate, and NOTHING else projects it persistently — the bottom bar
+    // badges Messages, not notifications — so burying it would have destroyed
+    // the signal rather than relocated it. It stays.
+    //
+    // Everything else leaves: Search to Discover, Add institution and Account
+    // to the drawer, Live to the drawer as a global destination. Its emptiness
+    // is not a problem and is not backfilled.
+    final mobileChrome = !widget.isTablet;
+
+    if (mobileChrome) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.activityPath != null)
+            _HeaderActivityBtn(
+              unreadCount: unreadCount,
+              onTap: () => context.push(widget.activityPath!),
+            ),
+        ],
+      );
+    }
+
     final tools = <Widget>[
       if (widget.searchPath != null)
         _HeaderIconBtn(
@@ -170,19 +205,62 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
       // Create domain, never buried in menus/settings/redirect chains.
       if (affiliationsResolved && !hasInstitution) ...[
         gap,
-        _HeaderAddInstitutionBtn(compact: !widget.isTablet),
+        // ICON-ONLY ON PHONES — founder-reported collision, 2026-08-23.
+        //
+        // The tools row is MainAxisSize.min inside a Row with a Spacer, so it
+        // does not wrap or scroll: anything wider than the remaining space
+        // simply runs off the right edge. On a 411dp phone the labelled pill
+        // pushed the ACCOUNT BUTTON entirely off-screen, which took identity
+        // and sign-out with it — not a cosmetic clip.
+        //
+        // The frozen ruling says this action stays visible at EVERY width, so
+        // it is not hidden or moved into a menu. Only its label is dropped;
+        // the icon, tooltip and destination are unchanged.
+        _HeaderAddInstitutionBtn(
+          compact: !widget.isDesktop,
+          iconOnly: !widget.isTablet,
+        ),
       ],
-      gap,
-      _HeaderAccountBtn(
-        busy: _busyLogout,
-        me: me,
-        isAdmin: isAdmin,
-        onSelected: (v) => unawaited(_handleAccountAction(v)),
-      ),
     ];
 
     if (widget.isTablet) tools.add(const SizedBox(width: AuraSpace.s4));
-    return Row(mainAxisSize: MainAxisSize.min, children: tools);
+
+    // THE ACCOUNT BUTTON IS NOT OPTIONAL, SO IT IS NOT IN THE FLEXIBLE GROUP.
+    //
+    // It carries the person's identity and the only route to sign out. When it
+    // sat inside the same unbounded Row as everything else, a phone-width
+    // header pushed it clean off the screen edge — sign-out became unreachable
+    // rather than merely cramped.
+    //
+    // Narrowing the widest pill helped and did not settle it: whether the
+    // header fits is a function of how many tools happen to be shown, which
+    // changes with standing and with anything added later. So the structure
+    // guarantees it instead of the arithmetic. The optional tools scroll
+    // within whatever space remains — nothing is hidden or moved into a menu,
+    // every affordance stays reachable — and the account button is laid out
+    // last and unconditionally.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            // Anchored to the end, so the tools nearest the account button —
+            // the ones a reader's eye is already on — stay visible when space
+            // runs short.
+            reverse: true,
+            child: Row(mainAxisSize: MainAxisSize.min, children: tools),
+          ),
+        ),
+        gap,
+        _HeaderAccountBtn(
+          busy: _busyLogout,
+          me: me,
+          isAdmin: isAdmin,
+          onSelected: (v) => unawaited(_handleAccountAction(v)),
+        ),
+      ],
+    );
   }
 }
 
@@ -388,10 +466,15 @@ class _LiveSessionMenuTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HeaderAddInstitutionBtn extends StatelessWidget {
-  const _HeaderAddInstitutionBtn({this.compact = false});
+  const _HeaderAddInstitutionBtn({this.compact = false, this.iconOnly = false});
 
   /// Compact label below tablet widths — same action, same prominence.
   final bool compact;
+
+  /// Phone widths. The action stays PERSISTENTLY VISIBLE as the frozen
+  /// lifecycle ruling requires — it is the label that goes, not the action.
+  /// Its tooltip and destination are unchanged.
+  final bool iconOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -419,14 +502,16 @@ class _HeaderAddInstitutionBtn extends StatelessWidget {
               children: [
                 const Icon(Icons.add_business_outlined,
                     size: 16, color: AuraSurface.muted),
-                const SizedBox(width: AuraSpace.s6),
-                Text(
-                  compact ? 'Add institution' : 'Add your institution',
-                  style: AuraText.small.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AuraSurface.muted,
+                if (!iconOnly) ...[
+                  const SizedBox(width: AuraSpace.s6),
+                  Text(
+                    compact ? 'Add institution' : 'Add your institution',
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AuraSurface.muted,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
