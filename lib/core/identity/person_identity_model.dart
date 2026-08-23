@@ -47,6 +47,8 @@
 /// with their own authorities.
 library;
 
+import '../trust/verification.dart';
+
 /// How a human being is represented when they appear inside another entity's
 /// payload: a message author, a member, a caller, a mention target.
 class AuraPersonIdentity {
@@ -56,6 +58,7 @@ class AuraPersonIdentity {
     required this.handle,
     this.avatarUrl,
     this.accountStatus,
+    this.verification = const PersonVerification.none(),
   });
 
   final String userId;
@@ -67,6 +70,20 @@ class AuraPersonIdentity {
   /// Carried so a surface can represent a deleted author truthfully while
   /// still resolving their historical authorship. Never a moderation reason.
   final String? accountStatus;
+
+  /// The governed verification set — mirroring `PersonIdentity.verification`
+  /// on the backend, field for field.
+  ///
+  /// CARRIED HERE BECAUSE TRUST IS PART OF WHO SOMEONE IS (founder ruling
+  /// 2026-08-23 §F). It was previously left to each surface to fetch or
+  /// ignore, and the Institution roster ignored it — so a person verified on
+  /// their profile appeared unverified on Members. A verified person must not
+  /// become unverified by being looked at through a different endpoint.
+  ///
+  /// Empty is the honest default: absence of verification, never an error and
+  /// never a claim. A payload that carries no `verification` key yields the
+  /// empty set exactly as one that carries an empty list.
+  final PersonVerification verification;
 
   bool get isEmpty => userId.isEmpty && displayName.isEmpty && handle.isEmpty;
   bool get isNotEmpty => !isEmpty;
@@ -124,12 +141,17 @@ class AuraPersonIdentity {
       handle: _str(map, const ['handle', 'username']),
       avatarUrl: _strOrNull(map, const ['avatarUrl', 'photoUrl', 'imageUrl']),
       accountStatus: _strOrNull(map, const ['accountStatus']),
+      verification: PersonVerification.fromJson(map['verification']),
     );
   }
 
   /// Keys under which a person is nested in Aura payloads. Ordered: the most
   /// specific envelope wins, so an actor is not mistaken for the viewer.
   static const List<String> _nestedKeys = [
+    // `person` is the name the backend uses when a payload carries the
+    // canonical projection beside its own state — a discovery suggestion, for
+    // one. Listed first because it is the most explicit envelope there is.
+    'person',
     'user',
     'author',
     'sender',
@@ -187,6 +209,7 @@ class AuraPersonIdentity {
       other.displayName == displayName &&
       other.handle == handle &&
       other.avatarUrl == avatarUrl &&
+      other.verification.classes.join(',') == verification.classes.join(',') &&
       other.accountStatus == accountStatus;
 
   @override

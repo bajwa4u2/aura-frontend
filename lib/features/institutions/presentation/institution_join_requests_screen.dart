@@ -1,3 +1,4 @@
+import '../../../core/trust/trust_marks.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -206,15 +207,40 @@ class _InstitutionJoinRequestsScreenState
         children: [
           Row(
             children: [
-              AuraAvatar(name: nameOrHandle, size: 36),
+              // Same rule as the roster: the request names a PERSON, and the
+              // canonical identity already read above supplies their face.
+              AuraAvatar(
+                name: nameOrHandle,
+                imageUrl: person.avatarUrl,
+                size: 36,
+              ),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      nameOrHandle,
-                      style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                    // Admitting someone is a trust decision, so their
+                    // verification travels with their name — the canonical
+                    // presentation, never a local badge.
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            nameOrHandle,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.small
+                                .copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        if (person.verification.hasAny) ...[
+                          const SizedBox(width: AuraSpace.s4),
+                          PersonVerificationMarks(
+                            verification: person.verification,
+                            size: TrustMarkSize.micro,
+                          ),
+                        ],
+                      ],
                     ),
                     if (handle.isNotEmpty)
                       Text(

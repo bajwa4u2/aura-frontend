@@ -1,3 +1,4 @@
+import '../../../core/trust/trust_marks.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -254,19 +255,59 @@ class _InstitutionMembersScreenState
       ),
       child: Row(
         children: [
-          AuraAvatar(name: nameOrHandle, size: 36),
+          // THE PERSON'S OWN FACE, NOT AN INITIAL STANDING IN FOR IT.
+          //
+          // This row already read the canonical identity for the name — and
+          // then rendered the avatar from that name alone, discarding
+          // `avatarUrl`. Established people appeared as generic initials on
+          // the roster while their photo rendered everywhere else.
+          AuraAvatar(
+            name: nameOrHandle,
+            imageUrl: person.avatarUrl,
+            size: 36,
+          ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  nameOrHandle,
-                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        nameOrHandle,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.small
+                            .copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    // TRUST IS PART OF WHO SOMEONE IS. Rendered through the
+                    // canonical presentation rather than a roster-local badge,
+                    // so a person cannot be verified here and unverified
+                    // there. Renders nothing when nothing is verified.
+                    if (person.verification.hasAny) ...[
+                      const SizedBox(width: AuraSpace.s4),
+                      PersonVerificationMarks(
+                        verification: person.verification,
+                        size: TrustMarkSize.micro,
+                      ),
+                    ],
+                  ],
                 ),
                 if (handle.isNotEmpty)
                   Text(
                     '@$handle',
+                    style: AuraText.micro.copyWith(color: AuraSurface.muted),
+                  ),
+                // Lifecycle truth, only when it is not the ordinary case: a
+                // roster should say plainly that someone's account is no
+                // longer active rather than presenting them as present.
+                if ((person.accountStatus ?? 'ACTIVE') != 'ACTIVE')
+                  Text(
+                    person.accountStatus == 'DELETED'
+                        ? 'Account deleted'
+                        : 'Account disabled',
                     style: AuraText.micro.copyWith(color: AuraSurface.muted),
                   ),
               ],

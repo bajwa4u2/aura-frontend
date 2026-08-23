@@ -1,3 +1,4 @@
+import '../../../core/trust/trust_marks.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -112,17 +113,26 @@ class PeopleDiscoveryScreen extends ConsumerWidget {
 
 class _PersonSuggestion {
   const _PersonSuggestion({
-    required this.userId,
-    required this.handle,
-    required this.displayName,
+    required this.person,
     required this.reasons,
     required this.followState,
   });
-  final String userId;
-  final String? handle;
-  final String displayName;
+
+  /// THE PERSON, WHOLE. This used to hold three scalars copied off the
+  /// canonical identity — userId, handle, displayName — which is the
+  /// partial-adoption pattern: the canonical reader was called and then most
+  /// of what it returned was thrown away, so a suggested person appeared as
+  /// an initial with no verification while the same human rendered fully
+  /// elsewhere. Holding the identity itself makes that impossible.
+  final AuraPersonIdentity person;
+
+  /// Discovery state — what this surface adds, never who the person is.
   final List<String> reasons;
   final String followState;
+
+  String get userId => person.userId;
+  String? get handle => person.handle.isEmpty ? null : person.handle;
+  String get displayName => person.label;
 }
 
 class _PeoplePage {
@@ -143,13 +153,11 @@ final _peopleDiscoveryProvider =
     coldStart: data['coldStart'] == true,
     suggestions: (data['suggestions'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
-        // F053/F116 — the identity half of a suggestion is read canonically;
-        // `reasons` and `followState` are discovery state, not identity, and
-        // stay on the suggestion. Composition, not flattening.
+        // F053/F116 — the identity half of a suggestion is read canonically
+        // and KEPT canonical; `reasons` and `followState` are discovery
+        // state, not identity, and stay on the suggestion beside it.
         .map((j) => _PersonSuggestion(
-              userId: AuraPersonIdentity.fromJson(j).userId,
-              handle: AuraPersonIdentity.fromJson(j).handle,
-              displayName: AuraPersonIdentity.fromJson(j).displayName,
+              person: AuraPersonIdentity.fromJson(j),
               reasons: (j['reasons'] as List<dynamic>? ?? const [])
                   .map((r) => r.toString())
                   .toList(),
@@ -213,7 +221,11 @@ class _PersonCardState extends ConsumerState<_PersonCard> {
       ),
       child: Row(
         children: [
-          AuraAvatar(name: s.displayName, size: 44),
+          AuraAvatar(
+            name: s.displayName,
+            imageUrl: s.person.avatarUrl,
+            size: 44,
+          ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(
             child: InkWell(
@@ -223,9 +235,28 @@ class _PersonCardState extends ConsumerState<_PersonCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(s.displayName,
-                      style: AuraText.body
-                          .copyWith(fontWeight: FontWeight.w700)),
+                  // Choosing whom to follow is a trust decision, so the
+                  // canonical verification travels with the name.
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          s.displayName,
+                          overflow: TextOverflow.ellipsis,
+                          style: AuraText.body
+                              .copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      if (s.person.verification.hasAny) ...[
+                        const SizedBox(width: AuraSpace.s4),
+                        PersonVerificationMarks(
+                          verification: s.person.verification,
+                          size: TrustMarkSize.micro,
+                        ),
+                      ],
+                    ],
+                  ),
                   if (s.reasons.isNotEmpty)
                     Text(
                       s.reasons.first,

@@ -460,7 +460,11 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actorName = AuraPersonIdentity.fromJson(event.actor).displayName;
+    // THE WHOLE IDENTITY, not one field off it. Reading `.displayName` and
+    // discarding the rest is the partial-adoption pattern that left the actor
+    // as an initial while the same person rendered with a photo elsewhere.
+    final actor = AuraPersonIdentity.fromJson(event.actor);
+    final actorName = actor.displayName;
     final summary = _summaryForKind(event);
     final time = event.createdAt != null ? _formatTime(event.createdAt!) : '';
 
@@ -486,7 +490,11 @@ class _ActivityCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AuraAvatar(name: actorName.isNotEmpty ? actorName : event.kind, size: 32),
+          AuraAvatar(
+            name: actorName.isNotEmpty ? actorName : event.kind,
+            imageUrl: actor.avatarUrl,
+            size: 32,
+          ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(
             child: Column(
