@@ -2391,15 +2391,29 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
+          // THE LIVE DIRECTORY IS A DESTINATION, NOT A CALL.
+          //
+          // Founder-reported: opening Live from the drawer was "free fall,
+          // dead end, no app hierarchy". It rendered outside the ShellRoute —
+          // no bottom bar, no drawer, no way back — because it sat with the
+          // realtime CALL routes and inherited their deliberate chrome
+          // suppression through a shared `/realtime` prefix.
+          //
+          // Browsing what is live is ordinary navigation and keeps the app's
+          // hierarchy. Entering a session (`/realtime/:sessionId`) remains
+          // immersive and stays outside.
+          GoRoute(
+            path: '/realtime',
+            builder: (_, __) => const RealtimeLobbyScreen(),
+          ),
         ],
       ),
 
-      // Realtime call routes are intentionally outside the ShellRoute so
-      // the call window renders without the member nav/sidebar.
-      GoRoute(
-        path: '/realtime',
-        builder: (_, __) => const RealtimeLobbyScreen(),
-      ),
+      // A CALL renders without the member nav/sidebar — chrome gets out of
+      // the way once you are in a session. The LOBBY is not a call: it is a
+      // directory you browse, and it now lives inside the shell (see above).
+      // The two shared a path prefix, which is how the directory came to wear
+      // a call's chrome suppression.
       GoRoute(
         path: '/realtime/:sessionId',
         // MEETING KILL SWITCH — divert meeting sessions to the meeting live

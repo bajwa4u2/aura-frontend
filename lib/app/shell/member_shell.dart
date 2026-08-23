@@ -1,3 +1,4 @@
+import '../../features/updates/providers.dart';
 import 'dart:async';
 import '../../core/auth/admin_access_provider.dart';
 import '../../core/auth/sign_out.dart';
@@ -242,7 +243,11 @@ int _memberBadgeFor(_NavItem item, ModuleAttention attention) {
 /// The slim mobile bar (and its menu affordance) is suppressed on immersive
 /// full-screen routes where navigation chrome should get out of the way.
 bool _showMemberMobileBar(String path) {
-  if (path.startsWith('/realtime')) return false;
+  // A SESSION is immersive; the LOBBY is not. This used to suppress on the
+  // whole `/realtime` prefix, so browsing what is live lost the bottom bar and
+  // the drawer with it — a directory with no way out. Only an actual session
+  // takes the chrome away.
+  if (path.startsWith('/realtime/')) return false;
   return true;
 }
 
@@ -926,6 +931,44 @@ class _MemberSideNav extends ConsumerWidget {
 /// mobile home at all (Activity, Live), or was consuming permanent header
 /// width for something contextual rather than immediate (Add institution,
 /// Account).
+/// The drawer opener, carrying whether anything inside wants attention.
+class _MenuButtonWithAttention extends ConsumerWidget {
+  const _MenuButtonWithAttention({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(notificationsUnreadCountProvider);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.menu_rounded,
+              size: 22, color: AuraSurface.ink),
+          tooltip: unread > 0 ? 'Menu, $unread unread' : 'Menu',
+          visualDensity: VisualDensity.compact,
+          onPressed: onPressed,
+        ),
+        if (unread > 0)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: AuraSurface.accent,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _MemberDrawerSecondary extends ConsumerWidget {
   const _MemberDrawerSecondary();
 
@@ -965,6 +1008,20 @@ class _MemberDrawerSecondary extends ConsumerWidget {
             label: 'Add your institution',
             onTap: () => go(NavigationAuthority.institutionOnboardingRoute),
           ),
+
+        // NOTIFICATIONS — the attention signal, relocated rather than removed.
+        //
+        // It was the header's last control and the founder ruled the mobile
+        // header empty. The unread COUNT travels with it: the earlier ruling
+        // required that attention semantics be preserved, and nothing else on
+        // mobile projects notification unread — the bottom bar badges
+        // Messages, which is a different thing.
+        _DrawerEntry(
+          icon: Icons.notifications_none_rounded,
+          label: 'Notifications',
+          badgeCount: ref.watch(notificationsUnreadCountProvider),
+          onTap: () => go('/notifications'),
+        ),
 
         _DrawerEntry(
           icon: Icons.history_rounded,
@@ -1024,11 +1081,16 @@ class _DrawerEntry extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+
+  /// Unread, when this entry carries an attention signal. Zero renders
+  /// nothing — an empty badge is a claim that there is something to see.
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -1050,6 +1112,24 @@ class _DrawerEntry extends StatelessWidget {
                 style: AuraText.small.copyWith(color: AuraSurface.ink),
               ),
             ),
+            if (badgeCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AuraSurface.accent,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                ),
+                child: Text(
+                  badgeCount > 99 ? '99+' : '$badgeCount',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.ink,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -1342,11 +1422,19 @@ class _MemberMobileBar extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.menu_rounded,
-                  size: 22, color: AuraSurface.ink),
-              tooltip: 'Menu',
-              visualDensity: VisualDensity.compact,
+            // THE MENU CARRIES THE UNREAD SIGNAL.
+            //
+            // Notifications moved into the drawer when the mobile header was
+            // emptied, which left attention one tap out of sight: a person
+            // would have had to open the drawer to discover there was anything
+            // to open it FOR. The three-line control is now the only permanent
+            // affordance above the content, so it carries the signal.
+            //
+            // A DOT, NOT A COUNT. The exact number lives on the Notifications
+            // entry inside; out here the honest claim is only "there is
+            // something unread". Zero renders nothing at all — an indicator
+            // with nothing behind it is a false claim, not a neutral one.
+            _MenuButtonWithAttention(
               onPressed: () => _memberScaffoldKey.currentState?.openDrawer(),
             ),
             const SizedBox(width: AuraSpace.s2),

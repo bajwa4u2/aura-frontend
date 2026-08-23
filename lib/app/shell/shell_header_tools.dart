@@ -163,18 +163,18 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
     // is not a problem and is not backfilled.
     final mobileChrome = !widget.isTablet;
 
-    if (mobileChrome) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.activityPath != null)
-            _HeaderActivityBtn(
-              unreadCount: unreadCount,
-              onTap: () => context.push(widget.activityPath!),
-            ),
-        ],
-      );
-    }
+    // THE MOBILE HEADER CARRIES NOTHING (founder ruling, 2026-08-23).
+    //
+    // The bell was the last global control here, and the founder ruled it out
+    // on sight. What remains above the content is the wordmark and the screen's
+    // own context — the header is not a global navigation bar, and its
+    // emptiness is the intended result rather than space to refill.
+    //
+    // THE ATTENTION SIGNAL IS NOT BURIED WITH IT. The earlier ruling was
+    // explicit that unread semantics must be preserved, so notifications moved
+    // to the drawer WITH their unread count rather than being dropped. Removing
+    // the button was the instruction; removing the signal would not have been.
+    if (mobileChrome) return const SizedBox.shrink();
 
     final tools = <Widget>[
       if (widget.searchPath != null)
