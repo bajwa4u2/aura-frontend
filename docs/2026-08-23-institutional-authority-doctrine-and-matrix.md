@@ -93,7 +93,12 @@ capability set and then largely ignores it:
   **5 / 3**. (`institution_live_rooms_screen` was reported as ungated and is
   not — see Finding B2. The counts above measure `can*` style checks only and
   therefore undercount `CapabilityProjection` adoption by roughly six files.)
-* Client-wide: **139** role-label checks against **19** capability checks.
+* Client-wide: 139 role-label references against 19 `can*` checks — **this
+  figure is superseded and must not be requoted.** It counted platform-admin
+  checks (a legitimately separate axis), role-shaped *names* over
+  capability-shaped *authority*, and missed `CapabilityProjection` adoption
+  entirely. See `2026-08-23-institution-privacy-projection-d3-d4.md` §0 for the
+  three withdrawn findings.
 
 So the repair is architectural, not cosmetic: the workspace must be **composed
 from** the effective capability set, not decorated with conditional widgets. The
