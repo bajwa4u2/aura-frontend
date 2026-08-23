@@ -1,3 +1,4 @@
+import '../../features/conversation/data/conversation_unread_authority.dart';
 import '../../features/updates/providers.dart';
 import 'dart:async';
 import '../../core/auth/admin_access_provider.dart';
@@ -229,10 +230,25 @@ class MemberShell extends StatelessWidget {
 /// AXR-1 notification synchronization — which module's unread count a
 /// member nav destination carries. Destinations without an owning module
 /// (Home, Create, Support) never badge; their events live in Activity.
-int _memberBadgeFor(_NavItem item, ModuleAttention attention) {
+/// MESSAGES DOES NOT ASK THE ATTENTION LEDGER (founder ruling 2026-08-23).
+///
+/// This returned `attention.messages` — a count of unread NOTIFICATION rows of
+/// type MESSAGE. Presentation therefore derived from the attention ledger, and
+/// a person who had read every message still saw a badge until the notification
+/// row happened to be acknowledged. Message unread answers "what Conversation
+/// content have I not read?", and that answer belongs to Conversation read
+/// state alone.
+///
+/// Institutions keeps asking attention, correctly: an institutional event IS a
+/// directed attention item, not unread conversation content.
+int _memberBadgeFor(
+  _NavItem item,
+  ModuleAttention attention,
+  ConversationUnread conversationUnread,
+) {
   switch (item.path) {
     case '/messages':
-      return attention.messages;
+      return conversationUnread.conversations;
     case '/institutions':
       return attention.institutions;
     default:
@@ -852,6 +868,10 @@ class _MemberSideNav extends ConsumerWidget {
     // AXR-1 notification synchronization — module badges derive from the
     // same notification rows as the global bell (one source of truth).
     final attention = ref.watch(moduleAttentionProvider);
+    // Conversation unread is its own authority — see conversation_unread_authority.
+    final conversationUnread = ref
+        .watch(conversationUnreadProvider)
+        .maybeWhen(data: (u) => u, orElse: () => const ConversationUnread.none());
     final list = Padding(
       padding: const EdgeInsets.fromLTRB(
           AuraSpace.s12, AuraSpace.s8, AuraSpace.s12, AuraSpace.s20),
@@ -879,7 +899,8 @@ class _MemberSideNav extends ConsumerWidget {
               _MemberSideNavTile(
                 item: items[i],
                 selected: i == selectedIndex,
-                badgeCount: _memberBadgeFor(items[i], attention),
+                badgeCount:
+                    _memberBadgeFor(items[i], attention, conversationUnread),
                 onTap: () {
                   final target = items[i].path;
                   if (target != currentPath) context.go(target);
@@ -1477,6 +1498,10 @@ class _MemberBottomNav extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // AXR-1 — same module-attention source as the side rail.
     final attention = ref.watch(moduleAttentionProvider);
+    // Conversation unread is its own authority — see conversation_unread_authority.
+    final conversationUnread = ref
+        .watch(conversationUnreadProvider)
+        .maybeWhen(data: (u) => u, orElse: () => const ConversationUnread.none());
     return Container(
       decoration: const BoxDecoration(
         color: AuraSurface.card,
@@ -1500,7 +1525,8 @@ class _MemberBottomNav extends ConsumerWidget {
                   child: _MemberBottomNavTile(
                     item: items[i],
                     selected: i == selectedIndex,
-                    badgeCount: _memberBadgeFor(items[i], attention),
+                    badgeCount: _memberBadgeFor(
+                        items[i], attention, conversationUnread),
                     onTap: () {
                       if (items[i].path != currentPath) {
                         context.go(items[i].path);

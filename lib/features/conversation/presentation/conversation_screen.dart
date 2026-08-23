@@ -1,3 +1,4 @@
+import '../data/conversation_unread_authority.dart';
 import 'dart:async';
 
 import 'package:desktop_drop/desktop_drop.dart';
@@ -803,27 +804,34 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         ref.watch(conversationMessagesProvider(widget.conversationId));
     final myUserId = ref.watch(myUserIdProvider);
 
-    // Reading the conversation marks it read (cursor truth server-side).
+    // READING ADVANCES THE CANONICAL CURSOR, AND EVERY UNREAD CONSUMER IS
+    // TOLD IMMEDIATELY.
     //
-    // The server now also clears the MESSAGE notifications addressed to this
-    // conversation, so attention converges with reading wherever it is read.
-    // The badge still has to be told: the unread count refreshes on a 120s
-    // poll, so without this the person reads the messages and watches the
-    // badge keep counting them for up to two minutes -- which is the defect
-    // as they experience it, whatever the database says.
+    // Two ledgers reach new truth here, and they are not the same ledger:
+    //
+    //   CONVERSATION READ STATE — the authority the Messages badge derives
+    //   from. Invalidated deterministically, because a poll is reconciliation
+    //   and must not be how the UI learns the result of a mutation the app
+    //   itself just performed. Before this, a person read the messages and
+    //   watched the badge keep counting them for up to two minutes.
+    //
+    //   ATTENTION — refreshed because the server clears the message-attention
+    //   rows linked to this conversation as a CONSEQUENCE of the read. It is
+    //   synchronised, never substituted: it no longer answers "are there
+    //   unread messages".
     ref.listen(conversationMessagesProvider(widget.conversationId),
         (prev, next) {
       next.whenData((_) {
-        ref
-            .read(conversationsRepositoryProvider)
-            .markRead(widget.conversationId)
-            .then((_) {
-          if (!mounted) return;
-          ref
+        advanceConversationRead(
+          ref,
+          widget.conversationId,
+          markRead: () => ref
+              .read(conversationsRepositoryProvider)
+              .markRead(widget.conversationId),
+          refreshAttention: () => ref
               .read(notificationsControllerProvider.notifier)
-              .refresh(force: true)
-              .ignore();
-        }).ignore();
+              .refresh(force: true),
+        ).ignore();
       });
     });
 
