@@ -180,18 +180,46 @@ InstitutionRouteDecision decideInstitutionRoute({
 /// The snapshot, read from the canonical access provider. `isLoading` is what
 /// separates "still resolving" from "resolved and absent" — the distinction
 /// `valueOrNull` destroys.
+/// THE LAST INSTITUTION AUTHORITY THAT WAS ACTUALLY ESTABLISHED.
+///
+/// Kept alive alongside the snapshot so a RE-CHECK cannot un-establish an
+/// answer the client already had. Not a cache for speed — a correctness
+/// latch. See the starvation this exists to end, below.
+class _EstablishedAuthority {
+  InstitutionAccess? value;
+}
+
+final _establishedAuthorityProvider =
+    Provider<_EstablishedAuthority>((ref) => _EstablishedAuthority());
+
 final institutionAuthoritySnapshotProvider =
     Provider<InstitutionAuthoritySnapshot>((ref) {
   final async = ref.watch(institutionAccessProvider);
 
+  // ONCE KNOWN, NEVER UNKNOWN AGAIN.
+  //
+  // Proven against the deployed client on 2026-08-24. `institutionAccess`
+  // resolved once and was then re-run; the re-run carried no previous value,
+  // so `isLoading && !hasValue` was true again and every institution route
+  // fell back to "still finding out" — Members, the Spaces list and a Space
+  // detail alike. Measured as runs=2, done=1 while the surface sat waiting.
+  //
+  // A re-check is not a loss of knowledge. The established answer is latched
+  // here and reused while a re-run is in flight, so the route boundary waits
+  // only for the FIRST resolution and can never be starved by a later one.
+  // The wait that remains is the honest one: nothing has been learned yet.
+  final established = ref.watch(_establishedAuthorityProvider);
+  final current = async.valueOrNull;
+  if (current != null) established.value = current;
+
   // An error is RESOLVED-but-unknown, not "still loading": parking forever on
   // a failed load would replace a lost destination with an eternal spinner,
   // which F068 forbids. It falls through to the governed fallback.
-  if (async.isLoading && !async.hasValue) {
+  if (async.isLoading && !async.hasValue && established.value == null) {
     return const InstitutionAuthoritySnapshot(resolved: false);
   }
 
-  final access = async.valueOrNull;
+  final access = current ?? established.value;
   if (access == null || !access.hasAccess) {
     return const InstitutionAuthoritySnapshot(resolved: true);
   }

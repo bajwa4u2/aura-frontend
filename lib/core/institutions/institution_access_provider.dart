@@ -436,7 +436,13 @@ Future<InstitutionAccess> _readInstitutionState(
   RouteProbe.accessRuns++;
   final dio = ref.watch(dioProvider);
 
-  await ref.read(sessionBootstrapProvider.future);
+  // WATCHED, not read. Reading captures the future that exists at this
+  // instant; if bootstrap is then invalidated that future is abandoned and
+  // never completes, turning a restart into a permanent stall. Watching means
+  // an invalidation RE-RUNS this instead of stranding it — and the latch in
+  // `institutionAuthoritySnapshotProvider` is what stops those re-runs from
+  // starving the route boundary.
+  await ref.watch(sessionBootstrapProvider.future);
 
   final authStatus = ref.watch(authStatusProvider);
   if (authStatus != AuthStatus.authed) {
