@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'conversations_repository.dart';
@@ -95,7 +96,24 @@ Future<void> advanceConversationRead(
   required Future<void> Function() markRead,
   Future<void> Function()? refreshAttention,
 }) async {
-  await markRead();
+  // A FAILED READ MUST NOT BE SILENT.
+  //
+  // The caller discards this future, which is correct — a person reading a
+  // conversation should not be interrupted by a toast about a cursor. But the
+  // 2026-08-24 defect lived for exactly that reason: every markRead returned
+  // 500, and nothing anywhere said so. Unread simply never cleared, and the
+  // only symptom was a badge that would not go away.
+  //
+  // So the failure is announced where an engineer will see it, and rethrown so
+  // the ledgers below are NOT invalidated on a write that did not happen —
+  // refreshing them after a failed read would redraw the same stale truth and
+  // make the failure look like a rendering problem.
+  try {
+    await markRead();
+  } catch (e) {
+    debugPrint('conversation read failed for $conversationId: $e');
+    rethrow;
+  }
 
   // Conversation unread — the authority this badge derives from.
   ref.invalidate(conversationUnreadProvider);

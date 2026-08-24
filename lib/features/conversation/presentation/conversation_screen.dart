@@ -1649,10 +1649,22 @@ class _MessageBubble extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (message.isSystem) {
+      // A PARTICIPATION EVENT WITHOUT ITS ACTOR IS NOT AN EVENT.
+      //
+      // Seen on a physical Pixel, 2026-08-24: a group correspondence read
+      // "left the conversation", centred and alone, with no indication of who
+      // had left. In a conversation with several parties that is unreadable —
+      // and leaving is precisely the moment a reader needs to know WHO, since
+      // it changes who can still see what is said next.
+      //
+      // The actor was always on the message. It simply was not asked for.
+      final who = mine
+          ? 'You'
+          : _conversationSenderName(conversation, message.senderUserId);
       final label = switch (message.systemKind) {
-        'JOINED' => 'joined the conversation',
-        'LEFT' => 'left the conversation',
-        'RENAMED' => 'named the conversation',
+        'JOINED' => '$who joined the conversation',
+        'LEFT' => '$who left the conversation',
+        'RENAMED' => '$who named the conversation',
         _ => message.body,
       };
       return Padding(

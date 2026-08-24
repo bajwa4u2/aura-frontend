@@ -58,10 +58,35 @@ List<ConversationParty> orderedOtherParties(Conversation c, String myUserId) {
   return others;
 }
 
+/// WHOSE CORRESPONDENCE THIS IS — which is not the same question as who is
+/// still taking part.
+///
+/// [orderedOtherParties] answers participation: who can see what is said next.
+/// Naming is a different question, and answering it with the participation set
+/// is how a correspondence loses its identity the moment the other person
+/// leaves.
+///
+/// Observed on a physical Pixel, 2026-08-24. The reviewer left a direct
+/// conversation and the founder's inbox row and header both collapsed to the
+/// word "Conversation" over a letter tile. The history was all still there;
+/// there was simply no longer any indication of whose it was.
+///
+/// A correspondence with someone remains a correspondence WITH THEM after
+/// they leave. So when no active counterpart remains, the people who were
+/// party to it name it — the same fallback a group needs when it has emptied
+/// out. Leaving ends participation; it does not make the past anonymous.
+List<ConversationParty> namingParties(Conversation c, String myUserId) {
+  final active = orderedOtherParties(c, myUserId);
+  if (active.isNotEmpty) return active;
+  return c.parties
+      .where((p) => !(p.isPerson && p.userId == myUserId))
+      .toList();
+}
+
 String conversationDisplayName(Conversation c, String myUserId) {
   final custom = (c.name ?? '').trim();
   if (custom.isNotEmpty) return custom;
-  final others = orderedOtherParties(c, myUserId);
+  final others = namingParties(c, myUserId);
   final names = others
       .map((p) => (p.userId != null || p.institutionId != null)
           ? _partyName(p)
@@ -89,7 +114,9 @@ String _partyName(ConversationParty p) {
 /// people (see [conversationAvatarIdentities] / `ConversationAvatar`), never
 /// one arbitrary member's photo standing in for everyone.
 String? conversationDisplayAvatarUrl(Conversation c, String myUserId) {
-  final others = orderedOtherParties(c, myUserId);
+  // Named, not merely participating — see [namingParties]. A face should not
+  // become a letter tile because the person left.
+  final others = namingParties(c, myUserId);
   if (others.length != 1) return null;
   final url = (others.first.avatarUrl ?? '').trim();
   return url.isEmpty ? null : url;
@@ -116,7 +143,7 @@ List<ConversationAvatarIdentity> conversationAvatarIdentities(
   String myUserId, {
   int max = 3,
 }) {
-  final others = orderedOtherParties(c, myUserId);
+  final others = namingParties(c, myUserId);
   return others
       .take(max)
       .map(
@@ -131,6 +158,6 @@ List<ConversationAvatarIdentity> conversationAvatarIdentities(
 }
 
 int conversationAvatarOverflow(Conversation c, String myUserId, {int max = 3}) {
-  final total = orderedOtherParties(c, myUserId).length;
+  final total = namingParties(c, myUserId).length;
   return total > max ? total - max : 0;
 }

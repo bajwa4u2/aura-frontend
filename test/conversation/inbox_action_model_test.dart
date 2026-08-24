@@ -116,11 +116,27 @@ void main() {
       expect(landing.contains('setArchived'), isFalse);
     });
 
-    test('both ledgers refresh after every action', () {
-      // The list and the unread authority the drawer badge reads. Refreshing
-      // one and not the other is how a badge starts disagreeing with the list.
+    test('every ledger refreshes after every action', () {
+      // The inbox list, the ARCHIVED list, and the unread authority the badge
+      // reads. Refreshing some and not others is how they start disagreeing.
+      //
+      // The archived one was learned on a physical Pixel, 2026-08-24:
+      // unarchiving from inside the archived view left the row sitting there
+      // while it simultaneously reappeared in the inbox — the same
+      // conversation in both lists at once.
       expect(actions, contains('conversationsListProvider'));
+      expect(actions, contains('archivedConversationsProvider'));
       expect(actions, contains('conversationUnreadProvider'));
+    });
+
+    test('the archived ledger is shared, not private to the screen', () {
+      // A ledger the one mutating authority cannot see is a ledger that goes
+      // stale. It belongs beside the inbox list in the data layer.
+      final repo = File(
+        'lib/features/conversation/data/conversations_repository.dart',
+      ).readAsStringSync();
+      expect(repo, contains('archivedConversationsProvider'));
+      expect(landing.contains('final archivedConversationsProvider'), isFalse);
     });
 
     test('touch and pointer open the SAME sheet', () {

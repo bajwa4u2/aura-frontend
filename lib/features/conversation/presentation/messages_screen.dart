@@ -33,7 +33,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     final conversationsAsync = _showArchived
-        ? ref.watch(_archivedConversationsProvider)
+        ? ref.watch(archivedConversationsProvider)
         : ref.watch(conversationsListProvider);
     final invitationsAsync = ref.watch(pendingInvitationsProvider);
     final myUserId = ref.watch(myUserIdProvider);
@@ -43,7 +43,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(conversationsListProvider);
-          ref.invalidate(_archivedConversationsProvider);
+          ref.invalidate(archivedConversationsProvider);
           ref.invalidate(pendingInvitationsProvider);
         },
         child: ListView(
@@ -156,11 +156,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     );
   }
 }
-
-final _archivedConversationsProvider =
-    FutureProvider.autoDispose<List<Conversation>>((ref) async {
-  return ref.watch(conversationsRepositoryProvider).list(archived: true);
-});
 
 /// A quiet divider between the pinned region and the rest. Small, lower
 /// contrast than a heading: it separates two orders without announcing itself

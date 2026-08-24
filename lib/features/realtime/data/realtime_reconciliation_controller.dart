@@ -81,9 +81,20 @@ class RealtimeReconciliationController {
       // conversation list should say. The open conversation refreshes its own
       // content in ConversationScreen — this is only the unread/list truth, so
       // a person outside that conversation still sees it arrive.
+      //
+      // A MESSAGE CHANGING COUNTS TOO, and leaving it out was a real defect.
+      // Observed on a physical Pixel, 2026-08-24: the other party edited their
+      // last message, the server's per-viewer continuity correctly returned
+      // the new text, and the inbox row went on showing the old words
+      // indefinitely. An edit rewrites the preview; a retraction turns it into
+      // "withdrew a message"; removing one for yourself changes which message
+      // is your latest. All three change what the inbox should say, so all
+      // three reach the ledgers the same way an arrival does.
       case 'conversation:message.created':
+      case 'conversation:message.changed':
         _ref.invalidate(conversationUnreadProvider);
         _ref.invalidate(conversationsListProvider);
+        _ref.invalidate(archivedConversationsProvider);
         break;
       case 'socket:connected':
         _onConnect();

@@ -32,6 +32,11 @@ class ConversationActions {
 
   void _refresh() {
     _ref.invalidate(conversationsListProvider);
+    // Archive moves a conversation BETWEEN two lists, so the archived ledger
+    // reaches new truth here too. Leaving it out put the same conversation in
+    // both lists at once — seen on a physical Pixel after unarchiving from
+    // inside the archived view.
+    _ref.invalidate(archivedConversationsProvider);
     _ref.invalidate(conversationUnreadProvider);
   }
 

@@ -110,6 +110,18 @@ void main() {
       expect(screen, contains('forwardedFromSenderUserId'));
       expect(screen.contains('sourceConversationId'), isFalse);
     });
+
+    test('a participation event names the person it happened to', () {
+      // Seen on a physical Pixel, 2026-08-24: a correspondence read "left the
+      // conversation", centred and alone, with no indication of who had left.
+      // Leaving is exactly the moment a reader needs to know WHO, because it
+      // changes who can still see what is said next.
+      expect(screen, contains(r"'$who left the conversation'"));
+      expect(screen, contains(r"'$who joined the conversation'"));
+      // And it is second person when it was the reader themselves — the same
+      // distinction the retraction tombstone already makes.
+      expect(screen, contains("mine\n          ? 'You'"));
+    });
   });
 
   group('one path per act', () {
@@ -151,6 +163,25 @@ void main() {
       final idx = screen.indexOf('conversation:message.changed');
       final region = screen.substring(idx, idx + 700);
       expect(region, contains('invalidate'));
+    });
+
+    test('a CHANGED message refreshes the inbox ledgers, not just the thread',
+        () {
+      // Observed on a physical Pixel, 2026-08-24: the other party edited their
+      // last message, the server's per-viewer continuity returned the new
+      // text, and the inbox row went on showing the old words indefinitely.
+      // Only `message.created` reached the ledgers.
+      final rt = codeOnly(
+        File('lib/features/realtime/data/realtime_reconciliation_controller.dart')
+            .readAsStringSync(),
+      );
+      final idx = rt.indexOf("case 'conversation:message.changed':");
+      expect(idx, greaterThan(0),
+          reason: 'a changed message must reach the inbox ledgers');
+      final region = rt.substring(idx, idx + 320);
+      expect(region, contains('conversationUnreadProvider'));
+      expect(region, contains('conversationsListProvider'));
+      expect(region, contains('archivedConversationsProvider'));
     });
   });
 

@@ -832,6 +832,23 @@ final conversationsListProvider =
   return ref.watch(conversationsRepositoryProvider).list();
 });
 
+/// THE ARCHIVED LEDGER, ALONGSIDE THE INBOX ONE RATHER THAN HIDDEN INSIDE A
+/// SCREEN.
+///
+/// Archive moves a conversation between two lists, so BOTH are ledgers and
+/// both have to reach new truth together. This lived as a private provider in
+/// the Messages screen, where the one place that performs inbox mutations
+/// could not see it — so unarchiving from the archived view left the row
+/// sitting there while it simultaneously reappeared in the inbox.
+///
+/// Observed on a physical Pixel, 2026-08-24: the same conversation in both
+/// lists at once. The fix is not for the screen to invalidate more; it is for
+/// the ledger to live where the authority that changes it can reach it.
+final archivedConversationsProvider =
+    FutureProvider.autoDispose<List<Conversation>>((ref) async {
+  return ref.watch(conversationsRepositoryProvider).list(archived: true);
+});
+
 final pendingInvitationsProvider =
     FutureProvider.autoDispose<List<PendingInvitation>>((ref) async {
   return ref.watch(conversationsRepositoryProvider).myInvitations();
