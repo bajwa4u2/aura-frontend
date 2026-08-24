@@ -54,7 +54,8 @@ class InstitutionRouteScope extends ConsumerWidget {
     // defect that made refresh unsurvivable.
     if (!snapshot.resolved) {
       RouteProbe.emit('instScope.unresolved');
-      return const AuraProductState(state: ProductState.loading);
+      return const AuraProductState(
+          state: ProductState.loading, headline: 'Loading [A: authority]');
     }
 
     final resolved = resolveInstitutionAddress(snapshot, address);
@@ -75,7 +76,8 @@ class InstitutionRouteScope extends ConsumerWidget {
       'hasError': remote.hasError,
     });
     return remote.when(
-      loading: () => const AuraProductState(state: ProductState.loading),
+      loading: () => const AuraProductState(
+          state: ProductState.loading, headline: 'Loading [B: address]'),
       // An error is resolved-but-unknown, never an eternal spinner (F068).
       error: (_, __) => const AuraProductState(
         state: ProductState.empty,
