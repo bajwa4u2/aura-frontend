@@ -93,6 +93,45 @@ class ConversationParty {
   }
 }
 
+/// The newest message a viewer can see in a conversation, as the inbox needs
+/// it: short, already safe to render, and describing content it cannot show.
+class ConversationLatest {
+  const ConversationLatest({
+    required this.messageId,
+    required this.senderUserId,
+    required this.preview,
+    required this.at,
+    required this.retracted,
+    required this.contentKind,
+  });
+
+  final String messageId;
+  final String senderUserId;
+
+  /// Short text. Empty for a retraction or an attachment-only message — the
+  /// surface describes those instead of showing a blank line.
+  final String preview;
+  final DateTime? at;
+
+  /// The author withdrew it. Previewed AS a withdrawal, never as its old text.
+  final bool retracted;
+
+  /// TEXT | IMAGE | VIDEO | AUDIO | FILE | SYSTEM
+  final String contentKind;
+
+  bool get isText => contentKind == 'TEXT';
+
+  static ConversationLatest fromJson(Map<String, dynamic> j) =>
+      ConversationLatest(
+        messageId: _s(j['messageId']),
+        senderUserId: _s(j['senderUserId']),
+        preview: _s(j['preview']),
+        at: _date(j['at']),
+        retracted: j['retracted'] == true,
+        contentKind: (_ns(j['contentKind']) ?? 'TEXT'),
+      );
+}
+
 class Conversation {
   const Conversation({
     required this.id,
@@ -103,6 +142,10 @@ class Conversation {
     required this.unreadCount,
     required this.archived,
     required this.muted,
+    required this.pinned,
+    required this.manuallyUnread,
+    required this.clearedAt,
+    required this.latest,
   });
 
   final String id;
@@ -113,6 +156,29 @@ class Conversation {
   final int unreadCount;
   final bool archived;
   final bool muted;
+
+  /// PERSONAL CONVERSATION STATE. Viewer-specific and owned by the
+  /// Conversation authority, so a conversation pinned here is pinned wherever
+  /// else it appears.
+  final bool pinned;
+
+  /// The viewer deliberately marked this unread — a different fact from having
+  /// unread messages, which `unreadCount` already states.
+  final bool manuallyUnread;
+
+  /// This viewer's history boundary, when they have deleted this conversation
+  /// from their own history. Exposed so an empty thread can be explained
+  /// truthfully instead of looking broken.
+  final DateTime? clearedAt;
+
+  /// The newest thing this viewer can actually see here. Derived per viewer by
+  /// the authority, so it already respects the clear boundary and anything this
+  /// person removed from their own view. Null when there is nothing to show.
+  final ConversationLatest? latest;
+
+  /// Whether attention is owed, by either route: messages this viewer has not
+  /// read, or a deliberate mark-unread.
+  bool get needsAttention => unreadCount > 0 || manuallyUnread;
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
     return Conversation(
@@ -127,8 +193,32 @@ class Conversation {
       unreadCount: _i(json['unreadCount']),
       archived: json['archived'] == true,
       muted: json['muted'] == true,
+      pinned: json['pinned'] == true,
+      manuallyUnread: json['manuallyUnread'] == true,
+      clearedAt: _date(json['clearedAt']),
+      latest: json['latest'] is Map
+          ? ConversationLatest.fromJson(
+              Map<String, dynamic>.from(json['latest'] as Map))
+          : null,
     );
   }
+}
+
+/// What a forward actually carried.
+class ForwardResult {
+  const ForwardResult({
+    required this.messageId,
+    required this.attachments,
+    required this.refusedReasons,
+  });
+
+  final String messageId;
+  final int attachments;
+
+  /// Why any attachment did not travel. Reported rather than swallowed.
+  final List<String> refusedReasons;
+
+  bool get hadRefusals => refusedReasons.isNotEmpty;
 }
 
 class ConversationMessage {
@@ -139,6 +229,11 @@ class ConversationMessage {
     required this.body,
     required this.systemKind,
     required this.createdAt,
+    required this.editedAt,
+    required this.deleted,
+    required this.reactions,
+    required this.myReaction,
+    required this.forwardedFromSenderUserId,
     this.mediaIds = const [],
     this.media = const [],
     this.replyTo,
@@ -152,6 +247,28 @@ class ConversationMessage {
   final String body;
   final String? systemKind; // JOINED | LEFT | RENAMED | null
   final DateTime createdAt;
+
+  /// When the author last edited this. Non-null means the surface must say so
+  /// — a silently rewritten message is a record nobody can rely on.
+  final DateTime? editedAt;
+
+  /// The author retracted this for everyone. The row survives as a truthful
+  /// tombstone, so replies to it stay structurally valid.
+  final bool deleted;
+
+  /// Reaction totals by type, and this viewer's own. Both come from the
+  /// shared engagement authority.
+  final Map<String, int> reactions;
+  final String? myReaction;
+
+  /// Who originally said this, when it arrived by forward. The source
+  /// conversation is deliberately absent: a recipient learns who, never where.
+  final String? forwardedFromSenderUserId;
+
+  bool get isForwarded => forwardedFromSenderUserId != null;
+  bool get wasEdited => editedAt != null;
+  int get reactionTotal =>
+      reactions.values.fold<int>(0, (sum, n) => sum + n);
 
   /// Canonical Media ids attached to this message (position-ordered).
   final List<String> mediaIds;
@@ -174,6 +291,16 @@ class ConversationMessage {
   bool get isSystem => systemKind != null;
 
   factory ConversationMessage.fromJson(Map<String, dynamic> json) {
+    final rawReactions = json['reactions'];
+    final reactions = <String, int>{};
+    if (rawReactions is Map) {
+      for (final entry in rawReactions.entries) {
+        final n = entry.value;
+        reactions[entry.key.toString()] =
+            n is int ? n : int.tryParse(n.toString()) ?? 0;
+      }
+    }
+
     final mediaRows = (json['media'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
         .toList()
@@ -185,6 +312,11 @@ class ConversationMessage {
       body: _s(json['body']),
       systemKind: _ns(json['systemKind']),
       createdAt: _date(json['createdAt']) ?? DateTime.now(),
+      editedAt: _date(json['editedAt']),
+      deleted: json['deleted'] == true || json['deletedAt'] != null,
+      reactions: reactions,
+      myReaction: _ns(json['myReaction']),
+      forwardedFromSenderUserId: _ns(json['forwardedFromSenderUserId']),
       mediaIds: mediaRows.map((m) => _s(m['mediaId'])).toList(),
       media: mediaRows
           .map((m) => MessageMediaRef(
@@ -494,6 +626,127 @@ class ConversationsRepository {
     await _dio.post<dynamic>('/conversations/$id/read', data: {
       if (lastReadMessageId != null) 'lastReadMessageId': lastReadMessageId,
     });
+  }
+
+  // ── PERSONAL CONVERSATION STATE ────────────────────────────────────────
+  //
+  // Every verb here is a thin call onto the Conversation authority. No
+  // semantics live in this client: pin, clear and mark-unread mean what the
+  // authority says they mean, and a widget that tried to decide otherwise
+  // would be inventing a second answer.
+
+  Future<void> setPinned(String id, bool pinned) async {
+    if (pinned) {
+      await _dio.post<dynamic>('/conversations/$id/pin');
+    } else {
+      await _dio.delete<dynamic>('/conversations/$id/pin');
+    }
+  }
+
+  /// Mark unread WITHOUT rewinding the read cursor — the authority records the
+  /// assertion beside it, so reading later restores the exact derived count.
+  Future<void> markUnread(String id) async {
+    await _dio.post<dynamic>('/conversations/$id/unread');
+  }
+
+  /// DELETE FROM THIS VIEWER'S HISTORY.
+  ///
+  /// Not archive, not leave, and it takes nothing from the other party. The
+  /// authority records a boundary; everything at or before it stops being
+  /// presented to this viewer alone.
+  Future<void> clearHistory(String id) async {
+    await _dio.delete<dynamic>('/conversations/$id/history');
+  }
+
+  // ── MESSAGE LIFECYCLE ──────────────────────────────────────────────────
+
+  Future<void> reactToMessage(
+    String conversationId,
+    String messageId,
+    String type,
+  ) async {
+    await _dio.post<dynamic>(
+      '/conversations/$conversationId/messages/$messageId/reactions',
+      data: {'type': type},
+    );
+  }
+
+  Future<void> unreactMessage(
+    String conversationId,
+    String messageId,
+  ) async {
+    await _dio.delete<dynamic>(
+      '/conversations/$conversationId/messages/$messageId/reactions',
+    );
+  }
+
+  /// EDIT — author only. Prior versions are retained by the authority.
+  Future<void> editMessage(
+    String conversationId,
+    String messageId,
+    String body,
+  ) async {
+    await _dio.patch<dynamic>(
+      '/conversations/$conversationId/messages/$messageId',
+      data: {'body': body},
+    );
+  }
+
+  /// RETRACT FOR EVERYONE — author only. A truthful tombstone remains.
+  Future<void> retractMessage(
+    String conversationId,
+    String messageId,
+  ) async {
+    await _dio.delete<dynamic>(
+      '/conversations/$conversationId/messages/$messageId',
+    );
+  }
+
+  /// REMOVE FOR ME — this viewer's presentation only. A separate address from
+  /// retract on purpose: same-looking verbs with different consequences must
+  /// not share one.
+  Future<void> removeMessageForMe(
+    String conversationId,
+    String messageId,
+  ) async {
+    await _dio.delete<dynamic>(
+      '/conversations/$conversationId/messages/$messageId/mine',
+    );
+  }
+
+  /// FORWARD — carries the words and its rich content into another
+  /// conversation as destination-governed instances.
+  ///
+  /// Returns what actually travelled, because attachments can legitimately
+  /// refuse: content still being examined must not move past the check that is
+  /// holding it, and the sender should not be left assuming it did.
+  Future<ForwardResult> forwardMessage(
+    String conversationId,
+    String messageId,
+    String destinationConversationId,
+  ) async {
+    final res = await _dio.post<dynamic>(
+      '/conversations/$conversationId/messages/$messageId/forward',
+      data: {'conversationId': destinationConversationId},
+    );
+    final body = res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : const <String, dynamic>{};
+    final data = body['data'] is Map
+        ? Map<String, dynamic>.from(body['data'] as Map)
+        : body;
+    final refused = data['attachmentsRefused'];
+    return ForwardResult(
+      messageId: _s(data['messageId']),
+      attachments: _i(data['attachments']),
+      refusedReasons: refused is List
+          ? refused
+              .whereType<Map>()
+              .map((e) => (e['reason'] ?? '').toString())
+              .where((r) => r.isNotEmpty)
+              .toList()
+          : const [],
+    );
   }
 
   Future<void> setArchived(String id, bool archived) async {

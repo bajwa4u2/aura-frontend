@@ -1,5 +1,3 @@
-import '../data/conversation_unread_authority.dart';
-import '../../../core/product/temporal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +13,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/conversations_repository.dart';
-import 'conversation_avatar.dart';
+import 'conversation_row.dart';
 import 'conversation_identity.dart';
 
 /// MESSAGES = where my Conversations live (canon).
@@ -113,10 +111,41 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           ),
                   );
                 }
+                // PINNED FORMS A STABLE PRIORITY REGION.
+                //
+                // Personal priority, so it is a region rather than a re-sort:
+                // recency stays truthful INSIDE it, and the rest of the inbox
+                // keeps its own order. Pinning does not rewrite chronology, it
+                // decides which chronology you read first.
+                final pinned =
+                    conversations.where((c) => c.pinned).toList();
+                final rest =
+                    conversations.where((c) => !c.pinned).toList();
+
+                // Swipe is a touch idiom. A pointer gets right-click, hover
+                // and the overflow button instead — the same actions, reached
+                // the way that platform reaches things.
+                final allowSwipe = _isTouchPlatform(context);
+
                 return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final c in conversations)
-                      _ConversationRow(conversation: c, myUserId: myUserId),
+                    if (pinned.isNotEmpty) ...[
+                      const _RegionLabel('Pinned'),
+                      for (final c in pinned)
+                        ConversationRow(
+                          conversation: c,
+                          myUserId: myUserId,
+                          allowSwipe: allowSwipe,
+                        ),
+                      if (rest.isNotEmpty) const _RegionLabel('Conversations'),
+                    ],
+                    for (final c in rest)
+                      ConversationRow(
+                        conversation: c,
+                        myUserId: myUserId,
+                        allowSwipe: allowSwipe,
+                      ),
                   ],
                 );
               },
@@ -133,225 +162,50 @@ final _archivedConversationsProvider =
   return ref.watch(conversationsRepositoryProvider).list(archived: true);
 });
 
-class _ConversationRow extends ConsumerWidget {
-  const _ConversationRow({required this.conversation, required this.myUserId});
-  final Conversation conversation;
-  final String myUserId;
+/// A quiet divider between the pinned region and the rest. Small, lower
+/// contrast than a heading: it separates two orders without announcing itself
+/// as a section of the product.
+class _RegionLabel extends StatelessWidget {
+  const _RegionLabel(this.label);
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final name = conversationDisplayName(conversation, myUserId);
-    final hasUnread = conversation.unreadCount > 0;
-    return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: 2),
-      // F056: a conversation looks like its people — counterpart avatar for
-      // 1:1, bounded composite for a group.
-      leading: ConversationAvatar(
-        conversation: conversation,
-        myUserId: myUserId,
-        size: 44,
-      ),
-      title: Text(
-        name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: AuraText.body.copyWith(
-          fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w600,
-          color: AuraSurface.ink,
-        ),
-      ),
-      subtitle: conversation.parties.any((p) => !p.isPerson && p.isActive)
-          ? Text('Institution conversation',
-              style: AuraText.micro.copyWith(color: AuraSurface.muted))
-          : null,
-      // THE ORDER IS TEMPORAL, SO THE READER MUST BE ABLE TO SEE TIME.
-      // The list is sorted by `lastMessageAt` descending on the server and
-      // that value reaches the client, but nothing rendered it — so a
-      // correctly ordered list looked arbitrarily ordered, and there was no
-      // way to tell a conversation from this morning from one from March.
-      // Time comes from the canonical temporal authority, the same one every
-      // other surface reads, rather than a formatter declared here.
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (conversation.muted)
-            const Padding(
-              padding: EdgeInsets.only(right: AuraSpace.s6),
-              child: Icon(Icons.notifications_off_outlined,
-                  size: 16, color: AuraSurface.faint),
-            ),
-          if (conversation.lastMessageAt != null || hasUnread)
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (conversation.lastMessageAt != null)
-                  Text(
-                    AuraTemporal.humanize(
-                      ProductTime(conversation.lastMessageAt!, TimeEvent.sent),
-                      style: TemporalStyle.compact,
-                    ),
-                    style: AuraText.micro.copyWith(
-                      color:
-                          hasUnread ? AuraSurface.ink : AuraSurface.faint,
-                      fontWeight:
-                          hasUnread ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                if (hasUnread) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AuraSurface.accent,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      conversation.unreadCount > 99
-                          ? '99+'
-                          : '${conversation.unreadCount}',
-                      style: AuraText.micro.copyWith(
-                          color: Colors.white, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          _ConversationRowMenu(conversation: conversation),
-        ],
-      ),
-      onTap: () =>
-          context.push(NavigationAuthority.conversationRoute(conversation.id)),
-    );
-  }
-}
-
-
-/// THE CONTROLS A CONVERSATION LIST IS SUPPOSED TO HAVE.
-///
-/// Mute, archive, mark-as-read and leave all existed on the repository and
-/// none of them were reachable from this list — the row had a tap target and
-/// nothing else, so the only way to act on a conversation was to open it and
-/// hunt. These are the actions the backend already governs; nothing new is
-/// invented here, it is exposed where the person is when they want it.
-///
-/// LEAVING IS DIFFERENT FROM THE OTHERS. Mute and archive are reversible from
-/// this same menu, so they act immediately. Leaving a conversation is not
-/// something this surface can undo, so it asks first and says plainly what
-/// will happen.
-class _ConversationRowMenu extends ConsumerStatefulWidget {
-  const _ConversationRowMenu({required this.conversation});
-
-  final Conversation conversation;
-
-  @override
-  ConsumerState<_ConversationRowMenu> createState() =>
-      _ConversationRowMenuState();
-}
-
-enum _RowAction { markRead, mute, archive, leave }
-
-class _ConversationRowMenuState extends ConsumerState<_ConversationRowMenu> {
-  bool _busy = false;
-
-  Future<void> _run(Future<void> Function() action) async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    try {
-      await action();
-      if (!mounted) return;
-      // Both ledgers refresh: the list itself, and the Conversation unread
-      // authority the drawer badge reads. Refreshing one and not the other is
-      // how a badge starts disagreeing with the list under it.
-      ref.invalidate(conversationsListProvider);
-      ref.invalidate(conversationUnreadProvider);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('That did not go through — try again.')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<bool> _confirmLeave() async {
-    final name = conversationDisplayName(
-      widget.conversation,
-      ref.read(myUserIdProvider) ?? '',
-    );
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AuraSurface.card,
-        title: const Text('Leave this conversation?'),
-        content: Text(
-          'You will stop receiving messages in $name, and it will no longer '
-          'appear in your list.',
-          style: AuraText.body.copyWith(color: AuraSurface.muted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Leave'),
-          ),
-        ],
-      ),
-    );
-    return ok ?? false;
-  }
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.conversation;
-    final repo = ref.read(conversationsRepositoryProvider);
-
-    return PopupMenuButton<_RowAction>(
-      enabled: !_busy,
-      tooltip: 'Conversation options',
-      icon: const Icon(Icons.more_horiz_rounded,
-          size: 20, color: AuraSurface.faint),
-      color: AuraSurface.card,
-      itemBuilder: (context) => [
-        if (c.unreadCount > 0)
-          const PopupMenuItem(
-            value: _RowAction.markRead,
-            child: Text('Mark as read'),
-          ),
-        PopupMenuItem(
-          value: _RowAction.mute,
-          child: Text(c.muted ? 'Unmute' : 'Mute'),
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AuraSpace.s12,
+        top: AuraSpace.s10,
+        bottom: AuraSpace.s4,
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: AuraText.micro.copyWith(
+          color: AuraSurface.faint,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.6,
         ),
-        PopupMenuItem(
-          value: _RowAction.archive,
-          child: Text(c.archived ? 'Move to inbox' : 'Archive'),
-        ),
-        const PopupMenuItem(
-          value: _RowAction.leave,
-          child: Text('Leave conversation'),
-        ),
-      ],
-      onSelected: (action) async {
-        switch (action) {
-          case _RowAction.markRead:
-            await _run(() => repo.markRead(c.id));
-          case _RowAction.mute:
-            await _run(() => repo.setMuted(c.id, !c.muted));
-          case _RowAction.archive:
-            await _run(() => repo.setArchived(c.id, !c.archived));
-          case _RowAction.leave:
-            if (await _confirmLeave()) await _run(() => repo.leave(c.id));
-        }
-      },
+      ),
     );
+  }
+}
+
+/// Whether this platform's people swipe.
+///
+/// Asked of the PLATFORM, not the window size: a narrow desktop window is
+/// still a pointer, and a wide tablet is still touch. Getting this from width
+/// is how a desktop user ends up with a gesture they cannot perform and a
+/// tablet user loses one they expect.
+bool _isTouchPlatform(BuildContext context) {
+  switch (Theme.of(context).platform) {
+    case TargetPlatform.android:
+    case TargetPlatform.iOS:
+    case TargetPlatform.fuchsia:
+      return true;
+    case TargetPlatform.macOS:
+    case TargetPlatform.windows:
+    case TargetPlatform.linux:
+      return false;
   }
 }
 
