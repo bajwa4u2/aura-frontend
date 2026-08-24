@@ -1,3 +1,5 @@
+import 'activity_view_switch.dart';
+import 'activity_history_view.dart';
 import '../../../core/navigation/navigation_authority.dart';
 import 'package:flutter/material.dart';
 
@@ -36,6 +38,8 @@ typedef _ActivityFilter = NotificationGroup?;
 const _ActivityFilter _kAllActivity = null;
 
 class _ActivityScreenState extends ConsumerState<ActivityScreen> {
+  ActivityView _view = ActivityView.attention;
+
   static const _resolver = CommunicationResolver();
 
   _ActivityFilter _activeFilter = _kAllActivity;
@@ -432,10 +436,24 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 children: [
                   _ActivityHeader(
                     unreadCount: unreadCount,
-                    onMarkAllRead: allItems.isEmpty ? null : _markAllRead,
+                    // Mark-all-read belongs to ATTENTION alone. History has
+                    // nothing to acknowledge, so offering the action there
+                    // would imply a semantics it does not have.
+                    onMarkAllRead:
+                        _view != ActivityView.attention || allItems.isEmpty
+                            ? null
+                            : _markAllRead,
                     markingAllRead: state.isRefreshing,
                   ),
                   const SizedBox(height: AuraSpace.s16),
+                  ActivityViewSwitch(
+                    active: _view,
+                    onChange: (v) => setState(() => _view = v),
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
+                  if (_view == ActivityView.history) ...[
+                    const ActivityHistoryView(),
+                  ] else ...[
                   _ActivityFilterRow(
                     active: _activeFilter,
                     onChange: (f) => setState(() => _activeFilter = f),
@@ -505,7 +523,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       ),
                     ],
                   ],
-                ],
+                  ],
+                  ],
               ),
             ),
           ),
