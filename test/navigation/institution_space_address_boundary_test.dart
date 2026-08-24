@@ -118,9 +118,15 @@ void main() {
     // exactly the Institution regression, and would look perfectly ordinary.
     final router = File('lib/router.dart').readAsStringSync();
 
-    final spaceRoute = RegExp(
-      r"path: '/institution/:institutionId/spaces/:spaceAddress'[\s\S]{0,600}?\),\n",
-    ).firstMatch(router)?.group(0);
+    // Bounded by the NEXT route declaration rather than by a character
+    // budget: a fixed window stops matching the moment the route grows a
+    // comment or a redirect, and a structural guard that silently stops
+    // finding its subject is worse than no guard at all.
+    final start =
+        router.indexOf("path: '/institution/:institutionId/spaces/:spaceAddress'");
+    final next = start < 0 ? -1 : router.indexOf('path: ', start + 10);
+    final spaceRoute =
+        start < 0 ? null : router.substring(start, next < 0 ? router.length : next);
 
     expect(
       spaceRoute,

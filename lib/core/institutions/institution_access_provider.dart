@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/session_bootstrap.dart';
@@ -418,13 +417,10 @@ Future<InstitutionAccess> _readInstitutionState(
   // finding out" — which is how a cold load can sit on a spinner forever.
   final bootstrap = ref.watch(sessionBootstrapProvider.future);
   final dio = ref.watch(dioProvider);
-  debugPrint('AURAINST: begin');
 
   await bootstrap;
-  debugPrint('AURAINST: bootstrap done');
 
   final authStatus = ref.watch(authStatusProvider);
-  debugPrint('AURAINST: authStatus=$authStatus');
   if (authStatus != AuthStatus.authed) {
     return const InstitutionAccess(state: InstitutionAccessState.none);
   }
@@ -441,15 +437,12 @@ Future<InstitutionAccess> _readInstitutionState(
     // institution workspace with no resolved authority to render from.
     final meData = await ref.read(authMeDataProvider.future);
     accountType = (meData['accountType'] ?? '').toString().toUpperCase();
-    debugPrint('AURAINST: accountType=$accountType');
   } catch (_) {
-    debugPrint('AURAINST: accountType probe failed');
     // /auth/me may transiently fail; treat as PUBLIC and let the call below
     // surface the real error if institutional access is required.
   }
 
   try {
-    debugPrint('AURAINST: requesting /institutions/me');
     final res = await dio.get(
       '/institutions/me',
       queryParameters: (institutionId ?? '').isEmpty

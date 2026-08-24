@@ -48,7 +48,6 @@
 library;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../net/dio_provider.dart';
@@ -189,11 +188,8 @@ final institutionAuthoritySnapshotProvider =
   // a failed load would replace a lost destination with an eternal spinner,
   // which F068 forbids. It falls through to the governed fallback.
   if (async.isLoading && !async.hasValue) {
-    debugPrint('AURAINST: snapshot UNRESOLVED (loading, no value)');
     return const InstitutionAuthoritySnapshot(resolved: false);
   }
-  debugPrint('AURAINST: snapshot resolved, hasValue=${async.hasValue} '
-      'hasError=${async.hasError}');
 
   final access = async.valueOrNull;
   if (access == null || !access.hasAccess) {
