@@ -330,7 +330,8 @@ class _InstitutionsSection extends ConsumerWidget {
               _DomainHeader(
                 title: 'Institutions',
                 subtitle: 'Presences participating in public',
-                onOpen: () => context.push(NavigationAuthority.institutionsRoute),
+                onOpen: () => context
+                    .push(NavigationAuthority.discoverInstitutionsRoute),
               ),
               for (final i in data.items) ...[
                 InstitutionPresenceCard(institution: i),

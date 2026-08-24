@@ -229,6 +229,11 @@ class NavigationAuthority {
 
   static const String discoverArticlesRoute = '/discover/articles';
 
+  /// The Institutions DISCOVERY destination. `/institutions` remains the
+  /// public directory; this is where relevance orders the ecosystem and
+  /// the sector ontology lives.
+  static const String discoverInstitutionsRoute = '/discover/institutions';
+
   /// A sector's institution ecosystem view, keyed by the ontology's stable
   /// class token (UPPER_SNAKE_CASE), never a display label.
   static String institutionSectorRoute(String classId) =>

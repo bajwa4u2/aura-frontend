@@ -114,6 +114,8 @@ import 'features/conversation/presentation/claim_invitation_screen.dart';
 import 'features/discover/presentation/people_discovery_screen.dart';
 import 'features/articles/presentation/article_editor_screen.dart';
 import 'features/articles/presentation/article_screen.dart';
+import 'features/discover/presentation/articles_discovery_screen.dart';
+import 'features/discover/presentation/institutions_discovery_screen.dart';
 import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
 import 'features/monetization/presentation/institution_billing_screen.dart';
@@ -1558,6 +1560,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/discover/articles',
             builder: (_, __) => const ArticlesDiscoveryScreen(),
+          ),
+          // INSTITUTIONS DISCOVERY — the domain destination.
+          //
+          // `/institutions` remains the PUBLIC directory it has always been;
+          // this is the discovery experience the Discover landing opens, where
+          // relevance orders the ecosystem and the sector ontology finally has
+          // a place that is not a wall on the general landing.
+          GoRoute(
+            path: '/discover/institutions',
+            builder: (_, __) => const InstitutionsDiscoveryScreen(),
           ),
           GoRoute(
             path: '/articles/write',

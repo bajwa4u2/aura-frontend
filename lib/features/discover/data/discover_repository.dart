@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 
 /// THE THREE DOMAINS THAT NOW HAVE DISCOVERY OF THEIR OWN.
@@ -190,6 +191,24 @@ class DiscoverRepository {
   DiscoverRepository(this._ref);
   final Ref _ref;
 
+  /// RECOMMENDATIONS ARE VIEWER-SCOPED; BROWSING IS NOT.
+  ///
+  /// `/discover`, `/spaces` and `/institutions` are PUBLIC addresses — route
+  /// classification says a signed-out visitor may browse them, and that is a
+  /// deliberate product position, not an oversight. The discovery endpoints
+  /// are auth-only, because relevance is personal and an anonymous viewer has
+  /// no relationships to reason from.
+  ///
+  /// So a signed-out viewer gets the same surfaces reading the PUBLIC
+  /// projections instead: the real objects, in their governed public order,
+  /// with no relevance reason and no follow state — because neither exists
+  /// for someone Aura does not know.
+  ///
+  /// This is not a second authority. It is the same eligibility rule stated by
+  /// endpoints that were already public, and nothing becomes discoverable that
+  /// was not already.
+  bool get _authed => _ref.read(isAuthedProvider);
+
   Future<DiscoverPage<T>> _page<T>(
     String path,
     T Function(Map<String, dynamic>) parse, {
@@ -219,12 +238,19 @@ class DiscoverRepository {
     int limit = 6,
     int offset = 0,
     bool includeFollowed = false,
-  }) =>
-      _page('/discover/spaces', DiscoveredSpace.fromJson, query: {
+  }) async {
+    if (_authed) {
+      return _page('/discover/spaces', DiscoveredSpace.fromJson, query: {
         'limit': limit,
         'offset': offset,
         if (includeFollowed) 'includeFollowed': '1',
       });
+    }
+    // Public: the governed Space universe in its display order.
+    final rows = await _publicList('/public-spaces', 'spaces');
+    final items = rows.take(limit).map(DiscoveredSpace.fromJson).toList();
+    return DiscoverPage(items: items, total: rows.length);
+  }
 
   Future<DiscoverPage<DiscoveredInstitution>> institutions({
     int limit = 4,
@@ -232,21 +258,66 @@ class DiscoverRepository {
     String? institutionClass,
     String? domainTag,
     bool includeFollowed = false,
-  }) =>
-      _page('/discover/institutions', DiscoveredInstitution.fromJson, query: {
-        'limit': limit,
-        'offset': offset,
-        if ((institutionClass ?? '').isNotEmpty) 'class': institutionClass,
-        if ((domainTag ?? '').isNotEmpty) 'domainTag': domainTag,
-        if (includeFollowed) 'includeFollowed': '1',
-      });
+  }) async {
+    if (_authed) {
+      return _page('/discover/institutions', DiscoveredInstitution.fromJson,
+          query: {
+            'limit': limit,
+            'offset': offset,
+            if ((institutionClass ?? '').isNotEmpty) 'class': institutionClass,
+            if ((domainTag ?? '').isNotEmpty) 'domainTag': domainTag,
+            if (includeFollowed) 'includeFollowed': '1',
+          });
+    }
+    // Public: the same directory the signed-out institutions page reads, and
+    // the same ontology narrowing it already supports.
+    final rows = await _publicList('/public/institutions', 'institutions',
+        query: {
+          'limit': limit,
+          if ((institutionClass ?? '').isNotEmpty) 'class': institutionClass,
+          if ((domainTag ?? '').isNotEmpty) 'domainTag': domainTag,
+        });
+    final items = rows.map(DiscoveredInstitution.fromJson).toList();
+    return DiscoverPage(items: items, total: items.length);
+  }
 
   Future<DiscoverPage<DiscoveredArticle>> articles({
     int limit = 3,
     int offset = 0,
-  }) =>
-      _page('/discover/articles', DiscoveredArticle.fromJson,
+  }) async {
+    if (_authed) {
+      return _page('/discover/articles', DiscoveredArticle.fromJson,
           query: {'limit': limit, 'offset': offset});
+    }
+    // Public: published work, most recent first.
+    final rows = await _publicList('/articles', 'articles',
+        query: {'limit': limit});
+    final items = rows.map(DiscoveredArticle.fromJson).toList();
+    return DiscoverPage(items: items, total: items.length);
+  }
+
+  /// Reads a public projection that answers under its own key rather than the
+  /// discovery envelope.
+  Future<List<Map<String, dynamic>>> _publicList(
+    String path,
+    String key, {
+    Map<String, dynamic>? query,
+  }) async {
+    final res = await _ref.read(dioProvider).get(path, queryParameters: query);
+    final root = res.data;
+    Map<String, dynamic> body = const {};
+    if (root is Map) {
+      body = Map<String, dynamic>.from(root);
+      final data = body['data'];
+      if (data is Map) body = Map<String, dynamic>.from(data);
+    }
+    final raw = body[key] ?? body['items'] ?? (root is List ? root : null);
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
 }
 
 final discoverRepositoryProvider =

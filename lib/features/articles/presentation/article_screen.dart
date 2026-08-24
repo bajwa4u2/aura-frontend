@@ -435,68 +435,10 @@ class _ArticleActionsState extends State<_ArticleActions> {
 
 /// DISCOVER → ARTICLES — the fourth domain, now REAL: published articles,
 /// newest first, truthful empty state when none exist yet.
-class ArticlesDiscoveryScreen extends ConsumerWidget {
-  const ArticlesDiscoveryScreen({super.key});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final articlesAsync = ref.watch(publishedArticlesProvider);
-    return AuraScaffold(
-      showHeader: false,
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(publishedArticlesProvider),
-        child: ListView(
-          padding: const EdgeInsets.all(AuraSpace.s16),
-          children: [
-            const Text('Articles', style: AuraText.display),
-            const SizedBox(height: AuraSpace.s6),
-            Text('Substantial authored thought — durable long-form writing.',
-                style: AuraText.body.copyWith(color: AuraSurface.muted)),
-            const SizedBox(height: AuraSpace.s16),
-            articlesAsync.when(
-              loading: () =>
-                  const AuraProductState(state: ProductState.loading),
-              error: (e, _) => AuraProductState(
-                state: ProductState.retryableError,
-                onRecover: () => ref.invalidate(publishedArticlesProvider),
-              ),
-              data: (articles) {
-                if (articles.isEmpty) {
-                  return const AuraProductState(
-                    state: ProductState.empty,
-                    headline: 'No articles yet',
-                    detail:
-                        'When people publish long-form writing on Aura, it '
-                        'arrives here. Yours could be the first — '
-                        'Create → Article.',
-                    icon: Icons.article_outlined,
-                  );
-                }
-                return Column(
-                  children: [
-                    for (final a in articles)
-                      ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AuraSpace.s8, vertical: AuraSpace.s4),
-                        title: Text(a.title,
-                            style: AuraText.headline
-                                .copyWith(fontWeight: FontWeight.w700)),
-                        subtitle: Text(
-                          (a.author ?? AuraPersonIdentity.unknown).proseName,
-                          style: AuraText.small
-                              .copyWith(color: AuraSurface.muted),
-                        ),
-                        onTap: a.slug == null
-                            ? null
-                            : () => context.push(NavigationAuthority.articleRoute(a.slug!)),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// ARTICLES DISCOVERY MOVED, 2026-08-24.
+//
+// The reverse-chronological list that lived here is replaced by the Articles
+// domain destination in features/discover, which reads the relevance-ordered
+// projection and presents articles editorially. Reading a single article is
+// still this file's job; discovering one is not.

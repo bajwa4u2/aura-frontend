@@ -159,6 +159,13 @@ bool isPublicPath(String path) {
   // Articles are durable public thought — READING is public; the authoring
   // paths are member-gated (see isMemberShellPath).
   if (path == '/discover/articles') return true;
+
+  // INSTITUTIONS DISCOVERY is public for the same reason the directory is:
+  // institutional participation is public record, and a signed-out visitor may
+  // browse it. Relevance ordering is the part that needs a session, and the
+  // surface reads the PUBLIC projections when there is none — so classifying
+  // this public grants no personal recommendation to anyone.
+  if (path == '/discover/institutions') return true;
   if (path.startsWith('/articles/') && !path.startsWith('/articles/write')) {
     return true;
   }
