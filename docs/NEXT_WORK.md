@@ -1,8 +1,70 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-22.** Roadmap frozen. C0–C3 executed. The native release-cutover workstream is **CLOSED**. G1 leg 5 is **COMPLETE**. CH-14 **CLOSED** and founder-certified 2026-08-22; the next chapter is **awaiting founder selection** — see the top entry.
+**As of 2026-08-24.** Discover reconstruction is **CLOSED**. The frozen
+sequence is DISCOVER → MESSAGES → CREATE → MEETINGS → LIVE → controlled
+two-party certification.
 
 ---
+
+## NEXT — MESSAGES RECONSTRUCTION (plan before build)
+
+Founder-directed. A measured architecture and product audit is owed **before**
+any implementation, covering:
+
+1. current Messages landing architecture;
+2. current conversation lifecycle;
+3. current leave/reconnect behaviour and why;
+4. current archive/delete/pin/mute/read authorities;
+5. missing inbox capabilities;
+6. proposed mobile swipe/action model;
+7. proposed desktop/web equivalent controls;
+8. current message interaction capabilities;
+9. missing reaction/reply/mention/forward/delete/edit capabilities;
+10. destructive message lifecycle decisions genuinely requiring founder ruling;
+11. preservation boundaries for Rich Content / audio / video / calls / Live;
+12. visual reconstruction direction;
+13. implementation sequence;
+14. certification plan.
+
+**DELETE is founder-ruled** and means deletion from *that user's* conversation
+history — not archive, not leave, not a client-side hide. Its canonical
+implementation and consequences must be established before it is written.
+
+**Leave/reconnect is under review.** The observed behaviour — a thread
+disappearing on leave and the old record resuming on reconnect — must not be
+preserved as intended by default. Correspondence continuity, participation
+state, personal inbox organisation, personal retention and message lifecycle
+are to be separated rather than collapsed into "the row disappears".
+
+## HELD — Meetings and Live
+
+Untouched by direction. Two-party active-media certification remains
+deliberately held until the reconstructed surfaces reach it.
+
+Recorded observations from earlier chapters stand and are **not** to be
+expanded during Messages work:
+
+* Meetings home invalidated its own realtime StreamProvider, which tore down
+  the socket subscription and looped with its listener. Repaired 2026-08-16;
+  the surface is a protected certified one and its certification needs
+  re-running.
+* Messages list recency and row controls were added before the freeze.
+
+## OPEN — data and addressability gaps recorded during Discover
+
+* **No-handle followability.** A person without a handle cannot be followed,
+  because the consent-required request endpoint is addressed by handle. Not
+  worked around inside Discover.
+* **Institution classification.** No institution carries `institutionClass`, so
+  every sector destination is truthfully empty. Classification is
+  founder-governed; proposals with evidence are owed before any row is mutated.
+* **Article subject matter.** `Article` carries no topic or tag column, so
+  Articles cannot rank on subject. Ordinary data-model work, not a workaround
+  to build around.
+
+---
+
+## Previously
 
 ## 2026-08-22 — RELEASE-CLIENT CLOSURE: TWO ITEMS STILL OWED TO THE FOUNDER
 

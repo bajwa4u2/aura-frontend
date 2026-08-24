@@ -1,8 +1,97 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-22**
+**Last updated: 2026-08-24**
 
 ---
+
+## Status
+
+> **2026-08-24 — DISCOVER RECONSTRUCTION CLOSED (founder-directed chapter).**
+> Discover is a live, curated, actionable discovery dashboard across exactly
+> four domains — People, Spaces, Institutions, Articles — with search operating
+> inside the surface rather than redirecting to a separate product.
+>
+> The next chapter is **MESSAGES**, plan first. Meetings and Live remain
+> deliberately untouched; two-party active-media certification stays held.
+
+### What Discover became
+
+**Three layers, separated on purpose.** Eligibility answers "may this viewer
+discover this object at all" and is the only layer that reads candidates from
+the database. Relevance receives ids and may reorder or drop them, never add.
+Presentation is the surfaces above.
+
+The boundary is structural, not editorial: `EligibleId` is branded with a
+module-private symbol, so nothing outside the eligibility service can construct
+one, and the composer builds its output by walking its input. Adversarial
+property tests point hostile providers at it — smuggling a private object with
+an overwhelming score, and an empty eligible set that must stay empty.
+
+**Relevance is composed per domain, not one global ladder.** People rank from
+the relationship graph; Spaces from topic affinity and shared participation;
+Institutions from relationship, subject matter and place; Articles from author
+relationship and recency. Signal providers are independent and additive, so one
+that throws is logged and dropped rather than blanking a section.
+
+**Cold start is a floor, not a branch.** Curated public standing contributes a
+small weight in every domain always, so it breaks ties for an established
+viewer and carries the whole ranking for a new one — with no separate code path
+that can be missed, which is exactly the defect repaired in People discovery.
+
+**Topic affinity is derived, never stored.** What the viewer wrote, responded
+to, and follows, recomputed per read. A plain topic-weight map that can be
+printed and explained, not an embedding.
+
+### Domains and their destinations
+
+| Domain | Landing | Destination |
+|---|---|---|
+| People | horizontal identity run, request-to-follow inline | `/discover/people` |
+| Spaces | environment tiles with live participation | `/spaces` |
+| Institutions | restrained presence cards | `/discover/institutions` |
+| Articles | editorial rows, cover-led | `/discover/articles` |
+
+The 24-sector ontology lives inside Institution discovery, where it narrows the
+eligible set server-side. It is not on the general landing: a classification
+wall would make institutional taxonomy the acquisition premise, and no
+institution currently carries a classification, so every sector chip led
+nowhere.
+
+### Search
+
+One surface, four states: no query is the dashboard, a query becomes
+cross-domain discovery in place, a domain chip narrows without losing the
+query, clearing restores the dashboard. State lives outside the widget, so
+opening a result and returning restores query, narrowing and scroll.
+
+The legacy search screen is retired. `/search?q=` still resolves — governed tag
+taps produce it — by rendering this surface with the query seeded. Posts are
+deliberately not a Discover domain; Home owns ongoing discourse.
+
+### Public browsing
+
+`/discover`, `/spaces`, `/institutions` and `/search` are PUBLIC by route
+classification. The discovery endpoints are auth-only because relevance is
+personal, so a signed-out viewer reads the public projections that were already
+public — the same objects, no relevance reason, no follow state. Nothing became
+discoverable that was not already.
+
+### Follow, corrected
+
+Person-to-person following is **consent-required**: request, then accept.
+`POST /follows` refuses USER → USER outright and names
+`POST /users/:handle/follow/request`. The People card had hand-rolled the wrong
+call to the wrong authority, so Follow had been silently broken there and on
+the People screen. Institutions and Spaces were unaffected — different
+authorities.
+
+**Open data gap:** the request endpoint is addressed by handle, so a person with
+no handle cannot be followed at all. The control is not offered rather than
+offered-and-broken. Recorded, not worked around.
+
+---
+
+## Previously
 
 ## Status
 
