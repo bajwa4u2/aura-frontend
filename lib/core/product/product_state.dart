@@ -167,6 +167,12 @@ class ProductStateCopy {
   final String detail;
 
   static ProductStateCopy of(ProductState state, {ProductNoun? subject}) {
+    // These fall back to the pronoun "this", so any sentence that puts a
+    // determiner in front of them — "this $one" — reads "this this" whenever a
+    // caller supplies no subject, which is most callers. Every sentence below
+    // that would do so carries its own subject == null wording. Live evidence:
+    // the Institutions directory shipped "This this exists but cannot be
+    // reached at the moment." to production.
     final it = subject?.plural.toLowerCase() ?? 'this';
     final one = subject?.singular.toLowerCase() ?? 'this';
 
@@ -201,12 +207,16 @@ class ProductStateCopy {
       case ProductState.unavailable:
         return ProductStateCopy(
           'Not available right now',
-          'This $one exists but cannot be reached at the moment.',
+          subject == null
+              ? 'This exists but cannot be reached at the moment.'
+              : 'This $one exists but cannot be reached at the moment.',
         );
       case ProductState.expired:
         return ProductStateCopy(
           'This has expired',
-          'The time window for this $one has passed.',
+          subject == null
+              ? 'The time window for this has passed.'
+              : 'The time window for this $one has passed.',
         );
       case ProductState.revoked:
         return const ProductStateCopy(
@@ -216,7 +226,9 @@ class ProductStateCopy {
       case ProductState.deleted:
         return ProductStateCopy(
           'No longer available',
-          'This $one has been removed.',
+          subject == null
+              ? 'This has been removed.'
+              : 'This $one has been removed.',
         );
       case ProductState.unauthorized:
         return const ProductStateCopy(

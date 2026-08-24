@@ -4,6 +4,39 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Product State Authority — vocabulary completeness', () {
+    test('no state stutters when no subject is given', () {
+      // The subject nouns fall back to the pronoun "this", so any sentence
+      // that writes "this $one" reads "this this" for the many callers that
+      // pass no subject. This shipped: the Institutions directory showed
+      // production "This this exists but cannot be reached at the moment."
+      // Asserted across every state rather than the three known sentences, so
+      // a new one cannot reintroduce it.
+      for (final state in ProductState.values) {
+        final copy = ProductStateCopy.of(state);
+        for (final text in [copy.headline, copy.detail]) {
+          expect(
+            text.toLowerCase(),
+            isNot(contains('this this')),
+            reason: '$state: "$text"',
+          );
+          expect(
+            RegExp(r'\b(\w+) \1\b', caseSensitive: false)
+                .hasMatch(text),
+            isFalse,
+            reason: '$state repeats a word: "$text"',
+          );
+        }
+      }
+    });
+
+    test('a subject still gets named where the sentence has room', () {
+      // The fix must not flatten the copy into subject-blind wording.
+      final copy =
+          ProductStateCopy.of(ProductState.unavailable,
+              subject: ProductNoun.message);
+      expect(copy.detail.toLowerCase(), contains('message'));
+    });
+
     test('every state has copy', () {
       for (final state in ProductState.values) {
         final copy = ProductStateCopy.of(state);
