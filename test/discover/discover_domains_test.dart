@@ -1,3 +1,9 @@
+import 'package:aura/features/institution_ontology/providers.dart';
+import 'package:aura/features/institution_ontology/models.dart';
+import 'package:aura/features/feed/domain/feed_item.dart';
+import 'package:aura/features/feed/data/unified_feed_providers.dart';
+import 'package:aura/features/discover/data/people_discovery.dart';
+import 'package:aura/core/identity/person_identity_model.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -46,14 +52,35 @@ void main() {
   });
 
   group('Discover renders the framework honestly', () {
+    /// The landing now reads three governed projections. They are overridden
+    /// rather than left to fire real requests: a widget test that reaches the
+    /// network is not deterministic, and the pending timers it leaves behind
+    /// fail the suite for reasons unrelated to what is being asserted.
+    Widget harness({
+      List<PersonSuggestion> people = const [],
+      InstitutionOntology ontology = InstitutionOntology.empty,
+      List<FeedItem> feed = const [],
+    }) {
+      return ProviderScope(
+        overrides: [
+          peopleDiscoveryProvider.overrideWith(
+            (ref) async =>
+                PeopleDiscoveryPage(suggestions: people, coldStart: false),
+          ),
+          institutionOntologyProvider.overrideWith((ref) async => ontology),
+          globalPublicFeedProvider
+              .overrideWith((ref) async => FeedPage(items: feed)),
+        ],
+        child: const MaterialApp(home: Material(child: DiscoverScreen())),
+      );
+    }
+
     testWidgets(
         'all four domains render — Articles is real (2026-08-16 addendum)',
         (tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(home: Material(child: DiscoverScreen())),
-        ),
-      );
+      await tester.pumpWidget(harness());
+      await tester.pumpAndSettle();
+
       for (final title in [
         'People',
         'Institutions',
@@ -62,6 +89,67 @@ void main() {
       ]) {
         expect(find.text(title), findsOneWidget);
       }
+    });
+
+    testWidgets('a section with nothing to show does not claim to have '
+        'something', (tester) async {
+      // Founder finding, 2026-08-23: the landing announced "People suggested
+      // for you" while showing no people. A section that cannot be filled is
+      // absent, not asserted — the domain door above it still works.
+      await tester.pumpWidget(harness());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Suggested for you'), findsNothing);
+      expect(find.text('Browse by sector'), findsNothing);
+      // The public section stays and says, truthfully, that there is nothing.
+      expect(find.text('Happening on Aura'), findsOneWidget);
+    });
+
+    testWidgets('real projections produce real, actionable content',
+        (tester) async {
+      // Tall surface: the ListView builds lazily, so a short viewport would
+      // simply not construct the lower sections and the assertions would be
+      // measuring the fold rather than the content.
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = const Size(1200, 3000);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(harness(
+        people: [
+          PersonSuggestion(
+            person: AuraPersonIdentity.fromJson(const {
+              'id': 'u1',
+              'displayName': 'A Person',
+              'handle': 'aperson',
+            }),
+            reasons: const ['Active in Civic'],
+            followState: 'NONE',
+          ),
+        ],
+        ontology: const InstitutionOntology(
+          classes: [
+            InstitutionClassDef(
+              id: 'CIVIC_BODY',
+              label: 'Civic body',
+              description: 'Public institutions.',
+            ),
+          ],
+          types: [],
+          domainTags: [],
+          maxDomainTagsPerInstitution: 3,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // A person, shown — with the follow control that makes the section a
+      // place to act rather than a place to read a claim.
+      expect(find.text('A Person'), findsOneWidget);
+      expect(find.text('Follow'), findsOneWidget);
+      expect(find.text('See all'), findsOneWidget);
+
+      // Topical entry, from the public taxonomy.
+      expect(find.text('Browse by sector'), findsOneWidget);
+      expect(find.text('Civic body'), findsOneWidget);
     });
   });
 

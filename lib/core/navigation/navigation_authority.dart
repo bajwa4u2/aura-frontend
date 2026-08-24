@@ -213,6 +213,17 @@ class NavigationAuthority {
   static String personRoute(String handle) => '/u/$handle';
   static String institutionRoute(String slug) => '/institutions/$slug';
 
+  /// DISCOVER facets. Discover is one destination with governed domains
+  /// beneath it; the domains are addresses this authority owns, so a surface
+  /// that links into one asks here instead of composing the path itself.
+  static const String discoverPeopleRoute = '/discover/people';
+  static const String discoverArticlesRoute = '/discover/articles';
+
+  /// A sector's institution ecosystem view, keyed by the ontology's stable
+  /// class token (UPPER_SNAKE_CASE), never a display label.
+  static String institutionSectorRoute(String classId) =>
+      '/institutions/sector/$classId';
+
   /// The institution's own Spaces list. RC-C7 reconstruction: Spaces are an
   /// institution-owned contextual destination, so their address lives in the
   /// `/institution/:address/…` space this authority already governs, and the

@@ -121,7 +121,7 @@
 # session-entry + object links pending dedicated authority builders; owners:
 # conversation module / discover module.
 3 lib/features/conversation/presentation/claim_invitation_screen.dart
-2 lib/features/discover/presentation/people_discovery_screen.dart
+1 lib/features/discover/presentation/people_discovery_screen.dart
 # 2026-08-16 shared-primitives wave burn-down: realtimeSessionRoute,
 # articleRoute, articleEditorRoute, messagesRoute, createRoute now exist
 # on the Navigation Authority; conversation + articles surfaces carry

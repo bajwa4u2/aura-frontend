@@ -233,7 +233,6 @@ void main() {
       'lib/features/institutions/presentation/institution_members_screen.dart',
       'lib/features/institutions/presentation/institution_join_requests_screen.dart',
       'lib/features/institutions/activity/institution_activity_screen.dart',
-      'lib/features/discover/presentation/people_discovery_screen.dart',
     ];
 
     for (final path in measured) {
@@ -241,5 +240,28 @@ void main() {
       expect(source, contains('AuraPersonIdentity'), reason: path);
       expect(source, contains('imageUrl:'), reason: path);
     }
+  });
+
+  test('People discovery still consumes the whole identity after extraction',
+      () {
+    // The People screen's suggestion model and card were extracted so the
+    // Discover landing could show the SAME people through the SAME card
+    // rather than re-reading the payload its own way. The measured surface is
+    // therefore now a pair of files, and the guarantee has to follow the code:
+    // the projection holds the canonical identity whole, and the card renders
+    // the image and verification off it. Asserting only the screen would let
+    // the extraction quietly drop identity on the way out.
+    final projection =
+        File('lib/features/discover/data/people_discovery.dart')
+            .readAsStringSync();
+    expect(projection, contains('AuraPersonIdentity'));
+    expect(projection, contains('AuraPersonIdentity.fromJson'));
+
+    final card =
+        File('lib/features/discover/widgets/person_suggestion_card.dart')
+            .readAsStringSync();
+    expect(card, contains('imageUrl:'));
+    expect(card, contains('person.avatarUrl'));
+    expect(card, contains('person.verification'));
   });
 }

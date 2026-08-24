@@ -1,3 +1,14 @@
+import '../../../core/navigation/navigation_authority.dart';
+import '../widgets/person_suggestion_card.dart';
+import '../data/people_discovery.dart';
+import '../../institution_ontology/providers.dart';
+import '../../institution_ontology/models.dart';
+import '../../feed/presentation/unified_feed_card.dart';
+import '../../feed/data/unified_feed_providers.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/product/product_state_view.dart';
+import '../../../core/product/product_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -44,16 +55,233 @@ class DiscoverScreen extends StatelessWidget {
           const Text('Discover', style: AuraText.display),
           const SizedBox(height: AuraSpace.s6),
           Text(
-            'Find people, institutions, spaces, and conversations across Aura.',
+            'People, institutions, spaces and writing across Aura.',
             style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
           ),
           const SizedBox(height: AuraSpace.s16),
           // The search mechanism, embedded as Discover's primary affordance.
           const _DiscoverSearchEntry(),
           const SizedBox(height: AuraSpace.s20),
+          // The four domain doors are PRESERVED - they remain the way into
+          // each object universe - but they are no longer the whole surface.
           const _FacetGrid(),
+          const SizedBox(height: AuraSpace.s24),
+          const _PeopleStrip(),
+          const _SectorStrip(),
+          const _PublicActivitySection(),
         ],
       ),
+    );
+  }
+}
+
+/// A section heading with an optional way into the full domain.
+class _SectionHead extends StatelessWidget {
+  const _SectionHead({
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AuraText.title),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ],
+            ),
+          ),
+          if (actionLabel != null && onAction != null)
+            AuraSecondaryButton(label: actionLabel!, onPressed: onAction),
+        ],
+      ),
+    );
+  }
+}
+
+/// PEOPLE, ACTUALLY SHOWN.
+///
+/// The landing used to state that people were "suggested for you" and then
+/// show none - the claim was the whole feature. This renders the same
+/// canonical `/discover/people` projection the People domain screen reads,
+/// through the same card, with the same real Follow control. Nothing is
+/// ranked, scored or personalised here; the server decides who is
+/// discoverable and this shows what it returned.
+class _PeopleStrip extends ConsumerWidget {
+  const _PeopleStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final page = ref.watch(peopleDiscoveryProvider);
+
+    return page.when(
+      // A landing section that cannot load is not worth a page-width spinner
+      // or an error the reader cannot act on: the People door directly above
+      // still works, so this section simply is not there.
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (data) {
+        if (data.suggestions.isEmpty) return const SizedBox.shrink();
+        final shown = data.suggestions.take(8).toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionHead(
+              title: 'People',
+              subtitle: data.coldStart
+                  ? 'Active on Aura - a starting point while Aura learns what '
+                      'matters to you'
+                  : 'Suggested for you',
+              actionLabel: 'See all',
+              onAction: () => context.push(NavigationAuthority.discoverPeopleRoute),
+            ),
+            SizedBox(
+              height: 216,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                children: [
+                  for (final s in shown)
+                    PersonSuggestionCard(suggestion: s, dense: true),
+                ],
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s24),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// TOPICAL ENTRY WITHOUT RANKING.
+///
+/// The institution ontology is a fixed, public taxonomy - not a
+/// recommendation. Surfacing it lets someone start from a subject they care
+/// about rather than a name they already know, which is the thing Discover
+/// could not previously do. Collapses whole when the taxonomy is unavailable;
+/// the sector pages behind these are the existing ecosystem views.
+class _SectorStrip extends ConsumerWidget {
+  const _SectorStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ontology = ref.watch(institutionOntologyProvider);
+    final classes = ontology.valueOrNull?.classes ?? const <InstitutionClassDef>[];
+    if (classes.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHead(
+          title: 'Browse by sector',
+          subtitle: 'Each sector opens the institutions working in it.',
+        ),
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          children: [
+            for (final c in classes)
+              InkWell(
+                onTap: () => context.push(NavigationAuthority.institutionSectorRoute(c.id)),
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s12,
+                    vertical: AuraSpace.s8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.card,
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                    border: Border.all(color: AuraSurface.divider),
+                  ),
+                  child: Text(
+                    c.label,
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s24),
+      ],
+    );
+  }
+}
+
+/// WHAT IS ACTUALLY BEING SAID IN PUBLIC.
+///
+/// The one thing that lets a person discover something without first choosing
+/// a directory or knowing what to search for. This is the existing
+/// `/feed/public` projection - the same merged public feed the home surface
+/// and the civic-signal derivations already read - in its own
+/// reverse-chronological order. No ranking, no personalisation, no new
+/// backend truth, and the card is the canonical single render path, so each
+/// item keeps its own visibility badge and its own authority.
+class _PublicActivitySection extends ConsumerWidget {
+  const _PublicActivitySection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final feed = ref.watch(globalPublicFeedProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHead(
+          title: 'Happening on Aura',
+          subtitle: 'Public posts, most recent first.',
+        ),
+        feed.when(
+          loading: () => const AuraProductState(state: ProductState.loading),
+          error: (_, __) => AuraProductState(
+            state: ProductState.retryableError,
+            headline: 'Public activity could not be loaded',
+            detail: 'Search and the domains above are still available.',
+            onRecover: () => ref.invalidate(globalPublicFeedProvider),
+          ),
+          data: (page) {
+            if (page.items.isEmpty) {
+              return const AuraProductState(
+                state: ProductState.empty,
+                headline: 'Nothing public yet',
+                detail: 'When people and institutions post publicly, '
+                    'it appears here.',
+              );
+            }
+            return Column(
+              children: [
+                for (final item in page.items.take(8))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                    child: UnifiedFeedCard(item: item),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
