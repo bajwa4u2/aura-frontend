@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../product/product_language.dart';
 import '../product/product_state.dart';
 import '../product/product_state_view.dart';
 import 'institution_route_authority.dart';
@@ -50,7 +51,10 @@ class InstitutionRouteScope extends ConsumerWidget {
     // Still finding out. Not "no institution" — deciding here is the RC2
     // defect that made refresh unsurvivable.
     if (!snapshot.resolved) {
-      return const AuraProductState(state: ProductState.loading);
+      return const AuraProductState(
+        state: ProductState.loading,
+        subject: ProductNoun.institution,
+      );
     }
 
     final resolved = resolveInstitutionAddress(snapshot, address);
@@ -64,7 +68,10 @@ class InstitutionRouteScope extends ConsumerWidget {
     );
 
     return remote.when(
-      loading: () => const AuraProductState(state: ProductState.loading),
+      loading: () => const AuraProductState(
+        state: ProductState.loading,
+        subject: ProductNoun.institution,
+      ),
       // An error is resolved-but-unknown, never an eternal spinner (F068).
       error: (_, __) => const AuraProductState(
         state: ProductState.empty,

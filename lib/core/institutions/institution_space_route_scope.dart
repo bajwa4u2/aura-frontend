@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../net/dio_provider.dart';
+import '../product/product_language.dart';
 import '../product/product_state.dart';
 import '../product/product_state_view.dart';
 
@@ -196,7 +197,10 @@ class _InstitutionSpaceRouteScopeState
     );
 
     return resolved.when(
-      loading: () => const AuraProductState(state: ProductState.loading),
+      loading: () => const AuraProductState(
+        state: ProductState.loading,
+        subject: ProductNoun.space,
+      ),
       error: (_, __) => const AuraProductState(
         state: ProductState.empty,
         headline: 'That space could not be found',

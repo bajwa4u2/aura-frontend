@@ -178,7 +178,18 @@ class ProductStateCopy {
 
     switch (state) {
       case ProductState.loading:
-        return const ProductStateCopy('Loading', 'One moment.');
+        // A WAIT THAT NAMES NOTHING CANNOT BE TOLD APART FROM ANY OTHER WAIT.
+        //
+        // Measured entering a live institution Space, 2026-08-24: the route
+        // boundary, the Space and the conversation timeline each rendered the
+        // identical word "Loading" one after another, because this sentence
+        // ignored the subject its callers were already passing. From outside,
+        // three distinct waits — and a stall in any one of them — were the
+        // same screen.
+        return ProductStateCopy(
+          subject == null ? 'Loading' : 'Loading $it',
+          'One moment.',
+        );
       case ProductState.empty:
         return ProductStateCopy(
           subject == null ? 'Nothing here yet' : 'No $it yet',

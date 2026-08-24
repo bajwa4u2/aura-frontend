@@ -1174,14 +1174,40 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   reverse: true,
                   padding: const EdgeInsets.all(AuraSpace.s12),
                   itemCount: messages.length,
-                  itemBuilder: (_, i) => _MessageBubble(
-                    message: messages[i],
-                    mine: messages[i].senderUserId == myUserId,
-                    conversation: c,
-                    translation: _translations[messages[i].id],
-                    onAction: (a) => _messageAction(a, messages[i]),
-                    onReact: (type) => _react(messages[i], type),
-                  ),
+                  itemBuilder: (_, i) {
+                    final m = messages[i];
+                    // The list is REVERSED, so index + 1 is the message
+                    // BEFORE this one in time.
+                    final previous =
+                        i + 1 < messages.length ? messages[i + 1] : null;
+                    return _MessageBubble(
+                      message: m,
+                      mine: m.senderUserId == myUserId,
+                      conversation: c,
+                      // WHO SAID THIS.
+                      //
+                      // Seen in a live institution Space, 2026-08-24: a
+                      // three-party correspondence rendered an incoming
+                      // message as a bare bubble with no author. In a
+                      // conversation with more than two sides that is
+                      // unreadable — the same defect as a participation
+                      // event without its actor, one layer down.
+                      //
+                      // Only where it adds something: a direct
+                      // correspondence already names the other party in
+                      // the header, and a run of messages from one person
+                      // is attributed by its first.
+                      showSender: shouldNameSender(
+                        conversation: c,
+                        message: m,
+                        previous: previous,
+                        myUserId: myUserId,
+                      ),
+                      translation: _translations[m.id],
+                      onAction: (a) => _messageAction(a, m),
+                      onReact: (type) => _react(m, type),
+                    );
+                  },
                 ),
               ),
             ),
@@ -1634,10 +1660,15 @@ class _MessageBubble extends ConsumerWidget {
     required this.conversation,
     required this.onAction,
     required this.onReact,
+    this.showSender = false,
     this.translation,
   });
   final ConversationMessage message;
   final bool mine;
+
+  /// Name the author above this message. Decided by the timeline, which is
+  /// the only place that can see the neighbouring messages.
+  final bool showSender;
   final Conversation conversation;
   final void Function(String action) onAction;
 
@@ -1685,6 +1716,12 @@ class _MessageBubble extends ConsumerWidget {
             .map((p) => p.displayName)
             .firstWhere((n) => n != null && n.isNotEmpty, orElse: () => null);
 
+    // Dual attribution already names the visible speaker, so a second name
+    // above it would state the same fact twice.
+    final senderName = showSender && institutionName == null
+        ? _conversationSenderName(conversation, message.senderUserId)
+        : null;
+
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
@@ -1720,6 +1757,13 @@ class _MessageBubble extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (senderName != null) ...[
+                Text(senderName,
+                    style: AuraText.micro.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AuraSurface.accentText)),
+                const SizedBox(height: 2),
+              ],
               if (institutionName != null) ...[
                 Text(institutionName,
                     style: AuraText.micro.copyWith(
@@ -2086,6 +2130,32 @@ final _deliveryUrlProvider =
 // The old four-action sheet is retired. The full set — reactions, reply,
 // forward, edit, retract, remove-for-me, copy, translate, report — lives in
 // message_interactions.dart, so touch and pointer reach one implementation.
+
+/// Does this incoming message need its author named above it?
+///
+/// [previous] is the message BEFORE this one in time (the timeline renders
+/// reversed, so it is the next index, not the previous one).
+///
+/// Named here rather than inside the bubble because it is a fact about the
+/// timeline, not about one message, and because the answer is the difference
+/// between a readable group correspondence and a column of anonymous bubbles.
+bool shouldNameSender({
+  required Conversation conversation,
+  required ConversationMessage message,
+  required ConversationMessage? previous,
+  required String? myUserId,
+}) {
+  // A direct correspondence has exactly one other side and its header already
+  // names them; repeating it on every bubble says nothing.
+  if (conversation.isDirect) return false;
+  // Your own messages are attributed by their side of the timeline.
+  if (myUserId != null && message.senderUserId == myUserId) return false;
+  if (message.isSystem) return false;
+  // A run from one person is attributed by its first message. A system event
+  // in between breaks the run, because the reader's eye has left the sender.
+  if (previous == null || previous.isSystem) return true;
+  return previous.senderUserId != message.senderUserId;
+}
 
 String _conversationSenderName(Conversation c, String userId) {
   for (final p in c.parties) {
