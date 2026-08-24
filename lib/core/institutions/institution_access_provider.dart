@@ -408,17 +408,31 @@ Future<InstitutionAccess> _readInstitutionState(
   Ref ref, {
   required String? institutionId,
 }) async {
-  // DEPENDENCIES DECLARED BEFORE THE FIRST AWAIT.
+  // THE DEPENDENCY IS THE RESOLVED AUTH STATUS, NOT THE IDENTITY OF THE
+  // BOOTSTRAP FUTURE.
   //
-  // `ref.watch` after an await registers the dependency late, so a change
-  // arriving in that window restarts this provider from the top. Until it
-  // completes ONCE there is no previous value to fall back on, and the
-  // institution route boundary reads "loading without a value" as "still
-  // finding out" — which is how a cold load can sit on a spinner forever.
-  final bootstrap = ref.watch(sessionBootstrapProvider.future);
+  // Proven on the deployed web client, 2026-08-24: every institution route
+  // sat on the authority wait — `snapshot.resolved == false`, which is
+  // `isLoading && !hasValue` — because this provider never produced a FIRST
+  // value. It restarted from the top repeatedly, each run re-issuing
+  // `/institutions/me` and being replaced before the response arrived. With no
+  // previous value to fall back on, the route boundary reads that as "still
+  // finding out" and waits forever, and the whole institution workspace is
+  // starved: Members, the Spaces list and a Space detail all alike.
+  //
+  // The restart source was watching `sessionBootstrapProvider.future`. Its
+  // identity changes on every invalidation, and the session layer invalidates
+  // bootstrap on ordinary auth events — so a token rotation during load kept
+  // cancelling this provider's own round trip.
+  //
+  // Bootstrap is READ here: we need it to have COMPLETED, not to be notified
+  // that it was recreated. `authStatusProvider` remains watched and is the
+  // honest dependency — it already derives from bootstrap AND the token
+  // store, so a session that genuinely changes still re-runs this, while a
+  // transient re-bootstrap no longer interrupts a resolution in flight.
   final dio = ref.watch(dioProvider);
 
-  await bootstrap;
+  await ref.read(sessionBootstrapProvider.future);
 
   final authStatus = ref.watch(authStatusProvider);
   if (authStatus != AuthStatus.authed) {
