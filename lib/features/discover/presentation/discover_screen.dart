@@ -147,7 +147,7 @@ class _PeopleStrip extends ConsumerWidget {
             _SectionHead(
               title: 'People',
               subtitle: data.coldStart
-                  ? 'Active on Aura - a starting point while Aura learns what '
+                  ? 'Active on Aura — a starting point while Aura learns what '
                       'matters to you'
                   : 'Suggested for you',
               actionLabel: 'See all',
