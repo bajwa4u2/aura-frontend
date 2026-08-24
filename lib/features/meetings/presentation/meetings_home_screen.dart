@@ -30,10 +30,19 @@ class MeetingsHomeScreen extends ConsumerStatefulWidget {
 class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
   Timer? _pollTimer;
 
+  /// RECONCILIATION, NOT THE SIGNAL.
+  ///
+  /// `meeting.state_changed` over the socket is how this screen learns that
+  /// something happened; this timer only catches the case where the socket was
+  /// down and reconnected without replay. It used to run every 30 seconds,
+  /// which meant six refetches a minute on a screen that already had a live
+  /// feed of exactly the events it cares about.
+  static const _reconcileEvery = Duration(minutes: 5);
+
   @override
   void initState() {
     super.initState();
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _pollTimer = Timer.periodic(_reconcileEvery, (_) {
       if (!mounted) return;
       _refresh();
     });
@@ -47,7 +56,20 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
 
   void _refresh() {
     final institutionId = widget.institutionId;
-    ref.invalidate(meetingStateChangedEventProvider);
+    // `meetingStateChangedEventProvider` IS DELIBERATELY NOT INVALIDATED.
+    //
+    // It is a StreamProvider over the live socket, not a query. Invalidating
+    // it tears the subscription down and builds a new one, so this screen was
+    // dropping and re-establishing its realtime feed every 30 seconds and
+    // losing whatever arrived in the gap.
+    //
+    // Worse, it closed a loop with the listener in build(): an event fired
+    // _refresh(), _refresh() invalidated the stream, the rebuilt stream
+    // notified the listener, and the listener called _refresh() again. Every
+    // real meeting state change kicked off a self-feeding cycle of
+    // re-subscriptions and six-endpoint refetches.
+    //
+    // A live subscription is not refreshed. It is listened to.
     ref.invalidate(upcomingMeetingsProvider);
     ref.invalidate(pastMeetingsProvider);
     ref.invalidate(myOpenOutcomesProvider);
