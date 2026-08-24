@@ -95,7 +95,7 @@ void main() {
       (tester) async {
     final adapter = _RecordingAdapter(
       responses: {
-        '/institutions/$institutionId/spaces/address/$spaceSlug/resolve': {
+        '/institutions/$institutionId/spaces/by-address/$spaceSlug/entry': {
           'ok': true,
           'spaceId': spaceId,
           'canonicalSlug': spaceSlug,
@@ -109,8 +109,8 @@ void main() {
       InstitutionSpaceRouteScope(
         institutionId: institutionId,
         address: spaceSlug,
-        builder: (id) {
-          gave = id;
+        builder: (e) {
+          gave = e.spaceId;
           return const Text('reached');
         },
       ),
@@ -120,8 +120,8 @@ void main() {
 
     expect(
       adapter.paths,
-      contains('/institutions/$institutionId/spaces/address/$spaceSlug/resolve'),
-      reason: 'the space address boundary must actually ask',
+      contains('/institutions/$institutionId/spaces/by-address/$spaceSlug/entry'),
+      reason: 'the space entry boundary must actually ask',
     );
     expect(gave, spaceId);
   });
@@ -131,7 +131,7 @@ void main() {
     // The production failure was of the chain, not of either boundary alone.
     final adapter = _RecordingAdapter(
       responses: {
-        '/institutions/$institutionId/spaces/address/$spaceSlug/resolve': {
+        '/institutions/$institutionId/spaces/by-address/$spaceSlug/entry': {
           'ok': true,
           'spaceId': spaceId,
           'canonicalSlug': spaceSlug,
@@ -147,8 +147,8 @@ void main() {
         builder: (id) => InstitutionSpaceRouteScope(
           institutionId: id,
           address: spaceSlug,
-          builder: (sid) {
-            reachedSpace = sid;
+          builder: (e) {
+            reachedSpace = e.spaceId;
             return const Text('reached');
           },
         ),
@@ -161,7 +161,38 @@ void main() {
         reason: 'the detail route must reach the Space it names');
   });
 
-  testWidgets('the Space screen asks for the Space and its conversation',
+  testWidgets('the screen does NOT re-ask for what the boundary resolved',
+      (tester) async {
+    // The waterfall this removes: the boundary resolved the address, then the
+    // screen fetched the Space again and its conversation id again, each trip
+    // starting only after a widget mounted. Measured at ~18s to become usable
+    // while every call took under 0.3s.
+    final adapter = _RecordingAdapter();
+    await pump(
+      tester,
+      InstitutionSpaceScreen(
+        institutionId: institutionId,
+        spaceId: spaceId,
+        entry: const SpaceAddress(
+          spaceId: spaceId,
+          canonicalSlug: spaceSlug,
+          isCanonical: true,
+          space: {'id': spaceId, 'title': 'Certification'},
+          conversationId: 'conv-1',
+        ),
+      ),
+      adapter,
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      adapter.paths.where((p) => p.contains('/spaces/')),
+      isEmpty,
+      reason: 'entry state already arrived with the boundary answer',
+    );
+  });
+
+  testWidgets('a caller WITHOUT a boundary answer still loads for itself',
       (tester) async {
     // The measured production symptom was that these two never happened: the
     // surface sat on "Loading" and no request for the Space itself was ever

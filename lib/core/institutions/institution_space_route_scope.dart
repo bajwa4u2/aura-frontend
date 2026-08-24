@@ -7,15 +7,32 @@ import '../net/dio_provider.dart';
 import '../product/product_state.dart';
 import '../product/product_state_view.dart';
 
-/// What a Space address in a workspace path names.
+/// What a Space address in a workspace path names — AND the entry state that
+/// naming it authoritatively produces.
+///
+/// It carries the Space and its conversation reference because opening a Space
+/// is ONE question. Resolving the address, loading the Space and obtaining its
+/// conversation used to be three round trips, each starting only once the
+/// previous stage's widget had mounted; every call was under 0.3s and the
+/// surface still took ~18 seconds to become usable.
 class SpaceAddress {
   const SpaceAddress({
     required this.spaceId,
     required this.canonicalSlug,
     required this.isCanonical,
+    this.space,
+    this.conversationId,
   });
 
   final String spaceId;
+
+  /// The Space as the authority projects it, already access-checked. Null only
+  /// when this address was resolved by a caller that asked for nothing more.
+  final Map<String, dynamic>? space;
+
+  /// The Space's canonical Conversation. Produced by the authority only AFTER
+  /// Space access was decided, which is why it can be carried here safely.
+  final String? conversationId;
 
   /// The Space's CURRENT address, or null if it has none (a Space with no
   /// institution is never addressed this way).
@@ -40,8 +57,13 @@ final remoteSpaceAddressProvider =
   if (institutionId.isEmpty || address.isEmpty) return null;
 
   try {
+    // ONE ANSWER. The entry endpoint resolves the address, decides Space
+    // access and produces the conversation reference in a single round trip,
+    // in that order. The older `address/:address/resolve` endpoint is
+    // deliberately unauthenticated and still exists for callers that only want
+    // to canonicalise an address.
     final res = await ref.read(dioProvider).get(
-          '/institutions/$institutionId/spaces/address/$address/resolve',
+          '/institutions/$institutionId/spaces/by-address/$address/entry',
         );
     final body =
         res.data is Map ? Map<String, dynamic>.from(res.data as Map) : <String, dynamic>{};
@@ -58,6 +80,12 @@ final remoteSpaceAddressProvider =
       // The server reports HOW it matched, so the client never has to infer
       // canonicality by comparing strings and getting the case rule wrong.
       isCanonical: data['matched']?.toString() == 'CANONICAL',
+      space: data['space'] is Map
+          ? Map<String, dynamic>.from(data['space'] as Map)
+          : null,
+      conversationId: (data['conversationId']?.toString().trim().isEmpty ?? true)
+          ? null
+          : data['conversationId'].toString().trim(),
     );
   } on DioException catch (e) {
     // A 404 is a real answer: the address names nothing in this institution.
@@ -109,8 +137,9 @@ class InstitutionSpaceRouteScope extends ConsumerStatefulWidget {
   /// a legacy persistence id.
   final String? address;
 
-  /// Receives the CANONICAL SPACE ID. Never the address.
-  final Widget Function(String spaceId) builder;
+  /// Receives the RESOLVED ENTRY. Never the raw address — the boundary exists
+  /// so a screen can never hand a path segment to a data layer as a key.
+  final Widget Function(SpaceAddress entry) builder;
 
   @override
   ConsumerState<InstitutionSpaceRouteScope> createState() =>
@@ -180,7 +209,7 @@ class _InstitutionSpaceRouteScopeState
           );
         }
         _canonicalize(address, raw);
-        return widget.builder(address.spaceId);
+        return widget.builder(address);
       },
     );
   }

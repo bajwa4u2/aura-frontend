@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/identity/person_identity_model.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/institutions/institution_space_route_scope.dart';
 import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/product/product_state.dart';
@@ -45,10 +46,22 @@ class InstitutionSpaceScreen extends ConsumerStatefulWidget {
     super.key,
     required this.institutionId,
     required this.spaceId,
+    this.entry,
   });
 
   final String institutionId;
   final String spaceId;
+
+  /// The entry state the route boundary ALREADY resolved.
+  ///
+  /// Opening a Space is one question and the boundary asked it: the Space and
+  /// its conversation reference arrive together, access-checked, in a single
+  /// round trip. Re-fetching them here is what made entry a staged loading
+  /// sequence — three serialised trips, each waiting on a widget mount.
+  ///
+  /// Null only for a caller that constructed this screen without going through
+  /// the boundary; that path still loads for itself.
+  final SpaceAddress? entry;
 
   @override
   ConsumerState<InstitutionSpaceScreen> createState() =>
@@ -70,6 +83,20 @@ class _InstitutionSpaceScreenState
   /// access first, so a Space that refuses you never yields one. Fetching the
   /// conversation independently would be a way around Space governance.
   Future<_SpaceBundle> _load() async {
+    // ALREADY ANSWERED. The boundary resolved the address, the Space authority
+    // decided access and the conversation reference was produced — in that
+    // order, in one round trip. Asking again would restore the waterfall this
+    // exists to remove.
+    final resolved = widget.entry;
+    if (resolved?.space != null) {
+      return _SpaceBundle(
+        space: resolved!.space!,
+        conversationId: resolved.conversationId,
+      );
+    }
+
+    // A caller that did not come through the boundary still gets a correct
+    // answer, in the original order: Space access first, conversation second.
     final repo = ref.read(institutionsRepositoryProvider);
     final space = await repo.getInstitutionSpace(widget.institutionId, widget.spaceId);
     final conversationId = await repo.institutionSpaceConversationId(

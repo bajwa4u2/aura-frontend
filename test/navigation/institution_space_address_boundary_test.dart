@@ -46,8 +46,8 @@ void main() {
           child: InstitutionSpaceRouteScope(
             institutionId: 'cmk0inst1',
             address: 'general',
-            builder: (spaceId) {
-              received = spaceId;
+            builder: (entry) {
+              received = entry.spaceId;
               return const SizedBox.shrink();
             },
           ),
@@ -148,4 +148,4 @@ void main() {
   });
 }
 
-Widget _neverBuilds(String spaceId) => const Text('SHOULD NOT MOUNT');
+Widget _neverBuilds(SpaceAddress entry) => const Text('SHOULD NOT MOUNT');

@@ -2191,9 +2191,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (institutionId) => InstitutionSpaceRouteScope(
                 institutionId: institutionId,
                 address: state.pathParameters['spaceAddress'],
-                builder: (spaceId) => InstitutionSpaceScreen(
+                builder: (entry) => InstitutionSpaceScreen(
                   institutionId: institutionId,
-                  spaceId: spaceId,
+                  spaceId: entry.spaceId,
+                  entry: entry,
                 ),
               ),
             ),
