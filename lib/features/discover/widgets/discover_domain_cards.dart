@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/interactions/follow_invalidation.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/product/temporal.dart';
@@ -244,6 +245,13 @@ class _InstitutionPresenceCardState
       }
       if (!mounted) return;
       setState(() => _following = next);
+
+      // Every surface that reads the follow graph re-reads: the pair cache and
+      // the feeds whose composition changed the moment this edge existed.
+      invalidateFollowSurfaces(
+        ref,
+        key: FollowStateKey(actor: actor, target: target),
+      );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,16 +1,17 @@
-import '../../../core/navigation/navigation_authority.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/net/dio_provider.dart';
+import '../../../core/interactions/follow_invalidation.dart';
+import '../../../core/interactions/follows_repository.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../conversation/presentation/conversation_identity.dart';
 import '../data/people_discovery.dart';
 
 /// A suggested person, with the one control that matters on them.
@@ -41,27 +42,45 @@ class _PersonSuggestionCardState extends ConsumerState<PersonSuggestionCard> {
   String? _localState;
   bool _busy = false;
 
-  /// Canonical Follow action — POST /follows against the user target. The card
-  /// re-renders from the SERVER's answer (FOLLOWING or REQUESTED), never from
-  /// an optimistic guess: a private account turns a follow into a request, and
-  /// showing "Following" for what is actually pending would be a lie the
-  /// person acts on.
+  /// FOLLOW, THROUGH THE CANONICAL AUTHORITY.
+  ///
+  /// This used to hand-roll `POST /follows` with `{targetType, targetUserId}`
+  /// and no actor. `actorType` is REQUIRED by the endpoint's contract, so every
+  /// tap was a 400 and the button silently did nothing — on the People screen
+  /// as well as here, since this card was extracted from it.
+  ///
+  /// The follows repository is the one place that knows how to address a
+  /// follow. C1 — acting context is per-act: following someone from Discover
+  /// is a PERSONAL act, so the viewer follows as themselves and never on
+  /// behalf of an institution they happen to speak for.
+  ///
+  /// The card re-renders from the SERVER's answer, never an optimistic guess:
+  /// a private account turns a follow into a request, and showing "Following"
+  /// for something still pending is a lie the person would act on.
   Future<void> _follow() async {
     if (_busy) return;
+    final viewerId = ref.read(myUserIdProvider);
+    if (viewerId.isEmpty) return;
+
     setState(() => _busy = true);
     try {
-      final res = await ref.read(dioProvider).post<dynamic>('/follows', data: {
-        'targetType': 'USER',
-        'targetUserId': widget.suggestion.userId,
-      });
-      final body = res.data is Map<String, dynamic>
-          ? ((res.data['data'] ?? res.data) as Map<String, dynamic>)
-          : const <String, dynamic>{};
-      final status = (body['status'] ?? body['state'] ?? '').toString();
+      final state = await ref.read(followsRepositoryProvider).follow(
+            actor: ActorRef.user(viewerId),
+            target: ActorRef.user(widget.suggestion.userId),
+          );
       if (!mounted) return;
-      setState(() => _localState =
-          status.toUpperCase().contains('PEND') ? 'REQUESTED' : 'FOLLOWING');
-    } on DioException {
+      setState(() => _localState = state.isPending ? 'REQUESTED' : 'FOLLOWING');
+
+      // Every surface that reads the follow graph re-reads: the pair cache,
+      // and the feeds whose composition changed the moment this edge existed.
+      invalidateFollowSurfaces(
+        ref,
+        key: FollowStateKey(
+          actor: ActorRef.user(viewerId),
+          target: ActorRef.user(widget.suggestion.userId),
+        ),
+      );
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not follow — try again.')),
