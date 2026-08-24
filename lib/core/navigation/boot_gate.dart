@@ -115,7 +115,9 @@ class _BootGateState extends ConsumerState<BootGate> {
     }
 
     if (!_overdue) {
-      return const Scaffold(body: AuraProductState(state: ProductState.loading));
+      return const Scaffold(
+          body: AuraProductState(
+              state: ProductState.loading, headline: 'Loading [BOOT]'));
     }
 
     return Scaffold(

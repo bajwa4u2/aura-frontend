@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
+import '../diagnostics/route_probe.dart';
 import '../net/dio_provider.dart';
 
 enum InstitutionAccessState {
@@ -414,8 +415,11 @@ final institutionWorkspaceIdentityProvider =
 InstitutionAccess? lastEstablishedInstitutionAccess;
 
 final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async {
+  RouteProbe.accessRuns++;
   final result = await _readInstitutionState(ref, institutionId: null);
   lastEstablishedInstitutionAccess = result;
+  RouteProbe.accessDone++;
+  RouteProbe.authorityLatched = true;
   return result;
 });
 

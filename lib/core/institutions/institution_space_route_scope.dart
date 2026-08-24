@@ -167,7 +167,8 @@ class _InstitutionSpaceRouteScopeState
     );
 
     return resolved.when(
-      loading: () => const AuraProductState(state: ProductState.loading),
+      loading: () => const AuraProductState(
+          state: ProductState.loading, headline: 'Loading [C space-address]'),
       error: (_, __) => const AuraProductState(
         state: ProductState.empty,
         headline: 'That space could not be found',

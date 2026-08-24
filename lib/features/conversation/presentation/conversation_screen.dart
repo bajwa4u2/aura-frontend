@@ -1036,7 +1036,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       loading: () => AuraScaffold(
           body: const AuraProductState(
               state: ProductState.loading,
-              subject: ProductNoun.conversation)),
+              subject: ProductNoun.conversation,
+              headline: 'Loading [E conversation]')),
       error: (e, _) => AuraScaffold(
         body: AuraProductState(
           state: ProductState.unavailable,
@@ -1164,7 +1165,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               child: messagesAsync.when(
                 loading: () => const AuraProductState(
                     state: ProductState.loading,
-                    subject: ProductNoun.message),
+                    subject: ProductNoun.message,
+                    headline: 'Loading [F messages]'),
                 error: (e, _) => AuraProductState(
                     state: ProductState.retryableError,
                     subject: ProductNoun.message,
