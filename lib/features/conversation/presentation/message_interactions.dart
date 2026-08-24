@@ -361,8 +361,15 @@ Future<void> showMessageActionSheet(
         );
       }
 
+      // Bounded and scrollable for the same reason as the inbox sheet: this
+      // set is longer, and its last two items are the removals.
       return SafeArea(
-        child: Column(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.85,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // A retracted message has nothing to react to — its content is
@@ -452,6 +459,8 @@ Future<void> showMessageActionSheet(
             ),
             const SizedBox(height: AuraSpace.s8),
           ],
+            ),
+          ),
         ),
       );
     },

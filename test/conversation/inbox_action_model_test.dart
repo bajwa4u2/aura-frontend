@@ -145,6 +145,27 @@ void main() {
     });
   });
 
+  group('the sheet never outgrows the viewport', () {
+    test('it is height-bounded and scrollable', () {
+      // Founder live finding, 2026-08-24: on a short window the sheet ran past
+      // the bottom edge with no scroll, so Leave and Delete were rendered but
+      // unreachable. A destructive action hidden below the fold is worse than
+      // one that is absent — the person cannot tell it exists.
+      expect(actions, contains('ConstrainedBox'));
+      expect(actions, contains('maxHeight'));
+      expect(actions, contains('SingleChildScrollView'));
+    });
+
+    test('the message sheet is bounded too — it is the longer one', () {
+      final interactions = codeOnly(
+        File('lib/features/conversation/presentation/message_interactions.dart')
+            .readAsStringSync(),
+      );
+      expect(interactions, contains('ConstrainedBox'));
+      expect(interactions, contains('SingleChildScrollView'));
+    });
+  });
+
   group('swipe is a platform idiom, not a width', () {
     test('it is decided from TargetPlatform', () {
       // A narrow desktop window is still a pointer; a wide tablet is still

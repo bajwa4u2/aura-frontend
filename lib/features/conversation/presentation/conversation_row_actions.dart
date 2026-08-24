@@ -203,8 +203,22 @@ Future<void> showConversationActionSheet(
         );
       }
 
+      // THE SHEET MUST NEVER OUTGROW THE VIEWPORT.
+      //
+      // Founder live finding: on a short window the sheet ran past the bottom
+      // edge with no scroll, so Leave and Delete were rendered but
+      // unreachable. A destructive action hidden below the fold is worse than
+      // one that is simply absent — the person cannot tell it exists.
+      //
+      // Bounded to most of the viewport and scrollable inside that bound, so
+      // every item is reachable at any height.
       return SafeArea(
-        child: Column(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.85,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
@@ -277,6 +291,8 @@ Future<void> showConversationActionSheet(
             ),
             const SizedBox(height: AuraSpace.s8),
           ],
+            ),
+          ),
         ),
       );
     },
