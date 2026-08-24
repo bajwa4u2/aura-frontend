@@ -40,6 +40,7 @@ import '../data/conversations_repository.dart';
 import 'add_people_sheet.dart';
 import 'conversation_avatar.dart';
 import 'conversation_identity.dart';
+import 'message_interactions.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../../core/composition/attachment_lifecycle.dart';
 import '../../../core/composition/composition_authority.dart';
@@ -128,7 +129,18 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         .read(correspondenceLiveServiceProvider)
         .events
         .listen((event) {
-      if (event.name != 'conversation:message.created') return;
+      // A MESSAGE ARRIVED, OR ONE CHANGED.
+      //
+      // Both are triggers and both are answered the same way: re-read the
+      // canonical projection. A reaction, an edit and a retraction all alter
+      // what a message IS, and only the projection knows what this particular
+      // viewer may now see of it — so the socket says that something moved and
+      // never what it now says.
+      const watched = {
+        'conversation:message.created',
+        'conversation:message.changed',
+      };
+      if (!watched.contains(event.name)) return;
       final id = (event.payload['conversationId'] ?? '').toString().trim();
       if (id != widget.conversationId) return;
       if (!mounted) return;
@@ -388,6 +400,123 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
   }
 
+  /// Reload the thread from the canonical projection.
+  ///
+  /// Every mutation ends here rather than patching a local copy: the
+  /// projection is the only thing that knows what THIS viewer may see after a
+  /// retract, an edit or a removal, and a locally-patched list would be a
+  /// second answer.
+  void _reloadMessages() {
+    ref.invalidate(conversationMessagesProvider(widget.conversationId));
+  }
+
+  Future<void> _react(ConversationMessage msg, String type) async {
+    await MessageActions(ref, widget.conversationId).react(context, msg, type);
+    _reloadMessages();
+  }
+
+  /// EDIT — the author rewrites their own message.
+  ///
+  /// Prior versions are retained by the authority, so this is not a
+  /// destructive overwrite even though it looks like one from here.
+  Future<void> _startEdit(ConversationMessage msg) async {
+    final controller = TextEditingController(text: msg.body);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AuraSurface.card,
+        title: const Text('Edit message'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 6,
+          minLines: 1,
+          decoration: const InputDecoration(hintText: 'Message'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (next == null || next.isEmpty || next == msg.body) return;
+    await MessageActions(ref, widget.conversationId)
+        .edit(context, msg, next);
+    _reloadMessages();
+  }
+
+  /// FORWARD — pick a destination from the conversations this person is in.
+  ///
+  /// Only conversations they are already party to are offered, because
+  /// forwarding requires membership on BOTH sides. Offering one they are not
+  /// in would produce a control that fails.
+  Future<void> _forward(ConversationMessage msg) async {
+    final all = await ref.read(conversationsRepositoryProvider).list();
+    final options =
+        all.where((c) => c.id != widget.conversationId).toList();
+    if (!mounted) return;
+
+    if (options.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('There is nowhere to forward this yet.'),
+        ),
+      );
+      return;
+    }
+
+    final myUserId = ref.read(myUserIdProvider);
+    final destination = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AuraSurface.card,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AuraSpace.s16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Forward to', style: AuraText.title),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final c in options)
+                    ListTile(
+                      leading: ConversationAvatar(
+                        conversation: c,
+                        myUserId: myUserId,
+                        size: 36,
+                      ),
+                      title: Text(conversationDisplayName(c, myUserId)),
+                      onTap: () => Navigator.of(sheetContext).pop(c.id),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (destination == null || !mounted) return;
+    await MessageActions(ref, widget.conversationId)
+        .forward(context, msg, destination);
+  }
+
   Future<void> _messageAction(String action, ConversationMessage msg) async {
     switch (action) {
       case 'reply':
@@ -395,6 +524,22 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         return;
       case 'copy':
         await Clipboard.setData(ClipboardData(text: msg.body));
+        return;
+      case 'edit':
+        await _startEdit(msg);
+        return;
+      case 'retract':
+        await MessageActions(ref, widget.conversationId)
+            .retract(context, msg);
+        _reloadMessages();
+        return;
+      case 'removeForMe':
+        await MessageActions(ref, widget.conversationId)
+            .removeForMe(context, msg);
+        _reloadMessages();
+        return;
+      case 'forward':
+        await _forward(msg);
         return;
       case 'translate':
         final target = Localizations.localeOf(context).languageCode;
@@ -1035,6 +1180,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     conversation: c,
                     translation: _translations[messages[i].id],
                     onAction: (a) => _messageAction(a, messages[i]),
+                    onReact: (type) => _react(messages[i], type),
                   ),
                 ),
               ),
@@ -1487,12 +1633,17 @@ class _MessageBubble extends ConsumerWidget {
     required this.mine,
     required this.conversation,
     required this.onAction,
+    required this.onReact,
     this.translation,
   });
   final ConversationMessage message;
   final bool mine;
   final Conversation conversation;
   final void Function(String action) onAction;
+
+  /// Toggling a reaction. Separate from `onAction` because it carries a type
+  /// and because it is the one act reachable without opening the sheet.
+  final void Function(String reactionType) onReact;
   final String? translation;
 
   @override
@@ -1529,10 +1680,22 @@ class _MessageBubble extends ConsumerWidget {
         // (canonical moderation authority, frozen hook) for another
         // party's message. Long-press is the touch ergonomic; right-click
         // is the desktop one (messenger parity) — same sheet either way.
-        onLongPress: () =>
-            _showMessageActions(context, mine: mine, onAction: onAction),
-        onSecondaryTap: () =>
-            _showMessageActions(context, mine: mine, onAction: onAction),
+        // Touch and pointer open the SAME sheet, so the two platforms
+        // cannot drift apart on what a message can do.
+        onLongPress: () => showMessageActionSheet(
+          context,
+          message: message,
+          mine: mine,
+          onAction: onAction,
+          onReact: onReact,
+        ),
+        onSecondaryTap: () => showMessageActionSheet(
+          context,
+          message: message,
+          mine: mine,
+          onAction: onAction,
+          onReact: onReact,
+        ),
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 3),
           padding: const EdgeInsets.symmetric(
@@ -1585,13 +1748,55 @@ class _MessageBubble extends ConsumerWidget {
                 ),
                 const SizedBox(height: AuraSpace.s6),
               ],
-              for (final m in message.media) ...[
-                _ConversationAttachment(media: m),
-                const SizedBox(height: AuraSpace.s6),
+              // FORWARDED — attribution travels, the source conversation does
+              // not. The recipient learns who said it, never where.
+              if (message.isForwarded) ...[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.forward_rounded,
+                        size: 11, color: AuraSurface.faint),
+                    const SizedBox(width: 3),
+                    Text(
+                      'Forwarded from '
+                      '${_conversationSenderName(conversation, message.forwardedFromSenderUserId!)}',
+                      style:
+                          AuraText.micro.copyWith(color: AuraSurface.faint),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.s4),
               ],
-              if (message.body.trim() != '…' || message.media.isEmpty)
-                SelectableText.rich(
-                    _conversationRichBody(context, message.body, conversation)),
+              // RETRACTED — a truthful tombstone. The row survives so replies
+              // to it stay valid, and the content is not shown, not even as
+              // greyed-out text: the author took it back.
+              if (message.deleted)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.block_rounded,
+                        size: 13, color: AuraSurface.faint),
+                    const SizedBox(width: AuraSpace.s6),
+                    Text(
+                      mine
+                          ? 'You withdrew this message'
+                          : 'This message was withdrawn',
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.faint,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                )
+              else ...[
+                for (final m in message.media) ...[
+                  _ConversationAttachment(media: m),
+                  const SizedBox(height: AuraSpace.s6),
+                ],
+                if (message.body.trim() != '…' || message.media.isEmpty)
+                  SelectableText.rich(
+                      _conversationRichBody(context, message.body, conversation)),
+              ],
               if (message.linkPreview != null) ...[
                 const SizedBox(height: AuraSpace.s6),
                 _LinkPreviewCard(preview: message.linkPreview!),
@@ -1607,6 +1812,21 @@ class _MessageBubble extends ConsumerWidget {
                         color: AuraSurface.muted,
                         fontStyle: FontStyle.italic)),
               ],
+              // EDITED — said plainly, and only where it is true. A silently
+              // rewritten message is a record nobody can rely on. Prior
+              // versions are retained by the authority; showing them is a
+              // separate product decision and would clutter ordinary reading.
+              if (message.wasEdited && !message.deleted) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Edited',
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                ),
+              ],
+              // REACTIONS as actually recorded, with this viewer's own marked.
+              // Tapping one toggles it through the same authority the sheet
+              // uses, so a tap here and a tap there cannot disagree.
+              MessageReactionBar(message: message, onToggle: onReact),
             ],
           ),
         ),
@@ -1851,52 +2071,9 @@ final _deliveryUrlProvider =
 
 
 /// Message action sheet: the shared per-message capability surface.
-void _showMessageActions(BuildContext context,
-    {required bool mine, required void Function(String action) onAction}) {
-  showModalBottomSheet<void>(
-    context: context,
-    builder: (ctx) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.reply_rounded),
-            title: const Text('Reply'),
-            onTap: () {
-              Navigator.of(ctx).pop();
-              onAction('reply');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.copy_rounded),
-            title: const Text('Copy text'),
-            onTap: () {
-              Navigator.of(ctx).pop();
-              onAction('copy');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.translate_rounded),
-            title: const Text('Translate'),
-            onTap: () {
-              Navigator.of(ctx).pop();
-              onAction('translate');
-            },
-          ),
-          if (!mine)
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: const Text('Report'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                onAction('report');
-              },
-            ),
-        ],
-      ),
-    ),
-  );
-}
+// The old four-action sheet is retired. The full set — reactions, reply,
+// forward, edit, retract, remove-for-me, copy, translate, report — lives in
+// message_interactions.dart, so touch and pointer reach one implementation.
 
 String _conversationSenderName(Conversation c, String userId) {
   for (final p in c.parties) {

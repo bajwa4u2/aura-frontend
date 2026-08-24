@@ -154,6 +154,10 @@ class CorrespondenceLiveService {
       'thread:member.updated',
       // CANONICAL CONVERSATION MESSAGES. This is the authority.
       'conversation:message.created',
+      // A message that already exists changed — reacted to, edited, or
+      // retracted. Carries no content, only what moved, so the client re-reads
+      // the projection that knows what THIS viewer may see of it now.
+      'conversation:message.changed',
 
       // COMPATIBILITY CONSUMERS ONLY — the legacy Thread runtime, retired as
       // an authority by the DirectThread and member-Space cutovers. They are
