@@ -45,6 +45,7 @@ class InstitutionRouteScope extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    debugPrint('AURAINST: InstitutionRouteScope.build address=$address');
     final snapshot = ref.watch(institutionAuthoritySnapshotProvider);
 
     // Still finding out. Not "no institution" — deciding here is the RC2

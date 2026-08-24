@@ -2170,7 +2170,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             // institution scope because a Space address is scoped to its
             // parent institution — resolving it needs the institution first.
             path: '/institution/:institutionId/spaces/:spaceAddress',
-            builder: (context, state) => InstitutionRouteScope(
+            builder: (context, state) => _instTrace(
+              'space-detail builder inst=${state.pathParameters['institutionId']} '
+              'space=${state.pathParameters['spaceAddress']}',
+              InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) => InstitutionSpaceRouteScope(
                 institutionId: institutionId,
@@ -2180,6 +2183,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   spaceId: spaceId,
                 ),
               ),
+            ),
             ),
           ),
           // The institution thread/archived-thread routes are RETIRED with
@@ -2622,6 +2626,13 @@ class _RouterBootScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const Scaffold(body: AuraProductState(state: ProductState.loading));
+}
+
+/// Temporary tracing while the institution route boundary is measured
+/// against production. Removed once the measurement is taken.
+Widget _instTrace(String what, Widget child) {
+  debugPrint('AURAINST: $what');
+  return child;
 }
 
 class GoRouterRefreshStream extends ChangeNotifier {
