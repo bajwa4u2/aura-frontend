@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../net/dio_provider.dart';
+import '../product/product_language.dart';
 import '../product/product_state.dart';
 import '../product/product_state_view.dart';
 
@@ -13,13 +14,28 @@ import '../product/product_state_view.dart';
 /// so this asks rather than deriving anything locally. A client that tried to
 /// compute it would need the thread's participants, which is the payload it is
 /// trying to reach.
+///
+/// IT ASKS THE RESOLUTION ENDPOINT, NOT THE READ ENDPOINT.
+///
+/// Found in production 2026-08-24: this called `GET /direct-threads/:id`,
+/// which — like every other read on that service — requires the caller to name
+/// the actor it is asking AS. This sent none, so the cutover answered
+/// `400 actor is missing userId` for every address from the day it shipped,
+/// and the scope below rendered its not-found state over a correspondence that
+/// existed.
+///
+/// Naming the actor is not this layer's to guess: C1 is explicit that a route
+/// may establish the context being viewed and never acting identity. So the
+/// authority answers the question as it is actually meant — where does this
+/// address lead FOR ME — from the caller's own session.
 final legacyDirectThreadConversationProvider =
     FutureProvider.family<String?, String>((ref, threadId) async {
   final id = threadId.trim();
   if (id.isEmpty) return null;
 
   try {
-    final res = await ref.read(dioProvider).get('/direct-threads/$id');
+    final res =
+        await ref.read(dioProvider).get('/direct-threads/$id/conversation');
     final body =
         res.data is Map ? Map<String, dynamic>.from(res.data as Map) : <String, dynamic>{};
     final data =
@@ -89,12 +105,23 @@ class _DirectThreadCutoverScopeState
         ref.watch(legacyDirectThreadConversationProvider(id));
 
     return resolved.when(
-      loading: () => const AuraProductState(state: ProductState.loading),
-      // Resolved-but-unknown is a truthful empty state, never an eternal
-      // spinner and never a silent bounce to somewhere unrelated.
-      error: (_, __) => const AuraProductState(
-        state: ProductState.empty,
-        headline: 'That conversation could not be found',
+      loading: () => const AuraProductState(
+        state: ProductState.loading,
+        subject: ProductNoun.conversation,
+      ),
+      // NOT FINDING OUT IS NOT ABSENCE.
+      //
+      // Resolved-but-unknown is a truthful empty state (below). A failure to
+      // REACH the authority is a different fact, and this rendered them
+      // identically — so the 400 above read to every reader as "this
+      // correspondence does not exist". That is the RC2 / F065 shape, in the
+      // one file whose own comments warn against it. It is recoverable, and
+      // it now says so.
+      error: (_, __) => AuraProductState(
+        state: ProductState.retryableError,
+        subject: ProductNoun.conversation,
+        onRecover: () =>
+            ref.invalidate(legacyDirectThreadConversationProvider(id)),
       ),
       data: (conversationId) {
         if (conversationId == null) {
@@ -104,7 +131,10 @@ class _DirectThreadCutoverScopeState
           );
         }
         _goCanonical(conversationId);
-        return const AuraProductState(state: ProductState.loading);
+        return const AuraProductState(
+          state: ProductState.loading,
+          subject: ProductNoun.conversation,
+        );
       },
     );
   }
