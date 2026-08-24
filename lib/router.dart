@@ -1,3 +1,4 @@
+import 'features/discover/presentation/discover_search.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -45,7 +46,6 @@ import 'features/public/presentation/space_detail_screen.dart';
 import 'features/public/presentation/spaces_discovery_screen.dart';
 import 'features/public/presentation/thread_screen.dart';
 import 'features/public/presentation/transparency_screen.dart';
-import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
 import 'features/activity/presentation/activity_screen.dart';
 import 'features/announcements/presentation/announcements_screen.dart';
@@ -1061,7 +1061,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
-          GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
+          // SEARCH IS DISCOVER, NOT A SEPARATE SCREEN.
+          //
+          // The address stays — governed tag taps arrive here as
+          // `/search?q=...` and older links still point at it — but it now
+          // renders the Discover surface in its searching state rather than a
+          // second search product with its own results, its own empty state
+          // and its own idea of what a result is.
+          //
+          // A query in the address is applied to the same state the field
+          // publishes, so arriving with `?q=` and typing by hand end in
+          // exactly the same place.
+          GoRoute(
+            path: '/search',
+            builder: (_, state) {
+              final q = (state.uri.queryParameters['q'] ?? '').trim();
+              return _DiscoverSearchEntryPoint(seedQuery: q);
+            },
+          ),
           // C3 — DISCOVER: founder-frozen consolidated discovery intention.
           GoRoute(
             path: '/discover',
@@ -2606,5 +2623,46 @@ class GoRouterRefreshStream extends ChangeNotifier {
   void dispose() {
     _sub.cancel();
     super.dispose();
+  }
+}
+
+/// THE SEARCH ADDRESS, RENDERED AS DISCOVER.
+///
+/// `/search?q=…` is a real, governed address: tag taps produce it and older
+/// links still carry it. It no longer opens a second search product. This
+/// seeds the incoming query into the same state the Discover field publishes
+/// — once, on first build, so a person who then edits the field is not fought
+/// by the address they arrived through — and hands over to the one surface.
+class _DiscoverSearchEntryPoint extends ConsumerStatefulWidget {
+  const _DiscoverSearchEntryPoint({required this.seedQuery});
+
+  final String seedQuery;
+
+  @override
+  ConsumerState<_DiscoverSearchEntryPoint> createState() =>
+      _DiscoverSearchEntryPointState();
+}
+
+class _DiscoverSearchEntryPointState
+    extends ConsumerState<_DiscoverSearchEntryPoint> {
+  @override
+  void initState() {
+    super.initState();
+    final q = widget.seedQuery;
+    if (q.isEmpty) return;
+    // Applied after the first frame: writing to a provider during build is
+    // what produces the "modified during build" crash.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(discoverQueryProvider.notifier).state = q;
+      ref.read(discoverNarrowedDomainProvider.notifier).state = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Focus the field when there is nothing to show yet, so arriving at the
+    // search address means being ready to type.
+    return DiscoverScreen(autofocusSearch: widget.seedQuery.isEmpty);
   }
 }

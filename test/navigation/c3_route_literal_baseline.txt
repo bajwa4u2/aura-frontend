@@ -31,7 +31,6 @@
 1 lib/features/direct_threads/presentation/direct_intent_screen.dart
 2 lib/features/discourse_intelligence/widgets/continuity_cards.dart
 1 lib/features/discourse_intelligence/widgets/institutional_response_history_strip.dart
-1 lib/features/discover/presentation/discover_screen.dart
 1 lib/features/feed/presentation/feed_interaction_bar.dart
 1 lib/features/feed/presentation/quoted_post_preview.dart
 1 lib/features/feed/presentation/unified_feed_card.dart
@@ -91,7 +90,6 @@
 3 lib/features/public/presentation/public_institutions_directory_screen.dart
 3 lib/features/public/presentation/public_unit_detail_screen.dart
 2 lib/features/public/presentation/space_detail_screen.dart
-1 lib/features/public/presentation/spaces_discovery_screen.dart
 6 lib/features/public/presentation/thread_screen.dart
 1 lib/features/public/widgets/follow_button.dart
 1 lib/features/public/widgets/monetization_label.dart
@@ -105,7 +103,6 @@
 # routed through NavigationAuthority.realtimeSessionJoinRoute.
 1 lib/features/realtime/presentation/widgets/floating_call_widget.dart
 1 lib/features/realtime/presentation/widgets/orphaned_session_banner.dart
-2 lib/features/search/presentation/search_screen.dart
 2 lib/features/updates/presentation/updates_screen.dart
 1 lib/screens/account_deletion_screen.dart
 2 lib/screens/child_safety_screen.dart

@@ -1,155 +1,305 @@
-import 'package:aura/features/institution_ontology/providers.dart';
-import 'package:aura/features/institution_ontology/models.dart';
-import 'package:aura/features/feed/domain/feed_item.dart';
-import 'package:aura/features/feed/data/unified_feed_providers.dart';
-import 'package:aura/features/discover/data/people_discovery.dart';
-import 'package:aura/core/identity/person_identity_model.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:aura/core/identity/person_identity_model.dart';
+import 'package:aura/features/discover/data/discover_repository.dart';
+import 'package:aura/features/discover/data/people_discovery.dart';
 import 'package:aura/features/discover/presentation/discover_screen.dart';
+import 'package:aura/features/discover/presentation/discover_search.dart';
 import 'package:aura/features/public/data/public_spaces_registry.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aura/features/search/providers.dart';
+import 'package:aura/features/search/search_repository.dart';
 
-/// DISCOVER — AURA'S EXTENSIBLE DISCOVERY FRAMEWORK (founder-frozen,
-/// C3 post-closeout correction, 2026-08-16). These pins enforce the
-/// frozen framework rules:
-///   * four immediate domains: People · Institutions · Spaces · Articles;
-///   * a declared-not-available domain renders HONESTLY — no dead CTA,
-///     no navigation affordance, an explicit unavailable note;
-///   * Discover DISCOVERS — no onboarding/workspace affordances anywhere
-///     in the discovery surfaces;
-///   * verification is identity truth, never relevance ranking.
+/// DISCOVER — AURA'S LIVE, CURATED, ACTIONABLE DISCOVERY DASHBOARD.
+///
+/// Founder ruling 2026-08-24 replaced the previous composition. The landing is
+/// no longer four large domain doors over a search box that navigated away; it
+/// is four live domains, each presented as the kind of object it holds, with a
+/// search experience that operates in place.
+///
+/// These pin the parts of that ruling a future change could quietly undo:
+///
+///   * exactly four domains, and Posts is not one of them;
+///   * a domain that cannot be filled disappears rather than promising;
+///   * search is part of this surface, not a redirect to another one;
+///   * narrowing keeps the query, and clearing restores the dashboard;
+///   * the sector taxonomy does not live on the landing;
+///   * Discover DISCOVERS — no onboarding or workspace affordances.
 void main() {
-  group('discovery-domain registry (frozen framework)', () {
-    test('the four immediate domains, in order', () {
-      expect(
-        kDiscoveryDomains.map((d) => d.title).toList(),
-        ['People', 'Institutions', 'Spaces', 'Articles'],
+  // ── Harness ───────────────────────────────────────────────────────────────
+  //
+  // Every domain reads a governed projection. They are overridden rather than
+  // left to reach the network: a widget test that fetches is not
+  // deterministic, and its pending timers fail the suite for reasons unrelated
+  // to the assertion.
+
+  PersonSuggestion person(String name, String handle) => PersonSuggestion(
+        person: AuraPersonIdentity.fromJson({
+          'id': handle,
+          'displayName': name,
+          'handle': handle,
+        }),
+        reasons: const ['Followed by someone you follow'],
+        followState: 'NONE',
       );
-    });
 
-    test('implemented domains navigate; declared-unavailable domains do not',
-        () {
-      final byTitle = {for (final d in kDiscoveryDomains) d.title: d};
-      expect(byTitle['People']!.route, '/discover/people');
-      expect(byTitle['Institutions']!.route, '/institutions');
-      expect(byTitle['Spaces']!.route, '/spaces');
-      // Articles is REAL (2026-08-16 addendum): the fourth domain renders
-      // and routes to the Article discovery/reading surface.
-      expect(byTitle['Articles']!.route, '/discover/articles');
-      expect(byTitle['Articles']!.unavailableNote, isNull);
-    });
-
-    test('every unavailable domain carries an honest note; available ones do not',
-        () {
-      for (final d in kDiscoveryDomains) {
-        expect((d.route == null), (d.unavailableNote != null), reason: d.title);
-      }
-    });
-  });
-
-  group('Discover renders the framework honestly', () {
-    /// The landing now reads three governed projections. They are overridden
-    /// rather than left to fire real requests: a widget test that reaches the
-    /// network is not deterministic, and the pending timers it leaves behind
-    /// fail the suite for reasons unrelated to what is being asserted.
-    Widget harness({
-      List<PersonSuggestion> people = const [],
-      InstitutionOntology ontology = InstitutionOntology.empty,
-      List<FeedItem> feed = const [],
-    }) {
-      return ProviderScope(
-        overrides: [
-          peopleDiscoveryProvider.overrideWith(
-            (ref) async =>
-                PeopleDiscoveryPage(suggestions: people, coldStart: false),
-          ),
-          institutionOntologyProvider.overrideWith((ref) async => ontology),
-          globalPublicFeedProvider
-              .overrideWith((ref) async => FeedPage(items: feed)),
-        ],
-        child: const MaterialApp(home: Material(child: DiscoverScreen())),
+  DiscoveredSpace space(String slug, String name) => DiscoveredSpace(
+        id: 'pubsp_$slug',
+        slug: slug,
+        name: name,
+        description: 'A public context.',
+        iconKey: 'account_balance_outlined',
+        participantCount: 3,
+        postCount: 7,
+        lastActivityAt: DateTime.utc(2026, 8, 20),
+        viewerFollows: false,
+        reason: null,
       );
-    }
 
-    testWidgets(
-        'all four domains render — Articles is real (2026-08-16 addendum)',
-        (tester) async {
-      await tester.pumpWidget(harness());
-      await tester.pumpAndSettle();
+  DiscoveredInstitution institution(String slug, String name) =>
+      DiscoveredInstitution(
+        id: slug,
+        slug: slug,
+        name: name,
+        tagline: 'An institutional presence.',
+        description: null,
+        logoUrl: null,
+        city: 'Taylor',
+        country: 'United States',
+        institutionClass: null,
+        domainTags: const [],
+        verified: true,
+        memberCount: 5,
+        viewerFollows: false,
+        reason: null,
+      );
 
-      for (final title in [
-        'People',
-        'Institutions',
-        'Spaces',
-        'Articles',
-      ]) {
-        expect(find.text(title), findsOneWidget);
-      }
-    });
+  DiscoveredArticle article(String id, String title) => DiscoveredArticle(
+        id: id,
+        slug: id,
+        title: title,
+        coverMediaId: null,
+        coverUrl: null,
+        publishedAt: DateTime.utc(2026, 8, 1),
+        readingMinutes: 4,
+        authorName: 'A Person',
+        authorHandle: 'aperson',
+        authorAvatarUrl: null,
+        reason: null,
+      );
 
-    testWidgets('a section with nothing to show does not claim to have '
-        'something', (tester) async {
-      // Founder finding, 2026-08-23: the landing announced "People suggested
-      // for you" while showing no people. A section that cannot be filled is
-      // absent, not asserted — the domain door above it still works.
-      await tester.pumpWidget(harness());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Suggested for you'), findsNothing);
-      expect(find.text('Browse by sector'), findsNothing);
-      // The public section stays and says, truthfully, that there is nothing.
-      expect(find.text('Happening on Aura'), findsOneWidget);
-    });
-
-    testWidgets('real projections produce real, actionable content',
-        (tester) async {
-      // Tall surface: the ListView builds lazily, so a short viewport would
-      // simply not construct the lower sections and the assertions would be
-      // measuring the fold rather than the content.
-      tester.view.devicePixelRatio = 1.0;
-      tester.view.physicalSize = const Size(1200, 3000);
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(harness(
-        people: [
-          PersonSuggestion(
-            person: AuraPersonIdentity.fromJson(const {
-              'id': 'u1',
-              'displayName': 'A Person',
-              'handle': 'aperson',
-            }),
-            reasons: const ['Active in Civic'],
-            followState: 'NONE',
-          ),
-        ],
-        ontology: const InstitutionOntology(
-          classes: [
-            InstitutionClassDef(
-              id: 'CIVIC_BODY',
-              label: 'Civic body',
-              description: 'Public institutions.',
-            ),
-          ],
-          types: [],
-          domainTags: [],
-          maxDomainTagsPerInstitution: 3,
+  Widget harness({
+    List<PersonSuggestion> people = const [],
+    List<DiscoveredSpace> spaces = const [],
+    List<DiscoveredInstitution> institutions = const [],
+    List<DiscoveredArticle> articles = const [],
+    SearchResult? searchResult,
+  }) {
+    return ProviderScope(
+      overrides: [
+        peopleDiscoveryProvider.overrideWith(
+          (ref) async =>
+              PeopleDiscoveryPage(suggestions: people, coldStart: false),
         ),
+        discoverSpacesPreviewProvider.overrideWith(
+          (ref) async => DiscoverPage(items: spaces, total: spaces.length),
+        ),
+        discoverInstitutionsPreviewProvider.overrideWith(
+          (ref) async =>
+              DiscoverPage(items: institutions, total: institutions.length),
+        ),
+        discoverArticlesPreviewProvider.overrideWith(
+          (ref) async => DiscoverPage(items: articles, total: articles.length),
+        ),
+        if (searchResult != null)
+          discoverSearchResultProvider.overrideWith((ref) async => searchResult),
+      ],
+      child: const MaterialApp(home: Material(child: DiscoverScreen())),
+    );
+  }
+
+  Future<void> tall(WidgetTester tester) async {
+    // The ListView builds lazily; a short viewport would simply not construct
+    // the lower domains and the assertions would measure the fold.
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(1200, 4000);
+    addTearDown(tester.view.reset);
+  }
+
+  group('the landing holds four live domains', () {
+    testWidgets('each domain renders its own objects', (tester) async {
+      await tall(tester);
+      await tester.pumpWidget(harness(
+        people: [person('A Person', 'aperson')],
+        spaces: [space('civic', 'Civic')],
+        institutions: [institution('aura-platform-llc', 'Aura Platform')],
+        articles: [article('a1', 'What We Build')],
       ));
       await tester.pumpAndSettle();
 
-      // A person, shown — with the follow control that makes the section a
-      // place to act rather than a place to read a claim.
+      for (final heading in ['People', 'Spaces', 'Institutions', 'Articles']) {
+        expect(find.text(heading), findsOneWidget, reason: heading);
+      }
+      // Real objects, not just headings.
       expect(find.text('A Person'), findsOneWidget);
-      expect(find.text('Follow'), findsOneWidget);
-      expect(find.text('See all'), findsOneWidget);
+      expect(find.text('Civic'), findsOneWidget);
+      expect(find.text('Aura Platform'), findsOneWidget);
+      expect(find.text('What We Build'), findsOneWidget);
+    });
 
-      // Topical entry, from the public taxonomy.
-      expect(find.text('Browse by sector'), findsOneWidget);
-      expect(find.text('Civic body'), findsOneWidget);
+    testWidgets('objects carry their natural action', (tester) async {
+      await tall(tester);
+      await tester.pumpWidget(harness(
+        people: [person('A Person', 'aperson')],
+        spaces: [space('civic', 'Civic')],
+        institutions: [institution('aura-platform-llc', 'Aura Platform')],
+      ));
+      await tester.pumpAndSettle();
+
+      // Follow on the person, the Space and the institution — the dashboard is
+      // somewhere to act, not only to look.
+      expect(find.text('Follow'), findsNWidgets(3));
+      // And a way deeper into each domain.
+      expect(find.text('Explore'), findsNWidgets(3));
+    });
+
+    testWidgets('a domain with nothing to show disappears', (tester) async {
+      // Founder ruling: a section may disappear rather than render an empty
+      // promise. The previous composition announced "People suggested for you"
+      // and showed none.
+      await tall(tester);
+      await tester.pumpWidget(harness(spaces: [space('civic', 'Civic')]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Spaces'), findsOneWidget);
+      expect(find.text('People'), findsNothing);
+      expect(find.text('Institutions'), findsNothing);
+      expect(find.text('Articles'), findsNothing);
+    });
+
+    testWidgets('the sector taxonomy does not live on the landing',
+        (tester) async {
+      // It belongs inside Institution discovery. A wall of institutional
+      // classification must not be Aura's acquisition premise — and with no
+      // institution classified, every sector leads nowhere.
+      await tall(tester);
+      await tester.pumpWidget(harness(
+        institutions: [institution('aura-platform-llc', 'Aura Platform')],
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Browse by sector'), findsNothing);
+    });
+
+    testWidgets('Home keeps ongoing discourse — Discover does not', (tester) async {
+      await tall(tester);
+      await tester.pumpWidget(harness(spaces: [space('civic', 'Civic')]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Happening on Aura'), findsNothing);
+    });
+  });
+
+  group('search operates inside Discover', () {
+    testWidgets('the dashboard yields to grouped results and comes back',
+        (tester) async {
+      await tall(tester);
+      final container = ProviderContainer(overrides: [
+        peopleDiscoveryProvider.overrideWith(
+          (ref) async => PeopleDiscoveryPage(
+              suggestions: [person('A Person', 'aperson')], coldStart: false),
+        ),
+        discoverSpacesPreviewProvider.overrideWith(
+          (ref) async => const DiscoverPage(items: [], total: 0),
+        ),
+        discoverInstitutionsPreviewProvider.overrideWith(
+          (ref) async => const DiscoverPage(items: [], total: 0),
+        ),
+        discoverArticlesPreviewProvider.overrideWith(
+          (ref) async => const DiscoverPage(items: [], total: 0),
+        ),
+        discoverSearchResultProvider.overrideWith(
+          (ref) async => const SearchResult(
+            people: [
+              {'id': 'u1', 'displayName': 'Found Person', 'handle': 'found'}
+            ],
+            institutions: [],
+            spaces: [],
+            articles: [],
+          ),
+        ),
+      ]);
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: Material(child: DiscoverScreen())),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('A Person'), findsOneWidget); // dashboard
+
+      container.read(discoverQueryProvider.notifier).state = 'found';
+      await tester.pumpAndSettle();
+
+      expect(find.text('Found Person'), findsOneWidget); // results
+      expect(find.text('A Person'), findsNothing); // dashboard yielded
+
+      // Clearing restores the curated dashboard.
+      container.read(discoverQueryProvider.notifier).state = '';
+      await tester.pumpAndSettle();
+      expect(find.text('A Person'), findsOneWidget);
+    });
+
+    test('a one-character query is not a query', () {
+      // Single letters match almost everything; the dashboard is the better
+      // answer until there is enough to go on.
+      expect(kMinQueryLength, greaterThanOrEqualTo(2));
+    });
+
+    test('Posts is not a Discover domain', () {
+      // The backend search returns posts. Surfacing them here would put the
+      // feed back inside Discover through the search box.
+      expect(SearchDomain.values.map((d) => d.label).toList(),
+          ['People', 'Spaces', 'Institutions', 'Articles']);
+      final source =
+          File('lib/features/search/search_repository.dart').readAsStringSync();
+      expect(source.contains("listOf('posts')"), isFalse);
+    });
+
+    test('search reads the canonical authority, not a second backend', () {
+      final source =
+          File('lib/features/search/search_repository.dart').readAsStringSync();
+      expect(source, contains("'/search'"));
+      // No parallel discovery-only search endpoint.
+      expect(source.contains('/discover/search'), isFalse);
+    });
+
+    test('the retired search screen is gone, and its address still works', () {
+      expect(
+        File('lib/features/search/presentation/search_screen.dart').existsSync(),
+        isFalse,
+        reason: 'the legacy search product is retired, not merely bypassed',
+      );
+      final router = File('lib/router.dart').readAsStringSync();
+      expect(router, contains("path: '/search'"));
+      expect(router, contains('_DiscoverSearchEntryPoint'));
+    });
+
+    test('search state survives navigation by living outside the widget', () {
+      // Query and narrowing must be restored when a person opens an object and
+      // comes back. autoDispose would drop both the moment the surface is
+      // covered.
+      final source =
+          File('lib/features/discover/presentation/discover_search.dart')
+              .readAsStringSync();
+      expect(source.contains('StateProvider.autoDispose'), isFalse);
+      expect(source, contains('discoverQueryProvider'));
+      expect(source, contains('discoverNarrowedDomainProvider'));
     });
   });
 
@@ -182,15 +332,24 @@ void main() {
       ];
       for (final path in files) {
         final src = File(path).readAsStringSync();
-        // Rendering must consume the unified activity-ordered list, not
-        // section the page by the verification cohorts (which survive
-        // only as transitional wire fields for released clients).
         expect(RegExp(r'items:\s*page\.(verified|other)\b').hasMatch(src),
             isFalse,
             reason: '$path renders a verification cohort as its own '
                 'section — verification is identity truth on each card, '
                 'never relevance ranking (C2).');
       }
+    });
+
+    test('Spaces discovery reads the backend, not a compiled-in universe', () {
+      // The registry survives as a fallback for icons and legacy addresses;
+      // it is no longer the product authority for what exists.
+      final src =
+          File('lib/features/public/presentation/spaces_discovery_screen.dart')
+              .readAsStringSync();
+      expect(src.contains('publicSpacesProvider'), isFalse,
+          reason: 'the hardcoded registry must not decide what is '
+              'discoverable — four of its ten entries existed nowhere else');
+      expect(src, contains('discoverRepositoryProvider'));
     });
   });
 
@@ -203,8 +362,8 @@ void main() {
       );
       expect(mount.hasMatch(router), isTrue,
           reason: 'The canonical /discover route must mount DiscoverScreen '
-              '(features/discover) — the frozen four-domain framework. A '
-              'different widget here is the stale-landing defect.');
+              '(features/discover). A different widget here is the '
+              'stale-landing defect.');
       expect(
         RegExp(r'class DiscoverScreen\b')
             .allMatches(
@@ -238,56 +397,11 @@ void main() {
     });
   });
 
-  group('ADD INSTITUTION lifecycle action (live-defect pins, 2026-08-16)',
-      () {
-    final headerSrc =
-        File('lib/app/shell/shell_header_tools.dart').readAsStringSync();
-
-    test('visible at EVERY width for a person with no institution — gated '
-        'only by canonical relationship truth', () {
-      // 2026-08-22: the gate gained a RESOLUTION term. Offering to ADD an
-      // institution asserts the person has none, and an empty affiliation list
-      // means "none" only after access resolves — before that it means "not
-      // yet". A member who already speaks for an institution was being invited
-      // to acquire one on every entry and refresh (the founder-observed
-      // public -> institution transit).
-      //
-      // The pin's original intent is unchanged and still asserted below: the
-      // action must never be gated on width, route or shell. Resolution truth
-      // is not one of those.
-      expect(
-          RegExp(r'if \(affiliationsResolved && !hasInstitution\) \.\.\.\[')
-              .hasMatch(headerSrc),
-          isTrue,
-          reason: 'The Add Institution action must render whenever the person '
-              'is KNOWN to have no institution relationship — not desktop-only, '
-              'and not while that is still unknown.');
-      expect(headerSrc.contains('myAffiliationsProvider'), isTrue,
-          reason: 'Visibility must derive from canonical relationship '
-              'truth, never route/shell/cached assumptions.');
-      expect(
-          RegExp(r'isDesktop\s*&&\s*!hasInstitution').hasMatch(headerSrc),
-          isFalse,
-          reason: 'Width must not gate the lifecycle action.');
-    });
-
-    test('disappears once a relationship exists — no buried menu fallback',
-        () {
-      expect(headerSrc.contains("'add_institution'"), isFalse,
-          reason: 'The account-menu variant is retired: with an '
-              'institution relationship the onboarding action is ABSENT, '
-              'not relocated into a menu.');
-    });
-
-    test('resolves directly to the ONE canonical onboarding journey', () {
-      expect(
-          headerSrc.contains('NavigationAuthority.institutionOnboardingRoute'),
-          isTrue);
-    });
-  });
-
   group('Spaces taxonomy registry integrity', () {
     test('slugs, ids, and tags are unique and stable-shaped', () {
+      // The registry is now a fallback rather than the authority, but its
+      // frozen wire contracts still have to hold: the backend rows were seeded
+      // from exactly these slugs.
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final spaces = container.read(publicSpacesProvider);

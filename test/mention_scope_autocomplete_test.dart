@@ -32,11 +32,12 @@ class _FakeSearchRepository extends SearchRepository {
   @override
   Future<SearchResult> search(String q, {int limit = 12}) async {
     return const SearchResult(
-      users: [
+      people: [
         {'id': 'global-1', 'handle': 'globaluser', 'displayName': 'Global User'},
       ],
       institutions: [],
-      posts: [],
+      spaces: [],
+      articles: [],
     );
   }
 }

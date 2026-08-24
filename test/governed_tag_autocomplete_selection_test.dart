@@ -14,7 +14,7 @@ class _FakeSearchRepository extends SearchRepository {
   @override
   Future<SearchResult> search(String q, {int limit = 12}) async {
     return const SearchResult(
-      users: [
+      people: [
         {
           'id': 'user-2',
           'handle': 'neighbor',
@@ -30,7 +30,8 @@ class _FakeSearchRepository extends SearchRepository {
           'logoUrl': 'https://cdn.example.com/logo.png',
         },
       ],
-      posts: [],
+      spaces: [],
+      articles: [],
     );
   }
 }

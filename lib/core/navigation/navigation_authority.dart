@@ -217,6 +217,16 @@ class NavigationAuthority {
   /// beneath it; the domains are addresses this authority owns, so a surface
   /// that links into one asks here instead of composing the path itself.
   static const String discoverPeopleRoute = '/discover/people';
+
+  /// The Spaces and Institutions domain destinations. Both are Discover
+  /// facets, so their addresses belong to this authority rather than being
+  /// composed at each call site.
+  static const String spacesRoute = '/spaces';
+  static const String institutionsRoute = '/institutions';
+
+  /// A public Space, addressed by its durable slug — never its persistence id.
+  static String spaceRoute(String slug) => '/spaces/$slug';
+
   static const String discoverArticlesRoute = '/discover/articles';
 
   /// A sector's institution ecosystem view, keyed by the ontology's stable
