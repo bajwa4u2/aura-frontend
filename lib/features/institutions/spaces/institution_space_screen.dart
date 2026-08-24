@@ -105,7 +105,6 @@ class _InstitutionSpaceScreenState
             body: const AuraProductState(
               state: ProductState.loading,
               subject: ProductNoun.conversation,
-              headline: 'Loading [D space+conversation]',
             ),
           );
         }
