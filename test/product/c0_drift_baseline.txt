@@ -107,6 +107,11 @@ G7 1 lib/widgets/note_card.dart
 # consumed the nine Follow-blocked sites. Measured remainder: 67 files / 168 sites. This is the burn-down that keeps AuraProductState from
 # sitting declared-and-unconsumed: the count can only fall, never rise.
 # Each later chapter converts the surfaces it owns as it touches them.
+#
+# Discover reconstruction (2026-08-23) consumed the four sites on the two
+# journey screens it owns: search_screen (3) and space_detail_screen (1).
+# Search is Discover's primary affordance, so its empty/loading/unavailable
+# answers now come from the product-state authority like every other surface.
 G5 1 lib/features/activity/presentation/activity_screen.dart
 G5 4 lib/features/admin/presentation/admin_audit_logs_screen.dart
 G5 3 lib/features/admin/presentation/admin_feature_flags_screen.dart
@@ -161,9 +166,7 @@ G5 3 lib/features/public/presentation/institution_sector_screen.dart
 G5 3 lib/features/public/presentation/public_institution_units_screen.dart
 G5 3 lib/features/public/presentation/public_institutions_directory_screen.dart
 G5 2 lib/features/public/presentation/public_unit_detail_screen.dart
-G5 1 lib/features/public/presentation/space_detail_screen.dart
 G5 3 lib/features/public/presentation/thread_screen.dart
 G5 3 lib/features/saves/presentation/saved_screen.dart
-G5 3 lib/features/search/presentation/search_screen.dart
 G5 3 lib/features/updates/presentation/updates_screen.dart
 G5 2 lib/shared/media/profile_media_editor.dart

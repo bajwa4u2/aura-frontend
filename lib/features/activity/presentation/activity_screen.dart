@@ -229,9 +229,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         }
       }
 
-      if (deeplink.startsWith('/spaces/')) {
+      // NOTE: `/spaces/...` is the live PublicSpace address, not a retired
+      // correspondence space — see route_targets.dart. Only the legacy
+      // correspondence shape is diverted here, and production holds none, so
+      // this branch is compatibility for a shape that may no longer exist.
+      if (deeplink.startsWith('/me/correspondence/')) {
         final idFromLink = deeplink
-            .substring('/spaces/'.length)
+            .substring('/me/correspondence/'.length)
             .split('?')
             .first
             .trim();

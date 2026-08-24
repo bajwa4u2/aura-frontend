@@ -32,11 +32,31 @@ String normalizeMemberFacingRoute(
     normalizedPath = '/me$normalizedPath';
   } else if (normalizedPath == '/conversations') {
     normalizedPath = '/messages';
-  } else if (normalizedPath.startsWith('/spaces/')) {
-    // Phase 5: '/me/correspondence/:spaceId' is retired. A bare '/spaces/:id'
-    // address named a personal correspondence space, which no longer has a
-    // surface; messaging is where that traffic belongs now.
-    normalizedPath = '/messages';
+    // `/spaces/...` IS DELIBERATELY NOT REWRITTEN. It used to be sent to
+    // /messages on the reasoning that a bare `/spaces/:id` named a retired
+    // personal correspondence space — but that prefix is also the live
+    // PublicSpace address, and the rule could not tell them apart.
+    //
+    // Measured 2026-08-23: production holds ZERO persisted deeplinks naming
+    // `/spaces/`, while the product offers TEN Space addresses through the
+    // public registry (civic, climate, culture, economy, education, health,
+    // justice, local, science, technology). Six of those carry a PublicSpace
+    // row; the other four resolve through the registry fallback and were
+    // verified rendering correctly in production. Every one of the ten is a
+    // live address this rule would have rewritten.
+    //
+    // SCOPE, stated precisely. This normaliser governs three entries only —
+    // the post-sign-in `?redirect=` destination, Activity attention
+    // deeplinks, and notification deeplinks. Direct URL navigation and
+    // in-app Discover taps never reach it, and were never affected;
+    // /spaces/civic was verified rendering correctly in production while the
+    // rule was still live. The reachable exposure was the sign-in redirect:
+    // arriving signed-out at a Space, then authenticating, normalised
+    // `/spaces/civic` to `/messages` and lost the destination.
+    //
+    // A genuinely retired `/spaces/<legacy-id>` now resolves to the
+    // PublicSpace surface and honestly finds nothing, which is the truthful
+    // answer for a retired address — better than landing somewhere unrelated.
   } else if (normalizedPath.startsWith('/threads/')) {
     final threadId = normalizedPath.substring('/threads/'.length).trim();
     if (threadId.isNotEmpty) {

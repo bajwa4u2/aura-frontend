@@ -1,3 +1,5 @@
+import '../../../core/product/product_state_view.dart';
+import '../../../core/product/product_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -73,7 +75,7 @@ class SpaceDetailScreen extends ConsumerWidget {
               description: fallbackSpace?.description ?? '',
             ),
             const InsModeHeaderGap(),
-            const Center(child: AuraLoadingState(message: 'Loading…')),
+            const AuraProductState(state: ProductState.loading),
           ],
         ),
       ),

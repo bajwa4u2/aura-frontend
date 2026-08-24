@@ -1,3 +1,6 @@
+import '../../../core/product/product_state_view.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_language.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -117,10 +120,7 @@ class _PublicInstitutionsDirectoryScreenState
                   // own verified / on-the-platform cohorts and type
                   // narrow row. Self-hides while the ontology is
                   // loading (the grid widget shrinks).
-                  const _BrowseBySectorHeading(),
-                  const SizedBox(height: AuraSpace.s10),
-                  const SectorGrid(),
-                  const SizedBox(height: AuraSpace.s20),
+                  const _BrowseBySectorSection(),
                   // Real public-feed civic signal — collapses entirely
                   // when no institution-authored items are present in
                   // the public feed. Derived from
@@ -768,6 +768,61 @@ class _OntologyTypeNarrowRow extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// THE HEADING AND ITS CONTENT ARE ONE THING.
+///
+/// These used to be siblings: the heading always rendered, and the grid
+/// collapsed to nothing whenever the ontology was empty. When
+/// `GET /institutions/ontology` started answering 404 in production, the
+/// result was a heading and an explanatory sentence floating above a blank
+/// band — a section promising "explore institutions by class" with no classes,
+/// no explanation, and nothing to click.
+///
+/// The grid also could not tell "still loading" from "failed" from "genuinely
+/// none", because it read `valueOrNull ?? empty` and rendered nothing for all
+/// three. Now each is answered as itself, through the product-state authority.
+class _BrowseBySectorSection extends ConsumerWidget {
+  const _BrowseBySectorSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ontology = ref.watch(institutionOntologyProvider);
+
+    Widget framed(Widget child) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _BrowseBySectorHeading(),
+            const SizedBox(height: AuraSpace.s10),
+            child,
+            const SizedBox(height: AuraSpace.s20),
+          ],
+        );
+
+    return ontology.when(
+      loading: () => framed(
+        const AuraProductState(state: ProductState.loading),
+      ),
+      error: (_, __) => framed(
+        AuraProductState(
+          state: ProductState.unavailable,
+          headline: 'Sectors could not be loaded',
+          action: AuraSecondaryButton(
+            label: ProductLabels.of(ProductAction.retry),
+            onPressed: () => ref.invalidate(institutionOntologyProvider),
+            icon: Icons.refresh_rounded,
+          ),
+        ),
+      ),
+      data: (data) {
+        // A taxonomy that is genuinely empty is not a section worth a heading,
+        // so the whole thing goes — heading included. That is the one case
+        // where silence is the truthful answer.
+        if (data.classes.isEmpty) return const SizedBox.shrink();
+        return framed(const SectorGrid());
+      },
     );
   }
 }

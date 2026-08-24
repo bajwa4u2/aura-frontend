@@ -1,3 +1,5 @@
+import '../../../core/product/product_state_view.dart';
+import '../../../core/product/product_state.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -313,11 +315,14 @@ class _SearchResults extends ConsumerWidget {
             r.posts.isNotEmpty;
 
         if (!hasAny) {
-          return AuraEmptyState(
-            title: 'No matches for "$q"',
-            body:
+          // C0 — say what is TRUE and let the product-state authority decide
+          // how that looks. A search that found nothing is an EMPTY result,
+          // not a failure, and the distinction belongs to the authority.
+          return AuraProductState(
+            state: ProductState.empty,
+            headline: 'No matches for "$q"',
+            detail:
                 'Try a different name, handle, phrase, institution, or theme.',
-            icon: Icons.search_off_rounded,
           );
         }
 
@@ -344,10 +349,10 @@ class _SearchResults extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const AuraLoadingState(message: 'Searching…'),
-      error: (e, _) => const AuraErrorState(
-        title: 'Search unavailable',
-        body: 'Search could not be reached right now. Try again in a moment.',
+      loading: () => const AuraProductState(state: ProductState.loading),
+      error: (e, _) => const AuraProductState(
+        state: ProductState.unavailable,
+        headline: 'Search could not be reached',
       ),
     );
   }
