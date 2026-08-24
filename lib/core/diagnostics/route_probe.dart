@@ -13,6 +13,12 @@ class RouteProbe {
 
   static int _seq = 0;
 
+  /// How many times institution access resolution has STARTED and FINISHED.
+  /// Rendered into the waiting state so a stalled single run is
+  /// distinguishable from restart churn without a console.
+  static int accessRuns = 0;
+  static int accessDone = 0;
+
   static void emit(String what, [Map<String, Object?>? data]) {
     final n = ++_seq;
     final extra = (data == null || data.isEmpty)

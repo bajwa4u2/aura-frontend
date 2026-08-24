@@ -54,8 +54,10 @@ class InstitutionRouteScope extends ConsumerWidget {
     // defect that made refresh unsurvivable.
     if (!snapshot.resolved) {
       RouteProbe.emit('instScope.unresolved');
-      return const AuraProductState(
-          state: ProductState.loading, headline: 'Loading [A: authority]');
+      return AuraProductState(
+          state: ProductState.loading,
+          headline: 'Loading [A runs=${RouteProbe.accessRuns} '
+              'done=${RouteProbe.accessDone}]');
     }
 
     final resolved = resolveInstitutionAddress(snapshot, address);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
+import '../diagnostics/route_probe.dart';
 import '../net/dio_provider.dart';
 
 enum InstitutionAccessState {
@@ -401,7 +402,9 @@ final institutionWorkspaceIdentityProvider =
 });
 
 final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async {
-  return _readInstitutionState(ref, institutionId: null);
+  final result = await _readInstitutionState(ref, institutionId: null);
+  RouteProbe.accessDone++;
+  return result;
 });
 
 Future<InstitutionAccess> _readInstitutionState(
@@ -430,6 +433,7 @@ Future<InstitutionAccess> _readInstitutionState(
   // honest dependency — it already derives from bootstrap AND the token
   // store, so a session that genuinely changes still re-runs this, while a
   // transient re-bootstrap no longer interrupts a resolution in flight.
+  RouteProbe.accessRuns++;
   final dio = ref.watch(dioProvider);
 
   await ref.read(sessionBootstrapProvider.future);
