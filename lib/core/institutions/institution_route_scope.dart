@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-import '../diagnostics/route_probe.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../product/product_state.dart';
@@ -47,22 +45,15 @@ class InstitutionRouteScope extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    RouteProbe.emit('instScope.build', {'address': address});
     final snapshot = ref.watch(institutionAuthoritySnapshotProvider);
 
     // Still finding out. Not "no institution" — deciding here is the RC2
     // defect that made refresh unsurvivable.
     if (!snapshot.resolved) {
-      RouteProbe.emit('instScope.unresolved');
-      return AuraProductState(
-          state: ProductState.loading,
-          headline: 'Loading [A runs=${RouteProbe.accessRuns} '
-              'done=${RouteProbe.accessDone}]');
+      return const AuraProductState(state: ProductState.loading);
     }
 
     final resolved = resolveInstitutionAddress(snapshot, address);
-    RouteProbe.emit('instScope.localResolve',
-        {'hit': resolved != null, 'id': resolved?.institutionId});
     if (resolved != null) return builder(resolved.institutionId);
 
     // The snapshot cannot resolve it — a historical slug, or an institution
@@ -72,14 +63,8 @@ class InstitutionRouteScope extends ConsumerWidget {
       remoteInstitutionAddressProvider((address ?? '').trim()),
     );
 
-    RouteProbe.emit('instScope.remote', {
-      'loading': remote.isLoading,
-      'hasValue': remote.hasValue,
-      'hasError': remote.hasError,
-    });
     return remote.when(
-      loading: () => const AuraProductState(
-          state: ProductState.loading, headline: 'Loading [B: address]'),
+      loading: () => const AuraProductState(state: ProductState.loading),
       // An error is resolved-but-unknown, never an eternal spinner (F068).
       error: (_, __) => const AuraProductState(
         state: ProductState.empty,

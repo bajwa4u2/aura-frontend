@@ -186,26 +186,26 @@ final institutionAuthoritySnapshotProvider =
 
   // ONCE KNOWN, NEVER UNKNOWN AGAIN.
   //
-  // Proven against the deployed client on 2026-08-24. `institutionAccess`
-  // resolved once and was then re-run; the re-run carried no previous value,
-  // so `isLoading && !hasValue` was true again and every institution route
-  // fell back to "still finding out" — Members, the Spaces list and a Space
-  // detail alike. Measured as runs=2, done=1 while the surface sat waiting.
+  // Measured against the deployed client on 2026-08-24: institution access
+  // resolved ONCE and was then re-run, and the re-run carried no previous
+  // value — so `isLoading && !hasValue` was true again and EVERY institution
+  // route fell back to "still finding out". Members, the Spaces list and a
+  // Space detail all sat on a spinner indefinitely; the child route builder
+  // never ran and no screen-owned request was ever issued. Instrumented as
+  // runs=2, done=1 while the surface was still waiting.
   //
   // A re-check is not a loss of knowledge. The established answer is latched
-  // here and reused while a re-run is in flight, so the route boundary waits
-  // only for the FIRST resolution and can never be starved by a later one.
-  // The wait that remains is the honest one: nothing has been learned yet.
-  final current = async.valueOrNull ?? lastEstablishedInstitutionAccess;
+  // by the producer and reused while a re-run is in flight, so the boundary
+  // waits only for the FIRST resolution and can never be starved by a later
+  // one. What remains is the honest wait: nothing has been learned yet.
+  final access = async.valueOrNull ?? lastEstablishedInstitutionAccess;
 
   // An error is RESOLVED-but-unknown, not "still loading": parking forever on
   // a failed load would replace a lost destination with an eternal spinner,
   // which F068 forbids. It falls through to the governed fallback.
-  if (async.isLoading && current == null) {
+  if (async.isLoading && access == null) {
     return const InstitutionAuthoritySnapshot(resolved: false);
   }
-
-  final access = current;
   if (access == null || !access.hasAccess) {
     return const InstitutionAuthoritySnapshot(resolved: true);
   }

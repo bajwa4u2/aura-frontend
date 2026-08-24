@@ -1,4 +1,3 @@
-import 'core/diagnostics/route_probe.dart';
 import 'features/discover/presentation/discover_search.dart';
 import 'dart:async';
 
@@ -306,12 +305,6 @@ String? _enforceCanonicalIdMatch(
   // them on arrival.
   final snapshot = ref.read(institutionAuthoritySnapshotProvider);
   final address = resolveInstitutionAddress(snapshot, pathId);
-  RouteProbe.emit('canonicalGate', {
-    'section': section,
-    'path': state.uri.path,
-    'resolvedNull': address == null,
-    'isCanonical': address?.isCanonical,
-  });
   if (address != null && !address.isCanonical) {
     final path = state.uri.path;
     final rest = path.startsWith('/institution/${pathId ?? ''}')
@@ -2193,10 +2186,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.pathParameters['institutionId'],
               'spaces',
             ),
-            builder: (context, state) => _probeRoute(
-              'spaceDetail',
-              state,
-              InstitutionRouteScope(
+            builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) => InstitutionSpaceRouteScope(
                 institutionId: institutionId,
@@ -2206,7 +2196,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                   spaceId: spaceId,
                 ),
               ),
-            ),
             ),
           ),
           // The institution thread/archived-thread routes are RETIRED with
@@ -2649,12 +2638,6 @@ class _RouterBootScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const Scaffold(body: AuraProductState(state: ProductState.loading));
-}
-
-/// Temporary route-boundary probe wrapper. Removed with the measurement.
-Widget _probeRoute(String name, GoRouterState state, Widget child) {
-  RouteProbe.emit('routeBuilder', {'route': name, 'uri': state.uri.toString()});
-  return child;
 }
 
 class GoRouterRefreshStream extends ChangeNotifier {

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
-import '../diagnostics/route_probe.dart';
 import '../net/dio_provider.dart';
 
 enum InstitutionAccessState {
@@ -403,21 +402,20 @@ final institutionWorkspaceIdentityProvider =
 
 /// THE LAST INSTITUTION AUTHORITY THAT WAS ACTUALLY ESTABLISHED.
 ///
-/// Written by the PRODUCER, the moment a resolution completes — not by an
-/// observer that happens to be watching. An observer only sees the value if it
-/// is evaluated while the value exists; the route boundary is frequently
-/// mounted after a completed run has already been superseded by a re-run, and
-/// then it sees only "loading, no value" and waits forever.
+/// Written by the PRODUCER, the moment a resolution completes — deliberately
+/// not by an observer. An observer only sees a value if it happens to be
+/// evaluated while that value exists, and the institution route boundary is
+/// routinely mounted AFTER a completed run has already been superseded by a
+/// re-run. It then sees only "loading, no value" and waits forever.
 ///
 /// This is a correctness latch, not a cache for speed: once the client has
 /// established which institutions this person holds, a later RE-CHECK must
-/// never make that unknown again.
+/// never make that unknown again. See [institutionAuthoritySnapshotProvider].
 InstitutionAccess? lastEstablishedInstitutionAccess;
 
 final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async {
   final result = await _readInstitutionState(ref, institutionId: null);
   lastEstablishedInstitutionAccess = result;
-  RouteProbe.accessDone++;
   return result;
 });
 
@@ -425,38 +423,17 @@ Future<InstitutionAccess> _readInstitutionState(
   Ref ref, {
   required String? institutionId,
 }) async {
-  // THE DEPENDENCY IS THE RESOLVED AUTH STATUS, NOT THE IDENTITY OF THE
-  // BOOTSTRAP FUTURE.
+  // DEPENDENCIES DECLARED BEFORE THE FIRST AWAIT.
   //
-  // Proven on the deployed web client, 2026-08-24: every institution route
-  // sat on the authority wait — `snapshot.resolved == false`, which is
-  // `isLoading && !hasValue` — because this provider never produced a FIRST
-  // value. It restarted from the top repeatedly, each run re-issuing
-  // `/institutions/me` and being replaced before the response arrived. With no
-  // previous value to fall back on, the route boundary reads that as "still
-  // finding out" and waits forever, and the whole institution workspace is
-  // starved: Members, the Spaces list and a Space detail all alike.
-  //
-  // The restart source was watching `sessionBootstrapProvider.future`. Its
-  // identity changes on every invalidation, and the session layer invalidates
-  // bootstrap on ordinary auth events — so a token rotation during load kept
-  // cancelling this provider's own round trip.
-  //
-  // Bootstrap is READ here: we need it to have COMPLETED, not to be notified
-  // that it was recreated. `authStatusProvider` remains watched and is the
-  // honest dependency — it already derives from bootstrap AND the token
-  // store, so a session that genuinely changes still re-runs this, while a
-  // transient re-bootstrap no longer interrupts a resolution in flight.
-  RouteProbe.accessRuns++;
+  // `ref.watch` after an await registers the dependency late, so a change
+  // arriving in that window restarts this provider from the top. Until it
+  // completes ONCE there is no previous value to fall back on, and the
+  // institution route boundary reads "loading without a value" as "still
+  // finding out" — which is how a cold load can sit on a spinner forever.
+  final bootstrap = ref.watch(sessionBootstrapProvider.future);
   final dio = ref.watch(dioProvider);
 
-  // WATCHED, not read. Reading captures the future that exists at this
-  // instant; if bootstrap is then invalidated that future is abandoned and
-  // never completes, turning a restart into a permanent stall. Watching means
-  // an invalidation RE-RUNS this instead of stranding it — and the latch in
-  // `institutionAuthoritySnapshotProvider` is what stops those re-runs from
-  // starving the route boundary.
-  await ref.watch(sessionBootstrapProvider.future);
+  await bootstrap;
 
   final authStatus = ref.watch(authStatusProvider);
   if (authStatus != AuthStatus.authed) {
