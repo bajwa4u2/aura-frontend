@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/session_bootstrap.dart';
@@ -408,14 +409,25 @@ Future<InstitutionAccess> _readInstitutionState(
   Ref ref, {
   required String? institutionId,
 }) async {
-  await ref.watch(sessionBootstrapProvider.future);
+  // DEPENDENCIES DECLARED BEFORE THE FIRST AWAIT.
+  //
+  // `ref.watch` after an await registers the dependency late, so a change
+  // arriving in that window restarts this provider from the top. Until it
+  // completes ONCE there is no previous value to fall back on, and the
+  // institution route boundary reads "loading without a value" as "still
+  // finding out" — which is how a cold load can sit on a spinner forever.
+  final bootstrap = ref.watch(sessionBootstrapProvider.future);
+  final dio = ref.watch(dioProvider);
+  debugPrint('AURAINST: begin');
+
+  await bootstrap;
+  debugPrint('AURAINST: bootstrap done');
 
   final authStatus = ref.watch(authStatusProvider);
+  debugPrint('AURAINST: authStatus=$authStatus');
   if (authStatus != AuthStatus.authed) {
     return const InstitutionAccess(state: InstitutionAccessState.none);
   }
-
-  final dio = ref.watch(dioProvider);
 
   // Probe accountType from /auth/me. INSTITUTION accounts represent the
   // institution itself; PUBLIC accounts may be members of an institution.
@@ -423,14 +435,21 @@ Future<InstitutionAccess> _readInstitutionState(
   // payload — /auth/me itself does not return institution data.
   String accountType = 'PUBLIC';
   try {
-    final meData = await ref.watch(authMeDataProvider.future);
+    // READ, NOT WATCH. The account type is an advisory probe for one fallback
+    // branch. Subscribing to it made every refresh of /auth/me restart this
+    // provider — and a restart before the first completion leaves the whole
+    // institution workspace with no resolved authority to render from.
+    final meData = await ref.read(authMeDataProvider.future);
     accountType = (meData['accountType'] ?? '').toString().toUpperCase();
+    debugPrint('AURAINST: accountType=$accountType');
   } catch (_) {
+    debugPrint('AURAINST: accountType probe failed');
     // /auth/me may transiently fail; treat as PUBLIC and let the call below
     // surface the real error if institutional access is required.
   }
 
   try {
+    debugPrint('AURAINST: requesting /institutions/me');
     final res = await dio.get(
       '/institutions/me',
       queryParameters: (institutionId ?? '').isEmpty
