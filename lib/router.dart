@@ -103,8 +103,6 @@ import 'features/institutions/engagement/engagement_list_screen.dart';
 import 'features/institutions/engagement/engagement_detail_screen.dart';
 import 'features/institutions/participation/participation_screen.dart';
 import 'features/direct_threads/presentation/direct_intent_screen.dart';
-import 'features/direct_threads/presentation/direct_thread_screen.dart';
-import 'features/direct_threads/presentation/inbox_screen.dart';
 import 'core/navigation/navigation_authority.dart';
 import 'features/discover/presentation/discover_screen.dart';
 import 'features/conversation/presentation/messages_screen.dart';
@@ -1598,13 +1596,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           // /messages/legacy-hub RETIRED with the correspondence family.
           // Canonical /messages has served this purpose since the additive
           // deploy; the parked predecessor is removed, not the product.
+          // THE LEGACY DIRECT INBOX IS RETIRED, ITS ADDRESSES ARE NOT.
+          //
+          // These listed correspondence from the DirectThread authority, whose
+          // content was reconciled into Conversation on 2026-08-23. Keeping
+          // them rendering meant two inboxes over one body of correspondence,
+          // where only one of them was being kept true. Archived is a filter
+          // on the canonical inbox, not a separate place, so both addresses
+          // have the same canonical answer.
           GoRoute(
             path: '$kMessagesRoute/direct',
-            builder: (_, __) => const InboxScreen(),
+            redirect: (_, __) => kMessagesRoute,
           ),
           GoRoute(
             path: '$kMessagesRoute/direct/archived',
-            builder: (_, __) => const InboxScreen(archived: true),
+            redirect: (_, __) => kMessagesRoute,
           ),
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
@@ -2355,13 +2361,23 @@ final routerProvider = Provider<GoRouter>((ref) {
                 '/institutions/${state.pathParameters['slug'] ?? ''}',
           ),
           GoRoute(
+            // CUTOVER, INSTITUTION SIDE (founder ruling 2026-08-24,
+            // "eliminate the debt").
+            //
+            // The member address `/direct/:threadId` was cut over on
+            // 2026-08-23 and the SERVER cut over with it: `mapThread` now
+            // answers `/messages/c/:conversationId` for an institution actor
+            // exactly as it does for a person. This route was the last place
+            // still rendering the legacy Direct runtime, so a durable
+            // institution link — a persisted notification deeplink, an older
+            // released client — reopened a second messaging authority that
+            // nothing else in the product still used.
+            //
+            // It resolves the same way the member address does. The
+            // destination is the server's own answer, not a client guess.
             path: '/institution/:institutionId/direct/:threadId',
-            builder: (context, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) => DirectThreadScreen(
-                threadId: state.pathParameters['threadId'] ?? '',
-                institutionContextId: institutionId,
-              ),
+            builder: (context, state) => DirectThreadCutoverScope(
+              threadId: state.pathParameters['threadId'] ?? '',
             ),
           ),
           GoRoute(
@@ -2430,23 +2446,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                   InstitutionMessagingScreen(institutionId: institutionId),
             ),
           ),
+          // The institution-context legacy inbox, retired with its member
+          // twin. A person's correspondence is theirs wherever it was begun —
+          // the canonical inbox is the same one — and the server already
+          // sends an institution actor to `/messages/c/:id`, so this converges
+          // on the destination the authority already names.
           GoRoute(
             path: '/institution/:institutionId/messages/direct',
-            builder: (_, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) =>
-                  InboxScreen(institutionContextId: institutionId),
-            ),
+            redirect: (_, __) => kMessagesRoute,
           ),
           GoRoute(
             path: '/institution/:institutionId/messages/direct/archived',
-            builder: (_, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) => InboxScreen(
-                archived: true,
-                institutionContextId: institutionId,
-              ),
-            ),
+            redirect: (_, __) => kMessagesRoute,
           ),
           // THE LIVE DIRECTORY IS A DESTINATION, NOT A CALL.
           //

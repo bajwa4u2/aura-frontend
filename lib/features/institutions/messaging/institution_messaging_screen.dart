@@ -105,13 +105,12 @@ class _InstitutionMessagingScreenState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Entry point to the new actor-aware direct inbox. Direct is an
-          // *addition* — the workspace messaging (Spaces) below remains
-          // the canonical institution-internal channel.
+          // Direct correspondence lives in the canonical inbox, which is a
+          // person's own wherever a correspondence was begun. This used to
+          // open a second, institution-scoped Direct inbox over the same
+          // correspondence; that authority is retired.
           InkWell(
-            onTap: () => context.push(
-              '/institution/${widget.institutionId}/messages/direct',
-            ),
+            onTap: () => context.push(NavigationAuthority.messagesRoute),
             borderRadius: BorderRadius.circular(AuraRadius.md),
             child: Container(
               padding: const EdgeInsets.symmetric(

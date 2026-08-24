@@ -94,7 +94,6 @@ G7 1 lib/features/admin/presentation/admin_institution_domains_screen.dart
 G7 2 lib/features/admin/presentation/admin_institutions_screen.dart
 G7 1 lib/features/admin/presentation/admin_review_queue_screen.dart
 G7 1 lib/features/announcements/presentation/announcements_screen.dart
-G7 1 lib/features/direct_threads/presentation/inbox_screen.dart
 G7 1 lib/features/institutions/activity/institution_activity_screen.dart
 G7 1 lib/features/meetings/presentation/meeting_lifecycle_presenter.dart
 G7 1 lib/features/notifications/presentation/notifications_screen.dart
@@ -133,8 +132,6 @@ G5 1 lib/features/communications/presentation/widgets/admin_campaign_workflow.da
 G5 1 lib/features/communications/presentation/widgets/admin_newsletter_lab.dart
 G5 2 lib/features/communications/presentation/widgets/digest_preferences_panel.dart
 G5 3 lib/features/direct_threads/presentation/direct_intent_screen.dart
-G5 4 lib/features/direct_threads/presentation/direct_thread_screen.dart
-G5 4 lib/features/direct_threads/presentation/inbox_screen.dart
 # member_home G5 2 -> 0: Public Home reconstruction (C2, 2026-08-16)
 # public_home G5 4 -> 0: Public Home reconstruction (C2, 2026-08-16)
 G5 2 lib/features/institutions/activity/institution_activity_screen.dart

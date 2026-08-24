@@ -45,7 +45,7 @@
 1 lib/features/institutions/live_rooms/global_live_banner_layer.dart
 3 lib/features/institutions/live_rooms/institution_live_rooms_screen.dart
 1 lib/features/institutions/live_rooms/live_now_card.dart
-2 lib/features/institutions/messaging/institution_messaging_screen.dart
+1 lib/features/institutions/messaging/institution_messaging_screen.dart
 1 lib/features/institutions/posts/institution_post_detail_screen.dart
 14 lib/features/institutions/presentation/admin_workspace_screen.dart
 4 lib/features/institutions/presentation/institution_detail_screen.dart
