@@ -42,12 +42,30 @@ void main() {
       });
     }
 
-    test('the person card follows as the viewer, through the repository', () {
-      final code = codeOnly(
-          File(cards['person']!).readAsStringSync());
-      expect(code, contains('followsRepositoryProvider'));
-      expect(code, contains('actor: ActorRef.user('));
-      expect(code, contains('target: ActorRef.user('));
+    test('following a PERSON goes through the consent-required request', () {
+      // Person-to-person following is request-then-accept by frozen product
+      // design. POST /follows refuses USER -> USER outright, so a card that
+      // called it was wrong twice: wrong shape and wrong authority.
+      final code = codeOnly(File(cards['person']!).readAsStringSync());
+      expect(code, contains('profileRepositoryProvider'));
+      expect(code, contains('.follow(handle)'));
+      expect(code.contains('followsRepositoryProvider'), isFalse,
+          reason: 'that authority is for institutions; people need consent');
+    });
+
+    test('a person with no handle is not offered a control that cannot work',
+        () {
+      // The request endpoint is addressed by handle. Aura Reviewer — the only
+      // suggestion in production — has none, so the button would always fail.
+      final code = codeOnly(File(cards['person']!).readAsStringSync());
+      expect(code, contains('if (widget.suggestion.handle == null)'));
+    });
+
+    test('a sent request reads as REQUESTED, never as FOLLOWING', () {
+      // The other person has not accepted. Claiming otherwise describes a
+      // relationship that does not exist.
+      final code = codeOnly(File(cards['person']!).readAsStringSync());
+      expect(code, contains("_localState = 'REQUESTED'"));
     });
 
     test('the institution card follows as the PERSON, not as an institution',
@@ -61,15 +79,24 @@ void main() {
       expect(code, contains('actor: actor'));
     });
 
-    test('follow state is taken from the server, never assumed', () {
-      // A private account turns a follow into a request. Rendering "Following"
-      // for something still pending is a lie the person acts on.
-      final code = codeOnly(File(cards['person']!).readAsStringSync());
-      expect(code, contains('state.isPending'));
+    test('institution follow state comes from the server, never assumed', () {
+      final code = codeOnly(File(cards['space+institution']!).readAsStringSync());
+      // The Space card takes the server's boolean rather than its own guess.
+      expect(code, contains('ok ? next : !next'));
     });
   });
 
   group('the endpoint contract the client must satisfy', () {
+    test('POST /follows refuses person-to-person, and says where to go', () {
+      // Read from the backend so this fails if the product rule changes,
+      // rather than encoding a copy that drifts.
+      final svc = File('../aura-backend/src/follows/follows.service.ts');
+      if (!svc.existsSync()) return; // backend not checked out beside this repo
+      final src = svc.readAsStringSync();
+      expect(src, contains('Aura follow requires a request'));
+      expect(src, contains('/users/:handle/follow/request'));
+    });
+
     test('actorType is required by FollowPairDto', () {
       // Read from the backend so this test fails if the contract changes,
       // rather than encoding a copy of it that can drift.

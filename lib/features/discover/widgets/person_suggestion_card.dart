@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/interactions/follow_invalidation.dart';
-import '../../../core/interactions/follows_repository.dart';
 import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -11,7 +10,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../conversation/presentation/conversation_identity.dart';
+import '../../profile/providers.dart';
 import '../data/people_discovery.dart';
 
 /// A suggested person, with the one control that matters on them.
@@ -42,48 +41,42 @@ class _PersonSuggestionCardState extends ConsumerState<PersonSuggestionCard> {
   String? _localState;
   bool _busy = false;
 
-  /// FOLLOW, THROUGH THE CANONICAL AUTHORITY.
+  /// FOLLOWING A PERSON IS A REQUEST, NOT A FOLLOW.
   ///
-  /// This used to hand-roll `POST /follows` with `{targetType, targetUserId}`
-  /// and no actor. `actorType` is REQUIRED by the endpoint's contract, so every
-  /// tap was a 400 and the button silently did nothing — on the People screen
-  /// as well as here, since this card was extracted from it.
+  /// Person-to-person following is CONSENT-REQUIRED by frozen product design:
+  /// request, then accept. `POST /follows` refuses USER -> USER outright and
+  /// names the endpoint that does not — "Aura follow requires a request. Use
+  /// POST /users/:handle/follow/request". Institutions are different, which is
+  /// why following one from Discover works through the follows repository
+  /// while this does not.
   ///
-  /// The follows repository is the one place that knows how to address a
-  /// follow. C1 — acting context is per-act: following someone from Discover
-  /// is a PERSONAL act, so the viewer follows as themselves and never on
-  /// behalf of an institution they happen to speak for.
+  /// This card previously hand-rolled `POST /follows` with no actor at all, so
+  /// every tap was a 400 twice over — wrong shape AND wrong authority. It was
+  /// extracted from the People screen, so Follow had been broken there for as
+  /// long, on a surface whose tests all passed.
   ///
-  /// The card re-renders from the SERVER's answer, never an optimistic guess:
-  /// a private account turns a follow into a request, and showing "Following"
-  /// for something still pending is a lie the person would act on.
-  Future<void> _follow() async {
+  /// The state that comes back is REQUESTED, not FOLLOWING, and the button
+  /// says so. Showing "Following" for something the other person has not
+  /// accepted would be a lie about a relationship that does not exist yet.
+  Future<void> _requestFollow() async {
     if (_busy) return;
-    final viewerId = ref.read(myUserIdProvider);
-    if (viewerId.isEmpty) return;
+    final handle = widget.suggestion.handle;
+    if (handle == null) return; // guarded by the control not being offered
 
     setState(() => _busy = true);
     try {
-      final state = await ref.read(followsRepositoryProvider).follow(
-            actor: ActorRef.user(viewerId),
-            target: ActorRef.user(widget.suggestion.userId),
-          );
+      await ref.read(profileRepositoryProvider).follow(handle);
       if (!mounted) return;
-      setState(() => _localState = state.isPending ? 'REQUESTED' : 'FOLLOWING');
+      setState(() => _localState = 'REQUESTED');
 
-      // Every surface that reads the follow graph re-reads: the pair cache,
-      // and the feeds whose composition changed the moment this edge existed.
-      invalidateFollowSurfaces(
-        ref,
-        key: FollowStateKey(
-          actor: ActorRef.user(viewerId),
-          target: ActorRef.user(widget.suggestion.userId),
-        ),
-      );
+      // The follow graph did not change yet — a request is pending, not an
+      // edge — but the request lists did, so the surfaces that read them
+      // re-read.
+      invalidateFollowSurfaces(ref);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not follow — try again.')),
+          const SnackBar(content: Text('Could not send that request — try again.')),
         );
       }
     } finally {
@@ -122,16 +115,23 @@ class _PersonSuggestionCardState extends ConsumerState<PersonSuggestionCard> {
         ],
       );
 
-  Widget _action(String state) => switch (state) {
-        'FOLLOWING' => Text('Following',
-            style: AuraText.small.copyWith(color: AuraSurface.muted)),
-        'REQUESTED' => Text('Requested',
-            style: AuraText.small.copyWith(color: AuraSurface.muted)),
-        _ => AuraSecondaryButton(
-            label: _busy ? '…' : 'Follow',
-            onPressed: _busy ? null : _follow,
-          ),
-      };
+  /// The follow request is addressed by HANDLE. A person who has not chosen
+  /// one cannot be reached through that endpoint, so no control is offered —
+  /// a button that cannot succeed is worse than its absence. Their profile is
+  /// still open from the card.
+  Widget _action(String state) {
+    if (widget.suggestion.handle == null) return const SizedBox.shrink();
+    return switch (state) {
+      'FOLLOWING' => Text('Following',
+          style: AuraText.small.copyWith(color: AuraSurface.muted)),
+      'REQUESTED' => Text('Requested',
+          style: AuraText.small.copyWith(color: AuraSurface.muted)),
+      _ => AuraSecondaryButton(
+          label: _busy ? '…' : 'Follow',
+          onPressed: _busy ? null : _requestFollow,
+        ),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
