@@ -238,16 +238,44 @@ class _PlatformBar extends StatelessWidget {
             child: Row(
               children: [
                 AuraShellWordmark(onTap: () => _goHome(context)),
-                const Spacer(),
-                // BOUNDED, so a future addition degrades inside the header
-                // instead of pushing the account button off the screen edge.
-                Flexible(
-                  child: ShellHeaderTools(
-                  isTablet: isTablet,
-                  isDesktop: isDesktop,
-                  showLive: showLive,
-                  searchPath: searchPath,
-                  activityPath: activityPath,
+                // THE UTILITY CLUSTER IS ANCHORED, NOT MERELY PUSHED.
+                //
+                // This was `Spacer()` followed by `Flexible(tools)`. Spacer is
+                // `Expanded(flex: 1)` and Flexible also defaults to `flex: 1`,
+                // so the free width was split fifty-fifty between the gap and
+                // the tools slot — and the tools, sized to their content,
+                // sat at the START of their half. The cluster therefore
+                // floated near the middle of the header with a wide dead gap
+                // to its right, at every desktop width. Measured on the
+                // deployed build at a 1142px viewport: ~227px of trailing
+                // emptiness. The 1440 bound below was not involved; it never
+                // binds at that width.
+                //
+                // One Expanded, with the cluster aligned to the trailing edge
+                // inside it, expresses the intent directly: the wordmark
+                // leads, the utilities anchor right against the outer inset,
+                // and everything between is gap.
+                //
+                // Still BOUNDED, so a future addition degrades inside the
+                // header rather than pushing the account button off the edge:
+                // Align passes a bounded max width down, which is what the
+                // tools' internal scroll-and-anchor behaviour needs.
+                //
+                // RESPONSIVE, NOT TWO LAYOUTS. On phones ShellHeaderTools
+                // renders nothing at all — the founder-validated mobile
+                // reconstruction — so this resolves to a wordmark and empty
+                // space without reintroducing search, attention, Live or
+                // account into the mobile header.
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: ShellHeaderTools(
+                      isTablet: isTablet,
+                      isDesktop: isDesktop,
+                      showLive: showLive,
+                      searchPath: searchPath,
+                      activityPath: activityPath,
+                    ),
                   ),
                 ),
               ],
