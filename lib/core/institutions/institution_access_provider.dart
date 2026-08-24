@@ -401,8 +401,22 @@ final institutionWorkspaceIdentityProvider =
   return _identityFrom(ref.watch(institutionWorkspaceProvider(id)).valueOrNull);
 });
 
+/// THE LAST INSTITUTION AUTHORITY THAT WAS ACTUALLY ESTABLISHED.
+///
+/// Written by the PRODUCER, the moment a resolution completes — not by an
+/// observer that happens to be watching. An observer only sees the value if it
+/// is evaluated while the value exists; the route boundary is frequently
+/// mounted after a completed run has already been superseded by a re-run, and
+/// then it sees only "loading, no value" and waits forever.
+///
+/// This is a correctness latch, not a cache for speed: once the client has
+/// established which institutions this person holds, a later RE-CHECK must
+/// never make that unknown again.
+InstitutionAccess? lastEstablishedInstitutionAccess;
+
 final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async {
   final result = await _readInstitutionState(ref, institutionId: null);
+  lastEstablishedInstitutionAccess = result;
   RouteProbe.accessDone++;
   return result;
 });

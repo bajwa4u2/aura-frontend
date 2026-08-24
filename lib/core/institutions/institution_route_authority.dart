@@ -180,18 +180,6 @@ InstitutionRouteDecision decideInstitutionRoute({
 /// The snapshot, read from the canonical access provider. `isLoading` is what
 /// separates "still resolving" from "resolved and absent" — the distinction
 /// `valueOrNull` destroys.
-/// THE LAST INSTITUTION AUTHORITY THAT WAS ACTUALLY ESTABLISHED.
-///
-/// Kept alive alongside the snapshot so a RE-CHECK cannot un-establish an
-/// answer the client already had. Not a cache for speed — a correctness
-/// latch. See the starvation this exists to end, below.
-class _EstablishedAuthority {
-  InstitutionAccess? value;
-}
-
-final _establishedAuthorityProvider =
-    Provider<_EstablishedAuthority>((ref) => _EstablishedAuthority());
-
 final institutionAuthoritySnapshotProvider =
     Provider<InstitutionAuthoritySnapshot>((ref) {
   final async = ref.watch(institutionAccessProvider);
@@ -208,18 +196,16 @@ final institutionAuthoritySnapshotProvider =
   // here and reused while a re-run is in flight, so the route boundary waits
   // only for the FIRST resolution and can never be starved by a later one.
   // The wait that remains is the honest one: nothing has been learned yet.
-  final established = ref.watch(_establishedAuthorityProvider);
-  final current = async.valueOrNull;
-  if (current != null) established.value = current;
+  final current = async.valueOrNull ?? lastEstablishedInstitutionAccess;
 
   // An error is RESOLVED-but-unknown, not "still loading": parking forever on
   // a failed load would replace a lost destination with an eternal spinner,
   // which F068 forbids. It falls through to the governed fallback.
-  if (async.isLoading && !async.hasValue && established.value == null) {
+  if (async.isLoading && current == null) {
     return const InstitutionAuthoritySnapshot(resolved: false);
   }
 
-  final access = current ?? established.value;
+  final access = current;
   if (access == null || !access.hasAccess) {
     return const InstitutionAuthoritySnapshot(resolved: true);
   }
