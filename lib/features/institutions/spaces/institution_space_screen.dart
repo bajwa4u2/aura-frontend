@@ -8,6 +8,7 @@ import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
+import '../../../core/diagnostics/route_probe.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -62,6 +63,7 @@ class _InstitutionSpaceScreenState
   @override
   void initState() {
     super.initState();
+    RouteProbe.emit('spaceScreen.initState', {'space': widget.spaceId});
     _future = _load();
   }
 
@@ -70,6 +72,7 @@ class _InstitutionSpaceScreenState
   /// access first, so a Space that refuses you never yields one. Fetching the
   /// conversation independently would be a way around Space governance.
   Future<_SpaceBundle> _load() async {
+    RouteProbe.emit('spaceScreen.load', {'space': widget.spaceId});
     final repo = ref.read(institutionsRepositoryProvider);
     final space = await repo.getInstitutionSpace(widget.institutionId, widget.spaceId);
     final conversationId = await repo.institutionSpaceConversationId(

@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+
+import '../diagnostics/route_probe.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -40,6 +42,7 @@ final remoteSpaceAddressProvider =
   if (institutionId.isEmpty || address.isEmpty) return null;
 
   try {
+    RouteProbe.emit('spaceResolve.request', {'address': address});
     final res = await ref.read(dioProvider).get(
           '/institutions/$institutionId/spaces/address/$address/resolve',
         );
@@ -152,6 +155,8 @@ class _InstitutionSpaceRouteScopeState
 
   @override
   Widget build(BuildContext context) {
+    RouteProbe.emit('spaceScope.build',
+        {'inst': widget.institutionId, 'addr': widget.address});
     final raw = (widget.address ?? '').trim();
     if (raw.isEmpty) {
       return const AuraProductState(
@@ -166,6 +171,11 @@ class _InstitutionSpaceRouteScopeState
       ),
     );
 
+    RouteProbe.emit('spaceScope.state', {
+      'loading': resolved.isLoading,
+      'hasValue': resolved.hasValue,
+      'hasError': resolved.hasError,
+    });
     return resolved.when(
       loading: () => const AuraProductState(state: ProductState.loading),
       error: (_, __) => const AuraProductState(
