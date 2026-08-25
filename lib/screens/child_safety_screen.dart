@@ -162,8 +162,8 @@ class _ChildSafetyBody extends StatelessWidget {
         const _SafetyContactCallout(),
         const SizedBox(height: AuraSpace.lg),
         _SafetyActionPanel(
-          onPrivacy: () => context.go('/privacy'),
-          onTerms: () => context.go('/terms'),
+          onPrivacy: () => context.push('/privacy'),
+          onTerms: () => context.push('/terms'),
         ),
       ],
     );

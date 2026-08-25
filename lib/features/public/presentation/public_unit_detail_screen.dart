@@ -107,26 +107,12 @@ class _Body extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: () =>
-              context.push('/institutions/${detail.institutionSlug}/units'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                const Icon(Icons.arrow_back_rounded, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  'All units of ${detail.institutionName}',
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.faint,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        // RETIRED 2026-08-25 - the return path is governed now. This was a
+        // Back-looking control hardcoded to one parent: right from that
+        // parent, wrong from a search result, a feed card or a shared link,
+        // and it navigated by replacement so it could not unwind to wherever
+        // the reader actually came from. ReturnPathAuthority resolves that
+        // per entry and the shell presents one control.
         const SizedBox(height: AuraSpace.s14),
         // Trust-attribution band — surfaces the parent institution above
         // the unit identity so the visitor sees the upstream first.

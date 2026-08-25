@@ -31,12 +31,12 @@ class MissionScreen extends StatelessWidget {
         AuraGhostButton(
           label: 'White Paper',
           icon: Icons.menu_book_outlined,
-          onPressed: () => context.go('/white-paper'),
+          onPressed: () => context.push('/white-paper'),
         ),
         AuraGhostButton(
           label: 'Founder',
           icon: Icons.person_outline_rounded,
-          onPressed: () => context.go('/founder'),
+          onPressed: () => context.push('/founder'),
         ),
       ],
     );

@@ -239,7 +239,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
               leading: Icons.lock_outline,
               statusLabel: 'Change',
               statusStyle: _StatusStyle.neutral,
-              onTap: () => context.go('/change-password'),
+              onTap: () => context.push('/change-password'),
             ),
             _SecurityRow(
               title: 'Email verification',
@@ -370,7 +370,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         if (kIsWeb) const BrowserNotificationsSection(),
 
         _DangerZonePanel(
-          onDeleteAccount: () => context.go('/account-deletion'),
+          onDeleteAccount: () => context.push('/account-deletion'),
         ),
       ]),
     );

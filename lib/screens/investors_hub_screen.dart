@@ -85,7 +85,7 @@ class InvestorsHubScreen extends StatelessWidget {
               AuraGhostButton(
                 label: 'Contact the Aura team',
                 icon: Icons.mail_outline_rounded,
-                onPressed: () => context.go('/support/agent'),
+                onPressed: () => context.push('/support/agent'),
               ),
             ],
           ),
@@ -383,22 +383,22 @@ class InvestorsHubScreen extends StatelessWidget {
                   AuraPrimaryButton(
                     label: 'Contact Aura',
                     icon: Icons.mail_outline_rounded,
-                    onPressed: () => context.go('/support/agent'),
+                    onPressed: () => context.push('/support/agent'),
                   ),
                   AuraGhostButton(
                     label: 'Patrons',
                     icon: Icons.volunteer_activism_outlined,
-                    onPressed: () => context.go('/patrons'),
+                    onPressed: () => context.push('/patrons'),
                   ),
                   AuraGhostButton(
                     label: 'Mission',
                     icon: Icons.flag_outlined,
-                    onPressed: () => context.go('/mission'),
+                    onPressed: () => context.push('/mission'),
                   ),
                   AuraGhostButton(
                     label: 'White Paper',
                     icon: Icons.menu_book_outlined,
-                    onPressed: () => context.go('/white-paper'),
+                    onPressed: () => context.push('/white-paper'),
                   ),
                 ],
               ),

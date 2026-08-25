@@ -190,7 +190,7 @@ class _AdminInstitutionsScreenState extends ConsumerState<AdminInstitutionsScree
                   loading: _loadingVerified,
                   error: _errorVerified,
                   onRetry: _loadVerified,
-                  onTap: (slug) => context.go('/institutions/$slug'),
+                  onTap: (slug) => context.push('/institutions/$slug'),
                   emptyMessage: 'No verified institutions.',
                   onViewMembers: (inst) {
                     final name = Uri.encodeQueryComponent(inst.name);
@@ -216,14 +216,14 @@ class _AdminInstitutionsScreenState extends ConsumerState<AdminInstitutionsScree
                   onApprove: _approve,
                   onReject: _reject,
                   onNeedsInfo: _needsInfo,
-                  onViewProfile: (slug) => context.go('/institutions/$slug'),
+                  onViewProfile: (slug) => context.push('/institutions/$slug'),
                 ),
                 _InstitutionList(
                   items: _suspended,
                   loading: _loadingSuspended,
                   error: _errorSuspended,
                   onRetry: _loadSuspended,
-                  onTap: (slug) => context.go('/institutions/$slug'),
+                  onTap: (slug) => context.push('/institutions/$slug'),
                   emptyMessage: 'No suspended institutions.',
                   onViewMembers: (inst) {
                     final name = Uri.encodeQueryComponent(inst.name);

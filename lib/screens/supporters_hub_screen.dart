@@ -30,12 +30,12 @@ class SupportersHubScreen extends StatelessWidget {
         AuraPrimaryButton(
           label: 'Share feedback',
           icon: Icons.mail_outline_rounded,
-          onPressed: () => context.go('/support/agent'),
+          onPressed: () => context.push('/support/agent'),
         ),
         AuraGhostButton(
           label: 'Mission',
           icon: Icons.flag_outlined,
-          onPressed: () => context.go('/mission'),
+          onPressed: () => context.push('/mission'),
         ),
       ],
     );

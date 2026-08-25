@@ -29,12 +29,12 @@ class PatronsHubScreen extends StatelessWidget {
         AuraPrimaryButton(
           label: 'Talk to the Aura team',
           icon: Icons.mail_outline_rounded,
-          onPressed: () => context.go('/support/agent'),
+          onPressed: () => context.push('/support/agent'),
         ),
         AuraGhostButton(
           label: 'Investors',
           icon: Icons.account_balance_outlined,
-          onPressed: () => context.go('/investors'),
+          onPressed: () => context.push('/investors'),
         ),
       ],
     );

@@ -140,11 +140,11 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
           icon: Icons.download_outlined,
           onPressed: _openPdf,
         ),
-        AuraGhostButton(
-          label: 'Back to Mission',
-          icon: Icons.arrow_back_rounded,
-          onPressed: () => context.go('/mission'),
-        ),
+        // RETIRED 2026-08-25. "Back to Mission" was a hero action wearing a
+        // return control's clothes: it named one sibling, and it was the way
+        // out only for a reader who arrived from that sibling. The governed
+        // affordance above this page returns to wherever they actually came
+        // from, and derives Mission only when there is nothing to unwind.
       ],
     );
 

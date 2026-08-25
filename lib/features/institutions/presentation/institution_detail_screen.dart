@@ -116,46 +116,16 @@ class _InstitutionDetailBody extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Visible return path to the directory. Closes the loop
-                // from /institutions → /institutions/:slug so visitors
-                // don't have to rely on browser back to navigate the
-                // ecosystem.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AuraSpace.s16,
-                    AuraSpace.s12,
-                    AuraSpace.s16,
-                    0,
-                  ),
-                  child: InkWell(
-                    onTap: () => context.go('/institutions'),
-                    borderRadius: BorderRadius.circular(AuraRadius.r10),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.arrow_back_rounded,
-                            size: 14,
-                            color: AuraSurface.faint,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Institutions',
-                            style: AuraText.small.copyWith(
-                              color: AuraSurface.faint,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                // RETIRED 2026-08-25 — the return path is governed now.
+                //
+                // This was a Back-looking control hardcoded to /institutions.
+                // It was right if you arrived from the directory and wrong
+                // from a search result, a feed card or a shared link, and
+                // because it navigated by replacement it could not unwind to
+                // wherever you actually came from. ReturnPathAuthority
+                // resolves that per entry — real history when it exists, the
+                // directory only as the derived fallback — and the shell
+                // presents it once.
                 _PublicHero(institution: institution),
                 const SizedBox(height: AuraSpace.s12),
                 Padding(

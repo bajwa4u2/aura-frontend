@@ -136,8 +136,8 @@ class _TermsBody extends StatelessWidget {
         ),
         const SizedBox(height: AuraSpace.md),
         _ActionPanel(
-          onPrivacy: () => context.go('/privacy'),
-          onSupport: () => context.go('/support/agent'),
+          onPrivacy: () => context.push('/privacy'),
+          onSupport: () => context.push('/support/agent'),
         ),
       ],
     );

@@ -152,34 +152,12 @@ class _SectorHero extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: () => context.go('/institutions'),
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s6,
-              vertical: 2,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.arrow_back_rounded,
-                  size: 14,
-                  color: AuraSurface.muted,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'All institutions',
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        // RETIRED 2026-08-25 - the return path is governed now. This was a
+        // Back-looking control hardcoded to one parent: right from that
+        // parent, wrong from a search result, a feed card or a shared link,
+        // and it navigated by replacement so it could not unwind to wherever
+        // the reader actually came from. ReturnPathAuthority resolves that
+        // per entry and the shell presents one control.
         const SizedBox(height: AuraSpace.s8),
         Text(label, style: AuraText.headline),
         const SizedBox(height: AuraSpace.s6),

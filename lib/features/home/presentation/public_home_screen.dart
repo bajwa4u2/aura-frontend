@@ -286,9 +286,16 @@ class _HeroLeft extends StatelessWidget {
                 color: AuraSurface.accentText,
               ),
               const SizedBox(width: AuraSpace.s6),
-              Text(
-                'Public communication with accountability',
-                style: AuraText.label.copyWith(color: AuraSurface.accentText),
+              // A `mainAxisSize: min` Row asks its Text for the width the
+              // sentence WANTS, so at any surface narrower than that the pill
+              // overflows — 76px at 800 wide, still 1px at 1600. Constraining
+              // the text lets the pill shrink instead of spilling.
+              Flexible(
+                child: Text(
+                  'Public communication with accountability',
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.label.copyWith(color: AuraSurface.accentText),
+                ),
               ),
             ],
           ),
@@ -320,7 +327,7 @@ class _HeroLeft extends StatelessWidget {
             ),
             _HeroOutlineButton(
               label: 'Explore discussions',
-              onTap: () => context.go('/search'),
+              onTap: () => context.push('/search'),
             ),
           ],
         ),
@@ -329,7 +336,7 @@ class _HeroLeft extends StatelessWidget {
         // (public-first doctrine: institution discovery remains real; it is
         // simply not the originating proposition of the entry surface).
         InkWell(
-          onTap: () => context.go('/institutions'),
+          onTap: () => context.push('/institutions'),
           borderRadius: BorderRadius.circular(AuraRadius.r10),
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -797,7 +804,7 @@ class _LiveDiscoursePlaceholderCard extends StatelessWidget {
                 child: Text(isAuthed ? 'Start a discussion' : 'Join Aura'),
               ),
               OutlinedButton(
-                onPressed: () => context.go('/spaces'),
+                onPressed: () => context.push('/spaces'),
                 child: const Text('Explore spaces'),
               ),
             ],
@@ -1130,7 +1137,7 @@ class _DiscussionPreviewSection extends ConsumerWidget {
                   AuraGhostButton(
                     label: 'See all discussions',
                     icon: Icons.explore_outlined,
-                    onPressed: () => context.go('/search'),
+                    onPressed: () => context.push('/search'),
                   ),
                 ],
               ),
@@ -1481,7 +1488,7 @@ class _SpacesSection extends ConsumerWidget {
                   AuraGhostButton(
                     label: 'Browse all spaces',
                     icon: Icons.grid_view_rounded,
-                    onPressed: () => context.go('/spaces'),
+                    onPressed: () => context.push('/spaces'),
                   ),
                 ],
               ),

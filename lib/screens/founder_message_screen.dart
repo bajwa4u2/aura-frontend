@@ -28,12 +28,12 @@ class FounderMessageScreen extends StatelessWidget {
         AuraGhostButton(
           label: 'Mission',
           icon: Icons.flag_outlined,
-          onPressed: () => context.go('/mission'),
+          onPressed: () => context.push('/mission'),
         ),
         AuraGhostButton(
           label: 'White Paper',
           icon: Icons.menu_book_outlined,
-          onPressed: () => context.go('/white-paper'),
+          onPressed: () => context.push('/white-paper'),
         ),
       ],
     );

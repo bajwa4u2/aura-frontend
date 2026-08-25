@@ -209,7 +209,7 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
                 ),
                 AuraGhostButton(
                   label: 'Open updates',
-                  onPressed: () => context.go('/updates'),
+                  onPressed: () => context.push('/updates'),
                   icon: Icons.notifications_none_outlined,
                 ),
                 AuraGhostButton(
@@ -454,7 +454,7 @@ class _PinnedSection extends StatelessWidget {
                   publishedAt: a.publishedAt,
                   pinned: true,
                   firstMedia: _firstMediaOf(a),
-                  onTap: () => context.go('/announcements/${a.slug}'),
+                  onTap: () => context.push('/announcements/${a.slug}'),
                 ),
               ),
             ),
@@ -531,7 +531,7 @@ class _AllSection extends StatelessWidget {
                   title: a.title.isEmpty ? a.slug : a.title,
                   publishedAt: a.publishedAt,
                   firstMedia: _firstMediaOf(a),
-                  onTap: () => context.go('/announcements/${a.slug}'),
+                  onTap: () => context.push('/announcements/${a.slug}'),
                 ),
               ),
             ),

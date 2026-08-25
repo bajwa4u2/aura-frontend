@@ -95,7 +95,7 @@ class SpaceDetailScreen extends ConsumerWidget {
                   primaryAction: AuraSecondaryButton(
                     label: 'See all spaces',
                     icon: Icons.grid_view_rounded,
-                    onPressed: () => context.go('/spaces'),
+                    onPressed: () => context.push('/spaces'),
                   ),
                 ),
                 const InsModeHeaderGap(),

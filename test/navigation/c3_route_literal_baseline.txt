@@ -48,7 +48,7 @@
 1 lib/features/institutions/messaging/institution_messaging_screen.dart
 1 lib/features/institutions/posts/institution_post_detail_screen.dart
 14 lib/features/institutions/presentation/admin_workspace_screen.dart
-4 lib/features/institutions/presentation/institution_detail_screen.dart
+3 lib/features/institutions/presentation/institution_detail_screen.dart
 1 lib/features/institutions/presentation/institution_members_screen.dart
 2 lib/features/institutions/profile/institution_profile_screen.dart
 # 2026-08-16 onboarding residue retirement: 7 -> 6 (the fourth path card
@@ -76,19 +76,19 @@
 # start-conversation entry now routes via NavigationAuthority.newConversationRoute
 # — the one canonical conversation-creation lifecycle).
 3 lib/features/posts/presentation/compose_screen.dart
-5 lib/features/posts/presentation/post_detail_screen.dart
+4 lib/features/posts/presentation/post_detail_screen.dart
 3 lib/features/posts/presentation/widgets/post_card.dart
 5 lib/features/profile/presentation/author_profile_screen.dart
 1 lib/features/profile/presentation/follow_requests_screen.dart
 1 lib/features/profile/presentation/followers_screen.dart
 1 lib/features/profile/presentation/following_screen.dart
-2 lib/features/public/presentation/institution_sector_screen.dart
-2 lib/features/public/presentation/public_institution_units_screen.dart
+1 lib/features/public/presentation/institution_sector_screen.dart
+1 lib/features/public/presentation/public_institution_units_screen.dart
 # 2026-08-16 C3 post-closeout Discover correction: 5 -> 3 (removed the
 # onboarding + workspace affordances — Discover discovers; onboarding is
 # the global chrome action via NavigationAuthority.institutionOnboardingRoute).
 3 lib/features/public/presentation/public_institutions_directory_screen.dart
-3 lib/features/public/presentation/public_unit_detail_screen.dart
+2 lib/features/public/presentation/public_unit_detail_screen.dart
 2 lib/features/public/presentation/space_detail_screen.dart
 6 lib/features/public/presentation/thread_screen.dart
 1 lib/features/public/widgets/follow_button.dart
@@ -113,7 +113,6 @@
 2 lib/screens/patrons_hub_screen.dart
 2 lib/screens/supporters_hub_screen.dart
 2 lib/screens/terms_screen.dart
-1 lib/screens/white_paper_screen.dart
 # 2026-08-16 Conversation System + People Discovery (clean-sheet surfaces):
 # session-entry + object links pending dedicated authority builders; owners:
 # conversation module / discover module.

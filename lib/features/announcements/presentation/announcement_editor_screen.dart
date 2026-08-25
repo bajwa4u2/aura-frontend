@@ -426,10 +426,10 @@ class _AnnouncementEditorScreenState
       if (!mounted) return;
       final cleanSlug = slug.trim();
       if (cleanSlug.isNotEmpty) {
-        context.go('/announcements/$cleanSlug');
+        context.push('/announcements/$cleanSlug');
         return;
       }
-      context.go('/announcements');
+      context.push('/announcements');
     });
   }
 
@@ -440,7 +440,7 @@ class _AnnouncementEditorScreenState
       context.pop();
       return;
     }
-    context.go('/announcements');
+    context.push('/announcements');
   }
 
   String _preferredTargetLanguage() {

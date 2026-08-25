@@ -472,7 +472,7 @@ class _InReplyToCard extends ConsumerWidget {
             snippet.length > 160 ? '${snippet.substring(0, 160)}…' : snippet;
         return _frame(
           context,
-          onTap: () => context.go('/posts/$parentId'),
+          onTap: () => context.push('/posts/$parentId'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -515,19 +515,15 @@ class _TopBar extends StatelessWidget {
       spacing: AuraSpace.s10,
       runSpacing: AuraSpace.s10,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        AuraSecondaryButton(
-          label: 'Back',
-          icon: Icons.arrow_back,
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-              return;
-            }
-            context.go('/search');
-          },
-        ),
-        const Text('Record', style: AuraText.title),
+      children: const [
+        // RETIRED 2026-08-25 — the Back button that stood here is governed now.
+        //
+        // It was the closest thing in the product to correct: it checked
+        // canPop() before popping. But its fallback was a hardcoded /search,
+        // which is where a post came from only if you searched for it. The
+        // governed affordance resolves the fallback from the destination
+        // instead, and presents one control rather than one per screen.
+        Text('Record', style: AuraText.title),
       ],
     );
   }

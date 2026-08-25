@@ -364,7 +364,7 @@ class _InstitutionAnnouncementsScreenState
                 label: 'Read more',
                 icon: Icons.article_outlined,
                 color: AuraSurface.accentText,
-                onTap: () => context.go('/announcements/$slug'),
+                onTap: () => context.push('/announcements/$slug'),
               ),
             ),
           ],

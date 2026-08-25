@@ -9,7 +9,7 @@ class ContactScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Redirect on first frame so the route can complete cleanly.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) context.go('/support/agent');
+      if (context.mounted) context.push('/support/agent');
     });
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }

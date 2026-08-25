@@ -117,7 +117,7 @@ void main() {
     // The mechanical half of the defect, and the reason "just add an arrow"
     // would not fix it: after context.go there is no predecessor for a back
     // control — or for Android system back — to unwind to.
-    test('CURRENT DEFECT: go() call sites outnumber push()', () {
+    test('REPAIRED: stack-preserving navigation now dominates', () {
       var go = 0;
       var push = 0;
       for (final f in Directory('lib')
@@ -128,8 +128,14 @@ void main() {
         go += RegExp(r"context\.go\(").allMatches(src).length;
         push += RegExp(r"context\.push\(").allMatches(src).length;
       }
-      expect(go, greaterThan(push),
-          reason: 'go() no longer dominates — the audit finding is stale');
+      // Was: go 222 / push 187, with 36 defective destinations reached by
+      // replacement. Founder ruling §3 authorised migrating ONLY the
+      // transitions whose semantic is "entered a child, expects to return";
+      // 55 sites qualified. Roots, gates, shell chrome, redirect targets,
+      // flow completions and terminal exits deliberately still replace.
+      expect(push, greaterThan(go),
+          reason: 'replacement navigation has regained the majority — a '
+              'child-entry transition has probably been written as go()');
     });
   });
 

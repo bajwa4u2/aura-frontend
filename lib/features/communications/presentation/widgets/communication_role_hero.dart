@@ -88,7 +88,7 @@ class _DeliveryPostureCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s16),
             AuraSecondaryButton(
               label: 'Open admin workspace',
-              onPressed: () => context.go('/admin'),
+              onPressed: () => context.push('/admin'),
               icon: Icons.admin_panel_settings_outlined,
             ),
           ],

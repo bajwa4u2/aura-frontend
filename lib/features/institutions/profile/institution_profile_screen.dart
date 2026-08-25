@@ -601,7 +601,7 @@ class _ActionGroup extends StatelessWidget {
           AuraSecondaryButton(
             label: 'Manage billing',
             icon: Icons.receipt_long_rounded,
-            onPressed: () => context.go(
+            onPressed: () => context.push(
               '/institution/${identity!.workspaceAddress}/billing',
             ),
           ),
