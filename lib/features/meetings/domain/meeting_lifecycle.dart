@@ -255,3 +255,12 @@ class MeetingLifecycle {
   bool get isLiveSurface =>
       phase == MeetingPhase.ready || phase == MeetingPhase.active;
 }
+
+/// Whether a meeting in this phase has anything that happened to look back on.
+///
+/// Mirrors [MeetingLifecycle.hasAftermath] so a surface holding only a phase
+/// can ask the same authority the same question. A cancelled or missed meeting
+/// has no record of what occurred, because nothing did.
+extension MeetingPhaseAftermath on MeetingPhase {
+  bool get hasAftermath => this == MeetingPhase.ended;
+}

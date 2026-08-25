@@ -14,6 +14,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../updates/providers.dart';
 import '../application/meetings_provider.dart';
+import '../domain/meeting_lifecycle.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_asset.dart';
 import '../domain/meeting_institution_routing.dart' as routing;
@@ -610,8 +611,19 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
       ],
     ];
 
+    // ONLY A MEETING THAT HAPPENED HAS AN AFTERMATH.
+    //
+    // This gated on `meeting.isEnded`, which is true for a CANCELLED meeting
+    // too — so the cancelled certification meeting offered "Shared in meeting"
+    // ("No files were shared during this meeting."), "Recording" ("This
+    // meeting was not recorded.") and a workroom, plus Add link / Upload file
+    // affordances, for something that never took place.
+    //
+    // The lifecycle authority already answers this exact question, and its own
+    // doctrine says offering a summary for a cancelled meeting is offering a
+    // blank page. Use it.
     final aftermath = <Widget>[
-      if (ended) ...[
+      if (meeting.phase.hasAftermath) ...[
         MeetingAssetsSection(
           meetingId: meeting.id,
           title: 'Shared in meeting',

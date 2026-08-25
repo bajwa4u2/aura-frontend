@@ -119,6 +119,19 @@ void main() {
       }
     });
 
+    test('a phase alone answers the aftermath question the same way', () {
+      // Seen in production 2026-08-25 on the cancelled certification meeting:
+      // the record still offered "Shared in meeting", "Recording" and a
+      // workroom — plus Add link / Upload file — for something that never took
+      // place, because the screen gated on the legacy `isEnded` (true for
+      // CANCELLED) instead of this authority.
+      expect(MeetingPhase.ended.hasAftermath, isTrue);
+      for (final p in MeetingPhase.values) {
+        if (p == MeetingPhase.ended) continue;
+        expect(p.hasAftermath, isFalse, reason: '$p offered an aftermath');
+      }
+    });
+
     test('only a meeting that HAPPENED has an aftermath', () {
       // A cancelled meeting has no record of what occurred, because nothing
       // did — offering a summary for one would be offering a blank page.
