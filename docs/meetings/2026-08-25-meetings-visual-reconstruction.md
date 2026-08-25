@@ -217,3 +217,133 @@ I did not attempt the PIN.
 
 **Test health:** 1469 client tests green, `flutter analyze` unchanged at its
 24-item baseline.
+
+---
+
+## 7. §11 — the active meeting workspace
+
+Founder ruling: §11 stays inside the Meetings chapter. Opened a real live room
+in production before changing anything.
+
+### What a participant actually experienced
+
+Entering a meeting whose service was unreachable, the room drew a **93%-opaque
+scrim over the entire surface**. Behind it the meeting's name, its institution,
+the elapsed timer, the participant count and both participants' identities were
+all still being rendered — and every one of them was invisible.
+
+A person in that state could not tell **which meeting they were in**.
+
+That is a composition problem, not a transport one: the header was simply
+painted earlier in the `Stack` than the overlay.
+
+### What changed
+
+The meeting header moves **above** the connecting and ended overlays, beside
+the control bar, on one principle:
+
+> Whatever the transport is doing, a person must always be able to see
+> **what meeting this is** and **how to leave**.
+
+The scrim drops from 93% to 80% — enough to focus attention on the message
+without erasing the room behind it.
+
+Same failure state, before and after: the "after" shows *Aura Platform /
+Introduction & Discussion*, `00:35`, `2 in the room`, and both participants
+with their real avatars, names and muted-microphone indicators. The "before"
+showed none of it.
+
+The **ended** overlay now names what continues — *"Its notes, outcomes and
+conversation stay with the meeting"* — at the moment that matters most, and
+its action says where it goes rather than promising only a summary.
+
+The record's **loading, error and canonicalising** states lost their
+full-surface spinners and the generic word "Meeting" above the meeting's own
+name: the same duplicate-heading regression as the landing, in the three
+branches the previous pass missed.
+
+### Two shared primitives I had duplicated
+
+`meeting_surfaces.dart` defined a second `MeetingSection` while
+`widgets/meeting_section.dart` already declared itself *"The ONE section
+grammar for every meeting surface"* with three consumers — the design-language
+fork §21 forbids. The canonical one grew `count`, `emphasis` and `bare`; mine
+is gone. My generic status chip likewise collided with the lifecycle-aware
+`MeetingStatusChip`, and is now `MeetingTag`.
+
+The analyzer caught both as ambiguous imports, which is the cheapest possible
+way to discover you have forked a design system.
+
+### Boundary
+
+No signalling, TURN, WebRTC, media engine, device selection, reconnection
+architecture or call-session lifecycle was touched. Everything above is
+composition, copy and paint order.
+
+---
+
+## 8. The record load — measured, and returned
+
+The ruling refused to accept the 10–15 s record load as release quality merely
+because skeletons represent it honestly, and required a measured cause rather
+than a guess. Here is the measurement.
+
+**Instrument:** `PerformanceResourceTiming` and the network log on production,
+signed in, assets warm.
+
+| call | start | duration |
+|---|---:|---:|
+| `/auth/refresh` | 698 ms | 114 ms |
+| `/client/compatibility` | 902 ms | 142 ms |
+| `/auth/me` | 902 ms | 234 ms |
+| `/notifications?limit=30` | 902 ms | 369 ms |
+| `/realtime/sessions?scope=me` | 902 ms | 341 ms |
+| `/institutions/me` | 1138 ms | 333 ms |
+| `/notifications/unread-count` | 1277 ms | 176 ms |
+
+**Every call completes by ~1.45 s. None exceeds 372 ms.**
+
+And then the finding that matters:
+
+> **`GET /meetings/:id` is never requested at all.**
+
+Reproduced at 29 s and at 50 s, on the institution path and the personal path,
+with a stable URL (no redirect loop), no 4xx/5xx, no rate limiting
+(`/health` and a public endpoint both answered 200 during the same window),
+and warm assets (`main.dart.js` 91 ms).
+
+The Meetings **landing** behaves the same way: after 20 s the only
+meetings-adjacent call is `/institutions/me` — no upcoming, no past, no
+outcomes, no availability.
+
+### What this means
+
+The meeting record does not have a *slow* data path. In this state it has **no
+data path at all**: the request is never dispatched, so the surface waits
+forever. That is a hang, not latency — a more serious finding than the one the
+ruling described, and skeletons make it look calm rather than broken.
+
+Earlier in the same session these surfaces loaded normally, so the client
+enters this state rather than starting in it.
+
+### Where it belongs — returned explicitly
+
+`meetingProvider` is three lines and would fire the moment it is watched, so
+the request is being prevented **upstream of Meetings**. The two candidates are
+the shared Dio/auth layer and the institution-identity resolution that supplies
+the scope these providers depend on.
+
+Proving which one requires instrumenting shared auth/institution machinery,
+which this chapter is not authorised to reconstruct. Per the ruling —
+*"if the cause belongs to another protected/shared system, document the
+measured dependency and return it explicitly"* — it is returned:
+
+```
+MEETING_RECORD_PERFORMANCE = BOUNDED — measured, cause outside Meetings
+```
+
+**What is proven:** the Meetings data path is never entered; the network,
+backend and assets are all healthy and fast.
+**What is not proven:** which shared authority withholds it.
+
+No performance improvement was manufactured by hiding work behind animation.
