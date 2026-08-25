@@ -18,6 +18,10 @@ import '../meeting_semantics.dart';
 /// technical-looking error blocks; no dead white space with a sentence.*
 ///
 /// So the states live here, once, and every Meetings surface uses them.
+///
+/// The section grammar is NOT here: `widgets/meeting_section.dart` already
+/// owned it. A second one lived in this file briefly and was the exact
+/// design-language fork section 21 forbids.
 
 // ─────────────────────────────────────────────────────────────────────────
 // LOADING
@@ -242,94 +246,15 @@ class MeetingError extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// SECTION
-// ─────────────────────────────────────────────────────────────────────────
-
-/// A titled group, with a count where a count means something.
+/// A small, quiet label.
 ///
-/// The important behaviour is [hideWhenEmpty]: the previous landing rendered
-/// every section unconditionally, so a person with nothing scheduled met five
-/// grey boxes telling them so five different ways. A section with nothing in
-/// it and nothing to say is not shown at all — the page's own empty state
-/// speaks once instead.
-class MeetingSection extends StatelessWidget {
-  const MeetingSection({
-    super.key,
-    required this.title,
-    required this.child,
-    this.count,
-    this.trailing,
-    this.emphasis = false,
-  });
-
-  final String title;
-  final Widget child;
-  final int? count;
-  final Widget? trailing;
-
-  /// Draws attention to a section that genuinely wants it.
-  final bool emphasis;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            if (emphasis) ...[
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: AuraSurface.accent,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
-            Semantics(
-              header: true,
-              child: Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.1,
-                ),
-              ),
-            ),
-            if (count != null && count! > 0) ...[
-              const SizedBox(width: AuraSpace.s8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-                decoration: BoxDecoration(
-                  color: AuraSurface.elevated,
-                  borderRadius: BorderRadius.circular(AuraRadius.r10),
-                ),
-                child: Text(
-                  '$count',
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: AuraSurface.muted),
-                ),
-              ),
-            ],
-            const Spacer(),
-            if (trailing != null) trailing!,
-          ],
-        ),
-        const SizedBox(height: AuraSpace.s10),
-        child,
-      ],
-    );
-  }
-}
-
-/// A small, quiet status word. Colour alone never carries the meaning — the
+/// NOT `MeetingStatusChip` — that name belongs to the lifecycle-aware chip in
+/// `presentation/meeting_status_chip.dart`, which reads a
+/// `MeetingLifecycleViewModel` and phrases itself differently for a host than
+/// for a guest. This is the generic primitive: a word and a tone. Colour alone never carries the meaning — the
 /// label is the meaning, and the colour agrees with it.
-class MeetingStatusChip extends StatelessWidget {
-  const MeetingStatusChip({
+class MeetingTag extends StatelessWidget {
+  const MeetingTag({
     super.key,
     required this.label,
     this.tone = MeetingChipTone.neutral,

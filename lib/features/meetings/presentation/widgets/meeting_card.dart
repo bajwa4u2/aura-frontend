@@ -86,7 +86,7 @@ class MeetingCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            MeetingStatusChip(
+            MeetingTag(
               label: statusLabel,
               tone: tone,
               icon: statusIcon,

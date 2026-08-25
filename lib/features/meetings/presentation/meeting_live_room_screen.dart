@@ -1247,20 +1247,6 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             ),
           ),
 
-          // E2 — Meeting-branded header with institution + elapsed timer
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _MeetingLiveHeader(
-              meeting: meeting,
-              joinedAt: _joinedAt,
-              participantCount:
-                  state.participants.isEmpty ? 1 : state.participants.length,
-              recording: _recording,
-            ),
-          ),
-
           // Ready state: a host alone should see "the meeting is ready",
           // not an empty transport room. Transient by design: animates in,
           // can be dismissed, yields to drawers, and leaves when anyone joins.
@@ -1507,6 +1493,31 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 ),
               ),
             ),
+
+          // E2 — MEETING IDENTITY, ABOVE EVERY OVERLAY.
+          //
+          // Section 11, observed in production: this header used to be drawn
+          // BEFORE the connecting/ended overlays, so a 93%-opaque scrim
+          // covered it. A person waiting to connect - or looking at "Aura
+          // could not reach the meeting service" - could not see which
+          // meeting they were in, who convened it, or how long they had been
+          // there. The information was on screen and unreadable.
+          //
+          // It is painted last now, with the control bar, on one principle:
+          // whatever the transport is doing, a person must always be able to
+          // see WHAT MEETING THIS IS and HOW TO LEAVE.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _MeetingLiveHeader(
+              meeting: meeting,
+              joinedAt: _joinedAt,
+              participantCount:
+                  state.participants.isEmpty ? 1 : state.participants.length,
+              recording: _recording,
+            ),
+          ),
 
           // E4 — Control bar at bottom. All media ops route through _bridge.
           // L3c: auto-hides after 4s of inactivity; reappears on any interaction.
@@ -3335,7 +3346,7 @@ class _ConnectingOverlay extends StatelessWidget {
     // Deliberate device handover — calm, actionable, never a spinner.
     if (state.joinState == RealtimeJoinState.replaced) {
       return Container(
-        color: const Color(0xEE030712),
+        color: const Color(0xCC030712),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -3372,7 +3383,7 @@ class _ConnectingOverlay extends StatelessWidget {
     }
 
     return Container(
-      color: const Color(0xEE030712),
+      color: const Color(0xCC030712),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -3474,7 +3485,7 @@ class _MeetingEndedOverlay extends StatelessWidget {
         ? 'Thanks for meeting with ${hostName!.trim()}.'
         : 'Thanks for joining.';
     return Container(
-      color: const Color(0xEE030712),
+      color: const Color(0xCC030712),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -3498,6 +3509,18 @@ class _MeetingEndedOverlay extends StatelessWidget {
               isGuest ? thanks : 'The host has ended the meeting.',
               style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
             ),
+            // Section 11/12: the moment a meeting ends is exactly when
+            // "what survives this" matters, and it was the moment the product
+            // said least. A member is told, once, that the meeting did not
+            // take its contents with it.
+            if (!isGuest) ...[
+              const SizedBox(height: AuraSpace.s6),
+              const Text(
+                'Its notes, outcomes and conversation stay with the meeting.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+              ),
+            ],
             if (isGuest) ...[
               const SizedBox(height: AuraSpace.s6),
               const Text(
@@ -3511,7 +3534,7 @@ class _MeetingEndedOverlay extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onViewSummary,
                 icon: const Icon(Icons.description_outlined),
-                label: const Text('View summary'),
+                label: const Text('Open the meeting'),
               ),
               const SizedBox(height: AuraSpace.s12),
             ],

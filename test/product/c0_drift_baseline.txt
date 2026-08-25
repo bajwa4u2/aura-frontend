@@ -77,7 +77,6 @@ G4 1 lib/features/meetings/presentation/booking_reschedule_screen.dart
 G4 1 lib/features/meetings/presentation/create_meeting_screen.dart
 G4 1 lib/features/meetings/presentation/guest_waiting_room_screen.dart
 G4 2 lib/features/meetings/presentation/institution_availability_screen.dart
-G4 2 lib/features/meetings/presentation/meeting_detail_screen.dart
 G4 1 lib/features/meetings/presentation/meeting_live_room_screen.dart
 G4 2 lib/features/meetings/presentation/public_booking_screen.dart
 G4 2 lib/features/monetization/presentation/institution_billing_screen.dart

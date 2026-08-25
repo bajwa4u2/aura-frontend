@@ -123,7 +123,7 @@ void main() {
       // A cancelled meeting has no record of what occurred, because nothing
       // did — offering a summary for one would be offering a blank page.
       expect(
-        MeetingLifecycle(
+        const MeetingLifecycle(
           phase: MeetingPhase.ended,
           capability: MeetingCapability.none,
         ).hasAftermath,

@@ -174,9 +174,9 @@ void main() {
     });
 
     test('a refused permission is not the same message as a busy camera', () {
-      final denied = DeviceReadiness(
+      const denied = DeviceReadiness(
           kind: MediaDeviceKind.camera, state: DevicePermissionState.denied);
-      final busy = DeviceReadiness(
+      const busy = DeviceReadiness(
           kind: MediaDeviceKind.camera, state: DevicePermissionState.inUse);
       expect(denied.summary, isNot(busy.summary));
       expect(busy.recovery, contains('Close the other app'));
@@ -184,7 +184,7 @@ void main() {
 
     test('a restriction does not tell somebody to change a setting they cannot',
         () {
-      final restricted = DeviceReadiness(
+      const restricted = DeviceReadiness(
         kind: MediaDeviceKind.microphone,
         state: DevicePermissionState.restricted,
       );
@@ -199,7 +199,7 @@ void main() {
     });
 
     test('a denial cannot be retried in-app, so it must not offer to', () {
-      final denied = DeviceReadiness(
+      const denied = DeviceReadiness(
           kind: MediaDeviceKind.microphone, state: DevicePermissionState.denied);
       expect(denied.canRetryInApp, isFalse);
     });
@@ -244,7 +244,7 @@ void main() {
 
   group('readiness knows what matters most', () {
     test('being unheard outranks being unseen', () {
-      final readiness = MediaReadiness(
+      const readiness = MediaReadiness(
         microphone: DeviceReadiness(
             kind: MediaDeviceKind.microphone,
             state: DevicePermissionState.denied),
@@ -262,7 +262,7 @@ void main() {
     });
 
     test('nothing is said when nothing is wrong', () {
-      final ok = MediaReadiness(
+      const ok = MediaReadiness(
         microphone: DeviceReadiness(
             kind: MediaDeviceKind.microphone,
             state: DevicePermissionState.granted),

@@ -17,6 +17,7 @@ import '../domain/availability_profile.dart';
 import '../domain/meeting.dart';
 import '../domain/meeting_lifecycle.dart';
 import 'widgets/meeting_card.dart';
+import 'widgets/meeting_section.dart';
 import 'widgets/meeting_surfaces.dart';
 import 'meeting_semantics.dart';
 import '../domain/meeting_room.dart';
@@ -425,6 +426,7 @@ class _MeetingsBody extends StatelessWidget {
       ],
       if (attention.isNotEmpty) ...[
         MeetingSection(
+          bare: true,
           title: 'Needs attention',
           count: attention.length,
           emphasis: true,
@@ -434,6 +436,7 @@ class _MeetingsBody extends StatelessWidget {
       ],
       if (rest.isNotEmpty) ...[
         MeetingSection(
+          bare: true,
           title: 'Upcoming',
           count: rest.length,
           child: _cards(context, rest),
@@ -442,6 +445,7 @@ class _MeetingsBody extends StatelessWidget {
       ],
       if (invited.isNotEmpty) ...[
         MeetingSection(
+          bare: true,
           title: 'Invitations',
           count: invited.length,
           child: _cards(context, invited),
@@ -468,6 +472,7 @@ class _MeetingsBody extends StatelessWidget {
     final aside = <Widget>[
       if (outcomes.isNotEmpty) ...[
         MeetingSection(
+          bare: true,
           title: 'Follow-up',
           count: outcomes.length,
           child: Column(
@@ -492,6 +497,7 @@ class _MeetingsBody extends StatelessWidget {
       if (past.isNotEmpty) ...[
         const SizedBox(height: AuraSpace.s20),
         MeetingSection(
+          bare: true,
           title: 'Past',
           child: _PastMeetingsSection(
             meetings: past,
@@ -595,6 +601,7 @@ class _UpNext extends StatelessWidget {
     final live = meeting.phase == MeetingPhase.active ||
         meeting.phase == MeetingPhase.ready;
     return MeetingSection(
+      bare: true,
       title: live ? 'Happening now' : 'Up next',
       emphasis: live,
       child: MeetingCard(

@@ -21,6 +21,7 @@ import 'meeting_lifecycle_presenter.dart';
 import 'meeting_status_chip.dart';
 import 'widgets/meeting_assets_section.dart';
 import 'meeting_semantics.dart';
+import 'widgets/meeting_surfaces.dart';
 import 'widgets/meeting_continuity_section.dart';
 import 'widgets/meeting_section.dart';
 import 'widgets/meeting_workroom.dart';
@@ -82,12 +83,26 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
         );
 
     return meetingAsync.when(
+      // Section 19: a full-surface spinner under the generic word "Meeting"
+      // told a person nothing except that something was happening somewhere.
+      // The skeleton has the shape of the record that is coming, and the
+      // header no longer says a word the page is about to say better.
       loading: () => AuraScaffold(
-        title: 'Meeting',
-        body: const Center(child: CircularProgressIndicator()),
+        maxWidth: 1180,
+        body: const Padding(
+          padding: EdgeInsets.fromLTRB(
+              AuraSpace.s16, AuraSpace.s16, AuraSpace.s16, AuraSpace.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              MeetingSkeleton(lines: 3, height: 40),
+              SizedBox(height: AuraSpace.s18),
+              MeetingSkeleton(lines: 2),
+            ],
+          ),
+        ),
       ),
       error: (e, _) => AuraScaffold(
-        title: 'Meeting',
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -139,9 +154,15 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
               context.go('/institution/$owningInstitution/meetings/$meetingId');
             }
           });
+          // Canonicalising to the institution address - a frame or two, not
+          // a destination. The skeleton keeps the page from flashing a
+          // spinner during a redirect nobody should notice.
           return AuraScaffold(
-            title: 'Meeting',
-            body: const Center(child: CircularProgressIndicator()),
+            maxWidth: 1180,
+            body: const Padding(
+              padding: EdgeInsets.all(AuraSpace.s16),
+              child: MeetingSkeleton(lines: 3, height: 40),
+            ),
           );
         }
         final isHost =

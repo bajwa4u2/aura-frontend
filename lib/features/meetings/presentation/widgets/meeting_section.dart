@@ -24,12 +24,28 @@ class MeetingSection extends StatelessWidget {
 
   final EdgeInsetsGeometry? padding;
 
+  /// How many things are in this section, when that is worth knowing at a
+  /// glance. Null hides the chip entirely - a count of nothing is noise.
+  final int? count;
+
+  /// Marks a section that genuinely wants attention. Used sparingly: if two
+  /// sections on a surface are emphasised, neither is.
+  final bool emphasis;
+
+  /// Renders the heading without the card around it. The Meetings landing
+  /// composes its own cards inside each section, and a card inside a card is
+  /// a border nobody asked for.
+  final bool bare;
+
   const MeetingSection({
     super.key,
     required this.title,
     required this.child,
     this.trailing,
     this.padding,
+    this.count,
+    this.emphasis = false,
+    this.bare = false,
   });
 
   /// The canonical quiet empty state: one muted line, no vessel of its own.
@@ -48,28 +64,62 @@ class MeetingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final heading = Row(
+      children: [
+        if (emphasis) ...[
+          Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: AuraSurface.accent,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s8),
+        ],
+        Semantics(
+          header: true,
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        if (count != null && count! > 0) ...[
+          const SizedBox(width: AuraSpace.s8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+            decoration: BoxDecoration(
+              color: AuraSurface.elevated,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: AuraSurface.muted),
+            ),
+          ),
+        ],
+        const Spacer(),
+        if (trailing != null) trailing!,
+      ],
+    );
+
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        heading,
+        const SizedBox(height: AuraSpace.s12),
+        child,
+      ],
+    );
+
+    if (bare) return body;
+
     return AuraCard(
       padding: padding ?? const EdgeInsets.all(AuraSpace.s18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (trailing != null) trailing!,
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          child,
-        ],
-      ),
+      child: body,
     );
   }
 }

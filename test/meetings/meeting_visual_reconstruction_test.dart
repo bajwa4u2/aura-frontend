@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:aura/features/meetings/domain/meeting.dart';
 import 'package:aura/features/meetings/domain/meeting_lifecycle.dart';
 import 'package:aura/features/meetings/presentation/widgets/meeting_card.dart';
+import 'package:aura/features/meetings/presentation/widgets/meeting_section.dart';
 import 'package:aura/features/meetings/presentation/widgets/meeting_surfaces.dart';
 
 /// THE VISUAL RECONSTRUCTION, PINNED.
@@ -261,7 +262,7 @@ void main() {
       for (final tone in MeetingChipTone.values) {
         await pump(
           tester,
-          MeetingStatusChip(label: 'Live now', tone: tone),
+          MeetingTag(label: 'Live now', tone: tone),
         );
         expect(find.text('Live now'), findsOneWidget, reason: '$tone');
       }
@@ -282,7 +283,7 @@ void main() {
         );
         expect(tester.takeException(), isNull, reason: state);
         // The chip is always present and always says something.
-        expect(find.byType(MeetingStatusChip), findsOneWidget, reason: state);
+        expect(find.byType(MeetingTag), findsOneWidget, reason: state);
       }
     });
 
