@@ -6,17 +6,17 @@ for Discover, Create and Meetings; MESSAGES remains owed as a planned chapter.
 
 ---
 
-## IMMEDIATELY OWED — founder review of Meetings
+## DONE — Meetings shipped 2026-08-25
 
-Nothing is committed or deployed. Waiting on:
+Client `a6a82df`, backend `6223286`, both pushed to `main` and deployed.
+Migration `20261003000000_meetings_reconstruction_r2_r3` applied and verified
+against production: 0 `audience` nulls remain, 120 rows backfilled,
+`conversationId` present, service stable.
 
-1. review of `docs/meetings/2026-08-25-meetings-reconstruction.md`;
-2. the exact commit message, per the established cycle;
-3. approval to push — which triggers Railway auto-deploy **and the migration**
-   `20261003000000_meetings_reconstruction_r2_r3`. That migration backfills
-   `Meeting.audience` and adds `Meeting.conversationId`; it was tested on a
-   disposable Postgres both from empty and against a recreated pre-migration
-   shape, and every statement is guarded.
+**Still owed:** web behavioural certification, now that the backend half is
+live. `flutter test --platform chrome` would not run in the authoring
+environment; the reconstructed lifecycle should be exercised in a real browser
+against production.
 
 ## NEXT CHAPTER — AUDIO / VIDEO CALL SYSTEM RECONSTRUCTION
 

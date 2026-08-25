@@ -24,7 +24,14 @@
 >
 > **Certified:** Windows native 11/11 with a real session; physical Pixel 9a
 > 11/11 (7 exercised, 4 session-dependent skipped). iOS `NOT_EXECUTED`.
-> **Not committed or deployed** — awaiting founder review.
+>
+> **COMMITTED, PUSHED AND DEPLOYED 2026-08-25** — client `a6a82df`, backend
+> `6223286`. Migration `20261003000000` applied in production and verified
+> against the live database: `Meeting.audience` is NOT NULL with default
+> `PRIVATE`, **0 nulls remaining**, 120 meetings backfilled (GUEST 112,
+> INSTITUTION 6, PRIVATE 2); `Meeting.conversationId` present. The new
+> endpoint answers 401 rather than 404 — routed and guarded — and the service
+> held steady across repeated probes.
 >
 > The next chapter is **AUDIO / VIDEO CALL SYSTEM RECONSTRUCTION**, against the
 > Meetings-facing contract this chapter produced. Live Broadcast follows it.
