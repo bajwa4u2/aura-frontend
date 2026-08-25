@@ -13,8 +13,11 @@ void main() {
   ).readAsStringSync();
 
   String? cardTitles() {
-    // Collect _CreateActionData title values.
-    final titles = RegExp(r"_CreateActionData\(\s*title:\s*'([^']+)'")
+    // Collect the card titles. The widget was renamed `_CreateActionData` ->
+    // `_CreateCard` in the 2026-08-25 reconstruction; the frozen VOCABULARY
+    // this gate exists for did not change, so the gate follows the rename
+    // rather than the vocabulary bending to the gate.
+    final titles = RegExp(r"_CreateCard\(\s*title:\s*'([^']+)'")
         .allMatches(src)
         .map((m) => m.group(1)!)
         .toList()

@@ -1,0 +1,525 @@
+{
+ "creationRoutes": [
+  {
+   "path": "/institutions/get-started",
+   "segments": 2,
+   "params": [],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "InstitutionOnboardingWizard",
+   "attribution": "ok",
+   "file": "lib/features/institutions/wizard/institution_onboarding_wizard.dart",
+   "sourceFound": true,
+   "backIcon": true,
+   "pop": true,
+   "canPop": false,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": false,
+   "hardcodedHome": true,
+   "fixedGo": true,
+   "fixedGoTargets": [
+    ".go('/')",
+    ".go('/institution/dashboard')",
+    ".go('/institution/sign-in')"
+   ],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "institution",
+   "entryModes": [
+    "in-app",
+    "deep-link"
+   ],
+   "expectedSemantic": "STACK_RETURN needs a PARENT_RETURN fallback",
+   "classification": "WRONG_RETURN_SEMANTICS",
+   "rule": "affordance pops without checking the stack",
+   "mobileViable": false
+  },
+  {
+   "path": "/institution/create",
+   "segments": 2,
+   "params": [],
+   "renders": false,
+   "redirectOnly": true,
+   "widget": null,
+   "attribution": "redirect-only",
+   "file": null,
+   "sourceFound": false,
+   "backIcon": false,
+   "pop": false,
+   "canPop": false,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": false,
+   "passesLeading": false,
+   "hardcodedHome": false,
+   "fixedGo": false,
+   "fixedGoTargets": [],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "institution",
+   "entryModes": [
+    "in-app",
+    "deep-link"
+   ],
+   "expectedSemantic": "n/a",
+   "classification": "NOT_A_SURFACE",
+   "rule": "redirect-only route",
+   "mobileViable": true
+  },
+  {
+   "path": "/announcements/create",
+   "segments": 2,
+   "params": [],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "AnnouncementEditorScreen",
+   "attribution": "ok",
+   "file": "lib/features/announcements/presentation/announcement_editor_screen.dart",
+   "sourceFound": true,
+   "backIcon": true,
+   "pop": true,
+   "canPop": true,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": false,
+   "hardcodedHome": false,
+   "fixedGo": true,
+   "fixedGoTargets": [
+    ".go('/announcements')",
+    ".go('/announcements/$cleanSlug')"
+   ],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "publication",
+   "entryModes": [
+    "in-app",
+    "deep-link"
+   ],
+   "expectedSemantic": "STACK_RETURN with PARENT_RETURN fallback",
+   "classification": "COMPLIANT",
+   "rule": "own affordance + stack-aware pop",
+   "mobileViable": true
+  },
+  {
+   "path": "/institution/:institutionId/meetings/new",
+   "segments": 4,
+   "params": [
+    "institutionId"
+   ],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "CreateMeetingScreen",
+   "attribution": "ok",
+   "file": "lib/features/meetings/presentation/create_meeting_screen.dart",
+   "sourceFound": true,
+   "backIcon": true,
+   "pop": true,
+   "canPop": false,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": true,
+   "hardcodedHome": false,
+   "fixedGo": false,
+   "fixedGoTargets": [],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "institution",
+   "entryModes": [
+    "in-app",
+    "deep-link",
+    "notification",
+    "external-link"
+   ],
+   "expectedSemantic": "TERMINAL_EXIT / governed by its own domain",
+   "classification": "PROTECTED_BOUNDARY",
+   "rule": "Meetings/Live \u2014 audit only",
+   "mobileViable": true
+  },
+  {
+   "path": "/messages/new",
+   "segments": 2,
+   "params": [],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "NewConversationPicker",
+   "attribution": "ok",
+   "file": "lib/features/conversation/presentation/new_conversation_picker.dart",
+   "sourceFound": true,
+   "backIcon": false,
+   "pop": false,
+   "canPop": false,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": true,
+   "hardcodedHome": false,
+   "fixedGo": false,
+   "fixedGoTargets": [],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "conversation",
+   "entryModes": [
+    "in-app",
+    "deep-link"
+   ],
+   "expectedSemantic": "PARENT_RETURN",
+   "classification": "MISSING_RETURN_PATH",
+   "rule": "child destination with no product-owned return",
+   "mobileViable": false
+  },
+  {
+   "path": "/articles/write",
+   "segments": 2,
+   "params": [],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "ArticleEditorScreen",
+   "attribution": "ok",
+   "file": "lib/features/articles/presentation/article_editor_screen.dart",
+   "sourceFound": true,
+   "backIcon": true,
+   "pop": true,
+   "canPop": true,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": false,
+   "hardcodedHome": false,
+   "fixedGo": false,
+   "fixedGoTargets": [],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "publication",
+   "entryModes": [
+    "in-app",
+    "deep-link"
+   ],
+   "expectedSemantic": "STACK_RETURN with PARENT_RETURN fallback",
+   "classification": "COMPLIANT",
+   "rule": "own affordance + stack-aware pop",
+   "mobileViable": true
+  },
+  {
+   "path": "/articles/write/:articleId",
+   "segments": 3,
+   "params": [
+    "articleId"
+   ],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "ArticleEditorScreen",
+   "attribution": "ok",
+   "file": "lib/features/articles/presentation/article_editor_screen.dart",
+   "sourceFound": true,
+   "backIcon": true,
+   "pop": true,
+   "canPop": true,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": false,
+   "hardcodedHome": false,
+   "fixedGo": false,
+   "fixedGoTargets": [],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "publication",
+   "entryModes": [
+    "in-app",
+    "deep-link",
+    "notification",
+    "external-link"
+   ],
+   "expectedSemantic": "STACK_RETURN with PARENT_RETURN fallback",
+   "classification": "COMPLIANT",
+   "rule": "own affordance + stack-aware pop",
+   "mobileViable": true
+  },
+  {
+   "path": "/create",
+   "segments": 1,
+   "params": [],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "CreateHubScreen",
+   "attribution": "ok",
+   "file": "lib/features/create/presentation/create_hub_screen.dart",
+   "sourceFound": true,
+   "backIcon": false,
+   "pop": false,
+   "canPop": false,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": false,
+   "hardcodedHome": false,
+   "fixedGo": true,
+   "fixedGoTargets": [
+    ".go('/announcements/create')",
+    ".go('/announcements/create?scope=institution')"
+   ],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "other",
+   "entryModes": [
+    "in-app",
+    "deep-link"
+   ],
+   "expectedSemantic": "ROOT_NO_RETURN",
+   "classification": "ROOT_NO_RETURN_REQUIRED",
+   "rule": "primary destination",
+   "mobileViable": true
+  },
+  {
+   "path": "/invite/create",
+   "segments": 2,
+   "params": [],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "InviteCreateScreen",
+   "attribution": "ok",
+   "file": "lib/features/invitations/presentation/invite_create_screen.dart",
+   "sourceFound": true,
+   "backIcon": true,
+   "pop": false,
+   "canPop": true,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": false,
+   "hardcodedHome": false,
+   "fixedGo": false,
+   "fixedGoTargets": [],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "other",
+   "entryModes": [
+    "in-app",
+    "deep-link"
+   ],
+   "expectedSemantic": "STACK_RETURN",
+   "classification": "COMPLIANT",
+   "rule": "own affordance",
+   "mobileViable": true
+  },
+  {
+   "path": "/compose",
+   "segments": 1,
+   "params": [],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "ComposeScreen",
+   "attribution": "ok",
+   "file": "lib/features/posts/presentation/compose_screen.dart",
+   "sourceFound": true,
+   "backIcon": true,
+   "pop": true,
+   "canPop": true,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": true,
+   "hardcodedHome": true,
+   "fixedGo": true,
+   "fixedGoTargets": [
+    ".go('/home')",
+    ".go('/login?redirect=$redirect')",
+    ".go('/messages')",
+    ".go('/posts/${publishedPostId!.trim()}')"
+   ],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "other",
+   "entryModes": [
+    "in-app",
+    "deep-link"
+   ],
+   "expectedSemantic": "STACK_RETURN with PARENT_RETURN fallback",
+   "classification": "COMPLIANT",
+   "rule": "own affordance + stack-aware pop",
+   "mobileViable": true
+  },
+  {
+   "path": "/institution/:institutionId/announcements/new",
+   "segments": 4,
+   "params": [
+    "institutionId"
+   ],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "InstitutionRouteScope",
+   "attribution": "ok",
+   "file": "lib/core/institutions/institution_route_scope.dart",
+   "sourceFound": true,
+   "backIcon": false,
+   "pop": false,
+   "canPop": false,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": false,
+   "passesLeading": false,
+   "hardcodedHome": false,
+   "fixedGo": false,
+   "fixedGoTargets": [],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "institution",
+   "entryModes": [
+    "in-app",
+    "deep-link",
+    "notification",
+    "external-link"
+   ],
+   "expectedSemantic": "STACK_RETURN + DEEP_LINK_FALLBACK to a canonical parent",
+   "classification": "DEEPLINK_ESCAPE_MISSING",
+   "rule": "addressable detail with no product-owned return",
+   "mobileViable": false
+  },
+  {
+   "path": "/institution/:institutionId/posts/new",
+   "segments": 4,
+   "params": [
+    "institutionId"
+   ],
+   "renders": true,
+   "redirectOnly": false,
+   "widget": "InstitutionPostComposerScreen",
+   "attribution": "ok",
+   "file": "lib/features/institutions/posts/institution_post_composer_screen.dart",
+   "sourceFound": true,
+   "backIcon": true,
+   "pop": true,
+   "canPop": false,
+   "popScope": false,
+   "appBar": false,
+   "auraScaffold": true,
+   "passesLeading": false,
+   "hardcodedHome": false,
+   "fixedGo": false,
+   "fixedGoTargets": [],
+   "sharedPage": [],
+   "sharedBackOptIn": false,
+   "area": "institution",
+   "entryModes": [
+    "in-app",
+    "deep-link",
+    "notification",
+    "external-link"
+   ],
+   "expectedSemantic": "STACK_RETURN needs a PARENT_RETURN fallback",
+   "classification": "WRONG_RETURN_SEMANTICS",
+   "rule": "affordance pops without checking the stack",
+   "mobileViable": false
+  }
+ ],
+ "entries": [
+  {
+   "file": "lib/features/announcements/presentation/announcements_screen.dart",
+   "line": 197,
+   "verb": "go",
+   "target": "/announcements/create?scope=platform"
+  },
+  {
+   "file": "lib/features/announcements/presentation/announcements_screen.dart",
+   "line": 361,
+   "verb": "go",
+   "target": "/announcements/create?scope=institution"
+  },
+  {
+   "file": "lib/features/institutions/explore/institution_explore_screen.dart",
+   "line": 165,
+   "verb": "push",
+   "target": "/institution/$id/posts/new?scope=${scope.wire}"
+  },
+  {
+   "file": "lib/features/institutions/presentation/admin_workspace_screen.dart",
+   "line": 441,
+   "verb": "push",
+   "target": "/announcements/create"
+  },
+  {
+   "file": "lib/features/posts/presentation/post_detail_screen.dart",
+   "line": 232,
+   "verb": "push",
+   "target": "/compose?replyTo=$postId"
+  },
+  {
+   "file": "lib/features/posts/presentation/post_detail_screen.dart",
+   "line": 334,
+   "verb": "push",
+   "target": "/compose?replyTo=$postId"
+  },
+  {
+   "file": "lib/features/posts/presentation/post_detail_screen.dart",
+   "line": 621,
+   "verb": "push",
+   "target": "/compose?continuesPostId=$postId&intent=raise"
+  },
+  {
+   "file": "lib/features/public/presentation/space_detail_screen.dart",
+   "line": 56,
+   "verb": "push",
+   "target": "/compose?$qs"
+  },
+  {
+   "file": "lib/features/public/presentation/thread_screen.dart",
+   "line": 303,
+   "verb": "push",
+   "target": "/compose?$qs"
+  },
+  {
+   "file": "lib/features/public/widgets/public_composer.dart",
+   "line": 49,
+   "verb": "push",
+   "target": "/compose"
+  }
+ ],
+ "modalCreation": [
+  {
+   "file": "lib/features/feed/presentation/feed_interaction_bar.dart",
+   "line": 233
+  },
+  {
+   "file": "lib/features/institutions/domain/institution_domains_screen.dart",
+   "line": 209
+  },
+  {
+   "file": "lib/features/institutions/units/institution_units_screen.dart",
+   "line": 125
+  },
+  {
+   "file": "lib/features/meetings/presentation/create_meeting_screen.dart",
+   "line": 207
+  },
+  {
+   "file": "lib/features/meetings/presentation/meeting_live_room_screen.dart",
+   "line": 600
+  },
+  {
+   "file": "lib/features/meetings/presentation/widgets/meeting_assets_section.dart",
+   "line": 79
+  },
+  {
+   "file": "lib/features/posts/presentation/compose_screen.dart",
+   "line": 2658
+  },
+  {
+   "file": "lib/features/posts/presentation/widgets/post_card.dart",
+   "line": 1300
+  },
+  {
+   "file": "lib/features/realtime/presentation/realtime_room_screen.dart",
+   "line": 530
+  }
+ ],
+ "hubOffers": [
+  "/announcements/create",
+  "/announcements/create?scope=institution",
+  "/articles/write",
+  "/compose"
+ ]
+}
