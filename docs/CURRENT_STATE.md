@@ -501,3 +501,22 @@ and POST /meetings/:id/cancel was never issued (proved against a working network
 control). Both fixed, deployed. Certified on **Windows native 8/8** and
 **physical Pixel 9a 8/8** via `integration_test/create_meeting_certification_test.dart`,
 plus web against production. iOS NOT_EXECUTED (no macOS host).
+
+**A/V CHAPTER — FIRST BATCH (2026-08-25):** Measured the A/V surface (35 client
+realtime files, 82 backend realtime files, 11 getUserMedia sites) and resolved
+the P0 Meetings handoff. `permission_handler` added; `MediaPermissionService`
+gives Android/iOS real permission status, permanent-denial detection and a
+settings trip, while web/desktop honestly report `notRequested` rather than
+faking readiness. `CallReadiness` + `CallPreflightSheet` are one shared
+preflight; thread calls now ask BEFORE creating the session and ringing anyone.
+`DevicePermissionState` gained `permanentlyDenied` and `unknown`. The media
+engine consumes the canonical classifier — zero browser-flavoured strings
+remain. Call controls name their effect and announce state/effect to screen
+readers (they carried no Semantics at all). Android manifest gained
+BLUETOOTH_CONNECT / FOREGROUND_SERVICE(+types) / WAKE_LOCK; iOS gained the
+`audio` background mode. TURN re-measured live: 3478 UDP/TCP and 5349 TLS
+healthy with a valid certificate, **443 closed** (enterprise-443-only networks
+unsupported, reported not hidden). Suite 1523 green, analyzer clean, Android APK
+builds, Windows A/V certification 8/8 on real hardware. Android physical
+NOT_EXECUTED (Pixel disconnected); iOS NOT_EXECUTED; no two-party call executed.
+Live Broadcast untouched.

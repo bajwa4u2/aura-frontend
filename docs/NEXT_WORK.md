@@ -1,33 +1,42 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-25.** The Meetings chapter is executed, pushed and deployed,
-including the closeout batch and the founder's closeout **correction**. The
-sequence DISCOVER → MESSAGES → CREATE → MEETINGS is complete for Discover,
-Create and Meetings; MESSAGES remains owed as a planned chapter.
+**As of 2026-08-25.** Meetings is CLOSED and founder-accepted. The **Audio /
+Video Call System** chapter is open and its first executable batch is
+delivered, committed and pushed.
 
-Full record: `docs/meetings/2026-08-25-meetings-closeout.md`.
+Record: `docs/av/AV_PRODUCT_CONTRACT.md`, `docs/av/AV_CERTIFICATION.md`.
 
-**Resolved in the correction:**
+## A/V — delivered
 
-* `CREATE_REVIEW_PANE_WIDE_LAYOUT` — the scroll architecture changed. The form
-  and the review rail are sibling scrollables in a bounded Row; the rail holds
-  while the form scrolls, and the primary action sits with the summary.
-* A **nested-scroll trap** found while proving it: the member picker's fixed
-  220px well swallowed the page's drags on a narrow window, so the create
-  button was unreachable by touch. Members now lay out inline.
-* `SHARED_CREATE_ENTRY_LOADING` — fixed at the canonical shared owner, no
-  Meetings branching. `AuraLoadingSurface` replaces a 16px spinner centred in
-  an empty page; "Loading" is no longer the largest text on screen.
-* `CREATE_SUBMIT_PRODUCTION` — one controlled Host-only creation, which found
-  **two** further defects: the same meeting rendered twice on the landing, and
-  **cancelling a meeting was impossible from the released client** (dialog
-  builder discarded its own context, so the buttons popped the screen's route
-  instead of the dialog; the cancel request was never issued).
+* The P0 handoff is resolved: an explicit native permission ask, in front of
+  the call, as ONE shared capability (`core/media/call_readiness.dart`,
+  `call_preflight_sheet.dart`) used by thread calls and available to Meetings.
+* The permission model gained `permanentlyDenied` and `unknown`; recovery is
+  derived from state, so copy is platform-correct by construction.
+* The media engine now consumes the canonical classifier. Zero
+  browser-flavoured strings remain in `lib/`.
+* Call controls name their effect and announce state to screen readers.
+* Android: `BLUETOOTH_CONNECT`, `FOREGROUND_SERVICE(+MICROPHONE/CAMERA)`,
+  `WAKE_LOCK`. iOS: `UIBackgroundModes: audio`.
 
-**Still open:** nothing from this chapter is knowingly deferred. Android and
-Windows both certified on real devices; iOS `NOT_EXECUTED` — no macOS host.
+## A/V — open, and honestly bounded
 
-**Do not begin A/V** until the founder closes Meetings.
+1. **`ANDROID_PHYSICAL_CERTIFICATION = NOT_EXECUTED_DEVICE_DISCONNECTED`.** The
+   Pixel 9a is no longer listed by `flutter devices`. The Meetings-chapter
+   Android result is NOT carried over. Reconnect the handset and run
+   `flutter test integration_test/av_certification_test.dart -d <id>`.
+2. **No real two-party call was executed** — audio, video, incoming delivery,
+   reconnect-under-loss and relay-path ICE all require a second authenticated
+   account or device. Nothing about them is claimed.
+3. **`TURNS_TLS_443 = BLOCKED_EXTERNAL`.** 3478 UDP/TCP and 5349 TLS are live
+   with a valid certificate (re-measured, not recalled); 443 is not listening.
+   Networks permitting egress only on 443 are unsupported until a listener is
+   added on the coturn host. This is infrastructure access this environment
+   does not have and is NOT hidden behind application retries.
+4. **`IOS_CERTIFICATION = NOT_EXECUTED`** — no macOS host. The implementation
+   thesis is documented; no iOS claim is made from Android or web.
+
+**Live Broadcast remains closed.** Do not begin it.
 
 ---
 
