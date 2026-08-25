@@ -199,3 +199,38 @@ wins. Pinned in `test/meetings/meetings_landing_sections_test.dart`.
 
 **This is exactly what the authorized production creation was for.** No amount
 of reading found it.
+
+### Cancelling a meeting was impossible from the released client
+
+The cleanup step found the most serious defect of the batch.
+
+Three attempts to cancel the certification meeting, each identical: the
+confirmation dialog stayed open, `POST /meetings/:id/cancel` was **never
+issued**, and the meeting stayed `SCHEDULED`.
+
+**Verified rather than assumed.** Network tracking captured the app's own
+presence pings and notification polls throughout, so the absence of the cancel
+request is evidence and not a dead instrument. The Dart isolate kept running
+timers while the renderer stopped painting, which is why it first looked like a
+freeze.
+
+The cause was one character:
+
+```dart
+builder: (_) => AlertDialog(          // its own context, discarded
+  ...
+  onPressed: () => Navigator.pop(context, true),   // the SCREEN's context
+```
+
+`showDialog` pushes onto the **root** navigator; the meeting screen lives
+inside go_router's **shell** navigator. The two contexts resolve to different
+`Navigator`s, so the buttons popped the meeting route out from under the dialog
+instead of closing it. `showDialog`'s future never completed, so everything
+after `if (confirm != true) return;` was unreachable.
+
+Swept `lib/` for the same shape — this was the only occurrence. The test
+reproduces the **topology** rather than the screen, because the topology is the
+defect, and asserts both directions so it stays evidence.
+
+The dialog also said "cancelled for the host and guest" for a meeting that had
+neither; corrected.
