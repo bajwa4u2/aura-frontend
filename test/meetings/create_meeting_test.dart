@@ -79,6 +79,21 @@ void main() {
       expect(find.text('What is this meeting for?'), findsOneWidget);
       expect(find.text('Everyone invited sees this first.'), findsOneWidget);
     });
+
+    testWidgets('and the question is actually VISIBLE when the field is empty',
+        (tester) async {
+      // Caught on the live site after the first deploy of this change: an
+      // empty, unfocused Material field draws its LABEL inside the box and
+      // suppresses the hint, so the question never appeared.
+      await open(tester);
+      final field = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Meeting title').first,
+      );
+      expect(
+        field.decoration?.floatingLabelBehavior,
+        FloatingLabelBehavior.always,
+      );
+    });
   });
 
   group('the summary answers the founder\'s four questions', () {
@@ -93,6 +108,14 @@ void main() {
         (tester) async {
       await open(tester);
       expect(find.text('Untitled meeting'), findsOneWidget);
+    });
+
+    testWidgets('it never invents a name for the convening institution',
+        (tester) async {
+      // "Owning institution" reached production as the convener's NAME for as
+      // long as the institution record took to load.
+      await open(tester);
+      expect(find.text('Owning institution'), findsNothing);
     });
 
     testWidgets('what is still MISSING is shown as missing', (tester) async {

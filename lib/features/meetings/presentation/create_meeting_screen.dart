@@ -524,9 +524,9 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
                             meetingTitle: _titleCtrl.text.trim(),
                             institutionName: institutionAsync?.maybeWhen(
                                   data: (institution) => institution.name,
-                                  orElse: () => 'Owning institution',
+                                  orElse: () => '',
                                 ) ??
-                                'Owning institution',
+                                '',
                           ),
                         ),
                       ],
@@ -590,9 +590,9 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
                           meetingTitle: _titleCtrl.text.trim(),
                           institutionName: institutionAsync?.maybeWhen(
                                 data: (institution) => institution.name,
-                                orElse: () => 'Owning institution',
+                                orElse: () => '',
                               ) ??
-                              'Owning institution',
+                              '',
                         ),
                       ],
                     ),
@@ -732,6 +732,11 @@ class _CreationForm extends StatelessWidget {
                     // This field used to arrive pre-filled with the word
                     // "Meeting". A placeholder asks; a default answers, and it
                     // answered wrong for everyone who did not notice.
+                    //
+                    // The label must float from the start or Material draws it
+                    // INSIDE the empty box and suppresses the hint entirely -
+                    // which is what production showed on first deploy.
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
                     hintText: 'What is this meeting for?',
                     helperText: 'Everyone invited sees this first.',
                     border: OutlineInputBorder(),
