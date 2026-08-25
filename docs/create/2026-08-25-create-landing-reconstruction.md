@@ -158,11 +158,18 @@ protected systems was found.
 
 ## 9. Certification
 
+> **Harness note.** Run as a single file, the Android Create suite finds the
+> session and passes 5/5. Run as the whole `integration_test` directory it
+> reports SKIPPED — each test file boots the app and calls `/auth/refresh`,
+> whose refresh token is single-use, so the second boot invalidates the first
+> one's session. A harness artefact, not a product defect, and stated rather
+> than papered over.
+
 | platform | result |
 |---|---|
 | **Web (live production)** | **PASS** — Create renders three person outcomes plus Announcement for an authorized speaker; Post → composer → Cancel returns to Create with no stale control |
 | **Windows native (real session)** | **PASS 5/5** — including composer-cancelled-back-to-Create |
-| **Android — physical Pixel 9a** | **PARTIAL** — the surface renders, all outcomes present, touch target > 44px on real hardware. The router-driven Create tests **skip**: the debug harness holds no session, and it says so rather than passing quietly |
+| **Android — physical Pixel 9a** | **PASS 5/5** — with a real session (founder signed in on the debug build, 2026-08-25). Outcomes present, no false Back, **composer cancelled back to Create**, phone geometry, device render + touch target > 44 px, reduced window |
 | **iOS** | **NOT EXECUTED** — no TestFlight/iOS environment on this host |
 
 ### iOS implementation thesis
