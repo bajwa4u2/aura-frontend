@@ -62,9 +62,17 @@ would traverse it, and the Android-specific permission recovery string.
 
 Two honest reasons, and neither is "it probably works":
 
-1. **The client harness would not run.** `flutter test --platform chrome`
-   compiled indefinitely in this environment without producing a result. It was
-   not forced to a conclusion, and no result is claimed from it.
+1. **The client harness could not load the suite.** `flutter test --platform
+   chrome` eventually failed with:
+
+   > Failed to load "test\meetings\meeting_lifecycle_test.dart": Connection
+   > closed before test suite loaded.
+
+   followed by a Chromium process the runner could not terminate with either
+   SIGTERM or SIGKILL. The suite never began, so nothing about the product was
+   exercised, passed or failed. This is an environment failure in the browser
+   test runner on this host, not a result — and it is recorded as one rather
+   than as a hang, which is what it looked like while it was still running.
 2. **The backend half is not deployed.** R-2's migration and R-3's endpoint
    live in the working tree, uncommitted. Exercising the reconstructed
    lifecycle against production would certify the *previous* build, which would
