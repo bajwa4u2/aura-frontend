@@ -134,6 +134,12 @@ class _ReturnBar extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(
               AuraSpace.s10, AuraSpace.s8, AuraSpace.s10, 0),
           child: InkWell(
+            // The key sits on the TAPPABLE, not on the Semantics wrapper: the
+            // wrapper spans the full width, so a tap at its centre lands in
+            // empty space beside the control. The certification test found
+            // exactly that — the control rendered, the tap missed, and it
+            // looked like the return did nothing.
+            key: returnAffordanceKey,
             onTap: () => performReturn(context, action),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
@@ -160,6 +166,9 @@ class _ReturnBar extends StatelessWidget {
     );
   }
 }
+
+/// The governed return control. One per routed surface, by construction.
+const Key returnAffordanceKey = ValueKey('aura.return.affordance');
 
 /// Carry out a governed return.
 ///

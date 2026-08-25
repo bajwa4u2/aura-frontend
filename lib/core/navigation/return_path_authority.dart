@@ -340,8 +340,24 @@ class ReturnPathAuthority {
     return home;
   }
 
-  /// A return destination is held to the same shape rules as a preserved one.
-  /// This is the only place the two authorities touch, and only this way round.
-  static String? safeDestination(String? candidate) =>
-      validatedReturnTarget(candidate);
+  /// A return destination is held to the same SHAPE rules as a preserved one —
+  /// no scheme, no authority, no smuggled origin, no control characters. This
+  /// is the only place the two authorities touch, and only this way round.
+  ///
+  /// WITH ONE DELIBERATE DIFFERENCE, AND IT IS THE POINT OF BEING SIBLINGS.
+  ///
+  /// RC4 refuses `/` outright, and is right to: as a PRESERVED GATE TARGET,
+  /// "come back to the root afterwards" says nothing a gate could not do by
+  /// default. But `/` is a registered destination and the correct way out for a
+  /// signed-out reader on an informational page — which is a different subject.
+  ///
+  /// Found by the render test, not by reasoning: the control appeared on
+  /// `/terms`, was tapped, and nothing moved, because the destination had been
+  /// silently refused. Conflating the two authorities would have made this
+  /// unfixable without weakening RC4's open-redirect refusal for everyone.
+  static String? safeDestination(String? candidate) {
+    final value = (candidate ?? '').trim();
+    if (value == '/') return '/';
+    return validatedReturnTarget(value);
+  }
 }

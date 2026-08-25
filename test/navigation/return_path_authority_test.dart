@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:aura/core/auth/session_bootstrap.dart';
 import 'package:aura/core/auth/session_providers.dart';
+import 'package:aura/core/navigation/destination_continuity.dart';
 import 'package:aura/core/navigation/return_path_authority.dart';
 import 'package:aura/core/navigation/route_registry.dart';
 import 'package:aura/router.dart';
@@ -172,6 +173,25 @@ void main() {
         expect(ReturnPathAuthority.safeDestination(d), isNotNull,
             reason: '$path resolved to a shape RC4 would refuse: $d');
       }
+    });
+
+    test('a SIGNED-OUT reader can actually reach the public root', () {
+      // The one place the two authorities deliberately disagree. RC4 refuses
+      // '/' as a preserved gate target — correctly, it says nothing. It is a
+      // real destination for a return, and refusing it made the control on
+      // /terms render and then do nothing when tapped.
+      final a = resolve('/terms', authed: false);
+      expect(a.destination, '/');
+      expect(ReturnPathAuthority.safeDestination(a.destination), '/',
+          reason: 'the signed-out way out of an informational page is refused');
+    });
+
+    test('RC4 itself is unchanged — it still refuses the root', () {
+      // Weakening RC4 to fix the above would have loosened the open-redirect
+      // refusal for every gate in the product.
+      expect(validatedReturnTarget('/'), isNull);
+      expect(validatedReturnTarget('//evil.com'), isNull);
+      expect(ReturnPathAuthority.safeDestination('//evil.com'), isNull);
     });
   });
 }
