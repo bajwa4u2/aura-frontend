@@ -1,8 +1,26 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-25.** Meetings Workspace reconstruction is **EXECUTED, not yet
-committed**. The sequence DISCOVER → MESSAGES → CREATE → MEETINGS is complete
-for Discover, Create and Meetings; MESSAGES remains owed as a planned chapter.
+**As of 2026-08-25.** The Meetings chapter is **executed, pushed and deployed**,
+including the final closeout batch (Create Meeting + the reported shared
+bootstrap hang). The sequence DISCOVER → MESSAGES → CREATE → MEETINGS is
+complete for Discover, Create and Meetings; MESSAGES remains owed as a planned
+chapter.
+
+**Meetings is NOT closed.** It is returned for founder review with three items
+named openly rather than absorbed — see
+`docs/meetings/2026-08-25-meetings-closeout.md`:
+
+* `CREATE_REVIEW_PANE_WIDE_LAYOUT = SCROLLS_OUT_OF_VIEW` — a real fix is a
+  restructure of the screen's scroll architecture, not a wrapper.
+* `CREATE_SUBMIT_PRODUCTION = NOT_EXECUTED` — pressing it writes a real meeting
+  into the founder's production institution.
+* Android and iOS `NOT_EXECUTED`. Browser verification is not a proxy for
+  either. The Android handset is PIN-locked and the PIN was not requested.
+
+**`SHARED_BOOTSTRAP_HANG = DOES_NOT_EXIST.`** It was my measurement error —
+every reading was taken against a hidden browser tab, where Chrome suspends
+rAF and Flutter therefore builds no frames. No Meetings-local workaround was
+added, and no A/V boundary was crossed. Full record in the closeout doc.
 
 ---
 

@@ -467,3 +467,21 @@ explicit authorization). Release authorized: commit + push both repos;
 founder observes deployment; migration + PublicSpace seed run through the
 authorized deployment path. C4 next after founder live certification; C5
 hard-gated on C4 live closure.
+
+**MEETINGS CLOSEOUT BATCH (2026-08-25):** Create Meeting reconstructed against
+the released form — no default "Meeting" title, a summary that answers what /
+when / how long / who / convened by and shows unmet requirements as unmet
+before submit, booking-page card removed from the create flow, backend
+terminology out of the subtitle, member-picker loading given shape, and the
+"All active members ON / No internal members selected" contradiction removed.
+Four defects were caught only by looking at the deployed build (invisible hint
+under a Material label; "Owning institution" rendered as a real institution's
+name during load; a missing controller listener exposed by removing the default
+title; a 23 px overflow in the invitee buttons). Frontend suite 1480 green,
+analyzer clean, C0 ratchet updated in the reducing direction (one full-surface
+spinner removed). The reported **shared bootstrap hang does not exist** — it was
+a hidden-tab measurement error of mine; diagnostics reverted in `a5a3bc4`, no
+Meetings-local workaround added, no A/V boundary crossed. Meetings is returned
+for founder review, NOT closed: wide-layout review pane still scrolls out of
+view, production submit not executed, Android/iOS not executed. Record:
+`docs/meetings/2026-08-25-meetings-closeout.md`.
