@@ -1232,18 +1232,10 @@ class _InstitutionPostComposerScreenState
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: const Padding(
-                          padding: EdgeInsets.only(top: 4),
-                          child: Icon(
-                            Icons.arrow_back_rounded,
-                            size: 20,
-                            color: AuraSurface.muted,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
+                      // RETIRED 2026-08-25 — duplicated the governed return
+                      // control, and did it worse: an UNGUARDED pop(), so on a
+                      // deep-link entry there was nothing to pop and the arrow
+                      // did nothing at all.
                       Expanded(
                         child: InsModeHeader(
                           title: widget.isEditing ? 'Edit post' : 'New post',

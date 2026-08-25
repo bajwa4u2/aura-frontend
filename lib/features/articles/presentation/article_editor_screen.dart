@@ -678,13 +678,10 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
             ),
             child: Row(
               children: [
-                IconButton(
-                  tooltip: 'Back',
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  onPressed: () => context.canPop()
-                      ? context.pop()
-                      : context.go(NavigationAuthority.createRoute),
-                ),
+                // RETIRED 2026-08-25 — duplicated the governed return
+                // control: canPop ? pop : Create is exactly what
+                // ReturnPathAuthority resolves for a flow surface, and two
+                // arrows on one screen is what the shared control ends.
                 Text('Article',
                     style: AuraText.body.copyWith(
                         fontWeight: FontWeight.w800,

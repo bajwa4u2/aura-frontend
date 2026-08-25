@@ -1076,20 +1076,18 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               ),
               child: Row(
                 children: [
-                  IconButton(
-                    tooltip: 'Back',
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    onPressed: () {
-                      final back = widget.spaceContext?.onBack;
-                      if (back != null) {
-                        back();
-                        return;
-                      }
-                      context.canPop()
-                          ? context.pop()
-                          : context.go(NavigationAuthority.messagesRoute);
-                    },
-                  ),
+                  // RETIRED 2026-08-25 — the way out is governed now.
+                  //
+                  // This control did exactly what ReturnPathAuthority now
+                  // resolves: pop if there is history, otherwise Messages —
+                  // and inside a Space, the Space's own `onBack`, which was
+                  // itself `go('/institution/:id/spaces')`, the same answer
+                  // the authority derives. Keeping it put two arrows on one
+                  // screen, which is what the shared control exists to end.
+                  //
+                  // The governed one is also strictly better in a Space: it
+                  // unwinds the real journey when there is one, where this
+                  // replaced it unconditionally.
                   // F056: counterpart avatar for 1:1, bounded composite of
                   // canonical participant identities for a group.
                   ConversationAvatar(

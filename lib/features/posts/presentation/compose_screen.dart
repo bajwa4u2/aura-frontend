@@ -2770,22 +2770,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     leadingIcon,
                     const SizedBox(width: AuraSpace.s12),
                     Expanded(child: Text(title, style: AuraText.headline)),
-                    AuraGhostButton(
-                      label: 'Back',
-                      icon: Icons.arrow_back,
-                      onPressed: _posting
-                          ? null
-                          : () {
-                              // Reached via context.go from the Create hub has no
-                              // back-stack — fall back to a safe home so Back is
-                              // never a dead tap.
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go('/home');
-                              }
-                            },
-                    ),
+                    // RETIRED 2026-08-25 - duplicated the governed return control. The
+                    // comment that stood here named the real problem exactly ("reached via
+                    // context.go from the Create hub has no back-stack") and answered it
+                    // with a hardcoded /home. ReturnPathAuthority answers the same question
+                    // from the destination, and presents it once.
                   ],
                 ),
                 const SizedBox(height: AuraSpace.s8),
@@ -2816,22 +2805,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 backgroundColor: AuraSurface.subtle,
                 textColor: AuraSurface.muted,
               ),
-              AuraGhostButton(
-                label: 'Back',
-                icon: Icons.arrow_back,
-                onPressed: _posting
-                    ? null
-                    : () {
-                        // Reached via context.go from the Create hub has no
-                        // back-stack — fall back to a safe home so Back is
-                        // never a dead tap.
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/home');
-                        }
-                      },
-              ),
+              // RETIRED 2026-08-25 - duplicated the governed return control. The
+              // comment that stood here named the real problem exactly ("reached via
+              // context.go from the Create hub has no back-stack") and answered it
+              // with a hardcoded /home. ReturnPathAuthority answers the same question
+              // from the destination, and presents it once.
             ],
           ),
         );

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -47,6 +48,53 @@ void main() {
       expect(src.contains('arrow_back'), isFalse,
           reason: 'AuraScaffold grew its own back control — return semantics '
               'belong to ReturnPathAuthority, presented once by the shell');
+    });
+  });
+
+  group('ONE control per surface (founder ruling section 14 convergence)', () {
+    // Retiring a screen's own control is only safe because the governed one
+    // took its job. Two arrows on one screen is the state this chapter ends,
+    // so the survivors are named rather than counted.
+    //
+    // Scoped to the screens the census ATTRIBUTES to a framed route. A whole
+    // -lib scan sweeps in sub-widgets and composers that are not routed
+    // surfaces at all, and a gate that fails on things it was never about is
+    // a gate people learn to edit rather than obey.
+    test('the only framed screens still drawing a back arrow are STEP controls',
+        () {
+      final census = jsonDecode(
+          File('docs/navigation/return_path_census.json').readAsStringSync())
+          as List<dynamic>;
+      final recensus = jsonDecode(
+          File('docs/navigation/return_path_recensus.json').readAsStringSync())
+          as List<dynamic>;
+
+      final framed = <String>{
+        for (final r in recensus)
+          if ((r as Map)['verdict'] == 'COMPLIANT') r['route'] as String,
+      };
+
+      const allowed = {
+        // setState(_step = _Step.input) - a wizard step, not a route.
+        'lib/features/invitations/presentation/contact_import_screen.dart',
+        // setState(_step = _SheetStep.configure) - a step inside a sheet.
+        'lib/features/institutions/live_rooms/institution_live_rooms_screen.dart',
+      };
+
+      final drawing = <String>{};
+      for (final row in census) {
+        final r = row as Map<String, dynamic>;
+        final file = r['file'] as String?;
+        if (file == null || !framed.contains(r['path'])) continue;
+        if (!File(file).existsSync()) continue;
+        if (File(file).readAsStringSync().contains('Icons.arrow_back')) {
+          drawing.add(file);
+        }
+      }
+
+      expect(drawing.difference(allowed), isEmpty,
+          reason: 'a framed screen grew its own back control again - route it '
+              'through ReturnPathAuthority instead of adding a second answer');
     });
   });
 

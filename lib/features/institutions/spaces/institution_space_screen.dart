@@ -180,8 +180,10 @@ class _InstitutionSpaceScreenState
             memberCount: bundle.members.length,
             canGovern: bundle.canGovern,
             onOpenMembers: () => _openMembers(bundle),
-            onBack: () =>
-                context.go(NavigationAuthority.institutionSpacesRoute(widget.institutionId)),
+            // `onBack` is no longer supplied: it was a hardcoded
+            // go('/institution/:id/spaces'), which is exactly what
+            // ReturnPathAuthority derives — and the authority unwinds a real
+            // journey first, which this could not.
           ),
         );
       },

@@ -726,12 +726,9 @@ class _ThreadAppBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton(
-            tooltip: 'Back',
-            icon: const Icon(Icons.arrow_back_rounded, size: 20),
-            color: AuraSurface.muted,
-            onPressed: onBack,
-          ),
+          // RETIRED 2026-08-25 - duplicated the governed return control:
+          // canPop ? pop : '/' is exactly what ReturnPathAuthority resolves
+          // for this destination, including the signed-out case.
           const Spacer(),
           if (followablePostId != null) ...[
             FollowButton.thread(threadPostId: followablePostId!),
