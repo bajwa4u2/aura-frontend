@@ -80,3 +80,9 @@ Thumbs.db
 # Claude Code local settings
 # -----------------------------
 .claude/
+# Return-path audit intermediates (regenerate with tools/navigation_audit)
+/routes.json
+/nav_audit.json
+/nav_classified.json
+/nav_entrymodes.json
+/nav_surfaces.json
