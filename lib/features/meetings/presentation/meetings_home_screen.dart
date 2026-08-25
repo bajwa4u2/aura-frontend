@@ -136,10 +136,14 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
         onRefresh: () async => _refresh(),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // §14/§15. One breakpoint, chosen because it is where a second
-            // column stops crowding the first — not because 900 is a round
-            // number. Below it the page is one column and the actions stack.
-            final wide = constraints.maxWidth >= 900;
+            // The breakpoint asks about the WINDOW, not this widget's own
+            // constraint. Measured on the live site: the body's constraint is
+            // narrowed by wrappers between the shell and the page, so a full
+            // desktop window still resolved as narrow and the second column
+            // never appeared. "Is this a desktop" is a question about the
+            // viewport, and that is what is asked.
+            final wide = MediaQuery.sizeOf(context).width >= 1100 &&
+                constraints.maxWidth >= 640;
             return ListView(
               padding: const EdgeInsets.fromLTRB(
                 AuraSpace.s16,

@@ -658,7 +658,11 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
       maxWidth: 1180,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 940;
+          // Viewport, not local constraint - see the note on the Meetings
+          // landing: wrappers between the shell and the page narrow the body's
+          // own constraint below what the window actually offers.
+          final wide = MediaQuery.sizeOf(context).width >= 1100 &&
+              constraints.maxWidth >= 640;
 
           final mainColumn = <Widget>[
             header(),
