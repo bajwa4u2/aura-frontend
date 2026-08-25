@@ -5,6 +5,8 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:aura/core/notifications/notification_presentation.dart';
 import 'package:aura/features/realtime/presentation/widgets/floating_call_widget.dart';
+import 'package:aura/core/navigation/return_path_authority.dart';
+import 'package:aura/core/navigation/return_path_frame.dart';
 import 'package:aura/router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -88,6 +90,58 @@ void main() {
       expect(callSurfaceOwnsTheScreen(Uri.parse('/realtime/s1')), isTrue);
       expect(callSurfaceOwnsTheScreen(Uri.parse('/meetings/m1/live')), isTrue);
       expect(callSurfaceOwnsTheScreen(Uri.parse('/home')), isFalse);
+    });
+  });
+
+  group('Windows desktop — return path (founder ruling 2026-08-25 §12)', () {
+    // This chapter exists because browser chrome concealed a product defect.
+    // A native window has no Back button of its own, so a destination with no
+    // Aura affordance is a destination with no way out at all — which is what
+    // makes proving it HERE, rather than only in a browser, the point.
+    testWidgets('a directly-entered destination presents a governed return',
+        (tester) async {
+      tester.view.physicalSize = const Size(1600, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      // Deliberately NOT disposed. Mounting the real child starts the
+      // router's own network work, and tearing the container down while that
+      // is in flight throws "read a provider from a disposed container" —
+      // late, and attributed to whichever test runs next.
+      final container = ProviderContainer();
+      final router = container.read(routerProvider);
+      router.go('/terms');
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          // The real child, not a stub: a discarded child leaves the delegate
+          // with no route matches, and every claim about return paths would
+          // then be vacuously true.
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byKey(returnAffordanceKey), findsOneWidget,
+          reason: 'a native client offers no browser Back — this IS the only '
+              'way out');
+
+      await tester.tap(find.byKey(returnAffordanceKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(router.routeInformationProvider.value.uri.path, isNot('/terms'),
+          reason: 'the control rendered on Windows but did not move anyone');
+    });
+
+    testWidgets('a protected surface is NOT framed on this platform either',
+        (tester) async {
+      // Founder ruling §13: a shared change must not alter Meetings/Live,
+      // including by decorating them.
+      expect(ReturnPathAuthority.isProtectedDomain('/realtime/s1'), isTrue);
+      expect(ReturnPathAuthority.isProtectedDomain('/meetings/m1/live'), isTrue);
     });
   });
 
