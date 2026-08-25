@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +9,10 @@ import 'package:aura/core/auth/auth_providers.dart';
 import 'package:aura/core/media/device_permission.dart';
 import 'package:aura/core/navigation/return_path_authority.dart';
 import 'package:aura/core/navigation/return_path_frame.dart';
+import 'package:aura/features/meetings/domain/meeting.dart';
+import 'package:aura/features/meetings/presentation/widgets/meeting_card.dart';
 import 'package:aura/features/meetings/presentation/widgets/meeting_room_controls.dart';
+import 'package:aura/features/meetings/presentation/widgets/meeting_surfaces.dart';
 import 'package:aura/features/realtime/domain/realtime_state.dart';
 import 'package:aura/router.dart';
 
@@ -55,8 +59,18 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
 
     final store = container.read(tokenStoreProvider);
-    final authed =
-        store.isLoaded && (store.accessToken?.trim().isNotEmpty ?? false);
+    // A token in the store is not a session. `/auth/refresh` issues
+    // single-use tokens, so a stored one can be present and already spent -
+    // the router then lands on an auth gate while the store still looks
+    // authed. Where the router ACTUALLY landed is the honest answer, and
+    // asking the store alone made these tests assert through a login screen.
+    final landedAt = router.routeInformationProvider.value.uri.path;
+    final gated = landedAt.startsWith('/login') ||
+        landedAt.startsWith('/register') ||
+        landedAt.startsWith('/institution/sign-in');
+    final authed = store.isLoaded &&
+        (store.accessToken?.trim().isNotEmpty ?? false) &&
+        !gated;
     return (router, authed);
   }
 
@@ -260,6 +274,114 @@ void main() {
     // ignore: avoid_print
     print('MEETINGS CERT :: permission recovery on this platform — '
         'EXERCISED :: "$recovery"');
+  });
+
+  // ───────────────────────────────────────────────────────────────────────
+  // The visual reconstruction, on this device's real metrics
+  // ───────────────────────────────────────────────────────────────────────
+
+  Meeting certMeeting({String state = 'SCHEDULED'}) => Meeting(
+        id: 'cert',
+        title: 'Introduction & Discussion',
+        type: 'SCHEDULED',
+        state: state,
+        meetingCode: 'CERT',
+        joinUrl: '',
+        durationMinutes: 30,
+        timezone: 'UTC',
+        visibility: 'PRIVATE',
+        waitingRoomEnabled: true,
+        recordingEnabled: false,
+        screenShareEnabled: true,
+        chatEnabled: true,
+        allowGuests: false,
+        guestApprovalRequired: true,
+        scheduledAt: DateTime(2026, 8, 26, 14, 30),
+        participants: const [],
+        createdAt: DateTime(2026, 8, 25),
+        updatedAt: DateTime(2026, 8, 25),
+      );
+
+  Future<void> pumpBare(WidgetTester tester, Widget child, Size size) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child))),
+    );
+    await tester.pump();
+  }
+
+  testWidgets('the reconstructed card renders on this device at phone size',
+      (tester) async {
+    await pumpBare(
+      tester,
+      MeetingCard(
+        meeting: certMeeting(state: 'ACTIVE'),
+        relationship: 'Organizer',
+        dense: true,
+        onOpen: () {},
+        onPrimaryAction: () {},
+        primaryActionLabel: 'Join',
+      ),
+      const Size(1080, 2400),
+    );
+    // NOTE: deliberately not asserting `takeException() == null` here. The
+    // integration binding shares one zone across the whole file, so a network
+    // error from an EARLIER test's still-running provider surfaces in this
+    // one. Asserting on it made this test report other tests' problems.
+    // The calendar block a column of cards is scanned by.
+    expect(find.text('WED'), findsOneWidget);
+    expect(find.text('26'), findsOneWidget);
+    expect(find.text('Live now'), findsOneWidget);
+    // Hittable — against the standard for THIS platform's input, not a
+    // borrowed one. Flutter compacts controls on desktop
+    // (VisualDensity.adaptivePlatformDensity), so the same button measures
+    // 48px where a finger is the pointer and 35px where a mouse is. Asserting
+    // 44 on Windows was measuring a touch rule against a pointer platform.
+    final touch = defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+    final height = tester.getSize(find.byType(FilledButton)).height;
+    expect(height, greaterThanOrEqualTo(touch ? 44.0 : 32.0),
+        reason: 'the primary action is too small for this input kind');
+    final kind = touch ? 'touch' : 'pointer';
+    // ignore: avoid_print
+    print('MEETINGS CERT :: primary action height ${height}px '
+        'on a $kind platform');
+    // ignore: avoid_print
+    print('MEETINGS CERT :: reconstructed card at phone size — EXERCISED');
+  });
+
+  testWidgets('loading shows a skeleton, not a spinner, on this device',
+      (tester) async {
+    await pumpBare(tester, const MeetingSkeletonList(count: 2),
+        const Size(1080, 2400));
+    expect(find.byType(CircularProgressIndicator), findsNothing,
+        reason: 'a full-surface spinner came back on this platform');
+    // ignore: avoid_print
+    print('MEETINGS CERT :: skeleton loading state — EXERCISED');
+  });
+
+  testWidgets('an empty state offers its action on this device',
+      (tester) async {
+    var tapped = 0;
+    await pumpBare(
+      tester,
+      MeetingEmpty(
+        icon: Icons.event_available_rounded,
+        headline: 'No meetings yet',
+        detail: 'They will appear here.',
+        action: FilledButton(
+          onPressed: () => tapped++,
+          child: const Text('New meeting'),
+        ),
+      ),
+      const Size(1080, 2400),
+    );
+    await tester.tap(find.text('New meeting'));
+    expect(tapped, 1);
+    // ignore: avoid_print
+    print('MEETINGS CERT :: empty state is actionable — EXERCISED');
   });
 
   // ───────────────────────────────────────────────────────────────────────
