@@ -1,26 +1,33 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-25.** The Meetings chapter is **executed, pushed and deployed**,
-including the final closeout batch (Create Meeting + the reported shared
-bootstrap hang). The sequence DISCOVER → MESSAGES → CREATE → MEETINGS is
-complete for Discover, Create and Meetings; MESSAGES remains owed as a planned
-chapter.
+**As of 2026-08-25.** The Meetings chapter is executed, pushed and deployed,
+including the closeout batch and the founder's closeout **correction**. The
+sequence DISCOVER → MESSAGES → CREATE → MEETINGS is complete for Discover,
+Create and Meetings; MESSAGES remains owed as a planned chapter.
 
-**Meetings is NOT closed.** It is returned for founder review with three items
-named openly rather than absorbed — see
-`docs/meetings/2026-08-25-meetings-closeout.md`:
+Full record: `docs/meetings/2026-08-25-meetings-closeout.md`.
 
-* `CREATE_REVIEW_PANE_WIDE_LAYOUT = SCROLLS_OUT_OF_VIEW` — a real fix is a
-  restructure of the screen's scroll architecture, not a wrapper.
-* `CREATE_SUBMIT_PRODUCTION = NOT_EXECUTED` — pressing it writes a real meeting
-  into the founder's production institution.
-* Android and iOS `NOT_EXECUTED`. Browser verification is not a proxy for
-  either. The Android handset is PIN-locked and the PIN was not requested.
+**Resolved in the correction:**
 
-**`SHARED_BOOTSTRAP_HANG = DOES_NOT_EXIST.`** It was my measurement error —
-every reading was taken against a hidden browser tab, where Chrome suspends
-rAF and Flutter therefore builds no frames. No Meetings-local workaround was
-added, and no A/V boundary was crossed. Full record in the closeout doc.
+* `CREATE_REVIEW_PANE_WIDE_LAYOUT` — the scroll architecture changed. The form
+  and the review rail are sibling scrollables in a bounded Row; the rail holds
+  while the form scrolls, and the primary action sits with the summary.
+* A **nested-scroll trap** found while proving it: the member picker's fixed
+  220px well swallowed the page's drags on a narrow window, so the create
+  button was unreachable by touch. Members now lay out inline.
+* `SHARED_CREATE_ENTRY_LOADING` — fixed at the canonical shared owner, no
+  Meetings branching. `AuraLoadingSurface` replaces a 16px spinner centred in
+  an empty page; "Loading" is no longer the largest text on screen.
+* `CREATE_SUBMIT_PRODUCTION` — one controlled Host-only creation, which found
+  **two** further defects: the same meeting rendered twice on the landing, and
+  **cancelling a meeting was impossible from the released client** (dialog
+  builder discarded its own context, so the buttons popped the screen's route
+  instead of the dialog; the cancel request was never issued).
+
+**Still open:** nothing from this chapter is knowingly deferred. Android and
+Windows both certified on real devices; iOS `NOT_EXECUTED` — no macOS host.
+
+**Do not begin A/V** until the founder closes Meetings.
 
 ---
 

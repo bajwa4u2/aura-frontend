@@ -485,3 +485,19 @@ Meetings-local workaround added, no A/V boundary crossed. Meetings is returned
 for founder review, NOT closed: wide-layout review pane still scrolls out of
 view, production submit not executed, Android/iOS not executed. Record:
 `docs/meetings/2026-08-25-meetings-closeout.md`.
+
+**MEETINGS CLOSEOUT CORRECTION (2026-08-25):** Wide-layout review pane fixed at
+the scroll architecture (sibling scrollables in a bounded Row; primary action
+moved into the rail) — not a wrapper; a nested-scroll trap in the member picker
+found and removed while proving it (the create button had been unreachable by
+touch on a narrow window). Shared entry loading fixed at the canonical owner
+(`AuraLoadingSurface` + copy), regression-tested on non-Meetings consumers. One
+founder-authorized Host-only production creation exercised Create → persistence
+→ record → return → landing, and found two further defects: the same meeting
+rendered twice on the landing (Up next + Needs attention), and **cancelling a
+meeting was impossible from the released client** — the dialog builder discarded
+its own context so both buttons popped the screen's route instead of the dialog,
+and POST /meetings/:id/cancel was never issued (proved against a working network
+control). Both fixed, deployed. Certified on **Windows native 8/8** and
+**physical Pixel 9a 8/8** via `integration_test/create_meeting_certification_test.dart`,
+plus web against production. iOS NOT_EXECUTED (no macOS host).
