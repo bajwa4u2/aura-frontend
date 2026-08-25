@@ -16,6 +16,7 @@ import '../../share/aura_share_sheet.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting.dart';
+import 'meeting_semantics.dart';
 import '../domain/meeting_room.dart';
 
 class MeetingsHomeScreen extends ConsumerStatefulWidget {
@@ -689,6 +690,7 @@ class _PastMeetingsSectionState extends State<_PastMeetingsSection> {
             suffixIcon: _query.isEmpty
                 ? null
                 : IconButton(
+                    tooltip: 'Clear the search',
                     icon: const Icon(Icons.clear_rounded, size: 18),
                     onPressed: () {
                       _searchCtrl.clear();
@@ -827,6 +829,24 @@ class _MeetingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // §VII. The card's meaning is spread across a title, two or three
+          // pills, an abbreviated date and a host name — six fragments read in
+          // sequence with nothing joining them, and `EEE, MMM d` spoken as
+          // letters. One summary replaces the lot; the button below stays its
+          // own control.
+          Semantics(
+            header: true,
+            label: MeetingSemantics.meeting(
+              title: meeting.title,
+              phase: meeting.phase,
+              scheduledAt: scheduledAt,
+              hostName: meeting.host?.name,
+              institutionName: meetingInstitution,
+            ),
+            excludeSemantics: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -858,12 +878,8 @@ class _MeetingCard extends StatelessWidget {
                   color: AuraSurface.muted,
                 ),
           ),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            _meetingActionLabel(meeting),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AuraSurface.faint,
-                ),
+              ],
+            ),
           ),
           const SizedBox(height: AuraSpace.s12),
           Align(
@@ -891,7 +907,12 @@ class _MeetingCard extends StatelessWidget {
     if (owningInstitutionId.trim().isNotEmpty) {
       return '/institution/$owningInstitutionId/meetings/${meeting.id}';
     }
-    return '/home';
+    // Found while labelling this card (founder ruling 2026-08-25 §XXIII): a
+    // meeting with no owning institution — every personal and every booked
+    // meeting — sent its own OPEN button to `/home`. The card rendered
+    // correctly, said "Join", and led to the top of the product. The personal
+    // meeting record has had a canonical address all along.
+    return '/meetings/${meeting.id}';
   }
 }
 

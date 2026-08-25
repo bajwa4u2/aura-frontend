@@ -1,10 +1,33 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-24**
+**Last updated: 2026-08-25**
 
 ---
 
 ## Status
+
+> **2026-08-25 — MEETINGS WORKSPACE RECONSTRUCTION EXECUTED (B0–B8).**
+> The Meetings audit of 2026-08-25 is the frozen baseline; all 23 open findings
+> are closed, including the three P0s. Four founder rulings implemented:
+> **R-1** Live is not established and the vocabulary is now enforced code;
+> **R-2** `NO_RESPONSE` converged onto `PENDING` and `MeetingAudience` is
+> non-nullable with a tested backfill; **R-3** a Meeting references one
+> canonical Conversation, created lazily; **R-4** Meetings is admitted to
+> `ReturnPathAuthority`, with live CALLS exempt by behaviour rather than the
+> whole domain by name.
+>
+> Six defects were found by doing the work and are listed in
+> `docs/meetings/2026-08-25-meetings-reconstruction.md` — including a personal
+> meeting card that navigated to `/home`, a refused participant who watched a
+> spinner forever, and an attendance `noShow` count that was structurally
+> always zero.
+>
+> **Certified:** Windows native 11/11 with a real session; physical Pixel 9a
+> 11/11 (7 exercised, 4 session-dependent skipped). iOS `NOT_EXECUTED`.
+> **Not committed or deployed** — awaiting founder review.
+>
+> The next chapter is **AUDIO / VIDEO CALL SYSTEM RECONSTRUCTION**, against the
+> Meetings-facing contract this chapter produced. Live Broadcast follows it.
 
 > **2026-08-24 — DISCOVER RECONSTRUCTION CLOSED (founder-directed chapter).**
 > Discover is a live, curated, actionable discovery dashboard across exactly

@@ -20,6 +20,7 @@ import '../domain/meeting_institution_routing.dart' as routing;
 import 'meeting_lifecycle_presenter.dart';
 import 'meeting_status_chip.dart';
 import 'widgets/meeting_assets_section.dart';
+import 'widgets/meeting_continuity_section.dart';
 import 'widgets/meeting_section.dart';
 import 'widgets/meeting_workroom.dart';
 
@@ -510,18 +511,13 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
         lifecycle.status == MeetingLifecycleStatus.guestWaiting;
     final hasAgenda = (meeting.preparationNotes ?? '').trim().isNotEmpty;
 
+    // R-4: this screen used to answer the return question itself, and its
+    // cold-entry fallback was `/home` — the default §XXIII forbids, and the
+    // reason someone opening a meeting link from an email landed at the top of
+    // the product instead of somewhere related to the meeting. The shared
+    // authority resolves a real parent from the route tree instead.
     return AuraScaffold(
       title: 'Meeting',
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => context.canPop()
-            ? context.pop()
-            : context.go(
-                _resolvedInstitutionId == null
-                    ? '/home'
-                    : '/institution/$_resolvedInstitutionId/meetings',
-              ),
-      ),
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s16),
         children: [
@@ -626,6 +622,15 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                   // People — one roster model for members, guests, bookers.
                   _ParticipantsSection(meeting: meeting, ended: ended),
                   const SizedBox(height: AuraSpace.s16),
+
+                  // R-3 — the meeting's one durable Conversation. Offered
+                  // whether or not the meeting has happened yet: the question
+                  // people want to ask beforehand is as real as the one they
+                  // ask after, and both deserve somewhere that survives.
+                  if (!meeting.isDraft) ...[
+                    MeetingContinuitySection(meeting: meeting),
+                    const SizedBox(height: AuraSpace.s16),
+                  ],
 
                   // The record itself — summary, outcomes, conversation.
                   if (ended) ...[

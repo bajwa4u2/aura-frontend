@@ -1309,20 +1309,31 @@ final routerProvider = Provider<GoRouter>((ref) {
               meetingId: state.pathParameters['id'] ?? '',
             ),
           ),
+          // MEETING RECORD ALIASES - CANONICALISED (founder ruling
+          // 2026-08-25 §XII).
+          //
+          // `/prep`, `/room`, `/summary` and `/post-meeting` each BUILT the
+          // record screen with identical arguments — the screen has no
+          // section parameter, so the four names named nothing. `/room` was
+          // the actively misleading one: it promised the live room and
+          // rendered the record, while the real room sat at `/live`.
+          //
+          // They now REDIRECT to the canonical record rather than rendering a
+          // second copy of it, so a bookmark still works and the address bar
+          // ends up telling the truth. One destination, one URL, four
+          // historical doors into it.
           GoRoute(
             path: '/meetings/:meetingId/prep',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-            ),
+            redirect: (context, state) =>
+                '/meetings/${state.pathParameters['meetingId'] ?? ''}',
           ),
           // Lobby retired: the Meeting Record is the doorway to the room.
           // Guests never land here anymore (pre-join routes straight to
           // /live); members see the record with its Enter room banner.
           GoRoute(
             path: '/meetings/:meetingId/room',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-            ),
+            redirect: (context, state) =>
+                '/meetings/${state.pathParameters['meetingId'] ?? ''}',
           ),
           GoRoute(
             path: '/meetings/:meetingId/waiting',
@@ -1348,15 +1359,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           // is the meeting before, during, and after. Old links keep working.
           GoRoute(
             path: '/meetings/:meetingId/summary',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-            ),
+            redirect: (context, state) =>
+                '/meetings/${state.pathParameters['meetingId'] ?? ''}',
           ),
           GoRoute(
             path: '/meetings/:meetingId/post-meeting',
-            builder: (context, state) => MeetingDetailScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-            ),
+            redirect: (context, state) =>
+                '/meetings/${state.pathParameters['meetingId'] ?? ''}',
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId',
@@ -1370,23 +1379,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/prep',
-            builder: (context, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) => MeetingDetailScreen(
-                meetingId: state.pathParameters['meetingId'] ?? '',
-                institutionId: institutionId,
-              ),
-            ),
+            redirect: (context, state) =>
+                '/institution/${state.pathParameters['institutionId'] ?? ''}'
+                '/meetings/${state.pathParameters['meetingId'] ?? ''}',
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/room',
-            builder: (context, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) => MeetingDetailScreen(
-                meetingId: state.pathParameters['meetingId'] ?? '',
-                institutionId: institutionId,
-              ),
-            ),
+            redirect: (context, state) =>
+                '/institution/${state.pathParameters['institutionId'] ?? ''}'
+                '/meetings/${state.pathParameters['meetingId'] ?? ''}',
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/waiting',
@@ -1417,24 +1418,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/meetings/:meetingId/summary',
-            builder: (context, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) => MeetingDetailScreen(
-                meetingId: state.pathParameters['meetingId'] ?? '',
-                institutionId: institutionId,
-              ),
-            ),
+            redirect: (context, state) =>
+                '/institution/${state.pathParameters['institutionId'] ?? ''}'
+                '/meetings/${state.pathParameters['meetingId'] ?? ''}',
           ),
           GoRoute(
-            path:
-                '/institution/:institutionId/meetings/:meetingId/post-meeting',
-            builder: (context, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) => MeetingDetailScreen(
-                meetingId: state.pathParameters['meetingId'] ?? '',
-                institutionId: institutionId,
-              ),
-            ),
+            path: '/institution/:institutionId/meetings/:meetingId/post-meeting',
+            redirect: (context, state) =>
+                '/institution/${state.pathParameters['institutionId'] ?? ''}'
+                '/meetings/${state.pathParameters['meetingId'] ?? ''}',
           ),
           // Institution admin booking pages — gated by InstitutionRoleGuard (ADMIN) on backend
           GoRoute(

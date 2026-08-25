@@ -1,4 +1,4 @@
-import '../../realtime/domain/realtime_enums.dart';
+import '../../features/realtime/domain/realtime_enums.dart';
 
 /// Realtime Architecture Correction — Phase 7, Meetings realtime
 /// orchestration (frontend piece).

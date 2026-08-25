@@ -7,6 +7,35 @@
 
 ---
 
+## Meetings — read before touching anything in `features/meetings`
+
+Reconstructed 2026-08-25 (B0–B8), **uncommitted**.
+
+1. `docs/meetings/MEETINGS_PRODUCT_CONTRACT.md` — what Meetings is, who
+   decides what, where the boundaries fall. Read this first.
+2. `docs/meetings/2026-08-25-meetings-reconstruction.md` — what changed and why.
+3. `docs/meetings/MEETINGS_CERTIFICATION.md` — what actually executed.
+4. `docs/meetings/MEETINGS_MARKET_BENCHMARK.md` — the outcome comparison.
+5. `docs/meetings/2026-08-25-meetings-workspace-audit.md` — the frozen baseline.
+
+**Four things that will bite you if you do not know them:**
+
+* **Lifecycle has ONE authority.** `resolveMeetingPhase` in
+  `domain/meeting_lifecycle.dart`. Do not add a getter that combines
+  `Meeting.state` and `MeetingRoom.status` again — three of them existed and
+  they disagreed.
+* **The workspace reads A/V through ONE adapter.**
+  `application/meeting_session_adapter.dart`. Do not import
+  `realtime/data/` into a Meetings presentation file.
+* **Meetings is inside `ReturnPathAuthority` now** (R-4). Do not add a screen's
+  own back arrow; the shared frame draws one. A live CALL is exempt, by
+  behaviour, and `/realtime` (the lobby) is not a call.
+* **A meeting's durable chat is a canonical Conversation** (R-3), not a
+  meeting-local one. `MeetingConversationMessage` is the record stream and is a
+  different thing.
+
+---
+
 ## Read these first, in order
 
 1. `docs/CURRENT_STATE.md` — where everything stands

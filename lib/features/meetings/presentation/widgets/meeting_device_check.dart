@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../../core/media/device_permission.dart';
 import '../../../realtime/application/realtime_providers.dart';
 import '../../application/meeting_entry_prefs.dart';
 import 'meeting_device_picker.dart';
@@ -49,6 +50,7 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
   bool _cameraOn = true;
   bool _micOn = true;
   bool _cameraUnavailable = false;
+  MediaReadiness _readiness = MediaReadiness.unchecked;
   bool _ready = false;
   bool _initializing = true;
   String? _error;
@@ -119,17 +121,44 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
               : false,
         };
 
+    // §IX. Both failures used to be swallowed by `catch (_)`, so four
+    // different problems — refused, restricted, no device, device busy — all
+    // ended at one sentence telling the person to check "browser permissions"
+    // on platforms that have no browser. The error is now classified, and the
+    // classification is what the person is shown.
     MediaStream? stream;
+    var cameraState = DevicePermissionState.granted;
+    var micState = DevicePermissionState.granted;
     try {
       stream = await navigator.mediaDevices.getUserMedia(build(true));
-    } catch (_) {
+    } catch (videoError) {
+      cameraState =
+          classifyMediaError(videoError, kind: MediaDeviceKind.camera);
       try {
+        // Falling back to audio-only tells us whether the microphone was ever
+        // the problem: if this succeeds, only the camera failed.
         stream = await navigator.mediaDevices.getUserMedia(build(false));
         _cameraUnavailable = true;
-      } catch (_) {
+      } catch (audioError) {
+        micState =
+            classifyMediaError(audioError, kind: MediaDeviceKind.microphone);
         stream = null;
       }
     }
+    _readiness = MediaReadiness(
+      microphone: DeviceReadiness(
+        kind: MediaDeviceKind.microphone,
+        state: micState,
+      ),
+      camera: DeviceReadiness(
+        kind: MediaDeviceKind.camera,
+        state: stream == null && micState != DevicePermissionState.granted
+            ? cameraState
+            : (_cameraUnavailable
+                ? cameraState
+                : DevicePermissionState.granted),
+      ),
+    );
 
     if (!mounted) {
       for (final t in stream?.getTracks() ?? const []) {
@@ -140,11 +169,17 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
     }
 
     if (stream == null) {
+      // The message is now the classified one, with the recovery that
+      // actually applies on THIS platform.
+      final concern = _readiness.primaryConcern;
       setState(() {
         _initializing = false;
         _ready = false;
-        _error = 'Camera and microphone are unavailable. '
-            'Check your browser permissions.';
+        _error = concern == null
+            ? 'Camera and microphone are unavailable.'
+            : [concern.summary, concern.recovery]
+                .where((line) => (line ?? '').trim().isNotEmpty)
+                .join('. ');
       });
       return;
     }

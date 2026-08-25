@@ -32,6 +32,10 @@ import '../../realtime/domain/realtime_enums.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
 import '../../conversation/presentation/conversation_identity.dart';
+import '../../../core/product/product_language.dart';
+import '../application/meeting_session_adapter.dart';
+import 'meeting_semantics.dart';
+import 'widgets/meeting_room_controls.dart';
 
 // E1 — MeetingTransportBridge: sole interface between meeting UI and WebRTC layer.
 // All mic/camera/screen operations from meeting widgets MUST go through this bridge.
@@ -668,6 +672,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                     ),
                     const SizedBox(width: 10),
                     IconButton(
+                      tooltip: 'Copy the meeting code',
                       icon: const Icon(Icons.copy_rounded,
                           size: 18, color: Color(0xFF6C63FF)),
                       onPressed: () {
@@ -880,15 +885,15 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     );
   }
 
-  String get _summaryPath =>
-      _exitInstitutionId == null || !_viewerBelongsToExitInstitution
-          ? '/meetings/${widget.meetingId}/summary'
-          : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/summary';
+  /// §XII: `/summary` and `/post-meeting` were two more names for the record,
+  /// and the record is where both of these already meant to go. They are one
+  /// path now, which is also why leaving and ending land in the same place.
+  String get _summaryPath => _workspacePath;
 
   String get _workspacePath =>
       _exitInstitutionId == null || !_viewerBelongsToExitInstitution
           ? '/meetings/${widget.meetingId}'
-          : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}/post-meeting';
+          : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}';
 
   Future<void> _endMeeting() async {
     if (_endingMeeting) return;
@@ -1518,7 +1523,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               duration: const Duration(milliseconds: 250),
               child: IgnorePointer(
                 ignoring: !_controlsVisible,
-                child: _MeetingControlBar(
+                child: MeetingControlBar(
               state: state,
               isHost: _isHost,
               showParticipants: _showParticipants,
@@ -2455,385 +2460,6 @@ class _ElapsedTimerState extends State<_ElapsedTimer> {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// E4 — Control bar: meeting vocabulary, no "call" language
-// ---------------------------------------------------------------------------
-
-class _MeetingControlBar extends StatelessWidget {
-  final RealtimeState state;
-  final bool isHost;
-  final bool showParticipants;
-  final bool showNotes;
-  final bool showChat;
-  final int unreadChat;
-  final bool endingMeeting;
-  final bool togglingScreenShare;
-  final VoidCallback onToggleMic;
-  final VoidCallback onToggleCamera;
-  final VoidCallback onToggleParticipants;
-  final VoidCallback onToggleNotes;
-  final VoidCallback onToggleChat;
-  final VoidCallback onInvite;
-  final VoidCallback onFiles;
-  final bool recordingSupported;
-  final bool recording;
-  final bool savingRecording;
-  final VoidCallback onToggleRecording;
-  final VoidCallback onShareScreen;
-  final VoidCallback onFlipCamera;
-  final VoidCallback onDeviceSettings;
-  final VoidCallback onEndMeeting;
-  final VoidCallback onLeaveMeeting;
-  final bool handRaised;
-  final VoidCallback onToggleHand;
-  final VoidCallback onReact;
-
-  const _MeetingControlBar({
-    required this.state,
-    required this.isHost,
-    required this.showParticipants,
-    required this.showNotes,
-    required this.showChat,
-    required this.unreadChat,
-    required this.endingMeeting,
-    required this.togglingScreenShare,
-    required this.onToggleMic,
-    required this.onToggleCamera,
-    required this.onToggleParticipants,
-    required this.onToggleNotes,
-    required this.onToggleChat,
-    required this.onInvite,
-    required this.onFiles,
-    required this.recordingSupported,
-    required this.recording,
-    required this.savingRecording,
-    required this.onToggleRecording,
-    required this.onShareScreen,
-    required this.onFlipCamera,
-    required this.onDeviceSettings,
-    required this.onEndMeeting,
-    required this.onLeaveMeeting,
-    required this.handRaised,
-    required this.onToggleHand,
-    required this.onReact,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [Color(0xEE030712), Colors.transparent],
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
-      // Control maturity: three intentional clusters — voice & picture,
-      // participation, meeting management — instead of one flat feature row.
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: AuraSpace.s14,
-        runSpacing: AuraSpace.s10,
-        children: [
-          _ControlGroup(
-            children: [
-              _ControlButton(
-                icon: state.microphoneEnabled
-                    ? Icons.mic_rounded
-                    : Icons.mic_off_rounded,
-                label: state.microphoneEnabled ? 'Mute' : 'Unmute',
-                active: state.microphoneEnabled,
-                onTap: onToggleMic,
-              ),
-              _ControlButton(
-                icon: state.cameraEnabled
-                    ? Icons.videocam_rounded
-                    : Icons.videocam_off_rounded,
-                label: state.cameraEnabled ? 'Camera' : 'Camera',
-                active: state.cameraEnabled,
-                onTap: onToggleCamera,
-              ),
-              _ControlButton(
-                icon: state.isScreenSharing
-                    ? Icons.stop_screen_share_rounded
-                    : Icons.screen_share_rounded,
-                label: state.isScreenSharing ? 'Stop share' : 'Share',
-                active: state.isScreenSharing,
-                onTap: togglingScreenShare ? null : onShareScreen,
-              ),
-            ],
-          ),
-          _ControlGroup(
-            children: [
-              _ControlButton(
-                icon: Icons.add_reaction_outlined,
-                label: 'React',
-                active: false,
-                onTap: onReact,
-              ),
-              _ControlButton(
-                icon: handRaised
-                    ? Icons.back_hand_rounded
-                    : Icons.back_hand_outlined,
-                label: handRaised ? 'Lower' : 'Hand',
-                active: handRaised,
-                onTap: onToggleHand,
-              ),
-              _ControlButton(
-                icon: Icons.chat_bubble_outline_rounded,
-                label: 'Chat',
-                active: showChat,
-                badge: unreadChat,
-                onTap: onToggleChat,
-              ),
-              _ControlButton(
-                icon: Icons.people_rounded,
-                label: 'People',
-                active: showParticipants,
-                onTap: onToggleParticipants,
-              ),
-            ],
-          ),
-          _ControlGroup(
-            children: [
-              if (recordingSupported)
-                _ControlButton(
-                  icon: recording
-                      ? Icons.stop_circle_outlined
-                      : Icons.fiber_manual_record_rounded,
-                  label: savingRecording
-                      ? 'Saving…'
-                      : (recording ? 'Stop rec' : 'Record'),
-                  active: recording,
-                  danger: recording,
-                  onTap: savingRecording ? null : onToggleRecording,
-                ),
-              // Secondary actions live in one place instead of widening the
-              // bar: notes & agenda, files, invite, devices, flip camera.
-              PopupMenuButton<String>(
-                tooltip: 'More',
-                color: const Color(0xFF0F172A),
-                offset: const Offset(0, -8),
-                position: PopupMenuPosition.over,
-                onSelected: (value) {
-                  switch (value) {
-                    case 'notes':
-                      onToggleNotes();
-                      break;
-                    case 'files':
-                      onFiles();
-                      break;
-                    case 'invite':
-                      onInvite();
-                      break;
-                    case 'devices':
-                      onDeviceSettings();
-                      break;
-                    case 'flip':
-                      onFlipCamera();
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  _moreItem('notes', Icons.notes_rounded, 'Notes & agenda',
-                      highlighted: showNotes),
-                  _moreItem(
-                      'files', Icons.folder_shared_outlined, 'Files & materials'),
-                  _moreItem(
-                      'invite', Icons.person_add_alt_rounded, 'Invite'),
-                  _moreItem('devices', Icons.tune_rounded, 'Devices'),
-                  if (state.isVideoMode && state.cameraEnabled)
-                    _moreItem(
-                        'flip', Icons.flip_camera_ios_rounded, 'Flip camera'),
-                ],
-                child: const _ControlButton(
-                  icon: Icons.more_horiz_rounded,
-                  label: 'More',
-                  active: false,
-                  menuChild: true,
-                ),
-              ),
-              if (isHost)
-                _ControlButton(
-                  icon: Icons.stop_rounded,
-                  label: endingMeeting ? 'Ending...' : 'End',
-                  active: false,
-                  danger: true,
-                  onTap: endingMeeting ? null : onEndMeeting,
-                )
-              else
-                _ControlButton(
-                  icon: Icons.logout_rounded,
-                  label: 'Leave',
-                  active: false,
-                  danger: true,
-                  onTap: onLeaveMeeting,
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  PopupMenuItem<String> _moreItem(
-    String value,
-    IconData icon,
-    String label, {
-    bool highlighted = false,
-  }) {
-    return PopupMenuItem<String>(
-      value: value,
-      height: 40,
-      child: Row(
-        children: [
-          Icon(icon,
-              size: 18,
-              color: highlighted
-                  ? const Color(0xFF8B85FF)
-                  : const Color(0xFF9CA3AF)),
-          const SizedBox(width: 10),
-          Text(
-            label,
-            style: TextStyle(
-              color: highlighted ? const Color(0xFF8B85FF) : const Color(0xFFE5E7EB),
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// A quiet cluster container — related controls read as one unit.
-class _ControlGroup extends StatelessWidget {
-  final List<Widget> children;
-
-  const _ControlGroup({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0x66101B2E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x331E293B)),
-      ),
-      child: Wrap(
-        spacing: AuraSpace.s8,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: children,
-      ),
-    );
-  }
-}
-
-class _ControlButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final bool danger;
-  // Unread count bubble (e.g. chat); hidden when 0.
-  final int badge;
-  final VoidCallback? onTap;
-
-  /// True when this button is the CHILD of a PopupMenuButton: taps must pass
-  /// through to the menu (onTap stays null) but the button must not render
-  /// as disabled.
-  final bool menuChild;
-
-  const _ControlButton({
-    required this.icon,
-    required this.label,
-    required this.active,
-    this.danger = false,
-    this.badge = 0,
-    this.onTap,
-    this.menuChild = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = danger
-        ? const Color(0xFFDC2626)
-        : active
-            ? const Color(0xFF1E293B)
-            : const Color(0xFF0F172A);
-    final fg = danger ? Colors.white : const Color(0xFFE5E7EB);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: (onTap == null && !menuChild)
-                      ? bg.withValues(alpha: 0.5)
-                      : bg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: active && !danger
-                      ? Border.all(
-                          color:
-                              const Color(0xFF6C63FF).withValues(alpha: 0.5),
-                        )
-                      : null,
-                ),
-                child: Icon(icon, color: fg, size: 22),
-              ),
-              if (badge > 0)
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6C63FF),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    constraints: const BoxConstraints(minWidth: 16),
-                    child: Text(
-                      badge > 99 ? '99+' : '$badge',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: danger ? const Color(0xFFFCA5A5) : const Color(0xFF9CA3AF),
-              fontSize: 11,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// E5 — Participant panel
-// ---------------------------------------------------------------------------
-
 class _MeetingParticipantPanel extends StatelessWidget {
   final List<RealtimeParticipant> participants;
   final bool isHost;
@@ -2875,6 +2501,7 @@ class _MeetingParticipantPanel extends StatelessWidget {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Close this panel',
                   icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
                   onPressed: onClose,
                 ),
@@ -2937,6 +2564,26 @@ class _ParticipantRow extends StatelessWidget {
     this.onMute,
   });
 
+  /// EVERYTHING THIS ROW SAYS WITHOUT WORDS.
+  ///
+  /// §VII names participant identity explicitly. On screen this row carries a
+  /// name plus up to five silent signals: a raised-hand emoji, a red or grey
+  /// microphone, a red or grey camera, a screen-share glyph, and "(you)".
+  /// Read out untreated it is a name and then a run of icon names, in which
+  /// nothing distinguishes muted from unmuted — both are simply "microphone".
+  String _spoken() {
+    final rawName = (participant.displayName ?? '').trim();
+    final name = rawName.isEmpty ? 'Guest' : rawName;
+    final parts = <String>[isMe ? '$name, you' : name];
+    final role = (participant.displayRole ?? '').trim();
+    if (role.isNotEmpty) parts.add(role);
+    if (handRaised) parts.add('hand raised');
+    parts.add(participant.audioOn ? 'microphone on' : 'muted');
+    if (!participant.videoOn) parts.add('camera off');
+    if (participant.screenOn) parts.add('sharing their screen');
+    return parts.join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -2946,97 +2593,120 @@ class _ParticipantRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: const Color(0xFF1E293B),
-            backgroundImage: participant.avatarUrl?.trim().isNotEmpty == true
-                ? NetworkImage(participant.avatarUrl!)
-                : null,
-            child: participant.avatarUrl?.trim().isNotEmpty == true
-                ? null
-                : Text(
-                    (participant.displayName ?? '').trim().isEmpty
-                        ? '?'
-                        : (participant.displayName ?? '').trim()[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: Color(0xFFE5E7EB),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
-          const SizedBox(width: AuraSpace.s10),
+          // WHO THIS IS — one spoken summary rather than a name followed by a
+          // run of unlabelled glyphs. The host's actions stay OUTSIDE it: a
+          // summary that swallowed them would announce the person and hide
+          // the two controls a host needs.
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  (participant.displayName ?? '').trim().isEmpty
-                      ? 'Guest'
-                      : (participant.displayName ?? '').trim(),
-                  style: const TextStyle(
-                    color: Color(0xFFE5E7EB),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+            child: Semantics(
+              label: _spoken(),
+              excludeSemantics: true,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: const Color(0xFF1E293B),
+                    backgroundImage:
+                        participant.avatarUrl?.trim().isNotEmpty == true
+                            ? NetworkImage(participant.avatarUrl!)
+                            : null,
+                    child: participant.avatarUrl?.trim().isNotEmpty == true
+                        ? null
+                        : Text(
+                            (participant.displayName ?? '').trim().isEmpty
+                                ? '?'
+                                : (participant.displayName ?? '')
+                                    .trim()[0]
+                                    .toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFFE5E7EB),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if ((participant.displayRole ?? '').trim().isNotEmpty)
-                  Text(
-                    (participant.displayRole ?? '').trim(),
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
-                      fontSize: 11,
+                  const SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (participant.displayName ?? '').trim().isEmpty
+                              ? 'Guest'
+                              : (participant.displayName ?? '').trim(),
+                          style: const TextStyle(
+                            color: Color(0xFFE5E7EB),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if ((participant.displayRole ?? '').trim().isNotEmpty)
+                          Text(
+                            (participant.displayRole ?? '').trim(),
+                            style: const TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-              ],
+                  if (handRaised) ...[
+                    const SizedBox(width: AuraSpace.s6),
+                    const Text('✋', style: TextStyle(fontSize: 14)),
+                  ],
+                  const SizedBox(width: AuraSpace.s6),
+                  Icon(
+                    participant.audioOn
+                        ? Icons.mic_rounded
+                        : Icons.mic_off_rounded,
+                    size: 16,
+                    color: participant.audioOn
+                        ? const Color(0xFF6B7280)
+                        : const Color(0xFFEF4444),
+                  ),
+                  const SizedBox(width: AuraSpace.s4),
+                  Icon(
+                    participant.videoOn
+                        ? Icons.videocam_rounded
+                        : Icons.videocam_off_rounded,
+                    size: 16,
+                    color: participant.videoOn
+                        ? const Color(0xFF6B7280)
+                        : const Color(0xFFEF4444),
+                  ),
+                  if (participant.screenOn) ...[
+                    const SizedBox(width: AuraSpace.s4),
+                    const Icon(
+                      Icons.screen_share_rounded,
+                      size: 16,
+                      color: Color(0xFF6C63FF),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
-          if (handRaised) ...[
-            const SizedBox(width: AuraSpace.s6),
-            const Text('✋', style: TextStyle(fontSize: 14)),
-          ],
-          const SizedBox(width: AuraSpace.s6),
-          Icon(
-            participant.audioOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-            size: 16,
-            color: participant.audioOn
-                ? const Color(0xFF6B7280)
-                : const Color(0xFFEF4444),
-          ),
-          const SizedBox(width: AuraSpace.s4),
-          Icon(
-            participant.videoOn
-                ? Icons.videocam_rounded
-                : Icons.videocam_off_rounded,
-            size: 16,
-            color: participant.videoOn
-                ? const Color(0xFF6B7280)
-                : const Color(0xFFEF4444),
-          ),
-          // I1: Screen sharing indicator
-          if (participant.screenOn) ...[
-            const SizedBox(width: AuraSpace.s4),
-            const Icon(
-              Icons.screen_share_rounded,
-              size: 16,
-              color: Color(0xFF6C63FF),
-            ),
-          ],
           // Host mute request (shown when the participant's mic is on).
           if (onMute != null) ...[
             const SizedBox(width: AuraSpace.s6),
-            GestureDetector(
-              onTap: onMute,
-              child: const Tooltip(
-                message: 'Ask to mute',
-                child: Icon(
-                  Icons.mic_off_rounded,
-                  size: 16,
-                  color: Color(0xFFF59E0B),
+            Semantics(
+              button: true,
+              label: 'Ask ${(participant.displayName ?? 'this participant').trim()} to mute',
+              excludeSemantics: true,
+              child: GestureDetector(
+                onTap: onMute,
+                child: const Tooltip(
+                  message: 'Ask to mute',
+                  child: Icon(
+                    Icons.mic_off_rounded,
+                    size: 16,
+                    color: Color(0xFFF59E0B),
+                  ),
                 ),
               ),
             ),
@@ -3044,12 +2714,20 @@ class _ParticipantRow extends StatelessWidget {
           // I3: Host remove button (not shown for self)
           if (onRemove != null) ...[
             const SizedBox(width: AuraSpace.s4),
-            GestureDetector(
-              onTap: onRemove,
-              child: const Icon(
-                Icons.person_remove_rounded,
-                size: 16,
-                color: Color(0xFFEF4444),
+            Semantics(
+              button: true,
+              label: 'Remove ${(participant.displayName ?? 'this participant').trim()} from the meeting',
+              excludeSemantics: true,
+              child: GestureDetector(
+                onTap: onRemove,
+                child: const Tooltip(
+                  message: 'Remove from meeting',
+                  child: Icon(
+                    Icons.person_remove_rounded,
+                    size: 16,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
               ),
             ),
           ],
@@ -3202,6 +2880,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
                   ),
                 const SizedBox(width: 4),
                 IconButton(
+                  tooltip: 'Close this panel',
                   icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
                   onPressed: widget.onClose,
                 ),
@@ -3426,6 +3105,7 @@ class _MeetingFilesDrawerState extends ConsumerState<_MeetingFilesDrawer> {
                   ),
                 ],
                 IconButton(
+                  tooltip: 'Close this panel',
                   icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
                   onPressed: widget.onClose,
                 ),
@@ -3631,8 +3311,24 @@ class _ConnectingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasError = state.joinState == RealtimeJoinState.failed &&
-        state.errorMessage != null;
+    // §XXXI — WHAT WENT WRONG DECIDES WHAT IS OFFERED.
+    //
+    // Two defects lived in the line this replaces. `hasError` was
+    // `joinState == failed && errorMessage != null`, so being REJECTED,
+    // REMOVED, BANNED or LOCKED fell through to the "Entering the meeting…"
+    // spinner and stayed there — the person was refused and watched a
+    // progress indicator until they gave up. And when an error did show, it
+    // offered "Retry" unconditionally, including for refusals and denied
+    // permissions, where pressing it can only fail again.
+    //
+    // The session contract already distinguishes these, so the overlay asks
+    // it instead of re-deriving them here.
+    final session = MeetingSessionAdapter.from(state);
+    final hasError = session.hasFailed;
+    final canRetry = session.canRetry;
+    final explanation = MeetingSessionAdapter.explain(session) ??
+        state.errorMessage ??
+        'Something went wrong joining this meeting.';
     final owner =
         meeting?.owningInstitution?.name ?? meeting?.host?.name;
 
@@ -3721,16 +3417,28 @@ class _ConnectingOverlay extends StatelessWidget {
             ] else ...[
               const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 40),
               const SizedBox(height: AuraSpace.s12),
-              Text(
-                state.errorMessage!,
-                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-                textAlign: TextAlign.center,
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  explanation,
+                  style:
+                      const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              const SizedBox(height: AuraSpace.s16),
-              FilledButton(
-                onPressed: onRetry,
-                child: const Text('Retry'),
-              ),
+              // Offered only where it can work. A retry on a refusal is a
+              // button that lies.
+              if (canRetry) ...[
+                const SizedBox(height: AuraSpace.s16),
+                MeetingAction(
+                  label: 'Try joining again',
+                  child: FilledButton(
+                    onPressed: onRetry,
+                    // The canonical recovery label. C0 owns this word.
+                    child: Text(ProductLabels.of(ProductAction.retry)),
+                  ),
+                ),
+              ],
             ],
           ],
         ),

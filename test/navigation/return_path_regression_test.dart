@@ -190,16 +190,38 @@ void main() {
       }
     });
 
-    test('Meetings and Live are not framed by the shared affordance', () {
-      // Founder ruling §13 — a shared change must not alter protected
-      // behaviour, and this is the line that keeps that true.
+    test('a LIVE CALL is exempt — because leaving one is not going back', () {
+      // R-4 (founder ruling 2026-08-25) SUPERSEDES the old §13 domain
+      // protection. The exemption survives only where it was ever earned: a
+      // person inside a synchronous session leaves, and leaving releases the
+      // camera, may end the meeting for everyone, and writes a participation
+      // record. A generic Back that popped the router would do none of it.
       for (final p in [
         '/realtime/s1',
-        '/meet/some-slug',
+        '/meetings/m1/live',
         '/institution/x/meetings/m1/live',
-        '/i/inst/meet/booking',
       ]) {
         expect(ReturnPathAuthority.isProtectedDomain(p), isTrue, reason: p);
+        expect(ReturnPathAuthority.isLiveCallSurface(p), isTrue, reason: p);
+      }
+    });
+
+    test('R-4: the Meetings WORKSPACE is framed like everywhere else', () {
+      // The regression this replaces: Meetings was exempt by DOMAIN, so the
+      // record, the waiting room, availability and public booking all drew
+      // their own way back or drew nothing. Four of them drew nothing.
+      for (final p in [
+        '/realtime',
+        '/meetings/m1',
+        '/meetings/m1/waiting',
+        '/institution/x/meetings',
+        '/institution/x/meetings/m1',
+        '/institution/x/availability',
+        '/meet/some-slug',
+        '/meet/some-slug/book',
+        '/i/inst/meet/booking',
+      ]) {
+        expect(ReturnPathAuthority.isProtectedDomain(p), isFalse, reason: p);
       }
     });
 

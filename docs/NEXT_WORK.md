@@ -1,12 +1,54 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-24.** Discover reconstruction is **CLOSED**. The frozen
-sequence is DISCOVER → MESSAGES → CREATE → MEETINGS → LIVE → controlled
-two-party certification.
+**As of 2026-08-25.** Meetings Workspace reconstruction is **EXECUTED, not yet
+committed**. The sequence DISCOVER → MESSAGES → CREATE → MEETINGS is complete
+for Discover, Create and Meetings; MESSAGES remains owed as a planned chapter.
 
 ---
 
-## NEXT — MESSAGES RECONSTRUCTION (plan before build)
+## IMMEDIATELY OWED — founder review of Meetings
+
+Nothing is committed or deployed. Waiting on:
+
+1. review of `docs/meetings/2026-08-25-meetings-reconstruction.md`;
+2. the exact commit message, per the established cycle;
+3. approval to push — which triggers Railway auto-deploy **and the migration**
+   `20261003000000_meetings_reconstruction_r2_r3`. That migration backfills
+   `Meeting.audience` and adds `Meeting.conversationId`; it was tested on a
+   disposable Postgres both from empty and against a recreated pre-migration
+   shape, and every statement is guarded.
+
+## NEXT CHAPTER — AUDIO / VIDEO CALL SYSTEM RECONSTRUCTION
+
+Founder-sequenced. The Meetings chapter produced the contract it should build
+against:
+
+* `lib/features/meetings/domain/meeting_av_contract.dart` — the product
+  vocabulary the workspace reasons in;
+* `lib/features/meetings/application/meeting_session_adapter.dart` — the one
+  place the workspace reads the A/V system.
+
+**A/V debt carried forward, recorded so it is not rediscovered:**
+
+1. 44 `setState` calls remain in the live room — behaviour was deliberately not
+   moved, per the ruling's instruction to preserve media behaviour;
+2. two `realtime/data/` imports remain (media service, event parser) — removing
+   them needs a service-level contract that is the A/V chapter's work;
+3. **release-blocking:** no explicit native permission REQUEST flow with a
+   rationale screen. Manifests, usage strings and classification/recovery all
+   exist; the pre-flight ask does not;
+4. two-party active media is uncertified — one process cannot drive both ends.
+
+## THEN — LIVE BROADCAST
+
+`LIVE_BROADCAST_SYSTEM = NOT_CURRENTLY_ESTABLISHED` (R-1). Start from
+`lib/core/realtime/live_vocabulary.dart`, which classifies every current use of
+the word. Nothing there becomes Live by inheritance.
+
+## STILL OWED — MESSAGES RECONSTRUCTION (plan before build)
+
+---
+
 
 Founder-directed. A measured architecture and product audit is owed **before**
 any implementation, covering:

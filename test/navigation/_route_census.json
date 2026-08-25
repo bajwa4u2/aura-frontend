@@ -752,8 +752,8 @@
   "params": [
    "meetingId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -766,8 +766,8 @@
   "params": [
    "meetingId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -808,8 +808,8 @@
   "params": [
    "meetingId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -822,8 +822,8 @@
   "params": [
    "meetingId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -852,8 +852,8 @@
    "institutionId",
    "meetingId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -867,8 +867,8 @@
    "institutionId",
    "meetingId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -912,8 +912,8 @@
    "institutionId",
    "meetingId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -927,8 +927,8 @@
    "institutionId",
    "meetingId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"

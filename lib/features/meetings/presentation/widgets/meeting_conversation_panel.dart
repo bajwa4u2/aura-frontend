@@ -98,6 +98,7 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Close',
                   icon: const Icon(Icons.close, color: AuraSurface.muted),
                   onPressed: widget.onClose,
                 ),
@@ -242,6 +243,7 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                           ),
                         ),
                         IconButton(
+                          tooltip: 'Send',
                           onPressed: _sending ? null : _send,
                           icon: _sending
                               ? const SizedBox(

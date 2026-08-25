@@ -163,6 +163,7 @@ class _BookingRescheduleScreenState
                   Row(
                     children: [
                       IconButton(
+                        tooltip: 'Previous month',
                         icon: const Icon(Icons.chevron_left_rounded),
                         onPressed: () => setState(() {
                           _focusedMonth = DateTime(
@@ -180,6 +181,7 @@ class _BookingRescheduleScreenState
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Next month',
                         icon: const Icon(Icons.chevron_right_rounded),
                         onPressed: () => setState(() {
                           _focusedMonth = DateTime(

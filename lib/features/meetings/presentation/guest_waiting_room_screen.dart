@@ -62,9 +62,11 @@ class _GuestWaitingRoomScreenState
     super.dispose();
   }
 
+  /// The meeting record — one page before, during and after. §XII: the old
+  /// `/summary` alias now redirects here, so the product links straight at it.
   String get _summaryPath => widget.institutionId == null
-      ? '/meetings/${widget.meetingId}/summary'
-      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}/summary';
+      ? '/meetings/${widget.meetingId}'
+      : '/institution/${widget.institutionId}/meetings/${widget.meetingId}';
 
   String get _currentSessionId => (widget.sessionId ?? '').trim();
 

@@ -153,7 +153,9 @@ final RegExp _institutionScoped = RegExp(r'^/institution/([^/]+)(/|$)');
 /// these is a create/edit/compose destination.
 final RegExp _flowSurface = RegExp(
   r'(^|/)(new|create|write|edit|compose|edit-profile|get-started|'
-  r'request-verification)(/|$)',
+  // §XIV: booking a time is a piece of work with a cancel, not a level in a
+  // hierarchy. `/meet/:slug/book` leaves back to the page it was started from.
+  r'request-verification|book|reschedule)(/|$)',
 );
 
 /// Human names for canonical parents, so an affordance can say where it goes.
@@ -193,23 +195,39 @@ String? _prefixParent(String path, RouteExists exists) {
   return null;
 }
 
-/// Meetings and Live, plus the auth/boot machinery.
+/// THE GATES — RC4's subject, and not this authority's.
 ///
-/// Founder ruling §13: Meetings and Live are protected and must not be altered
-/// — including accidentally, through a shared change. The shared affordance
-/// therefore declines to frame them, which is also what lets them adopt this
-/// architecture later without a fork: the authority already describes them, it
-/// simply does not present for them yet.
-///
-/// The gates are excluded for a different reason: RC4 owns their exits, and a
-/// hierarchical Back on a sign-in gate would contradict a governed transition.
-final RegExp _protectedDomain = RegExp(
+/// A hierarchical Back on a sign-in gate would contradict a governed
+/// transition, so the shared affordance declines to present for them and
+/// leaves their exits to `destination_continuity.dart`.
+final RegExp _gateDomain = RegExp(
   r'^/(_boot|login|register|auth|logout|verify-email|verify-pending|'
-  r'complete-identity|reset-password|forgot-password|enter-institution|'
-  r'realtime|meet|meetings)(/|$)'
-  r'|^/institution/[^/]+/meetings(/|$)'
-  r'|^/i/[^/]+/meet(/|$)'
+  r'complete-identity|reset-password|forgot-password|enter-institution)(/|$)'
   r'|^/institution/sign-in$',
+);
+
+/// LIVE CALL SURFACES — a BEHAVIOUR exemption, not a domain one.
+///
+/// R-4 (founder ruling 2026-08-25) admits Meetings to this authority: the
+/// blanket `meetings|meet|realtime` protection is over. But one thing about
+/// those surfaces was always right and survives on its own merits — a person
+/// who is INSIDE a synchronous session does not "go back". They leave, and
+/// leaving is a governed act with consequences for other people in the room:
+/// it may end the meeting for everybody, it releases the camera, it writes a
+/// participation record. A generic Back control that quietly popped the router
+/// would perform none of that.
+///
+/// So the exemption is now stated in terms of what the surface IS rather than
+/// which feature owns it, which is why it correctly covers a direct call at
+/// `/realtime/:sessionId` and correctly does NOT cover the waiting room, the
+/// meeting record, availability, or public booking — none of which is a call.
+final RegExp _liveCallSurface = RegExp(
+  r'^/meetings/[^/]+/live(/|$)'
+  r'|^/institution/[^/]+/meetings/[^/]+/live(/|$)'
+  // `/realtime/:sessionId` is a call. `/realtime` on its own is the LOBBY —
+  // a list of rooms, where nobody is connected to anything and a way out is
+  // exactly what is wanted.
+  r'|^/realtime/[^/]+',
 );
 
 /// THE AUTHORITY.
@@ -218,11 +236,21 @@ class ReturnPathAuthority {
 
   /// Is this destination outside the shared affordance's remit?
   ///
-  /// Returns true for Meetings/Live (founder-protected) and for the auth/boot
-  /// gates (RC4's subject). The authority still RESOLVES these — describing
-  /// them is how they adopt this later — it just does not present for them.
-  static bool isProtectedDomain(String path) =>
-      _protectedDomain.hasMatch(_normalize(path));
+  /// Two populations, for two different reasons: the auth/boot gates, whose
+  /// exits RC4 owns, and live call surfaces, where leaving is a governed act
+  /// rather than a navigation (see [_liveCallSurface]).
+  ///
+  /// R-4: the Meetings Workspace is no longer among them. The authority always
+  /// resolved these paths — describing them is how they adopted this — and now
+  /// it presents for them too.
+  static bool isProtectedDomain(String path) {
+    final p = _normalize(path);
+    return _gateDomain.hasMatch(p) || _liveCallSurface.hasMatch(p);
+  }
+
+  /// True for a surface a person is synchronously present on.
+  static bool isLiveCallSurface(String path) =>
+      _liveCallSurface.hasMatch(_normalize(path));
 
   /// Resolve what returning from [path] means.
   ///

@@ -22,6 +22,18 @@
 | **FD-12** | **Proven-dead retirement only** + surface reachability principle; naïve zero-reference gate forbidden |
 | **FD-13** | **Enforcement ships with the authority it protects** — hard failure, narrow exceptions, no end-stage enforcement chapter |
 
+## Meetings Workspace rulings — R-1 … R-4 (frozen 2026-08-25)
+
+Issued with the Meetings reconstruction authorization. Implemented and
+documented in `docs/meetings/MEETINGS_PRODUCT_CONTRACT.md`.
+
+| R | Decision |
+|---|---|
+| **R-1** | **`LIVE_BROADCAST_SYSTEM = NOT_CURRENTLY_ESTABLISHED`** — Meetings, A/V Calling and Live Broadcast are separate chapters; current naming does not define architecture. `MeetingLiveRoomScreen` is meeting A/V presentation, `features/institutions/live_rooms/` is a legacy capability, and the Explore "LIVE NOW" indicator is presentation. None becomes Live by inheritance. Classification enforced in `lib/core/realtime/live_vocabulary.dart` |
+| **R-2** | **Invitation state is explicit; nullability is not lifecycle authority** — `PENDING` is canonical for "invited, awaiting response"; `NO_RESPONSE` converges onto it (nothing ever wrote it, so the `noShow` count it fed was structurally always zero — now derived). `MeetingAudience` is non-nullable, backfilled by the derivation that previously ran at every read |
+| **R-3** | **`MEETING_CONVERSATION_CONTINUITY = CANONICAL_RELATIONSHIP_REQUIRED`** / **`MEETING_LOCAL_DURABLE_CHAT = PROHIBITED`** — a Meeting references one canonical Conversation, created lazily. Meeting owns lifecycle/scheduling/participation/authority/the record; Conversation owns durable messages; A/V owns realtime media. Guests are not conversation parties — a party is a person or an institution, and a guest holds no Aura identity |
+| **R-4** | **`MEETINGS_RETURN_PATH_AUTHORITY = ADMIT`** — the §13 domain protection is retired. One exemption survives, restated as BEHAVIOUR: a live call surface, where leaving is a governed act rather than a navigation. The historical "19 destinations without an affordance" is **superseded**; the measured figure was 4 |
+
 ## Five named cross-product freezes
 
 1. **Capability-Adaptive Experience** — roles change available capability, not the product

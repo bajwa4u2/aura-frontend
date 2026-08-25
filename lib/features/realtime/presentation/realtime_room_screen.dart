@@ -8,10 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
-import '../../meetings/application/meetings_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/services/call_presence_bridge.dart';
 import '../../../core/ui/aura_card.dart';
@@ -143,7 +141,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   // picker; a second tap while it is open must not race a second capture.
   bool _togglingScreenShare = false;
   String? _lastConsentSyncKey;
-  bool _guestAuthAttempted = false;
   RealtimeSurfaceType? _lastKnownSurfaceType;
   String? _lastKnownSurfaceId;
   String? _lastKnownInstitutionId;
@@ -206,7 +203,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      await _ensureGuestAuth();
       if (!mounted) return;
       final controller = ref.read(realtimeControllerProvider.notifier);
       final action = (widget.action ?? '').trim().toLowerCase();
@@ -318,20 +314,25 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   /// Re-exchanges a guest JWT if the in-memory token was cleared (web page
   /// refresh wipes TokenStore._accessToken). Only runs once per screen mount.
-  Future<void> _ensureGuestAuth() async {
-    final guestId = (widget.guestId ?? '').trim();
-    if (guestId.isEmpty || _guestAuthAttempted) return;
-    _guestAuthAttempted = true;
-    final tokenStore = ref.read(tokenStoreProvider);
-    if (tokenStore.isAuthed) return;
-    try {
-      final repo = ref.read(meetingsRepositoryProvider);
-      final guestAuth = await repo.exchangeGuestAuth(guestId);
-      if (guestAuth.accessToken.trim().isNotEmpty) {
-        await tokenStore.setSession(accessToken: guestAuth.accessToken);
-      }
-    } catch (_) {}
-  }
+  // GUEST AUTH IS THE ROUTER'S JOB, NOT THIS SCREEN'S.
+  //
+  // Founder ruling 2026-08-25 §X/§XXXVIII. This screen used to mint a guest
+  // session itself by calling `meetingsRepository.exchangeGuestAuth`, and that
+  // single call was the ONLY reason the A/V presentation layer imported the
+  // Meetings feature at all — a whole cross-feature dependency edge held up by
+  // one method.
+  //
+  // It was also redundant. `/realtime/:sessionId` performs the identical
+  // exchange in its own redirect before resolving the surface, and a guest who
+  // does NOT reach that branch is hard-blocked to `/meetings/join-error`
+  // rather than being allowed to render here. The only route to this builder
+  // carrying a guestId is the cached "already confirmed non-meeting" fast
+  // path — and reaching that requires an earlier pass that already ran the
+  // exchange. So the method could only ever repeat work that was done, or
+  // swallow its failure with `catch (_) {}` while doing nothing.
+  //
+  // (The audit called it unreachable. Reachable-but-always-redundant is the
+  // more precise finding, and it retires for the same reason.)
 
   void _syncConsentsIfNeeded({
     required RealtimeController controller,

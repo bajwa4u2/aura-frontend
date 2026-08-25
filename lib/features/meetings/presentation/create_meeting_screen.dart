@@ -425,12 +425,11 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         ? 'No internal members selected'
         : selectedMembers.map((member) => member.displayLabel).join(', ');
 
+    // R-4: the way out is the shared one. Creating a meeting is a FLOW, so
+    // the governed affordance says Cancel rather than Back — a distinction
+    // this screen's own arrow could not make.
     return AuraScaffold(
       title: 'Create meeting',
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => context.pop(),
-      ),
       body: ListView(
         padding: const EdgeInsets.all(AuraSpace.s16),
         children: [
@@ -1165,6 +1164,7 @@ class _Chip extends StatelessWidget {
       onDeleted: onRemove,
       deleteIcon: onEdit != null
           ? IconButton(
+              tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined, size: 16),
               color: fg,
               onPressed: onEdit,

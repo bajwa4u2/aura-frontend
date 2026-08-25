@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:aura/features/meetings/application/meeting_realtime_semantics.dart';
+import 'package:aura/core/realtime/meeting_realtime_semantics.dart';
 import 'package:aura/features/realtime/domain/realtime_enums.dart';
 
 // Realtime Architecture Correction — Phase 7, Meetings realtime

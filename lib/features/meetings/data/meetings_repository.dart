@@ -91,6 +91,28 @@ class MeetingsRepository {
     return Meeting.fromJson(data);
   }
 
+  /// THE MEETING'S DURABLE CONVERSATION — R-3, founder ruling 2026-08-25.
+  ///
+  /// A POST, because this is where the conversation comes into existence.
+  /// Creation is lazy by design: opening a meeting record must not bring a
+  /// conversation into being for somebody who only looked at the page, so
+  /// nothing here happens until a person asks to continue talking.
+  ///
+  /// Returns null when the server has not adopted the relationship yet, which
+  /// keeps a released client working against an older deployment — the
+  /// affordance simply does not appear.
+  Future<String?> openMeetingConversation(String id) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$id/conversation',
+    );
+    final body = res.data?['data'] ?? res.data;
+    if (body is Map) {
+      final value = (body['conversationId'] as String?)?.trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
   Future<MeetingSummary?> getMeetingSummary(String id) async {
     final res = await _dio.get<Map<String, dynamic>>('/meetings/$id/summary');
     final data = res.data?['data'];

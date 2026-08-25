@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/client_identity/client_identity.dart';
 import '../../../core/errors/app_error_mapper.dart';
-import '../../meetings/application/meeting_realtime_semantics.dart';
+import '../../../core/realtime/meeting_realtime_semantics.dart';
 import '../data/realtime_event_parser.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';

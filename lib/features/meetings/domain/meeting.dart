@@ -1,5 +1,6 @@
 import 'meeting_identity.dart';
 import 'meeting_asset.dart';
+import 'meeting_lifecycle.dart';
 import 'meeting_room.dart';
 import '../../../core/identity/person_identity_model.dart';
 
@@ -75,7 +76,39 @@ class MeetingParticipant {
             : null,
       );
 
-  String get displayName => user?.name ?? guestName ?? guestEmail ?? 'Guest';
+  /// Whether this row names somebody who holds an Aura identity — whether or
+  /// not the payload happened to expand it.
+  bool get isAuraPerson =>
+      user != null || (userId ?? '').trim().isNotEmpty;
+
+  /// WHAT TO CALL THIS PARTICIPANT.
+  ///
+  /// Founder ruling 2026-08-25 §XI. This getter used to end
+  /// `?? guestEmail ?? 'Guest'`, which meant an Aura member whose person
+  /// payload had not been expanded — a list projection, a cached row, a
+  /// participant fetched without `include: { user: true }` — was rendered as
+  /// **Guest**. That is the F053/F116 defect in one line: a person's identity
+  /// answered by an external participant type they do not hold. `Guest` is a
+  /// statement about someone's relationship to Aura, and it was being made
+  /// about members on the strength of a missing join.
+  ///
+  /// The order now separates the two populations before naming either:
+  ///
+  ///   * an Aura person is named by the canonical identity authority, whose
+  ///     own last resort is the one neutral word the whole product shares;
+  ///   * a genuinely external participant is named by what they supplied, and
+  ///     only then by `Guest` — which is accurate for them, and is the
+  ///     meeting domain's own governed word for exactly this case.
+  String get displayName {
+    final person = user;
+    if (person != null) return person.name;
+    if (isAuraPerson) return AuraPersonIdentity.unknown.label;
+    final name = (guestName ?? '').trim();
+    if (name.isNotEmpty) return name;
+    final email = (guestEmail ?? '').trim();
+    if (email.isNotEmpty) return email;
+    return 'Guest';
+  }
 
   bool get isHost => role == 'HOST';
   bool get isGuest => role == 'GUEST';
@@ -155,11 +188,27 @@ class MeetingBookingDetails {
     this.host,
   });
 
-  factory MeetingBookingDetails.fromJson(Map<String, dynamic> j) =>
-      MeetingBookingDetails(
+  factory MeetingBookingDetails.fromJson(Map<String, dynamic> j) {
+    // §XI. `bookerName` defaulted to the literal 'Guest', which named the
+    // person who booked the meeting by an external participant type — even
+    // when the payload carried a fully resolved `bookerIdentity` that knew
+    // exactly who they were. The identity is consulted BEFORE the fallback,
+    // and the fallback is only reached for a booker who is genuinely external
+    // and supplied no name.
+    final identity = j['bookerIdentity'] is Map<String, dynamic>
+        ? MeetingIdentityRef.fromJson(
+            j['bookerIdentity'] as Map<String, dynamic>,
+          )
+        : null;
+    final suppliedName = (j['bookerName'] as String? ?? '').trim();
+    final resolvedName = suppliedName.isNotEmpty
+        ? suppliedName
+        : (identity?.displayName ?? 'Guest');
+
+    return MeetingBookingDetails(
         id: j['id'] as String? ?? '',
         profileId: j['profileId'] as String? ?? '',
-        bookerName: j['bookerName'] as String? ?? 'Guest',
+        bookerName: resolvedName,
         bookerEmail: j['bookerEmail'] as String? ?? '',
         bookerNotes: j['bookerNotes'] as String?,
         scheduledAt: j['scheduledAt'] != null
@@ -170,11 +219,7 @@ class MeetingBookingDetails {
         status: j['status'] as String? ?? 'CONFIRMED',
         bookingPageName: j['bookingPageName'] as String?,
         bookingPageSlug: j['bookingPageSlug'] as String?,
-        bookerIdentity: j['bookerIdentity'] is Map<String, dynamic>
-            ? MeetingIdentityRef.fromJson(
-                j['bookerIdentity'] as Map<String, dynamic>,
-              )
-            : null,
+        bookerIdentity: identity,
         institution: j['institution'] is Map<String, dynamic>
             ? MeetingInstitutionRef.fromJson(
                 j['institution'] as Map<String, dynamic>,
@@ -184,6 +229,7 @@ class MeetingBookingDetails {
             ? MeetingHost.fromJson(j['host'] as Map<String, dynamic>)
             : null,
       );
+  }
 }
 
 class MeetingSummary {
@@ -288,6 +334,14 @@ class Meeting {
   /// even without a booking so every surface can show WHO owns the meeting.
   final MeetingInstitutionRef? institution;
 
+  /// THE MEETING'S DURABLE CONVERSATION — R-3, founder ruling 2026-08-25.
+  ///
+  /// Null is the normal state, and means "nobody has asked for one yet"
+  /// rather than "failed": conversations are created lazily, on the first
+  /// person who actually wants to continue talking. Every meeting that
+  /// predates the ruling has none, and most meetings never need one.
+  final String? conversationId;
+
   /// READY recordings attached to this meeting (inventory projection only —
   /// the recordings themselves stay meeting-owned and load with the record).
   final int recordingCount;
@@ -323,6 +377,7 @@ class Meeting {
     this.summary,
     this.assets,
     this.institution,
+    this.conversationId,
     this.recordingCount = 0,
     required this.createdAt,
     required this.updatedAt,
@@ -382,6 +437,9 @@ class Meeting {
         ? MeetingInstitutionRef.fromJson(
             j['institution'] as Map<String, dynamic>)
         : null,
+    conversationId: (j['conversationId'] as String?)?.trim().isEmpty ?? true
+        ? null
+        : (j['conversationId'] as String).trim(),
     recordingCount: (j['recordingCount'] as num?)?.toInt() ?? 0,
     createdAt:
         DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
@@ -393,22 +451,25 @@ class Meeting {
   String? get owningInstitutionId =>
       organizationId ?? booking?.institution?.id;
 
-  bool get isActive => state == 'ACTIVE' && !isEnded;
-  bool get isScheduled =>
-      state == 'SCHEDULED' &&
-      (room == null ||
-          room?.status == MeetingRoomStatus.scheduled ||
-          room?.status == MeetingRoomStatus.startingSoon ||
-          room?.status == MeetingRoomStatus.waiting ||
-          room?.status == MeetingRoomStatus.hostWaiting ||
-          room?.status == MeetingRoomStatus.guestWaiting);
-  bool get isDraft => state == 'DRAFT';
+  /// THE ONE LIFECYCLE ANSWER (founder ruling 2026-08-25 §XIII).
+  ///
+  /// These four getters used to each combine `state` and `room?.status` in
+  /// their own way, and they did not agree: `isEnded` was true when the room
+  /// said `missed` while the record still said SCHEDULED, and `isScheduled`
+  /// was true only for five of the twelve room statuses — so a meeting could
+  /// be neither scheduled nor ended nor active in the same frame. They now
+  /// delegate to `MeetingPhase`, which resolves the record and the room once,
+  /// forward-only, and is tested. See `meeting_lifecycle.dart`.
+  MeetingPhase get phase =>
+      resolveMeetingPhase(recordState: state, roomStatus: room?.status);
+
+  bool get isActive => phase == MeetingPhase.active;
+  bool get isScheduled => phase == MeetingPhase.scheduled;
+  bool get isDraft => phase == MeetingPhase.draft;
   bool get isEnded =>
-      state == 'ENDED' ||
-      state == 'CANCELLED' ||
-      room?.status == MeetingRoomStatus.ended ||
-      room?.status == MeetingRoomStatus.missed ||
-      room?.status == MeetingRoomStatus.cancelled;
+      phase == MeetingPhase.ended ||
+      phase == MeetingPhase.cancelled ||
+      phase == MeetingPhase.missed;
   bool get isInstant => type == 'INSTANT';
 
   int get participantCount => participants.length;

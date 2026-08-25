@@ -499,6 +499,7 @@ class _CalendarPanel extends StatelessWidget {
         Row(
           children: [
             IconButton(
+              tooltip: 'Previous month',
               icon: const Icon(Icons.chevron_left_rounded),
               onPressed: onPreviousMonth,
             ),
@@ -513,6 +514,7 @@ class _CalendarPanel extends StatelessWidget {
               ),
             ),
             IconButton(
+              tooltip: 'Next month',
               icon: const Icon(Icons.chevron_right_rounded),
               onPressed: onNextMonth,
             ),

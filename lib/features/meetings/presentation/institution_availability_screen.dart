@@ -347,6 +347,7 @@ class _ProfileCard extends ConsumerWidget {
                 ),
               ),
               IconButton(
+                tooltip: 'Copy the public booking link',
                 icon: const Icon(Icons.copy_rounded, size: 16),
                 color: const Color(0xFF9CA3AF),
                 padding: EdgeInsets.zero,
@@ -509,6 +510,7 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
                 style: const TextStyle(fontSize: 13),
               ),
               trailing: IconButton(
+                tooltip: 'Remove this availability window',
                 icon: const Icon(
                   Icons.remove_circle_outline_rounded,
                   size: 18,

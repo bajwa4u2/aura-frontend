@@ -424,6 +424,7 @@ class _ConfirmationView extends ConsumerWidget {
                           ),
                         ),
                         IconButton(
+                          tooltip: 'Copy the joining link',
                           icon: const Icon(Icons.copy_rounded, size: 18),
                           color: const Color(0xFF6C63FF),
                           onPressed: () {
