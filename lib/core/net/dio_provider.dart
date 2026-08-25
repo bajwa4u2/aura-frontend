@@ -453,12 +453,21 @@ final dioProvider = Provider<Dio>((ref) {
           }
         }
 
+        // TEMPORARY DIAGNOSTIC (bootstrap hang investigation 2026-08-25).
+        final diagStart = DateTime.now();
+        void mark(String stage) {
+          debugPrint('[net-diag] ${options.path} :: $stage '
+              '+${DateTime.now().difference(diagStart).inMilliseconds}ms');
+        }
+        mark('enter');
+
         final store = ref.read(tokenStoreProvider);
 
         if (!skipAuth) {
           try {
             await store.waitUntilLoaded();
           } catch (_) {}
+          mark('tokenStore');
 
           // Wait for session bootstrap to settle so a request fired during the
           // /auth/refresh round-trip on app start does not race past it with no
@@ -476,6 +485,7 @@ final dioProvider = Provider<Dio>((ref) {
               // Bootstrap is best-effort — a failure here must not block
               // the request (see the note above).
             }
+            mark('bootstrap');
           }
         }
 
@@ -491,6 +501,7 @@ final dioProvider = Provider<Dio>((ref) {
         try {
           await ref.read(clientIdentityProvider.future);
         } catch (_) {}
+        mark('identity');
         final identity = ref.read(clientIdentitySnapshotProvider);
         if (identity != null) {
           identity.toHttpHeaders().forEach((key, value) {
@@ -509,6 +520,7 @@ final dioProvider = Provider<Dio>((ref) {
           options.headers.remove('Authorization');
         }
 
+        mark('dispatch');
         handler.next(options);
       },
       onError: (err, handler) async {
