@@ -100,3 +100,88 @@ the founder's account is available here. Reported rather than simulated.
 * No two-party audio or video call.
 * No relay-path ICE certification (needs a real call).
 * No reconnect-under-loss certification (needs a real call).
+
+---
+
+# Android physical certification — executed 2026-08-25
+
+Device: **Pixel 9a**, `53061JEBF08485`, Android 17 (API 37).
+Harness: `integration_test/av_android_certification_test.dart` — **18/18 PASS**
+on the final current A/V code. Baseline harness
+`av_certification_test.dart` — **8/8 PASS** on the same device.
+
+The previous `NOT_EXECUTED` classification is retired. No Meetings-chapter
+Android evidence was reused; that certified different code.
+
+## A defect the handset found and Windows could not
+
+**`CallReadiness` notified after disposal.** `check()` is asynchronous, and on
+Android it is genuinely slow — a permission request plus a real device open.
+Dismissing the preflight while it runs disposed the notifier, and the
+continuation then called `notifyListeners()` on a dead `ChangeNotifier`:
+
+```
+A CallReadiness was used after being disposed.
+#3  CallReadiness.check (package:aura/core/media/call_readiness.dart:146:7)
+```
+
+Windows never exposed it: its check returns almost instantly, so there is no
+window to be dismissed inside. The fix guards notification, and releases
+anything the in-flight check opened, so a preflight abandoned mid-check cannot
+leave the camera running. Pinned by *"disposing DURING a check does not explode
+or leak"*.
+
+## Measured permission evidence
+
+| Observation | Value |
+|---|---|
+| `hasQueryablePermissions` on Android | **true** (false on Windows, by design) |
+| Status query without a system dialog | **works** — never returned `unknown` |
+| Fresh-install state, read live | `mic=denied camera=denied` — the real denied path |
+| OS grant via `adb pm grant` | `CAMERA`, `RECORD_AUDIO`, **`BLUETOOTH_CONNECT`** all `granted=true` |
+| After that grant, read live | `mic=granted camera=granted` |
+
+**Two OS states were driven from outside the app and Aura reported each one
+correctly** — denied on a fresh install, granted after `adb shell pm grant`,
+with the second run asserting it via `--dart-define=EXPECT_CAMERA=granted`.
+That is the agreement between Aura and the platform, measured rather than
+assumed, and it is the capability that did not exist at all before this
+chapter.
+
+`BLUETOOTH_CONNECT` being grantable confirms the new manifest entry is real on
+this device — the permission that call audio needs to reach a paired headset on
+Android 12+, and which was absent before this chapter.
+
+## The ordering invariant
+
+    CALL INTENT → PREFLIGHT → READINESS → USER PROCEEDS
+      → SESSION CREATED → OTHER PARTY RUNG
+
+Proved in two halves, and the structural half was **negative-controlled**: the
+pre-chapter defect was reintroduced (hoisting `startLive` above the preflight)
+and the test failed with *"a session is created, and the recipient rung, before
+the caller has proceeded through readiness"*; restoring the source made it pass
+again. A test that cannot fail is not evidence.
+
+* Structural — `test/realtime/call_preflight_ordering_test.dart`, 6/6:
+  `startLive` and `context.push` are both unreachable before the
+  `if (proceed != true) return;` guard.
+* Behavioural, on the handset — dismissal yields `false`, and **system Back**
+  also yields a non-proceed answer, so neither route can be read as consent.
+
+## Android capabilities certified on device
+
+| Item | Result |
+|---|---|
+| Preflight opens, names the person, offers a way out | PASS |
+| Touch targets on a real phone viewport | PASS |
+| Device state announced (not colour/icon alone) | PASS |
+| Composition without overflow on this screen | PASS |
+| Foreground → background → foreground | PASS |
+| Re-entry re-answers readiness rather than trusting stale state | PASS |
+| Dispose during in-flight check | PASS (after fix) |
+| Preview release idempotent, nothing left open | PASS |
+| System Back closes without starting a call | PASS |
+| Android recovery language names Settings › Apps, never a browser | PASS |
+| Degraded participation: refusal never bars joining | PASS |
+| Audio call never reports the camera as refused | PASS |

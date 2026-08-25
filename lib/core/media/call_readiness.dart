@@ -41,6 +41,16 @@ class CallReadiness extends ChangeNotifier {
   bool _checking = false;
   bool get checking => _checking;
 
+  /// DISPOSED MID-CHECK.
+  ///
+  /// Found on a physical Pixel 9a, 2026-08-25: `check()` is asynchronous and
+  /// on Android it is genuinely slow — a permission request plus a real device
+  /// open. Dismissing the preflight while it is still running disposes this
+  /// object, and the continuation then called `notifyListeners()` on a dead
+  /// ChangeNotifier. Windows never exposed it because its check returns almost
+  /// immediately; the race needs a device slow enough to be dismissed during.
+  bool _disposed = false;
+
   /// True once a check has completed, whatever the answer. Surfaces use this
   /// to tell "not asked yet" apart from "asked and everything is fine" —
   /// which look identical if you only inspect the states.
@@ -90,9 +100,9 @@ class CallReadiness extends ChangeNotifier {
   /// Skipping step 2 would let a preflight declare readiness it has not
   /// verified, which is the failure this whole system exists to prevent.
   Future<void> check({bool requestPermission = true}) async {
-    if (_checking) return;
+    if (_checking || _disposed) return;
     _checking = true;
-    notifyListeners();
+    _notify();
 
     try {
       var micState = DevicePermissionState.notRequested;
@@ -143,8 +153,19 @@ class CallReadiness extends ChangeNotifier {
       _hasChecked = true;
     } finally {
       _checking = false;
-      notifyListeners();
+      // If we were disposed mid-flight, release anything the check opened and
+      // stay silent — the listener it would notify is already gone.
+      if (_disposed) {
+        await releasePreview();
+      } else {
+        _notify();
+      }
     }
+  }
+
+  void _notify() {
+    if (_disposed) return;
+    notifyListeners();
   }
 
   /// Send the person to the only place that can undo a permanent refusal.
@@ -221,6 +242,10 @@ class CallReadiness extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    // Fire-and-forget is deliberate: dispose cannot await, and the devices
+    // must be released whether or not a check is still in flight. A check that
+    // completes afterwards releases again — releasePreview is idempotent.
     releasePreview();
     super.dispose();
   }
