@@ -86,3 +86,7 @@ Thumbs.db
 /nav_classified.json
 /nav_entrymodes.json
 /nav_surfaces.json
+
+# Golden-test failure artefacts
+/test/failures/
+/nav_gopush.json
