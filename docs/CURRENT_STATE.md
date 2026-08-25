@@ -6,6 +6,24 @@
 
 ## Status
 
+> **2026-08-25 — MEETINGS §11 ACTIVE WORKSPACE RECONSTRUCTED.** The room now
+> keeps the meeting's identity, participants and elapsed time legible while the
+> transport is connecting or failing — they were rendered under a 93% scrim and
+> invisible. The ended overlay names what continues. The record's loading,
+> error and canonicalising states lost their full-surface spinners.
+>
+> Two shared primitives I had duplicated (`MeetingSection`, `MeetingStatusChip`)
+> were folded back into the canonical ones.
+>
+> **Returned to the founder, not fixed:** `GET /meetings/:id` is never
+> requested in the affected session state — measured, both routes, no 4xx/5xx,
+> every other call inside 1.45 s. The record does not load slowly; it does not
+> load. Cause is upstream of Meetings (shared auth or institution identity).
+> `MEETING_RECORD_PERFORMANCE = BOUNDED`.
+>
+> Certified: Windows native 14/14 real session; Pixel 9a 14/14 (10 exercised,
+> 4 skipped, no session). No A/V machinery touched.
+
 > **2026-08-25 — MEETINGS WORKSPACE RECONSTRUCTION EXECUTED (B0–B8).**
 > The Meetings audit of 2026-08-25 is the frozen baseline; all 23 open findings
 > are closed, including the three P0s. Four founder rulings implemented:
