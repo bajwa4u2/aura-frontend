@@ -90,6 +90,10 @@ class MeetingSkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
+        // Without this the placeholder cards size to their content and sit
+        // centred, so the loading state does not match the shape of the list
+        // it is standing in for - which is the whole point of a skeleton.
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < count; i++) ...[
             const MeetingSkeleton(),

@@ -127,6 +127,11 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
 
     return AuraScaffold(
       title: 'Meetings',
+      // AuraScaffold clamps to 920 by default, which is BELOW this page's own
+      // 900 breakpoint - so a full desktop window still resolved as narrow and
+      // stacked the actions edge to edge. The page needs the room it lays out
+      // for.
+      maxWidth: 1180,
       body: RefreshIndicator(
         onRefresh: () async => _refresh(),
         child: LayoutBuilder(
@@ -957,9 +962,26 @@ class _OutcomeCard extends ConsumerWidget {
     return AuraCard(
       padding: const EdgeInsets.all(AuraSpace.s16),
       child: meetingAsync.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.symmetric(vertical: AuraSpace.s8),
-          child: Center(child: CircularProgressIndicator()),
+        // The outcome's own text is already known - only the meeting it came
+        // from is still resolving. Showing a spinner hid information that was
+        // in hand, so the follow-up item reads immediately and the meeting's
+        // name arrives when it arrives.
+        loading: () => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              outcome.text,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AuraSpace.s6),
+            Text(
+              'Loading the meeting this came from...',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AuraSurface.muted),
+            ),
+          ],
         ),
         error: (e, _) => Text(
           outcome.text,
